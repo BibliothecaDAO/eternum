@@ -257,11 +257,13 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected getHexagonEntity(hexCoords: HexPosition) {
-    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
-    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    const army = this.armyHexes.get(hex.x)?.get(hex.y);
+    const structure = this.structureHexes.get(hex.x)?.get(hex.y);
     return { army, structure };
   }
 
+  // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
@@ -347,26 +349,47 @@ export default class WorldmapScene extends HexagonScene {
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
 
-    // Get the target hex (last hex in the path)
     const targetHex = selectedPath[selectedPath.length - 1];
+    const target = this.getHexagonEntity(targetHex);
+    const selected = this.getHexagonEntity(selectedPath[0]);
 
     // Find the army at the target position
     this.state.toggleModal(
       <CombatModal
-        attackerEntityId={selectedEntityId}
-        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+        selected={{
+          type: selected.army ? "explorer" : "structure",
+          id: selectedEntityId,
+          hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+        }}
+        target={{
+          type: target.army ? "explorer" : "structure",
+          id: target.army?.id || target.structure?.id || 0,
+          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+        }}
       />,
     );
   }
 
+  // actionPath is not normalized
   private onArmyHelp(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
     const targetHex = selectedPath[selectedPath.length - 1];
+    const selectedHex = selectedPath[0];
+    const selected = this.getHexagonEntity(selectedHex);
+    const target = this.getHexagonEntity(targetHex);
 
     this.state.toggleModal(
       <HelpModal
-        selectedEntityId={selectedEntityId}
-        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+        selected={{
+          type: selected.army ? "explorer" : "structure",
+          id: selectedEntityId,
+          hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        }}
+        target={{
+          type: target.army ? "explorer" : "structure",
+          id: target.army?.id || target.structure?.id || 0,
+          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+        }}
       />,
     );
   }

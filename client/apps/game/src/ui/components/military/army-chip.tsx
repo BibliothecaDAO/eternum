@@ -1,6 +1,4 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
-import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
-import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyManagementCard } from "@/ui/components/military/army-management-card";
@@ -10,13 +8,14 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ArmyInfo, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { LucideArrowRight } from "lucide-react";
-import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
+import React, { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 
 export const NavigateToPositionIcon = ({
@@ -71,15 +70,17 @@ export const ArmyChip = ({
     setup: { components },
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const [showInventory, setShowInventory] = useState(false);
-  const [showTroopSwap, setShowTroopSwap] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
 
   const isHome = army.isHome;
 
   const [location] = useLocation();
+  const { hexPosition } = useQuery();
+
   const isOnMap = useMemo(() => location.includes("map"), [location]);
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
@@ -94,6 +95,24 @@ export const ArmyChip = ({
     if (!army.troops) return 0;
     return StaminaManager.getMaxStamina(army.troops.category as TroopType);
   }, [army.troops]);
+
+  const onTroopSwap = useCallback(() => {
+    toggleModal(
+      <HelpModal
+        selected={{
+          type: "explorer",
+          id: army.entityId,
+          hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
+        }}
+        target={{
+          type: "structure",
+          id: army.entity_owner_id,
+          hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
+        }}
+        allowBothDirections={true}
+      />,
+    );
+  }, [army, hexPosition, toggleModal]);
 
   return (
     <div
@@ -111,8 +130,6 @@ export const ArmyChip = ({
           </Button>
           <ArmyManagementCard army={army} owner_entity={army.entity_owner_id} />
         </>
-      ) : showTroopSwap ? (
-        <ArmyMergeTroopsPanel giverArmy={army} setShowMergeTroopsPopup={setShowTroopSwap} />
       ) : (
         <>
           <div className="flex w-full h-full justify-between p-2 gap-4">
@@ -121,8 +138,8 @@ export const ArmyChip = ({
                 <div className="text-base mr-2 truncate">{army.name}</div>
                 {showButtons && army.isMine && (
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Plus
-                      className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                    <CirclePlus
+                      className={`w-5 h-5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                         army.troops.count === 0n ? "animate-pulse" : ""
                       } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                       onClick={() => {
@@ -139,22 +156,24 @@ export const ArmyChip = ({
                           position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
                         />
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
-                        <Swap
-                          className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
-                            army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
-                          }`}
-                          onClick={() => {
-                            setTooltip(null);
-                            setShowTroopSwap(!showTroopSwap);
-                          }}
-                          onMouseEnter={() =>
-                            setTooltip({
-                              content: "Swap troops or resources (only possible on same hex)",
-                              position: "top",
-                            })
-                          }
-                          onMouseLeave={() => setTooltip(null)}
-                        />
+                        {isHome && (
+                          <ArrowLeftRight
+                            className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer animate-pulse ${
+                              army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                            }`}
+                            onClick={() => {
+                              setTooltip(null);
+                              onTroopSwap();
+                            }}
+                            onMouseEnter={() =>
+                              setTooltip({
+                                content: "Swap troops or resources if at base",
+                                position: "top",
+                              })
+                            }
+                            onMouseLeave={() => setTooltip(null)}
+                          />
+                        )}
                       </React.Fragment>
                     )}
                     {army.troops.count > 0n && (
