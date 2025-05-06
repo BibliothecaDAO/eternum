@@ -13,13 +13,15 @@ const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
   .map(([_, [__, address]]) => address.toString());
 
+const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "eternum";
+const namespace: string = "s1_eternum";
 const chain_id =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA;
 const cartridgeController = new ControllerConnector({
   chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
   defaultChainId: chain_id,
+  preset,
   namespace,
   slot,
   tokens: {
