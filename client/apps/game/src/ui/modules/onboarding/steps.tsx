@@ -207,6 +207,36 @@ export const StepOne = () => {
     return realmEntities.length > 0 || villageEntities.length > 0;
   }, [realmEntities, villageEntities]);
 
+  const isSeasonActive = env.VITE_PUBLIC_SEASON_START_TIME <= Date.now() / 1000;
+  const canPlay = hasRealmsOrVillages && isSeasonActive;
+
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = Date.now() / 1000;
+      const timeLeft = env.VITE_PUBLIC_SEASON_START_TIME - now;
+
+      if (timeLeft <= 0) {
+        setTimeRemaining("");
+        return;
+      }
+
+      const days = Math.floor(timeLeft / (60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (60 * 60 * 24)) / (60 * 60));
+      const minutes = Math.floor((timeLeft % (60 * 60)) / 60);
+      const seconds = Math.floor(timeLeft % 60);
+      const time = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+      setTimeRemaining(time);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const onSpectatorModeClick = useSpectatorModeClick(components);
   const goToStructure = useGoToStructure();
 
@@ -228,11 +258,12 @@ export const StepOne = () => {
         <Button
           size="lg"
           variant="gold"
-          disabled={!hasRealmsOrVillages}
-          className={` w-full ${!hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
+          disabled={!canPlay}
+          className={` w-full ${!canPlay ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
           onClick={onPlayModeClick}
         >
-          <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
+          <Sword className="w-6 fill-current mr-2" />
+          <div className="text-black">{isSeasonActive ? "Play" : timeRemaining}</div>
         </Button>
       ) : (
         <Button size="lg" className="!bg-gold border-none" onClick={() => setShowToS(true)}>

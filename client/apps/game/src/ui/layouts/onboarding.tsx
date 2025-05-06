@@ -40,8 +40,6 @@ interface SeasonPassButtonProps {
   setSettleRealm: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const SEASON_PASS_MARKET_URL = "0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80";
-
 export const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet"
     ? "https://empire.realms.world/season-passes"
