@@ -143,6 +143,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     }>
   >([]);
 
+  const topTiers = resourceProbabilities.slice(0, 3);
+  const bottomTiers = resourceProbabilities.slice(3);
+
   const getRealm = (realmId: number): Realm | undefined => {
     const key = realmId.toString(); // convert number id to string key
     return (RealmJson as Record<string, Realm>)[key];
@@ -402,25 +405,50 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
               {/* Resource Probability Section */}
               <div className="my-6 ">
                 <h3 className="text-gold mb-4 text-center">Possible Village Resources & Odds</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {resourceProbabilities.map((tier) => (
-                    <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown border-gold/30")}>
-                      <h6 className="font-bold text-lg mb-2 text-center">
-                        {tier.name} ({tier.totalChance.toFixed(3)}%)
-                      </h6>
-                      <ul className="space-y-1">
-                        {tier.resources.map((resource) => (
-                          <li key={resource.name} className="flex justify-between items-center text-xl">
-                            <span className="flex items-center gap-1">
-                              <ResourceIcon resource={resource.name} size="xs" />
-                              {resource.name}
-                            </span>
-                            <span>{resource.chance.toFixed(3)}%</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Column 1: Top 3 Tiers */}
+                  <div className="space-y-4">
+                    {topTiers.map((tier) => (
+                      <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown/10 border-gold/30")}>
+                        <h6 className="font-bold text-lg mb-2 text-center">
+                          {tier.name} ({tier.totalChance.toFixed(3)}%)
+                        </h6>
+                        <ul className="space-y-1">
+                          {tier.resources.map((resource) => (
+                            <li key={resource.name} className="flex justify-between items-center text-xl">
+                              <span className="flex items-center gap-1">
+                                <ResourceIcon resource={resource.name} size="xs" />
+                                {resource.name}
+                              </span>
+                              <span>{resource.chance.toFixed(2)}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Column 2: Bottom 3 Tiers */}
+                  <div className="space-y-4">
+                    {bottomTiers.map((tier) => (
+                      <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown/10 border-gold/30")}>
+                        <h6 className="font-bold text-lg mb-2 text-center">
+                          {tier.name} ({tier.totalChance.toFixed(3)}%)
+                        </h6>
+                        <ul className="space-y-1">
+                          {tier.resources.map((resource) => (
+                            <li key={resource.name} className="flex justify-between items-center text-xl">
+                              <span className="flex items-center gap-1">
+                                <ResourceIcon resource={resource.name} size="xs" />
+                                {resource.name}
+                              </span>
+                              <span>{resource.chance.toFixed(2)}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <p className="text-center text-gray-300 mt-4 text-sm italic">
                   There is a ~90% chance of rolling a Common or Uncommon resource, and a ~10% chance of a Rare, Epic,
