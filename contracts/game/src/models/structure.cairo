@@ -122,14 +122,7 @@ pub impl StructureBaseImpl of StructureBaseTrait {
             + battle_config.regular_immunity_ticks.into();
 
         if current_tick < allow_attack_tick {
-            let remaining_ticks = allow_attack_tick - current_tick;
-            return (
-                true,
-                format!(
-                    "structures and armies cannot be attacked for another {} seconds",
-                    remaining_ticks * tick_config.interval(),
-                ),
-            );
+            return (true, "This entity can't be attacked until immunity period ends");
         }
 
         return (false, "");

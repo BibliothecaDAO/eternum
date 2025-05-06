@@ -1,11 +1,10 @@
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { unpackValue } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
@@ -41,8 +40,8 @@ export const VillageResourceReveal = ({
 }) => {
   const {
     setup: {
-      account: { account },
       components: { Tile, Structure },
+      account: { account },
     },
   } = useDojo();
 
@@ -53,11 +52,8 @@ export const VillageResourceReveal = ({
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  console.log(villageCoords);
-
   const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
 
-  console.log(tile);
   // Check if player is owner in case someone else settles at same time
   const revealedResource = useMemo(() => {
     if (!tile?.occupier_id) return null;
@@ -66,7 +62,6 @@ export const VillageResourceReveal = ({
     return unpackValue(structure?.resources_packed)?.[0];
   }, [tile?.occupier_id, account.address]);
 
-  console.log(revealedResource);
   // Generate random resources for the roulette
   const generateRandomResources = useCallback(() => {
     // Create a pool with more common resources and fewer rare ones
@@ -130,10 +125,10 @@ export const VillageResourceReveal = ({
   }, [revealedResource, isSpinning, spinComplete, startSpin]);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full relative">
-      <h4 className="mb-8">Resource Discovery</h4>
+    <div className="flex flex-col items-center w-full h-full relative">
+      <h2 className="mb-8">Resource Mined!</h2>
 
-      <div className="relative w-64 h-64 overflow-hidden rounded-2xl panel-wood border-gold/5 bg-brown/5 backdrop-blur-sm shadow-xl">
+      <div className="relative w-72 h-72 overflow-hidden rounded-2xl panel-wood border-gold/5 bg-brown/5 backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
         {!revealedResource ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90 p-4">
@@ -193,7 +188,6 @@ export const VillageResourceReveal = ({
             }}
             className="absolute inset-0 flex flex-col items-center justify-center p-4"
           >
-            <h6>You minted:</h6>
             <div className="p-6 bg-dark-brown/80 rounded-xl shadow-inner flex flex-col items-center justify-center">
               <ResourceIcon
                 resource={
@@ -204,11 +198,11 @@ export const VillageResourceReveal = ({
                 size="xxl"
                 className="mb-2"
               />
-              <h5>
+              <h6>
                 {Object.keys(ResourcesIds).find(
                   (key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource,
                 ) + " Village"}
-              </h5>
+              </h6>
             </div>
           </motion.div>
         )}

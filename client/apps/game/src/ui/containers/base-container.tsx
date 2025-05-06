@@ -22,7 +22,7 @@ export const BaseContainer = memo(
         <div
           ref={ref}
           className={clsx(
-            "flex relative flex-col transition-all duration-400 dark:bg-dark-wood",
+            "flex relative flex-col transition-all duration-400 bg-dark-wood",
             {
               "[direction:rtl]": scrollbarSide === "left",
             },

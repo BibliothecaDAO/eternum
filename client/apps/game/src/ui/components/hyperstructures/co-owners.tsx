@@ -8,8 +8,8 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
 import { getAddressName, getStructure } from "@bibliothecadao/eternum";
-import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -130,7 +130,7 @@ const CoOwnersRows = ({
             variant="primary"
             className="w-full mt-4 bg-gold/20"
           >
-            Change Co-Owners
+            Change Shareholders
           </Button>
         </div>
       )}
@@ -171,7 +171,7 @@ const ChangeCoOwners = ({
   const [nextId, setNextId] = useState(1);
 
   const addCoOwner = () => {
-    if (newCoOwners.length >= 10) return;
+    if (newCoOwners.length >= 20) return;
     setNewCoOwners([...newCoOwners, { address: ContractAddress(account.address), percentage: 0, id: nextId }]);
     setNextId(nextId + 1);
   };
@@ -253,7 +253,7 @@ const ChangeCoOwners = ({
           <div onClick={addCoOwner} className="flex items-center justify-center">
             <Plus
               className={`w-6 h-6 fill-gold/70 ${
-                newCoOwners.length >= 10
+                newCoOwners.length >= 20
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
               }`}
@@ -270,12 +270,12 @@ const ChangeCoOwners = ({
         isLoading={isLoading}
       >
         {hasDuplicates
-          ? "Can't set the same person twice as co-owner"
+          ? "A shareholder can't be added twice"
           : !hasCurrentUser
-            ? "You must include yourself as a co-owner"
+            ? "You must include yourself as a shareholder"
             : totalPercentage !== 100
               ? "Total percentage must be 100%"
-              : "Set co-owners (Required to earn points)"}
+              : "Change Shareholders"}
       </Button>
     </div>
   );

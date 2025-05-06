@@ -14,7 +14,7 @@ pub trait IResourceBridgeSystems<T> {
         amount: u128,
         client_fee_recipient: ContractAddress,
     );
-    fn lp_withdraw(ref self: T, to_address: ContractAddress, resource_type: u8, amount: u128);
+    fn lp_withdraw(ref self: T, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128);
 }
 
 
@@ -215,7 +215,9 @@ pub mod resource_bridge_systems {
         }
 
 
-        fn lp_withdraw(ref self: ContractState, to_address: ContractAddress, resource_type: u8, amount: u128) {
+        fn lp_withdraw(
+            ref self: ContractState, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             //todo ensure only liquidity systems can call this
@@ -244,14 +246,19 @@ pub mod resource_bridge_systems {
                 / inefficiency_percentage_denom.into();
             let amount = amount - amount_lost_to_inefficiency;
 
+            // send fees to realm if from_structure is a village
+            let bank_resource_fee_amount = iBridgeImpl::send_bank_fees(
+                ref world, through_bank_id, resource_type, amount, BridgeTxType::Withdrawal,
+            );
+
             // send platform fees
             let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
             let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
                 ref world, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
             );
             // transfer withdrawm erc20 amount to recipient
-            let realm_token_fee_amount = 0;
-            let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
+            let bank_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, bank_resource_fee_amount);
+            let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - platform_token_fee_amount;
             iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
         }
     }

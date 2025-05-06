@@ -21,16 +21,12 @@ export const SettlementMinimapModal = ({
 }: SettlementMinimapModalProps) => {
   return (
     <ModalContainer size="auto" title={`Select Location for Realm #${realmId} - ${realmName}`}>
-      <div className="h-full flex flex-col">
-        <div className="flex-1 overflow-auto h-full">
-          <SettlementMinimap
-            onSelectLocation={onSelectLocation}
-            onConfirm={onConfirm}
-            maxLayers={maxLayers}
-            extraPlayerOccupiedLocations={extraPlayerOccupiedLocations}
-          />
-        </div>
-      </div>
+      <SettlementMinimap
+        onSelectLocation={onSelectLocation}
+        onConfirm={onConfirm}
+        maxLayers={maxLayers}
+        extraPlayerOccupiedLocations={extraPlayerOccupiedLocations}
+      />
     </ModalContainer>
   );
 };

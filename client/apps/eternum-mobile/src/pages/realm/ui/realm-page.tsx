@@ -1,4 +1,5 @@
 import { useStore } from "@/shared/store";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
@@ -24,14 +25,19 @@ export const RealmPage = () => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const { selectedRealm, setSelectedStructure } = useStore();
+  const [hasNoStructures, setHasNoStructures] = useState(false);
 
   // Set initial structure on load
   useEffect(() => {
     if (!selectedRealm) {
       if (playerRealms.length > 0) {
         setSelectedStructure(playerRealms[0]);
+        setHasNoStructures(false);
       } else if (playerVillages.length > 0) {
         setSelectedStructure(playerVillages[0]);
+        setHasNoStructures(false);
+      } else {
+        setHasNoStructures(true);
       }
     }
   }, [playerRealms, playerVillages, selectedRealm, setSelectedStructure]);
@@ -39,6 +45,22 @@ export const RealmPage = () => {
   const switchTab = (tab: string) => {
     setActiveTab(tab);
   };
+
+  if (hasNoStructures) {
+    return (
+      <div className="container p-4">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-center">No Realms or Villages Found</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-2">
+            <p className="text-muted-foreground">Please open the desktop client to settle a realm or village.</p>
+            <p className="text-sm text-muted-foreground">Mobile settling functionality coming soon!</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <RealmTabsContext.Provider value={{ switchTab }}>

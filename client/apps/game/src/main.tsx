@@ -71,7 +71,7 @@ async function init() {
           muted
           playsInline
         />
-        <div className="relative z-10 flex flex-col items-center justify-center dark:bg-dark-wood bg-brown/90 bg-hex-bg rounded-xl border panel-wood  p-10">
+        <div className="relative z-10 flex flex-col items-center justify-center bg-dark-wood bg-brown/90 bg-hex-bg rounded-xl border panel-wood  p-10">
           <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-48 stroke-current mx-auto" />
 
           <p className="my-6 text-2xl">Eternum is being crafted, and will be available soon...</p>

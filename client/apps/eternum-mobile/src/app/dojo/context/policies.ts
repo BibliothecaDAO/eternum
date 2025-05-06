@@ -1,9 +1,12 @@
+import { getSeasonPassAddress, getVillagePassAddress } from "@/shared/lib/addresses";
 import { toSessionPolicies } from "@cartridge/controller";
+import { getContractByName } from "@dojoengine/core";
+import { dojoConfig } from "../../../../dojoConfig";
 import { messages } from "./signing-policy";
 
 export const policies = toSessionPolicies({
   contracts: {
-    "0x18b9148a166e58cd719ac89996f48a7f9e5e050824ba3922a1c857634deaded": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "bank_systems").address]: {
       methods: [
         {
           name: "create_banks",
@@ -19,7 +22,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x10da13d48ab6a2408139ef53b09b2b7a19292b20ecd487f748001842ed18946": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "config_systems").address]: {
       methods: [
         {
           name: "set_agent_config",
@@ -131,7 +134,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x1e5201004ca12f8b131799f26ae9c9c17f6d1602907e1e3d6788ea0cd69392f": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "dev_resource_systems").address]: {
       methods: [
         {
           name: "mint",
@@ -147,7 +150,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x358239acadbe0d46e12b0fc13345afd14a7e271e0e752a4fc8bb9caf6a1a652": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "guild_systems").address]: {
       methods: [
         {
           name: "create_guild",
@@ -183,7 +186,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0xef8353b356d25a369c5399cb89029f53f7cdd19dea612470a6effa1f5d8d4e": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "hyperstructure_systems").address]: {
       methods: [
         {
           name: "initialize",
@@ -215,7 +218,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x3b18caf2845394357555ba0f413b4f9c1b0aeb401b35c357636c3e1dd6ab07a": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "liquidity_systems").address]: {
       methods: [
         {
           name: "add",
@@ -235,7 +238,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6ca7d5fc383284bf679d0156728cabbd57b8a467671eaeff46a7beabf0437f4": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "name_systems").address]: {
       methods: [
         {
           name: "set_address_name",
@@ -251,7 +254,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x3a1738d17af9b541ce064eb390e554ae50c28013cdae10bcbbc9908f340f462": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "ownership_systems").address]: {
       methods: [
         {
           name: "transfer_structure_ownership",
@@ -271,7 +274,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x4ed8e64f23ee7bba99cf6fd750b6b61ec8b7a8a4cc7ffb9ffd737e85dd98d0": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "production_systems").address]: {
       methods: [
         {
           name: "create_building",
@@ -311,7 +314,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6961d3f47a78a1228dbaf25b36651ae158a18f34db8d399ca87cb35a02097b7": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "realm_systems").address]: {
       methods: [
         {
           name: "create",
@@ -327,7 +330,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x5d0b815e8824b2298425264d7302749a25b244c0709cbc5dac48d2711e2054c": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "resource_systems").address]: {
       methods: [
         {
           name: "deposit",
@@ -347,7 +350,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x32263b5ee54112732e960f70551f0d364bfc6285d79f1c4f5e098875e73717e": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "resource_systems").address]: {
       methods: [
         {
           name: "approve",
@@ -383,7 +386,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x45f8cd7b9b8bd8eddad5ebd73f0ab88cfdf094c520df4ba7e669bfc997c8be4": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "season_systems").address]: {
       methods: [
         {
           name: "register_to_leaderboard",
@@ -403,7 +406,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6a7d39a0f0713ff621acc63560210d11c13426a034e16fca23323c880edb2f4": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "structure_systems").address]: {
       methods: [
         {
           name: "level_up",
@@ -419,7 +422,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x8be7b8a995419b755ed4c6a9a9d35133d8b34e1b1b25f5067a9701f345ef6": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "swap_systems").address]: {
       methods: [
         {
           name: "buy",
@@ -439,7 +442,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x5169dc50402f24ef420ffc855364781fb1c644635e46713e6fa6e3c7a907b60": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "trade_systems").address]: {
       methods: [
         {
           name: "create_order",
@@ -463,7 +466,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x35d52751cb2568efc010c28c32bc188103d5dea638324fe1130d27e9997b0c4": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_battle_systems").address]: {
       methods: [
         {
           name: "attack_explorer_vs_explorer",
@@ -487,7 +490,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x118088b602a81601d5e21b944e5574f9b7903789d20d075fdaffa47fd2d80e0": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_management_systems").address]: {
       methods: [
         {
           name: "guard_add",
@@ -531,7 +534,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x779ba8d0430782b834f97372b64a26f6241a1e5ea5a4fc392fd9e0f1caf7f7f": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_movement_systems").address]: {
       methods: [
         {
           name: "explorer_move",
@@ -547,7 +550,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6d8a6e3287121f742c445761c74f652c69f23826cfdb76483ad44b205e7904": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_movement_util_systems").address]: {
       methods: [
         {
           name: "dojo_name",
@@ -559,7 +562,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x29e5629077fef197a91b956648eea23714466dcbcd23b993a531285e36cf8dd": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_raid_systems").address]: {
       methods: [
         {
           name: "raid_explorer_vs_guard",
@@ -575,7 +578,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6c15f9c3ab41aa8992d1159b24efdf95c8432f001930461f7a4d61e3cd311ea": {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "village_systems").address]: {
       methods: [
         {
           name: "upgrade",
@@ -604,8 +607,21 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x4c36a33d1804f02549d321f22c30fbba7d20e78a535f6c826340f94a28df8fd": {
-      methods: [],
+    [getSeasonPassAddress()]: {
+      methods: [
+        {
+          name: "set_approval_for_all",
+          entrypoint: "set_approval_for_all",
+        },
+      ],
+    },
+    [getVillagePassAddress()]: {
+      methods: [
+        {
+          name: "set_approval_for_all",
+          entrypoint: "set_approval_for_all",
+        },
+      ],
     },
   },
   messages,

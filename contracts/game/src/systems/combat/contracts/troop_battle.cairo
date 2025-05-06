@@ -250,7 +250,10 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
-                iStructureImpl::claim(ref world, ref guarded_structure, ref explorer_aggressor, structure_id);
+                // claim structure
+                iStructureImpl::battle_claim(
+                    ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
+                );
                 return;
             }
 
@@ -332,7 +335,10 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        iStructureImpl::claim(ref world, ref guarded_structure, ref explorer_aggressor, structure_id);
+                        // claim structure
+                        iStructureImpl::battle_claim(
+                            ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
+                        );
                     }
                 }
             } else {
@@ -474,8 +480,13 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        iStructureImpl::claim(
-                            ref world, ref structure_aggressor_base, ref explorer_defender, structure_id,
+                        // claim structure
+                        iStructureImpl::battle_claim(
+                            ref world,
+                            ref structure_guards_aggressor,
+                            ref structure_aggressor_base,
+                            ref explorer_defender,
+                            structure_id,
                         );
                     }
                 }

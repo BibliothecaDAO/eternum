@@ -159,6 +159,37 @@ pub impl iBridgeImpl of iBridgeTrait {
         return 0;
     }
 
+
+    fn send_bank_fees(
+        ref world: WorldStorage, bank_structure_id: ID, resource_type: u8, amount: u128, tx_type: BridgeTxType,
+    ) -> u128 {
+        let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("res_bridge_fee_split_config"),
+        );
+
+        // bank fee is same amount as realm fee
+        let bank_fee_percent = match tx_type {
+            BridgeTxType::Deposit => { fee_split_config.realm_fee_dpt_percent },
+            BridgeTxType::Withdrawal => { fee_split_config.realm_fee_wtdr_percent },
+        };
+        if bank_fee_percent.is_non_zero() {
+            let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_percent).try_into().unwrap();
+            assert!(bank_fee_amount.is_non_zero(), "Bridge: amount too small to pay bank fees");
+            match tx_type {
+                BridgeTxType::Deposit => { panic!("Bridge: deposit through bank is not allowed"); },
+                BridgeTxType::Withdrawal => {
+                    // beam resources into the bank's resource arrivals. it costs 0 donkey and time
+                    iResourceTransferImpl::portal_to_structure_arrivals_instant(
+                        ref world, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
+                    );
+                },
+            };
+            return bank_fee_amount;
+        }
+        return 0;
+    }
+
+
     fn send_platform_fees(
         ref world: WorldStorage,
         token: ContractAddress,

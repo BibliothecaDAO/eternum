@@ -11,11 +11,19 @@ enum ModalTab {
 }
 
 export const CombatModal = ({
-  attackerEntityId,
-  targetHex,
+  selected,
+  target,
 }: {
-  attackerEntityId: ID;
-  targetHex: { x: number; y: number };
+  selected: {
+    type: "explorer" | "structure";
+    id: ID;
+    hex: { x: number; y: number };
+  };
+  target: {
+    type: "explorer" | "structure";
+    id: ID;
+    hex: { x: number; y: number };
+  };
 }) => {
   const [activeTab, setActiveTab] = useState<ModalTab>(ModalTab.Attack);
 
@@ -43,9 +51,9 @@ export const CombatModal = ({
         <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
             {activeTab === ModalTab.Attack ? (
-              <AttackContainer attackerEntityId={attackerEntityId} targetHex={targetHex} />
+              <AttackContainer attackerEntityId={selected.id} targetHex={target.hex} />
             ) : (
-              <HelpContainer selectedEntityId={attackerEntityId} targetHex={targetHex} />
+              <HelpContainer selected={selected} target={target} />
             )}
           </Suspense>
         </div>
