@@ -460,7 +460,7 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn start_resource_amount() -> u128 {
-        10 * RESOURCE_PRECISION
+        100 * RESOURCE_PRECISION
     }
 
     fn start_troop_type(biome: Biome) -> (u8, (TroopType, TroopTier)) {
