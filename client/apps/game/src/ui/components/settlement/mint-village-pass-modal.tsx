@@ -181,10 +181,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const refetchAndSetPasses = async (): Promise<number> => {
     if (address) {
       try {
-        const tokenTransfers = await fetchTokenTransfers(
-          getVillagePassAddress(),
-          address.replace("0x0", "0x") as string,
-        );
+        const tokenTransfers = await fetchTokenTransfers(getVillagePassAddress(), "0x" + BigInt(address).toString(16));
         const updatedPasses = tokenTransfers.map((a) => {
           return {
             ...a,
