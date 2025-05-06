@@ -18,7 +18,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col items-center p-4">
+      <img src="/images/eternum-logo-words.svg" alt="Eternum Logo" className="w-3/4 my-12" />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome to Eternum</CardTitle>
