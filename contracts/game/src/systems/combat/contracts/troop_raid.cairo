@@ -119,6 +119,7 @@ pub mod troop_raid_systems {
 
             let mut sum_damage_to_explorer = 0;
             let mut sum_damage_to_guards = 0;
+            let mut max_explorer_stamina_loss = 0;
             let structure_functional_guard_slots = guard_defender
                 .functional_slots(guarded_structure.troop_max_guard_count.into());
             let mut structure_non_zero_guard_slots = array![];
@@ -146,7 +147,8 @@ pub mod troop_raid_systems {
                     let structure_non_zero_guard_slot = *structure_non_zero_guard_slots.at(i);
                     let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
                         .from_slot(structure_non_zero_guard_slot);
-                    let (damage_dealt_to_guard, damage_dealt_to_explorer) = individual_explorer_aggressor_troops
+                    let (damage_dealt_to_guard, damage_dealt_to_explorer, explorer_stamina_loss) =
+                        individual_explorer_aggressor_troops
                         .damage(
                             ref guard_defender_troops,
                             defender_biome,
@@ -154,6 +156,10 @@ pub mod troop_raid_systems {
                             troop_damage_config,
                             current_tick,
                         );
+
+                    if explorer_stamina_loss > max_explorer_stamina_loss {
+                        max_explorer_stamina_loss = explorer_stamina_loss;
+                    }
 
                     // apply damage to guard slot
                     let mut guard_damage_applied = troop_damage_config.damage_raid_percent_num.into()
@@ -163,16 +169,16 @@ pub mod troop_raid_systems {
                     guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
                     guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
 
-                    // deduct stamina spent
-                    guard_defender_troops
-                        .stamina
-                        .spend(
-                            guard_defender_troops.category,
-                            troop_stamina_config,
-                            troop_stamina_config.stamina_attack_req.into(),
-                            current_tick,
-                            false,
-                        );
+                    // // deduct stamina spent
+                    // guard_defender_troops
+                    //     .stamina
+                    //     .spend(
+                    //         guard_defender_troops.category,
+                    //         troop_stamina_config,
+                    //         troop_stamina_config.stamina_attack_req.into(),
+                    //         current_tick,
+                    //         false,
+                    //     );
 
                     // update structure guard
                     if guard_defender_troops.count.is_zero() {
@@ -228,7 +234,7 @@ pub mod troop_raid_systems {
                     .spend(
                         explorer_aggressor_troops.category,
                         troop_stamina_config,
-                        troop_stamina_config.stamina_attack_req.into(),
+                        max_explorer_stamina_loss,
                         current_tick,
                         true,
                     );

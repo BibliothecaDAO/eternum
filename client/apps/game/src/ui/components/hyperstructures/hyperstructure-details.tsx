@@ -1,7 +1,7 @@
 import { Tabs } from "@/ui/elements/tab";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ID } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 import { CoOwners } from "./co-owners";
 import { Leaderboard } from "./leaderboard";
@@ -33,7 +33,7 @@ export const HyperstructureDetails = ({ hyperstructureEntityId }: { hyperstructu
         key: "coOwners",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Co Owners</div>
+            <div>Shareholders</div>
             {!coOwnersWithTimestamp && <div className="text-xs text-red animate-pulse">Required for points!</div>}
           </div>
         ),

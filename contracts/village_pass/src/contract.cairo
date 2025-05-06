@@ -60,7 +60,7 @@ mod EternumVillagePass {
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
     fn TOKEN_IMAGE_IPFS_CID() -> ByteArray {
-        "bafybeigf3hnqeu52erejskxicys5q5oqnfvbkj2o6w7jer5xpna4gpgk2i"
+        "bafybeiae3us54v5rd37qs44lmbefe6wjja5hfdnszpvlbo2kr4pejoxnou"
     }
 
     #[storage]

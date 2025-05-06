@@ -40,6 +40,28 @@ const QUERIES = {
                 AND  x.from_address    = tt.to_address
           );
   `,
+  STRUCTURE_BY_COORD: `
+    SELECT
+        internal_id,
+        entity_id,
+        owner                           AS occupier_id,
+        \`base.category\`                 AS structure_category,
+        \`base.level\`                    AS structure_level,
+        \`base.coord_x\`                  AS coord_x,
+        \`base.coord_y\`                  AS coord_y,
+        \`base.created_at\`               AS created_tick,
+        \`metadata.realm_id\`             AS realm_id,
+        category                        AS top_level_category,
+        internal_created_at,
+        internal_updated_at,
+        resources_packed
+    FROM
+        \`s1_eternum-Structure\`
+    WHERE
+        \`base.coord_x\` = {coord_x}
+        AND
+        \`base.coord_y\` = {coord_y};
+  `,
 };
 
 // API response types
@@ -69,6 +91,22 @@ export interface TokenTransfer {
   from_address: ContractAddress; // Added field
   name: string;
   symbol: string;
+}
+
+export interface StructureDetails {
+  internal_id: string; // Assuming internal_id might be non-numeric or large
+  entity_id: number; // Assuming entity_id is numeric
+  structure_category: number; // Assuming category is numeric
+  structure_level: number; // Assuming level is numeric
+  coord_x: number;
+  coord_y: number;
+  created_tick: number; // Assuming tick is numeric
+  realm_id: number; // Assuming realm_id is numeric
+  top_level_category: number; // Assuming category is numeric
+  internal_created_at: string; // ISO date string or similar
+  internal_updated_at: string; // ISO date string or similar
+  resources_packed: string; // Assuming this is a packed format, represented as string initially
+  occupier_id: ContractAddress; // Added owner field aliased as occupier_id
 }
 
 /**
@@ -129,6 +167,26 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
 
   if (!response.ok) {
     throw new Error(`Failed to fetch token transfers: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch structure details for a specific coordinate from the API
+ */
+export async function fetchStructureByCoord(coordX: number, coordY: number): Promise<StructureDetails[]> {
+  // Construct the query by replacing the placeholders
+  const query = QUERIES.STRUCTURE_BY_COORD.replace("{coord_x}", coordX.toString()).replace(
+    "{coord_y}",
+    coordY.toString(),
+  );
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch structure details: ${response.statusText}`);
   }
 
   return await response.json();

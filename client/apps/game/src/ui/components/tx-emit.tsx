@@ -60,7 +60,7 @@ const getTxMessage = (type: TransactionType) => {
     case TransactionType.CREATE_BANKS:
       return "🏰 Established royal treasury";
     case TransactionType.SET_CO_OWNERS:
-      return "📜 Updated co-owners";
+      return "📜 Updated Shareholders";
     case TransactionType.CLAIM_LEADERBOARD_REWARDS:
       return "🏆 Claimed leaderboard rewards";
     case TransactionType.REGISTER_TO_LEADERBOARD:

@@ -30,7 +30,7 @@ export const WorldLoading = () => {
       id="world-loading"
     >
       {anyLoading && (
-        <div className="flex flex-row items-center justify-center h-full p-2 dark:bg-dark-wood panel-wood panel-wood-corners min-w-64">
+        <div className="flex flex-row items-center justify-center h-full p-2 bg-dark-wood panel-wood panel-wood-corners min-w-64">
           <img src="/images/logos/eternum-loader.png" className="w-10" />
           <div className="ml-4 text-xs">{getLoadingItems()}</div>
         </div>
