@@ -1,14 +1,25 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { useWallet } from "@/shared/hooks/use-wallet";
+import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { useNavigate } from "@tanstack/react-router";
+import { TermsOfService } from "./terms-of-service";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
+  const hasAcceptedToS = useStore((state) => state.hasAcceptedToS);
+  const showToS = useStore((state) => state.showToS);
+  const setShowToS = useStore((state) => state.setShowToS);
 
   const handleConnect = async () => {
+    if (!hasAcceptedToS) {
+      setShowToS(true);
+      return;
+    }
+
     try {
       await connectWallet();
       navigate({ to: ROUTES.REALM });
@@ -29,10 +40,30 @@ export function LoginPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
-            {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect Wallet"}
+            {isConnecting
+              ? "Connecting..."
+              : isConnected
+                ? "Connected"
+                : hasAcceptedToS
+                  ? "Connect Wallet"
+                  : "Accept Terms of Service"}
           </Button>
         </CardContent>
       </Card>
+
+      <p className="text-sm text-center text-muted-foreground mt-4 max-w-md">
+        By continuing you are agreeing to Eternum's{" "}
+        <button onClick={() => setShowToS(true)} className="underline hover:text-gold transition-colors">
+          Terms of Service
+        </button>
+        {hasAcceptedToS && " (Accepted)"}
+      </p>
+
+      <Dialog open={showToS} onOpenChange={setShowToS}>
+        <DialogContent className="max-w-[95vw] h-[90vh] p-0">
+          <TermsOfService />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
