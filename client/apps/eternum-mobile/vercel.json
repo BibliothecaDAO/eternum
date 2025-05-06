@@ -56,6 +56,10 @@
   ],
   "rewrites": [
     {
+      "source": "/trade",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
