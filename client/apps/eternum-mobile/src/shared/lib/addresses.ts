@@ -24,3 +24,7 @@ export const getLordsAddress = () => {
 export const getClientFeeRecipient = () => {
   return env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
 };
+
+export const getVillagePassAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).villagePass;
+};
