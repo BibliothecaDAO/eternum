@@ -40,6 +40,35 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
+  // Unregister any active service workers (specifically targeting Vite PWA)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => {
+        for (const registration of registrations) {
+          // You might want to be more specific here if you have other service workers
+          // For now, this will unregister all service workers.
+          registration
+            .unregister()
+            .then((unregistered) => {
+              if (unregistered) {
+                console.log("Service worker unregistered successfully.");
+                // Optionally, reload the page to ensure the SW is gone
+                window.location.reload();
+              } else {
+                console.log("Service worker anregistration failed.");
+              }
+            })
+            .catch((error) => {
+              console.error("Service worker unregistration failed:", error);
+            });
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting service worker registrations:", error);
+      });
+  }
+
   // Redirect mobile users to the mobile version of the game
   if (IS_MOBILE) {
     root.render(
