@@ -429,6 +429,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ref world, to_structure_id, day,
         );
 
+        let arrived = ResourceArrivalImpl::slot_time_has_passed(ref world, day, slot);
+        assert!(arrived, "The items have not arrived yet");
+
         // todo: delay delivery by day and slot
         let mut index_counted: u8 = 0;
         let mut total_amount_deposited: u128 = 0;

@@ -30,6 +30,32 @@ pub struct StructureVillageSlots {
     pub directions_left: Span<Direction>,
 }
 
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureOwnerStats {
+    #[key]
+    pub owner: ContractAddress,
+    pub structures_num: u32,
+}
+
+#[generate_trait]
+pub impl StructureOwnerStatsImpl of StructureOwnerStatsTrait {
+    fn increase(ref world: WorldStorage, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+        so_stats.structures_num += 1;
+        world.write_model(@so_stats);
+    }
+
+    fn decrease(ref world: WorldStorage, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+        if so_stats.structures_num > 0 {
+            so_stats.structures_num -= 1;
+            world.write_model(@so_stats);
+        }
+    }
+}
+
+
 // todo: obtain each value as needed not all at once
 
 // todo: add hard limit of troop to be something like 20
@@ -57,7 +83,11 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
     }
 
     fn store(owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
+        let previous_owner: ContractAddress = Self::retrieve(ref world, structure_id);
+        StructureOwnerStatsImpl::decrease(ref world, previous_owner);
+
         world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
+        StructureOwnerStatsImpl::increase(ref world, owner);
     }
 }
 
