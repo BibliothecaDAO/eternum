@@ -316,6 +316,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.claim_reward(props);
   };
 
+  const get_game_count = async (props: SystemProps.GetGameCountProps) => {
+    return await provider.get_game_count(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -396,6 +400,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
     start_quest: withAuth(start_quest),
     claim_reward: withAuth(claim_reward),
+    get_game_count: withAuth(get_game_count),
   };
 
   return systemCalls;

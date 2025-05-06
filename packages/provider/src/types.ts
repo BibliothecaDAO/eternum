@@ -53,4 +53,5 @@ export enum TransactionType {
   EDIT_MARKETPLACE_ORDER = "edit_marketplace_order",
   START_QUEST = "start_quest",
   CLAIM_REWARD = "claim_reward",
+  GET_GAME_COUNT = "get_game_count",
 }

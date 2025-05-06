@@ -1,153 +1,38 @@
 import { ClientComponents } from "@bibliothecadao/types";
-import { Query, ToriiClient } from "@dojoengine/torii-wasm";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { GameScore } from "metagame-sdk";
 
-export const formatQuests = (quests: any[]) => {
-  return quests.map((quest) => {
-    return {
-      ...quest,
-    };
+export const getQuests = (components: ClientComponents, gameAddress: string, scores: GameScore[]) => {
+  const gameIdsQueryFrament =
+    scores.length > 0
+      ? [
+          Has(components.Quest),
+          ...scores.map((score) =>
+            HasValue(components.Quest, {
+              game_address: gameAddress,
+              game_token_id: BigInt(score.token_id),
+            }),
+          ),
+        ]
+      : [HasValue(components.Quest, { game_address: "0x0" })];
+
+  const questEntities = useEntityQuery([...gameIdsQueryFrament]);
+
+  const quests = questEntities.map((questEntity) => {
+    return getComponentValue(components.Quest, questEntity);
   });
-};
-
-export const getQuests = async (
-  toriiClient: ToriiClient,
-  components: ClientComponents,
-  gameAddress: string,
-  questGames: any,
-) => {
-  const queryQuests = {
-    clause: {
-      Composite: {
-        operator: "And",
-        clauses: [
-          {
-            Member: {
-              model: "s1_eternum-Quest",
-              member: "game_address",
-              operator: "Eq",
-              value: {
-                String: gameAddress,
-              },
-            },
-          },
-          {
-            Member: {
-              model: "s1_eternum-Quest",
-              member: "game_token_id",
-              operator: "In",
-              value: {
-                List: questGames.map((game: any) => {
-                  return {
-                    Primitive: {
-                      U64: Number(game.token_id),
-                    },
-                  };
-                }),
-              },
-            },
-          },
-        ],
-      },
-    },
-    limit: 100,
-    offset: 0,
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Quest"],
-    entity_updated_after: 0,
-  } as Query;
-
-  // return getEntities(
-  //   toriiClient,
-  //   queryQuests.clause,
-  //   components as any,
-  //   [],
-  //   ["s1_eternum-Quest"],
-  //   EVENT_QUERY_LIMIT,
-  //   true,
-  // );
-
-  const result = await toriiClient.getEntities(queryQuests, false);
-
-  const resultArray = Array.isArray(result) ? result : result ? [result] : [];
-
-  // Processed quests array
-  const processedQuests = [];
-
-  // Process the nested structure
-  for (const entity of resultArray) {
-    for (const entityId in entity) {
-      // Skip non-entity ID properties
-      if (!entityId.startsWith("0x")) continue;
-
-      const questData = entity[entityId];
-      if (!questData || !questData["s1_eternum-Quest"]) continue;
-
-      const quest = questData["s1_eternum-Quest"];
-
-      processedQuests.push({
-        entityId,
-        completed: quest.completed?.value === true,
-        explorer_id: Number(quest.explorer_id?.value),
-        game_address: quest.game_address?.value,
-        game_token_id: quest.game_token_id?.value, // Keep hex string or convert as needed
-        quest_tile_id: Number(quest.quest_tile_id?.value),
-        // Add any other fields you need
-      });
-    }
-  }
-
-  return processedQuests;
+  return quests;
 };
 
 /**
- * Gets all quest locations from the game state
+ * Gets the current quest for an explorer
  */
-export const getQuestForExplorer = async (
-  toriiClient: ToriiClient,
-  components: ClientComponents,
-  explorerId: number,
-) => {
-  const queryQuests = {
-    clause: {
-      Member: {
-        model: "s1_eternum-Quest",
-        member: "explorer_id",
-        operator: "Eq",
-        value: { Primitive: { U32: explorerId } },
-      },
-    },
-    limit: 1,
-    offset: 0,
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Quest"],
-    entity_updated_after: 0,
-  } as Query;
+export const getQuestForExplorer = (components: ClientComponents, explorerId: number, questTileId: number) => {
+  const entity = useEntityQuery([
+    Has(components.Quest),
+    HasValue(components.Quest, { explorer_id: explorerId, quest_tile_id: questTileId }),
+  ]);
 
-  // return getEntities(toriiClient, queryQuests.clause, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT);
-
-  console.log(queryQuests);
-
-  const result = await toriiClient.getEntities(queryQuests, false);
-
-  for (const entityId in result) {
-    // Skip non-entity ID properties
-    if (!entityId.startsWith("0x")) continue;
-
-    const questData = result[entityId];
-    if (!questData || !questData["s1_eternum-Quest"]) continue;
-
-    const quest = questData["s1_eternum-Quest"];
-
-    return {
-      entityId,
-      completed: quest.completed?.value === true,
-      explorer_id: Number(quest.explorer_id?.value),
-      game_address: quest.game_address?.value,
-      game_token_id: quest.game_token_id?.value, // Keep hex string or convert as needed
-      quest_tile_id: Number(quest.quest_tile_id?.value),
-      // Add any other fields you need
-    };
-  }
+  return entity.values().next().value!;
 };

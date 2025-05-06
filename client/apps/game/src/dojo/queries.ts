@@ -5,12 +5,12 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
+import { Clause, ComparisonOperator, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
-  debouncedGetQuestsFromTorii,
+  debouncedGetQuestTilesFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -406,10 +406,10 @@ export const getQuestTilesFromTorii = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   questTileIds: ID[],
 ) => {
-  return await debouncedGetQuestsFromTorii(client, components as any, questTileIds, () => {});
+  return await debouncedGetQuestTilesFromTorii(client, components as any, questTileIds, () => {});
 };
 
-export const getQuestsFromTorii = async <S extends Schema>(
+export const getQuestTilesFromToriiQuery = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
   questTileIds: number[],
@@ -435,4 +435,47 @@ export const getQuestsFromTorii = async <S extends Schema>(
     1000,
     false,
   );
+};
+
+export const getQuestsFromTorii = async (
+  client: ToriiClient,
+  components: Component<Schema, Metadata, undefined>[],
+  gameAddress: string,
+  questGames: any[],
+) => {
+  const query = {
+    Composite: {
+      operator: "And" as LogicalOperator,
+      clauses: [
+        {
+          Member: {
+            model: "s1_eternum-Quest",
+            member: "game_address",
+            operator: "Eq" as ComparisonOperator,
+            value: {
+              String: gameAddress,
+            },
+          },
+        },
+        {
+          Member: {
+            model: "s1_eternum-Quest",
+            member: "game_token_id",
+            operator: "In" as ComparisonOperator,
+            value: {
+              List: questGames.map((game: any) => {
+                return {
+                  Primitive: {
+                    U64: Number(game.token_id),
+                  },
+                };
+              }),
+            },
+          },
+        },
+      ],
+    },
+  };
+
+  return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
 };

@@ -498,7 +498,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           game_address: RecsType.String,
-          levels: RecsType.EntityArray,
+          levels: RecsType.Schema,
         },
         {
           metadata: {

@@ -2734,4 +2734,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [game_token_id, game_address],
     });
   }
+
+  public async get_game_count(props: SystemProps.GetGameCountProps) {
+    const { game_address } = props;
+    return await this.provider.callContract({
+      contractAddress: game_address,
+      entrypoint: "game_count",
+      calldata: [],
+    });
+  }
 }

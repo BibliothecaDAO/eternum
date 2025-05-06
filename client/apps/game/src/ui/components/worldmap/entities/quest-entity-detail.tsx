@@ -16,22 +16,18 @@ interface QuestEntityDetailProps {
 
 export const QuestEntityDetail = ({ questEntityId, compact = false, className }: QuestEntityDetailProps) => {
   const {
-    account,
     setup: { components },
     network: { toriiClient },
   } = useDojo();
 
-  const [quest, setQuest] = useState<ComponentValue<ClientComponents["QuestTile"]["schema"]> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [quest, setQuest] = useState<ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined>(undefined);
 
   useEffect(() => {
     const fetchQuest = async () => {
-      setIsLoading(true);
       const result = await getQuestFromToriiClient(toriiClient, questEntityId);
       if (result) {
         setQuest(result);
       }
-      setIsLoading(false);
     };
     fetchQuest();
   }, [questEntityId]);
@@ -72,7 +68,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       <div className="flex flex-row justify-between mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Reward</div>
-          <QuestReward quest={quest} />
+          <QuestReward quest={quest!} />
         </div>
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Remaining</div>

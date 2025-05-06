@@ -946,3 +946,7 @@ export interface ClaimRewardProps extends SystemSigner {
   game_token_id: number;
   game_address: string;
 }
+
+export interface GetGameCountProps extends SystemSigner {
+  game_address: string;
+}
