@@ -20,6 +20,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
+        chat: resolve(__dirname, "chat/index.html"),
+        trade: resolve(__dirname, "trade/index.html"),
+        realm: resolve(__dirname, "realm/index.html"),
+        settings: resolve(__dirname, "settings/index.html"),
       },
       maxParallelFileOps: 2,
       cache: false,
