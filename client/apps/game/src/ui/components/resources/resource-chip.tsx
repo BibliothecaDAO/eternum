@@ -9,7 +9,7 @@ import {
   multiplyByPrecision,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { ID, findResourceById, TickIds } from "@bibliothecadao/types";
+import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -122,20 +122,16 @@ export const ResourceChip = ({
       onMouseLeave={handleMouseLeave}
     >
       {icon}
-      <div className="grid grid-cols-10 w-full">
-        <div className={`self-center font-bold col-span-3 ${size === "large" ? "text-lg" : ""}`}>
+      <div className="grid grid-cols-10 w-full items-center">
+        <div className={`self-center font-bold col-span-5 ${size === "large" ? "text-lg" : ""}`}>
           {currencyFormat(balance ? Number(balance) : 0, 2)}
-        </div>
-
-        <div className={`self-center m-y-auto font-bold col-span-4 text-center ${size === "large" ? "text-lg" : ""}`}>
-          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
         </div>
 
         {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
           <div
             className={`${
-              productionRate < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-3 text-center mx-auto`}
+              productionRate < 0 ? "text-light-red" : "text-green/60"
+            } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-5 justify-end`}
           >
             <div className={`self-center`}>
               +
@@ -161,11 +157,17 @@ export const ResourceChip = ({
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className={`self-center px-2 col-span-3 mx-auto ${size === "large" ? "text-base" : "text-sm"} font-medium`}
+            className={`self-center px-2 col-span-5 text-right ${
+              size === "large" ? "text-base" : "text-xs"
+            } font-medium`}
           >
             {reachedMaxCap ? "MaxCap" : ""}
           </div>
         )}
+
+        <div className={`col-span-10 text-xs ${size === "large" ? "" : ""}`}>
+          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
+        </div>
       </div>
       <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
         <svg

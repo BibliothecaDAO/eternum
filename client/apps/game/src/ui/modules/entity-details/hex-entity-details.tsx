@@ -40,22 +40,21 @@ export const HexEntityDetails = () => {
   }, [tile]);
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto p-2">
       <div className={`${hasOccupier ? "h-50" : "h-full"}`}>
         <BiomeInfoPanel biome={biome} compact={hasOccupier} />
       </div>
       {hasOccupier && tile && (
-        <div className="p-4">
+        <div>
           {isStructure ? (
             <StructureEntityDetail
               structureEntityId={tile.occupier_id}
               compact={false}
               maxInventory={Infinity}
               showButtons={true}
-              className="max-w-md mx-auto"
             />
           ) : (
-            <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
+            <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} />
           )}
         </div>
       )}

@@ -1,11 +1,10 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
-import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -207,7 +206,7 @@ export const ResourceProductionControls = ({
         </div>
         <div className="flex flex-col gap-2">
           <div className=" text-xl my-4">
-            You will be charged for the production of {formatNumber(productionAmount, 0)}{" "}
+            You will be charged for the production of {productionAmount.toLocaleString()}{" "}
             <span className="flex items-center gap-2">
               {" "}
               {ResourcesIds[selectedResource]}
