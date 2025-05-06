@@ -110,6 +110,8 @@ pub mod troop_management_systems {
             let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
             if caller_address != realms_systems_address && caller_address != village_systems_address {
+                // ensure season is open
+                SeasonConfigImpl::get(world).assert_started_and_not_over();
                 StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
             }
 
