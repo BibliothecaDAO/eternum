@@ -1,11 +1,12 @@
-import { fetchStructureByCoord } from "@/services/api";
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { unpackValue } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
 
 // Define common resource types for the roulette
@@ -39,39 +40,27 @@ export const VillageResourceReveal = ({
 }) => {
   const {
     setup: {
+      components: { Tile, Structure },
       account: { account },
     },
   } = useDojo();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinComplete, setSpinComplete] = useState(false);
-  const [revealedResource, setRevealedResource] = useState<number | null>(null);
   const [rouletteResources, setRouletteResources] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const fetchResource = async () => {
-      try {
-        const structure = await fetchStructureByCoord(villageCoords.col, villageCoords.row);
+  const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
 
-        if (structure && structure.length > 0) {
-          const unpacked = unpackValue(BigInt(structure[0].resources_packed));
-
-          setRevealedResource(unpacked?.[0] ?? null);
-        } else {
-          console.log("No structure found for occupier ID");
-          setRevealedResource(null);
-        }
-      } catch (error) {
-        console.error("Error fetching structure:", error);
-        setRevealedResource(null);
-      }
-    };
-
-    fetchResource();
-  }, [account.address]);
+  // Check if player is owner in case someone else settles at same time
+  const revealedResource = useMemo(() => {
+    if (!tile?.occupier_id) return null;
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
+    if (!structure || structure.owner !== ContractAddress(account.address)) return null;
+    return unpackValue(structure?.resources_packed)?.[0];
+  }, [tile?.occupier_id, account.address]);
 
   // Generate random resources for the roulette
   const generateRandomResources = useCallback(() => {
