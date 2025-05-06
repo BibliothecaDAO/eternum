@@ -41,9 +41,7 @@ interface SeasonPassButtonProps {
 }
 
 export const mintUrl =
-  env.VITE_PUBLIC_CHAIN === "mainnet"
-    ? "https://empire.realms.world/season-passes"
-    : "https://next-empire.realms.world/season-passes";
+  env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://next-empire.realms.world/";
 
 export const StepContainer = ({
   children,
@@ -224,7 +222,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           <div className="flex gap-3 w-full flex-wrap">
             <a
               className="text-brown cursor-pointer w-full"
-              href={`https://empire.realms.world/mint`}
+              href={`${mintUrl}mint`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -242,7 +240,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             </a>
             <a
               className="text-brown cursor-pointer w-full"
-              href={`https://empire.realms.world/trade`}
+              href={`${mintUrl}trade`}
               target="_blank"
               rel="noopener noreferrer"
             >
