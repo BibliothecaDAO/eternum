@@ -1770,7 +1770,7 @@
     },
     {
       "address": "0x13d8a75615fe7fa93159161ac18474c43f3009955d72d817b54b8a57111584",
-      "class_hash": "0x29e257fab0de7d6e464b2a042cfea66c192bb0afe317c816451d9942e6d5fca",
+      "class_hash": "0x1a5e41f3a71db2e5731c20f8bee1f9a1a7c089a7261a34a46860e57a3c3aa54",
       "abi": [
         {
           "type": "impl",
@@ -5138,7 +5138,7 @@
     },
     {
       "address": "0xfb46a68d00a5a0dea1f8313f9206313a5c08d4563b5d9b66d4047f6110c062",
-      "class_hash": "0x7865ca2764c70c1306a47dc570e001344b16635d17cee45194e9ba117a395c",
+      "class_hash": "0x6b107e24d9b7dd5b501730196b40ee73345fb48a13fa5eb47bc4e78bd266b7a",
       "abi": [
         {
           "type": "impl",
@@ -6152,7 +6152,7 @@
     },
     {
       "address": "0x235e26f51b87ba4537b454071474822ed4c1bd5f9160ee217636dcae618b760",
-      "class_hash": "0x2ff27fba5fca1b357ee6aeafa3d8aaf86d3ecbb71c0e43ecde2ab561b281141",
+      "class_hash": "0x5f57787defbc4c6d700ca6258017c3a3cee15a27c0db6b445fa7408afd16707",
       "abi": [
         {
           "type": "impl",
@@ -8204,7 +8204,7 @@
     },
     {
       "address": "0x1ecd73c719fddd2de9be99109f741a9ce1dd464ddf7f97f197c495869163ca7",
-      "class_hash": "0x25cd22561c832b13a299713cb72b4d89a34ea98b28d6d1f7405db99a25a086c",
+      "class_hash": "0x4afa1477bec7a3e14f23d5b47ab27a13f6a3c02be3391f68ba7888eceac93bb",
       "abi": [
         {
           "type": "impl",
@@ -10555,7 +10555,7 @@
     },
     {
       "address": "0x231e60df8f521992ad87f871670c57ddfd8ff2fd27382fe173a17fe4bcc1567",
-      "class_hash": "0x8478c42869f75108273da41ffe564b13aceb2eb206a0040ec4ebac05dbd288",
+      "class_hash": "0x6f030df6c591a6021c101b960a3b5090d10a6aaeb1e2af04d790fec7f95a3ee",
       "abi": [
         {
           "type": "impl",
@@ -12041,7 +12041,7 @@
     },
     {
       "address": "0x74e355c0d39948d5e6bfb926097e7d69694156041360b2f128813fcb524f858",
-      "class_hash": "0x3be35026ecc7f2e0e9c266d5b79083788112335b2c7e5d54f35927ee8d26bd",
+      "class_hash": "0x6447e8b44b06c21d3db1697b776b05960ce77b834522e46b9c087ca014976c7",
       "abi": [
         {
           "type": "impl",
