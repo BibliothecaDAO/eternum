@@ -1,20 +1,32 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { useWallet } from "@/shared/hooks/use-wallet";
-import { useStore } from "@/shared/store";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { TermsOfService } from "./terms-of-service";
+
+const TOS_ACCEPTED_KEY = "eternum_tos_accepted";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
-  const hasAcceptedToS = useStore((state) => state.hasAcceptedToS);
-  const showToS = useStore((state) => state.showToS);
-  const setShowToS = useStore((state) => state.setShowToS);
+  const [hasAcceptedToS, setHasAcceptedToS] = useState(false);
+  const [showToS, setShowToS] = useState(false);
+
+  useEffect(() => {
+    const accepted = localStorage.getItem(TOS_ACCEPTED_KEY) === "true";
+    setHasAcceptedToS(accepted);
+  }, []);
+
+  const handleAcceptToS = () => {
+    localStorage.setItem(TOS_ACCEPTED_KEY, "true");
+    setHasAcceptedToS(true);
+    setShowToS(false);
+  };
 
   const handleConnect = async () => {
     if (!hasAcceptedToS) {
@@ -71,7 +83,7 @@ export function LoginPage() {
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
         <DialogContent className="max-w-[95vw] h-[90vh] p-0">
-          <TermsOfService />
+          <TermsOfService onAccept={handleAcceptToS} />
         </DialogContent>
       </Dialog>
     </div>

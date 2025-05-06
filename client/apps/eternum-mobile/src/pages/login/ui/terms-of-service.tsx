@@ -1,10 +1,11 @@
-import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { useMemo, useRef, useState } from "react";
 
-export const TermsOfService = () => {
-  const setHasAcceptedToS = useStore((state) => state.setHasAcceptedToS);
-  const setShowToS = useStore((state) => state.setShowToS);
+interface TermsOfServiceProps {
+  onAccept: () => void;
+}
+
+export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -16,8 +17,7 @@ export const TermsOfService = () => {
   };
 
   const handleAcceptTerms = () => {
-    setHasAcceptedToS(true);
-    setShowToS(false);
+    onAccept();
   };
 
   const step1Content = useMemo(
