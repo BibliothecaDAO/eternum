@@ -44,7 +44,10 @@ pub impl AchievementImpl of AchievementTrait {
 
     fn declare_all(mut world: WorldStorage) {
         let mut achievements: Array<Achievement> = array![
-            Self::first_steps(), Self::cartographer_one(), Self::cartographer_two(), Self::cartographer_three(),
+            Self::first_steps(),
+            Self::cartographer_one(),
+            Self::cartographer_two(),
+            Self::cartographer_three(),
         ];
         while let Option::Some(achievement) = achievements.pop_front() {
             achievement.declare(world);
@@ -60,7 +63,9 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn first_steps() -> Achievement {
         let tasks: Array<AchievementTask> = array![
-            AchievementTaskTrait::new(id: Tasks::SETTLEMENT, total: 1, description: "Settle your first Realm."),
+            AchievementTaskTrait::new(
+                id: Tasks::SETTLEMENT, total: 1, description: "Settle your first Realm.",
+            ),
         ];
         Achievement {
             id: 'FIRST_STEPS',
@@ -123,7 +128,7 @@ pub impl AchievementImpl of AchievementTrait {
             points: 80,
             group: 'Cartographer',
             icon: 'fa-mountain-sun',
-            title: 'Experienced Cartographer',
+            title: 'Master Cartographer',
             description: "The world is a book, and those who do not travel read only one page.",
             tasks: array![task].span(),
         }
