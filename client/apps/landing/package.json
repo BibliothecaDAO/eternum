@@ -26,6 +26,7 @@
     "@dojoengine/core": "catalog:",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
+    "@metamask/sdk": "catalog:",
     "@parcel/watcher": "^2.4.1",
     "@radix-ui/react-checkbox": "^1.1.2",
     "@radix-ui/react-collapsible": "^1.1.1",
@@ -37,6 +38,7 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-tooltip": "^1.1.3",
+    "@solana/web3.js": "catalog:",
     "@starknet-react/chains": "catalog:",
     "@starknet-react/core": "catalog:",
     "@tanstack/react-query": "^5.59.15",
@@ -46,9 +48,11 @@
     "graphql-tag": "^2.12.6",
     "jotai": "^2.10.1",
     "nuqs": "^2.0.4",
+    "open": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "starknet": "catalog:",
+    "starknetkit": "catalog:",
     "storybook": "^8.3.2",
     "vite-plugin-vercel": "^9.0.3",
     "zustand": "^4.5.2"
@@ -75,6 +79,6 @@
     "@types/react-dom": "catalog:"
   },
   "peerDependencies": {
-    "starknet": "6.23.1"
+    "starknet": "catalog:"
   }
 }
