@@ -399,6 +399,10 @@ pub mod hyperstructure_systems {
                 assert!(address.is_non_zero(), "zero address shareholders");
                 allocated_percentage += percentage;
 
+                // ensure the min percentage is 1% to ensure that no one's
+                // generated points round out to zero
+                assert!(percentage.into() >= PercentageValueImpl::_1(), "minimum percentage is 1%");
+
                 // initialize the player registered points model in the indexer
                 // if not present
                 let player_points_initializer: PlayerRegisteredPoints = world.read_model(address);
@@ -455,9 +459,6 @@ pub mod hyperstructure_systems {
                     let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
                     if shareholder_address.is_non_zero() {
                         let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
-                        // todo: ensure generated points is non zero. not by panicking though
-                        // we just want to make sure that when shareholder_percentage is taken into account,
-                        // generated points does not round out to zero.
                         let generated_points: u256 = time_elapsed.into()
                             * hyperstructure_config.points_per_second.into()
                             * (*shareholder_percentage).into()

@@ -24,7 +24,7 @@ const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL, VITE_PUBLIC
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS!, VITE_PUBLIC_MASTER_PRIVATE_KEY!);
 await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
 const configuration = await nodeReadConfig(VITE_PUBLIC_CHAIN! as Chain);
-export const config = new GameConfigDeployer(configuration);
+export const config = new GameConfigDeployer(configuration, VITE_PUBLIC_CHAIN! as NetworkType);
 
 // Deploy configurations
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);

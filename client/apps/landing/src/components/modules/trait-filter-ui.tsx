@@ -38,8 +38,8 @@ export function TraitFilterUI({
           </Button>
         )}
       </div> */}
-          {/* Display Active Filters */}
-          {hasActiveFilters && (
+      {/* Display Active Filters */}
+      {hasActiveFilters && (
         <div className="border-r pr-4 border-border/50 flex flex-wrap gap-2 items-center">
           {Object.entries(selectedFilters).map(([traitType, values]) =>
             values.map((value) => {
@@ -146,7 +146,6 @@ export function TraitFilterUI({
             );
           })}
       </div>
-  
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
 
-world_address = "0x06cfab4e288a923b44f95fb37ed63a604134f6614a4c9f7205fa947c0ce87b7f"
+world_address = "0x0351794b22848befd36334d79884e5eb9b55203f7774f359e90250f1bdeed6d0"
 
 db_dir = "torii-sepolia"
 
@@ -19,14 +19,14 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-    "erc721:0x33b928dbf2e57422f89e04dbc79f591c209b8dc2c0f7a65a0cbf7964508cf08",
-    "erc721:0x3821e12abd167abb93194afac48c2f71d02308471826b77713baafcfe8dbf77",
-	"erc721:0x73d6cf641720e97308fd32ea80e5457e80148447efe88e5f5080c9d6d29047e",
-    "erc20:0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+    "erc721:0x5b8a83562a7cfa6d99fedad8a6bce28da8085e0175d6c2e6defda2209fb5c7a",
+    "erc721:0x604b48362aabe1c19a2d1f43b68d420ad280ab5e27eced60f8de1c943f44f0a",
+	"erc721:0x6327fb64d06a1f5d9b2b08328bde5060755775f5bc82cbdd22cabf2c0721469",
+    "erc20:0x1fc53d9072816a29df81f14b8717b6a21da647208812ed927c5970dea1d7d9d",
 ]
 
 [erc]
-max_metadata_tasks = 2
+max_metadata_tasks = 5
 
 namespaces = ["s1_eternum"]
 

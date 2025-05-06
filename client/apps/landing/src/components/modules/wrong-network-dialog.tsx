@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 export const WrongNetworkDialog = () => {
   const { connector } = useAccount();
   const { account, chainId } = useAccount();
-  const { chain} = useNetwork()
+  const { chain } = useNetwork();
   const [isWrongNetwork, setIsWrongNetwork] = useState<boolean>(false);
   const { disconnect } = useDisconnect();
 
@@ -26,7 +26,7 @@ export const WrongNetworkDialog = () => {
     }
     console.log(import.meta.env.VITE_PUBLIC_CHAIN);
     console.log(chain.id);
-    console.log(account)
+    console.log(account);
     setIsWrongNetwork(
       import.meta.env.VITE_PUBLIC_CHAIN === "sepolia"
         ? bigintToStringHex(chainId) === bigintToStringHex(mainnet.id)

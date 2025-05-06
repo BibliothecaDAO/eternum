@@ -112,6 +112,25 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
 
+    // todo: verify
+    fn slot_time_has_passed(ref world: WorldStorage, day: u64, slot: u8) -> bool {
+        let (last_open_slot_day, last_open_slot_hour) = Self::previous_arrival_slot(ref world, 0);
+
+        if day < last_open_slot_day {
+            return true;
+        }
+
+        if day == last_open_slot_day {
+            if slot <= last_open_slot_hour {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+
     fn previous_arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
         let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, travel_time);
         if arrival_slot == 1 {

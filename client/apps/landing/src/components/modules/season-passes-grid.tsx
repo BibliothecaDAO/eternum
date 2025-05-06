@@ -29,7 +29,6 @@ export const SeasonPassesGrid = ({
   hideTransferButton,
   isCompactGrid,
 }: SeasonPassRowProps) => {
-
   if (!seasonPasses?.length) {
     return (
       <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-8 min-h-[600px] rounded-xl border-2 border-dashed border-gray-200/70 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
@@ -63,7 +62,6 @@ export const SeasonPassesGrid = ({
 
   return (
     <div>
-
       <AnimatedGrid
         items={gridItems}
         renderItem={(item) => {
