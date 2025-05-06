@@ -1,3 +1,4 @@
+import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojoConfig";
@@ -603,6 +604,22 @@ export const policies = toSessionPolicies({
           name: "VRF",
           description: "Verifiable Random Function",
           entrypoint: "request_random",
+        },
+      ],
+    },
+    [getSeasonPassAddress()]: {
+      methods: [
+        {
+          name: "set_approval_for_all",
+          entrypoint: "set_approval_for_all",
+        },
+      ],
+    },
+    [getVillagePassAddress()]: {
+      methods: [
+        {
+          name: "set_approval_for_all",
+          entrypoint: "set_approval_for_all",
         },
       ],
     },

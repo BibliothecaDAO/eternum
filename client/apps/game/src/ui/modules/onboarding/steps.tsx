@@ -1,6 +1,4 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.svg";
-import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
@@ -403,7 +401,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
 
-          <div className="flex flex-row justify-between ml-1 relative top-2">
+          {/* <div className="flex flex-row justify-between ml-1 relative top-2">
             {selectedRealms.length === 0 ? (
               <div
                 className="flex flex-row items-center gap-2"
@@ -424,7 +422,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             <div className="text-sm">
               {realmsWithLocations.length} / {seasonPassRealms.length} With Locations
             </div>
-          </div>
+          </div> */}
           <div className=" w-full mt-auto">
             <Button
               disabled={settleableRealms.length === 0 || loading}

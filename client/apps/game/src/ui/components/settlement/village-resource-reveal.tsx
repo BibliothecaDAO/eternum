@@ -1,13 +1,11 @@
+import { fetchStructureByCoord } from "@/services/api";
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, HexPosition, ResourcesIds } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
 
 // Define common resource types for the roulette
@@ -42,31 +40,39 @@ export const VillageResourceReveal = ({
   const {
     setup: {
       account: { account },
-      components: { Tile, Structure },
     },
   } = useDojo();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinComplete, setSpinComplete] = useState(false);
+  const [revealedResource, setRevealedResource] = useState<number | null>(null);
   const [rouletteResources, setRouletteResources] = useState<string[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  console.log(villageCoords);
+  useEffect(() => {
+    const fetchResource = async () => {
+      try {
+        const structure = await fetchStructureByCoord(villageCoords.col, villageCoords.row);
 
-  const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
+        if (structure && structure.length > 0) {
+          const unpacked = unpackValue(BigInt(structure[0].resources_packed));
 
-  console.log(tile);
-  // Check if player is owner in case someone else settles at same time
-  const revealedResource = useMemo(() => {
-    if (!tile?.occupier_id) return null;
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
-    if (!structure || structure.owner !== ContractAddress(account.address)) return null;
-    return unpackValue(structure?.resources_packed)?.[0];
-  }, [tile?.occupier_id, account.address]);
+          setRevealedResource(unpacked?.[0] ?? null);
+        } else {
+          console.log("No structure found for occupier ID");
+          setRevealedResource(null);
+        }
+      } catch (error) {
+        console.error("Error fetching structure:", error);
+        setRevealedResource(null);
+      }
+    };
 
-  console.log(revealedResource);
+    fetchResource();
+  }, [account.address]);
+
   // Generate random resources for the roulette
   const generateRandomResources = useCallback(() => {
     // Create a pool with more common resources and fewer rare ones
@@ -130,10 +136,10 @@ export const VillageResourceReveal = ({
   }, [revealedResource, isSpinning, spinComplete, startSpin]);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full relative">
-      <h4 className="mb-8">Resource Discovery</h4>
+    <div className="flex flex-col items-center w-full h-full relative">
+      <h2 className="mb-8">Resource Mined!</h2>
 
-      <div className="relative w-64 h-64 overflow-hidden rounded-2xl panel-wood border-gold/5 bg-brown/5 backdrop-blur-sm shadow-xl">
+      <div className="relative w-72 h-72 overflow-hidden rounded-2xl panel-wood border-gold/5 bg-brown/5 backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
         {!revealedResource ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90 p-4">
@@ -193,7 +199,6 @@ export const VillageResourceReveal = ({
             }}
             className="absolute inset-0 flex flex-col items-center justify-center p-4"
           >
-            <h6>You minted:</h6>
             <div className="p-6 bg-dark-brown/80 rounded-xl shadow-inner flex flex-col items-center justify-center">
               <ResourceIcon
                 resource={
@@ -204,11 +209,11 @@ export const VillageResourceReveal = ({
                 size="xxl"
                 className="mb-2"
               />
-              <h5>
+              <h6>
                 {Object.keys(ResourcesIds).find(
                   (key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource,
                 ) + " Village"}
-              </h5>
+              </h6>
             </div>
           </motion.div>
         )}
