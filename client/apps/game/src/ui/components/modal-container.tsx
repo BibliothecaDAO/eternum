@@ -60,7 +60,7 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   return (
     <div
       ref={modalRef}
-      className={`z-50  dark:bg-dark-wood panel-wood text-gold ${containerClasses} fixed overflow-hidden`}
+      className={`z-50  bg-dark-wood panel-wood text-gold ${containerClasses} fixed overflow-hidden`}
       tabIndex={0}
     >
       <div className={`flex flex-col ${size === "auto" ? "h-auto" : "h-full"}`}>
