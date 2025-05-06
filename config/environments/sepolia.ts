@@ -8,7 +8,6 @@
 
 import { RealmLevels, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the Sepolia testnet environment.
@@ -18,7 +17,11 @@ import { getAllResourcesWithAmount } from "./utils/resource";
 // sepolia god mode
 export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
-  // no stamina cost
+  tick: {
+    ...CommonEternumGlobalConfig.tick,
+    // 1 minute
+    armiesTickIntervalInSeconds: 60,
+  },
   village: {
     ...CommonEternumGlobalConfig.village,
     village_mint_initial_recipient: "0x054f2b25070d70d49f1c1f7c10Ef2639889fDAc15894D3FBa1a03caF5603eCA3",
@@ -36,10 +39,6 @@ export const SepoliaEternumGlobalConfig: Config = {
       staminaTravelWheatCost: 0,
       staminaExploreFishCost: 0,
       staminaExploreWheatCost: 0,
-      staminaTravelStaminaCost: 0,
-      staminaExploreStaminaCost: 0,
-      staminaBonusValue: 0,
-      staminaInitial: 120,
     },
   },
   exploration: {
@@ -51,55 +50,16 @@ export const SepoliaEternumGlobalConfig: Config = {
     questFindProbability: 1,
     questFindFailProbability: 10,
   },
-  // cheap hyperstructures
-  hyperstructures: {
-    ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureInitializationShardsCost: {
-      resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
-      amount: 5_000,
-    },
-    hyperstructurePointsForWin: 100n,
-    hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
-      (cost) => ({
-        ...cost,
-        min_amount: 12_000,
-        max_amount: 12_000,
-      }),
-    ),
-  },
-  // no grace period
-  battle: {
-    ...CommonEternumGlobalConfig.battle,
-    graceTickCount: 1, // 1 tick so 1 hours
-  },
-  // starting resources x1000
-  startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-    if (
-      resource.resource === ResourcesIds.Knight ||
-      resource.resource === ResourcesIds.Paladin ||
-      resource.resource === ResourcesIds.Crossbowman
-    ) {
-      return {
-        ...resource,
-        amount: Math.floor(CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount / 4),
-      };
-    }
-    return resource;
-  }),
-  villageStartingResources: getAllResourcesWithAmount(2_000_000).map((resource) => {
-    if (
-      resource.resource === ResourcesIds.Knight ||
-      resource.resource === ResourcesIds.Paladin ||
-      resource.resource === ResourcesIds.Crossbowman
-    ) {
-      return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-    }
-    return resource;
-  }),
   season: {
     ...CommonEternumGlobalConfig.season,
-    startSettlingAfterSeconds: 59, // 1 minute
-    startMainAfterSeconds: 60,
+    bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 1 hour after season end
+
+    startSettlingAfterSeconds: 60 * 60 * 2, // 2 hours
+    startMainAfterSeconds: 60 * 60 * 3, // 3 hours
+  },
+  battle: {
+    ...CommonEternumGlobalConfig.battle,
+    graceTickCount: 4, // 1 tick so 1 hour grace period for all realms
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
