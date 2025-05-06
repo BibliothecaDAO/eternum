@@ -44,10 +44,7 @@ pub impl AchievementImpl of AchievementTrait {
 
     fn declare_all(mut world: WorldStorage) {
         let mut achievements: Array<Achievement> = array![
-            Self::first_steps(),
-            Self::cartographer_one(),
-            Self::cartographer_two(),
-            Self::cartographer_three(),
+            Self::first_steps(), Self::cartographer_one(), Self::cartographer_two(), Self::cartographer_three(),
         ];
         while let Option::Some(achievement) = achievements.pop_front() {
             achievement.declare(world);
@@ -63,9 +60,7 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn first_steps() -> Achievement {
         let tasks: Array<AchievementTask> = array![
-            AchievementTaskTrait::new(
-                id: Tasks::SETTLEMENT, total: 1, description: "Settle your first Realm.",
-            ),
+            AchievementTaskTrait::new(id: Tasks::SETTLEMENT, total: 1, description: "Settle your first Realm."),
         ];
         Achievement {
             id: 'FIRST_STEPS',
