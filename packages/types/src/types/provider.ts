@@ -1,7 +1,7 @@
 import { Account, AccountInterface, BigNumberish, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
-import { Resource } from "./common";
+import { Level, Resource } from "./common";
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
@@ -925,4 +925,28 @@ export interface EditMarketplaceOrderProps {
   order_id: num.BigNumberish;
   new_price: num.BigNumberish;
   signer: AccountInterface;
+}
+
+export interface SetQuestGamesProps extends SystemSigner {
+  quest_games: {
+    address: string;
+    levels: Level[];
+    overwrite: boolean;
+  }[];
+}
+
+export interface StartQuestProps extends SystemSigner {
+  quest_tile_id: number;
+  explorer_id: number;
+  player_name: num.BigNumberish;
+  to_address: string;
+}
+
+export interface ClaimRewardProps extends SystemSigner {
+  game_token_id: number;
+  game_address: string;
+}
+
+export interface GetGameCountProps extends SystemSigner {
+  game_address: string;
 }

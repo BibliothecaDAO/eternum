@@ -863,15 +863,15 @@
       "23": 30,
       "24": 1,
       "25": 0.5,
-      "26": 0.04,
-      "27": 0.04,
-      "28": 0.04,
-      "29": 0.04,
-      "30": 0.04,
-      "31": 0.04,
-      "32": 0.04,
-      "33": 0.04,
-      "34": 0.04,
+      "26": 0.05,
+      "27": 0.05,
+      "28": 0.05,
+      "29": 0.05,
+      "30": 0.05,
+      "31": 0.05,
+      "32": 0.05,
+      "33": 0.05,
+      "34": 0.05,
       "35": 50,
       "36": 50,
       "37": 0
@@ -1038,9 +1038,13 @@
     "hyperstructureWinProbAtCenter": 20000,
     "hyperstructureFailProbAtCenter": 100000,
     "hyperstructureFailProbIncreasePerHexDistance": 20,
-    "hyperstructureFailProbIncreasePerHyperstructureFound": 1500,
+    "hyperstructureFailProbIncreasePerHyperstructureFound": 500,
     "shardsMineInitialWheatBalance": 1000,
-    "shardsMineInitialFishBalance": 1000
+    "shardsMineInitialFishBalance": 1000,
+    "questDiscoveryProbability": 25000,
+    "questDiscoveryFailProbability": 75000,
+    "questFindProbability": 1000,
+    "questFindFailProbability": 10000
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
@@ -2143,7 +2147,7 @@
     },
     {
       "resource": 26,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 27,
@@ -2155,7 +2159,7 @@
     },
     {
       "resource": 29,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 30,
@@ -2167,7 +2171,7 @@
     },
     {
       "resource": 32,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 33,
@@ -2289,7 +2293,7 @@
     },
     {
       "resource": 26,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 27,
@@ -2301,7 +2305,7 @@
     },
     {
       "resource": 29,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 30,
@@ -2313,7 +2317,7 @@
     },
     {
       "resource": 32,
-      "amount": 1000000
+      "amount": 100000
     },
     {
       "resource": 33,
@@ -4697,11 +4701,27 @@
               "items": [
                 {
                   "type": "function",
-                  "name": "set_agent_controller",
+                  "name": "set_agent_config",
                   "inputs": [
                     {
                       "name": "agent_controller_address",
                       "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "max_lifetime_count",
+                      "type": "core::integer::u16"
+                    },
+                    {
+                      "name": "max_current_count",
+                      "type": "core::integer::u16"
+                    },
+                    {
+                      "name": "min_spawn_lords_amount",
+                      "type": "core::integer::u8"
+                    },
+                    {
+                      "name": "max_spawn_lords_amount",
+                      "type": "core::integer::u8"
                     }
                   ],
                   "outputs": [],
@@ -5937,6 +5957,43 @@
             },
             {
               "type": "impl",
+              "name": "IQuestConfig",
+              "interface_name": "s1_eternum::systems::config::contracts::IQuestConfig"
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::QuestConfig",
+              "members": [
+                {
+                  "name": "quest_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "quest_discovery_fail_prob",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IQuestConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_quest_config",
+                  "inputs": [
+                    {
+                      "name": "quest_config",
+                      "type": "s1_eternum::models::config::QuestConfig"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
               "name": "WorldProviderImpl",
               "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
             },
@@ -6085,6 +6142,7 @@
             "set_structure_level_config",
             "set_settlement_config",
             "set_trade_config",
+            "set_quest_config",
             "upgrade"
           ]
         },
@@ -11102,6 +11160,26 @@
                   ],
                   "outputs": [],
                   "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "lp_withdraw",
+                  "inputs": [
+                    {
+                      "name": "to_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "resource_type",
+                      "type": "core::integer::u8"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "core::integer::u128"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -11226,6 +11304,7 @@
           "systems": [
             "deposit",
             "withdraw",
+            "lp_withdraw",
             "upgrade"
           ]
         },
@@ -14559,9 +14638,27 @@
         },
         {
           "members": [],
+          "class_hash": "0x1749e5d4460f73698e3bda2f0918123a6a237e0fae40796eb609363160d96b8",
+          "tag": "s1_eternum-AgentConfig",
+          "selector": "0x289c6289f39005ef802db9f05c38d144ce4f971790be8dc9789355cf44952d3"
+        },
+        {
+          "members": [],
           "class_hash": "0x7297ba08beac215d3d834472f597bf348d1abdb7174393f82e8dd4759c983f5",
           "tag": "s1_eternum-AgentCount",
           "selector": "0x775c3ea779b07da3b53cb737bc3d20ec1acfdcae1066601f630acb127468115"
+        },
+        {
+          "members": [],
+          "class_hash": "0x10a22f132c924dfdf3e1c677aa60b523b676c84a59017cb552962a60276e7ca",
+          "tag": "s1_eternum-AgentLifetimeCount",
+          "selector": "0x60ca4e60ab28ed4a280168c6cbbededd0895e5f55743578ee5e505577c690da"
+        },
+        {
+          "members": [],
+          "class_hash": "0x22a25515f5fc697baacbe1d136cc108241fea466136644190e99e9eba314272",
+          "tag": "s1_eternum-AgentLordsMinted",
+          "selector": "0x43fdc3ce5dd74e32996d38949f4a8fbf8570eada60cc9707c3f8df028f2685c"
         },
         {
           "members": [],

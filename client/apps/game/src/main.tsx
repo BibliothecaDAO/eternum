@@ -15,6 +15,7 @@ import { env } from "../env";
 import App from "./app";
 import { initialSync } from "./dojo/sync";
 import { DojoProvider } from "./hooks/context/dojo-context";
+import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
@@ -126,7 +127,7 @@ async function init() {
 
   const state = useUIStore.getState();
   const syncingStore = useSyncStore.getState();
-
+  
   console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },
@@ -164,7 +165,9 @@ async function init() {
       <ShepherdJourneyProvider>
         <StarknetProvider>
           <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
-            <App backgroundImage={backgroundImage} />
+            <MetagameProvider>
+              <App backgroundImage={backgroundImage} />
+            </MetagameProvider>
           </DojoProvider>
         </StarknetProvider>
       </ShepherdJourneyProvider>

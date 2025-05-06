@@ -314,6 +314,18 @@ export const policies = toSessionPolicies({
         },
       ],
     },
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "quest_systems").address]: {
+      methods: [
+        {
+          name: "start_quest",
+          entrypoint: "start_quest",
+        },
+        {
+          name: "claim_reward",
+          entrypoint: "claim_reward",
+        },
+      ],
+    },
     [getContractByName(dojoConfig.manifest, "s1_eternum", "realm_systems").address]: {
       methods: [
         {

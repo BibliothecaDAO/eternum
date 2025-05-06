@@ -7,6 +7,7 @@ export * from "./use-guilds";
 export * from "./use-hyperstructures";
 export * from "./use-players";
 export * from "./use-query";
+export * from "./use-quests";
 export * from "./use-realm";
 export * from "./use-resource-arrivals";
 export * from "./use-resources";

@@ -6,6 +6,7 @@
     "slot": "bun --env-file=../client/apps/game/.env.slot run ./deployer/index.ts",
     "sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./deployer/index.ts",
     "mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./deployer/index.ts",
+    "add-quest-games": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/add-quest-games.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

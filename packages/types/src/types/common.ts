@@ -51,6 +51,7 @@ export enum TileOccupier {
   RealmRegularLevel3WonderBonus = 35,
   RealmRegularLevel4WonderBonus = 36,
   VillageWonderBonus = 37,
+  Quest = 38,
 }
 
 /**
@@ -122,6 +123,48 @@ export type Structure = {
   ownerName?: string;
   owner: ContractAddress;
   position: Position;
+};
+
+export type Tile = {
+  col: number;
+  row: number;
+  biome: number;
+  occupier_id: ID;
+  occupier_type: number;
+  occupier_is_structure: boolean;
+};
+
+export type Quest = {
+  game_token_id: number;
+  game_address: ContractAddress;
+  quest_tile_id: number;
+  explorer_id: number;
+  completed: boolean;
+};
+
+export type QuestTile = {
+  id: number;
+  game_address: ContractAddress;
+  coord: {
+    x: number;
+    y: number;
+  };
+  level: number;
+  resource_type: number;
+  amount: bigint;
+  capacity: number;
+  participant_count: number;
+};
+
+export type QuestLevel = {
+  game_address: ContractAddress;
+  levels: Level[];
+};
+
+export type Level = {
+  target_score: number;
+  settings_id: number;
+  time_limit: number;
 };
 
 export type TroopFoodConsumption = {

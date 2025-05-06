@@ -91,6 +91,8 @@ export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 export const AGENT_FIND_PROBABILITY = 8; // 8/100 = 8%
 export const AGENT_FIND_FAIL_PROBABILITY = 92; // 92/100 = 92%
+export const QUEST_DISCOVERY_PROBABILITY = 25000; // 25000/100000 = 25%
+export const QUEST_DISCOVERY_FAIL_PROBABILITY = 75000; // 75000/100000 = 75%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
@@ -220,6 +222,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
+    questFindProbability: QUEST_DISCOVERY_PROBABILITY,
+    questFindFailProbability: QUEST_DISCOVERY_FAIL_PROBABILITY,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,

@@ -13,6 +13,7 @@ export enum ActionType {
   Build = "build",
   Help = "help",
   Explore = "explore",
+  Quest = "quest",
 }
 
 export class ActionPaths {

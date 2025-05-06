@@ -59,7 +59,7 @@
     "villagepass:deploy:sepolia": "cd ./contracts/village_pass/ext/scripts && ./deploy.sh sepolia",
     "seasonresources:deploy:sepolia": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh sepolia",
     "toml:update:sepolia": "cd ./contracts/game && ./ext/scripts/update-toml.sh torii-sepolia.toml ../common/addresses/sepolia.json",
-    "indexer:start:sepolia": "pnpm run toml:update:sepolia && bash contracts/game/ext/scripts/slot.sh torii --network sepolia --world 0x7abda767aa2629ad5ec3277934a81f933911f7022232c1893de4edc108bf260 --toml ./contracts/game --project eternum-sepolia",
+    "indexer:start:sepolia": "pnpm run toml:update:sepolia && bash contracts/game/ext/scripts/slot.sh torii --network sepolia --world 0x04e2023f1c633ccb98a5c7b40bd23c01742c10a635a04dbfd0417944a3d7d042 --toml ./contracts/game --project eternum-sepolia-quest",
     "config:deploy:sepolia": "pnpm run build:packages && pnpm --dir ./config run sepolia",
     "_comment_mainnet_network_": "_______________________________________________",
     "_comment_mainnet_network1": "These are all you commands you need to run (in this order)",

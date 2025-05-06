@@ -4,7 +4,7 @@ import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
-import { shortString, constants } from "starknet";
+import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 
