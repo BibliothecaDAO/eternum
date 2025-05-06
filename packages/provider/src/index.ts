@@ -2718,7 +2718,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async start_quest(props: SystemProps.StartQuestProps) {
     const { quest_tile_id, explorer_id, player_name, to_address, signer } = props;
-    console.log([quest_tile_id, explorer_id, player_name, to_address]);
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
       entrypoint: "start_quest",

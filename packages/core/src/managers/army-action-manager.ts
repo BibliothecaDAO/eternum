@@ -87,7 +87,6 @@ export class ArmyActionManager {
     // Calculate minimum stamina cost across all biomes for this troop type
     const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
     const maxStaminaSteps = Math.floor(Number(stamina.amount) / minTravelStaminaCost);
-    console.log(this.entity);
 
     const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
     const travelFoodCosts = entityArmy

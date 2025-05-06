@@ -15,8 +15,6 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
     HasValue(components.Structure, { owner: playerAddress || ContractAddress(account.address) }),
   ]);
 
-  console.log("structures", entities);
-
   const playerStructures = useMemo(() => {
     return entities
       .map((id) => getStructure(id, ContractAddress(account.address), components))

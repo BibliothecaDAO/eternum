@@ -366,8 +366,6 @@ export class SystemManager {
 
               if (!questTile) return;
 
-              console.log("questTile", questTile);
-
               return {
                 entityId: update.entity,
                 id: questTile.id,

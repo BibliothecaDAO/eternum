@@ -13,24 +13,6 @@ export const formatQuests = (quests: Entity[], components: ClientComponents): Qu
       const quest = getComponentValue(components.QuestTile, questEntity);
       if (!quest) return undefined;
 
-      // const position = explorerTroops.coord;
-
-      // const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
-      // const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
-
-      // const resource = getComponentValue(components.Resource, armyEntity);
-      // const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
-
-      // const stamina = explorerTroops.troops.stamina.amount;
-      // const name = getComponentValue(components.AddressName, armyEntity);
-      // const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
-
-      // const isMine = (structure?.owner || 0n) === playerAddress;
-
-      // const isMercenary = structure?.owner === 0n;
-
-      // const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
-
       return {
         id: quest.id,
         game_address: ContractAddress(quest.game_address),

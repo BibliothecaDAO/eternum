@@ -510,7 +510,6 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          console.log({ building });
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 

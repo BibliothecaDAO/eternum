@@ -212,8 +212,6 @@ export default class WorldmapScene extends HexagonScene {
       this.questManager,
     );
 
-    console.log("minimap done");
-
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
@@ -346,10 +344,8 @@ export default class WorldmapScene extends HexagonScene {
     const account = useAccountStore.getState().account;
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
-    console.log("actionPaths", actionPaths);
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
-      console.log("actionPath", actionPath);
       if (actionPath && account) {
         const actionType = ActionPaths.getActionType(actionPath);
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
@@ -458,8 +454,6 @@ export default class WorldmapScene extends HexagonScene {
       currentArmiesTick,
       playerAddress,
     );
-    console.log("quest hexes", this.questHexes);
-    console.log("actionPaths", actionPaths);
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
@@ -665,7 +659,6 @@ export default class WorldmapScene extends HexagonScene {
     const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
 
     if (isStructure || isQuest) {
-      console.log("isStructure or isQuest", isStructure, isQuest);
       dummy.scale.set(0, 0, 0);
     } else {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -1029,7 +1022,6 @@ export default class WorldmapScene extends HexagonScene {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-      console.log("loaded chunkKey", chunkKey);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
       this.questManager.updateChunk(chunkKey);
