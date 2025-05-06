@@ -340,7 +340,7 @@ function Mint() {
         {/* Page Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">Mint Season Passes for your Realms</h2>
         <p className="text-center text-muted-foreground mb-6">
-          Select your Realm NFTs below to mint their corresponding Season Pass NFTs
+          Select your Realm NFTs below to mint their corresponding Season Pass NFTs.
         </p>
 
         {/* --- Use the Reusable Filter UI --- */}
