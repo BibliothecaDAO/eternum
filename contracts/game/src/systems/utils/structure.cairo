@@ -151,6 +151,8 @@ pub impl iStructureImpl of IStructureTrait {
             structure_id, category, coord, owner, structure_resources_packed, metadata,
         );
         world.write_model(@structure);
+        // call the store function to ensure structure owner stats are updated
+        StructureOwnerStoreImpl::store(owner, ref world, structure_id);
 
         // set tile occupier
         IMapImpl::occupy(ref world, ref tile, tile_occupier, structure_id);
