@@ -4,12 +4,10 @@ use s1_eternum::alias::ID;
 use s1_eternum::models::config::{MapConfig, QuestConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::Coord;
-use s1_eternum::models::quest::{
-    Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile,
-};
+use s1_eternum::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
 use s1_eternum::systems::quest::constants::{
-    CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY,
-    MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
+    CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
+    QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::{iExplorerImpl};
@@ -23,19 +21,13 @@ pub trait IQuestSystems<T> {
     fn remove_game(ref self: T, address: ContractAddress);
     fn create_quest(ref self: T, tile: Tile, vrf_seed: u256);
     fn start_quest(
-        ref self: T,
-        quest_tile_id: u32,
-        explorer_id: ID,
-        player_name: felt252,
-        to_address: ContractAddress,
+        ref self: T, quest_tile_id: u32, explorer_id: ID, player_name: felt252, to_address: ContractAddress,
     ) -> u64;
     fn claim_reward(ref self: T, game_token_id: u64, game_address: ContractAddress);
     fn enable_quests(ref self: T);
     fn disable_quests(ref self: T);
     fn get_quest(self: @T, game_token_id: u64, game_address: ContractAddress) -> Quest;
-    fn get_quest_details(
-        self: @T, game_token_id: u64, game_address: ContractAddress,
-    ) -> QuestDetails;
+    fn get_quest_details(self: @T, game_token_id: u64, game_address: ContractAddress) -> QuestDetails;
     fn get_quest_tile(self: @T, quest_tile_id: u32) -> QuestTile;
     fn get_target_score(self: @T, game_token_id: u64, game_address: ContractAddress) -> u32;
     fn is_quest_feature_enabled(self: @T) -> bool;
@@ -53,8 +45,7 @@ pub mod quest_systems {
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::quest::{
-        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels,
-        QuestRegistrations, QuestTile,
+        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestRegistrations, QuestTile,
     };
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -66,24 +57,19 @@ pub mod quest_systems {
     use starknet::ContractAddress;
     use super::iQuestDiscoveryImpl;
     use tournaments::components::interfaces::{
-        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, IGameTokenDispatcher,
-        IGameTokenDispatcherTrait,
+        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, IGameTokenDispatcher, IGameTokenDispatcherTrait,
     };
 
     fn dojo_init(self: @ContractState) {
         // initialize quest feature flag to enabled
         let mut world: WorldStorage = self.world(DEFAULT_NS());
-        let mut quest_feature_flag: QuestFeatureFlag = QuestFeatureFlag {
-            key: VERSION, enabled: true,
-        };
+        let mut quest_feature_flag: QuestFeatureFlag = QuestFeatureFlag { key: VERSION, enabled: true };
         world.write_model(@quest_feature_flag);
     }
 
     #[abi(embed_v0)]
     pub impl QuestSystemsImpl of super::IQuestSystems<ContractState> {
-        fn add_game(
-            ref self: ContractState, address: ContractAddress, levels: Span<Level>, overwrite: bool,
-        ) {
+        fn add_game(ref self: ContractState, address: ContractAddress, levels: Span<Level>, overwrite: bool) {
             let mut world = self.world(DEFAULT_NS());
 
             // Check that at least one level is provided
@@ -93,10 +79,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(
-                        selector_from_tag!("s1_eternum-quest_systems"),
-                        starknet::get_caller_address(),
-                    ) == true,
+                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -104,9 +87,7 @@ pub mod quest_systems {
             if !overwrite {
                 // ensure game is not already in registry
                 let quest_levels: QuestLevels = world.read_model(address);
-                assert!(
-                    quest_levels.levels.len() == 0, "Game already exists and overwrite is not true",
-                );
+                assert!(quest_levels.levels.len() == 0, "Game already exists and overwrite is not true");
             }
 
             // Store the game configuration
@@ -134,10 +115,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(
-                        selector_from_tag!("s1_eternum-quest_systems"),
-                        starknet::get_caller_address(),
-                    ) == true,
+                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -179,9 +157,7 @@ pub mod quest_systems {
             let mut tile = tile;
 
             // ensure caller is the troop movement util systems
-            let (troop_movement_util_systems_address, _) = world
-                .dns(@"troop_movement_util_systems")
-                .unwrap();
+            let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
             assert!(
                 starknet::get_caller_address() == troop_movement_util_systems_address,
                 "caller must be the troop movement util systems",
@@ -206,30 +182,19 @@ pub mod quest_systems {
             assert!(feature_toggle.enabled, "Quest feature is disabled");
 
             let mut quest_tile: QuestTile = world.read_model(quest_tile_id);
+            assert!(quest_tile.game_address.is_non_zero(), "Quest tile not found for id: {}", quest_tile_id);
             assert!(
-                quest_tile.game_address.is_non_zero(),
-                "Quest tile not found for id: {}",
-                quest_tile_id,
-            );
-            assert!(
-                quest_tile.participant_count < quest_tile.capacity,
-                "Quest is at capacity for id: {}",
-                quest_tile_id,
+                quest_tile.participant_count < quest_tile.capacity, "Quest is at capacity for id: {}", quest_tile_id,
             );
 
             let explorer: ExplorerTroops = world.read_model(explorer_id);
-            assert!(
-                explorer.coord.is_adjacent(quest_tile.coord),
-                "Explorer is not adjacent to quest tile",
-            );
+            assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
 
             // verify caller is owner of explorer
             StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
             // Get the realm ID from the explorer's owner structure
-            let structure_metadata = StructureMetadataStoreImpl::retrieve(
-                ref world, explorer.owner,
-            );
+            let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
 
             // if the structure is a village
             let realm_or_village_id = if structure_metadata.village_realm != 0 {
@@ -244,8 +209,7 @@ pub mod quest_systems {
             let realm_or_village_participant: QuestRegistrations = world
                 .read_model((quest_tile_id, realm_or_village_id));
             assert!(
-                realm_or_village_participant.game_token_id == 0,
-                "Realm or Village has already attempted this quest",
+                realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
             );
 
             // TODO: Consider scenario in which game has been removed from registry
@@ -263,20 +227,12 @@ pub mod quest_systems {
                 Option::None
             };
 
-            let game_dispatcher = IGameTokenDispatcher {
-                contract_address: quest_tile.game_address,
-            };
+            let game_dispatcher = IGameTokenDispatcher { contract_address: quest_tile.game_address };
             let game_token_id: u64 = game_dispatcher
-                .mint(
-                    player_name, config.settings_id, game_start_delay, game_expiration, to_address,
-                );
+                .mint(player_name, config.settings_id, game_start_delay, game_expiration, to_address);
 
             let quest = Quest {
-                game_token_id,
-                game_address: quest_tile.game_address,
-                quest_tile_id,
-                explorer_id,
-                completed: false,
+                game_token_id, game_address: quest_tile.game_address, quest_tile_id, explorer_id, completed: false,
             };
             world.write_model(@quest);
 
@@ -285,17 +241,13 @@ pub mod quest_systems {
             world.write_model(@quest_tile);
 
             // Record realm participation with this quest
-            let realm_or_village_participant = QuestRegistrations {
-                quest_tile_id, realm_or_village_id, game_token_id,
-            };
+            let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id };
             world.write_model(@realm_or_village_participant);
 
             game_token_id
         }
 
-        fn claim_reward(
-            ref self: ContractState, game_token_id: u64, game_address: ContractAddress,
-        ) {
+        fn claim_reward(ref self: ContractState, game_token_id: u64, game_address: ContractAddress) {
             let mut world = self.world(DEFAULT_NS());
 
             let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
@@ -306,10 +258,7 @@ pub mod quest_systems {
 
             // Explorer must be adjacent to quest tile to claim reward
             let explorer: ExplorerTroops = world.read_model(quest.explorer_id);
-            assert!(
-                explorer.coord.is_adjacent(quest_tile.coord),
-                "Explorer is not adjacent to quest tile",
-            );
+            assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
 
             // TODO: Capacity Check (if we're using a resource that has a weight)
 
@@ -317,9 +266,7 @@ pub mod quest_systems {
             let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
             let level: Level = *quest_levels.levels.at(quest_tile.level.into());
 
-            let game_dispatcher = IGameDetailsDispatcher {
-                contract_address: quest_tile.game_address,
-            };
+            let game_dispatcher = IGameDetailsDispatcher { contract_address: quest_tile.game_address };
             let score: u32 = game_dispatcher.score(quest.game_token_id);
 
             // check if the score is greater than or equal to the target score
@@ -336,12 +283,8 @@ pub mod quest_systems {
             world.write_model(@quest);
 
             // grant resource reward for completing quest
-            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(
-                ref world, quest.explorer_id,
-            );
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, quest_tile.resource_type,
-            );
+            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, quest.explorer_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_tile.resource_type);
             let mut resource = SingleResourceStoreImpl::retrieve(
                 ref world,
                 quest.explorer_id,
@@ -360,10 +303,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(
-                        selector_from_tag!("s1_eternum-quest_systems"),
-                        starknet::get_caller_address(),
-                    ) == true,
+                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -379,10 +319,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(
-                        selector_from_tag!("s1_eternum-quest_systems"),
-                        starknet::get_caller_address(),
-                    ) == true,
+                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -393,16 +330,12 @@ pub mod quest_systems {
             world.write_model(@feature_toggle);
         }
 
-        fn get_quest(
-            self: @ContractState, game_token_id: u64, game_address: ContractAddress,
-        ) -> Quest {
+        fn get_quest(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> Quest {
             let mut world = self.world(DEFAULT_NS());
             world.read_model((game_token_id, game_address))
         }
 
-        fn get_quest_details(
-            self: @ContractState, game_token_id: u64, game_address: ContractAddress,
-        ) -> QuestDetails {
+        fn get_quest_details(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> QuestDetails {
             let mut world = self.world(DEFAULT_NS());
             let quest: Quest = world.read_model((game_token_id, game_address));
             let quest_tile: QuestTile = world.read_model(quest.quest_tile_id);
@@ -419,9 +352,7 @@ pub mod quest_systems {
             }
         }
 
-        fn get_target_score(
-            self: @ContractState, game_token_id: u64, game_address: ContractAddress,
-        ) -> u32 {
+        fn get_target_score(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> u32 {
             let mut world = self.world(DEFAULT_NS());
             let quest: Quest = world.read_model((game_token_id, game_address));
             let quest_tile: QuestTile = world.read_model(quest.quest_tile_id);
@@ -458,24 +389,18 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let game_count: u128 = quest_game_registry.games.len().into();
 
         // select random game from game registry
-        let game_selector: u32 = random::random(seed.clone(), GAME_SELECTOR_SALT, game_count)
-            .try_into()
-            .unwrap();
+        let game_selector: u32 = random::random(seed.clone(), GAME_SELECTOR_SALT, game_count).try_into().unwrap();
         let game_address: ContractAddress = *quest_game_registry.games.at(game_selector);
         let quest_levels: QuestLevels = world.read_model(game_address);
 
         // select random level for the selected game
-        let level: u8 = random::random(
-            seed.clone(), LEVEL_SELECTOR_SALT, quest_levels.levels.len().into(),
-        )
+        let level: u8 = random::random(seed.clone(), LEVEL_SELECTOR_SALT, quest_levels.levels.len().into())
             .try_into()
             .unwrap();
 
         // select random capacity for the quest
         let capacity: u16 = (random::random(
-            seed.clone(),
-            CAPACITY_SELECTOR_SALT,
-            (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into(),
+            seed.clone(), CAPACITY_SELECTOR_SALT, (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into(),
         )
             + MINIMUM_QUEST_CAPACITY.into())
             .try_into()
@@ -488,9 +413,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward
-        let amount: u128 = base_reward_amount
-            * QUEST_REWARD_BASE_MULTIPLIER.into()
-            * (level.into() + 1);
+        let amount: u128 = base_reward_amount * QUEST_REWARD_BASE_MULTIPLIER.into() * (level.into() + 1);
 
         let id = world.dispatcher.uuid();
         let coord = Coord { x: tile.col, y: tile.row };
@@ -516,11 +439,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         let success: bool = *random::choices(
             array![true, false].span(),
-            array![
-                quest_config.quest_discovery_prob.into(),
-                quest_config.quest_discovery_fail_prob.into(),
-            ]
-                .span(),
+            array![quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into()].span(),
             array![].span(),
             1,
             true,
@@ -532,13 +451,13 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
 #[cfg(test)]
 mod tests {
+    use achievement::events::index::{e_TrophyCreation, e_TrophyProgression};
     use core::num::traits::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
 
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use achievement::events::index::e_TrophyProgression;
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{CombatConfigImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
@@ -557,21 +476,18 @@ mod tests {
     use s1_eternum::models::{
         config::{m_WeightConfig, m_WorldConfig}, map::{m_Tile},
         quest::{
-            Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag,
-            m_QuestGameRegistry, m_QuestLevels, m_QuestRegistrations, m_QuestTile,
+            Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
+            m_QuestLevels, m_QuestRegistrations, m_QuestTile,
         },
-        resource::production::building::{m_Building, m_StructureBuildings},
-        resource::resource::{m_Resource}, structure::{m_Structure}, troop::{m_ExplorerTroops},
-        weight::{Weight},
+        resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
+        structure::{m_Structure}, troop::{m_ExplorerTroops}, weight::{Weight},
     };
     use s1_eternum::systems::combat::contracts::troop_management::{
-        ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
-        troop_management_systems,
+        ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
-        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
-        agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems,
-        troop_movement_systems, troop_movement_util_systems,
+        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
+        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
     use s1_eternum::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
@@ -583,14 +499,14 @@ mod tests {
     use s1_eternum::systems::village::contracts::village_systems;
     use s1_eternum::utils::map::biomes::{Biome};
     use s1_eternum::utils::testing::helpers::{
-        MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources,
-        tspawn_explorer, tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm,
-        tspawn_village, tspawn_village_explorer, tspawn_world,
+        MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
+        tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
+        tspawn_world,
     };
     use starknet::ContractAddress;
     use tournaments::components::models::game::{
-        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter,
-        m_SettingsDetails, m_TokenMetadata,
+        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails,
+        m_TokenMetadata,
     };
     use tournaments::components::tests::mocks::game_mock::{
         IGameTokenMockDispatcher, IGameTokenMockDispatcherTrait, IGameTokenMockInitDispatcher,
@@ -603,19 +519,15 @@ mod tests {
             resources: [
                 // world config
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(
-                    m_WeightConfig::TEST_CLASS_HASH,
-                ), // structure, realm and buildings
+                TestResource::Model(m_WeightConfig::TEST_CLASS_HASH), // structure, realm and buildings
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
-                TestResource::Model(m_Building::TEST_CLASS_HASH),
-                TestResource::Model(m_Tile::TEST_CLASS_HASH),
+                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 // other models
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 // quest models
-                TestResource::Model(m_QuestTile::TEST_CLASS_HASH),
-                TestResource::Model(m_Quest::TEST_CLASS_HASH),
+                TestResource::Model(m_QuestTile::TEST_CLASS_HASH), TestResource::Model(m_Quest::TEST_CLASS_HASH),
                 TestResource::Model(m_QuestRegistrations::TEST_CLASS_HASH),
                 TestResource::Model(m_QuestLevels::TEST_CLASS_HASH),
                 TestResource::Model(m_QuestGameRegistry::TEST_CLASS_HASH),
@@ -623,13 +535,13 @@ mod tests {
                 // game mock models
                 TestResource::Model(m_GameMetadata::TEST_CLASS_HASH),
                 TestResource::Model(m_GameCounter::TEST_CLASS_HASH),
-                TestResource::Model(m_TokenMetadata::TEST_CLASS_HASH),
-                TestResource::Model(m_Score::TEST_CLASS_HASH),
+                TestResource::Model(m_TokenMetadata::TEST_CLASS_HASH), TestResource::Model(m_Score::TEST_CLASS_HASH),
                 TestResource::Model(m_Settings::TEST_CLASS_HASH),
                 TestResource::Model(m_SettingsCounter::TEST_CLASS_HASH),
                 TestResource::Model(m_SettingsDetails::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
                 // achievements
+                TestResource::Event(e_TrophyCreation::TEST_CLASS_HASH),
                 TestResource::Event(e_TrophyProgression::TEST_CLASS_HASH),
                 // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
@@ -696,21 +608,12 @@ mod tests {
         let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
 
         // grant basic resources to the realm
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into()
-            * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
         let wheat_amount: u128 = 100000000000000000;
         let fish_amount: u128 = 50000000000000000;
-        tgrant_resources(
-            ref world,
-            realm_entity_id,
-            array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
-        );
-        tgrant_resources(
-            ref world, realm_entity_id, array![(ResourceTypes::WHEAT, wheat_amount)].span(),
-        );
-        tgrant_resources(
-            ref world, realm_entity_id, array![(ResourceTypes::FISH, fish_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::WHEAT, wheat_amount)].span());
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::FISH, fish_amount)].span());
 
         // set current tick
         let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
@@ -724,22 +627,14 @@ mod tests {
         let troop_spawn_direction = Direction::East;
         let explorer_id = troop_management_systems
             .explorer_create(
-                realm_entity_id,
-                TroopType::Crossbowman,
-                TroopTier::T2,
-                troop_amount,
-                troop_spawn_direction,
+                realm_entity_id, TroopType::Crossbowman, TroopTier::T2, troop_amount, troop_spawn_direction,
             );
 
         // add settings to our game mock
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        let troop_movement_systems = ITroopMovementSystemsDispatcher {
-            contract_address: troop_movement_system_addr,
-        };
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
 
         let mut found_quest = false;
         let mut quest_coord: Coord = Coord { x: 0, y: 0 };
@@ -765,8 +660,7 @@ mod tests {
                 let tile = *discovered_tiles.at(0);
                 // println!("Discovered tile {:?}", tile);
 
-                if tile.occupier_type > 0
-                    && tile.occupier_type != TileOccupier::ExplorerCrossbowmanT2Regular.into() {
+                if tile.occupier_type > 0 && tile.occupier_type != TileOccupier::ExplorerCrossbowmanT2Regular.into() {
                     // if we find a quest tile, we're done
                     if tile.occupier_type == TileOccupier::Quest.into() {
                         found_quest = true;
@@ -793,9 +687,7 @@ mod tests {
 
         // assert explorer is adjacent to the quest tile
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(
-            explorer.coord.is_adjacent(quest_coord), "Explorer is not adjacent to the quest tile",
-        );
+        assert!(explorer.coord.is_adjacent(quest_coord), "Explorer is not adjacent to the quest tile");
 
         // get tile at quest coord
         let tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
@@ -811,13 +703,8 @@ mod tests {
             * QUEST_REWARD_BASE_MULTIPLIER.into()
             * (quest_tile.level.into() + 1)
             * RESOURCE_PRECISION;
-        assert!(
-            quest_tile.coord == quest_coord, "Quest details coord does not match quest tile coord",
-        );
-        assert!(
-            quest_tile.id == tile.occupier_id,
-            "Quest details id does not match quest tile occupier id",
-        );
+        assert!(quest_tile.coord == quest_coord, "Quest details coord does not match quest tile coord");
+        assert!(quest_tile.id == tile.occupier_id, "Quest details id does not match quest tile occupier id");
         assert!(
             quest_tile.game_address == game_mock_addr,
             "Quest tile game address is wrong. Expected: {:?}, Got: {:?}",
@@ -840,8 +727,7 @@ mod tests {
 
         // start quest
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // // verify game was minted to quester
         let erc721_dispatcher = IERC721Dispatcher { contract_address: game_mock_addr };
@@ -855,16 +741,9 @@ mod tests {
 
         // get resource amount prior to claiming quest reward
         let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-        let mut resource_weight_grams: u128 = ResourceWeightImpl::grams(
-            ref world, quest_tile.resource_type,
-        );
+        let mut resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_tile.resource_type);
         let resource = SingleResourceStoreImpl::retrieve(
-            ref world,
-            explorer_id,
-            quest_tile.resource_type,
-            ref explorer_weight,
-            resource_weight_grams,
-            false,
+            ref world, explorer_id, quest_tile.resource_type, ref explorer_weight, resource_weight_grams, false,
         );
         let resource_balance_before_claim = resource.balance;
 
@@ -878,22 +757,14 @@ mod tests {
 
         // get updated resource amount
         let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, quest.explorer_id);
-        let resource_weight_grams: u128 = ResourceWeightImpl::grams(
-            ref world, quest_tile.resource_type,
-        );
+        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_tile.resource_type);
         let mut resource = SingleResourceStoreImpl::retrieve(
-            ref world,
-            quest.explorer_id,
-            quest_tile.resource_type,
-            ref explorer_weight,
-            resource_weight_grams,
-            false,
+            ref world, quest.explorer_id, quest_tile.resource_type, ref explorer_weight, resource_weight_grams, false,
         );
 
         // assert explorer received reward
         assert!(
-            resource.balance == quest_tile.amount + resource_balance_before_claim,
-            "Explorer did not receive reward",
+            resource.balance == quest_tile.amount + resource_balance_before_claim, "Explorer did not receive reward",
         );
     }
 
@@ -923,10 +794,7 @@ mod tests {
 
         // Verify game was added
         let updated_quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            updated_quest_game_registry.games.len() == game_count + 1,
-            "Owner should be able to add game",
-        );
+        assert!(updated_quest_game_registry.games.len() == game_count + 1, "Owner should be able to add game");
     }
 
     #[test]
@@ -981,9 +849,7 @@ mod tests {
 
         // Check registry count incremented
         let updated_quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            updated_quest_game_registry.games.len() == game_count + 1, "Registry count should be 1",
-        );
+        assert!(updated_quest_game_registry.games.len() == game_count + 1, "Registry count should be 1");
 
         // Add second game
         let game_address2 = starknet::contract_address_const::<'game_mock_2'>();
@@ -994,9 +860,7 @@ mod tests {
 
         // Check registry count incremented again
         let updated_quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            updated_quest_game_registry.games.len() == game_count + 2, "Registry count should be 2",
-        );
+        assert!(updated_quest_game_registry.games.len() == game_count + 2, "Registry count should be 2");
     }
 
     #[test]
@@ -1095,9 +959,7 @@ mod tests {
         init_config(ref world);
 
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at (80, 80)
@@ -1125,10 +987,7 @@ mod tests {
 
         // Verify explorer is NOT adjacent to quest
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(
-            !explorer.coord.is_adjacent(quest_coord),
-            "Explorer should not be adjacent to quest tile",
-        );
+        assert!(!explorer.coord.is_adjacent(quest_coord), "Explorer should not be adjacent to quest tile");
 
         // Attempt to start quest - should fail because explorer is not adjacent
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
@@ -1145,9 +1004,7 @@ mod tests {
         init_config(ref world);
 
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest at adjacent positions
@@ -1173,9 +1030,7 @@ mod tests {
 
         // Verify explorer is adjacent to quest
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(
-            explorer.coord.is_adjacent(quest_coord), "Explorer should be adjacent to quest tile",
-        );
+        assert!(explorer.coord.is_adjacent(quest_coord), "Explorer should be adjacent to quest tile");
 
         // Set the contract address to a DIFFERENT account (not the realm owner)
         let different_owner = starknet::contract_address_const::<'different_owner'>();
@@ -1196,9 +1051,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
@@ -1243,19 +1096,13 @@ mod tests {
 
         // Verify explorers are adjacent to quest
         let explorer1: ExplorerTroops = world.read_model(explorer1_id);
-        assert!(
-            explorer1.coord.is_adjacent(quest_coord), "Explorer1 is not adjacent to quest tile",
-        );
+        assert!(explorer1.coord.is_adjacent(quest_coord), "Explorer1 is not adjacent to quest tile");
 
         let explorer2: ExplorerTroops = world.read_model(explorer2_id);
-        assert!(
-            explorer2.coord.is_adjacent(quest_coord), "Explorer2 is not adjacent to quest tile",
-        );
+        assert!(explorer2.coord.is_adjacent(quest_coord), "Explorer2 is not adjacent to quest tile");
 
         let explorer3: ExplorerTroops = world.read_model(explorer3_id);
-        assert!(
-            explorer3.coord.is_adjacent(quest_coord), "Explorer3 is not adjacent to quest tile",
-        );
+        assert!(explorer3.coord.is_adjacent(quest_coord), "Explorer3 is not adjacent to quest tile");
 
         // Get quest system
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
@@ -1278,9 +1125,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
     fn start_quest_twice_from_realm_different_explorers() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1288,9 +1133,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
@@ -1320,14 +1163,10 @@ mod tests {
 
         // Verify both explorers are adjacent to quest
         let explorer1: ExplorerTroops = world.read_model(explorer1_id);
-        assert!(
-            explorer1.coord.is_adjacent(quest_coord), "Explorer1 is not adjacent to quest tile",
-        );
+        assert!(explorer1.coord.is_adjacent(quest_coord), "Explorer1 is not adjacent to quest tile");
 
         let explorer2: ExplorerTroops = world.read_model(explorer2_id);
-        assert!(
-            explorer2.coord.is_adjacent(quest_coord), "Explorer2 is not adjacent to quest tile",
-        );
+        assert!(explorer2.coord.is_adjacent(quest_coord), "Explorer2 is not adjacent to quest tile");
 
         // Get quest system
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
@@ -1347,9 +1186,7 @@ mod tests {
 
     // tests trying to start a quest with the same explorer twice
     #[test]
-    #[should_panic(
-        expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
     fn start_quest_twice_same_explorer() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1357,9 +1194,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
@@ -1413,9 +1248,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm and explorer
@@ -1431,8 +1264,7 @@ mod tests {
         // Get quest system and attempt to start quest with non-existent quest details id
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        quest_system
-            .start_quest(999999, explorer_id, 'player1', realm_owner); // Non-existent quest id
+        quest_system.start_quest(999999, explorer_id, 'player1', realm_owner); // Non-existent quest id
     }
 
     #[test]
@@ -1442,9 +1274,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1466,8 +1296,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Verify token was minted to correct address
         let erc721_dispatcher = IERC721Dispatcher { contract_address: game_mock_addr };
@@ -1493,9 +1322,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create custom quest game with time limit
@@ -1529,8 +1356,7 @@ mod tests {
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         // Start quest
-        let game_token_id = quest_systems
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_systems.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Get the game token metadata to verify expiration
         let token_metadata: TokenMetadata = world.read_model(game_token_id);
@@ -1543,9 +1369,7 @@ mod tests {
                 end,
             ),
             Option::None => assert!(
-                false,
-                "Game token expiration not set correctly. Expected: {}, Actual: None",
-                expected_expiration,
+                false, "Game token expiration not set correctly. Expected: {}, Actual: None", expected_expiration,
             ),
         }
     }
@@ -1557,9 +1381,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1599,9 +1421,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1623,8 +1443,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Verify returned quest ID matches expected value
         assert!(game_token_id > 0, "Game token ID should be non-zero");
@@ -1644,8 +1463,7 @@ mod tests {
     #[test]
     #[should_panic(
         expected: (
-            "Quest for game token id 1 is not completed. Target score: 200, Current score: 199",
-            'ENTRYPOINT_FAILED',
+            "Quest for game token id 1 is not completed. Target score: 200, Current score: 199", 'ENTRYPOINT_FAILED',
         ),
     )]
     fn claim_reward_score_too_low() {
@@ -1654,9 +1472,7 @@ mod tests {
         init_config(ref world);
 
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         let realm_coord = Coord { x: 80, y: 80 };
@@ -1678,14 +1494,11 @@ mod tests {
         let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
 
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(
-            explorer.coord.is_adjacent(quest_coord), "Explorer is not adjacent to the quest tile",
-        );
+        assert!(explorer.coord.is_adjacent(quest_coord), "Explorer is not adjacent to the quest tile");
 
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         let quest_levels: QuestLevels = world.read_model(*quest_tile.game_address);
         let one_below_target_score = *quest_levels.levels.at(level.into()).target_score - 1;
@@ -1704,9 +1517,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1728,8 +1539,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Complete quest with sufficient score
         let quest_levels: QuestLevels = world.read_model(*quest_tile.game_address);
@@ -1744,10 +1554,7 @@ mod tests {
 
         // Verify explorer is no longer adjacent
         let updated_explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(
-            !updated_explorer.coord.is_adjacent(quest_coord),
-            "Explorer should not be adjacent to quest tile",
-        );
+        assert!(!updated_explorer.coord.is_adjacent(quest_coord), "Explorer should not be adjacent to quest tile");
 
         // Attempt to claim reward - should fail because explorer is not adjacent
         quest_system.claim_reward(game_token_id, game_mock_addr);
@@ -1756,8 +1563,7 @@ mod tests {
     #[test]
     #[should_panic(
         expected: (
-            "Quest for game token id 1 is not completed. Target score: 200, Current score: 100",
-            'ENTRYPOINT_FAILED',
+            "Quest for game token id 1 is not completed. Target score: 200, Current score: 100", 'ENTRYPOINT_FAILED',
         ),
     )]
     fn claim_reward_score_verification() {
@@ -1766,9 +1572,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1790,8 +1594,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // End game with INSUFFICIENT score (only 100 points, but 200 required)
         let game_mock_dispatcher = IGameTokenMockDispatcher { contract_address: game_mock_addr };
@@ -1808,9 +1611,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1832,8 +1633,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Verify quest is not completed initially
         let quest = quest_system.get_quest(game_token_id, game_mock_addr);
@@ -1850,9 +1650,7 @@ mod tests {
 
         // Verify quest is marked as completed
         let updated_quest: Quest = quest_system.get_quest(game_token_id, game_mock_addr);
-        assert!(
-            updated_quest.completed, "Quest should be marked as completed after claiming reward",
-        );
+        assert!(updated_quest.completed, "Quest should be marked as completed after claiming reward");
     }
 
     #[test]
@@ -1862,9 +1660,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -1905,8 +1701,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // --- Test get_quest_tile ---
         let retrieved_quest_tile = quest_system.get_quest_tile(*quest_tile.id);
@@ -1933,9 +1728,7 @@ mod tests {
         // --- Test get_quest_details ---
         let retrieved_details = quest_system.get_quest_details(game_token_id, game_mock_addr);
         let expected_resource_name = s1_eternum::constants::resource_type_name(resource_type);
-        assert!(
-            retrieved_details.quest_tile_id == quest_tile_id, "Details: Quest tile ID mismatch",
-        );
+        assert!(retrieved_details.quest_tile_id == quest_tile_id, "Details: Quest tile ID mismatch");
         assert!(retrieved_details.game_address == game_mock_addr, "Details: Game address mismatch");
         assert!(retrieved_details.coord == quest_coord, "Details: Coordinate mismatch");
         assert!(
@@ -1950,9 +1743,7 @@ mod tests {
             expected_resource_name,
             retrieved_details.reward_name,
         );
-        assert!(
-            retrieved_details.reward_amount == expected_reward, "Details: Reward amount mismatch",
-        );
+        assert!(retrieved_details.reward_amount == expected_reward, "Details: Reward amount mismatch");
 
         // --- Test get_target_score ---
         let retrieved_target_score = quest_system.get_target_score(game_token_id, game_mock_addr);
@@ -1965,15 +1756,12 @@ mod tests {
 
         // Complete quest and check that completed status is updated
         let game_mock_dispatcher = IGameTokenMockDispatcher { contract_address: game_mock_addr };
-        game_mock_dispatcher
-            .end_game(game_token_id, expected_target_score); // Use the retrieved target score
+        game_mock_dispatcher.end_game(game_token_id, expected_target_score); // Use the retrieved target score
         quest_system.claim_reward(game_token_id, game_mock_addr);
 
         // --- Test get_quest (after completion) ---
         let updated_quest = quest_system.get_quest(game_token_id, game_mock_addr);
-        assert!(
-            updated_quest.completed, "Quest should be marked as completed after claiming reward",
-        );
+        assert!(updated_quest.completed, "Quest should be marked as completed after claiming reward");
     }
 
     #[test]
@@ -2026,9 +1814,7 @@ mod tests {
 
         // Verify game was removed
         let registry_after: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            registry_after.games.len() == game_count_before - 1, "Game count should decrease by 1",
-        );
+        assert!(registry_after.games.len() == game_count_before - 1, "Game count should decrease by 1");
 
         // Verify the specific game is no longer in the registry
         let mut found_after = false;
@@ -2098,9 +1884,7 @@ mod tests {
         // Write a QuestLevels model with empty levels to simulate a game not in registry
         // Note: This seems backwards, but the actual implementation checks levels.len() == 0
         let empty_levels = array![].span();
-        let quest_levels = QuestLevels {
-            game_address: nonexistent_game_address, levels: empty_levels,
-        };
+        let quest_levels = QuestLevels { game_address: nonexistent_game_address, levels: empty_levels };
         world.write_model_test(@quest_levels);
 
         // Attempt to remove this "non-existent" game - should fail with "Game is not in registry"
@@ -2154,9 +1938,7 @@ mod tests {
 
         // Verify game count decreased
         let registry_after: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            registry_after.games.len() == game_count_before - 1, "Game count should decrease by 1",
-        );
+        assert!(registry_after.games.len() == game_count_before - 1, "Game count should decrease by 1");
 
         // Verify game2 is removed but game1 and game3 remain
         let mut found_game1 = false;
@@ -2228,10 +2010,7 @@ mod tests {
 
         // Verify game count and contents
         let registry_after_first: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            registry_after_first.games.len() == game_count_initial - 1,
-            "Game count should decrease by 1",
-        );
+        assert!(registry_after_first.games.len() == game_count_initial - 1, "Game count should decrease by 1");
 
         // Verify first element is no longer game1
         assert!(*registry_after_first.games.at(0) != game_address1, "First game should be removed");
@@ -2241,9 +2020,7 @@ mod tests {
 
         // Verify final state
         let registry_final: QuestGameRegistry = world.read_model(VERSION);
-        assert!(
-            registry_final.games.len() == game_count_initial - 2, "Game count should decrease by 2",
-        );
+        assert!(registry_final.games.len() == game_count_initial - 2, "Game count should decrease by 2");
 
         assert!(registry_final.games.len() == 2, "Only two games should remain");
         assert!(*registry_final.games.at(1) == game_address2, "Game2 should be the second game");
@@ -2410,9 +2187,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest tile
@@ -2457,9 +2232,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create realm, explorer, and quest
@@ -2481,8 +2254,7 @@ mod tests {
         // Start quest
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let game_token_id = quest_system
-            .start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
+        let game_token_id = quest_system.start_quest(*quest_tile.id, explorer_id, 'player1', realm_owner);
 
         // Verify quest is not completed initially
         let quest: Quest = quest_system.get_quest(game_token_id, game_mock_addr);
@@ -2540,10 +2312,7 @@ mod tests {
         // Assertions
         // 1. Tile is now occupied by a Quest
         let updated_tile: Tile = world.read_model((coord.x, coord.y));
-        assert!(
-            updated_tile.occupier_type == TileOccupier::Quest.into(),
-            "Tile should be occupied by Quest",
-        );
+        assert!(updated_tile.occupier_type == TileOccupier::Quest.into(), "Tile should be occupied by Quest");
         assert!(updated_tile.occupier_id != 0, "Occupier ID should be set");
         assert!(
             updated_tile.occupier_is_structure == true, "Occupier should be structure",
@@ -2564,9 +2333,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected: ("caller must be the troop movement util systems", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("caller must be the troop movement util systems", 'ENTRYPOINT_FAILED'))]
     fn create_quest_unauthorized_caller() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
@@ -2686,10 +2453,7 @@ mod tests {
         // Verify updated Tile model
         let updated_tile: Tile = world.read_model((coord.x, coord.y));
         assert!(updated_tile.biome != Biome::None.into(), "Biome should have been explored");
-        assert!(
-            updated_tile.occupier_type == TileOccupier::Quest.into(),
-            "Tile should be occupied by Quest",
-        );
+        assert!(updated_tile.occupier_type == TileOccupier::Quest.into(), "Tile should be occupied by Quest");
         assert!(
             updated_tile.occupier_is_structure == true, "Occupier should be structure",
         ); // Internal iQuestDiscoveryImpl sets this
@@ -2701,14 +2465,8 @@ mod tests {
         assert!(quest_tile.game_address.is_non_zero(), "QuestTile game address should be set");
         assert!(quest_tile.resource_type > 0, "QuestTile resource type should be set");
         assert!(quest_tile.amount > 0, "QuestTile amount should be set");
-        assert!(
-            quest_tile.capacity >= MINIMUM_QUEST_CAPACITY,
-            "QuestTile capacity should be above minimum",
-        );
-        assert!(
-            quest_tile.capacity <= MAXIMUM_QUEST_CAPACITY,
-            "QuestTile capacity should be below maximum",
-        );
+        assert!(quest_tile.capacity >= MINIMUM_QUEST_CAPACITY, "QuestTile capacity should be above minimum");
+        assert!(quest_tile.capacity <= MAXIMUM_QUEST_CAPACITY, "QuestTile capacity should be below maximum");
         assert!(quest_tile.participant_count == 0, "QuestTile participant count should be set");
     }
 
@@ -2719,9 +2477,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest at specific location
@@ -2754,9 +2510,7 @@ mod tests {
         // Create explorer for the village
         let village_explorer_coord = Coord { x: 79, y: 80 }; // Adjacent to quest
         starknet::testing::set_contract_address(village_owner);
-        let village_explorer_id = tspawn_village_explorer(
-            ref world, village_id, village_explorer_coord,
-        );
+        let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
 
         // Get quest system
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
@@ -2770,27 +2524,18 @@ mod tests {
 
         // Verify participant count incremented
         let quest_tile_after_realm: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_realm.participant_count == 1,
-            "Participant count should be 1 after realm",
-        );
+        assert!(quest_tile_after_realm.participant_count == 1, "Participant count should be 1 after realm");
 
         // Start quest with village explorer (should succeed)
         starknet::testing::set_contract_address(village_owner);
         let village_game_token_id = quest_system
             .start_quest(*quest_tile.id, village_explorer_id, 'village_player', village_owner);
         assert!(village_game_token_id > 0, "Village failed to start quest after realm");
-        assert!(
-            village_game_token_id != realm_game_token_id,
-            "Village and realm tokens should be different",
-        );
+        assert!(village_game_token_id != realm_game_token_id, "Village and realm tokens should be different");
 
         // Verify participant count incremented again
         let quest_tile_after_village: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_village.participant_count == 2,
-            "Participant count should be 2 after village",
-        );
+        assert!(quest_tile_after_village.participant_count == 2, "Participant count should be 2 after village");
     }
 
     #[test]
@@ -2800,9 +2545,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest
@@ -2827,9 +2570,7 @@ mod tests {
         let realm_explorer_id = tspawn_explorer(ref world, realm_id, realm_explorer_coord);
         let village_explorer_coord = Coord { x: 79, y: 80 };
         starknet::testing::set_contract_address(village_owner);
-        let village_explorer_id = tspawn_village_explorer(
-            ref world, village_id, village_explorer_coord,
-        );
+        let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
 
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
@@ -2841,26 +2582,17 @@ mod tests {
         assert!(village_game_token_id > 0, "Village failed to start quest first");
 
         let quest_tile_after_village: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_village.participant_count == 1,
-            "Participant count should be 1 after village",
-        );
+        assert!(quest_tile_after_village.participant_count == 1, "Participant count should be 1 after village");
 
         // Start quest with realm explorer (should succeed)
         starknet::testing::set_contract_address(realm_owner);
         let realm_game_token_id = quest_system
             .start_quest(*quest_tile.id, realm_explorer_id, 'realm_player', realm_owner);
         assert!(realm_game_token_id > 0, "Realm failed to start quest after village");
-        assert!(
-            realm_game_token_id != village_game_token_id,
-            "Realm and village tokens should be different",
-        );
+        assert!(realm_game_token_id != village_game_token_id, "Realm and village tokens should be different");
 
         let quest_tile_after_realm: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_realm.participant_count == 2,
-            "Participant count should be 2 after realm",
-        );
+        assert!(quest_tile_after_realm.participant_count == 2, "Participant count should be 2 after realm");
     }
 
     #[test]
@@ -2870,9 +2602,7 @@ mod tests {
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest
@@ -2901,16 +2631,12 @@ mod tests {
         // Create explorer for village 1
         let village1_explorer_coord = Coord { x: 80, y: 79 };
         starknet::testing::set_contract_address(village1_owner);
-        let village1_explorer_id = tspawn_village_explorer(
-            ref world, village1_id, village1_explorer_coord,
-        );
+        let village1_explorer_id = tspawn_village_explorer(ref world, village1_id, village1_explorer_coord);
 
         // Create explorer for village 2
         let village2_explorer_coord = Coord { x: 79, y: 80 };
         starknet::testing::set_contract_address(village2_owner);
-        let village2_explorer_id = tspawn_village_explorer(
-            ref world, village2_id, village2_explorer_coord,
-        );
+        let village2_explorer_id = tspawn_village_explorer(ref world, village2_id, village2_explorer_coord);
 
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
@@ -2922,41 +2648,28 @@ mod tests {
         assert!(village1_game_token_id > 0, "Village 1 failed to start quest");
 
         let quest_tile_after_v1: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_v1.participant_count == 1,
-            "Participant count should be 1 after village 1",
-        );
+        assert!(quest_tile_after_v1.participant_count == 1, "Participant count should be 1 after village 1");
 
         // Start quest with village 2 explorer (should succeed)
         starknet::testing::set_contract_address(village2_owner);
         let village2_game_token_id = quest_system
             .start_quest(*quest_tile.id, village2_explorer_id, 'village_player2', village2_owner);
         assert!(village2_game_token_id > 0, "Village 2 failed to start quest after village 1");
-        assert!(
-            village2_game_token_id != village1_game_token_id,
-            "Village 1 and 2 tokens should be different",
-        );
+        assert!(village2_game_token_id != village1_game_token_id, "Village 1 and 2 tokens should be different");
 
         let quest_tile_after_v2: QuestTile = world.read_model(*quest_tile.id);
-        assert!(
-            quest_tile_after_v2.participant_count == 2,
-            "Participant count should be 2 after village 2",
-        );
+        assert!(quest_tile_after_v2.participant_count == 2, "Participant count should be 2 after village 2");
     }
 
     #[test]
-    #[should_panic(
-        expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
     fn test_start_quest_village_twice_different_explorers() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
         init_config(ref world);
 
         // Initialize game mock
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher {
-            contract_address: game_mock_addr,
-        };
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
         // Create quest

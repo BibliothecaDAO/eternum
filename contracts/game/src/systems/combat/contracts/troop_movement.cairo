@@ -18,24 +18,22 @@ pub mod troop_movement_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::{
         config::{
-            CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig,
-            TroopStaminaConfig, WorldConfigUtilImpl,
+            CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
         },
         map::{Tile, TileImpl, TileOccupier}, position::{CoordTrait, Direction},
-        resource::resource::{
-            ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-        },
-        structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
-        troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
+        resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
+        structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl}, troop::{ExplorerTroops, GuardImpl},
+        weight::{Weight},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
     };
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::random::{VRFImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
 
 
@@ -67,10 +65,7 @@ pub mod troop_movement_systems {
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
         fn explorer_move(
-            ref self: ContractState,
-            explorer_id: ID,
-            mut directions: Span<Direction>,
-            explore: bool,
+            ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool,
         ) -> Span<Tile> {
             let mut tiles_to_return: Array<Tile> = array![];
 
@@ -99,12 +94,8 @@ pub mod troop_movement_systems {
             let caller = starknet::get_caller_address();
 
             let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
@@ -121,10 +112,7 @@ pub mod troop_movement_systems {
                 let mut occupy_destination: bool = true;
                 if explore {
                     // ensure only one tile can be explored
-                    assert!(
-                        directions.len().is_zero(),
-                        "explorer can only move one direction when exploring",
-                    );
+                    assert!(directions.len().is_zero(), "explorer can only move one direction when exploring");
 
                     // ensure target tile is not explored
                     assert!(!tile.discovered(), "tile is already explored");
@@ -133,16 +121,12 @@ pub mod troop_movement_systems {
                     IMapImpl::explore(ref world, ref tile, biome);
 
                     // perform lottery to discover mine
-                    let map_config: MapConfig = WorldConfigUtilImpl::get_member(
-                        world, selector!("map_config"),
-                    );
+                    let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
                     let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                         world, selector!("vrf_provider_address"),
                     );
                     let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
-                    let (troop_movement_util_systems_address, _) = world
-                        .dns(@"troop_movement_util_systems")
-                        .unwrap();
+                    let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
                     let troop_movement_util_systems = ITroopMovementUtilSystemsDispatcher {
                         contract_address: troop_movement_util_systems_address,
                     };
@@ -168,25 +152,15 @@ pub mod troop_movement_systems {
                     }
 
                     // grant resource reward for exploration
-                    let (_explore_reward_type, _explore_reward_amount) =
-                        iExplorerImpl::exploration_reward(
+                    let (_explore_reward_type, _explore_reward_amount) = iExplorerImpl::exploration_reward(
                         ref world, map_config, vrf_seed,
                     );
                     explore_reward_type = _explore_reward_type;
                     explore_reward_amount = _explore_reward_amount;
-                    let mut explorer_weight: Weight = WeightStoreImpl::retrieve(
-                        ref world, explorer_id,
-                    );
-                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                        ref world, explore_reward_type,
-                    );
+                    let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
                     let mut resource = SingleResourceStoreImpl::retrieve(
-                        ref world,
-                        explorer_id,
-                        explore_reward_type,
-                        ref explorer_weight,
-                        resource_weight_grams,
-                        false,
+                        ref world, explorer_id, explore_reward_type, ref explorer_weight, resource_weight_grams, false,
                     );
                     resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
                     resource.store(ref world);
@@ -224,9 +198,7 @@ pub mod troop_movement_systems {
             };
 
             // burn stamina cost
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iExplorerImpl::burn_stamina_cost(
                 ref world, ref explorer, troop_stamina_config, explore, biomes, current_tick,
             );
@@ -288,10 +260,7 @@ pub mod troop_movement_util_systems {
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use s1_eternum::models::{
-        config::{
-            CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl,
-            WorldConfigUtilImpl,
-        },
+        config::{CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
     };
     use s1_eternum::systems::quest::constants::VERSION;
     use s1_eternum::systems::quest::contracts::{
@@ -326,9 +295,7 @@ pub mod troop_movement_util_systems {
                 "caller must be the troop movement systems",
             );
 
-            let (hyperstructure_discovery_systems, _) = world
-                .dns(@"hyperstructure_discovery_systems")
-                .unwrap();
+            let (hyperstructure_discovery_systems, _) = world.dns(@"hyperstructure_discovery_systems").unwrap();
             let hyperstructure_discovery_systems = ITroopMovementUtilSystemsDispatcher {
                 contract_address: hyperstructure_discovery_systems,
             };
@@ -364,9 +331,7 @@ pub mod troop_movement_util_systems {
                 if found_mine {
                     return (true, ExploreFind::Mine);
                 } else {
-                    let (agent_discovery_systems, _) = world
-                        .dns(@"agent_discovery_systems")
-                        .unwrap();
+                    let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
                     let agent_discovery_systems = ITroopMovementUtilSystemsDispatcher {
                         contract_address: agent_discovery_systems,
                     };
@@ -391,16 +356,10 @@ pub mod troop_movement_util_systems {
                         let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
                         let quest_game_count = quest_game_registry.games.len();
                         if quest_game_count > 0 && feature_toggle.enabled {
-                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
-                                quest_config, vrf_seed,
-                            );
+                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
                             if quest_lottery_won {
-                                let (quest_system_address, _) = world
-                                    .dns(@"quest_systems")
-                                    .unwrap();
-                                let quest_system = IQuestSystemsDispatcher {
-                                    contract_address: quest_system_address,
-                                };
+                                let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
+                                let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_address };
                                 quest_system.create_quest(tile, vrf_seed);
                                 return (true, ExploreFind::Quest);
                             }
@@ -420,9 +379,7 @@ pub mod hyperstructure_discovery_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
-    };
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
@@ -445,9 +402,7 @@ pub mod hyperstructure_discovery_systems {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure caller is the troop utils movement systems
-            let (troop_movement_util_systems, _) = world
-                .dns(@"troop_movement_util_systems")
-                .unwrap();
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
             assert!(
                 starknet::get_caller_address() == troop_movement_util_systems,
                 "caller must be the troop_movement_util_systems",
@@ -458,13 +413,7 @@ pub mod hyperstructure_discovery_systems {
             );
             if hyps_lottery_won {
                 iHyperstructureDiscoveryImpl::create(
-                    ref world,
-                    tile.into(),
-                    caller,
-                    map_config,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    vrf_seed,
+                    ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                 );
                 return (true, ExploreFind::Hyperstructure);
             }
@@ -480,9 +429,7 @@ pub mod mine_discovery_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
-    };
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
@@ -505,9 +452,7 @@ pub mod mine_discovery_systems {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure caller is the troop utils movement systems
-            let (troop_movement_util_systems, _) = world
-                .dns(@"troop_movement_util_systems")
-                .unwrap();
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
             assert!(
                 starknet::get_caller_address() == troop_movement_util_systems,
                 "caller must be the troop_movement_util_systems",
@@ -516,12 +461,7 @@ pub mod mine_discovery_systems {
             let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
             if mine_lottery_won {
                 iMineDiscoveryImpl::create(
-                    ref world,
-                    tile.into(),
-                    map_config,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    vrf_seed,
+                    ref world, tile.into(), map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                 );
                 return (true, ExploreFind::Mine);
             }
@@ -538,9 +478,7 @@ pub mod agent_discovery_systems {
     use s1_eternum::models::agent::AgentCountImpl;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
-    };
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
@@ -563,9 +501,7 @@ pub mod agent_discovery_systems {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure caller is the troop utils movement systems
-            let (troop_movement_util_systems, _) = world
-                .dns(@"troop_movement_util_systems")
-                .unwrap();
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
             assert!(
                 starknet::get_caller_address() == troop_movement_util_systems,
                 "caller must be the troop_movement_util_systems",
@@ -578,12 +514,7 @@ pub mod agent_discovery_systems {
             let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
             if agent_lottery_won {
                 iAgentDiscoveryImpl::create(
-                    ref world,
-                    ref tile,
-                    vrf_seed,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    current_tick,
+                    ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
                 );
                 return (true, ExploreFind::Agent);
             }

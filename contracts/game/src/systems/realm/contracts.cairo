@@ -50,8 +50,8 @@ pub mod realm_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{
-        RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig,
-        SettlementConfigImpl, WorldConfigUtilImpl,
+        RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl};
@@ -102,9 +102,7 @@ pub mod realm_systems {
                 world, selector!("season_addresses_config"),
             );
 
-            iRealmImpl::collect_season_pass(
-                ref world, season_addresses_config.season_pass_address, realm_id,
-            );
+            iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
 
             // retrieve realm metadata
             let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
@@ -114,9 +112,7 @@ pub mod realm_systems {
 
             // update realm count
             let realm_count_selector: felt252 = selector!("realm_count_config");
-            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(
-                world, realm_count_selector,
-            );
+            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
             realm_count.count += 1;
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
 
@@ -124,19 +120,13 @@ pub mod realm_systems {
             let settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("settlement_config"),
             );
-            let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(
-                realm_count.count.into(),
-            );
+            let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(realm_count.count.into());
             let coord: Coord = settlement_config
-                .generate_coord(
-                    settlement_max_layer, settlement.side, settlement.layer, settlement.point,
-                );
+                .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point);
 
             // create realm
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
-            let structure_id = IRealmInternalSystemsDispatcher {
-                contract_address: realm_internal_systems_address,
-            }
+            let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                 .create_internal(owner, realm_id, resources, order, wonder, coord);
 
             // collect lords attached to season pass and bridge into the realm
@@ -178,9 +168,7 @@ pub mod realm_systems {
                 );
 
             // emit achievement progression
-            AchievementTrait::progress(
-                world, owner.into(), Tasks::SETTLEMENT, 1, starknet::get_block_timestamp(),
-            );
+            AchievementTrait::progress(world, owner.into(), Tasks::SETTLEMENT, 1, starknet::get_block_timestamp());
 
             structure_id.into()
         }
@@ -211,14 +199,10 @@ pub mod realm_internal_systems {
             // ensure caller is the realm systems
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
-            assert!(
-                starknet::get_caller_address() == realm_systems, "caller must be the realm_systems",
-            );
+            assert!(starknet::get_caller_address() == realm_systems, "caller must be the realm_systems");
 
             // create realm
-            let structure_id = iRealmImpl::create_realm(
-                ref world, owner, realm_id, resources, order, 0, wonder, coord,
-            );
+            let structure_id = iRealmImpl::create_realm(ref world, owner, realm_id, resources, order, 0, wonder, coord);
             structure_id.into()
         }
     }

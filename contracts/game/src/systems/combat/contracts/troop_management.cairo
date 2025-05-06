@@ -25,9 +25,7 @@ pub trait ITroopManagementSystems<TContractState> {
         amount: u128,
         spawn_direction: Direction,
     ) -> ID;
-    fn explorer_add(
-        ref self: TContractState, to_explorer_id: ID, amount: u128, home_direction: Direction,
-    );
+    fn explorer_add(ref self: TContractState, to_explorer_id: ID, amount: u128, home_direction: Direction);
     fn explorer_delete(ref self: TContractState, explorer_id: ID);
 
     // troop swap
@@ -69,8 +67,8 @@ pub mod troop_management_systems {
     use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::{
         config::{
-            CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig,
-            TroopStaminaConfig, WorldConfigUtilImpl,
+            CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
         },
         map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
         resource::{
@@ -84,15 +82,10 @@ pub mod troop_management_systems {
             StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
             StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
         },
-        troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType,
-            Troops,
-        },
+        troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::{
-        mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
 
     use super::ITroopManagementSystems;
 
@@ -116,37 +109,24 @@ pub mod troop_management_systems {
             let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
-            if caller_address != realms_systems_address
-                && caller_address != village_systems_address {
-                StructureOwnerStoreImpl::retrieve(ref world, for_structure_id)
-                    .assert_caller_owner();
+            if caller_address != realms_systems_address && caller_address != village_systems_address {
+                StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
             }
 
             // deduct resources used to create guard
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure provided category and tier are correct
-            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
-                ref world, for_structure_id,
-            );
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
             if troops.count.is_non_zero() {
-                assert!(
-                    troops.category == category && troops.tier == tier,
-                    "incorrect category or tier",
-                );
+                assert!(troops.category == category && troops.tier == tier, "incorrect category or tier");
             }
 
-            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, for_structure_id,
-            );
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             let tick = TickImpl::get_tick_config(ref world);
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iGuardImpl::add(
                 ref world,
                 for_structure_id,
@@ -180,16 +160,12 @@ pub mod troop_management_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // delete guard
-            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
-                ref world, for_structure_id,
-            );
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
 
             // Only proceed if the slot actually has troops to delete
             if troops.count.is_non_zero() {
-                let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, for_structure_id,
-                );
+                let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
                 iGuardImpl::delete(
                     ref world,
                     for_structure_id,
@@ -224,18 +200,14 @@ pub mod troop_management_systems {
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure structure has not reached itslimit of troops
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, for_structure_id,
-            );
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             assert!(
                 structure.troop_explorer_count < structure.troop_max_explorer_count.into(),
                 "reached limit of troops for your structure",
             );
 
             // ensure structure has not reached hard limit of explorers for all structures
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 structure.troop_explorer_count < troop_limit_config.explorer_max_party_count.into(),
                 "reached limit of troops per structure",
@@ -245,9 +217,7 @@ pub mod troop_management_systems {
             let mut explorer_id: ID = world.dispatcher.uuid();
 
             // add explorer count to structure
-            let mut explorers: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
-                ref world, for_structure_id,
-            )
+            let mut explorers: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(ref world, for_structure_id)
                 .into();
             explorers.append(explorer_id);
             StructureTroopExplorerStoreImpl::store(explorers.span(), ref world, for_structure_id);
@@ -260,12 +230,8 @@ pub mod troop_management_systems {
             let mut tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             iExplorerImpl::create(
@@ -283,13 +249,9 @@ pub mod troop_management_systems {
             explorer_id
         }
 
-        fn explorer_add(
-            ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction,
-        ) {
+        fn explorer_add(ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
-            assert!(
-                amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision",
-            );
+            assert!(amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
@@ -300,18 +262,14 @@ pub mod troop_management_systems {
             StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
             // ensure explorer is adjacent to home structure
-            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer.owner,
-            );
+            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             assert!(
                 explorer_owner_structure.coord() == explorer.coord.neighbor(home_direction),
                 "explorer not adjacent to home structure",
             );
 
             // deduct resources used to create explorer
-            iTroopImpl::make_payment(
-                ref world, explorer.owner, amount, explorer.troops.category, explorer.troops.tier,
-            );
+            iTroopImpl::make_payment(ref world, explorer.owner, amount, explorer.troops.category, explorer.troops.tier);
 
             // add troops to explorer
             explorer.troops.count += amount;
@@ -321,12 +279,9 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, to_explorer_id, amount, true);
 
             // ensure explorer count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
-                    * RESOURCE_PRECISION,
+                explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per army",
             );
         }
@@ -346,8 +301,7 @@ pub mod troop_management_systems {
             );
 
             // delete explorer
-            let mut explorer_owner_structure_explorers_list: Array<ID> =
-                StructureTroopExplorerStoreImpl::retrieve(
+            let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
                 ref world, explorer.owner,
             )
                 .into();
@@ -369,9 +323,7 @@ pub mod troop_management_systems {
             count: u128,
         ) {
             assert!(count.is_non_zero(), "count must be greater than 0");
-            assert!(
-                count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision",
-            );
+            assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
@@ -383,12 +335,8 @@ pub mod troop_management_systems {
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
 
             // ensure caller owns both explorers
-            let from_structure_owner = StructureOwnerStoreImpl::retrieve(
-                ref world, from_explorer.owner,
-            );
-            let to_structure_owner = StructureOwnerStoreImpl::retrieve(
-                ref world, to_explorer.owner,
-            );
+            let from_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            let to_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, to_explorer.owner);
             from_structure_owner.assert_caller_owner();
             to_structure_owner.assert_caller_owner();
 
@@ -426,9 +374,7 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
 
             // ensure to_explorer count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 to_explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
                     * RESOURCE_PRECISION,
@@ -440,17 +386,9 @@ pub mod troop_management_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
-            from_explorer
-                .troops
-                .stamina
-                .refill(from_explorer.troops.category, troop_stamina_config, current_tick);
-            to_explorer
-                .troops
-                .stamina
-                .refill(to_explorer.troops.category, troop_stamina_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -463,8 +401,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 );
 
-                let mut explorer_owner_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
+                let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
                     ref world, from_explorer.owner,
                 )
                     .into();
@@ -493,9 +430,7 @@ pub mod troop_management_systems {
             count: u128,
         ) {
             assert!(count.is_non_zero(), "count must be greater than 0");
-            assert!(
-                count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision",
-            );
+            assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
@@ -509,9 +444,7 @@ pub mod troop_management_systems {
             StructureOwnerStoreImpl::retrieve(ref world, to_structure_id).assert_caller_owner();
 
             // ensure explorer is adjacent to structure
-            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, to_structure_id,
-            );
+            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
             assert!(
                 to_structure_base.coord() == from_explorer.coord.neighbor(to_structure_direction),
                 "explorer is not adjacent to structure",
@@ -530,8 +463,7 @@ pub mod troop_management_systems {
             let mut to_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
                 ref world, to_structure_id,
             );
-            let (mut to_structure_troops, to_structure_troops_destroyed_tick): (Troops, u32) =
-                to_structure_guards
+            let (mut to_structure_troops, to_structure_troops_destroyed_tick): (Troops, u32) = to_structure_guards
                 .from_slot(to_guard_slot);
             if to_structure_troops.count.is_non_zero() {
                 assert!(
@@ -556,13 +488,8 @@ pub mod troop_management_systems {
             // update explorer stamina
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
-            from_explorer
-                .troops
-                .stamina
-                .refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -571,8 +498,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 );
 
-                let mut explorer_owner_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
+                let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
                     ref world, from_explorer.owner,
                 )
                     .into();
@@ -591,18 +517,14 @@ pub mod troop_management_systems {
             /////////////////////////////////////////////
 
             // ensure there is no stamina advantage gained by swapping
-            to_structure_troops
-                .stamina
-                .refill(to_structure_troops.category, troop_stamina_config, current_tick);
+            to_structure_troops.stamina.refill(to_structure_troops.category, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
             }
 
             // add troops to structure guard
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             iGuardImpl::add(
                 ref world,
                 to_structure_id,
@@ -618,9 +540,7 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 troop_stamina_config,
             );
-            StructureTroopGuardStoreImpl::store(
-                ref to_structure_guards, ref world, to_structure_id,
-            );
+            StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
         }
 
@@ -634,9 +554,7 @@ pub mod troop_management_systems {
             count: u128,
         ) {
             assert!(count.is_non_zero(), "count must be greater than 0");
-            assert!(
-                count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision",
-            );
+            assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
@@ -649,9 +567,7 @@ pub mod troop_management_systems {
             StructureOwnerStoreImpl::retrieve(ref world, from_structure_id).assert_caller_owner();
 
             // ensure structure is adjacent to explorer
-            let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, from_structure_id,
-            );
+            let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(
                 to_explorer.coord == from_structure_base.coord().neighbor(to_explorer_direction),
                 "structure is not adjacent to explorer",
@@ -661,8 +577,7 @@ pub mod troop_management_systems {
             let mut from_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
                 ref world, from_structure_id,
             );
-            let (mut from_structure_troops, from_structure_troops_destroyed_tick): (Troops, u32) =
-                from_structure_guards
+            let (mut from_structure_troops, from_structure_troops_destroyed_tick): (Troops, u32) = from_structure_guards
                 .from_slot(from_guard_slot);
 
             // ensure guard is not dead
@@ -690,9 +605,7 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
 
             // ensure to_explorer count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-                ref world,
-            );
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 to_explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
                     * RESOURCE_PRECISION,
@@ -704,16 +617,9 @@ pub mod troop_management_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(
-                ref world,
-            );
-            to_explorer
-                .troops
-                .stamina
-                .refill(to_explorer.troops.category, troop_stamina_config, current_tick);
-            from_structure_troops
-                .stamina
-                .refill(from_structure_troops.category, troop_stamina_config, current_tick);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
+            from_structure_troops.stamina.refill(from_structure_troops.category, troop_stamina_config, current_tick);
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -742,9 +648,7 @@ pub mod troop_management_systems {
                         from_structure_troops,
                         from_structure_troops_destroyed_tick.try_into().unwrap(),
                     );
-                StructureTroopGuardStoreImpl::store(
-                    ref from_structure_guards, ref world, from_structure_id,
-                );
+                StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, from_structure_id);
             }
         }
     }
@@ -752,41 +656,36 @@ pub mod troop_management_systems {
 
 #[cfg(test)]
 mod tests {
+    use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorageTrait};
     use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait,
-        spawn_test_world,
+        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-    use achievement::events::index::e_TrophyProgression;
 
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::{
-        config::{
-            CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig,
-            m_WorldConfig,
-        },
+        config::{CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig},
         map::{Tile, TileTrait, m_Tile}, position::{Coord, CoordTrait, Direction},
         resource::production::building::{m_Building, m_StructureBuildings},
         resource::resource::{ResourceImpl, m_Resource},
         structure::{
-            StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
-            m_Structure, m_StructureVillageSlots,
+            StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
+            m_StructureVillageSlots,
         },
         troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops},
     };
 
     // use s1_eternum::models::weight::m_Weight; // Removed: Weight is not a model
     use s1_eternum::systems::combat::contracts::troop_management::{
-        ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
-        troop_management_systems,
+        ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
-        agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems,
-        troop_movement_systems, troop_movement_util_systems,
+        agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems,
+        troop_movement_util_systems,
     };
     use s1_eternum::systems::realm::contracts::realm_internal_systems;
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
@@ -803,13 +702,10 @@ mod tests {
             resources: [
                 // world config
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(
-                    m_WeightConfig::TEST_CLASS_HASH,
-                ), // structure, realm and buildings
+                TestResource::Model(m_WeightConfig::TEST_CLASS_HASH), // structure, realm and buildings
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
-                TestResource::Model(m_Building::TEST_CLASS_HASH),
-                TestResource::Model(m_Tile::TEST_CLASS_HASH),
+                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
@@ -889,11 +785,7 @@ mod tests {
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -923,13 +815,10 @@ mod tests {
 
         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
         assert(
-            final_structure_base.troop_guard_count == initial_structure_base.troop_guard_count + 1,
-            'Base guard count',
+            final_structure_base.troop_guard_count == initial_structure_base.troop_guard_count + 1, 'Base guard count',
         );
 
-        let knight_balance = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_knight_balance = starting_knight_t1_amount - knights_added_to_guard;
         assert!(
             knight_balance == expected_knight_balance,
@@ -956,11 +845,7 @@ mod tests {
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -988,9 +873,7 @@ mod tests {
         let initial_base_guard_count = structure_base_after_first_add.troop_guard_count;
         assert(initial_base_guard_count == 1, 'Base guard count after first');
 
-        let knight_balance_after_first_add = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let knight_balance_after_first_add = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_knight_balance_after_first_add = starting_knight_t1_amount - first_add_amount;
         assert!(
             knight_balance_after_first_add == expected_knight_balance_after_first_add,
@@ -1010,26 +893,17 @@ mod tests {
 
         // StructureBase troop_guard_count should NOT increase the second time
         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-        assert(
-            final_structure_base.troop_guard_count == initial_base_guard_count,
-            'Base guard count unchanged',
-        );
+        assert(final_structure_base.troop_guard_count == initial_base_guard_count, 'Base guard count unchanged');
 
-        let final_knight_balance = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let final_knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_final_knight_balance = starting_knight_t1_amount - total_added_amount;
-        assert!(
-            final_knight_balance == expected_final_knight_balance, "Wrong final knight balance",
-        );
+        assert!(final_knight_balance == expected_final_knight_balance, "Wrong final knight balance");
     }
 
     /// @notice Tests that `guard_add` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1046,9 +920,7 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         let realm_owner = starknet::get_contract_address();
         let realm_coord = Coord { x: 10, y: 10 };
@@ -1056,9 +928,7 @@ mod tests {
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
         // Grant resources needed for the call
         let amount = 1 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, amount * 2)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, amount * 2)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1112,11 +982,7 @@ mod tests {
     /// payment.
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(
-        expected: (
-            "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED',
-        ),
-    )]
+    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
     fn guard_add_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1125,9 +991,7 @@ mod tests {
 
         let realm_owner = starknet::get_contract_address(); // Use default caller
         let realm_coord = Coord { x: 10, y: 10 };
-        let realm_id = tspawn_simple_realm(
-            ref world, 1, realm_owner, realm_coord,
-        ); // Spawn without resources
+        let realm_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord); // Spawn without resources
 
         // DO NOT grant resources
 
@@ -1262,14 +1126,11 @@ mod tests {
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-        let max_troops_per_guard = troop_limit_config.explorer_guard_max_troop_count.into()
-            * RESOURCE_PRECISION;
+        let max_troops_per_guard = troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
         let amount_to_exceed = max_troops_per_guard + 1 * RESOURCE_PRECISION;
 
         // Grant enough resources for the large amount
-        tgrant_resources(
-            ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, amount_to_exceed * 2)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, amount_to_exceed * 2)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1301,11 +1162,7 @@ mod tests {
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1382,9 +1239,7 @@ mod tests {
     /// @notice Tests that `guard_delete` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn guard_delete_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1401,9 +1256,7 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         let realm_owner = starknet::get_contract_address();
         let realm_coord = Coord { x: 10, y: 10 };
@@ -1473,11 +1326,7 @@ mod tests {
         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1493,16 +1342,13 @@ mod tests {
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
         assert(SpanTrait::len(initial_explorers) == 0, 'Initial explorer count');
 
-        let structure_coord = Coord {
-            x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
-        };
+        let structure_coord = Coord { x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
         let initial_spawn_tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
         assert(initial_spawn_tile.not_occupied(), 'Spawn tile initially free');
 
         // Act
-        let explorer_id = troop_management_systems
-            .explorer_create(realm_id, category, tier, amount, spawn_direction);
+        let explorer_id = troop_management_systems.explorer_create(realm_id, category, tier, amount, spawn_direction);
 
         // Assert
         assert(explorer_id != 0, 'Explorer ID should be non-zero');
@@ -1519,8 +1365,7 @@ mod tests {
         // Check StructureBase updates
         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
         assert(
-            final_structure_base.troop_explorer_count == initial_structure_base.troop_explorer_count
-                + 1,
+            final_structure_base.troop_explorer_count == initial_structure_base.troop_explorer_count + 1,
             'Structure explorer count',
         );
 
@@ -1535,9 +1380,7 @@ mod tests {
         assert(final_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupant ID');
 
         // Check resource deduction
-        let final_knight_balance = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let final_knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_knight_balance = starting_knight_t1_amount - amount;
         assert!(
             final_knight_balance == expected_knight_balance,
@@ -1581,9 +1424,7 @@ mod tests {
     /// @notice Tests that `explorer_create` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1596,11 +1437,7 @@ mod tests {
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1626,9 +1463,7 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         // Act 2: Attempt to add troops with inactive season
         let home_direction = get_opposite_direction(spawn_direction);
@@ -1652,11 +1487,7 @@ mod tests {
 
         // Grant resources needed for the call
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1675,11 +1506,7 @@ mod tests {
 
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(
-        expected: (
-            "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED',
-        ),
-    )]
+    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1728,11 +1555,7 @@ mod tests {
 
         // Grant enough resources to create *two* explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount * 2)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount * 2)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1754,8 +1577,7 @@ mod tests {
         assert(structure_base_after_1.troop_explorer_count == 1, 'Count should be 1');
 
         // Act 2: Attempt to create the second explorer (should panic)
-        troop_management_systems
-            .explorer_create(realm_id, category, tier, amount, spawn_direction_2);
+        troop_management_systems.explorer_create(realm_id, category, tier, amount, spawn_direction_2);
         // Assert 2 - Handled by should_panic
     }
 
@@ -1780,17 +1602,11 @@ mod tests {
         // Now, set global explorer limit config to 0 *after* realm creation
         let mut troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
         troop_limit_config.explorer_max_party_count = 0;
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("troop_limit_config"), troop_limit_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("troop_limit_config"), troop_limit_config);
 
         // Grant resources needed for the call (even though it should fail)
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1832,9 +1648,7 @@ mod tests {
         // Grant resources needed for the call
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
         tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount * 2)].span(),
+            ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount * 2)].span(),
         ); // Need enough for two creations
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
@@ -1873,11 +1687,7 @@ mod tests {
 
         // Grant resources for creation and addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1899,9 +1709,7 @@ mod tests {
         let initial_explorer: ExplorerTroops = world.read_model(explorer_id);
         assert(initial_explorer.troops.count == create_amount, 'Initial count');
 
-        let balance_after_create = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let balance_after_create = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_balance_after_create = starting_knight_t1_amount - create_amount;
         assert(balance_after_create == expected_balance_after_create, 'Balance post-create');
 
@@ -1915,9 +1723,7 @@ mod tests {
         assert(final_explorer.troops.count == total_amount, 'Final count');
 
         // Check final resource deduction
-        let final_knight_balance = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let final_knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         let expected_knight_balance = starting_knight_t1_amount - total_amount;
         assert!(final_knight_balance == expected_knight_balance, "Wrong final knight balance");
     }
@@ -1938,11 +1744,7 @@ mod tests {
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -1969,9 +1771,7 @@ mod tests {
     /// RESOURCE_PRECISION.
     /// @dev Required by the `assert!(amount % RESOURCE_PRECISION == 0)` check.
     #[test]
-    #[should_panic(
-        expected: ("amount must be divisible by resource precision", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("amount must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_invalid_precision() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -1984,11 +1784,7 @@ mod tests {
 
         // Grant resources needed for initial creation and attempt
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2014,9 +1810,7 @@ mod tests {
     /// @notice Tests that `explorer_add` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -2029,11 +1823,7 @@ mod tests {
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2059,9 +1849,7 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         // Act 2: Attempt to add troops with inactive season
         let home_direction = get_opposite_direction(spawn_direction);
@@ -2089,11 +1877,7 @@ mod tests {
 
         // Grant resources needed for creation and addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2155,9 +1939,7 @@ mod tests {
             contract_address: troop_management_system_addr,
         };
         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-        let troop_movement_systems = ITroopMovementSystemsDispatcher {
-            contract_address: troop_movement_system_addr,
-        };
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
 
         let category = TroopType::Knight;
         let tier = TroopTier::T1;
@@ -2186,11 +1968,7 @@ mod tests {
     /// @notice Tests that `explorer_add` reverts if the structure lacks sufficient resources.
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
-    #[should_panic(
-        expected: (
-            "Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 2000000000", 'ENTRYPOINT_FAILED',
-        ),
-    )]
+    #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 2000000000", 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_insufficient_resources() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -2210,9 +1988,7 @@ mod tests {
         let spawn_direction = Direction::NorthEast;
 
         // Grant exactly enough resources to CREATE the explorer, but not enough to ADD more
-        tgrant_resources(
-            ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, create_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, create_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2224,9 +2000,7 @@ mod tests {
             .explorer_create(realm_id, category, tier, create_amount, spawn_direction);
 
         // Assert 1: Verify the realm has 0 Knight T1 balance after creation
-        let balance_after_create = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
+        let balance_after_create = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
         assert!(balance_after_create == 0, "Balance should be zero after creation");
 
         // Act 2: Attempt to add more troops (this should fail due to insufficient resources)
@@ -2252,17 +2026,13 @@ mod tests {
 
         // Get the limit from config
         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-        let max_troops_per_explorer = troop_limit_config.explorer_guard_max_troop_count.into()
-            * RESOURCE_PRECISION;
-        let create_amount = max_troops_per_explorer
-            - 1 * RESOURCE_PRECISION; // Create just under the limit
+        let max_troops_per_explorer = troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        let create_amount = max_troops_per_explorer - 1 * RESOURCE_PRECISION; // Create just under the limit
         let add_amount = 2 * RESOURCE_PRECISION; // Amount that will exceed the limit
         let total_needed_resource = create_amount + add_amount;
 
         // Grant enough resources for creation and the attempt to add more
-        tgrant_resources(
-            ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, total_needed_resource)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, total_needed_resource)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2304,11 +2074,7 @@ mod tests {
 
         // Grant resources for creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2331,9 +2097,7 @@ mod tests {
 
         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
         assert(initial_structure_base.troop_explorer_count == 1, 'Initial structure count wrong');
-        let structure_coord = Coord {
-            x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
-        };
+        let structure_coord = Coord { x: initial_structure_base.coord_x, y: initial_structure_base.coord_y };
         let spawn_coord = structure_coord.neighbor(spawn_direction);
 
         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
@@ -2355,9 +2119,7 @@ mod tests {
         // Dojo models aren't truly deleted, but zeroed out.
         assert(final_explorer.owner == 0, 'Final owner should be 0');
         assert(final_explorer.troops.count == 0, 'Final count should be 0');
-        assert(
-            final_explorer.explorer_id == explorer_id, 'Explorer ID should be same',
-        ); // ID is also zeroed
+        assert(final_explorer.explorer_id == explorer_id, 'Explorer ID should be same'); // ID is also zeroed
         assert(final_explorer.troops.count == 0, 'Final count should be 0');
         assert(final_explorer.coord.x == 0, 'Final coord x should be 0');
         assert(final_explorer.coord.y == 0, 'Final coord y should be 0');
@@ -2376,9 +2138,7 @@ mod tests {
     /// @notice Tests that `explorer_delete` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_delete_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -2391,11 +2151,7 @@ mod tests {
 
         // Grant resources needed for initial creation
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2421,9 +2177,7 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         // Act 2: Attempt to delete the explorer with inactive season
         troop_management_systems.explorer_delete(explorer_id);
@@ -2450,11 +2204,7 @@ mod tests {
 
         // Grant resources needed for creation and addition
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2489,12 +2239,8 @@ mod tests {
         init_config(ref world);
 
         // Verify config directly
-        let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-            ref world,
-        );
-        assert(
-            troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check',
-        );
+        let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+        assert(troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check');
 
         let realm_owner = starknet::get_contract_address();
         let realm_coord = Coord { x: 10, y: 10 };
@@ -2504,26 +2250,14 @@ mod tests {
 
         // Verify structure max count after creation
         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-        assert(
-            structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check',
-        );
+        assert(structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check');
         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, realm2_id);
-        assert(
-            structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check',
-        );
+        assert(structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check');
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2550,16 +2284,9 @@ mod tests {
             .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
 
         // Verify structure state after first create
-        let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(
-            ref world, realm_id,
-        );
-        assert(
-            structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create',
-        );
-        assert(
-            structure_base_after_first_create.troop_max_explorer_count == 1,
-            'Max count after first create',
-        );
+        let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+        assert(structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create');
+        assert(structure_base_after_first_create.troop_max_explorer_count == 1, 'Max count after first create');
 
         // Assert 1: Verify initial states
         let initial_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -2569,8 +2296,7 @@ mod tests {
 
         // Act 3: Perform the swap
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
 
         // Assert 2: Verify final states
         let final_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -2589,20 +2315,10 @@ mod tests {
         assert(final_to_stamina <= initial_from_stamina, 'Stamina constraint');
 
         // Check knight balance at realm layer (should be unaffected by the swap)
-        let final_knight_balance_realm1 = ResourceImpl::read_balance(
-            ref world, realm_id, ResourceTypes::KNIGHT_T1,
-        );
-        let final_knight_balance_realm2 = ResourceImpl::read_balance(
-            ref world, realm2_id, ResourceTypes::KNIGHT_T1,
-        );
-        assert(
-            final_knight_balance_realm1 == starting_knight_t1_amount - create_amount_from,
-            'Final Balance Realm 1',
-        );
-        assert(
-            final_knight_balance_realm2 == starting_knight_t1_amount - create_amount_to,
-            'Final Balance Realm 2',
-        );
+        let final_knight_balance_realm1 = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
+        let final_knight_balance_realm2 = ResourceImpl::read_balance(ref world, realm2_id, ResourceTypes::KNIGHT_T1);
+        assert(final_knight_balance_realm1 == starting_knight_t1_amount - create_amount_from, 'Final Balance Realm 1');
+        assert(final_knight_balance_realm2 == starting_knight_t1_amount - create_amount_to, 'Final Balance Realm 2');
     }
 
     /// @notice Tests swapping troops when the swap amount equals the source explorer's total
@@ -2617,12 +2333,8 @@ mod tests {
         init_config(ref world);
 
         // Verify config directly
-        let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(
-            ref world,
-        );
-        assert(
-            troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check',
-        );
+        let troop_limit_config_check: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+        assert(troop_limit_config_check.explorer_max_party_count == 20, 'Config Max Party Count Check');
 
         let realm_owner = starknet::get_contract_address();
         let realm_coord = Coord { x: 10, y: 10 };
@@ -2632,26 +2344,14 @@ mod tests {
 
         // Verify structure max count after creation
         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-        assert(
-            structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check',
-        );
+        assert(structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check');
         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, realm2_id);
-        assert(
-            structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check',
-        );
+        assert(structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check');
 
         // Grant enough resources for two explorers and the swap
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2672,16 +2372,9 @@ mod tests {
             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
 
         // Verify structure state after first create
-        let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(
-            ref world, realm_id,
-        );
-        assert(
-            structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create',
-        );
-        assert(
-            structure_base_after_first_create.troop_max_explorer_count == 1,
-            'Max count after first create',
-        );
+        let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+        assert(structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create');
+        assert(structure_base_after_first_create.troop_max_explorer_count == 1, 'Max count after first create');
 
         // Act 2: Create the 'to' explorer
         let to_explorer_id = troop_management_systems
@@ -2696,8 +2389,7 @@ mod tests {
         // Act 3: Perform the swap
         // Direction from 'from_explorer' (NE) to 'to_explorer' (E) is SouthEast
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
 
         // Assert 2: Verify final states
         let final_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -2734,16 +2426,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2766,17 +2450,14 @@ mod tests {
 
         // Act 2: Attempt the swap with zero amount (expect panic)
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
     /// @notice Tests that `explorer_explorer_swap` reverts if the season is not active.
     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
     #[test]
-    #[should_panic(
-        expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_season_inactive() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -2791,16 +2472,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2831,14 +2504,11 @@ mod tests {
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
         };
-        WorldConfigUtilImpl::set_member(
-            ref world, selector!("season_config"), inactive_season_config,
-        );
+        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
         // Act 2: Attempt the swap with inactive season (expect panic)
         let swap_direction = Direction::SouthEast;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
@@ -2864,16 +2534,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
             contract_address: troop_management_system_addr,
@@ -2900,8 +2562,7 @@ mod tests {
         //        who only owns one of the explorers (expect panic)
         impersonate(other_caller);
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
@@ -2924,16 +2585,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id_1,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm_id_2,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id_1, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm_id_2, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -2959,8 +2612,7 @@ mod tests {
         // Act 2: Attempt the swap between different owners (expect panic)
         impersonate(realm_owner_1);
         let swap_direction = Direction::SouthEast;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
@@ -2982,16 +2634,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
             contract_address: troop_management_system_addr,
@@ -3013,8 +2657,7 @@ mod tests {
 
         // Act 2: Attempt the swap between non-adjacent explorers (expect panic)
         let swap_direction = Direction::SouthEast;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
@@ -3037,16 +2680,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -3069,16 +2704,13 @@ mod tests {
 
         // Act 2: Attempt the swap with insufficient troops (expect panic)
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 
     /// @dev Required by the `assert!(count % RESOURCE_PRECISION == 0)` check.
     #[test]
-    #[should_panic(
-        expected: ("count must be divisible by resource precision", 'ENTRYPOINT_FAILED'),
-    )]
+    #[should_panic(expected: ("count must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
     fn explorer_swap_revert_invalid_precision() {
         // Arrange
         let mut world = spawn_test_world([namespace_def()].span());
@@ -3093,16 +2725,8 @@ mod tests {
 
         // Grant enough resources for two explorers
         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
-        tgrant_resources(
-            ref world,
-            realm_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
-        tgrant_resources(
-            ref world,
-            realm2_id,
-            array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span(),
-        );
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
+        tgrant_resources(ref world, realm2_id, array![(ResourceTypes::KNIGHT_T1, starting_knight_t1_amount)].span());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let troop_management_systems = ITroopManagementSystemsDispatcher {
@@ -3125,8 +2749,7 @@ mod tests {
 
         // Act 2: Attempt the swap with invalid precision (expect panic)
         let swap_direction = Direction::East;
-        troop_management_systems
-            .explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
+        troop_management_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         // Assert - Handled by should_panic
     }
 }
