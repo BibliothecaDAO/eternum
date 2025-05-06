@@ -102,9 +102,6 @@ pub mod troop_management_systems {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
             let mut world = self.world(DEFAULT_NS());
-            // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
-
             // ensure caller owns structure or is realms_systems
             let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
