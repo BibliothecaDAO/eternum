@@ -13,7 +13,7 @@ export const ScrollHeader = ({ children, className }: ScrollHeaderProps) => {
   useEffect(() => {
     const handleScroll = () => {
       if (!headerRef.current) return;
-      
+
       const parentContainer = headerRef.current.parentElement;
       if (!parentContainer) return;
 
@@ -34,10 +34,10 @@ export const ScrollHeader = ({ children, className }: ScrollHeaderProps) => {
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         isScrolled ? "py-2 bg-background/80 backdrop-blur-sm shadow-sm" : "py-4",
-        className
+        className,
       )}
     >
       {children}
     </div>
   );
-}; 
+};
