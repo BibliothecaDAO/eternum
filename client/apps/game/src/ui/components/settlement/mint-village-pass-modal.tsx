@@ -2,7 +2,7 @@ import { fetchRealmVillageSlots, fetchTokenTransfers, RealmVillageSlot, TokenTra
 import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { useDojo } from "@bibliothecadao/react";
-import { Direction, HexPosition } from "@bibliothecadao/types";
+import { Direction, getNeighborHexes, HexPosition, Steps } from "@bibliothecadao/types";
 import { ControllerConnector } from "@cartridge/connector";
 import { useAccount } from "@starknet-react/core";
 import { useEffect, useMemo, useState } from "react";
@@ -122,7 +122,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   const controllerConnector = connector as never as ControllerConnector;
 
-  const [selectedCoords, setSelectedCoords] = useState<HexPosition | null>(null);
+  const [villageCoords, setVillageCoords] = useState<HexPosition | null>(null);
+  const [realmCoords, setRealmCoords] = useState<HexPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResourceReveal, setShowResourceReveal] = useState(false);
   const [realmSearchTerm, setRealmSearchTerm] = useState("");
@@ -145,6 +146,16 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   const topTiers = resourceProbabilities.slice(0, 3);
   const bottomTiers = resourceProbabilities.slice(3);
+
+  useEffect(() => {
+    if (realmCoords && selectedDirection !== null) {
+      setVillageCoords(
+        getNeighborHexes(realmCoords.col, realmCoords.row, Steps.Two).filter(
+          (hex) => hex.direction === selectedDirection,
+        )[0],
+      );
+    }
+  }, [realmCoords, selectedDirection]);
 
   const getRealm = (realmId: number): Realm | undefined => {
     const key = realmId.toString(); // convert number id to string key
@@ -266,8 +277,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   useMemo(() => {
     const selectedLocation = availableVillages.find(
       (village) =>
-        village.connected_realm_coord.col === selectedCoords?.col &&
-        village.connected_realm_coord.row === selectedCoords?.row,
+        village.connected_realm_coord.col === realmCoords?.col &&
+        village.connected_realm_coord.row === realmCoords?.row,
     );
 
     if (!selectedLocation) {
@@ -276,7 +287,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     }
 
     setSelectedRealm(selectedLocation);
-  }, [availableVillages, selectedCoords]);
+  }, [availableVillages, realmCoords]);
 
   useEffect(() => {
     if (selectedRealm && selectedRealm.directions_left) {
@@ -322,7 +333,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   const handleRealmSelection = (village: RealmVillageSlot | null) => {
     setSelectedRealm(village);
-    setSelectedCoords(village ? village.connected_realm_coord : null);
+    setRealmCoords(village ? village.connected_realm_coord : null);
     setSelectedDirection(null);
   };
 
@@ -562,9 +573,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   </h2>
                   <div className="w-full md:w-96 pt-4">
                     <h6 className="text-base mb-2">Village Direction:</h6>
+                    {/* need to flip north and south because of the way the worldmap is oriented */}
                     <div className="grid grid-cols-3 gap-2 mx-auto my-4">
                       <DirectionButton
-                        direction={Direction.NORTH_WEST}
+                        direction={Direction.SOUTH_WEST}
                         label="↖"
                         tooltip="North West"
                         availableDirections={directionOptions.map((opt) => opt.value)}
@@ -573,7 +585,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       />
                       <div />
                       <DirectionButton
-                        direction={Direction.NORTH_EAST}
+                        direction={Direction.SOUTH_EAST}
                         label="↗"
                         tooltip="North East"
                         availableDirections={directionOptions.map((opt) => opt.value)}
@@ -598,7 +610,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         onClick={setSelectedDirection}
                       />
                       <DirectionButton
-                        direction={Direction.SOUTH_WEST}
+                        direction={Direction.NORTH_WEST}
                         label="↙"
                         tooltip="South West"
                         availableDirections={directionOptions.map((opt) => opt.value)}
@@ -607,7 +619,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       />
                       <div />
                       <DirectionButton
-                        direction={Direction.SOUTH_EAST}
+                        direction={Direction.NORTH_EAST}
                         label="↘"
                         tooltip="South East"
                         availableDirections={directionOptions.map((opt) => opt.value)}
@@ -638,15 +650,15 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
             </div>
           )}
 
-          {currentStep === 4 && selectedCoords && showResourceReveal && (
+          {currentStep === 4 && villageCoords && showResourceReveal && (
             <>
               <h4 className="text-gold mb-4">4. Village Settled & Resource Revealed!</h4>
               <VillageResourceReveal
-                villageCoords={selectedCoords}
+                villageCoords={villageCoords}
                 onClose={onClose}
                 onRestart={() => {
                   setShowResourceReveal(false);
-                  setSelectedCoords(null);
+                  setRealmCoords(null);
                   setSelectedDirection(null);
                   setSelectedRealm(null);
                   setSelectedVillagePass(null);
