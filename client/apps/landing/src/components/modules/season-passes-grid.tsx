@@ -1,7 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { MergedNftData } from "@/routes/season-passes.lazy";
-import { Crown, Grid2X2, Grid3X3 } from "lucide-react";
-import { useState } from "react";
+import { Crown } from "lucide-react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
 
@@ -20,6 +18,7 @@ interface SeasonPassRowProps {
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;
+  isCompactGrid?: boolean;
 }
 
 export const SeasonPassesGrid = ({
@@ -28,8 +27,8 @@ export const SeasonPassesGrid = ({
   setIsTransferOpen,
   checkOwner,
   hideTransferButton,
+  isCompactGrid,
 }: SeasonPassRowProps) => {
-  const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   if (!seasonPasses?.length) {
     return (
@@ -64,16 +63,7 @@ export const SeasonPassesGrid = ({
 
   return (
     <div>
-      <div className="flex justify-end my-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setIsCompactGrid(!isCompactGrid)}
-          title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
-        >
-          {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
-        </Button>
-      </div>
+
       <AnimatedGrid
         items={gridItems}
         renderItem={(item) => {

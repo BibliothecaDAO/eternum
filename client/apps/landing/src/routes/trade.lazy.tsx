@@ -2,6 +2,7 @@ import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
+import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import {
   Pagination,
@@ -11,6 +12,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ScrollHeader } from "@/components/ui/scroll-header";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
@@ -23,7 +25,7 @@ import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Loader2 } from "lucide-react";
+import { Badge, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { formatUnits } from "viem";
@@ -350,9 +352,10 @@ function SeasonPasses() {
   const activeOrders = totals.data?.[0]?.total_active ?? 0;
   const totalWei = totals.data?.[0]?.total_volume ?? null;
   const totalEth = totalWei !== null ? formatUnits(totalWei, 18) : "0";
+  const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <>
         {controllerAddress && (
           <div className="text-xl py-4 flex items-center">
@@ -364,9 +367,8 @@ function SeasonPasses() {
           </div>
         )}
 
-        <>
-          {/* Header Section */}
-          <div className="text-center py-4">
+        <div className="flex flex-col h-full overflow-y-auto">
+          <div className="text-center border-b py-6">
             <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season Pass Marketplace"}</h2>
             <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
               <span>
@@ -379,21 +381,30 @@ function SeasonPasses() {
               </span>
             </div>
           </div>
+          <ScrollHeader>
+            {/* Filter UI */}
+            <div className="flex justify-end my-2 gap-4 px-4">
+              <TraitFilterUI
+                allTraits={allTraits}
+                selectedFilters={selectedFilters}
+                handleFilterChange={handleFilterChange}
+                clearFilter={clearFilter}
+                clearAllFilters={clearAllFilters}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsCompactGrid(!isCompactGrid)}
+                title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
+              >
+                {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
+              </Button>
+            </div>
+          </ScrollHeader>
 
-          {/* Filter UI */}
-          <div className="">
-            <TraitFilterUI
-              allTraits={allTraits}
-              selectedFilters={selectedFilters}
-              handleFilterChange={handleFilterChange}
-              clearFilter={clearFilter}
-              clearAllFilters={clearAllFilters}
-            />
-          </div>
-
-          {/* Grid container - Removed extra bottom padding */}
-          <div className="flex-grow overflow-y-auto pt-0 pb-4 px-2">
-            <div className="flex flex-col gap-2">
+          {/* Scrollable content area */}
+          <div className="flex-1">
+            <div className="flex flex-col gap-2 px-2">
               <Suspense
                 fallback={
                   <div className="flex-grow flex items-center justify-center min-h-[200px]">
@@ -406,6 +417,7 @@ function SeasonPasses() {
                     seasonPasses={paginatedPasses}
                     setIsTransferOpen={handleTransferClick}
                     hideTransferButton={true}
+                    isCompactGrid={isCompactGrid}
                   />
                 )}
 
@@ -423,44 +435,44 @@ function SeasonPasses() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <Pagination className="py-2 border-t">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(currentPage - 1);
-                    }}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
-                  />
-                </PaginationItem>
-                {/* Render dynamic pagination items */}
-                {renderPaginationItems()}
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(currentPage + 1);
-                    }}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+            <div className="flex-shrink-0">
+              <Pagination className="py-2 border-t">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(currentPage - 1);
+                      }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                    />
+                  </PaginationItem>
+                  {renderPaginationItems()}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(currentPage + 1);
+                      }}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
-          {/* End Pagination Controls */}
+        </div>
 
-          {isTransferOpen && (
-            <TransferSeasonPassDialog
-              isOpen={isTransferOpen}
-              setIsOpen={setIsTransferOpen}
-              seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
-              initialSelectedTokenId={tokenIdToTransfer}
-            />
-          )}
-        </>
+        {isTransferOpen && (
+          <TransferSeasonPassDialog
+            isOpen={isTransferOpen}
+            setIsOpen={setIsTransferOpen}
+            seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
+            initialSelectedTokenId={tokenIdToTransfer}
+          />
+        )}
       </>
     </div>
   );
