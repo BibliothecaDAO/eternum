@@ -1,7 +1,7 @@
 import { getSeasonPassAddress, getVillagePassAddress } from "@/shared/lib/addresses";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
-import { dojoConfig } from "dojoConfig";
+import { dojoConfig } from "../../../../dojoConfig";
 import { messages } from "./signing-policy";
 
 export const policies = toSessionPolicies({
