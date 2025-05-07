@@ -7034,7 +7034,7 @@
     },
     {
       "address": "0x4e14c2dc7e3e38e18357655f93e5eacc8aaae58ffc51db8f75162f1e5cd152e",
-      "class_hash": "0x1402ec9d26bf07bb2c2de08948b5121a0d90d87f2c980a9824945f3aeaa1bdd",
+      "class_hash": "0x9cb8df8ea910cc17afd46db94b8c730f5bc1d18289ba596355ca2f02e89453",
       "abi": [
         {
           "type": "impl",
