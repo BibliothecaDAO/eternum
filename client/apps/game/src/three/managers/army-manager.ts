@@ -13,6 +13,7 @@ import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { FXManager } from "./fx-manager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -35,6 +36,7 @@ export class ArmyManager {
   private labelsGroup: THREE.Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
+  private deathFxManager: FXManager;
 
   constructor(
     scene: THREE.Scene,
@@ -51,6 +53,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.deathFxManager = new FXManager(scene, "/textures/skull.png");
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -441,6 +444,7 @@ export class ArmyManager {
     // Set renderOrder to Infinity on hover
     labelDiv.addEventListener("mouseenter", () => {
       label.renderOrder = Infinity;
+      this.deathFxManager.playFxAtCoords(position.x, position.y + 2, position.z);
     });
 
     // Restore original renderOrder when mouse leaves
