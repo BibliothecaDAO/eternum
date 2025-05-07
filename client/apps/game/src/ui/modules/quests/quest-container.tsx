@@ -172,7 +172,7 @@ export const QuestContainer = ({
         </div>
         <div className="flex flex-col items-center gap-2">
           <span className="text-gold/80">Cost</span>
-          <span className="text-2xl font-bold text-gold">Free To Play</span>
+          <span className="text-2xl font-bold text-gold">Free</span>
         </div>
       </div>
       <div className="flex p-5">

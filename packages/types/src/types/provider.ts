@@ -951,3 +951,7 @@ export interface ClaimRewardProps extends SystemSigner {
 export interface GetGameCountProps extends SystemSigner {
   game_address: string;
 }
+
+export interface DisableQuestsProps extends SystemSigner {}
+
+export interface EnableQuestsProps extends SystemSigner {}

@@ -2747,4 +2747,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [],
     });
   }
+
+  public async disable_quests(props: SystemProps.DisableQuestsProps) {
+    const { signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "disable_quests",
+      calldata: [],
+    });
+  }
+
+  public async enable_quests(props: SystemProps.EnableQuestsProps) {
+    const { signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "enable_quests",
+      calldata: [],
+    });
+  }
 }

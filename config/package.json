@@ -6,7 +6,12 @@
     "slot": "bun --env-file=../client/apps/game/.env.slot run ./deployer/index.ts",
     "sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./deployer/index.ts",
     "mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./deployer/index.ts",
-    "add-quest-games": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/add-quest-games.ts",
+    "add-quest-games-sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/add-quest-games.ts",
+    "disable-quests-sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/disable-quests.ts",
+    "enable-quests-sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/enable-quests.ts",
+    "add-quest-games-mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./scripts/add-quest-games.ts",
+    "disable-quests-mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./scripts/disable-quests.ts",
+    "enable-quests-mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./scripts/enable-quests.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
