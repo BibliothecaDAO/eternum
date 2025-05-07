@@ -145,7 +145,7 @@ async function init() {
           href={env.VITE_PUBLIC_MOBILE_VERSION_URL}
           className="text-xl underline font-bold text-gold hover:text-gold/80"
         >
-          next-eternum-mobile.realms.world
+          Mobile Version
         </a>
       </div>,
     );
