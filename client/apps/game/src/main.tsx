@@ -70,22 +70,6 @@ async function init() {
   }
 
   // Redirect mobile users to the mobile version of the game
-  if (IS_MOBILE) {
-    root.render(
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
-        <h1 className="text-2xl font-bold mb-4">Mobile Version Not Available</h1>
-        <p className="mb-6">This version of Eternum is not optimized for mobile devices.</p>
-        <p className="mb-6">Please visit our mobile-friendly version at:</p>
-        <a
-          href={env.VITE_PUBLIC_MOBILE_VERSION_URL}
-          className="text-xl underline font-bold text-gold hover:text-gold/80"
-        >
-          next-eternum-mobile.realms.world
-        </a>
-      </div>,
-    );
-    return;
-  }
 
   const backgroundImage = getRandomBackgroundImage();
 
@@ -146,6 +130,23 @@ async function init() {
             </Button>
           </div>
         </div>
+      </div>,
+    );
+    return;
+  }
+
+  if (IS_MOBILE) {
+    root.render(
+      <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
+        <h1 className="text-2xl font-bold mb-4">Mobile Version Not Available</h1>
+        <p className="mb-6">This version of Eternum is not optimized for mobile devices.</p>
+        <p className="mb-6">Please visit our mobile-friendly version at:</p>
+        <a
+          href={env.VITE_PUBLIC_MOBILE_VERSION_URL}
+          className="text-xl underline font-bold text-gold hover:text-gold/80"
+        >
+          next-eternum-mobile.realms.world
+        </a>
       </div>,
     );
     return;
