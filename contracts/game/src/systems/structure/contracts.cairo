@@ -27,8 +27,8 @@ pub mod structure_systems {
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::map::IMapImpl;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
-
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
         fn level_up(ref self: ContractState, structure_id: ID) {
@@ -102,6 +102,18 @@ pub mod structure_systems {
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
                 );
                 IMapImpl::occupy(ref world, ref structure_tile, tile_occupier, structure_id);
+
+                // grant realm level up achievement
+                AchievementTrait::progress(
+                    world, structure_owner.into(), Tasks::UPGRADE_REALM, 1, starknet::get_block_timestamp(),
+                );
+            }
+
+            if structure_base.category == StructureCategory::Village.into() {
+                // grant village level up achievement
+                AchievementTrait::progress(
+                    world, structure_owner.into(), Tasks::UPGRADE_VILLAGE, 1, starknet::get_block_timestamp(),
+                );
             }
         }
     }

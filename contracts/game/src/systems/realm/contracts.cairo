@@ -168,7 +168,9 @@ pub mod realm_systems {
                 );
 
             // emit achievement progression
-            AchievementTrait::progress(world, owner.into(), Tasks::SETTLEMENT, 1, starknet::get_block_timestamp());
+            AchievementTrait::progress(
+                world, owner.into(), Tasks::REALM_SETTLEMENT, 1, starknet::get_block_timestamp(),
+            );
 
             structure_id.into()
         }

@@ -16,6 +16,7 @@ pub mod troop_movement_systems {
     use dojo::world::{WorldStorageTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::map::BiomeDiscovered;
     use s1_eternum::models::{
         config::{
             CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
@@ -165,6 +166,53 @@ pub mod troop_movement_systems {
                     resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
                     resource.store(ref world);
                     explorer_weight.store(ref world, explorer_id);
+
+                    // emit explore achievement progression
+                    AchievementTrait::progress(
+                        world, caller.into(), Tasks::EXPLORE, 1, starknet::get_block_timestamp(),
+                    );
+
+                    // emit discovery achievement achievement
+                    match explore_find {
+                        ExploreFind::None => {},
+                        ExploreFind::Hyperstructure => {
+                            AchievementTrait::progress(
+                                world,
+                                caller.into(),
+                                Tasks::HYPERSTRUCTURE_DISCOVER,
+                                1,
+                                starknet::get_block_timestamp(),
+                            );
+                        },
+                        ExploreFind::Mine => {
+                            AchievementTrait::progress(
+                                world, caller.into(), Tasks::MINE_DISCOVER, 1, starknet::get_block_timestamp(),
+                            );
+                        },
+                        ExploreFind::Agent => {
+                            AchievementTrait::progress(
+                                world, caller.into(), Tasks::AGENT_DISCOVER, 1, starknet::get_block_timestamp(),
+                            );
+                        },
+                        ExploreFind::Quest => {
+                            AchievementTrait::progress(
+                                world, caller.into(), Tasks::QUEST_DISCOVER, 1, starknet::get_block_timestamp(),
+                            );
+                        },
+                    }
+
+                    // check if biome type has been discovered by player previously
+                    let biome_u8: u8 = biome.into();
+                    let mut biome_discovered: BiomeDiscovered = world.read_model((caller, biome_u8));
+                    if !biome_discovered.discovered {
+                        biome_discovered.discovered = true;
+                        world.write_model(@biome_discovered);
+
+                        // emit achievement progression
+                        AchievementTrait::progress(
+                            world, caller.into(), Tasks::BIOME_DISCOVER, 1, starknet::get_block_timestamp(),
+                        );
+                    }
                 } else {
                     // ensure all tiles passed through during travel are explored
                     assert!(tile.discovered(), "one of the tiles in path is not explored");
@@ -222,11 +270,6 @@ pub mod troop_movement_systems {
 
             // update explorer
             world.write_model(@explorer);
-
-            // emit achievement progression
-            AchievementTrait::progress(
-                world, explorer.owner.into(), Tasks::EXPLORE, 1, starknet::get_block_timestamp(),
-            );
 
             tiles_to_return.span()
         }

@@ -63,6 +63,7 @@ pub mod season_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::{
         constants::{DEFAULT_NS, WORLD_CONFIG_ID},
         models::{
@@ -107,6 +108,11 @@ pub mod season_systems {
             // emit season end event
             let now = starknet::get_block_timestamp();
             world.emit_event(@SeasonEnded { winner_address: player_address, timestamp: now });
+
+            // grant win season achievement
+            AchievementTrait::progress(
+                world, player_address.into(), Tasks::WIN_GAME, 1, starknet::get_block_timestamp(),
+            );
         }
 
         fn season_prize_claim(ref self: ContractState) {

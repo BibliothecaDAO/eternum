@@ -144,6 +144,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 pub mod hyperstructure_systems {
+    use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
 
@@ -170,7 +171,7 @@ pub mod hyperstructure_systems {
             owner::{OwnerAddressTrait}, resource::resource::{}, season::{SeasonPrize},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
-        utils::math::PercentageValueImpl,
+        utils::achievements::index::{AchievementTrait, Tasks}, utils::math::PercentageValueImpl,
     };
     use starknet::{ContractAddress};
 
@@ -360,6 +361,21 @@ pub mod hyperstructure_systems {
                 let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
+
+            // grant hyperstructure contribution achievement
+            let contribution_try_y32: u128 = total_resource_amount_contributed_by_structure / RESOURCE_PRECISION;
+            let max_u32: u32 = Bounded::MAX;
+            if contribution_try_y32 > max_u32.into() {
+                panic!("Contribution is too large. try contributing in batches of <= 4 billion resources");
+            }
+            let contribution_u32: u32 = contribution_try_y32.try_into().unwrap();
+            AchievementTrait::progress(
+                world,
+                from_structure_owner.into(),
+                Tasks::CONTRIBUTE_HYPERSTRUCTURE,
+                contribution_u32,
+                starknet::get_block_timestamp(),
+            );
         }
 
         fn allocate_shares(ref self: ContractState, hyperstructure_id: ID, shareholders: Span<(ContractAddress, u16)>) {
