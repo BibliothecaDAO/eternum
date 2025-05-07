@@ -268,12 +268,8 @@ pub mod trade_systems {
                 array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
                 ref taker_resource_arrival_total_amount,
             );
-            ResourceArrivalImpl::write_slot(
-                ref world, taker_id, arrival_day, arrival_slot, taker_resources_array,
-            );
-            ResourceArrivalImpl::write_day_total(
-                ref world, taker_id, arrival_day, taker_resource_arrival_total_amount,
-            );
+            ResourceArrivalImpl::write_slot(ref world, taker_id, arrival_day, arrival_slot, taker_resources_array);
+            ResourceArrivalImpl::write_day_total(ref world, taker_id, arrival_day, taker_resource_arrival_total_amount);
 
             // burn enough taker donkeys to carry resources given by maker
             let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, taker_id);
