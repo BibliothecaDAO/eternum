@@ -375,6 +375,14 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     setSeasonPassRealms((prevRealms) =>
       prevRealms.map((realm) => (realm.realmId === realmId ? { ...realm, selectedLocation: location } : realm)),
     );
+    if (location !== null) {
+      setSelectedRealms((prevSelectedRealms) => {
+        if (!prevSelectedRealms.includes(realmId)) {
+          return [...prevSelectedRealms, realmId];
+        }
+        return prevSelectedRealms;
+      });
+    }
   };
 
   const occupiedLocations = useMemo(() => {
@@ -484,7 +492,12 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             </Button>
           </div>
 
-          <div className="flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+          <div className="relative flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+            {loading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-md">
+                <img src="/images/logos/eternum-loader.png" className="w-10 h-10 animate-spin" alt="Loading..." />
+              </div>
+            )}
             {seasonPassElements}
           </div>
         </div>
@@ -495,17 +508,19 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
 
 const Header = ({ onPrevious }: { onPrevious: () => void }) => {
   return (
-    <div className="grid grid-cols-3 justify-between items-center">
-      <Button
-        className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
-        variant="primary"
-        onClick={onPrevious}
-      >
-        <BackArrow className="w-6 h-6 mr-2 fill-current" />
-        <div className="w-14 text-base font-normal normal-case inline">Back</div>
-      </Button>
-      <div className="text-2xl font-normal normal-case mx-auto self-center">Season Pass</div>
-      <div className="w-14"></div>
+    <div className="justify-between items-center">
+      <div className="flex w-full gap-2">
+        {" "}
+        <Button size="xs" variant="primary" className="self-center" onClick={onPrevious}>
+          <BackArrow className="w-4 h-4 mr-2 fill-current" />
+          <div className="w-14 text-base font-normal normal-case inline">Back</div>
+        </Button>
+        <h3 className="self-center ml-9">Season Pass</h3>
+      </div>
+      <p className="text-sm mt-3">
+        Tip: Other people might settle in the same location as you at the same time, which will result in an error. For
+        best results don't settle all at once!
+      </p>
     </div>
   );
 };
