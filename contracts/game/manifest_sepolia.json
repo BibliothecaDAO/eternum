@@ -9969,7 +9969,7 @@
     },
     {
       "address": "0x77f855da7addf5a215f06f42a8d5f01662e251b041fed66496e3ab17ea5730d",
-      "class_hash": "0x547778cd7135174a59f99336f2eb27e692caa59987f9407c1dbd88a8cc82882",
+      "class_hash": "0x7b54aa60db6621b1b39d7a907776a0b5305bc1bdd798d40e2acdd33c239aadf",
       "abi": [
         {
           "type": "impl",
