@@ -29,6 +29,9 @@ namespaces = ["s1_eternum"]
 
 world_block = 940000
 
+[erc]
+max_metadata_tasks = 5
+
 [sql]
 all_model_indices = false
 model_indices = [

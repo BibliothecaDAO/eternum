@@ -2,7 +2,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const useSeasonStart = () => {
-  const seasonStart = useMemo(() => BigInt(configManager.getSeasonConfig().startMainAt || 0), []);
+  const seasonStart = useMemo(() => BigInt(configManager.getSeasonConfig().startSettlingAt || 0), []);
   const currentBlockTimestamp = useMemo(() => BigInt(Math.floor(Date.now() / 1000)), []);
 
   const [countdown, setCountdown] = useState<bigint>(0n);

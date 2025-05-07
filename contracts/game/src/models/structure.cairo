@@ -30,6 +30,33 @@ pub struct StructureVillageSlots {
     pub directions_left: Span<Direction>,
 }
 
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureOwnerStats {
+    #[key]
+    pub owner: ContractAddress,
+    pub structures_num: u32,
+    pub name: felt252,
+}
+
+#[generate_trait]
+pub impl StructureOwnerStatsImpl of StructureOwnerStatsTrait {
+    fn increase(ref world: WorldStorage, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+        so_stats.structures_num += 1;
+        world.write_model(@so_stats);
+    }
+
+    fn decrease(ref world: WorldStorage, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+        if so_stats.structures_num > 0 {
+            so_stats.structures_num -= 1;
+            world.write_model(@so_stats);
+        }
+    }
+}
+
+
 // todo: obtain each value as needed not all at once
 
 // todo: add hard limit of troop to be something like 20
@@ -57,7 +84,11 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
     }
 
     fn store(owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
+        let previous_owner: ContractAddress = Self::retrieve(ref world, structure_id);
+        StructureOwnerStatsImpl::decrease(ref world, previous_owner);
+
         world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
+        StructureOwnerStatsImpl::increase(ref world, owner);
     }
 }
 
@@ -246,12 +277,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
 #[generate_trait]
 pub impl StructureImpl of StructureTrait {
     fn new(
-        entity_id: ID,
-        category: StructureCategory,
-        coord: Coord,
-        owner: ContractAddress,
-        resources_packed: u128,
-        metadata: StructureMetadata,
+        entity_id: ID, category: StructureCategory, coord: Coord, resources_packed: u128, metadata: StructureMetadata,
     ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
         let mut structure: Structure = Default::default();
@@ -260,7 +286,6 @@ pub impl StructureImpl of StructureTrait {
         structure.base.category = category.into();
         structure.base.coord_x = coord.x;
         structure.base.coord_y = coord.y;
-        structure.owner = owner;
         structure.resources_packed = resources_packed;
         structure.metadata = metadata;
         match category {
