@@ -1,7 +1,6 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
@@ -9,13 +8,11 @@ import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
-import { getAddressNameFromToriiClient } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AccountInterface, RpcProvider, shortString } from "starknet";
+import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { useSpectatorModeClick } from "../helpers/use-navigate";
 
@@ -107,7 +104,6 @@ const DojoContextProvider = ({
   backgroundImage: string;
 }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const setAddressName = useAddressStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
@@ -137,58 +133,19 @@ const DojoContextProvider = ({
   useEffect(() => {
     if (controllerAccount) {
       setAccountToUse(controllerAccount);
+      setAccountsInitialized(true);
+    } else {
+      setTimeout(() => {
+        setRetries((prevRetries) => {
+          if (prevRetries < 10) {
+            return prevRetries + 1;
+          } else {
+            setAccountsInitialized(true);
+            return prevRetries;
+          }
+        });
+      }, 100);
     }
-  }, [controllerAccount]);
-
-  useEffect(() => {
-    const setUserName = async () => {
-      let username;
-      try {
-        username = await (connector as unknown as ControllerConnector)?.username();
-        if (!username) {
-          username = "adventurer"; // Default to adventurer in local mode
-        }
-      } catch (error) {
-        username = "adventurer"; // If username() fails, we're in local mode
-        console.log("Using default username 'adventurer' for local mode");
-      }
-
-      const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-      value.systemCalls.set_address_name({
-        signer: controllerAccount!,
-        name: usernameFelt,
-      });
-      setAddressName(username);
-    };
-
-    const handleAddressName = async () => {
-      if (controllerAccount) {
-        useAccountStore.getState().setAccount(controllerAccount);
-
-        const addressName = await getAddressNameFromToriiClient(value.network.toriiClient, controllerAccount.address);
-
-        if (!addressName) {
-          await setUserName();
-        } else {
-          setAddressName(shortString.decodeShortString(addressName));
-        }
-
-        setAccountsInitialized(true);
-      } else {
-        setTimeout(() => {
-          setRetries((prevRetries) => {
-            if (prevRetries < 10) {
-              return prevRetries + 1;
-            } else {
-              setAccountsInitialized(true);
-              return prevRetries;
-            }
-          });
-        }, 100);
-      }
-    };
-
-    handleAddressName();
   }, [controllerAccount, retries]);
 
   if (!accountsInitialized) {

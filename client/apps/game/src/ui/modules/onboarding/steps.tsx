@@ -3,6 +3,7 @@ import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
+import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
 import {
@@ -18,6 +19,7 @@ import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
+import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -194,9 +196,12 @@ export const LocalStepOne = () => {
 export const StepOne = () => {
   const {
     setup: { components },
+    account: { account },
+    setup,
   } = useDojo();
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
+  const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
   const villageEntities = usePlayerOwnedVillageEntities();
@@ -207,6 +212,9 @@ export const StepOne = () => {
 
   const isSeasonActive = env.VITE_PUBLIC_SEASON_START_TIME <= Date.now() / 1000;
   const canPlay = hasRealmsOrVillages && isSeasonActive;
+
+  // Only set address name if user has realms or villages
+  useSetAddressName(setup, hasRealmsOrVillages ? account : null, connector);
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
