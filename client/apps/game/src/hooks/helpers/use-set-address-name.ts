@@ -18,6 +18,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
   const [isAddressNameSet, setIsAddressNameSet] = useState(false);
 
   useEffect(() => {
+    // set usser name for the controller account
     const setUserName = async () => {
       let username;
       try {
