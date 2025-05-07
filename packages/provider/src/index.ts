@@ -1413,7 +1413,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async explorer_create(props: SystemProps.ExplorerCreateProps) {
     const { for_structure_id, category, tier, amount, spawn_direction, signer } = props;
-    console.log({ props });
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
