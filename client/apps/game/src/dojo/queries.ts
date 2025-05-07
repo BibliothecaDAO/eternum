@@ -209,7 +209,6 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     "s1_eternum-HyperstructureShareholders",
     "s1_eternum-HyperstructureRequirements",
     "s1_eternum-PlayerRegisteredPoints",
-    "s1_eternum-PlayerConstructionPoints",
   ];
 
   return getEntities(client, query, components as any, [], hyperstructureModels, EVENT_QUERY_LIMIT, false);

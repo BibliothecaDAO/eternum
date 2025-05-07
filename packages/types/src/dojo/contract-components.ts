@@ -258,25 +258,6 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    PlayerConstructionPoints: (() => {
-      return defineComponent(
-        world,
-        {
-          address: RecsType.BigInt,
-          hyperstructure_id: RecsType.Number,
-          unregistered_points: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "PlayerConstructionPoints",
-            types: ["ContractAddress", "u32", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     PlayerRegisteredPoints: (() => {
       return defineComponent(
         world,
