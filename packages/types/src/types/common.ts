@@ -230,6 +230,9 @@ export interface MarketInterface {
   takerId: ID;
   // brillance, reflection, ...
   makerOrder: number;
+  makerGivesMinResourceAmount: number;
+  takerPaysMinResourceAmount: number;
+  makerGivesMaxResourceCount: number;
   expiresAt: number;
   takerGets: Resource[];
   makerGets: Resource[];
