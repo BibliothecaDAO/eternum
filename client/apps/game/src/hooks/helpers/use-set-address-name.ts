@@ -31,10 +31,11 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
       }
 
       const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-      value.systemCalls.set_address_name({
+      const calldata = {
         signer: controllerAccount!,
         name: usernameFelt,
-      });
+      };
+      value.systemCalls.set_address_name(calldata);
       setAddressName(username);
       setIsAddressNameSet(true);
     };
