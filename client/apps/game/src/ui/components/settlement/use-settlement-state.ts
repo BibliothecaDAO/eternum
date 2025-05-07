@@ -66,7 +66,7 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     fetchOccupiedLocations();
 
     // Set up polling interval (every 10 seconds)
-    const intervalId = setInterval(fetchOccupiedLocations, 10 * 1000);
+    const intervalId = setInterval(fetchOccupiedLocations, 5 * 1000);
 
     // Set up timeout to clear interval after 30 minutes
     const timeoutId = setTimeout(
@@ -81,7 +81,7 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
       clearInterval(intervalId);
       clearTimeout(timeoutId);
     };
-  }, [account?.address, components, extraPlayerOccupiedLocations, maxLayers]);
+  }, []);
 
   return {
     // Location state
