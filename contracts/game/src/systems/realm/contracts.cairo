@@ -68,6 +68,7 @@ pub mod realm_systems {
     };
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     use super::RealmSettlement;
     use super::{IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait};
@@ -129,14 +130,16 @@ pub mod realm_systems {
                 .create_internal(owner, realm_id, resources, order, wonder, coord);
 
             // collect lords attached to season pass and bridge into the realm
-            // let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
+            // let lords_amount_attached: u256 =
+            // InternalRealmLogicImpl::collect_lords_from_season_pass(
             //     season_addresses_config.season_pass_address, realm_id,
             // );
 
             // // bridge attached lords into the realm
             // if lords_amount_attached.is_non_zero() {
             //     InternalRealmLogicImpl::bridge_lords_into_realm(
-            //         ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
+            //         ref world, season_addresses_config.lords_address, structure_id,
+            //         lords_amount_attached, frontend,
             //     );
             // }
 
@@ -163,6 +166,9 @@ pub mod realm_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+
+            // emit achievement progression
+            AchievementTrait::progress(world, owner.into(), Tasks::SETTLEMENT, 1, starknet::get_block_timestamp());
 
             structure_id.into()
         }

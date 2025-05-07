@@ -31,6 +31,7 @@ pub mod troop_movement_systems {
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
     };
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::random::{VRFImpl};
     use starknet::ContractAddress;
@@ -221,6 +222,11 @@ pub mod troop_movement_systems {
 
             // update explorer
             world.write_model(@explorer);
+
+            // emit achievement progression
+            AchievementTrait::progress(
+                world, explorer.owner.into(), Tasks::EXPLORE, 1, starknet::get_block_timestamp(),
+            );
 
             tiles_to_return.span()
         }
