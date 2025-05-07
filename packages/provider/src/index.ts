@@ -7,7 +7,7 @@
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
-import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
+import { Account, AccountInterface, AllowArray, Call, CallData, Result, uint256 } from "starknet";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
@@ -232,11 +232,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+  async executeAndCheckTransaction(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): Promise<Result> {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
-    const tx = await this.execute(signer, transactionDetails, NAMESPACE, { version: 3 });
+    const tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     // Get the transaction type based on the entrypoint name
@@ -265,7 +268,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return transactionResult;
   }
 
-  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
+  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call): Promise<Result> {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -280,7 +283,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    * @throws Error if transaction fails or is reverted
    */
-  async waitForTransactionWithCheck(transactionHash: string) {
+  async waitForTransactionWithCheck(transactionHash: string): Promise<Result> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
@@ -1920,7 +1923,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       lords_address,
       start_settling_at,
       start_main_at,
-      end_grace_seconds,
+      bridge_close_end_grace_seconds,
+      point_registration_grace_seconds,
       signer,
     } = props;
 
@@ -1933,7 +1937,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         lords_address,
         start_settling_at,
         start_main_at,
-        end_grace_seconds,
+        bridge_close_end_grace_seconds,
+        point_registration_grace_seconds,
       ],
     });
   }

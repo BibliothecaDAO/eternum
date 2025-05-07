@@ -3,6 +3,7 @@ import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
+import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
 import {
@@ -18,6 +19,7 @@ import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
+import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
@@ -194,9 +196,12 @@ export const LocalStepOne = () => {
 export const StepOne = () => {
   const {
     setup: { components },
+    account: { account },
+    setup,
   } = useDojo();
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
+  const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
   const villageEntities = usePlayerOwnedVillageEntities();
@@ -207,6 +212,9 @@ export const StepOne = () => {
 
   const isSeasonActive = env.VITE_PUBLIC_SEASON_START_TIME <= Date.now() / 1000;
   const canPlay = hasRealmsOrVillages && isSeasonActive;
+
+  // Only set address name if user has realms or villages
+  useSetAddressName(setup, hasRealmsOrVillages ? account : null, connector);
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
@@ -261,11 +269,11 @@ export const StepOne = () => {
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" />
-          <div className="text-black">{isSeasonActive ? "Play" : timeRemaining}</div>
+          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Eternum" : timeRemaining}</div>
         </Button>
       ) : (
-        <Button size="lg" className="!bg-gold border-none" onClick={() => setShowToS(true)}>
-          <div className="text-black">Accept ToS</div>
+        <Button size="lg" className="!bg-gold border-none w-full" onClick={() => setShowToS(true)}>
+          <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
       <SpectateButton onClick={onSpectatorModeClick} />
@@ -276,7 +284,9 @@ export const StepOne = () => {
 export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button className="w-full" onClick={onClick} size="lg">
-      <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
+      <div className="flex items-center justify-start w-full">
+        <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
+      </div>
     </Button>
   );
 };

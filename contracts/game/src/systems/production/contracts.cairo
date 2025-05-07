@@ -152,7 +152,7 @@ mod production_systems {
 
         fn pause_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);

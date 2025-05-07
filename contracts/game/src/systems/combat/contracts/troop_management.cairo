@@ -102,14 +102,13 @@ pub mod troop_management_systems {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
             let mut world = self.world(DEFAULT_NS());
-            // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
-
             // ensure caller owns structure or is realms_systems
             let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
             if caller_address != realms_systems_address && caller_address != village_systems_address {
+                // ensure season is open
+                SeasonConfigImpl::get(world).assert_started_and_not_over();
                 StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
             }
 
@@ -670,7 +669,7 @@ mod tests {
         resource::resource::{ResourceImpl, m_Resource},
         structure::{
             StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
-            m_StructureVillageSlots,
+            m_StructureOwnerStats, m_StructureVillageSlots,
         },
         troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops},
     };
@@ -703,6 +702,7 @@ mod tests {
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
                 TestResource::Model(m_WeightConfig::TEST_CLASS_HASH), // structure, realm and buildings
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
+                TestResource::Model(m_StructureOwnerStats::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
                 TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
