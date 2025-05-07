@@ -277,12 +277,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
 #[generate_trait]
 pub impl StructureImpl of StructureTrait {
     fn new(
-        entity_id: ID,
-        category: StructureCategory,
-        coord: Coord,
-        owner: ContractAddress,
-        resources_packed: u128,
-        metadata: StructureMetadata,
+        entity_id: ID, category: StructureCategory, coord: Coord, resources_packed: u128, metadata: StructureMetadata,
     ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
         let mut structure: Structure = Default::default();
@@ -291,7 +286,6 @@ pub impl StructureImpl of StructureTrait {
         structure.base.category = category.into();
         structure.base.coord_x = coord.x;
         structure.base.coord_y = coord.y;
-        structure.owner = owner;
         structure.resources_packed = resources_packed;
         structure.metadata = metadata;
         match category {
