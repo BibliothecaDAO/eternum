@@ -149,7 +149,7 @@ const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
-export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + (ONE_HOUR_IN_SECONDS * 12); // 1 and half day
+export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
 
 // probably best if both these values are the same
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 2 days

@@ -1067,7 +1067,8 @@ export const setSeasonConfig = async (config: Config) => {
     lords_address: config.config.setup!.addresses.lords,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,
-    end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
+    bridge_close_end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
+    point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
 
   console.log(
@@ -1087,7 +1088,8 @@ export const setSeasonConfig = async (config: Config) => {
         timeZone: "UTC",
       }),
     )} UTC
-    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.end_grace_seconds))} after game ends
+    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
+    │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
     │
     │  ${chalk.yellow("Contract Addresses")}
     │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
