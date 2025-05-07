@@ -123,7 +123,6 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         };
 
         // create hyperstructure model
-        let now = starknet::get_block_timestamp();
         world
             .write_model(
                 @Hyperstructure {
