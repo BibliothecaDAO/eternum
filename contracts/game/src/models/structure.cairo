@@ -36,6 +36,7 @@ pub struct StructureOwnerStats {
     #[key]
     pub owner: ContractAddress,
     pub structures_num: u32,
+    pub name: felt252,
 }
 
 #[generate_trait]
