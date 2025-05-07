@@ -11,17 +11,20 @@ import {
   getRealmInfo,
   getStructure,
 } from "@bibliothecadao/eternum";
-import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArrowUpRightIcon, PlusIcon } from "lucide-react";
+import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
+
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const isNearWonder = true;
+  const [hasActivatedWonderBonus, setHasActivatedWonderBonus] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,34 +74,71 @@ export const Castle = () => {
   return (
     structure && (
       <div className="castle-selector w-full text-sm">
-        <div className="p-2 space-y-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 justify-between w-full">
-                <h5 className="text-2xl">{RealmLevels[realmInfo.level]}</h5>
-                {getNextRealmLevel && isOwner && (
-                  <Button
-                    variant={checkBalance ? "gold" : "outline"}
-                    disabled={!checkBalance}
-                    isLoading={isLoading}
-                    onClick={levelUpRealm}
-                  >
-                    {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
-
-                    <ArrowUpRightIcon className="w-4 h-4 ml-4" />
-                  </Button>
-                )}
+        <div className="p-4 space-y-6">
+          {/* Wonder Bonus Section */}
+          {isNearWonder && (
+            <div className="bg-gold/5 border border-gold/20 rounded-lg px-4 py-3 shadow-lg shadow-gold/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gold/10 p-2 rounded-lg">
+                    <SparklesIcon className="w-6 h-6 text-gold" />
+                  </div>
+                  <div>
+                    <h6 className="text-gold font-semibold">Wonder Bonus Available</h6>
+                    <p className="text-sm text-gold/70">
+                      {hasActivatedWonderBonus
+                        ? "Currently receiving +20% production bonus"
+                        : "Activate to receive +20% production bonus"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant={hasActivatedWonderBonus ? "gold" : "outline"}
+                  onClick={() => setHasActivatedWonderBonus(!hasActivatedWonderBonus)}
+                  disabled={isLoading}
+                  className="min-w-[140px]"
+                >
+                  {hasActivatedWonderBonus ? "Deactivate Bonus" : "Activate Bonus"}
+                </Button>
               </div>
             </div>
+          )}
 
+          {/* Realm Level Section */}
+          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-gold/10 p-2 rounded-lg">
+                  <CrownIcon className="w-6 h-6 text-gold" />
+                </div>
+                <h5 className="text-2xl font-bold text-gold">{RealmLevels[realmInfo.level]}</h5>
+              </div>
+
+              {getNextRealmLevel && isOwner && (
+                <Button
+                  variant={checkBalance ? "gold" : "outline"}
+                  disabled={!checkBalance}
+                  isLoading={isLoading}
+                  onClick={levelUpRealm}
+                  className="w-full"
+                >
+                  {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
+                  <ArrowUpRightIcon className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+
+            {/* Upgrade Requirements Section */}
             {getNextRealmLevel && isOwner && (
-              <div className="bg-gold/5 border border-gold/10 rounded px-4 py-4 space-y-3">
+              <div className="bg-gold/5 border border-gold/10 rounded-lg px-4 py-4 space-y-3">
                 <div>
-                  <h6 className="">Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}</h6>
-                  <p className="text-gold/90 mb-3">
+                  <h6 className="text-gold font-semibold mb-2">
+                    Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}
+                  </h6>
+                  <p className="text-gold/90 mb-4 text-sm">
                     {LEVEL_DESCRIPTIONS[(realmInfo.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
                       <ResourceCost
                         key={a.resource}
@@ -114,20 +154,27 @@ export const Castle = () => {
             )}
           </div>
 
-          <div className="pt-2">
+          {/* Resources Section */}
+          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
             {structure && structure.structure.base.category === StructureType.Realm && (
-              <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entityId} />
+              <RealmResourcesIO
+                size="md"
+                titleClassName="uppercase font-semibold text-gold"
+                realmEntityId={structure.entityId}
+              />
             )}
           </div>
 
+          {/* Labor Production Button */}
           {isOwner && (
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center">
               <Button
                 onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
                 variant="primary"
                 withoutSound
+                className="w-full max-w-[300px]"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <PlusIcon className="w-4 h-4" />
                   Produce Labor
                 </div>
