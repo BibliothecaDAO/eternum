@@ -37,31 +37,31 @@ export const RealmsContainer = ({
 
   const scores = useMinigameStore((state) => state.scores);
 
-  const quests = getQuests(components, questTileEntity?.game_address as string, Object.values(scores || {}));
+  const quests = getQuests(components, questTileEntity?.game_address as string, questTileEntity?.id ?? 0);
 
   const armyInfo = getArmy(explorerEntityId, ContractAddress(account?.address), components);
 
   const realmsOrVillages = useMemo(() => {
-    const matchingRealmId = armyInfo?.structure?.metadata?.realm_id;
+    const matchingStructureEntityId = armyInfo?.structure?.entity_id;
 
     return playerStructures
       .filter((structure) => structure.category === StructureType.Realm || structure.category === StructureType.Village)
       .map((structure) => ({
         ...structure,
         // Add a flag to identify if this structure matches the armyInfo
-        isMatchingRealm: structure?.structure?.metadata?.realm_id === matchingRealmId,
+        isMatchingStructure: structure?.structure?.entity_id === matchingStructureEntityId,
       }))
       .sort((a, b) => {
         // First sort by matching flag (true comes before false)
-        if (a.isMatchingRealm && !b.isMatchingRealm) return -1;
-        if (!a.isMatchingRealm && b.isMatchingRealm) return 1;
+        if (a.isMatchingStructure && !b.isMatchingStructure) return -1;
+        if (!a.isMatchingStructure && b.isMatchingStructure) return 1;
 
         // If both match or both don't match, sort by realmId
-        const aRealmId = a?.structure?.metadata?.realm_id || 0;
-        const bRealmId = b?.structure?.metadata?.realm_id || 0;
-        return aRealmId - bRealmId;
+        const aStructureEntityId = a?.structure?.entity_id || 0;
+        const bStructureEntityId = b?.structure?.entity_id || 0;
+        return aStructureEntityId - bStructureEntityId;
       });
-  }, [playerStructures, armyInfo?.structure?.metadata?.realm_id]);
+  }, [playerStructures, armyInfo?.structure?.entity_id]);
 
   const fullCapacity = useMemo(() => {
     return questTileEntity?.capacity === questTileEntity?.participant_count;
@@ -69,9 +69,9 @@ export const RealmsContainer = ({
 
   return (
     <div className="grid grid-cols-3 gap-3 overflow-y-auto w-3/4 mx-auto pt-5">
-      {realmsOrVillages.map((structure) => {
+      {realmsOrVillages.map((structure, index) => {
         return (
-          <div className="h-36">
+          <div className="h-36" key={index}>
             <QuestRealm
               questLevelInfo={questLevel}
               structureInfo={structure}

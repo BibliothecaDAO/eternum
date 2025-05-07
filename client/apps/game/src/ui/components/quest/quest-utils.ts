@@ -1,21 +1,17 @@
 import { ClientComponents } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
-import { GameScore } from "metagame-sdk";
 
-export const getQuests = (components: ClientComponents, gameAddress: string, scores: GameScore[]) => {
-  const gameIdsQueryFrament =
-    scores.length > 0
-      ? [
-          Has(components.Quest),
-          ...scores.map((score) =>
-            HasValue(components.Quest, {
-              game_address: gameAddress,
-              game_token_id: BigInt(score.token_id),
-            }),
-          ),
-        ]
-      : [HasValue(components.Quest, { game_address: "0x0" })];
+export const getQuests = (components: ClientComponents, gameAddress: string, questTileId: number) => {
+  const gameIdsQueryFrament = !!questTileId
+    ? [
+        Has(components.Quest),
+        HasValue(components.Quest, {
+          game_address: gameAddress,
+          quest_tile_id: questTileId,
+        }),
+      ]
+    : [HasValue(components.Quest, { game_address: "0x0" })];
 
   const questEntities = useEntityQuery([...gameIdsQueryFrament]);
 

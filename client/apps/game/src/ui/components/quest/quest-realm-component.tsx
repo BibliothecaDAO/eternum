@@ -26,14 +26,14 @@ export const QuestRealm = ({
   fullCapacity,
   loadingQuests,
 }: QuestRealmProps) => {
-  const realmId = structureInfo.structure.metadata.realm_id;
-  const questExplorerUsed = realmId === armyInfo?.structure?.metadata?.realm_id;
+  const structureEntityId = structureInfo.structure.entity_id;
+  const questExplorerUsed = structureEntityId === armyInfo?.structure?.entity_id;
   const explorers = useExplorersByStructure({ structureEntityId: structureInfo.entityId });
 
   const questEntitiesWithExplorers = questEntities.filter((quest) =>
     explorers.some((explorer) => explorer.entityId === quest?.explorer_id),
   );
-  const quest = questEntitiesWithExplorers[0];
+  const quest = questEntitiesWithExplorers[0]; // there should only be one quest per realm / village
   const isCompleted = quest?.completed;
   const game = questGames?.[Number(quest?.game_token_id)];
 
@@ -143,8 +143,8 @@ export const CurrentQuest = ({
       systemCalls: { claim_reward },
     },
   } = useDojo();
-  const realmId = structureInfo.structure.metadata.realm_id;
-  const questExplorerUsed = realmId === armyInfo?.structure?.metadata?.realm_id;
+  const structureEntityId = structureInfo.structure.entity_id;
+  const questExplorerUsed = structureEntityId === armyInfo?.structure?.entity_id;
   const targetScore = questLevelInfo?.value?.target_score?.value;
 
   const isCompleted = quest?.completed;
