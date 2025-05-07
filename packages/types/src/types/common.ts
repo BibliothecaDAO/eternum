@@ -452,6 +452,7 @@ export interface Config {
     startSettlingAfterSeconds: number;
     startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
+    pointRegistrationCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;
