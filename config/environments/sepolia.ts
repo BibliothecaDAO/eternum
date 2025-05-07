@@ -24,7 +24,7 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   village: {
     ...CommonEternumGlobalConfig.village,
-    village_mint_initial_recipient: "0x077b8Ed8356a7C1F0903Fc4bA6E15F9b09CF437ce04f21B2cBf32dC2790183d0",
+    village_mint_initial_recipient: "0x054f2b25070d70d49f1c1f7c10Ef2639889fDAc15894D3FBa1a03caF5603eCA3",
   },
   troop: {
     ...CommonEternumGlobalConfig.troop,
@@ -47,8 +47,8 @@ export const SepoliaEternumGlobalConfig: Config = {
     shardsMinesFailProbability: 11,
     agentFindProbability: 1,
     agentFindFailProbability: 6,
-    questFindProbability: 19,
-    questFindFailProbability: 1,
+    questFindProbability: 1,
+    questFindFailProbability: 10,
   },
   season: {
     ...CommonEternumGlobalConfig.season,
