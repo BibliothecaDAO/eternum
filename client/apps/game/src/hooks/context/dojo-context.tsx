@@ -214,15 +214,19 @@ const DojoContextProvider = ({
               {!isConnected && (
                 <>
                   <Button size="lg" variant="gold" onClick={connectWallet} className="w-full">
-                    <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
-                    Log In
+                    <div className="flex items-center justify-start w-full">
+                      <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
+                      <span className="flex-grow text-center">Log In</span>
+                    </div>
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
 
                   <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full" size="lg">
-                      <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
-                      Mint Season Pass
+                      <div className="flex items-center justify-start w-full">
+                        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                        <span className="flex-grow text-center">Mint Season Pass</span>
+                      </div>
                     </Button>
                   </a>
                 </>
