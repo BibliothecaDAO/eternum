@@ -159,18 +159,18 @@ export const QuestContainer = ({
         <img src={gameImage} alt="Dark Shuffle" className="object-cover w-full h-full object-center" />
       </div>
       <div className="flex flex-row justify-between items-center w-3/4 p-5 mx-auto border border-gold/20 bg-gold/10 rounded-lg">
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 w-1/3">
           <span className="text-gold/80">Reward</span>
           <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
             <ResourceIcon resource={ResourcesIds[questTileEntity?.resource_type ?? 0]} size="lg" />
             <span>{currencyFormat(Number(rewardAmount), 0)}</span>
           </span>
         </div>
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 w-1/3">
           <span className="text-gold/80">Difficulty</span>
           <span className="text-2xl font-bold text-gold">{settingName}</span>
         </div>
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 w-1/3">
           <span className="text-gold/80">Cost</span>
           <span className="text-2xl font-bold text-gold">Free</span>
         </div>
