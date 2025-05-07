@@ -1,6 +1,6 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
+import { AugmentedRealm } from "@/routes/mint.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { CheckCircle2, Loader } from "lucide-react";
@@ -11,9 +11,7 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 const IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="; // Transparent 1x1 gif
 
 interface RealmCardProps {
-  realm: NonNullable<NonNullable<NonNullable<GetAccountTokensQuery>["tokenBalances"]>["edges"]>[0] & {
-    seasonPassMinted?: boolean;
-  };
+  realm: AugmentedRealm;
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
@@ -27,12 +25,11 @@ interface ListingDetails {
 }
 
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
-  const { tokenId, contractAddress } = { tokenId: BigInt(realm.token_id) }
+  const { tokenId, contractAddress } = { tokenId: BigInt(realm.tokenId), contractAddress: realm.originalRealm?.contract_address }
     /*{ tokenId: "", contractAddress: "", metadata: "" };*/
 
-  const parsedMetadata: RealmMetadata | null = realm.metadata ? JSON.parse(realm.metadata) : null;
-  const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
-  console.log(parsedMetadata)
+  const { attributes, name, image: originalImageUrl } = realm.parsedMetadata ?? {};
+
 
   const { address: accountAddress } = useAccount();
 
@@ -172,7 +169,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     fetchListingStatus();
   }, [tokenId, contractAddress, components]); // Add components dependency
 
-  const hasSeasonPassMinted = realm.season_pass_balance != null
+  const hasSeasonPassMinted = realm.seasonPassMinted
   const isLoadingStatus =  isFetchingRealmOwner;
 
   return (

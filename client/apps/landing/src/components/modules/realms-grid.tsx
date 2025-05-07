@@ -1,21 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { TokenBalance } from "@/routes/season-passes.lazy";
+import { AugmentedRealm } from "@/routes/mint.lazy";
 import { Grid2X2, Grid3X3 } from "lucide-react";
 import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
 import { RealmCard } from "./realm-card";
-
 interface RealmGridItem {
   colSpan?: {
     sm?: number;
     md?: number;
     lg?: number;
   };
-  data: TokenBalance;
+  data: AugmentedRealm;
 }
 
 interface SeasonPassRowProps {
-  realms: TokenBalance[];
+  realms: AugmentedRealm[];
   seasonPassTokenIds?: string[];
   toggleNftSelection: (tokenId: string, collectionAddress: string) => void;
   isNftSelected?: (tokenId: string, contractAddress: string) => boolean;
@@ -66,14 +65,14 @@ export const RealmsGrid = ({
 
           const isSelected =
             isNftSelected?.(
-              realm.token_id,
-              realm.contract_address,
+              realm.tokenId,
+              realm.originalRealm?.contract_address,
             ) ?? false;
 
           return (
             <RealmCard
               toggleNftSelection={toggleNftSelection}
-              key={`${realm.token_id}`}
+              key={`${realm.tokenId}`}
               isSelected={isSelected}
               realm={realm}
               onSeasonPassStatusChange={onSeasonPassStatusChange}

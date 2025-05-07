@@ -45,6 +45,7 @@ export const getSeasonPassNfts = (data: GetAccountTokensQuery | null): TokenBala
     }) ?? []
   );
 };
+type ViewMode = "my" | "all";
 
 function SeasonPasses() {
   const { connectors, connect } = useConnect();
@@ -53,6 +54,7 @@ function SeasonPasses() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
+  const [viewMode, setViewMode] = useState<ViewMode>("my");
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);

@@ -14,7 +14,6 @@ import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { Bug, Loader2, PartyPopper, Send } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
@@ -35,13 +34,10 @@ export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
 
-// Define the type for a single realm edge, assuming GetAccountTokensQuery is correctly generated
-type RealmEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-
 // Define the structure of the augmented realm used internally
-interface AugmentedRealm {
-  originalRealm: RealmEdge; // Keep the original structure
-  parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] };
+export interface AugmentedRealm {
+  originalRealm: SeasonPassRealm; // Keep the original structure
+  parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[]; image: string, description?: string };
   seasonPassMinted: boolean;
   tokenId: string;
 }
@@ -384,10 +380,7 @@ function Mint() {
 
                       console.log("eligibleTokenIds", eligibleTokenIds);
 
-                      // Safely access contractAddress only for ERC721 from the first displayed realm's original data
-                      const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
-                      const contractAddress =
-                        firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
+                      const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
 
                       return (
                         <SelectNftActions
@@ -428,7 +421,7 @@ function Mint() {
               <RealmsGrid
                 isNftSelected={isNftSelected}
                 toggleNftSelection={toggleNftSelection}
-                realms={paginatedRealms.map((ar) => ar.originalRealm) ?? []} // Use paginated data
+                realms={paginatedRealms ?? []} // Use paginated data
                 onSeasonPassStatusChange={handleSeasonPassStatusChange}
               />
             </Suspense>
@@ -448,9 +441,8 @@ function Mint() {
                   .map((realm) => realm.tokenId);
 
                 // Safely access contractAddress only for ERC721 from the first displayed realm's original data
-                const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
-                const contractAddress =
-                  firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
+                const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
+
 
                 return (
                   <SelectNftActions
