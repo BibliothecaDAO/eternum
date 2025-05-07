@@ -139,31 +139,12 @@ export class SystemManager {
     callback: (value: T) => void,
     getUpdate: (update: any) => T | undefined,
     runOnInit = true,
-    maxRetries = 10,
-    retryDelay = 500,
   ) {
     const handleUpdate = (update: any) => {
       const value = getUpdate(update);
       if (value) {
         callback(value);
-        return;
       }
-
-      let retries = 0;
-      const tryGetUpdate = () => {
-        const value = getUpdate(update);
-        if (value) {
-          callback(value);
-          return;
-        }
-
-        retries++;
-        if (retries < maxRetries) {
-          setTimeout(tryGetUpdate, retryDelay);
-        }
-      };
-
-      setTimeout(tryGetUpdate, retryDelay);
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, {
@@ -182,17 +163,17 @@ export class SystemManager {
               const [currentState, _prevState] = update.value;
               const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
 
-              // leaving this condition here so that typescript is happy.
               if (!explorer) return;
 
-              const owner = getComponentValue(
+              const explorerTroops = getComponentValue(
                 this.setup.components.ExplorerTroops,
                 getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              )?.owner;
+              );
 
-              const structure = owner
-                ? getComponentValue(this.setup.components.Structure, getEntityIdFromKeys([BigInt(owner)]))
-                : undefined;
+              const structure = getComponentValue(
+                this.setup.components.Structure,
+                getEntityIdFromKeys([BigInt(explorerTroops?.owner || 0)]),
+              );
 
               return {
                 entityId: currentState.occupier_id,
