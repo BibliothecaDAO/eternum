@@ -155,7 +155,7 @@ async function init() {
 
   const state = useUIStore.getState();
   const syncingStore = useSyncStore.getState();
-  
+
   console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },
