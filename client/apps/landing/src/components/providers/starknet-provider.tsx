@@ -13,6 +13,7 @@ const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
   .map(([_, [__, address]]) => address.toString());
 
+const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
 const chain_id =
@@ -20,6 +21,7 @@ const chain_id =
 const cartridgeController = new ControllerConnector({
   chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
   defaultChainId: chain_id,
+  preset,
   namespace,
   slot,
   tokens: {
@@ -43,7 +45,7 @@ export function StarknetProvider({ children, onlyCartridge }: { children: React.
 
   return (
     <StarknetConfig
-      chains={[chain]}
+      chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
       connectors={[cartridgeController, ...(onlyCartridge ? [] : [...connectors])]}
       explorer={voyager}

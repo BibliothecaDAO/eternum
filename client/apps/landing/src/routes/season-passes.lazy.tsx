@@ -91,9 +91,9 @@ function SeasonPasses() {
     // Use the appropriate NFT edges based on view mode
     const nftEdges = mySeasonPassNfts;
     // Adjust access based on actual response structure from GET_MARKETPLACE_ORDERS
-    const orderEdges = marketplaceOrdersData?.marketplaceMarketOrderModelModels?.edges;
+    const orderEdges = marketplaceOrdersData?.marketplaceMarketOrderModelModels?.edges || [];
 
-    if (!nftEdges || !orderEdges) return [];
+    if (!nftEdges) return [];
 
     // 1. Process marketplace orders to find min price per token ID
     const orderInfoMap = new Map<string, { minPrice: bigint; owner: string; orderId: string; expiration: string }>();
@@ -247,8 +247,12 @@ function SeasonPasses() {
 
         <>
           {/* Page Title */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">Your Season Passes</h2>
-          <p className="text-center text-muted-foreground mb-6">View and manage your Season Pass NFTs.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">
+            {viewMode === "my" ? "Your Season Passes" : "All Season Passes"}
+          </h2>
+          <p className="text-center text-muted-foreground mb-6">
+            {viewMode === "my" ? "View and manage your Season Pass NFTs" : "Browse all available Season Pass NFTs."}
+          </p>
 
           {/* Filter UI */}
           <div>

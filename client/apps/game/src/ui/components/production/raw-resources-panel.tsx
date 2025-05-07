@@ -79,7 +79,7 @@ export const RawResourcesPanel = ({
                       : "text-gold"
                   }`}
                 >
-                  {balance}
+                  {balance.toLocaleString()}
                 </span>
                 <div>
                   <NumberInput

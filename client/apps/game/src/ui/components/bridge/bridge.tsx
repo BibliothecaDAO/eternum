@@ -337,7 +337,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           >
             <SelectValue placeholder="Select Structure..." />
           </SelectTrigger>
-          <SelectContent className="bg-gray-700 border-gray-600 panel-wood dark:bg-dark-wood">
+          <SelectContent className="bg-gray-700 border-gray-600 panel-wood bg-dark-wood">
             {structuresWithFavorites.map((structure) =>
               structure.entityId ? (
                 <div key={structure.entityId} className="flex flex-row items-center pr-2 hover:bg-gray-600">
@@ -447,7 +447,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
                     <SelectTrigger className="w-full panel-wood">
                       <SelectValue placeholder="Select Resource..." />
                     </SelectTrigger>
-                    <SelectContent className="panel-wood dark:bg-dark-wood">
+                    <SelectContent className="panel-wood bg-dark-wood">
                       {bridgeableResources.map((br) => (
                         <SelectItem key={br.id} value={br.id.toString()}>
                           <div className="flex items-center gap-2">

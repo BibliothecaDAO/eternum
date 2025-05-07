@@ -186,7 +186,7 @@ export const SeasonPassRealm = ({
   return (
     <div
       key={seasonPassRealm.realmId}
-      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md dark:bg-dark-wood transition-colors duration-200 ${
+      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md bg-dark-wood transition-colors duration-200 ${
         selected ? "border-gold/40 bg-black/80" : "border-transparent"
       } ${className} border hover:border-gold cursor-pointer`}
       onClick={() => setSelected(!selected)}

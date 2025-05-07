@@ -1,8 +1,8 @@
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBuildingQuantity, getRealmInfo } from "@bibliothecadao/eternum";
-import { BuildingType, ID, RESOURCE_TIERS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { BuildingType, ID, RESOURCE_TIERS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
 
@@ -52,7 +52,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   return (
     <div>
       <div className="flex justify-between items-center mb-4 pb-2 border-b border-gold/20 p-1">
-        <h3 className="text-gold font-semibold">Resources</h3>
+        <h4>Resources</h4>
         <label className="inline-flex items-center cursor-pointer">
           <span className={`mr-2 text-xxs ${showAllResources ? "text-gold/50" : ""}`}>Hide Empty</span>
           <div className="relative">

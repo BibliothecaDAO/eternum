@@ -15,10 +15,9 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::structure::{
     Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
     StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
-    StructureVillageSlots,
+    StructureTroopGuardStoreImpl, StructureVillageSlots,
 };
-use s1_eternum::models::troop::{ExplorerTroops};
-use s1_eternum::models::troop::{GuardSlot, TroopsImpl};
+use s1_eternum::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopsImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::combat::contracts::troop_management::{
     ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
@@ -149,9 +148,11 @@ pub impl iStructureImpl of IStructureTrait {
         // save structure model
         let structure_resources_packed: u128 = StructureResourcesImpl::pack_resource_types(resources);
         let structure: Structure = StructureImpl::new(
-            structure_id, category, coord, owner, structure_resources_packed, metadata,
+            structure_id, category, coord, structure_resources_packed, metadata,
         );
         world.write_model(@structure);
+        // call the store function to ensure structure owner stats are updated
+        StructureOwnerStoreImpl::store(owner, ref world, structure_id);
 
         // set tile occupier
         IMapImpl::occupy(ref world, ref tile, tile_occupier, structure_id);
@@ -174,6 +175,28 @@ pub impl iStructureImpl of IStructureTrait {
         ResourceImpl::write_weight(ref world, structure_id, structure_weight);
     }
 
+
+    fn battle_claim(
+        ref world: WorldStorage,
+        ref structure_guards: GuardTroops,
+        ref structure_base: StructureBase,
+        ref explorer: ExplorerTroops,
+        structure_id: ID,
+    ) {
+        if explorer.owner != DAYDREAMS_AGENT_ID {
+            if structure_base.category != StructureCategory::Village.into() {
+                // reset all guard troops
+                structure_guards.reset_all_slots();
+                StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+
+                // change owner of structure
+                let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, explorer.owner,
+                );
+                StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+            }
+        }
+    }
 
     fn claim(
         ref world: WorldStorage, ref structure_base: StructureBase, ref explorer: ExplorerTroops, structure_id: ID,
@@ -218,6 +241,7 @@ pub impl iStructureImpl of IStructureTrait {
                     // store the resource
                     realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
                     realm_resource.store(ref world);
+                    structure_weight.store(ref world, structure_id);
 
                     // create starting guard
                     let start_guard_troop_amount = resource_amount - TroopsImpl::start_resource_amount();
@@ -234,9 +258,9 @@ pub impl iStructureImpl of IStructureTrait {
             } else {
                 realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
                 realm_resource.store(ref world);
+                structure_weight.store(ref world, structure_id);
             }
         };
-        structure_weight.store(ref world, structure_id);
     }
 }
 

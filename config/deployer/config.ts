@@ -19,6 +19,7 @@ import chalk from "chalk";
 import type { EternumProvider } from "@bibliothecadao/provider";
 import fs from "fs";
 import type { Account } from "starknet";
+import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
@@ -30,9 +31,19 @@ interface Config {
 
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
+  public network: NetworkType;
 
-  constructor(config: EternumConfig) {
+  constructor(config: EternumConfig, network: NetworkType) {
     this.globalConfig = config;
+    this.network = network;
+  }
+
+  async sleepNonLocal() {
+    if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
+      let sleepSeconds = 1;
+      console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
+      await new Promise((resolve) => setTimeout(resolve, sleepSeconds * 1000));
+    }
   }
 
   async setupAll(account: Account, provider: EternumProvider) {
@@ -43,34 +54,82 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await this.sleepNonLocal();
+
     await setWonderBonusConfig(config);
+    await this.sleepNonLocal();
+
     await setAgentConfig(config);
+    await this.sleepNonLocal();
+
     await setVillageControllersConfig(config);
+    await this.sleepNonLocal();
+
     await SetResourceFactoryConfig(config);
+    await this.sleepNonLocal();
+
     await setResourceBridgeWhitelistConfig(config);
+    await this.sleepNonLocal();
+
     await setTradeConfig(config);
+    await this.sleepNonLocal();
+
     await setStartingResourcesConfig(config);
+    await this.sleepNonLocal();
+
     await setSeasonConfig(config);
+    await this.sleepNonLocal();
+
     await setVRFConfig(config);
+    await this.sleepNonLocal();
+
     await setResourceBridgeFeesConfig(config);
+    await this.sleepNonLocal();
+
     await setBuildingConfig(config);
+    await this.sleepNonLocal();
+
     await setWeightConfig(config);
+    await this.sleepNonLocal();
+
     await setBattleConfig(config);
+    await this.sleepNonLocal();
+
     await setTroopConfig(config);
+    await this.sleepNonLocal();
+
     await setRealmUpgradeConfig(config);
+    await this.sleepNonLocal();
+
     await setStructureMaxLevelConfig(config);
+    await this.sleepNonLocal();
+
     await setupGlobals(config);
+    await this.sleepNonLocal();
+
     await setCapacityConfig(config);
+    await this.sleepNonLocal();
+
     await setSpeedConfig(config);
+    await this.sleepNonLocal();
+
     await setHyperstructureConfig(config);
+    await this.sleepNonLocal();
+
     await setSettlementConfig(config);
+    await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await createBanks(config);
+    await this.sleepNonLocal();
+
     // await mintResources(config);
+    // await this.sleepNonLocal();
+
     await addLiquidity(config);
+    await this.sleepNonLocal();
   }
 
   getResourceOutputsScaled(): ResourceOutputs {

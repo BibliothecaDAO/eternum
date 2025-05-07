@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { lordsAddress } from "@/config";
+import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { RealmMetadata } from "@/types";
-import { useAccount, useBalance, useConnect } from "@starknet-react/core";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -71,13 +71,9 @@ export const RealmDetailModal = ({
   const { address } = useAccount();
   const { connectors, connect } = useConnect();
 
-  // Fetch user's LORDS balance
-  const { data: balanceData } = useBalance({
-    address: address,
-    token: lordsAddress as `0x${string}`,
-    watch: true,
-  });
-  const userBalance = balanceData?.value ?? BigInt(0);
+  const { lordsBalance } = useLords();
+
+  const userBalance = lordsBalance ?? BigInt(0);
   const nftPrice = price ?? BigInt(0);
   const hasSufficientBalance = userBalance >= nftPrice;
 

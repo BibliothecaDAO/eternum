@@ -14,7 +14,7 @@ pub trait IResourceBridgeSystems<T> {
         amount: u128,
         client_fee_recipient: ContractAddress,
     );
-    fn lp_withdraw(ref self: T, to_address: ContractAddress, resource_type: u8, amount: u128);
+    fn lp_withdraw(ref self: T, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128);
 }
 
 
@@ -29,6 +29,7 @@ pub mod resource_bridge_systems {
         ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::config::{SeasonConfigImpl};
+    use s1_eternum::models::owner::{OwnerAddressImpl};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -57,7 +58,7 @@ pub mod resource_bridge_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the bridge is open
-            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure the recipient of the bridged resources is a realm or village
             let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
@@ -74,9 +75,9 @@ pub mod resource_bridge_systems {
             let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
-            // ensure caller is owner of to_structure_id or realm systems
+            // ensure caller is owner of to_structure_id
             let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
-            iBridgeImpl::assert_only_owner_or_realm_systems(world, get_caller_address(), to_structure_owner);
+            to_structure_owner.assert_caller_owner();
 
             // transfer the deposit amount from the caller to this contract
             let caller = get_caller_address();
@@ -152,7 +153,7 @@ pub mod resource_bridge_systems {
 
             // ensure caller is owner of from_structure_id
             let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
-            assert!(from_structure_owner == get_caller_address(), "caller is not owner of from_structure_id");
+            from_structure_owner.assert_caller_owner();
 
             // ensure from_structure_id is a realm or village
             let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
@@ -215,7 +216,9 @@ pub mod resource_bridge_systems {
         }
 
 
-        fn lp_withdraw(ref self: ContractState, to_address: ContractAddress, resource_type: u8, amount: u128) {
+        fn lp_withdraw(
+            ref self: ContractState, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             //todo ensure only liquidity systems can call this
@@ -244,14 +247,19 @@ pub mod resource_bridge_systems {
                 / inefficiency_percentage_denom.into();
             let amount = amount - amount_lost_to_inefficiency;
 
+            // send fees to realm if from_structure is a village
+            let bank_resource_fee_amount = iBridgeImpl::send_bank_fees(
+                ref world, through_bank_id, resource_type, amount, BridgeTxType::Withdrawal,
+            );
+
             // send platform fees
             let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
             let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
                 ref world, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
             );
             // transfer withdrawm erc20 amount to recipient
-            let realm_token_fee_amount = 0;
-            let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
+            let bank_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, bank_resource_fee_amount);
+            let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - platform_token_fee_amount;
             iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
         }
     }

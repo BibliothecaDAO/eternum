@@ -65,7 +65,7 @@ pub mod guild_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::SeasonConfigImpl;
     use s1_eternum::models::guild::{Guild, GuildMember, GuildWhitelist};
-    use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::structure::StructureOwnerStats;
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]
@@ -79,8 +79,8 @@ pub mod guild_systems {
 
             // ensure caller is/was a game player
             let caller_address = starknet::get_caller_address();
-            let caller_name: AddressName = world.read_model(caller_address);
-            assert!(caller_name.name.is_non_zero(), "No AddressName set for guild creator");
+            let caller_stats: StructureOwnerStats = world.read_model(caller_address);
+            assert!(caller_stats.structures_num > 0, "No structures owned by caller");
 
             // ensure caller doesnt own a guild
             let mut guild: Guild = world.read_model(caller_address);
@@ -99,6 +99,9 @@ pub mod guild_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller_address = starknet::get_caller_address();
+            let caller_stats: StructureOwnerStats = world.read_model(caller_address);
+            assert!(caller_stats.structures_num > 0, "No structures owned by caller");
+
             let mut guild_member: GuildMember = world.read_model(caller_address);
 
             // remove player from existing guild
@@ -159,8 +162,8 @@ pub mod guild_systems {
             let mut guild: Guild = world.read_model(caller_address);
             assert!(guild.member_count.is_non_zero(), "guild does not exist");
 
-            let whitelisted_player_name: AddressName = world.read_model(address);
-            assert(whitelisted_player_name.name.is_non_zero(), 'Address given is not a player');
+            let whitelisted_player_stats: StructureOwnerStats = world.read_model(address);
+            assert!(whitelisted_player_stats.structures_num > 0, "Address given is not a player address");
 
             world.write_model(@GuildWhitelist { guild_id: caller_address, address, whitelisted: whitelist });
         }
