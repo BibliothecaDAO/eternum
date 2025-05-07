@@ -8,7 +8,7 @@ use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::position::{Coord, CoordTrait, Direction};
+use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -372,10 +372,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         self.produced_resource().is_non_zero()
     }
 
-    fn is_adjacent_building_booster(self: Building) -> bool {
-        self.boost_adjacent_building_production_by().is_non_zero()
-    }
-
     fn allowed_for_all_realms_and_villages(self: Building) -> bool {
         let category: BuildingCategory = self.category.into();
         match category {
@@ -468,51 +464,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         }
     }
 
-    fn boost_adjacent_building_production_by(self: Building) -> u32 {
-        return 0;
-        // let category: BuildingCategory = self.category.into();
-    // match category {
-    //     BuildingCategory::None => 0,
-    //     BuildingCategory::WorkersHut => 0,
-    //     BuildingCategory::Storehouse => 0,
-    //     BuildingCategory::ResourceStone => 0,
-    //     BuildingCategory::ResourceCoal => 0,
-    //     BuildingCategory::ResourceWood => 0,
-    //     BuildingCategory::ResourceCopper => 0,
-    //     BuildingCategory::ResourceIronwood => 0,
-    //     BuildingCategory::ResourceObsidian => 0,
-    //     BuildingCategory::ResourceGold => 0,
-    //     BuildingCategory::ResourceSilver => 0,
-    //     BuildingCategory::ResourceMithral => 0,
-    //     BuildingCategory::ResourceAlchemicalSilver => 0,
-    //     BuildingCategory::ResourceColdIron => 0,
-    //     BuildingCategory::ResourceDeepCrystal => 0,
-    //     BuildingCategory::ResourceRuby => 0,
-    //     BuildingCategory::ResourceDiamonds => 0,
-    //     BuildingCategory::ResourceHartwood => 0,
-    //     BuildingCategory::ResourceIgnium => 0,
-    //     BuildingCategory::ResourceTwilightQuartz => 0,
-    //     BuildingCategory::ResourceTrueIce => 0,
-    //     BuildingCategory::ResourceAdamantine => 0,
-    //     BuildingCategory::ResourceSapphire => 0,
-    //     BuildingCategory::ResourceEtherealSilica => 0,
-    //     BuildingCategory::ResourceDragonhide => 0,
-    //     BuildingCategory::ResourceLabor => 0,
-    //     BuildingCategory::ResourceEarthenShard => 0,
-    //     BuildingCategory::ResourceDonkey => 0,
-    //     BuildingCategory::ResourceKnightT1 => 0,
-    //     BuildingCategory::ResourceKnightT2 => 0,
-    //     BuildingCategory::ResourceKnightT3 => 0,
-    //     BuildingCategory::ResourceCrossbowmanT1 => 0,
-    //     BuildingCategory::ResourceCrossbowmanT2 => 0,
-    //     BuildingCategory::ResourceCrossbowmanT3 => 0,
-    //     BuildingCategory::ResourcePaladinT1 => 0,
-    //     BuildingCategory::ResourcePaladinT2 => 0,
-    //     BuildingCategory::ResourcePaladinT3 => 0,
-    //     BuildingCategory::ResourceWheat => 0,
-    //     BuildingCategory::ResourceFish => 0,
-    // }
-    }
     fn update_production(
         ref self: Building, ref world: WorldStorage, structure_category: u8, ref structure_weight: Weight, stop: bool,
     ) {
@@ -536,9 +487,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
                 // bonus received percent so production rate is decreased correctly
                 let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
 
-                // update bonus received percent
-                self.update_bonus_received_percent(ref world, delete: true);
-
                 // decrease building count
                 production.decrease_building_count();
 
@@ -546,9 +494,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
                 production.decrease_production_rate(produced_amount_every_second.try_into().unwrap());
             },
             false => {
-                // update bonus received percent
-                self.update_bonus_received_percent(ref world, delete: false);
-
                 // ensure production amount is gotten AFTER updating
                 // bonus received percent so production rate is increased correctly
                 let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
@@ -575,10 +520,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             self.update_production(ref world, structure_category, ref structure_weight, stop: false);
         }
 
-        if self.is_adjacent_building_booster() {
-            // give out bonuses to surrounding buildings
-            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: false);
-        }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
 
@@ -594,10 +535,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             self.update_production(ref world, structure_category, ref structure_weight, stop: true);
         }
 
-        if self.is_adjacent_building_booster() {
-            // remove bonuses it gave to surrounding buildings
-            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: true);
-        }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
 
@@ -618,147 +555,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             resource_factory_config.realm_output_per_second.into()
         };
 
-        let bonus_amount_every_second: u128 = (produced_amount_every_second * (*self.bonus_percent).into())
-            / PercentageValueImpl::_100().into();
-
-        produced_amount_every_second + bonus_amount_every_second
-    }
-
-
-    fn update_bonus_received_percent(ref self: Building, ref world: WorldStorage, delete: bool) {
-        if delete {
-            // clear building bonus
-            self.bonus_percent = 0;
-        } else {
-            // get bonuses from all buildings surronding this building if the offer boosts
-            let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
-            let mut bonus_percent = self.get_bonus_from(building_coord.neighbor(Direction::East), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthEast), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthWest), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::West), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::SouthWest), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::SouthEast), ref world);
-
-            // set new bonus percent
-            self.bonus_percent = bonus_percent;
-        }
-    }
-
-    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, ref world: WorldStorage) -> u32 {
-        // only get bonuses from buildings that are active (not paused)
-        let bonus_giver_building: Building = world
-            .read_model((self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y));
-        if bonus_giver_building.paused {
-            return 0;
-        } else {
-            return bonus_giver_building.boost_adjacent_building_production_by();
-        }
-    }
-
-
-    fn update_bonuses_supplied(
-        self: @Building, ref world: WorldStorage, structure_category: u8, ref structure_weight: Weight, delete: bool,
-    ) {
-        let self = *self;
-
-        if self.is_adjacent_building_booster() {
-            let self_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
-
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::East), structure_category, ref structure_weight, ref world, delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthEast),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthWest),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::West), structure_category, ref structure_weight, ref world, delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthWest),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthEast),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-        }
-    }
-
-
-    fn update_bonus_supplied_to(
-        self: Building,
-        receiver_inner_coord: Coord,
-        structure_category: u8,
-        ref structure_weight: Weight,
-        ref world: WorldStorage,
-        delete: bool,
-    ) {
-        let mut recipient_building: Building = world
-            .read_model((self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y));
-        if recipient_building.exists() // only when building exists at the location
-            && !recipient_building.paused // only give bonus to active buildings
-            && recipient_building.is_resource_producer() { // only give bonus to resource producers
-            // get the resource that the building produces
-            let recipient_produced_resource_type = recipient_building.produced_resource();
-            let recipient_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, recipient_produced_resource_type,
-            );
-            let mut recipient_building_resource = SingleResourceStoreImpl::retrieve(
-                ref world,
-                self.outer_entity_id,
-                recipient_produced_resource_type,
-                ref structure_weight,
-                recipient_resource_weight_grams,
-                true,
-            );
-
-            // remove the recipient building's contribution from global resource production
-            // first so that we can recalculate and add the new production rate
-            let recipient_building_resource_produced_amount_every_second: u128 = recipient_building
-                .produced_amount_every_second(structure_category, ref world);
-            let mut recipient_building_resource_production: Production = recipient_building_resource.production;
-            recipient_building_resource_production
-                .decrease_production_rate(recipient_building_resource_produced_amount_every_second.try_into().unwrap());
-
-            // update the recipient building's bonus percent
-            if delete {
-                recipient_building.bonus_percent -= self.boost_adjacent_building_production_by();
-            } else {
-                recipient_building.bonus_percent += self.boost_adjacent_building_production_by();
-            }
-            world.write_model(@recipient_building);
-
-            // update the global resource production to reflect the new production rate
-            recipient_building_resource_production
-                .increase_production_rate(
-                    recipient_building.produced_amount_every_second(structure_category, ref world).try_into().unwrap(),
-                );
-            recipient_building_resource.production = recipient_building_resource_production;
-            recipient_building_resource.store(ref world);
-        }
+        produced_amount_every_second
     }
 }
 

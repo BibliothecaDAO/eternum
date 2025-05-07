@@ -148,7 +148,7 @@ pub impl iStructureImpl of IStructureTrait {
         // save structure model
         let structure_resources_packed: u128 = StructureResourcesImpl::pack_resource_types(resources);
         let structure: Structure = StructureImpl::new(
-            structure_id, category, coord, owner, structure_resources_packed, metadata,
+            structure_id, category, coord, structure_resources_packed, metadata,
         );
         world.write_model(@structure);
         // call the store function to ensure structure owner stats are updated
