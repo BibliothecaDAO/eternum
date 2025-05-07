@@ -281,6 +281,22 @@ pub mod trade_systems {
             iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
             iDonkeyImpl::burn_finialize(ref world, taker_id, taker_donkey_amount, taker_structure_owner);
 
+            // deduct taker's resources
+            let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                ref world, trade.taker_pays_resource_type,
+            );
+            let mut taker_resource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                taker_id,
+                trade.taker_pays_resource_type,
+                ref taker_structure_weight,
+                taker_resource_weight_grams,
+                true,
+            );
+            taker_resource
+                .spend(taker_pays_resource_amount.into(), ref taker_structure_weight, taker_resource_weight_grams);
+            taker_resource.store(ref world);
+
             // update taker structure weight
             taker_structure_weight.store(ref world, taker_id);
 
