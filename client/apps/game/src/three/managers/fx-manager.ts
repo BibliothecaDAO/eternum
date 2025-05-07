@@ -8,12 +8,15 @@ class FXInstance {
   private animationFrameId?: number;
   private isDestroyed = false;
   private initialY: number;
+  private baseSize: number;
 
-  constructor(scene: THREE.Scene, texture: THREE.Texture, x: number, y: number, z: number) {
+  constructor(scene: THREE.Scene, texture: THREE.Texture, x: number, y: number, z: number, size: number = 1.5) {
     this.clock = new THREE.Clock();
     this.group = new THREE.Group();
+    this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
     this.initialY = y;
+    this.baseSize = size;
 
     this.material = new THREE.SpriteMaterial({
       map: texture,
@@ -23,7 +26,7 @@ class FXInstance {
     });
 
     this.sprite = new THREE.Sprite(this.material);
-    this.sprite.scale.set(1.5, 1.5, 1.5);
+    this.sprite.scale.set(size, size, size);
     this.group.add(this.sprite);
     scene.add(this.group);
 
@@ -42,7 +45,7 @@ class FXInstance {
     if (elapsed < 0.2) {
       const f = elapsed / 0.2;
       this.material.opacity = f;
-      this.sprite.scale.set(1.5 * f, 1.5 * f, 1.5 * f);
+      this.sprite.scale.set(this.baseSize * f, this.baseSize * f, this.baseSize * f);
     }
 
     // Phase 2: Idle Hover (0.2–1.5s)
@@ -50,6 +53,7 @@ class FXInstance {
       const hover = Math.sin((elapsed - 0.2) * Math.PI * 2) * 0.1;
       this.group.position.y = this.initialY + hover;
       this.material.opacity = 1;
+      this.sprite.scale.set(this.baseSize, this.baseSize, this.baseSize);
     }
 
     // Phase 3: Rise and Fade Out (1.5–2.5s)
@@ -57,6 +61,7 @@ class FXInstance {
       const f = (elapsed - 1.5) / 1.0;
       this.group.position.y = this.initialY + hoverHeight * f;
       this.material.opacity = 1 - f;
+      this.sprite.scale.set(this.baseSize, this.baseSize, this.baseSize);
     }
 
     if (elapsed >= duration) {
@@ -88,15 +93,28 @@ export class FXManager {
   private scene: THREE.Scene;
   private texture: THREE.Texture;
   private activeFX: Set<FXInstance> = new Set();
+  private defaultSize: number;
 
-  constructor(scene: THREE.Scene, textureUrl: string) {
+  constructor(scene: THREE.Scene, textureUrl: string, defaultSize: number = 1.5) {
     this.scene = scene;
-    this.texture = new THREE.TextureLoader().load(textureUrl);
-    this.texture.colorSpace = THREE.SRGBColorSpace;
+    this.defaultSize = defaultSize;
+
+    // Create texture with proper settings
+    this.texture = new THREE.TextureLoader().load(textureUrl, (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+    });
   }
 
-  playFxAtCoords(x: number, y: number, z: number) {
-    const fxInstance = new FXInstance(this.scene, this.texture, x, y, z);
+  playFxAtCoords(x: number, y: number, z: number, size?: number) {
+    // Ensure texture is loaded before creating instance
+    if (!this.texture.image) {
+      console.warn("Texture not loaded yet, skipping FX");
+      return;
+    }
+
+    const fxInstance = new FXInstance(this.scene, this.texture, x, y, z, size ?? this.defaultSize);
     this.activeFX.add(fxInstance);
 
     // Clean up the instance from activeFX set when it's destroyed

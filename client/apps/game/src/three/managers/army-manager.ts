@@ -53,7 +53,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.deathFxManager = new FXManager(scene, "/textures/skull.png");
+    this.deathFxManager = new FXManager(scene, "/textures/skull.png", 1);
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
