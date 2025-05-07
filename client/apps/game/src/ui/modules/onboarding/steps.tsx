@@ -14,6 +14,7 @@ import {
 import { MintVillagePassModal } from "@/ui/components/settlement/mint-village-pass-modal";
 import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
+import { useSettlementState } from "@/ui/components/settlement/use-settlement-state";
 import Button from "@/ui/elements/button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
@@ -300,6 +301,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     },
   } = useDojo();
 
+  const settlementState = useSettlementState(50, []);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
@@ -369,7 +372,52 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         setLoading(false);
       }
     });
-  }, [loading, realms]);
+  }, [loading, realms, account.address, Structure]);
+
+  // Effect to deselect locations if they get settled by others
+  useEffect(() => {
+    // Filter for locations settled by others
+    const settledByOthers = settlementState.settledLocations.filter((loc) => !loc.isMine);
+
+    if (settledByOthers.length === 0 || seasonPassRealms.length === 0) {
+      return;
+    }
+
+    let madeChanges = false;
+    // Create copies to modify
+    let currentSeasonPassRealms = [...seasonPassRealms];
+    let currentSelectedRealms = [...selectedRealms];
+
+    for (const settledLoc of settledByOthers) {
+      const conflictingRealmIndex = currentSeasonPassRealms.findIndex(
+        (realm) =>
+          realm.selectedLocation &&
+          realm.selectedLocation.layer === settledLoc.layer &&
+          realm.selectedLocation.point === settledLoc.point &&
+          realm.selectedLocation.side === settledLoc.side,
+      );
+
+      if (conflictingRealmIndex !== -1) {
+        const realmToUpdate = currentSeasonPassRealms[conflictingRealmIndex];
+        // console.log(`Location for realm ${realmToUpdate.realmId} (Layer: ${settledLoc.layer}, Side: ${settledLoc.side}, Point: ${settledLoc.point}) was taken. Unselecting.`);
+
+        // Clear the selected location for this realm
+        currentSeasonPassRealms[conflictingRealmIndex] = {
+          ...realmToUpdate,
+          selectedLocation: null,
+        };
+
+        // Remove from selectedRealms
+        currentSelectedRealms = currentSelectedRealms.filter((id) => id !== realmToUpdate.realmId);
+        madeChanges = true;
+      }
+    }
+
+    if (madeChanges) {
+      setSeasonPassRealms(currentSeasonPassRealms);
+      setSelectedRealms(currentSelectedRealms);
+    }
+  }, [settlementState.settledLocations]);
 
   const handleSelectLocation = (realmId: number, location: SettlementLocation | null) => {
     setSeasonPassRealms((prevRealms) =>
@@ -383,6 +431,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         return prevSelectedRealms;
       });
     }
+
+    console.log(location);
   };
 
   const occupiedLocations = useMemo(() => {
