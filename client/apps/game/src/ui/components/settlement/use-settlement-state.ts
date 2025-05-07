@@ -65,8 +65,8 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     // Initial fetch
     fetchOccupiedLocations();
 
-    // Set up polling interval (every 30 seconds)
-    const intervalId = setInterval(fetchOccupiedLocations, 30 * 1000);
+    // Set up polling interval (every 10 seconds)
+    const intervalId = setInterval(fetchOccupiedLocations, 10 * 1000);
 
     // Set up timeout to clear interval after 30 minutes
     const timeoutId = setTimeout(
