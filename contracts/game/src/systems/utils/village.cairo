@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{WorldConfigUtilImpl};
 use s1_eternum::models::position::{TravelImpl};
-use s1_eternum::models::structure::{StructureBaseImpl, StructureMetadata};
+use s1_eternum::models::structure::{StructureBaseImpl, StructureMetadata, StructureOwnerStoreImpl};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
@@ -16,12 +16,25 @@ pub impl iVillageImpl of iVillageTrait {
         2
     }
 
-    fn ensure_village_realm(ref world: WorldStorage, village_structure_metadata: StructureMetadata, realm: ID) {
+    fn ensure_village_realm(
+        ref world: WorldStorage, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
+    ) {
         assert!(village_structure_metadata.village_realm.is_non_zero(), "village owner is not set");
-        assert!(realm.is_non_zero(), "village realm owner is not set");
+        assert!(check_realm_entity_id.is_non_zero(), "village realm owner is not set");
+
+        if village_structure_metadata.village_realm == check_realm_entity_id {
+            return;
+        }
+
+        let actual_realm_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+            ref world, village_structure_metadata.village_realm,
+        );
+        let check_realm_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+            ref world, check_realm_entity_id,
+        );
         assert!(
-            village_structure_metadata.village_realm == realm,
-            "your village can only perform this action if the Realm you are interacting with is owned by the same address as the Realm connected to your village",
+            actual_realm_structure_owner == check_realm_structure_owner,
+            "villages can only receive troops from realms associated with the same address as the connected realm owner",
         );
     }
 }

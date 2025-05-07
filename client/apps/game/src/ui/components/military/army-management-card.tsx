@@ -1,5 +1,6 @@
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
@@ -10,12 +11,23 @@ import {
   ArmyManager,
   divideByPrecision,
   getBalance,
-  getFreeDirectionsAroundStructure,
+  getEntityIdFromKeys,
   getTroopName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { ArmyInfo, getDirectionBetweenAdjacentHexes, ID, resources, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { getTilesFromToriiClient } from "@bibliothecadao/torii-client";
+import {
+  ArmyInfo,
+  Direction,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
+  ID,
+  resources,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { LockIcon, Pen } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -35,8 +47,43 @@ type ArmyCreateProps = {
   onCancel?: () => void;
 };
 
+interface DirectionButtonProps {
+  direction: Direction;
+  label: string;
+  tooltip: string;
+  availableDirections: Direction[];
+  selectedDirection: Direction | null;
+  onClick: (direction: Direction) => void;
+}
+
+const DirectionButton: React.FC<DirectionButtonProps> = ({
+  direction,
+  label,
+  tooltip,
+  availableDirections,
+  selectedDirection,
+  onClick,
+}) => {
+  const isAvailable = availableDirections.includes(direction);
+  const isSelected = selectedDirection === direction;
+
+  return (
+    <Button
+      variant={isSelected ? "gold" : isAvailable ? "default" : "outline"}
+      size="md"
+      onClick={() => isAvailable && onClick(direction)}
+      disabled={!isAvailable}
+      className={`aspect-square text-sm ${isAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+      title={tooltip}
+    >
+      {label}
+    </Button>
+  );
+};
+
 export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardSlot, onCancel }: ArmyCreateProps) => {
   const {
+    network: { toriiClient },
     setup: { components },
     account: { account },
   } = useDojo();
@@ -46,6 +93,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
   const [troopCount, setTroopCount] = useState<number>(0);
+  const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(
     army
       ? army.troops.count === 0n
@@ -54,6 +102,9 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
       : TroopType.Crossbowman,
   );
   const [selectedTier, setSelectedTier] = useState<TroopTier>(TroopTier.T1);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [isLoadingTiles, setIsLoadingTiles] = useState(true);
+  const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
   const handleTroopCountChange = (count: number) => {
     setTroopCount(count);
@@ -63,10 +114,35 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
     setSelectedTier(tier);
   };
 
-  const freeDirections = useMemo(
-    () => getFreeDirectionsAroundStructure(owner_entity, components),
-    [owner_entity, components],
-  );
+  useEffect(() => {
+    const fetchTiles = async () => {
+      setIsLoadingTiles(true);
+      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
+      if (structure) {
+        const coords = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
+        const tiles = await getTilesFromToriiClient(
+          toriiClient,
+          coords.map((coord) => ({ col: coord.col, row: coord.row })),
+        );
+        const freeTiles = tiles.filter((tile) => tile.occupier_id === 0);
+        const freeDirections = freeTiles.map((tile) =>
+          getDirectionBetweenAdjacentHexes(
+            { col: structure.base.coord_x, row: structure.base.coord_y },
+            { col: tile.col, row: tile.row },
+          ),
+        );
+        setFreeDirections(freeDirections.filter((direction) => direction !== null) as Direction[]);
+      }
+      setIsLoadingTiles(false);
+    };
+    fetchTiles();
+  }, []);
+
+  useEffect(() => {
+    if (freeDirections.length > 0) {
+      setSelectedDirection(freeDirections[0]);
+    }
+  }, [freeDirections]);
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
@@ -92,7 +168,12 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
           );
         }
       } else {
-        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, freeDirections[0]);
+        if (selectedDirection === null) {
+          console.error("No direction selected");
+          setIsLoading(false);
+          return;
+        }
+        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
       }
     } else {
       if (guardSlot !== undefined) {
@@ -166,8 +247,8 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   });
 
   return (
-    <div className=" py-4">
-      {isExplorer && !army && freeDirections.length === 0 && (
+    <div className="">
+      {isExplorer && !army && freeDirections.length === 0 && !isLoadingTiles && (
         <div className="text-xs text-red-500 mb-4 p-2 bg-red-500/10 border border-red-500/30  flex items-center">
           <span className="mr-1">⚠️</span> No space available to create an army. Clear adjacent tiles to create an army.
         </div>
@@ -179,113 +260,202 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
         </div>
       )}
 
-      {(!army || army.troops.count === 0n) && (
-        <div className="my-4">
-          <h4 className="text-center mb-4">SELECT TIER</h4>
-          <div className="flex justify-center gap-2 mb-2">
-            {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
-              <Button
-                key={tier}
-                variant={selectedTier === tier ? "gold" : "primary"}
-                onClick={() => handleTierChange(tier)}
-                className={clsx(
-                  "px-3 py-1",
-                  selectedTier === tier ? "ring-2 ring-gold" : "opacity-80 hover:opacity-100",
-                )}
-              >
-                Tier {tier}
-              </Button>
-            ))}
-          </div>
+      {isExplorer && !army && (
+        <div className="flex border-b border-gold/30 mb-4">
+          <button
+            className={`flex-1 py-2 px-4 text-center ${
+              activeTab === "troops" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold"
+            }`}
+            onClick={() => setActiveTab("troops")}
+          >
+            Select Troops
+          </button>
+          <button
+            className={`flex-1 py-2 px-4 text-center ${
+              activeTab === "direction" ? "bg-gold/20 text-gold" : "text-gold/50 hover:text-gold"
+            }`}
+            onClick={() => setActiveTab("direction")}
+          >
+            Spawn Location
+          </button>
         </div>
       )}
 
-      <div className="mb-4">
-        <h5 className="text-center my-4">SELECT TROOP TYPE</h5>
-
-        <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
-          {troops.map((troop) => {
-            const balance = getBalance(
-              owner_entity,
-              getTroopResourceId(troop.troopType, selectedTier),
-              currentDefaultTick,
-              components,
-            ).balance;
-            const isCurrentTroopType =
-              !army || army.troops.count === 0n
-                ? selectedTroopType === troop.troopType
-                : army.troops.category === troop.troopType;
-
-            return (
-              <div
-                className={clsx(
-                  "p-3 bg-gold/5 flex flex-col cursor-pointer transition-all duration-200",
-                  isCurrentTroopType ? "panel-gold" : "opacity-50 hover:opacity-70",
-                )}
-                key={troop.troopType}
-                onClick={() => {
-                  if (!army || army.troops.count === 0n) {
-                    setSelectedTroopType(troop.troopType);
-                  }
-                }}
-              >
-                <div className="font-bold mb-4">
-                  <div className="flex justify-between">
-                    <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
-                  </div>
-                  <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
-                    Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
-                  </div>
-                  <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
-                    <ResourceIcon
-                      withTooltip={false}
-                      resource={
-                        resources.find((resource) => resource.id === getTroopResourceId(troop.troopType, selectedTier))
-                          ?.trait || ""
-                      }
-                      size="lg"
-                    />
-                    <div className="text-green self-center font-bold">x {troop.current}</div>
-                  </div>
-                </div>
-
-                {isCurrentTroopType && (
-                  <div className="mt-auto">
-                    <div className="flex justify-between items-center gap-2 mb-2">
-                      <button
-                        className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTroopCount((count) => Math.min(count + 500, getMaxAffordableTroops));
-                        }}
-                      >
-                        +500
-                      </button>
-                      <button
-                        className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTroopCount(getMaxAffordableTroops);
-                        }}
-                      >
-                        MAX
-                      </button>
-                    </div>
-                    <NumberInput
-                      max={divideByPrecision(balance)}
-                      min={0}
-                      step={100}
-                      value={troopCount}
-                      onChange={handleTroopCountChange}
-                      className="border border-gold/30"
-                    />
-                  </div>
-                )}
+      {activeTab === "troops" && (
+        <>
+          {(!army || army.troops.count === 0n) && (
+            <div className="my-4">
+              <h6 className="text-center mb-2">SELECT TIER</h6>
+              <div className="flex justify-center gap-2 mb-2">
+                {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
+                  <Button
+                    key={tier}
+                    variant={selectedTier === tier ? "gold" : "primary"}
+                    onClick={() => handleTierChange(tier)}
+                    className={clsx(
+                      "px-3 py-1",
+                      selectedTier === tier ? "ring-2 ring-gold" : "opacity-80 hover:opacity-100",
+                    )}
+                  >
+                    Tier {tier}
+                  </Button>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          <div className="mb-4">
+            <h5 className="text-center my-4">SELECT TROOP TYPE</h5>
+
+            <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
+              {troops.map((troop) => {
+                const balance = getBalance(
+                  owner_entity,
+                  getTroopResourceId(troop.troopType, selectedTier),
+                  currentDefaultTick,
+                  components,
+                ).balance;
+                const isCurrentTroopType =
+                  !army || army.troops.count === 0n
+                    ? selectedTroopType === troop.troopType
+                    : army.troops.category === troop.troopType;
+
+                return (
+                  <div
+                    className={clsx(
+                      "p-3 bg-gold/5 flex flex-col cursor-pointer transition-all duration-200",
+                      isCurrentTroopType ? "panel-gold" : "opacity-50 hover:opacity-70",
+                    )}
+                    key={troop.troopType}
+                    onClick={() => {
+                      if (!army || army.troops.count === 0n) {
+                        setSelectedTroopType(troop.troopType);
+                      }
+                    }}
+                  >
+                    <div className="font-bold mb-4">
+                      <div className="flex justify-between">
+                        <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
+                      </div>
+                      <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
+                        Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
+                      </div>
+                      <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
+                        <ResourceIcon
+                          withTooltip={false}
+                          resource={
+                            resources.find(
+                              (resource) => resource.id === getTroopResourceId(troop.troopType, selectedTier),
+                            )?.trait || ""
+                          }
+                          size="lg"
+                        />
+                        <div className="text-green self-center font-bold">x {troop.current}</div>
+                      </div>
+                    </div>
+
+                    {isCurrentTroopType && (
+                      <div className="mt-auto">
+                        <div className="flex justify-between items-center gap-2 mb-2">
+                          <button
+                            className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTroopCount((count) => Math.min(count + 500, getMaxAffordableTroops));
+                            }}
+                          >
+                            +500
+                          </button>
+                          <button
+                            className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTroopCount(getMaxAffordableTroops);
+                            }}
+                          >
+                            MAX
+                          </button>
+                        </div>
+                        <NumberInput
+                          max={divideByPrecision(balance)}
+                          min={0}
+                          step={100}
+                          value={troopCount}
+                          onChange={handleTroopCountChange}
+                          className="border border-gold/30"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "direction" && isExplorer && !army && (
+        <div className="mb-4">
+          <h6 className="text-center mb-2">SELECT DIRECTION</h6>
+          {isLoadingTiles ? (
+            <LoadingAnimation />
+          ) : freeDirections.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2 mx-auto my-4 max-w-xs">
+              <DirectionButton
+                direction={Direction.SOUTH_WEST}
+                label="↖"
+                tooltip="North West"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+              <div />
+              <DirectionButton
+                direction={Direction.SOUTH_EAST}
+                label="↗"
+                tooltip="North East"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+              <DirectionButton
+                direction={Direction.WEST}
+                label="←"
+                tooltip="West"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+              <div className="flex items-center justify-center text-4xl ">🏰</div>
+              <DirectionButton
+                direction={Direction.EAST}
+                label="→"
+                tooltip="East"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+              <DirectionButton
+                direction={Direction.NORTH_WEST}
+                label="↙"
+                tooltip="South West"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+              <div />
+              <DirectionButton
+                direction={Direction.NORTH_EAST}
+                label="↘"
+                tooltip="South East"
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                onClick={setSelectedDirection}
+              />
+            </div>
+          ) : null}
         </div>
-      </div>
+      )}
 
       <div className="flex justify-center gap-2 w-full mt-6">
         <Button

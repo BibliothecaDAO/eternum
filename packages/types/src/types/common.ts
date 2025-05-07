@@ -230,6 +230,9 @@ export interface MarketInterface {
   takerId: ID;
   // brillance, reflection, ...
   makerOrder: number;
+  makerGivesMinResourceAmount: number;
+  takerPaysMinResourceAmount: number;
+  makerGivesMaxResourceCount: number;
   expiresAt: number;
   takerGets: Resource[];
   makerGets: Resource[];
@@ -449,6 +452,7 @@ export interface Config {
     startSettlingAfterSeconds: number;
     startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
+    pointRegistrationCloseAfterEndSeconds: number;
   };
   bridge: {
     velords_fee_on_dpt_percent: number;

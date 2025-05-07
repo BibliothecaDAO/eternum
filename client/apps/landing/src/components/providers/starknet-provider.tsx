@@ -2,10 +2,11 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { StarknetConfig, argent, braavos, jsonRpcProvider, useInjectedConnectors, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
-import { constants } from "starknet";
+import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { getResourceAddresses } from "../ui/utils/addresses";
 
+const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const resourceAddresses = getResourceAddresses();
 
 const LORDS = resourceAddresses["LORDS"][1].toString();
@@ -16,8 +17,13 @@ const otherResources = Object.entries(resourceAddresses)
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
+
 const chain_id =
-  env.VITE_PUBLIC_CHAIN === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA;
+  env.VITE_PUBLIC_CHAIN === "local"
+    ? KATANA_CHAIN_ID
+    : env.VITE_PUBLIC_CHAIN === "sepolia"
+      ? constants.StarknetChainId.SN_SEPOLIA
+      : constants.StarknetChainId.SN_MAIN;
 const cartridgeController = new ControllerConnector({
   chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
   defaultChainId: chain_id,
