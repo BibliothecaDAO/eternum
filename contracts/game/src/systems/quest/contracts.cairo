@@ -478,7 +478,7 @@ mod tests {
             m_QuestLevels, m_QuestRegistrations, m_QuestTile,
         },
         resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
-        structure::{m_Structure}, troop::{m_ExplorerTroops}, weight::{Weight},
+        structure::{m_Structure, m_StructureOwnerStats}, troop::{m_ExplorerTroops}, weight::{Weight},
     };
     use s1_eternum::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
@@ -520,6 +520,7 @@ mod tests {
                 TestResource::Model(m_WeightConfig::TEST_CLASS_HASH), // structure, realm and buildings
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
+                TestResource::Model(m_StructureOwnerStats::TEST_CLASS_HASH),
                 TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 // other models

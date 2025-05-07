@@ -181,10 +181,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const refetchAndSetPasses = async (): Promise<number> => {
     if (address) {
       try {
-        const tokenTransfers = await fetchTokenTransfers(
-          getVillagePassAddress(),
-          address.replace("0x0", "0x") as string,
-        );
+        const tokenTransfers = await fetchTokenTransfers(getVillagePassAddress(), "0x" + BigInt(address).toString(16));
         const updatedPasses = tokenTransfers.map((a) => {
           return {
             ...a,
@@ -529,7 +526,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         Selected Realm: <br />
                       </h5>
                       <h4 className="mb-4">
-                        {getRealmName(selectedRealm.connected_realm_entity_id)} (#
+                        {getRealmName(selectedRealm.connected_realm_id)} (#
                         {selectedRealm.connected_realm_id})
                       </h4>
 
@@ -569,7 +566,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
               <div className="flex flex-col md:flex-row gap-12  bg-dark-brown/50">
                 <div className="space-y-4">
                   <h2>
-                    {getRealmName(selectedRealm.connected_realm_entity_id)} (#{selectedRealm.connected_realm_id})
+                    {getRealmName(selectedRealm.connected_realm_id)} (#{selectedRealm.connected_realm_id})
                   </h2>
                   <div className="w-full md:w-96 pt-4">
                     <h6 className="text-base mb-2">Village Direction:</h6>

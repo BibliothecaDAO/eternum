@@ -54,12 +54,12 @@ export const SepoliaEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     bridgeCloseAfterEndSeconds: 60 * 60 * 1, // 1 hour after season end
 
-    startSettlingAfterSeconds: 1, // 2 hours
-    startMainAfterSeconds: 2, // 3 hours
+    startSettlingAfterSeconds: 60 * 20, // 20 minutes
+    startMainAfterSeconds: 60 * 35, // 35 minutes
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,
-    graceTickCount: 4, // 1 tick so 1 hour grace period for all realms
+    graceTickCount: 4, // 4 ticks depending on armiesTickIntervalInSeconds
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,

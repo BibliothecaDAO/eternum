@@ -1,15 +1,15 @@
-import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { ResourceManager, getRealmNameById } from "..";
 import {
-  ResourcesIds,
   ClientComponents,
   ContractComponents,
   ID,
   MarketInterface,
   Resource,
+  ResourcesIds,
 } from "@bibliothecadao/types";
+import { Entity, getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
+import { ResourceManager, getRealmNameById } from "..";
 
 export type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -119,6 +119,9 @@ export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number
             tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,
+            makerGivesMinResourceAmount: Number(trade.maker_gives_min_resource_amount),
+            takerPaysMinResourceAmount: Number(trade.taker_pays_min_resource_amount),
+            makerGivesMaxResourceCount: Number(trade.maker_gives_max_count),
             makerOrder: makerStructure?.metadata.order,
             expiresAt: Number(trade.expires_at),
             takerGets,
