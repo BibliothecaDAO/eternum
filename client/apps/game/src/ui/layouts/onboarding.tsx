@@ -9,6 +9,7 @@ import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/step
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
+import { Castle, FileText, MessageSquare, Play, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
@@ -72,7 +73,7 @@ export const StepContainer = ({
   return (
     <motion.div className="flex h-screen z-50" {...motionProps}>
       <div
-        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[32px] my-16 ml-16 panel-wood panel-wood-corners ${
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[32px] my-16 ml-16 panel-wood panel-wood-corners ${
           expandedWidth
         } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
@@ -100,7 +101,7 @@ export const StepContainer = ({
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-brown w-32 sm:w-40 lg:w-72 mx-auto" />
+                  <EternumWordsLogo className="fill-brown w-32 sm:w-24 lg:w-32 xl:w-48 mx-auto" />
                 )}
               </div>
             </div>
@@ -108,9 +109,9 @@ export const StepContainer = ({
             {tos && (
               <div className="mt-auto pt-4 flex-shrink-0">
                 <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
-                <div className="w-full flex justify-center rounded-lg p-2">
+                <div className="w-full flex justify-center rounded-lg pt-2">
                   <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing to Eternum's{" "}
+                    By continuing you are agreeing <br /> to Eternum's{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
@@ -210,31 +211,25 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               !hasRealmsOrVillages ? "animate-pulse" : ""
             }`}
           >
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-start w-full">
               <div className="w-7 h-7 bg-black/20 rounded-full mr-2 md:mr-3 flex justify-center items-center font-semibold">
                 {seasonPassRealms.length}
               </div>
-              <span className="text-lg font-medium">Redeem Season Pass</span>
+              <span className="text-lg font-medium flex-grow text-center">Redeem Season Pass</span>
             </div>
           </Button>
         )}
         <div className="flex flex-col gap-3 w-full">
-          <div className="flex gap-3 w-full flex-wrap">
-            <a
-              className="text-brown cursor-pointer w-full"
-              href={`${mintUrl}mint`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <div className="flex w-full flex-wrap">
+            <a className="w-full" target="_blank" rel="noopener noreferrer">
               <Button
                 size="lg"
-                className={`w-full !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                  !hasRealmsOrVillages ? "animate-pulse" : ""
-                }`}
+                onClick={handleVillagePassClick}
+                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
               >
-                <div className="flex items-center justify-center">
-                  <TreasureChest className="!w-5 !h-5 mr-2 fill-brown text-brown" />
-                  <span className="font-medium">Mint Season Pass</span>
+                <div className="flex items-center justify-start w-full gap-2">
+                  <Play className="!w-5 !h-5 fill-gold" />
+                  <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
                 </div>
               </Button>
             </a>
@@ -246,31 +241,69 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             >
               <Button
                 size="lg"
-                className={`w-full !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                  !hasRealmsOrVillages ? "animate-pulse" : ""
-                }`}
+                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
               >
-                <div className="flex items-center justify-center">
-                  <TreasureChest className="!w-5 !h-5 mr-2 fill-gold" />
-                  <span className="font-medium">Buy Season Pass</span>
+                <div className="flex items-center justify-start w-full">
+                  <Castle className="!w-5 !h-5 mr-2 fill-gold" />
+                  <span className="font-medium flex-grow text-center">Season Passes</span>
                 </div>
               </Button>
             </a>
-            <a className="w-full" target="_blank" rel="noopener noreferrer">
+            <a
+              className="text-brown cursor-pointer w-full"
+              href={`${mintUrl}mint`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button
                 size="lg"
-                onClick={handleVillagePassClick}
-                className={`w-full hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                  !hasRealmsOrVillages ? "animate-pulse" : ""
-                }`}
+                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <TreasureChest className="!w-5 !h-5 fill-gold" />
-                  <span className="font-medium">Buy Village</span>
+                <div className="flex items-center justify-start w-full">
+                  <TreasureChest className="!w-5 !h-5 mr-2 fill-gold" />
+                  <span className="font-medium flex-grow text-center">Claim Season Pass</span>
                 </div>
               </Button>
             </a>
           </div>
+        </div>
+        <div className="flex w-full mt-3">
+          <a
+            className="text-brown cursor-pointer w-full"
+            href="https://discord.gg/XjtWGDx5SW" // TODO: Update with actual Discord link
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button size="lg" className="w-full !normal-case rounded-md shadow-md">
+              <div className="flex items-center justify-start w-full">
+                <MessageSquare className="!w-5 !h-5 mx-auto fill-gold" />
+              </div>
+            </Button>
+          </a>
+          <a
+            className="text-brown cursor-pointer w-full"
+            href="https://x.com/RealmsEternum" // TODO: Update with actual Twitter link
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button size="lg" className="w-full !normal-case rounded-md shadow-md">
+              <div className="flex items-center justify-start w-full">
+                <TwitterIcon className="!w-5 !h-5 mx-auto fill-gold" />
+              </div>
+            </Button>
+          </a>
+          <a
+            className="text-brown cursor-pointer w-full"
+            href="https://eternum-docs.realms.world/" // TODO: Update with actual Docs link
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button size="lg" className="w-full !normal-case rounded-md shadow-md">
+              <div className="flex items-center w-full">
+                <FileText className="!w-5 !h-5 mx-auto fill-gold" />
+              </div>
+            </Button>
+          </a>
         </div>
       </div>
     )

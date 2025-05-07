@@ -261,11 +261,11 @@ export const StepOne = () => {
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" />
-          <div className="text-black">{isSeasonActive ? "Play" : timeRemaining}</div>
+          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Eternum" : timeRemaining}</div>
         </Button>
       ) : (
-        <Button size="lg" className="!bg-gold border-none" onClick={() => setShowToS(true)}>
-          <div className="text-black">Accept ToS</div>
+        <Button size="lg" className="!bg-gold border-none w-full" onClick={() => setShowToS(true)}>
+          <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
       <SpectateButton onClick={onSpectatorModeClick} />
@@ -276,7 +276,9 @@ export const StepOne = () => {
 export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button className="w-full" onClick={onClick} size="lg">
-      <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
+      <div className="flex items-center justify-start w-full">
+        <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
+      </div>
     </Button>
   );
 };
