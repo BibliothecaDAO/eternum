@@ -342,11 +342,19 @@ export class ArmyManager {
 
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
-    if (!this.armies.delete(entityId)) return;
 
-    this.armyModel.removeLabel(entityId);
-    this.entityIdLabels.delete(entityId);
-    this.renderVisibleArmies(this.currentChunkKey!);
+    this.deathFxManager
+      .playFxAtCoords(
+        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
+        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
+        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
+      )
+      .then(() => {
+        this.armies.delete(entityId);
+        this.armyModel.removeLabel(entityId);
+        this.entityIdLabels.delete(entityId);
+        this.renderVisibleArmies(this.currentChunkKey!);
+      });
   }
 
   public getArmies() {
@@ -444,7 +452,6 @@ export class ArmyManager {
     // Set renderOrder to Infinity on hover
     labelDiv.addEventListener("mouseenter", () => {
       label.renderOrder = Infinity;
-      this.deathFxManager.playFxAtCoords(position.x, position.y + 2, position.z);
     });
 
     // Restore original renderOrder when mouse leaves

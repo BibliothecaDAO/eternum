@@ -9,6 +9,7 @@ class FXInstance {
   private isDestroyed = false;
   private initialY: number;
   private baseSize: number;
+  private resolvePromise?: () => void;
 
   constructor(scene: THREE.Scene, texture: THREE.Texture, x: number, y: number, z: number, size: number = 1.5) {
     this.clock = new THREE.Clock();
@@ -31,6 +32,10 @@ class FXInstance {
     scene.add(this.group);
 
     this.animate();
+  }
+
+  public onComplete(resolve: () => void) {
+    this.resolvePromise = resolve;
   }
 
   private animate = () => {
@@ -65,6 +70,7 @@ class FXInstance {
     }
 
     if (elapsed >= duration) {
+      this.resolvePromise?.();
       this.destroy();
       return;
     }
@@ -107,27 +113,30 @@ export class FXManager {
     });
   }
 
-  playFxAtCoords(x: number, y: number, z: number, size?: number) {
+  playFxAtCoords(x: number, y: number, z: number, size?: number): Promise<void> {
     // Ensure texture is loaded before creating instance
     if (!this.texture.image) {
       console.warn("Texture not loaded yet, skipping FX");
-      return;
+      return Promise.reject("Texture not loaded");
     }
 
-    const fxInstance = new FXInstance(this.scene, this.texture, x, y, z, size ?? this.defaultSize);
-    this.activeFX.add(fxInstance);
+    return new Promise((resolve) => {
+      const fxInstance = new FXInstance(this.scene, this.texture, x, y, z, size ?? this.defaultSize);
+      fxInstance.onComplete(resolve);
+      this.activeFX.add(fxInstance);
 
-    // Clean up the instance from activeFX set when it's destroyed
-    const cleanup = () => {
-      this.activeFX.delete(fxInstance);
-    };
+      // Clean up the instance from activeFX set when it's destroyed
+      const cleanup = () => {
+        this.activeFX.delete(fxInstance);
+      };
 
-    // Override the destroy method to include cleanup
-    const originalDestroy = fxInstance.destroy;
-    fxInstance.destroy = () => {
-      originalDestroy.call(fxInstance);
-      cleanup();
-    };
+      // Override the destroy method to include cleanup
+      const originalDestroy = fxInstance.destroy;
+      fxInstance.destroy = () => {
+        originalDestroy.call(fxInstance);
+        cleanup();
+      };
+    });
   }
 
   destroy() {
