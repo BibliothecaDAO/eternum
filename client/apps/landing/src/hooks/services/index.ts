@@ -241,6 +241,7 @@ export interface SeasonPassRealm {
   balance: string;
   contract_address: string;
   season_pass_balance: string | null;
+  metadata: string | null;
 }
 
 /**

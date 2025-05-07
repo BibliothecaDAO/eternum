@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/pagination";
 
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
-import { fetchSeasonPassRealmsByAddress } from "@/hooks/services";
+import { fetchSeasonPassRealmsByAddress, SeasonPassRealm } from "@/hooks/services";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
@@ -80,10 +80,8 @@ function Mint() {
   const realmsErcBalance = seasonPassMints.data
 
   // --- Filtering Hook ---
-  const getRealmMetadataString = useCallback((realm): string | null => {
+  const getRealmMetadataString = useCallback((realm: SeasonPassRealm): string | null => {
       return realm.metadata;
-    
-;
   }, []);
 
   const {
@@ -93,7 +91,7 @@ function Mint() {
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<RealmEdge>(realmsErcBalance, getRealmMetadataString);
+  } = useTraitFiltering<SeasonPassRealm>(realmsErcBalance, getRealmMetadataString);
 
   // --- State for Season Pass Mint Status ---
   const [seasonPassStatus, setSeasonPassStatus] = useState<Record<string, boolean>>({});
@@ -125,13 +123,13 @@ function Mint() {
         return {
           originalRealm: realm,
           parsedMetadata: parsedMetadata,
-          seasonPassMinted: seasonPassStatus[tokenId] ?? false,
+          seasonPassMinted: realm.season_pass_balance !== null,
           tokenId: tokenId.toString(),
         } as AugmentedRealm;
       })
       .filter((realm): realm is AugmentedRealm => realm !== null);
 
-    // 2. Sort the augmented array
+    // 2. Sort the augmented array - Can probably move to sql ordering
     return augmented.sort((a, b) => {
       // Sort by minted status first (false/unminted comes first)
       if (a.seasonPassMinted !== b.seasonPassMinted) {
@@ -162,14 +160,8 @@ function Mint() {
   const totalRealms = useMemo(() => realmsErcBalance?.length ?? 0, [realmsErcBalance]);
 
   const mintedRealmsCount = useMemo(() => {
-    return (
-      seasonPassMints.data?.filter((realm) => {
-        if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return false;
-        const tokenId = parseInt(realm.node.tokenMetadata.tokenId);
-        return seasonPassStatus[tokenId] ?? false;
-      }).length ?? 0
-    );
-  }, [realmsErcBalance, seasonPassStatus]);
+    return seasonPassMints.data?.filter((realm) => realm.season_pass_balance !== null).length ?? 0;
+  }, [seasonPassMints.data]);
 
   const allMinted = totalRealms > 0 && mintedRealmsCount === totalRealms;
 
