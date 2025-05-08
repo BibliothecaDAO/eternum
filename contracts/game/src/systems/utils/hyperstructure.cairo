@@ -114,7 +114,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 ref world,
                 structure_id,
                 vrf_seed + count.into(),
-                array![(guard_slot, TroopTier::T3, *guard_troop_types_order.at(count))].span(),
+                array![(guard_slot, TroopTier::T2, *guard_troop_types_order.at(count))].span(),
                 troop_limit_config,
                 troop_stamina_config,
                 tick_config,

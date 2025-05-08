@@ -587,12 +587,14 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
         let random_troop_type_index: u128 = random::random(seed, salt, troop_types.len().into());
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
-
-        let troop_tiers: Array<TroopTier> = array![TroopTier::T1, TroopTier::T2, TroopTier::T3];
-        let random_troop_tier_index: u128 = random::random(
-            seed + 14, salt + random_troop_type_index, troop_tiers.len().into(),
-        );
-        let troop_tier: TroopTier = *troop_tiers.at(random_troop_tier_index.try_into().unwrap());
+        let troop_tier: TroopTier = *random::choices(
+            array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
+            array![80, 15, 5].span(),
+            array![].span(),
+            1,
+            true,
+            seed + 15,
+        )[0];
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();

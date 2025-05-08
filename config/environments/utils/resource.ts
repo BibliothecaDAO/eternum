@@ -78,7 +78,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 50,
   [ResourcesIds.Fish]: 50,
-  [ResourcesIds.AncientFragment]: 1,
+  [ResourcesIds.AncientFragment]: 3,
   [ResourcesIds.Labor]: 30,
 };
 
@@ -86,7 +86,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Stone, amount: 4.1 },
     { resource: ResourcesIds.Coal, amount: 3.9 },
-    { resource: ResourcesIds.Wheat, amount: 5 },
+    { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Stone]: [
     { resource: ResourcesIds.Wood, amount: 4.6 },
@@ -96,12 +96,12 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Coal]: [
     { resource: ResourcesIds.Stone, amount: 4.8 },
     { resource: ResourcesIds.Copper, amount: 3.2 },
-    { resource: ResourcesIds.Wheat, amount: 5 },
+    { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Copper]: [
     { resource: ResourcesIds.Coal, amount: 5.2 },
     { resource: ResourcesIds.Obsidian, amount: 3 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Obsidian]: [
     { resource: ResourcesIds.Copper, amount: 4.9 },
@@ -111,7 +111,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Silver]: [
     { resource: ResourcesIds.Obsidian, amount: 5.4 },
     { resource: ResourcesIds.Ironwood, amount: 2.9 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ironwood]: [
     { resource: ResourcesIds.Silver, amount: 5.4 },
@@ -121,7 +121,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.ColdIron]: [
     { resource: ResourcesIds.Ironwood, amount: 4.7 },
     { resource: ResourcesIds.Gold, amount: 3.7 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Gold]: [
     { resource: ResourcesIds.ColdIron, amount: 5.2 },
@@ -131,7 +131,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Hartwood]: [
     { resource: ResourcesIds.Gold, amount: 6.4 },
     { resource: ResourcesIds.Diamonds, amount: 2.1 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Diamonds]: [
     { resource: ResourcesIds.Hartwood, amount: 6.3 },
@@ -141,7 +141,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Sapphire]: [
     { resource: ResourcesIds.Diamonds, amount: 5 },
     { resource: ResourcesIds.Ruby, amount: 3.9 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ruby]: [
     { resource: ResourcesIds.Sapphire, amount: 4.5 },
@@ -151,7 +151,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.DeepCrystal]: [
     { resource: ResourcesIds.Ruby, amount: 5.2 },
     { resource: ResourcesIds.Ignium, amount: 3.7 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ignium]: [
     { resource: ResourcesIds.DeepCrystal, amount: 5.4 },
@@ -161,7 +161,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.EtherealSilica]: [
     { resource: ResourcesIds.Ignium, amount: 5 },
     { resource: ResourcesIds.TrueIce, amount: 4.1 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.TrueIce]: [
     { resource: ResourcesIds.EtherealSilica, amount: 5.4 },
@@ -171,7 +171,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.TwilightQuartz]: [
     { resource: ResourcesIds.TrueIce, amount: 5.6 },
     { resource: ResourcesIds.AlchemicalSilver, amount: 3.7 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.AlchemicalSilver]: [
     { resource: ResourcesIds.TwilightQuartz, amount: 6.4 },
@@ -181,7 +181,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Adamantine]: [
     { resource: ResourcesIds.AlchemicalSilver, amount: 7.2 },
     { resource: ResourcesIds.Mithral, amount: 2.8 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Mithral]: [
     { resource: ResourcesIds.Adamantine, amount: 7.3 },
@@ -191,7 +191,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Dragonhide]: [
     { resource: ResourcesIds.Adamantine, amount: 6.6 },
     { resource: ResourcesIds.Mithral, amount: 4.4 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 25 },
@@ -336,7 +336,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs =
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Labor, amount: 10.4 },
-    { resource: ResourcesIds.Wheat, amount: 5 },
+    { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Stone]: [
     { resource: ResourcesIds.Labor, amount: 10.4 },
@@ -344,11 +344,11 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Coal]: [
     { resource: ResourcesIds.Labor, amount: 13.1 },
-    { resource: ResourcesIds.Wheat, amount: 5 },
+    { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Copper]: [
     { resource: ResourcesIds.Labor, amount: 16.35 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Obsidian]: [
     { resource: ResourcesIds.Labor, amount: 25.61 },
@@ -356,7 +356,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Silver]: [
     { resource: ResourcesIds.Labor, amount: 29.12 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ironwood]: [
     { resource: ResourcesIds.Labor, amount: 39.91 },
@@ -364,7 +364,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.ColdIron]: [
     { resource: ResourcesIds.Labor, amount: 48.49 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Gold]: [
     { resource: ResourcesIds.Labor, amount: 62.92 },
@@ -372,7 +372,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Hartwood]: [
     { resource: ResourcesIds.Labor, amount: 79.82 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Diamonds]: [
     { resource: ResourcesIds.Labor, amount: 121.18 },
@@ -380,7 +380,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Sapphire]: [
     { resource: ResourcesIds.Labor, amount: 172.12 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ruby]: [
     { resource: ResourcesIds.Labor, amount: 185.12 },
@@ -388,7 +388,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.DeepCrystal]: [
     { resource: ResourcesIds.Labor, amount: 213.98 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ignium]: [
     { resource: ResourcesIds.Labor, amount: 222.95 },
@@ -396,7 +396,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.EtherealSilica]: [
     { resource: ResourcesIds.Labor, amount: 281.58 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.TrueIce]: [
     { resource: ResourcesIds.Labor, amount: 319.54 },
@@ -404,7 +404,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.TwilightQuartz]: [
     { resource: ResourcesIds.Labor, amount: 367.25 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.AlchemicalSilver]: [
     { resource: ResourcesIds.Labor, amount: 504.01 },
@@ -412,7 +412,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Adamantine]: [
     { resource: ResourcesIds.Labor, amount: 652.08 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Mithral]: [
     { resource: ResourcesIds.Labor, amount: 1075.75 },
@@ -420,7 +420,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.Dragonhide]: [
     { resource: ResourcesIds.Labor, amount: 1199.0 },
-    { resource: ResourcesIds.Fish, amount: 5 },
+    { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Donkey]: [],
   [ResourcesIds.Knight]: [
