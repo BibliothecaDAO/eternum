@@ -536,6 +536,11 @@ export interface Config {
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
+  questGames: {
+    address: string;
+    levels: Level[];
+    overwrite: boolean;
+  }[];
 
   // Config for calling the setup function
   setup?: {

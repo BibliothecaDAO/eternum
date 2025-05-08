@@ -59,7 +59,7 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
       </div>
       <div className="flex flex-col items-center w-4/5 border-t border-gold/20 pt-5">
         <div className="font-bold">Available Levels</div>
-        <div className="flex flex-row justify-center gap-5 p-2">
+        <div className="flex flex-row gap-5 p-2 w-full overflow-x-auto">
           {questLevels.map((level: any, i: number) => {
             const timeLimit = level?.value?.time_limit?.value;
             const targetScore = level?.value?.target_score?.value;

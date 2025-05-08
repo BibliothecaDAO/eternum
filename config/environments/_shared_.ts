@@ -341,6 +341,19 @@ export const EternumGlobalConfig: Config = {
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
+  questGames: [
+    {
+      address: "0x444834e7b71749832f0db8c64f17ed1c3af8462c1682c10dcd6068b1c57494b",
+      levels: [
+        { target_score: 26, settings_id: 21, time_limit: 86400 },
+        { target_score: 26, settings_id: 23, time_limit: 86400 },
+        { target_score: 26, settings_id: 24, time_limit: 86400 },
+        { target_score: 51, settings_id: 26, time_limit: 86400 },
+        { target_score: 101, settings_id: 27, time_limit: 86400 },
+      ],
+      overwrite: true,
+    },
+  ],
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

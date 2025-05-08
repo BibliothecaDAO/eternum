@@ -86,6 +86,19 @@ export const SepoliaEternumGlobalConfig: Config = {
       { resource: ResourcesIds.Fish, amount: 1 },
     ],
   },
+  questGames: [
+    {
+      address: "0x25dd1faa4f94d1ddd523d7db4697c10a34a09d7b55b4758995a070fd9d61498",
+      levels: [
+        { target_score: 26, settings_id: 1, time_limit: 86400 },
+        { target_score: 51, settings_id: 2, time_limit: 86400 },
+        { target_score: 51, settings_id: 3, time_limit: 86400 },
+        { target_score: 51, settings_id: 4, time_limit: 86400 },
+        { target_score: 101, settings_id: 9, time_limit: 86400 },
+      ],
+      overwrite: true,
+    },
+  ],
 };
 
 console.log("Welcome to Sepolia!");

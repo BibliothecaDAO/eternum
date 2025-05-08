@@ -68,7 +68,7 @@ export const RealmsContainer = ({
   }, [questTileEntity]);
 
   return (
-    <div className="grid grid-cols-3 gap-3 overflow-y-auto w-3/4 mx-auto pt-5">
+    <div className="grid grid-cols-3 gap-3 overflow-y-auto w-3/4 mx-auto p-5">
       {realmsOrVillages.map((structure, index) => {
         return (
           <div className="h-36" key={index}>

@@ -340,7 +340,6 @@ const configModels = [
   "s1_eternum-SeasonPrize",
   "s1_eternum-GuildWhitelist",
   "s1_eternum-HyperstructureRequirements",
-  "s1_eternum-QuestLevel",
 ];
 
 const singleKeyModels = [
