@@ -850,7 +850,7 @@ pub impl AchievementImpl of AchievementTrait {
             index: 0,
             points: 5,
             group: 'Warrior',
-            icon: 'fa-fort-awesome',
+            icon: 'fa-skull-crossbones',
             title: 'Stalwart',
             description: "Your walls stand strong against all comers",
             tasks: array![task].span(),
@@ -904,9 +904,9 @@ pub impl AchievementImpl of AchievementTrait {
             index: 2,
             points: 40,
             group: 'Imperial',
-            icon: 'fa-empire',
+            icon: 'fa-landmark-flag',
             title: 'Imperial Ambition',
-            description: "The greatest of all realms",
+            description: "Your empire stands supreme, a landmark for all ages",
             tasks: array![task].span(),
         }
     }
