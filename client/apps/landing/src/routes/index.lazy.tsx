@@ -54,7 +54,7 @@ function Index() {
   return (
     <div className="p-4 flex flex-col items-center">
       {/* Title might also be animated if desired */}
-      <h1 className="text-5xl mb-6 text-center">Welcome to Eternum Empire!</h1>
+      <h1 className="text-5xl mb-6 text-center">Eternum Empire!</h1>
       <p className="text-xl text-center mb-12 max-w-2xl">Explore, conquer, and build your legacy.</p>
 
       <motion.div
@@ -79,7 +79,7 @@ function Index() {
           };
           const content = (
             <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center">
-              <span className="text-white text-2xl border px-4 py-2 border-gold rounded-md uppercase font-serif text-center">
+              <span className="text-gold text-2xl border px-4 py-2 border-gold rounded-md uppercase font-serif text-center">
                 {cta.text}
               </span>
             </div>

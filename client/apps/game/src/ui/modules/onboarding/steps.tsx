@@ -204,6 +204,7 @@ export const StepOne = () => {
   const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
+
   const villageEntities = usePlayerOwnedVillageEntities();
 
   const hasRealmsOrVillages = useMemo(() => {
@@ -295,69 +296,15 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { create_multiple_realms },
       components: { Structure },
     },
   } = useDojo();
 
+  const realms = usePlayerOwnedRealmEntities();
+
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-
-  // Track which realms have locations selected
-  const realmsWithLocations = useMemo(() => {
-    return seasonPassRealms.filter((realm) => realm.selectedLocation).map((realm) => realm.realmId);
-  }, [seasonPassRealms]);
-
-  // Only allow settling realms that have locations selected
-  const settleableRealms = useMemo(() => {
-    return selectedRealms.filter((realmId) => realmsWithLocations.includes(realmId));
-  }, [selectedRealms, realmsWithLocations]);
-
-  const settleRealms = async (realmIds: number[]) => {
-    if (realmIds.length === 0) return;
-
-    setLoading(true);
-    try {
-      // For each realm, use its specific location
-      const toSettle = [];
-      for (const realmId of realmIds) {
-        const realm = seasonPassRealms.find((r) => r.realmId === realmId);
-        if (!realm || !realm.selectedLocation) continue;
-
-        toSettle.push({
-          realm_id: realmId,
-          realm_settlement: {
-            side: realm.selectedLocation.side,
-            layer: realm.selectedLocation.layer,
-            point: realm.selectedLocation.point,
-          },
-        });
-      }
-
-      await create_multiple_realms({
-        realms: toSettle,
-        owner: account.address,
-        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-        signer: account,
-        season_pass_address: getSeasonPassAddress(),
-      });
-
-      // Refresh the list of season passes after settling
-      const updatedSeasonPasses = await getUnusedSeasonPasses(
-        account.address,
-        realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
-      );
-      setSeasonPassRealms(updatedSeasonPasses);
-      setSelectedRealms([]);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error settling realms:", error);
-      setLoading(false);
-    }
-  };
-
-  const realms = usePlayerOwnedRealmEntities();
 
   useEffect(() => {
     getUnusedSeasonPasses(
@@ -369,12 +316,20 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         setLoading(false);
       }
     });
-  }, [loading, realms]);
+  }, [loading, realms, account.address, Structure]);
 
   const handleSelectLocation = (realmId: number, location: SettlementLocation | null) => {
     setSeasonPassRealms((prevRealms) =>
       prevRealms.map((realm) => (realm.realmId === realmId ? { ...realm, selectedLocation: location } : realm)),
     );
+    if (location !== null) {
+      setSelectedRealms((prevSelectedRealms) => {
+        if (!prevSelectedRealms.includes(realmId)) {
+          return [...prevSelectedRealms, realmId];
+        }
+        return prevSelectedRealms;
+      });
+    }
   };
 
   const occupiedLocations = useMemo(() => {
@@ -383,6 +338,20 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       .map((realm) => realm.selectedLocation!)
       .filter((location): location is SettlementLocation => location !== null && location !== undefined);
   }, [seasonPassRealms]);
+
+  const [realmCount, setRealmCount] = useState<number>(0);
+  const [maxLayers, setMaxLayers] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMaxLayers(getMaxLayer(realmCount));
+  }, [realmCount]);
+
+  useEffect(() => {
+    const fetchRealmCount = async () => {
+      setRealmCount((await queryRealmCount()) ?? 0);
+    };
+    fetchRealmCount();
+  }, []);
 
   const seasonPassElements = useMemo(() => {
     const elements = [];
@@ -404,6 +373,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             }
             onSelectLocation={handleSelectLocation}
             occupiedLocations={occupiedLocations}
+            realmCount={realmCount}
+            maxLayers={maxLayers}
           />
           {seasonPassElement2 && (
             <SeasonPassRealm
@@ -419,6 +390,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
               }
               onSelectLocation={handleSelectLocation}
               occupiedLocations={occupiedLocations}
+              realmCount={realmCount}
+              maxLayers={maxLayers}
             />
           )}
         </div>,
@@ -442,29 +415,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
 
-          {/* <div className="flex flex-row justify-between ml-1 relative top-2">
-            {selectedRealms.length === 0 ? (
-              <div
-                className="flex flex-row items-center gap-2"
-                onClick={() => setSelectedRealms(seasonPassRealms.map((realm) => realm.realmId))}
-              >
-                <CheckboxUnchecked className="w-4 h-4 fill-current text-gold" />
-                <div className="text-sm">{seasonPassRealms.length} Available</div>
-              </div>
-            ) : (
-              <div className="flex flex-row items-center gap-2" onClick={() => setSelectedRealms([])}>
-                <CheckboxMinus className="w-4 h-4 fill-current text-gold" />
-                <div className="text-sm">
-                  {selectedRealms.length} / {seasonPassRealms.length} Selected
-                </div>
-              </div>
-            )}
-
-            <div className="text-sm">
-              {realmsWithLocations.length} / {seasonPassRealms.length} With Locations
-            </div>
-          </div> */}
-          <div className=" w-full mt-auto">
+          {/* <div className=" w-full mt-auto">
             <Button
               disabled={settleableRealms.length === 0 || loading}
               onClick={() => settleRealms(settleableRealms)}
@@ -482,9 +433,14 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                 </div>
               )}
             </Button>
-          </div>
+          </div> */}
 
-          <div className="flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+          <div className="relative flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+            {loading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-md">
+                <img src="/images/logos/eternum-loader.png" className="w-10 h-10 animate-spin" alt="Loading..." />
+              </div>
+            )}
             {seasonPassElements}
           </div>
         </div>
@@ -495,17 +451,19 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
 
 const Header = ({ onPrevious }: { onPrevious: () => void }) => {
   return (
-    <div className="grid grid-cols-3 justify-between items-center">
-      <Button
-        className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
-        variant="primary"
-        onClick={onPrevious}
-      >
-        <BackArrow className="w-6 h-6 mr-2 fill-current" />
-        <div className="w-14 text-base font-normal normal-case inline">Back</div>
-      </Button>
-      <div className="text-2xl font-normal normal-case mx-auto self-center">Season Pass</div>
-      <div className="w-14"></div>
+    <div className="justify-between items-center">
+      <div className="flex w-full gap-2">
+        {" "}
+        <Button size="xs" variant="primary" className="self-center" onClick={onPrevious}>
+          <BackArrow className="w-4 h-4 mr-2 fill-current" />
+          <div className="w-14 text-base font-normal normal-case inline">Back</div>
+        </Button>
+        <h3 className="self-center ml-9">Season Pass</h3>
+      </div>
+      <p className="text-xl mt-3">
+        Tip: During settling, other people might settle in the same location as you at the same time, which will result
+        in an error. If you have an error, try settling again.
+      </p>
     </div>
   );
 };

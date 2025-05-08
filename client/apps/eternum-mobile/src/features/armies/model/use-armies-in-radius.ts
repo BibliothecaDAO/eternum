@@ -28,12 +28,15 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
 
       try {
         const query: Query = {
-          limit: 100,
-          offset: 0,
-          entity_models: ["s1_eternum-ExplorerTroops"],
-          dont_include_hashed_keys: false,
-          entity_updated_after: 0,
-          order_by: [],
+          pagination: {
+            limit: 1000,
+            cursor: undefined,
+            direction: "Forward",
+            order_by: [],
+          },
+          models: ["s1_eternum-ExplorerTroops"],
+          no_hashed_keys: false,
+          historical: false,
           clause: AndComposeClause([
             MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", center.x - radius),
             MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", center.x + radius),
@@ -42,7 +45,7 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
           ]).build(),
         };
 
-        const results = await toriiClient.getEntities(query, false);
+        const results = await toriiClient.getEntities(query);
         let armies = Object.values(results).map((army) => {
           const owner = army["s1_eternum-ExplorerTroops"]["owner"]["value"];
           const isEnemy = owner !== selectedRealm?.entityId;

@@ -49,7 +49,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="p-3">
-      <SidebarContent className="bg-dark-wood border rounded-xl relative">
+      <SidebarContent className="dark:bg-dark-wood border rounded-xl relative">
         {isMobile && (
           <button
             onClick={() => setOpenMobile(false)}
