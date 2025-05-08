@@ -1,5 +1,6 @@
 import { Direction, getNeighborHexes, ID, Steps } from "@bibliothecadao/types";
 import { Entity } from "@dojoengine/recs";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../parser";
 import { getResourcesFromToriiEntity } from "../parser/resources";
@@ -253,4 +254,29 @@ export const checkOpenVillageSlotFromToriiClient = async (
       row: villageSlotsData.connected_realm_coord?.value.y.value,
     },
   };
+};
+
+export const hasSurroundingWonderFromToriiClient = async (
+  toriiClient: ToriiClient,
+  coords: { col: number; row: number },
+) => {
+  const radius = 200;
+
+  const query: Query = {
+    limit: 1000,
+    offset: 0,
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["s1_eternum-Structure"],
+    entity_updated_after: 0,
+    clause: AndComposeClause([
+      MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", coords.col - radius),
+      MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", coords.col + radius),
+      MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", coords.row - radius),
+      MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", coords.row + radius),
+      MemberClause("s1_eternum-Structure", "metadata.has_wonder", "Eq", true),
+    ]).build(),
+  };
+  const wonders = await toriiClient.getEntities(query, false);
+  return !!Object.keys(wonders).length;
 };

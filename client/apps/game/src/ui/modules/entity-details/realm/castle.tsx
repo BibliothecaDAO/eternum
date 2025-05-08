@@ -13,9 +13,10 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { hasSurroundingWonderFromToriiClient } from "@bibliothecadao/torii-client";
 import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
 export const Castle = () => {
@@ -23,7 +24,8 @@ export const Castle = () => {
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const isNearWonder = true;
+
+  const [isNearWonder, setIsNearWonder] = useState(false);
   const [hasActivatedWonderBonus, setHasActivatedWonderBonus] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +39,18 @@ export const Castle = () => {
     () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
     [structureEntityId, dojo.account.account.address, dojo.setup.components],
   );
+
+  useEffect(() => {
+    const checkNearWonder = async () => {
+      const isNearWonder = await hasSurroundingWonderFromToriiClient(dojo.network.toriiClient, {
+        col: structure?.position.x ?? 0,
+        row: structure?.position.y ?? 0,
+      });
+      console.log("isNearWonder", isNearWonder);
+      setIsNearWonder(isNearWonder);
+    };
+    checkNearWonder();
+  }, [structure]);
 
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;
@@ -77,29 +91,34 @@ export const Castle = () => {
         <div className="p-4 space-y-6">
           {/* Wonder Bonus Section */}
           {isNearWonder && (
-            <div className="bg-gold/5 border border-gold/20 rounded-lg px-4 py-3 shadow-lg shadow-gold/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gold/10 p-2 rounded-lg">
-                    <SparklesIcon className="w-6 h-6 text-gold" />
+            <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gold/20 p-3 rounded-lg">
+                      <SparklesIcon className="w-7 h-7 text-gold" />
+                    </div>
+                    <div>
+                      <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Available</h6>
+                      <p className="text-gold/90 text-sm">
+                        {hasActivatedWonderBonus
+                          ? "✨ Currently receiving +20% production bonus"
+                          : "Activate to receive +20% production bonus"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h6 className="text-gold font-semibold">Wonder Bonus Available</h6>
-                    <p className="text-sm text-gold/70">
-                      {hasActivatedWonderBonus
-                        ? "Currently receiving +20% production bonus"
-                        : "Activate to receive +20% production bonus"}
-                    </p>
-                  </div>
+                  <Button
+                    variant={hasActivatedWonderBonus ? "gold" : "outline"}
+                    onClick={() => setHasActivatedWonderBonus(!hasActivatedWonderBonus)}
+                    disabled={isLoading}
+                    className={`min-w-[160px] ${
+                      hasActivatedWonderBonus ? "bg-gold hover:bg-gold/90" : "hover:bg-gold/10 animate-pulse"
+                    }`}
+                  >
+                    {hasActivatedWonderBonus ? "Deactivate Bonus" : "Activate Bonus"}
+                  </Button>
                 </div>
-                <Button
-                  variant={hasActivatedWonderBonus ? "gold" : "outline"}
-                  onClick={() => setHasActivatedWonderBonus(!hasActivatedWonderBonus)}
-                  disabled={isLoading}
-                  className="min-w-[140px]"
-                >
-                  {hasActivatedWonderBonus ? "Deactivate Bonus" : "Activate Bonus"}
-                </Button>
               </div>
             </div>
           )}
