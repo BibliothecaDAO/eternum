@@ -439,7 +439,7 @@ pub impl AchievementImpl of AchievementTrait {
     fn chief_foreman_two() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::BUILD_SIMPLE,
-            total: 3,
+            total: 25,
             description: "Construct 25 buildings using the Simple construction mode.",
         );
         Achievement {
