@@ -72,6 +72,7 @@ export default defineConfig({
             { text: "Production", link: "/mechanics/resources/production" },
             { text: "Storage", link: "/mechanics/resources/storage" },
             { text: "Transfers & Trade", link: "/mechanics/resources/transfers-and-trade" },
+            { text: "Bridging", link: "/mechanics/resources/bridging" },
           ],
         },
         {
