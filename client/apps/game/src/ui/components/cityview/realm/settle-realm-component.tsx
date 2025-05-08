@@ -121,6 +121,7 @@ export const SeasonPassRealm = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
   const [isLoading, setIsLoading] = useState(false);
+  const [isSettled, setIsSettled] = useState(false);
 
   const setLocationRef = useRef<SettlementLocation | null>(null);
 
@@ -169,6 +170,7 @@ export const SeasonPassRealm = ({
         season_pass_address: getSeasonPassAddress(),
       });
       toast.success("Realms settled successfully");
+      setIsSettled(true);
     } catch (error) {
       toast.error("Error settling realms");
       console.error("Error settling realms:", error);
@@ -256,7 +258,11 @@ export const SeasonPassRealm = ({
       </div>
 
       <div className="mt-auto border-t border-gold/20 pt-2">
-        {normalizedSelectedLocation ? (
+        {isSettled ? (
+          <div className="flex items-center justify-center h-full py-2">
+            <h5 className="text-gold font-semibold">Realm Settled!</h5>
+          </div>
+        ) : normalizedSelectedLocation ? (
           <div className="flex flex-col gap-1">
             <h6 className="text-xs text-gold/70">Selected Location</h6>
             <div className="flex justify-between items-center">
