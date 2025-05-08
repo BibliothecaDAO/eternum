@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
 
-world_address = "0x02a9df60830aa88fe768c26b12043318fd1a7e951c851a96dd64d542c86e0daf"
+world_address = "0x7113b2a40ebedb0f0508bfdfc86ae574bab7bb4e84ce38564edad4f777ab7d8"
 
 db_dir = "torii-sepolia"
 
@@ -19,14 +19,11 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-    "erc721:0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
-    "erc721:0x59484f4ecc818f5953b614ac1de7d83b94bd5af537202e44cd2125bccf07bfc",
-	"erc721:0x233818083e4af46078f415d1249d2292d2ade046010d5ae61d1fd1f6de9a099",
-    "erc20:0xc091ab9bb3e0494d2eae6972bf4d2dc0517eb01e42e14a2fb3af2b8a803b8",
+    "erc721:0x4430e9e7b6ad7fbc1b40d85c8166880bd0811f37af3293ba8d19d8052b01db",
+    "erc721:0x571531ea5ab11e9fb0f1589139c72c93f474dd774cfda1be361be09ae8d5120",
+	"erc721:0x41daa0003c33c8e45b6ead4dec35dc02970413f970f8155ccaf5cfe8286b74e",
+    "erc20:0x2e1704aa180dd8094625bc1424ddde8461357ee86618ade4e1429104c38dd43",
 ]
-
-[erc]
-max_metadata_tasks = 5
 
 namespaces = ["s1_eternum"]
 
@@ -40,8 +37,8 @@ model_indices = [
 	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.villages_count", "metadata.realm_id", "owner"]},
 	{ model_tag = "s1_eternum-Tile", fields = ["col", "row"] },
 ]
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
-cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
+historical = ["s1_eternum-TrophyProgression"]
+cache_size = -500_000 # 512MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
 page_size = 32_768
 
 [server]
