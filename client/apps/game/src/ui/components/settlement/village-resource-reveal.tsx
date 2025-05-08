@@ -59,6 +59,7 @@ export const VillageResourceReveal = ({
   const [revealedResource, setRevealedResource] = useState<number | null>(null);
 
   useEffect(() => {
+    // tiles get updated before structure in recs, so we're fetching directly the structure from torii
     const fetchResourceData = async () => {
       if (!tile?.occupier_id) return;
 
