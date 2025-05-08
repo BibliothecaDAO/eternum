@@ -13,6 +13,7 @@ import { VillageResourceReveal } from "./village-resource-reveal";
 import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
+import { ArrowRightIcon } from "lucide-react";
 import RealmJson from "../../../../../../public/jsons/realms.json";
 
 interface RealmAttribute {
@@ -368,67 +369,119 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         <div className="flex-1 overflow-auto space-y-6 p-4">
           {currentStep === 1 && (
             <div>
-              <h4 className="text-gold mb-4">1. Purchase a Village Pass</h4>
-              <p className="text-xl text-gray-300 mb-4">
-                <span className="font-bold text-2xl">Villages</span> are smaller settlements with fewer perks than
-                Realms.
-                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                  <li>Each Realm has 6 possible village spots (one in each direction).</li>
-                  <li>Villages support a more casual style of play and can't be captured by other players.</li>
-                  <li>Villages have 20% production of the Realm they are on.</li>
-                </ul>
-              </p>
-              <Button
-                variant="gold"
-                onClick={() => mintStarterPack("eternum-village-pass")}
-                isLoading={isPurchasingPass}
-                disabled={isPurchasingPass}
-                className="mb-6"
-              >
-                {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass $5 (CC or Crypto Accepted)"}
-              </Button>
-
-              {purchasedVillagePass.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <h4 className="text-gold mt-4">1. Select an Available Village Pass</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {purchasedVillagePass.map((pass) => (
-                      <div
-                        className={`p-4 h5 border panel-wood rounded-md cursor-pointer hover:bg-gold/10 ${
-                          selectedVillagePass?.token_id === pass.token_id ? "bg-gold/10 ring-2 ring-gold" : ""
-                        }`}
-                        key={pass.token_id}
-                        onClick={() => handlePassSelection(pass)}
-                      >
-                        <p>Pass #{pass.token_id}</p>
-                      </div>
-                    ))}
+              <h3 className="text-3xl font-bold text-gold mb-6 text-center">Step 1: Acquire Your Village Pass</h3>
+              <div className="grid md:grid-cols-2 gap-8 items-start mb-8">
+                {/* Right Column: Purchase and Selection - MOVED TO LEFT */}
+                <div className="space-y-6 md:order-1">
+                  {" "}
+                  {/* Added md:order-1 */}
+                  <div>
+                    <h5 className="text-xl font-semibold text-gold mb-3">Information</h5>
+                    <p className="text-lg text-gray-300 leading-relaxed mt-4">
+                      <span className="font-semibold text-xl text-gold">Villages</span> offer a unique way to expand
+                      your presence in Eternum. They are smaller settlements, perfect for a more casual playstyle, and
+                      cannot be captured by others.
+                    </p>
+                    <ul className="list-disc list-inside ml-4 space-y-1  mb-4">
+                      <li>Each Realm can support up to 6 Villages, one in each direction.</li>
+                      <li>Villages benefit from 20% of their connected Realm's production.</li>
+                      <li>Villages have one resource type that is random.</li>
+                    </ul>
+                    <Button
+                      variant="gold"
+                      onClick={() => mintStarterPack("eternum-village-pass")}
+                      isLoading={isPurchasingPass}
+                      disabled={isPurchasingPass}
+                      className="w-full py-8"
+                    >
+                      {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass ($5)"}
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-1 text-center">(Credit Card or Crypto Accepted)</p>
                   </div>
-                  {isPurchasingPass && <div className="text-sm text-gray-400 mt-2"> Checking for new passes...</div>}
+                  {purchasedVillagePass.length > 0 && (
+                    <div className="pt-4 border-t border-gold/20 mt-6">
+                      <h4 className="text-xl font-semibold text-gold mb-3">Select an Available Pass</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {purchasedVillagePass.map((pass) => (
+                          <div
+                            className={cn(
+                              "p-3 border rounded-lg cursor-pointer transition-all duration-150 ease-in-out",
+                              "text-center /30 hover:bg-gold/20 border-gold/30",
+                              selectedVillagePass?.token_id === pass.token_id
+                                ? "bg-gold/20 ring-2 ring-gold shadow-lg scale-105"
+                                : "hover:shadow-md",
+                            )}
+                            key={pass.token_id}
+                            onClick={() => handlePassSelection(pass)}
+                          >
+                            <p className="font-semibold text-gold flex justify-between">
+                              Pass #{pass.token_id} <ArrowRightIcon className="w-4 h-4 ml-2 self-center" />
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      {isPurchasingPass && (
+                        <div className="text-sm text-yellow-400 mt-3 text-center animate-pulse">
+                          Checking for new passes...
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!purchasedVillagePass.length && !isPurchasingPass && (
+                    <p className="text-center text-gray-500 mt-6 text-sm">
+                      You currently have no Village Passes. Purchase one to continue.
+                    </p>
+                  )}
                 </div>
-              ) : (
-                !isPurchasingPass && <p className="text-center text-gray-400 mt-4"></p>
-              )}
 
-              {/* Resource Probability Section */}
-              <div className="my-6 ">
-                <h3 className="text-gold mb-4 text-center">Possible Village Resources & Odds</h3>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Left Column: Image and Info - MOVED TO RIGHT */}
+                <div className="space-y-4 pr-4 md:order-2">
+                  {" "}
+                  {/* Added md:order-2 */}
+                  <img
+                    src="/images/buildings/construction/castleOne.png" // Path relative to the public directory
+                    alt="Village Pass Illustration"
+                    className="w-full mx-auto  object-contain"
+                  />
+                </div>
+              </div>
+
+              {/* Resource Probability Section - Clearer Separation */}
+              <div className="my-10 pt-8 border-t-2 border-gold/20">
+                <h3 className="text-2xl font-bold text-gold mb-6 text-center">Possible Village Resources &amp; Odds</h3>
+                <p className="text-center text-gray-300 mb-6 text-sm italic">
+                  Each Village Pass, when settled, will reveal one of the following resources based on these odds. There
+                  is a ~90% chance of rolling a Common or Uncommon resource, and a ~10% chance for Rare or rarer.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-6">
                   {/* Column 1: Top 3 Tiers */}
                   <div className="space-y-4">
                     {topTiers.map((tier) => (
-                      <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown/10 border-gold/30")}>
-                        <h6 className="font-bold text-lg mb-2 text-center">
-                          {tier.name} ({tier.totalChance.toFixed(3)}%)
+                      <div
+                        key={tier.name}
+                        className={cn(
+                          "p-4 rounded-lg border /20 border-gold/40 shadow-md hover:shadow-lg transition-shadow",
+                        )}
+                      >
+                        <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
+                          <span
+                            className={cn(
+                              "inline-block w-3 h-3 rounded-full mr-2",
+                              tier.color.replace("bg-", "border-").replace("-800", "-500").replace("-600", "-400"), // Use border color for dot
+                              tier.color,
+                            )}
+                          ></span>
+                          {tier.name}{" "}
+                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
-                        <ul className="space-y-1">
+                        <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
-                            <li key={resource.name} className="flex justify-between items-center text-xl">
-                              <span className="flex items-center gap-1">
-                                <ResourceIcon resource={resource.name} size="xs" />
+                            <li key={resource.name} className="flex justify-between items-center text-md text-gray-200">
+                              <span className="flex items-center gap-2">
+                                <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span>{resource.chance.toFixed(2)}%</span>
+                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -439,18 +492,31 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   {/* Column 2: Bottom 3 Tiers */}
                   <div className="space-y-4">
                     {bottomTiers.map((tier) => (
-                      <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown/10 border-gold/30")}>
-                        <h6 className="font-bold text-lg mb-2 text-center">
-                          {tier.name} ({tier.totalChance.toFixed(3)}%)
+                      <div
+                        key={tier.name}
+                        className={cn(
+                          "p-4 rounded-lg border /20 border-gold/40 shadow-md hover:shadow-lg transition-shadow",
+                        )}
+                      >
+                        <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
+                          <span
+                            className={cn(
+                              "inline-block w-3 h-3 rounded-full mr-2",
+                              tier.color.replace("bg-", "border-").replace("-800", "-500").replace("-600", "-400"),
+                              tier.color,
+                            )}
+                          ></span>
+                          {tier.name}{" "}
+                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
-                        <ul className="space-y-1">
+                        <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
-                            <li key={resource.name} className="flex justify-between items-center text-xl">
-                              <span className="flex items-center gap-1">
-                                <ResourceIcon resource={resource.name} size="xs" />
+                            <li key={resource.name} className="flex justify-between items-center text-md text-gray-200">
+                              <span className="flex items-center gap-2">
+                                <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span>{resource.chance.toFixed(2)}%</span>
+                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -458,9 +524,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     ))}
                   </div>
                 </div>
-                <p className="text-center text-gray-300 mt-4 text-sm italic">
-                  There is a ~90% chance of rolling a Common or Uncommon resource, and a ~10% chance of a Rare, Epic,
-                  Legendary or Mythic resource.
+                <p className="text-center text-gray-400 mt-6 text-xs italic">
+                  Note: Percentages are approximate and subject to minor variations.
                 </p>
               </div>
               {/* End Resource Probability Section */}
@@ -481,13 +546,13 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       placeholder="Search Realm ID..."
                       value={realmSearchTerm}
                       onChange={(e) => setRealmSearchTerm(e.target.value)}
-                      className="w-full p-2 bg-dark-brown border border-gold/30 rounded-md text-gold placeholder-gold/50 focus:outline-none focus:ring-0 focus:border-gold"
+                      className="w-full p-2  border border-gold/30 rounded-md text-gold placeholder-gold/50 focus:outline-none focus:ring-0 focus:border-gold bg-transparent"
                       disabled={isLoading || availableVillages.length === 0}
                     />
                   </div>
 
                   <div>
-                    <h5 className="text-gold mb-1 pt-2">Or Select Realm from List</h5>
+                    <h5 className="text-gold mb-1 pt-2">Select Realm</h5>
                     <Select
                       value={selectedRealm?.connected_realm_entity_id.toString() ?? ""}
                       onValueChange={(value) => {
@@ -497,7 +562,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       }}
                       disabled={isLoading || availableVillages.length === 0}
                     >
-                      <SelectTrigger className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
+                      <SelectTrigger className="w-full p-2 pr-8  border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
                         <SelectValue
                           placeholder={
                             availableVillages.length > 0
@@ -521,25 +586,22 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     </Select>
                   </div>
                   {selectedRealm && (
-                    <div className="mt-4 bg-dark-brown rounded-md">
-                      <h5 className="text-gold mb-2">
-                        Selected Realm: <br />
-                      </h5>
-                      <h4 className="mb-4">
+                    <div className="mt-4">
+                      <h2 className="mb-4">
                         {getRealmName(selectedRealm.connected_realm_id)} (#
                         {selectedRealm.connected_realm_id})
-                      </h4>
+                      </h2>
 
                       <Button variant="gold" onClick={handleConfirmRealm} className="w-full">
-                        Confirm Realm & Select Direction
+                        Confirm <ArrowRightIcon className="w-4 h-4 ml-2" />
                       </Button>
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1">
-                  <h5 className="text-gold mb-2">Or Select Realm on Map</h5>
-                  <div className="border border-gold/30 rounded-md overflow-hidden w-1/2">
+                  <h5 className="text-gold mb-2">Select Realm on Map</h5>
+                  <div className="overflow-hidden w-1/2">
                     <SettlementMinimap
                       onSelectLocation={(location) => {
                         const village = availableVillages.find(
@@ -553,6 +615,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       maxLayers={50}
                       extraPlayerOccupiedLocations={[]}
                       villageSelect={true}
+                      showSelectButton={false}
                     />
                   </div>
                 </div>
@@ -563,7 +626,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           {currentStep === 3 && selectedRealm && (
             <div>
               <h4 className="text-gold mb-4">3. Confirm Village Details</h4>
-              <div className="flex flex-col md:flex-row gap-12  bg-dark-brown/50">
+              <div className="flex flex-col md:flex-row gap-12  /50">
                 <div className="space-y-4">
                   <h2>
                     {getRealmName(selectedRealm.connected_realm_id)} (#{selectedRealm.connected_realm_id})

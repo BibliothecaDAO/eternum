@@ -23,4 +23,5 @@ export interface SettlementMinimapProps {
   // potential player locations to display on the minimap
   extraPlayerOccupiedLocations?: SettlementLocation[];
   villageSelect?: boolean;
+  showSelectButton?: boolean;
 }
