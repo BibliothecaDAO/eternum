@@ -6,7 +6,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { FELT_CENTER } from "@/ui/config";
 import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";

@@ -4,7 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
-import type { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import type { Clause, ToriiClient } from "@dojoengine/torii-client";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -18,8 +18,8 @@ export const EVENT_QUERY_LIMIT = 40_000;
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   setupResult: SetupResult,
-  entityKeyClause: EntityKeysClause[],
-  logging = true,
+  entityKeyClause: Clause | undefined | null,
+  logging = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -66,7 +66,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
           }
         }
 
-        setEntities(batch, world.components, logging);
+        const modelsArray = Object.values(batch).map((value) => {
+          return { hashed_keys: value.hashed_keys, models: value.models };
+        });
+
+        setEntities(modelsArray, world.components, logging);
       } catch (error) {
         console.error("Error processing entity batch:", error);
       }
@@ -114,7 +118,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 
   // Handle entity updates
-  const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
+  const entitySub = client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
     if (logging) console.log("Entity updated", fetchedEntities, data);
 
     try {
@@ -125,7 +129,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
+  const eventSub = client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
     if (logging) console.log("Event message updated", fetchedEntities);
 
     try {
@@ -150,7 +154,7 @@ export const initialSync = async (
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,
 ) => {
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, null, false);
 
   let start = performance.now();
   let end;
@@ -164,6 +168,7 @@ export const initialSync = async (
 
   // SPECTATOR REALM
   const firstNonOwnedStructure = await getFirstStructureFromToriiClient(setup.network.toriiClient);
+
   if (firstNonOwnedStructure) {
     state.setSpectatorRealmEntityId(firstNonOwnedStructure.entityId);
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [

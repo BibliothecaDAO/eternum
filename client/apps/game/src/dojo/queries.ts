@@ -243,7 +243,8 @@ export const getEntitiesFromTorii = async <S extends Schema>(
             ],
           },
         };
-  return getEntities(client, query, components as any, [], entityModels, 40_000);
+
+  return getEntities(client, query, components as any, [], entityModels, 40_000, true);
 };
 
 export const getMarketFromTorii = async <S extends Schema>(

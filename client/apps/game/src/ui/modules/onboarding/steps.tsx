@@ -204,6 +204,7 @@ export const StepOne = () => {
   const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
+
   const villageEntities = usePlayerOwnedVillageEntities();
 
   const hasRealmsOrVillages = useMemo(() => {
@@ -295,69 +296,15 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { create_multiple_realms },
       components: { Structure },
     },
   } = useDojo();
 
+  const realms = usePlayerOwnedRealmEntities();
+
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-
-  // Track which realms have locations selected
-  const realmsWithLocations = useMemo(() => {
-    return seasonPassRealms.filter((realm) => realm.selectedLocation).map((realm) => realm.realmId);
-  }, [seasonPassRealms]);
-
-  // Only allow settling realms that have locations selected
-  const settleableRealms = useMemo(() => {
-    return selectedRealms.filter((realmId) => realmsWithLocations.includes(realmId));
-  }, [selectedRealms, realmsWithLocations]);
-
-  const settleRealms = async (realmIds: number[]) => {
-    if (realmIds.length === 0) return;
-
-    setLoading(true);
-    try {
-      // For each realm, use its specific location
-      const toSettle = [];
-      for (const realmId of realmIds) {
-        const realm = seasonPassRealms.find((r) => r.realmId === realmId);
-        if (!realm || !realm.selectedLocation) continue;
-
-        toSettle.push({
-          realm_id: realmId,
-          realm_settlement: {
-            side: realm.selectedLocation.side,
-            layer: realm.selectedLocation.layer,
-            point: realm.selectedLocation.point,
-          },
-        });
-      }
-
-      await create_multiple_realms({
-        realms: toSettle,
-        owner: account.address,
-        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-        signer: account,
-        season_pass_address: getSeasonPassAddress(),
-      });
-
-      // Refresh the list of season passes after settling
-      const updatedSeasonPasses = await getUnusedSeasonPasses(
-        account.address,
-        realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
-      );
-      setSeasonPassRealms(updatedSeasonPasses);
-      setSelectedRealms([]);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error settling realms:", error);
-      setLoading(false);
-    }
-  };
-
-  const realms = usePlayerOwnedRealmEntities();
 
   useEffect(() => {
     getUnusedSeasonPasses(
@@ -383,8 +330,6 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         return prevSelectedRealms;
       });
     }
-
-    console.log(location);
   };
 
   const occupiedLocations = useMemo(() => {
@@ -393,6 +338,20 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       .map((realm) => realm.selectedLocation!)
       .filter((location): location is SettlementLocation => location !== null && location !== undefined);
   }, [seasonPassRealms]);
+
+  const [realmCount, setRealmCount] = useState<number>(0);
+  const [maxLayers, setMaxLayers] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMaxLayers(getMaxLayer(realmCount));
+  }, [realmCount]);
+
+  useEffect(() => {
+    const fetchRealmCount = async () => {
+      setRealmCount((await queryRealmCount()) ?? 0);
+    };
+    fetchRealmCount();
+  }, []);
 
   const seasonPassElements = useMemo(() => {
     const elements = [];
@@ -414,6 +373,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             }
             onSelectLocation={handleSelectLocation}
             occupiedLocations={occupiedLocations}
+            realmCount={realmCount}
+            maxLayers={maxLayers}
           />
           {seasonPassElement2 && (
             <SeasonPassRealm
@@ -429,6 +390,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
               }
               onSelectLocation={handleSelectLocation}
               occupiedLocations={occupiedLocations}
+              realmCount={realmCount}
+              maxLayers={maxLayers}
             />
           )}
         </div>,
@@ -452,7 +415,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
 
-          <div className=" w-full mt-auto">
+          {/* <div className=" w-full mt-auto">
             <Button
               disabled={settleableRealms.length === 0 || loading}
               onClick={() => settleRealms(settleableRealms)}
@@ -470,7 +433,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                 </div>
               )}
             </Button>
-          </div>
+          </div> */}
 
           <div className="relative flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
             {loading && (
@@ -497,9 +460,9 @@ const Header = ({ onPrevious }: { onPrevious: () => void }) => {
         </Button>
         <h3 className="self-center ml-9">Season Pass</h3>
       </div>
-      <p className="text-sm mt-3">
-        Tip: Other people might settle in the same location as you at the same time, which will result in an error. For
-        best results don't settle all at once!
+      <p className="text-xl mt-3">
+        Tip: During settling, other people might settle in the same location as you at the same time, which will result
+        in an error. If you have an error, try settling again.
       </p>
     </div>
   );

@@ -3,7 +3,7 @@ import { GUIManager } from "@/three/helpers/gui-manager";
 import { Navigator } from "@/three/managers/navigator";
 import { SceneManager } from "@/three/scene-manager";
 import * as THREE from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 export default class HUDScene {
   private scene: THREE.Scene;

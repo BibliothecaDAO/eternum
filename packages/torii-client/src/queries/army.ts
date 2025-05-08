@@ -1,29 +1,37 @@
 import { ID } from "@bibliothecadao/types";
-import { Entity } from "@dojoengine/recs";
+// import { Entity } from "@dojoengine/recs"; // Will be removed
 import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getExplorerFromToriiEntity, getResourcesFromToriiEntity } from "../parser";
 
 export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
   const query: Query = {
-    limit: 1,
-    offset: 0,
+    pagination: {
+      limit: 1,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [], // Preserved from original query logic, now in pagination
+    },
+    no_hashed_keys: false, // Mapped from 'dont_include_hashed_keys'
+    models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"], // Mapped from 'entity_models'
+    historical: false, // Added for consistency with address.ts
     clause: {
       Keys: {
         keys: [entityId.toString()],
         pattern_matching: "FixedLen" as PatternMatching,
-        models: [],
+        // Models associated with the keys, mirroring the top-level models
+        models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
       },
     },
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-    entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query, false);
-  const entity = Object.keys(entities)[0] as Entity;
+  const response = await toriiClient.getEntities(query); // Updated call, removed second argument
+
+  const entityModels = response.items[0].models;
+  const explorerModelData = entityModels["s1_eternum-ExplorerTroops"];
+  const resourceModelData = entityModels["s1_eternum-Resource"];
+
   return {
-    explorer: getExplorerFromToriiEntity(entities[entity]["s1_eternum-ExplorerTroops"]),
-    resources: getResourcesFromToriiEntity(entities[entity]["s1_eternum-Resource"]),
+    explorer: getExplorerFromToriiEntity(explorerModelData),
+    resources: getResourcesFromToriiEntity(resourceModelData),
   };
 };
