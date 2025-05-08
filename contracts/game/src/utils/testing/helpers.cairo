@@ -73,7 +73,7 @@ pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
         t2_damage_multiplier: 46116860184273879040, // 2.5
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30% // percentage bonus for biome damage
-        damage_scaling_factor: 64563604257983430656, // 3.5
+        damage_scaling_factor: 55340232221128654848, // 3
         damage_beta_small: 4611686018427387904, // 0.25
         damage_beta_large: 2213609288845146193, // 0.12
         damage_c0: 100_000 * FixedTrait::ONE().mag,

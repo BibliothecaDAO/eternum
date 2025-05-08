@@ -485,19 +485,9 @@ pub impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn _effective_beta(total_troop_count: Fixed, damage_config: TroopDamageConfig) -> Fixed {
-        let BETA_SMALL: Fixed = FixedTrait::new(damage_config.damage_beta_small.into(), false);
-        let BETA_LARGE: Fixed = FixedTrait::new(damage_config.damage_beta_large.into(), false);
-        let C0: Fixed = FixedTrait::new(damage_config.damage_c0.into(), false);
-        let DELTA: Fixed = FixedTrait::new(damage_config.damage_delta.into(), false);
-        let ONE: Fixed = FixedTrait::ONE();
-        let TWO: Fixed = ONE + ONE;
-        let TANH: Fixed = FixedTrait::tanh((total_troop_count - C0) / DELTA) + ONE;
-        let TANH_DIV_TWO: Fixed = TANH / TWO;
-        let BETA_DIFF: Fixed = BETA_SMALL - BETA_LARGE;
-        let BETA_MULT: Fixed = BETA_DIFF * TANH_DIV_TWO;
-        let BETA_EFF: Fixed = BETA_SMALL - BETA_MULT;
-        return BETA_EFF;
+    fn _effective_beta() -> Fixed {
+        // effective beta is 0.2
+        return FixedTrait::new_unscaled(2, false) / FixedTrait::new_unscaled(10, false);
     }
 
     fn damage(
@@ -556,7 +546,7 @@ pub impl TroopsImpl of TroopsTrait {
         let BRAVO_TIER_BONUS: Fixed = bravo._tier_bonus(troop_damage_config).into();
         let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, troop_damage_config);
         let TOTAL_NUM_TROOPS: Fixed = ALPHA_NUM_TROOPS + BRAVO_NUM_TROOPS;
-        let EFFECTIVE_BETA: Fixed = Self::_effective_beta(TOTAL_NUM_TROOPS, troop_damage_config);
+        let EFFECTIVE_BETA: Fixed = Self::_effective_beta();
         let BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * BRAVO_NUM_TROOPS
             * BRAVO_TIER_BONUS
@@ -656,7 +646,7 @@ mod tests {
             t2_damage_multiplier: 46116860184273879040, // 2.5
             t3_damage_multiplier: 129127208515966861312, // 7
             damage_biome_bonus_num: 3_000, // 30% // percentage bonus for biome damage
-            damage_scaling_factor: 64563604257983430656, // 3.5
+            damage_scaling_factor: 55340232221128654848, // 3
             damage_beta_small: 4611686018427387904, // 0.25
             damage_beta_large: 2213609288845146193, // 0.12
             damage_c0: 100_000 * FixedTrait::ONE().mag,
@@ -700,7 +690,7 @@ mod tests {
     #[test]
     fn tests_troop_attack_simple_1() {
         let mut alpha = Troops {
-            category: TroopType::Crossbowman,
+            category: TroopType::Knight,
             tier: TroopTier::T1,
             count: 1 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
@@ -708,14 +698,14 @@ mod tests {
         let mut bravo = Troops {
             category: TroopType::Paladin,
             tier: TroopTier::T1,
-            count: 500_000 * RESOURCE_PRECISION,
+            count: 95_000 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
         };
 
         alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
 
         assert_eq!(alpha.count, 0);
-        assert_eq!(bravo.count, 499_999 * RESOURCE_PRECISION);
+        assert_eq!(bravo.count, 95_000 * RESOURCE_PRECISION);
         assert_eq!(bravo.stamina.amount, 130);
     }
 
@@ -736,8 +726,8 @@ mod tests {
 
         alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
 
-        assert_eq!(alpha.count, 0);
-        assert_eq!(bravo.count, 2_052 * RESOURCE_PRECISION);
-        assert_eq!(bravo.stamina.amount, 120);
+        assert_eq!(alpha.count, 40_079 * RESOURCE_PRECISION);
+        assert_eq!(bravo.count, 108_288 * RESOURCE_PRECISION);
+        assert_eq!(bravo.stamina.amount, 100);
     }
 }
