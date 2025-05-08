@@ -176,6 +176,9 @@ pub mod hyperstructure_systems {
     use starknet::{ContractAddress};
 
 
+    const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
+
+
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn initialize(ref self: ContractState, hyperstructure_id: ID) {
@@ -266,6 +269,7 @@ pub mod hyperstructure_systems {
 
             // contribute to hyperstructure
             let mut total_resource_amount_contributed_by_structure = 0;
+            let mut total_victory_points_gotten_by_structure = 0;
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
             for (resource_type, resource_amount) in contribution {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
@@ -306,6 +310,7 @@ pub mod hyperstructure_systems {
                 let generated_points = (resource_amount / RESOURCE_PRECISION)
                     * HyperstructureRequirementsImpl::get_resource_points(ref world, resource_type)
                     / (needed_contribution_amount / RESOURCE_PRECISION);
+                total_victory_points_gotten_by_structure += generated_points;
 
                 let mut player_points: PlayerRegisteredPoints = world.read_model(from_structure_owner);
                 let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
@@ -318,6 +323,8 @@ pub mod hyperstructure_systems {
 
             // update structure weight
             from_structure_weight.store(ref world, from_structure_id);
+
+            assert!(total_resource_amount_contributed_by_structure.is_non_zero(), "no resources contributed");
 
             // update resource amount contributed by all
             let total_resource_amount_contributed_by_all = HyperstructureRequirementsImpl::read_current_resource_total(
@@ -362,7 +369,7 @@ pub mod hyperstructure_systems {
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
 
-            // grant hyperstructure contribution achievement
+            // grant hyperstructure resource contribution achievement
             let contribution_try_y32: u128 = total_resource_amount_contributed_by_structure / RESOURCE_PRECISION;
             let max_u32: u32 = Bounded::MAX;
             if contribution_try_y32 > max_u32.into() {
@@ -374,6 +381,22 @@ pub mod hyperstructure_systems {
                 from_structure_owner.into(),
                 Tasks::CONTRIBUTE_HYPERSTRUCTURE,
                 contribution_u32,
+                starknet::get_block_timestamp(),
+            );
+
+            // grant hyperstructure victory points achievement
+            let mut victory_points_for_achievement_try_y32: u128 = total_victory_points_gotten_by_structure
+                / HYPERSTRUCTURE_POINT_MULTIPLIER;
+            if victory_points_for_achievement_try_y32 > max_u32.into() {
+                // should be impossible but who knows
+                victory_points_for_achievement_try_y32 = max_u32.into();
+            }
+            let victory_points_for_achievement_u32: u32 = victory_points_for_achievement_try_y32.try_into().unwrap();
+            AchievementTrait::progress(
+                world,
+                from_structure_owner.into(),
+                Tasks::VICTORY_POINTS,
+                victory_points_for_achievement_u32,
                 starknet::get_block_timestamp(),
             );
         }

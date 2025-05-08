@@ -31,6 +31,7 @@ pub mod Tasks {
     pub const COMPLETE_ORDER: felt252 = 'COMPLETE_ORDER';
     pub const KILL_AGENT: felt252 = 'KILL_AGENT';
     pub const WIN_BATTLE: felt252 = 'WIN_BATTLE';
+    pub const PRODUCE_T2: felt252 = 'PRODUCE_T2';
     pub const PRODUCE_T3: felt252 = 'PRODUCE_T3';
     pub const WIN_BIOME_BATTLE: felt252 = 'WIN_BIOME_BATTLE';
     pub const SUCCESSFUL_RAID: felt252 = 'SUCCESSFUL_RAID';
@@ -40,6 +41,7 @@ pub mod Tasks {
     pub const JOIN_TRIBE: felt252 = 'JOIN_TRIBE';
     pub const CONTRIBUTE_HYPERSTRUCTURE: felt252 = 'CONTRIBUTE_HYPERSTRUCTURE';
     pub const WIN_GAME: felt252 = 'WIN_GAME';
+    pub const VICTORY_POINTS: felt252 = 'VICTORY_POINTS';
 }
 
 #[generate_trait]
@@ -67,7 +69,11 @@ pub impl AchievementImpl of AchievementTrait {
     fn declare_all(mut world: WorldStorage) {
         let mut achievements: Array<Achievement> = array![
             Self::first_realm(),
+            Self::third_realm(),
+            Self::seventh_realm(),
             Self::first_village(),
+            Self::third_village(),
+            Self::fifth_village(),
             Self::cartographer_one(),
             Self::cartographer_two(),
             Self::cartographer_three(),
@@ -96,8 +102,10 @@ pub impl AchievementImpl of AchievementTrait {
             Self::first_blood(),
             Self::hardened_battler(),
             Self::seasoned_commander(),
+            Self::tier_two_general(),
             Self::tier_three_general(),
-            Self::successful_raider(),
+            Self::petty_raider(),
+            Self::feared_raider(),
             Self::fortress(),
             Self::city_planner(),
             Self::kingdom_come(),
@@ -107,6 +115,9 @@ pub impl AchievementImpl of AchievementTrait {
             Self::contributor_one(),
             Self::contributor_two(),
             Self::contributor_three(),
+            Self::points_collector_one(),
+            Self::points_collector_two(),
+            Self::points_collector_three(),
             Self::history_written_by_victor(),
         ];
         while let Option::Some(achievement) = achievements.pop_front() {
@@ -129,11 +140,45 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'FIRST_REALM',
             hidden: false,
             index: 0,
-            points: 1,
-            group: 'Explorer',
+            points: 5,
+            group: 'Sovereign',
             icon: 'fa-seedling',
-            title: 'Realm Settler',
+            title: 'The Lord',
             description: "Every journey begins with a single step",
+            tasks: tasks.span(),
+        }
+    }
+
+    fn third_realm() -> Achievement {
+        let tasks: Array<AchievementTask> = array![
+            AchievementTaskTrait::new(id: Tasks::REALM_SETTLEMENT, total: 3, description: "Settle your 3rd Realm."),
+        ];
+        Achievement {
+            id: 'THIRD_REALM',
+            hidden: false,
+            index: 1,
+            points: 15,
+            group: 'Sovereign',
+            icon: 'fa-seedling',
+            title: 'The Duke',
+            description: "The seeds of power take root across the land",
+            tasks: tasks.span(),
+        }
+    }
+
+    fn seventh_realm() -> Achievement {
+        let tasks: Array<AchievementTask> = array![
+            AchievementTaskTrait::new(id: Tasks::REALM_SETTLEMENT, total: 7, description: "Settle your 7th Realm."),
+        ];
+        Achievement {
+            id: 'SEVENTH_REALM',
+            hidden: false,
+            index: 2,
+            points: 40,
+            group: 'Sovereign',
+            icon: 'fa-seedling',
+            title: 'The King',
+            description: "An empire of grand ambition rises from your vision",
             tasks: tasks.span(),
         }
     }
@@ -149,11 +194,46 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'FIRST_VILLAGE',
             hidden: false,
             index: 0,
-            points: 1,
-            group: 'Explorer',
+            points: 5,
+            group: 'Sovereign',
             icon: 'fa-house',
-            title: 'Village Founder',
+            title: 'The Serf',
             description: "From humble beginnings come great things",
+            tasks: tasks.span(),
+        }
+    }
+
+    #[inline]
+    fn third_village() -> Achievement {
+        let tasks: Array<AchievementTask> = array![
+            AchievementTaskTrait::new(id: Tasks::VILLAGE_SETTLEMENT, total: 3, description: "Settle your 3rd Village"),
+        ];
+        Achievement {
+            id: 'THIRD_VILLAGE',
+            hidden: false,
+            index: 1,
+            points: 10,
+            group: 'Sovereign',
+            icon: 'fa-house',
+            title: 'The Citizen',
+            description: "Communities flourish under your watchful eye",
+            tasks: tasks.span(),
+        }
+    }
+
+    fn fifth_village() -> Achievement {
+        let tasks: Array<AchievementTask> = array![
+            AchievementTaskTrait::new(id: Tasks::VILLAGE_SETTLEMENT, total: 5, description: "Settle your 5th Village"),
+        ];
+        Achievement {
+            id: 'FIFTH_VILLAGE',
+            hidden: false,
+            index: 2,
+            points: 15,
+            group: 'Sovereign',
+            icon: 'fa-house',
+            title: 'The Mayor',
+            description: "Your network of villages spans the horizon",
             tasks: tasks.span(),
         }
     }
@@ -164,13 +244,13 @@ pub impl AchievementImpl of AchievementTrait {
             id: Tasks::EXPLORE, total: 50, description: "Explore 50 hexes on the World Map.",
         );
         Achievement {
-            id: 'CARTROGRAPHER_ONE',
+            id: 'CARTOGRAPHER_ONE',
             hidden: false,
             index: 0,
-            points: 2,
+            points: 5,
             group: 'Explorer',
             icon: 'fa-mountain',
-            title: 'Apprentice Cartographer',
+            title: 'Novice Explorer',
             description: "The world is a book, and those who do not travel read only one page.",
             tasks: array![task].span(),
         }
@@ -179,17 +259,17 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn cartographer_two() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::EXPLORE, total: 250, description: "Explore 250 hexes on the World Map.",
+            id: Tasks::EXPLORE, total: 200, description: "Explore 200 hexes on the World Map.",
         );
         Achievement {
-            id: 'CARTROGRAPHER_TWO',
+            id: 'CARTOGRAPHER_TWO',
             hidden: false,
             index: 1,
-            points: 4,
+            points: 20,
             group: 'Explorer',
             icon: 'fa-mountains',
-            title: 'Experienced Cartographer',
-            description: "The world is a book, and those who do not travel read only one page.",
+            title: 'Journeyman Explorer',
+            description: "The thrill of discovery drives you beyond known borders",
             tasks: array![task].span(),
         }
     }
@@ -197,17 +277,17 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn cartographer_three() -> Achievement {
         let task: AchievementTask = AchievementTaskTrait::new(
-            id: Tasks::EXPLORE, total: 1000, description: "Explore 1000 hexes on the World Map.",
+            id: Tasks::EXPLORE, total: 500, description: "Explore 500 hexes on the World Map.",
         );
         Achievement {
-            id: 'CARTROGRAPHER_THREE',
+            id: 'CARTOGRAPHER_THREE',
             hidden: false,
             index: 2,
-            points: 8,
+            points: 50,
             group: 'Explorer',
             icon: 'fa-mountain-sun',
-            title: 'Master Cartographer',
-            description: "The world is a book, and those who do not travel read only one page.",
+            title: 'Master Explorer',
+            description: "No corner of the world remains hidden from your gaze",
             tasks: array![task].span(),
         }
     }
@@ -222,7 +302,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'BIOME_MASTER',
             hidden: false,
             index: 0,
-            points: 10,
+            points: 30,
             group: 'Explorer',
             icon: 'fa-earth-americas',
             title: 'Biome Master',
@@ -238,9 +318,9 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'CHANCE_ENCOUNTER',
             hidden: false,
             index: 0,
-            points: 2,
-            group: 'Explorer',
-            icon: 'fa-user',
+            points: 5,
+            group: 'Archaeologist',
+            icon: 'fa-person',
             title: 'Chance Encounter',
             description: "The world is full of interesting characters",
             tasks: array![task].span(),
@@ -256,8 +336,8 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'SHADY_DEALER',
             hidden: false,
             index: 0,
-            points: 3,
-            group: 'Explorer',
+            points: 5,
+            group: 'Archaeologist',
             icon: 'fa-scroll',
             title: 'Shady Dealer',
             description: "Every quest begins with a mysterious encounter",
@@ -265,41 +345,43 @@ pub impl AchievementImpl of AchievementTrait {
         }
     }
 
+
     #[inline]
-    fn lost_and_found() -> Achievement {
+    fn ancient_discoverer() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::MINE_DISCOVER, total: 1, description: "Discover a Fragment Mine.",
         );
         Achievement {
-            id: 'LOST_AND_FOUND',
+            id: 'ANCIENT_DISCOVERER',
             hidden: false,
             index: 0,
-            points: 3,
-            group: 'Explorer',
-            icon: 'fa-gem',
-            title: 'Lost & Found',
+            points: 15,
+            group: 'Archaeologist',
+            icon: 'fa-landmark',
+            title: 'Fragment Finder',
             description: "Ancient treasures await those who seek them",
             tasks: array![task].span(),
         }
     }
 
     #[inline]
-    fn ancient_discoverer() -> Achievement {
+    fn lost_and_found() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::HYPERSTRUCTURE_DISCOVER, total: 1, description: "Discover a Hyperstructure Foundation.",
         );
         Achievement {
-            id: 'ANCIENT_DISCOVERER',
+            id: 'LOST_AND_FOUND',
             hidden: false,
             index: 0,
-            points: 5,
-            group: 'Explorer',
-            icon: 'fa-landmark',
-            title: 'Ancient Discoverer',
+            points: 80,
+            group: 'Archaeologist',
+            icon: 'fa-gem',
+            title: 'Lost & Found',
             description: "The past holds the key to the future",
             tasks: array![task].span(),
         }
     }
+
 
     #[inline]
     fn resource_tycoon_one() -> Achievement {
@@ -310,10 +392,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'RESOURCE_TYCOON_ONE',
             hidden: false,
             index: 0,
-            points: 3,
-            group: 'Tycoon',
+            points: 5,
+            group: 'Magnate',
             icon: 'fa-coins',
-            title: 'Resource Tycoon I',
+            title: 'Resource Producer',
             description: "The foundation of every great empire",
             tasks: array![task].span(),
         }
@@ -328,10 +410,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'RESOURCE_TYCOON_TWO',
             hidden: false,
             index: 1,
-            points: 6,
-            group: 'Tycoon',
+            points: 20,
+            group: 'Magnate',
             icon: 'fa-coins',
-            title: 'Resource Tycoon II',
+            title: 'Resource Magnate',
             description: "Wealth beyond measure",
             tasks: array![task].span(),
         }
@@ -340,16 +422,16 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn resource_tycoon_three() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::RESOURCE_PRODUCE, total: 1_000_000_000, description: "Produce 1,000,000,000 resources.",
+            id: Tasks::RESOURCE_PRODUCE, total: 500_000_000, description: "Produce 500,000,000 resources.",
         );
         Achievement {
             id: 'RESOURCE_TYCOON_THREE',
             hidden: false,
             index: 2,
-            points: 12,
-            group: 'Tycoon',
+            points: 40,
+            group: 'Magnate',
             icon: 'fa-coins',
-            title: 'Resource Tycoon III',
+            title: 'Resource Tycoon',
             description: "The wealth of nations",
             tasks: array![task].span(),
         }
@@ -366,10 +448,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'MASTER_BUILDER_ONE',
             hidden: false,
             index: 0,
-            points: 2,
+            points: 10,
             group: 'Builder',
             icon: 'fa-building',
-            title: 'Master Builder I',
+            title: 'Novice Builder',
             description: "Every great structure starts with a foundation",
             tasks: array![task].span(),
         }
@@ -386,10 +468,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'MASTER_BUILDER_TWO',
             hidden: false,
             index: 1,
-            points: 4,
+            points: 20,
             group: 'Builder',
             icon: 'fa-building',
-            title: 'Master Builder II',
+            title: 'Journeyman Builder',
             description: "A city rises from your vision",
             tasks: array![task].span(),
         }
@@ -406,10 +488,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'MASTER_BUILDER_THREE',
             hidden: false,
             index: 2,
-            points: 8,
+            points: 30,
             group: 'Builder',
             icon: 'fa-building',
-            title: 'Master Builder III',
+            title: 'Master Builder',
             description: "Architect of the future",
             tasks: array![task].span(),
         }
@@ -426,10 +508,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'CHIEF_FOREMAN_ONE',
             hidden: false,
             index: 0,
-            points: 2,
+            points: 5,
             group: 'Builder',
             icon: 'fa-hammer',
-            title: 'Chief Foreman I',
+            title: 'Novice Foreman',
             description: "Efficiency is the key to success",
             tasks: array![task].span(),
         }
@@ -446,10 +528,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'CHIEF_FOREMAN_TWO',
             hidden: false,
             index: 1,
-            points: 4,
+            points: 10,
             group: 'Builder',
             icon: 'fa-hammer',
-            title: 'Chief Foreman II',
+            title: 'Journeyman Foreman',
             description: "Speed and precision in perfect harmony",
             tasks: array![task].span(),
         }
@@ -466,10 +548,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'CHIEF_FOREMAN_THREE',
             hidden: false,
             index: 2,
-            points: 6,
+            points: 20,
             group: 'Builder',
             icon: 'fa-hammer',
-            title: 'Chief Foreman III',
+            title: 'Master Foreman',
             description: "Master of rapid construction",
             tasks: array![task].span(),
         }
@@ -478,16 +560,16 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn labor_powerhouse_one() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::LABOR_PRODUCE, total: 1_000_000, description: "Produce 1,000,000 Labor.",
+            id: Tasks::LABOR_PRODUCE, total: 5_000_000, description: "Produce 5,000,000 Labor.",
         );
         Achievement {
             id: 'LABOR_POWERHOUSE_ONE',
             hidden: false,
             index: 0,
-            points: 2,
-            group: 'Tycoon',
+            points: 5,
+            group: 'Taskmaster',
             icon: 'fa-person-digging',
-            title: 'Labor Powerhouse I',
+            title: 'Labor Producer',
             description: "The strength of many working as one",
             tasks: array![task].span(),
         }
@@ -496,16 +578,16 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn labor_powerhouse_two() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::LABOR_PRODUCE, total: 10_000_000, description: "Produce 10,000,000 Labor.",
+            id: Tasks::LABOR_PRODUCE, total: 50_000_000, description: "Produce 50,000,000 Labor.",
         );
         Achievement {
             id: 'LABOR_POWERHOUSE_TWO',
             hidden: false,
             index: 1,
-            points: 4,
-            group: 'Tycoon',
+            points: 20,
+            group: 'Taskmaster',
             icon: 'fa-person-digging',
-            title: 'Labor Powerhouse II',
+            title: 'Labor Magnate',
             description: "A workforce to be reckoned with",
             tasks: array![task].span(),
         }
@@ -514,16 +596,16 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn labor_powerhouse_three() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::LABOR_PRODUCE, total: 100_000_000, description: "Produce 100,000,000 Labor.",
+            id: Tasks::LABOR_PRODUCE, total: 250_000_000, description: "Produce 250,000,000 Labor.",
         );
         Achievement {
             id: 'LABOR_POWERHOUSE_THREE',
             hidden: false,
             index: 2,
-            points: 8,
-            group: 'Tycoon',
+            points: 40,
+            group: 'Taskmaster',
             icon: 'fa-person-digging',
-            title: 'Labor Powerhouse III',
+            title: 'Labor Tycoon',
             description: "The power of industry unleashed",
             tasks: array![task].span(),
         }
@@ -536,10 +618,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'LORD_OF_LOGISTICS_ONE',
             hidden: false,
             index: 0,
-            points: 1,
+            points: 5,
             group: 'Trader',
             icon: 'fa-truck-fast',
-            title: 'Lord of Logistics I',
+            title: 'Novice Logistician',
             description: "The wheels of commerce turn smoothly",
             tasks: array![task].span(),
         }
@@ -552,10 +634,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'LORD_OF_LOGISTICS_TWO',
             hidden: false,
             index: 1,
-            points: 3,
+            points: 15,
             group: 'Trader',
             icon: 'fa-truck-fast',
-            title: 'Lord of Logistics II',
+            title: 'Journeyman Logistician',
             description: "A well-oiled machine of commerce",
             tasks: array![task].span(),
         }
@@ -570,10 +652,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'LORD_OF_LOGISTICS_THREE',
             hidden: false,
             index: 2,
-            points: 8,
+            points: 30,
             group: 'Trader',
             icon: 'fa-truck-fast',
-            title: 'Lord of Logistics III',
+            title: 'Master Logistician',
             description: "Master of the supply chain",
             tasks: array![task].span(),
         }
@@ -586,7 +668,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'BLADE_RUNNER',
             hidden: false,
             index: 0,
-            points: 3,
+            points: 10,
             group: 'Warrior',
             icon: 'fa-khanda',
             title: 'Blade Runner',
@@ -602,7 +684,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'NEXUS_SIX',
             hidden: false,
             index: 1,
-            points: 6,
+            points: 50,
             group: 'Warrior',
             icon: 'fa-khanda',
             title: 'Nexus-6',
@@ -618,7 +700,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'FIRST_BLOOD',
             hidden: false,
             index: 0,
-            points: 3,
+            points: 5,
             group: 'Warrior',
             icon: 'fa-flag',
             title: 'First Blood',
@@ -634,7 +716,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'HARDENED_BATTLER',
             hidden: false,
             index: 1,
-            points: 5,
+            points: 15,
             group: 'Warrior',
             icon: 'fa-flag',
             title: 'Hardened Battler',
@@ -650,7 +732,7 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'SEASONED_COMMANDER',
             hidden: false,
             index: 2,
-            points: 10,
+            points: 30,
             group: 'Warrior',
             icon: 'fa-flag',
             title: 'Seasoned Commander',
@@ -658,6 +740,25 @@ pub impl AchievementImpl of AchievementTrait {
             tasks: array![task].span(),
         }
     }
+
+    #[inline]
+    fn tier_two_general() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::PRODUCE_T2, total: 1, description: "Produce a T2 troop (Knight, Crossbowman, or Paladin).",
+        );
+        Achievement {
+            id: 'TIER_TWO_GENERAL',
+            hidden: false,
+            index: 0,
+            points: 20,
+            group: 'Warrior',
+            icon: 'fa-chess-knight',
+            title: '2-Star General',
+            description: "The elite forces are at your command",
+            tasks: array![task].span(),
+        }
+    }
+
 
     #[inline]
     fn tier_three_general() -> Achievement {
@@ -668,11 +769,11 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'TIER_THREE_GENERAL',
             hidden: false,
             index: 0,
-            points: 8,
+            points: 40,
             group: 'Warrior',
             icon: 'fa-chess-knight',
-            title: 'Tier 3 General',
-            description: "The elite forces are at your command",
+            title: '3-Star General',
+            description: "Legendary warriors march under your banner",
             tasks: array![task].span(),
         }
     }
@@ -697,24 +798,44 @@ pub impl AchievementImpl of AchievementTrait {
     // }
 
     #[inline]
-    fn successful_raider() -> Achievement {
+    fn petty_raider() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::SUCCESSFUL_RAID, total: 1, description: "Successfully raid resources from an enemy structure.",
+        );
+        Achievement {
+            id: 'PETTY_RAIDER',
+            hidden: false,
+            index: 0,
+            points: 5,
+            group: 'Warrior',
+            icon: 'fa-shield-halved',
+            title: 'Petty Raider',
+            description: "Take what you need, leave what you don't",
+            tasks: array![task].span(),
+        }
+    }
+
+
+    #[inline]
+    fn feared_raider() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::SUCCESSFUL_RAID,
             total: 10,
             description: "Successfully raid resources from an enemy structure 10 times.",
         );
         Achievement {
-            id: 'SUCCESSFUL_RAIDER',
+            id: 'FEARED_RAIDER',
             hidden: false,
-            index: 0,
-            points: 5,
+            index: 1,
+            points: 20,
             group: 'Warrior',
-            icon: 'fa-shield-halved',
-            title: 'Successful Raider',
-            description: "Take what you need, leave what you don't",
+            icon: 'fa-skull',
+            title: 'Feared Raider',
+            description: "A force to be reckoned with",
             tasks: array![task].span(),
         }
     }
+
 
     #[inline]
     fn fortress() -> Achievement {
@@ -730,7 +851,7 @@ pub impl AchievementImpl of AchievementTrait {
             points: 5,
             group: 'Warrior',
             icon: 'fa-fort-awesome',
-            title: 'Fortress',
+            title: 'Stalwart',
             description: "Your walls stand strong against all comers",
             tasks: array![task].span(),
         }
@@ -746,7 +867,7 @@ pub impl AchievementImpl of AchievementTrait {
             hidden: false,
             index: 0,
             points: 5,
-            group: 'Progression',
+            group: 'Imperial',
             icon: 'fa-city',
             title: 'City Planner',
             description: "From settlement to metropolis",
@@ -763,8 +884,8 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'KINGDOM_COME',
             hidden: false,
             index: 1,
-            points: 10,
-            group: 'Progression',
+            points: 15,
+            group: 'Imperial',
             icon: 'fa-crown',
             title: 'Kingdom Come',
             description: "A realm worthy of a king",
@@ -775,14 +896,14 @@ pub impl AchievementImpl of AchievementTrait {
     #[inline]
     fn imperial_ambition() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::UPGRADE_REALM, total: 1, description: "Upgrade a Realm to an Empire.",
+            id: Tasks::UPGRADE_REALM, total: 3, description: "Upgrade a Realm to an Empire.",
         );
         Achievement {
             id: 'IMPERIAL_AMBITION',
             hidden: false,
             index: 2,
-            points: 20,
-            group: 'Progression',
+            points: 40,
+            group: 'Imperial',
             icon: 'fa-empire',
             title: 'Imperial Ambition',
             description: "The greatest of all realms",
@@ -799,8 +920,8 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'VILLAGE_ELDER',
             hidden: false,
             index: 0,
-            points: 8,
-            group: 'Progression',
+            points: 5,
+            group: 'Imperial',
             icon: 'fa-house-circle-check',
             title: 'Village Elder',
             description: "From humble village to thriving city",
@@ -815,10 +936,10 @@ pub impl AchievementImpl of AchievementTrait {
             id: 'TRIBAL_CHIEF',
             hidden: false,
             index: 0,
-            points: 3,
-            group: 'Social',
-            icon: 'fa-users',
-            title: 'Tribal Chief',
+            points: 5,
+            group: 'Alliance',
+            icon: 'fa-people-group',
+            title: 'Socializer',
             description: "Strength in numbers",
             tasks: array![task].span(),
         }
@@ -828,17 +949,17 @@ pub impl AchievementImpl of AchievementTrait {
     fn contributor_one() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::CONTRIBUTE_HYPERSTRUCTURE,
-            total: 500_000,
-            description: "Contribute 500,000 resources to a Hyperstructure.",
+            total: 1_000_000,
+            description: "Contribute 1,000,000 resources or labor to Hyperstructures.",
         );
         Achievement {
             id: 'CONTRIBUTOR_ONE',
             hidden: false,
             index: 0,
-            points: 5,
-            group: 'Social',
+            points: 10,
+            group: 'Alliance',
             icon: 'fa-hands-holding',
-            title: 'Contributor I',
+            title: 'Hyperstructure Donator',
             description: "Every contribution matters",
             tasks: array![task].span(),
         }
@@ -848,17 +969,17 @@ pub impl AchievementImpl of AchievementTrait {
     fn contributor_two() -> Achievement {
         let task = AchievementTaskTrait::new(
             id: Tasks::CONTRIBUTE_HYPERSTRUCTURE,
-            total: 5_000_000,
-            description: "Contribute 5,000,000 resources to a Hyperstructure.",
+            total: 10_000_000,
+            description: "Contribute 10,000,000 resources or labor to Hyperstructures.",
         );
         Achievement {
             id: 'CONTRIBUTOR_TWO',
             hidden: false,
             index: 1,
-            points: 10,
-            group: 'Social',
+            points: 30,
+            group: 'Alliance',
             icon: 'fa-hands-holding',
-            title: 'Contributor II',
+            title: 'Hyperstructure Contributor',
             description: "A significant contribution to history",
             tasks: array![task].span(),
         }
@@ -869,17 +990,73 @@ pub impl AchievementImpl of AchievementTrait {
         let task = AchievementTaskTrait::new(
             id: Tasks::CONTRIBUTE_HYPERSTRUCTURE,
             total: 50_000_000,
-            description: "Contribute 50,000,000 resources to a Hyperstructure.",
+            description: "Contribute 50,000,000 resources or labor to  Hyperstructures.",
         );
         Achievement {
             id: 'CONTRIBUTOR_THREE',
             hidden: false,
             index: 2,
-            points: 20,
-            group: 'Social',
+            points: 60,
+            group: 'Alliance',
             icon: 'fa-hands-holding',
-            title: 'Contributor III',
+            title: 'Hyperstructure Developer',
             description: "A legendary contribution to the ages",
+            tasks: array![task].span(),
+        }
+    }
+
+    #[inline]
+    fn points_collector_one() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::VICTORY_POINTS, total: 10_000, description: "Accumulate 10,000 Victory Points.",
+        );
+        Achievement {
+            id: 'POINTS_COLLECTOR_ONE',
+            hidden: false,
+            index: 0,
+            points: 5,
+            group: 'Dominion',
+            icon: 'fa-star',
+            title: 'On the Board',
+            description: "Aiming for the moon",
+            tasks: array![task].span(),
+        }
+    }
+
+    #[inline]
+    fn points_collector_two() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::VICTORY_POINTS, total: 100_000, description: "Accumulate 100,000 Victory Points.",
+        );
+        Achievement {
+            id: 'POINTS_COLLECTOR_TWO',
+            hidden: false,
+            index: 1,
+            points: 15,
+            group: 'Dominion',
+            icon: 'fa-stars',
+            title: 'Contender',
+            description: "Aiming for the stars",
+            tasks: array![task].span(),
+        }
+    }
+
+
+    #[inline]
+    fn points_collector_three() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::VICTORY_POINTS, total: 500_000, description: "Accumulate 500,000 Victory Points.",
+        );
+
+        Achievement {
+            id: 'POINTS_COLLECTOR_THREE',
+            hidden: false,
+            index: 2,
+            points: 30,
+            group: 'Dominion',
+            icon: 'fa-ranking-star',
+            title: 'Fierce Competitor',
+            description: "Your achievements echo throughout the world",
             tasks: array![task].span(),
         }
     }
@@ -888,13 +1065,13 @@ pub impl AchievementImpl of AchievementTrait {
     fn history_written_by_victor() -> Achievement {
         let task = AchievementTaskTrait::new(id: Tasks::WIN_GAME, total: 1, description: "Win the game.");
         Achievement {
-            id: 'THE_GREAT_VICTOR',
+            id: 'HISTORY_WRITTEN_BY_VICTOR',
             hidden: false,
             index: 0,
-            points: 100,
-            group: 'Victory',
+            points: 5,
+            group: 'Dominion',
             icon: 'fa-trophy',
-            title: 'The Great Victor',
+            title: 'Victorious',
             description: "The greatest achievement of all, conquering the world.",
             tasks: array![task].span(),
         }

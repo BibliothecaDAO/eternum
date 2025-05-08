@@ -169,15 +169,23 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
                 AchievementTrait::progress(
                     world, owner.into(), Tasks::LABOR_PRODUCE, amount_u32, starknet::get_block_timestamp(),
                 );
-            }
+            } else if TroopResourceImpl::is_troop(resource_type) {
+                if TroopResourceImpl::is_t2_troop(resource_type) {
+                    AchievementTrait::progress(
+                        world, owner.into(), Tasks::PRODUCE_T2, 1, starknet::get_block_timestamp(),
+                    );
+                }
 
-            if TroopResourceImpl::is_t3_troop(resource_type) {
-                AchievementTrait::progress(world, owner.into(), Tasks::PRODUCE_T3, 1, starknet::get_block_timestamp());
+                if TroopResourceImpl::is_t3_troop(resource_type) {
+                    AchievementTrait::progress(
+                        world, owner.into(), Tasks::PRODUCE_T3, 1, starknet::get_block_timestamp(),
+                    );
+                }
+            } else {
+                AchievementTrait::progress(
+                    world, owner.into(), Tasks::RESOURCE_PRODUCE, amount_u32, starknet::get_block_timestamp(),
+                );
             }
-
-            AchievementTrait::progress(
-                world, owner.into(), Tasks::RESOURCE_PRODUCE, amount_u32, starknet::get_block_timestamp(),
-            );
         }
     }
 
@@ -334,6 +342,8 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         );
         let mut produced_resource_production: Production = produced_resource.production;
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
+        assert!(produceable_amount.is_non_zero(), "can't produce this resource in standard mode");
+
         let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produceable_amount,
         );
