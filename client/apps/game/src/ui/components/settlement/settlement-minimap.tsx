@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { SettlementCanvas } from "./settlement-canvas";
 import { BANK_ICON_PATH } from "./settlement-constants";
-import { SettlementControls } from "./settlement-controls";
+import { ConfirmButton, SettlementControls } from "./settlement-controls";
 import { SettlementMinimapProps } from "./settlement-types";
 import { useCanvasInteractions } from "./use-canvas-interactions";
 import { useSettlementState } from "./use-settlement-state";
@@ -60,7 +60,6 @@ export const SettlementMinimap = ({
       {/* Info Panel */}
       {/* <SettlementInfoPanel selectedLocation={selectedLocation} selectedCoords={selectedCoords} /> */}
 
-      {/* <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} /> */}
       {/* Controls */}
       <SettlementControls
         customNormalizedCoords={canvasInteractions.customNormalizedCoords}
@@ -69,6 +68,7 @@ export const SettlementMinimap = ({
         onResetMapCenter={canvasInteractions.resetMapCenter}
       />
 
+      <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />
       {/* Canvas */}
       <SettlementCanvas
         maxLayers={maxLayers}
