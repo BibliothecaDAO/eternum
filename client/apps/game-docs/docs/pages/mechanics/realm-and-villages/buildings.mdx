@@ -489,3 +489,28 @@ available for construction in standard mode.
   ]}
 />
 </div>
+
+### Same Building Cost Increase
+
+Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
+using the following formula:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (N-1)²)
+```
+
+Where:
+
+- **Base Cost** is the initial cost of the building (from the tables above)
+- **N** is the number of the same buildings already constructed
+
+For example, if you build a second building of the same type (N=2), the cost will be:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (2-1)²)
+     = Base Cost + (Base Cost × 0.5 × 1)
+     = Base Cost × 1.5
+```
+
+Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Stone Quarry after a
+Lumber Camp (both being resource buildings) would not be subject to this cost increase.

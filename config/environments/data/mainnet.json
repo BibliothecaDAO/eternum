@@ -2054,7 +2054,7 @@
 },
 {
   "resource": 25,
-  "amount": 2000
+  "amount": 3000
 },
 {
   "resource": 26,
@@ -2084,7 +2084,7 @@
 },
 {
   "resource": 25,
-  "amount": 500
+  "amount": 1500
 },
 {
   "resource": 26,
@@ -2164,15 +2164,15 @@
   },
   {
     "resource": 35,
-    "amount": 9000000
+    "amount": 6000000
   },
   {
     "resource": 36,
-    "amount": 9000000
+    "amount": 6000000
   },
   {
     "resource": 15,
-    "amount": 1000000
+    "amount": 750000
   },
   {
     "resource": 14,

@@ -67,12 +67,13 @@ Food is the cornerstone of your realm's economy:
 Military units have unique properties:
 
 - They can be traded as resources
-- Cannot be converted back to tradeable form once assigned to an army
-- Become permanent once assigned to armies but are transferable to other armies on the same hex
+- Cannot be converted back to tradeable form once deployed to an army
+- Once deployed, they can still be transferred between armies if they are located on adjacent hexes and are of the same
+  type and tier
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
-#### Transport
+#### Transport (Donkeys)
 
 <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
   <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
@@ -80,9 +81,8 @@ Military units have unique properties:
 
 Essential for logistics:
 
-- Required for moving resources
-- Consumed during transport
-- Critical for trade and supply chains
+- Required for transferring and trading materials
+- Consumed after a single use
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
@@ -96,9 +96,9 @@ Essential for logistics:
 
 **$LORDS** is Eternum's economic backbone:
 
-- Used for all market transactions
+- Used as the currency for all market transactions
 - Bridgeable to external networks
-- Required for game fees and operations
+- Required to produce donkeys
 
 #### Labor
 
@@ -123,5 +123,5 @@ Labor is a fundamental production material:
 Strategic end-game material:
 
 - Only found in world map Fragment Mines
-- Required for Hyperstructures
-- Cannot be produced by Realms
+- Required to commence the construction of Hyperstructures
+- Cannot be produced
