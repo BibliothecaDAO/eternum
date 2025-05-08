@@ -389,7 +389,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      {seasonPassRealms.length === 0 ? (
+      {seasonPassRealms.length === 0 && !loading ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-gold">No Realms</h3>
           <p className="text-gray-400">You need to have at least one realm to settle a season pass.</p>
