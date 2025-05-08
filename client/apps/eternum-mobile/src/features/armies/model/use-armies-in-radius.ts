@@ -29,7 +29,7 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
       try {
         const query: Query = {
           pagination: {
-            limit: 1,
+            limit: 1000,
             cursor: undefined,
             direction: "Forward",
             order_by: [],
