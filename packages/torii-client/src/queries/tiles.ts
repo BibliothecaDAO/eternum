@@ -9,12 +9,15 @@ export const getTilesFromToriiClient = async (
   coordsList: { col: number; row: number }[],
 ): Promise<ComponentValue<ClientComponents["Tile"]["schema"]>[]> => {
   const tileQuery: Query = {
-    limit: 6,
-    offset: 0,
-    entity_models: ["s1_eternum-Tile"],
-    dont_include_hashed_keys: false,
-    entity_updated_after: 0,
-    order_by: [],
+    pagination: {
+      limit: 6 * coordsList.length,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    models: ["s1_eternum-Tile"],
+    no_hashed_keys: false,
+    historical: false,
     clause: OrComposeClause(
       coordsList.map((hex) =>
         AndComposeClause([
@@ -25,6 +28,15 @@ export const getTilesFromToriiClient = async (
     ).build(),
   };
 
-  const tiles = await toriiClient.getEntities(tileQuery, false);
-  return Object.values(tiles).map((tile) => getTileFromToriiEntity(tile["s1_eternum-Tile"]));
+  const response = await toriiClient.getEntities(tileQuery);
+  return response && response.items
+    ? (response.items
+        .map((item) => {
+          if (item.models && item.models["s1_eternum-Tile"]) {
+            return getTileFromToriiEntity(item.models["s1_eternum-Tile"]);
+          }
+          return null;
+        })
+        .filter((tile) => tile !== null) as ComponentValue<ClientComponents["Tile"]["schema"]>[])
+    : [];
 };

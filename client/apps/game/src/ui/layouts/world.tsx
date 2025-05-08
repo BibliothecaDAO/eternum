@@ -118,6 +118,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           structures,
         );
         const end = performance.now();
+
+        console.log(structures);
         console.log(
           `[sync] structures query structures ${structures.map((s) => `${s.entityId}(${s.position.col},${s.position.row})`)}`,
           end - start,

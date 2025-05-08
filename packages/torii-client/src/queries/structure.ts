@@ -1,5 +1,5 @@
 import { Direction, getNeighborHexes, ID, Steps } from "@bibliothecadao/types";
-import { Entity } from "@dojoengine/recs";
+// import { Entity } from "@dojoengine/recs"; // Will be removed
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../parser";
 import { getResourcesFromToriiEntity } from "../parser/resources";
@@ -8,9 +8,9 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
   const clause: Clause = !ownedBy
     ? {
         Keys: {
-          keys: [undefined], // matches any key
+          keys: [undefined],
           pattern_matching: "FixedLen" as PatternMatching,
-          models: ["s1_eternum-Structure"], // specify the model you want to query
+          models: ["s1_eternum-Structure"],
         },
       }
     : {
@@ -19,9 +19,9 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
           clauses: [
             {
               Keys: {
-                keys: [undefined], // matches any key
+                keys: [undefined],
                 pattern_matching: "FixedLen" as PatternMatching,
-                models: ["s1_eternum-Structure"], // specify the model you want to query
+                models: ["s1_eternum-Structure"],
               },
             },
             {
@@ -37,24 +37,24 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
       };
 
   const query: Query = {
-    limit: 1,
-    offset: 0,
+    pagination: {
+      limit: 1,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    no_hashed_keys: false,
+    models: ["s1_eternum-Structure"],
+    historical: false,
     clause,
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query, false);
-  const realmEntity = Object.keys(entities)[0] as Entity;
+  const response = await toriiClient.getEntities(query);
 
-  if (!realmEntity) {
-    return;
-  }
+  const entityModels = response.items[0].models;
+  const structureData = entityModels["s1_eternum-Structure"];
 
-  const structure = getStructureFromToriiEntity(entities[realmEntity]["s1_eternum-Structure"]);
-
+  const structure = getStructureFromToriiEntity(structureData);
   return {
     entityId: structure.entity_id,
     owner: structure.owner,
@@ -64,29 +64,33 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
 
 export const getStructureFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
   const query: Query = {
-    limit: 1,
-    offset: 0,
+    pagination: {
+      limit: 1,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    no_hashed_keys: false,
+    models: ["s1_eternum-Structure", "s1_eternum-Resource"],
+    historical: false,
     clause: {
       Keys: {
         keys: [entityId.toString()],
         pattern_matching: "FixedLen" as PatternMatching,
-        models: [],
+        models: ["s1_eternum-Structure", "s1_eternum-Resource"], // Ensure models list here matches top-level if keys are specific to them
       },
     },
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure", "s1_eternum-Resource"],
-    entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query, false);
-  const entity = Object.keys(entities)[0] as Entity;
+  const response = await toriiClient.getEntities(query);
 
-  if (!entity) return;
+  const entityModels = response.items[0].models;
+  const structureData = entityModels["s1_eternum-Structure"];
+  const resourceData = entityModels["s1_eternum-Resource"];
 
   return {
-    structure: getStructureFromToriiEntity(entities[entity]["s1_eternum-Structure"]),
-    resources: getResourcesFromToriiEntity(entities[entity]["s1_eternum-Resource"]),
+    structure: getStructureFromToriiEntity(structureData),
+    resources: getResourcesFromToriiEntity(resourceData),
   };
 };
 
@@ -94,9 +98,9 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
   const clause: Clause = !ownedBy
     ? {
         Keys: {
-          keys: [undefined], // matches any key
+          keys: [undefined],
           pattern_matching: "FixedLen" as PatternMatching,
-          models: ["s1_eternum-Structure"], // specify the model you want to query
+          models: ["s1_eternum-Structure"],
         },
       }
     : {
@@ -109,24 +113,37 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
       };
 
   const query: Query = {
-    limit: 1000,
-    offset: 0,
+    pagination: {
+      limit: 1000,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    no_hashed_keys: false,
+    models: ["s1_eternum-Structure"],
+    historical: false,
     clause,
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query, false);
-  const result = Object.keys(entities).map((entity) => {
-    const structure = getStructureFromToriiEntity(entities[entity]["s1_eternum-Structure"]);
-    return {
-      entityId: structure.entity_id,
-      owner: structure.owner,
-      position: { col: structure.base.coord_x, row: structure.base.coord_y },
-    };
-  });
+  const response = await toriiClient.getEntities(query);
+
+  const result =
+    response && response.items
+      ? response.items
+          .map((item) => {
+            if (item.models && item.models["s1_eternum-Structure"]) {
+              const structure = getStructureFromToriiEntity(item.models["s1_eternum-Structure"]);
+              return {
+                entityId: structure.entity_id,
+                owner: structure.owner,
+                position: { col: structure.base.coord_x, row: structure.base.coord_y },
+              };
+            }
+            return null; // Or handle as needed if a structure model is missing
+          })
+          .filter((item) => item !== null)
+      : []; // Filter out nulls if any item didn't have the structure model
+
   return result;
 };
 
@@ -183,23 +200,27 @@ const formatVillageSlots = (availableSlotStrings: string[], col: number, row: nu
 
 // Query builders
 const createStructureVillageSlotsQuery = (clause?: Clause): Query => ({
-  limit: 1,
-  offset: 0,
+  pagination: {
+    limit: 1,
+    cursor: undefined,
+    direction: "Forward",
+    order_by: [],
+  },
+  no_hashed_keys: false,
+  models: ["s1_eternum-StructureVillageSlots"],
+  historical: false,
   clause,
-  dont_include_hashed_keys: false,
-  order_by: [],
-  entity_models: ["s1_eternum-StructureVillageSlots"],
-  entity_updated_after: 0,
 });
 
 // Main functions
 export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient) => {
-  const villageSlots = await toriiClient.getEntities(createStructureVillageSlotsQuery(), false);
-  const entityId = Object.keys(villageSlots)[0];
+  const response = await toriiClient.getEntities(createStructureVillageSlotsQuery());
 
-  if (!entityId) return null;
+  const entityModels = response.items[0].models;
+  const villageSlotsData = entityModels["s1_eternum-StructureVillageSlots"] as any; // Keep as any for now due to complex structure
 
-  const villageSlotsData = villageSlots[entityId]["s1_eternum-StructureVillageSlots"] as any;
+  if (!villageSlotsData) return null;
+
   const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
 
   return {
@@ -231,12 +252,13 @@ export const checkOpenVillageSlotFromToriiClient = async (
     },
   });
 
-  const villageSlots = await toriiClient.getEntities(villageSlotQuery, false);
-  const entity = Object.keys(villageSlots)[0];
+  const response = await toriiClient.getEntities(villageSlotQuery);
 
-  if (!entity) return null;
+  const entityModels = response.items[0].models;
+  const villageSlotsData = entityModels["s1_eternum-StructureVillageSlots"] as any; // Keep as any
 
-  const villageSlotsData = villageSlots[entity]["s1_eternum-StructureVillageSlots"] as any;
+  if (!villageSlotsData) return null;
+
   const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
 
   return {
