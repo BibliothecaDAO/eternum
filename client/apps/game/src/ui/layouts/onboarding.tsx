@@ -180,14 +180,32 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const villageEntities = usePlayerOwnedVillageEntities();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSeasonPasses = async () => {
-      const unsettledSeasonPassRealms = await getUnusedSeasonPasses(
-        account.address,
-        realmsEntities.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
-      );
-      setSeasonPassRealms(unsettledSeasonPassRealms);
+      try {
+        const unsettledSeasonPassRealms = await getUnusedSeasonPasses(
+          account.address,
+          realmsEntities.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
+        );
+        if (isMounted) {
+          setSeasonPassRealms(unsettledSeasonPassRealms);
+        }
+      } catch (err) {
+        console.error("Error fetching season passes:", err);
+      }
     };
+
+    // initial fetch
     fetchSeasonPasses();
+
+    // poll every 10 seconds
+    const intervalId = setInterval(fetchSeasonPasses, 10_000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [realmsEntities, account.address]);
 
   const hasRealmsOrVillages = useMemo(() => {
