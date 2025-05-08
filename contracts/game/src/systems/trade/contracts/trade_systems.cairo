@@ -8,9 +8,9 @@ pub trait ITradeSystems<T> {
         taker_id: ID,
         maker_gives_resource_type: u8,
         taker_pays_resource_type: u8,
-        maker_gives_min_resource_amount: u32,
+        maker_gives_min_resource_amount: u64,
         maker_gives_max_count: u64, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
-        taker_pays_min_resource_amount: u32,
+        taker_pays_min_resource_amount: u64,
         expires_at: u32,
     ) -> ID;
     fn accept_order(ref self: T, taker_id: ID, trade_id: ID, taker_buys_count: u64);
@@ -92,9 +92,9 @@ pub mod trade_systems {
             taker_id: ID,
             maker_gives_resource_type: u8,
             taker_pays_resource_type: u8,
-            maker_gives_min_resource_amount: u32,
+            maker_gives_min_resource_amount: u64,
             maker_gives_max_count: u64, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
-            taker_pays_min_resource_amount: u32,
+            taker_pays_min_resource_amount: u64,
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());

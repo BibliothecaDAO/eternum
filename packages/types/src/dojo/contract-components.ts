@@ -1089,15 +1089,15 @@ export function defineContractComponents(world: World) {
           expires_at: RecsType.Number,
           maker_gives_resource_type: RecsType.Number,
           taker_pays_resource_type: RecsType.Number,
-          maker_gives_min_resource_amount: RecsType.Number,
-          taker_pays_min_resource_amount: RecsType.Number,
+          maker_gives_min_resource_amount: RecsType.BigInt,
+          taker_pays_min_resource_amount: RecsType.BigInt,
           maker_gives_max_count: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Trade",
-            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u32", "u32", "u64"],
+            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u64", "u64", "u64"],
             customTypes: [],
           },
         },
