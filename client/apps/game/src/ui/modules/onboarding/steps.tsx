@@ -204,6 +204,8 @@ export const StepOne = () => {
   const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
+
+  console.log(realmEntities);
   const villageEntities = usePlayerOwnedVillageEntities();
 
   const hasRealmsOrVillages = useMemo(() => {
