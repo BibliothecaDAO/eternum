@@ -1763,6 +1763,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  /**
+   * Claim wonder production bonus for a structure
+   *
+   * @param props - Properties for claiming wonder production bonus
+   * @param props.structure_id - ID of the structure claiming the bonus
+   * @param props.wonder_structure_id - ID of the wonder structure providing the bonus
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async claim_wonder_production_bonus(props: SystemProps.ClaimWonderProductionBonusProps) {
+    const { structure_id, wonder_structure_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "claim_wonder_production_bonus",
+      calldata: [structure_id, wonder_structure_id],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
     const { realm_entity_id, config_ids, signer } = props;
 

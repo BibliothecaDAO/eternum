@@ -23,6 +23,7 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
+    "s1_eternum-ProductionWonderBonus",
   ];
 
   // Create promises for both queries without awaiting them

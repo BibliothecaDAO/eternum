@@ -12,11 +12,19 @@ import {
   getStructure,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  ID,
+  LEVEL_DESCRIPTIONS,
+  RealmLevels,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { hasSurroundingWonderFromToriiClient } from "@bibliothecadao/torii-client";
+import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
+import { useComponentValue } from "@dojoengine/react";
 import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
 export const Castle = () => {
@@ -24,12 +32,27 @@ export const Castle = () => {
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
+  const [isLevelUpLoading, setIsLevelUpLoading] = useState(false);
+  const [wonderStructureId, setWonderStructureId] = useState<ID | null>(null);
 
-  const [isNearWonder, setIsNearWonder] = useState(false);
-  const [hasActivatedWonderBonus, setHasActivatedWonderBonus] = useState(false);
+  const productionWonderBonus = useComponentValue(
+    dojo.setup.components.ProductionWonderBonus,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
+  );
+  const hasActivatedWonderBonus = !!productionWonderBonus;
 
-  const [isLoading, setIsLoading] = useState(false);
+  const onActivateWonderBonus = async () => {
+    setIsWonderBonusLoading(true);
+    if (!wonderStructureId) return;
 
+    await dojo.setup.systemCalls.claim_wonder_production_bonus({
+      signer: dojo.account.account,
+      wonder_structure_id: wonderStructureId,
+      structure_id: structureEntityId,
+    });
+    setIsWonderBonusLoading(false);
+  };
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
     [structureEntityId, dojo.setup.components],
@@ -42,12 +65,11 @@ export const Castle = () => {
 
   useEffect(() => {
     const checkNearWonder = async () => {
-      const isNearWonder = await hasSurroundingWonderFromToriiClient(dojo.network.toriiClient, {
+      const wonderStructureId = await getSurroundingWonderBonusFromToriiClient(dojo.network.toriiClient, 12, {
         col: structure?.position.x ?? 0,
         row: structure?.position.y ?? 0,
       });
-      console.log("isNearWonder", isNearWonder);
-      setIsNearWonder(isNearWonder);
+      setWonderStructureId(wonderStructureId);
     };
     checkNearWonder();
   }, [structure]);
@@ -72,14 +94,14 @@ export const Castle = () => {
   }, [getBalance, structureEntityId]);
 
   const levelUpRealm = async () => {
-    setIsLoading(true);
+    setIsLevelUpLoading(true);
     if (!realmInfo) return;
 
     await dojo.setup.systemCalls.upgrade_realm({
       signer: dojo.account.account,
       realm_entity_id: realmInfo.entityId,
     });
-    setIsLoading(false);
+    setIsLevelUpLoading(false);
   };
 
   if (!realmInfo) return null;
@@ -90,7 +112,7 @@ export const Castle = () => {
       <div className="castle-selector w-full text-sm">
         <div className="p-4 space-y-6">
           {/* Wonder Bonus Section */}
-          {isNearWonder && (
+          {wonderStructureId && (
             <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
               <div className="relative">
@@ -108,16 +130,16 @@ export const Castle = () => {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant={hasActivatedWonderBonus ? "gold" : "outline"}
-                    onClick={() => setHasActivatedWonderBonus(!hasActivatedWonderBonus)}
-                    disabled={isLoading}
-                    className={`min-w-[160px] ${
-                      hasActivatedWonderBonus ? "bg-gold hover:bg-gold/90" : "hover:bg-gold/10 animate-pulse"
-                    }`}
-                  >
-                    {hasActivatedWonderBonus ? "Deactivate Bonus" : "Activate Bonus"}
-                  </Button>
+                  {!hasActivatedWonderBonus && (
+                    <Button
+                      variant="outline"
+                      onClick={onActivateWonderBonus}
+                      isLoading={isWonderBonusLoading}
+                      className="min-w-[160px] hover:bg-gold/10 animate-pulse"
+                    >
+                      Activate Bonus
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -137,7 +159,7 @@ export const Castle = () => {
                 <Button
                   variant={checkBalance ? "gold" : "outline"}
                   disabled={!checkBalance}
-                  isLoading={isLoading}
+                  isLoading={isLevelUpLoading}
                   onClick={levelUpRealm}
                   className="w-full"
                 >

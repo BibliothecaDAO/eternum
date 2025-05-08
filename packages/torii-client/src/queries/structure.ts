@@ -1,5 +1,5 @@
 import { Direction, getNeighborHexes, ID, Steps } from "@bibliothecadao/types";
-// import { Entity } from "@dojoengine/recs"; // Will be removed
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../parser";
 import { getResourcesFromToriiEntity } from "../parser/resources";
@@ -277,19 +277,21 @@ export const checkOpenVillageSlotFromToriiClient = async (
   };
 };
 
-export const hasSurroundingWonderFromToriiClient = async (
+export const getSurroundingWonderBonusFromToriiClient = async (
   toriiClient: ToriiClient,
+  radius: number,
   coords: { col: number; row: number },
 ) => {
-  const radius = 200;
-
   const query: Query = {
-    limit: 1000,
-    offset: 0,
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
+    pagination: {
+      limit: 1000,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    no_hashed_keys: false,
+    models: ["s1_eternum-Structure"],
+    historical: false,
     clause: AndComposeClause([
       MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", coords.col - radius),
       MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", coords.col + radius),
@@ -298,6 +300,14 @@ export const hasSurroundingWonderFromToriiClient = async (
       MemberClause("s1_eternum-Structure", "metadata.has_wonder", "Eq", true),
     ]).build(),
   };
-  const wonders = await toriiClient.getEntities(query, false);
-  return !!Object.keys(wonders).length;
+  const res = await toriiClient.getEntities(query);
+
+  if (res.items && res.items.length > 0) {
+    const structure = res.items[0].models["s1_eternum-Structure"];
+    if (structure && structure.entity_id) {
+      return Number(structure.entity_id.value);
+    }
+  }
+
+  return null;
 };

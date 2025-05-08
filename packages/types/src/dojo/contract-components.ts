@@ -468,6 +468,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ProductionWonderBonus: (() => {
+      return defineComponent(
+        world,
+        {
+          structure_id: RecsType.Number,
+          bonus_percent_num: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "ProductionWonderBonus",
+            types: ["u32", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Resource: (() => {
       return defineComponent(
         world,
