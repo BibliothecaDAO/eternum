@@ -19,7 +19,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
-  logging = true,
+  logging = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -66,7 +66,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
           }
         }
 
-        setEntities(batch, world.components, logging);
+        const modelsArray = Object.values(batch).map((value) => {
+          return { hashed_keys: value.hashed_keys, models: value.models };
+        });
+
+        setEntities(modelsArray, world.components, logging);
       } catch (error) {
         console.error("Error processing entity batch:", error);
       }
