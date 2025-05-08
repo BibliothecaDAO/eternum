@@ -36,6 +36,8 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
     return remainingQuestCapacity <= 0;
   }, [remainingQuestCapacity]);
 
+  const miniGameInfo = minigames?.find((game) => game.contract_address === questLevelsEntity?.game_address);
+
   return (
     <div className="flex flex-col gap-5 items-center border border-gold/20 rounded-lg p-5 h-full w-3/4 mx-auto">
       <div className="flex flex-row items-center justify-center gap-2 relative">
@@ -47,14 +49,14 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
       <div className="flex flex-col gap-2 items-center w-4/5 border-t border-gold/20 pt-5">
         <div className="flex flex-col items-center">
           <span className="font-bold">Game</span>
-          <span className="text-sm">{minigames?.[0]?.name}</span>
+          <span className="text-sm">{miniGameInfo?.name}</span>
         </div>
         <div className="flex flex-col items-center">
           <span className="font-bold">Publisher</span>
-          <span className="text-sm">{minigames?.[0]?.publisher}</span>
+          <span className="text-sm">{miniGameInfo?.publisher}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="font-bold">Description</span> <span className="text-sm">{minigames?.[0]?.description}</span>
+          <span className="font-bold">Description</span> <span className="text-sm">{miniGameInfo?.description}</span>
         </div>
       </div>
       <div className="flex flex-col items-center w-4/5 border-t border-gold/20 pt-5">

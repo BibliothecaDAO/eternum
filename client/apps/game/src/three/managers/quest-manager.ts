@@ -2,7 +2,7 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { Position } from "@/types/position";
 import { ContractAddress, FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { gltfLoader } from "../helpers/utils";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
