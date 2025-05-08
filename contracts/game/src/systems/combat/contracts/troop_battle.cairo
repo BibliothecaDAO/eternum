@@ -200,6 +200,18 @@ pub mod troop_battle_systems {
                 // delete defender
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
+
+                    // grant kill agent achievement
+                    if explorer_aggressor_owner_address.is_non_zero() {
+                        // zero addr check ensures it isnt agent on agent crime
+                        AchievementTrait::progress(
+                            world,
+                            explorer_aggressor_owner_address.into(),
+                            Tasks::KILL_AGENT,
+                            1,
+                            starknet::get_block_timestamp(),
+                        );
+                    }
                 } else {
                     let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, explorer_defender.owner,
