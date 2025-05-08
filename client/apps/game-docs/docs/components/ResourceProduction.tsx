@@ -492,6 +492,9 @@ export const StandardTroopProduction = () => {
 export const LaborProduction = () => {
   const config = ETERNUM_CONFIG();
   const laborOutputPerResource = config.resources.laborOutputPerResource;
+  console.log({ laborOutputPerResource });
+
+  const laborOutputPerSecond = config.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor] || 0;
 
   // Get resources that produce labor
   const laborProducingResources = Object.keys(laborOutputPerResource)
@@ -518,7 +521,9 @@ export const LaborProduction = () => {
         <tbody>
           {laborProducingResources.map((resourceId) => {
             const resourceName = getResourceName(resourceId);
-            const laborOutput = laborOutputPerResource[resourceId] || 0;
+            const resourceInput = laborOutputPerResource[resourceId]
+              ? laborOutputPerSecond / laborOutputPerResource[resourceId]
+              : 0;
 
             return (
               <tr key={`labor-${resourceId}`}>
@@ -529,13 +534,13 @@ export const LaborProduction = () => {
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
                     <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    1/s
+                    {formatAmount(resourceInput)}/s
                   </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
                     <ResourceIcon id={ResourcesIds.Labor} name="Labor" size="md" />
-                    {formatAmount(laborOutput)}/s
+                    {formatAmount(laborOutputPerSecond)}/s
                   </div>
                 </td>
               </tr>
