@@ -1,9 +1,11 @@
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { useAccount, useDisconnect, useNetwork, useSwitchChain } from "@starknet-react/core";
 import { useEffect, useState } from "react";
-import { constants } from "starknet";
+import { constants, shortString } from "starknet";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+
+const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 
 export const WrongNetworkDialog = () => {
   const { connector } = useAccount();
@@ -36,9 +38,11 @@ export const WrongNetworkDialog = () => {
   const { switchChainAsync } = useSwitchChain({
     params: {
       chainId:
-        import.meta.env.VITE_PUBLIC_CHAIN === "sepolia"
-          ? (constants.StarknetChainId.SN_SEPOLIA as string)
-          : (constants.StarknetChainId.SN_MAIN as string),
+        import.meta.env.VITE_PUBLIC_CHAIN === "local"
+          ? KATANA_CHAIN_ID
+          : import.meta.env.VITE_PUBLIC_CHAIN === "sepolia"
+            ? (constants.StarknetChainId.SN_SEPOLIA as string)
+            : (constants.StarknetChainId.SN_MAIN as string),
     },
   });
   return (

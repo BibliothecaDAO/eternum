@@ -20,7 +20,6 @@ const syncEntitiesDebounced = async <S extends Schema>(
   setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
   logging = true,
-  historical = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 

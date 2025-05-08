@@ -48,7 +48,7 @@ const STYLES = {
 const SIZES = {
   xs: "text-xxs sm:text-xs md:text-sm h-4 sm:h-5 md:h-6 px-2 sm:px-3 md:px-4",
   md: "text-xs sm:text-sm md:text-base lg:text-base px-3 sm:px-4 md:px-6 lg:px-6 py-1 sm:py-2 md:py-2",
-  lg: "text-sm sm:text-lg md:text-xl px-4 sm:px-6 md:px-8 lg:px-8 py-2 sm:py-2 md:py-3",
+  lg: "text-sm sm:text-lg md:text-xl px-4 sm:px-6 md:px-8 lg:px-8 py-2 sm:py-1 md:py-2",
 };
 
 const Button: React.FC<ButtonProps> = ({

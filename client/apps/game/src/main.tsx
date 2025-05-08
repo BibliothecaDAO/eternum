@@ -10,6 +10,7 @@ import ReactDOM from "react-dom/client";
 import { ShepherdJourneyProvider } from "react-shepherd";
 import "shepherd.js/dist/css/shepherd.css";
 
+import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./app";
@@ -20,6 +21,7 @@ import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
+import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { IS_MOBILE } from "./ui/config";
 import Button from "./ui/elements/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";
@@ -40,49 +42,26 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-  // Unregister any active service workers (specifically targeting Vite PWA)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .getRegistrations()
-      .then((registrations) => {
-        if (registrations.length === 0) {
-          console.log("No service workers found to unregister.");
-          return;
-        }
-        const unregisterPromises = registrations.map((registration) => {
-          return registration.unregister().then((unregistered) => {
-            if (unregistered) {
-              console.log("Service worker unregistered successfully:", registration.scope);
-            } else {
-              console.log(
-                "Service worker unregistration returned false (might already be unregistered or not found):",
-                registration.scope,
-              );
-            }
-            return unregistered; // Pass the status along
-          });
-        });
+  const updateContainer = document.createElement("div");
+  updateContainer.id = "pwa-update-container";
+  document.body.appendChild(updateContainer);
+  const updateRoot = ReactDOM.createRoot(updateContainer);
 
-        Promise.all(unregisterPromises)
-          .then((results) => {
-            const anyUnregistered = results.some((status) => status === true);
-            if (anyUnregistered) {
-              console.log("At least one service worker was unregistered. Reloading page forcefully.");
-              (window.location as any).reload(true);
-            } else {
-              console.log("No service workers were actively unregistered (they may have been gone already).");
-            }
-          })
-          .catch((error) => {
-            console.error("Error during batch unregistration of service workers:", error);
-          });
-      })
-      .catch((error) => {
-        console.error("Error getting service worker registrations:", error);
-      });
-  }
-
-  // Redirect mobile users to the mobile version of the game
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      updateRoot.render(
+        <PWAUpdatePopup
+          onUpdate={() => {
+            updateSW(true);
+          }}
+        />,
+      );
+    },
+    onOfflineReady() {
+      console.log("App ready to work offline");
+    },
+    immediate: true,
+  });
 
   const backgroundImage = getRandomBackgroundImage();
 

@@ -1923,7 +1923,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       lords_address,
       start_settling_at,
       start_main_at,
-      end_grace_seconds,
+      bridge_close_end_grace_seconds,
+      point_registration_grace_seconds,
       signer,
     } = props;
 
@@ -1936,7 +1937,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         lords_address,
         start_settling_at,
         start_main_at,
-        end_grace_seconds,
+        bridge_close_end_grace_seconds,
+        point_registration_grace_seconds,
       ],
     });
   }
