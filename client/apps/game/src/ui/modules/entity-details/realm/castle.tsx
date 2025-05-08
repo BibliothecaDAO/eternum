@@ -27,6 +27,8 @@ import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
+const WONDER_BONUS_DISTANCE = 12;
+
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
@@ -46,11 +48,17 @@ export const Castle = () => {
     setIsWonderBonusLoading(true);
     if (!wonderStructureId) return;
 
-    await dojo.setup.systemCalls.claim_wonder_production_bonus({
-      signer: dojo.account.account,
-      wonder_structure_id: wonderStructureId,
-      structure_id: structureEntityId,
-    });
+    try {
+      await dojo.setup.systemCalls.claim_wonder_production_bonus({
+        signer: dojo.account.account,
+        wonder_structure_id: wonderStructureId,
+        structure_id: structureEntityId,
+      });
+      setIsWonderBonusLoading(false);
+    } catch (error) {
+      console.error("Error claiming wonder production bonus:", error);
+      setIsWonderBonusLoading(false);
+    }
     setIsWonderBonusLoading(false);
   };
   const realmInfo = useMemo(
@@ -65,10 +73,15 @@ export const Castle = () => {
 
   useEffect(() => {
     const checkNearWonder = async () => {
-      const wonderStructureId = await getSurroundingWonderBonusFromToriiClient(dojo.network.toriiClient, 12, {
-        col: structure?.position.x ?? 0,
-        row: structure?.position.y ?? 0,
-      });
+      if (!structure) return;
+      const wonderStructureId = await getSurroundingWonderBonusFromToriiClient(
+        dojo.network.toriiClient,
+        WONDER_BONUS_DISTANCE,
+        {
+          col: structure.position.x,
+          row: structure.position.y,
+        },
+      );
       setWonderStructureId(wonderStructureId);
     };
     checkNearWonder();
@@ -97,10 +110,16 @@ export const Castle = () => {
     setIsLevelUpLoading(true);
     if (!realmInfo) return;
 
-    await dojo.setup.systemCalls.upgrade_realm({
-      signer: dojo.account.account,
-      realm_entity_id: realmInfo.entityId,
-    });
+    try {
+      await dojo.setup.systemCalls.upgrade_realm({
+        signer: dojo.account.account,
+        realm_entity_id: realmInfo.entityId,
+      });
+      setIsLevelUpLoading(false);
+    } catch (error) {
+      console.error("Error upgrading realm:", error);
+      setIsLevelUpLoading(false);
+    }
     setIsLevelUpLoading(false);
   };
 
