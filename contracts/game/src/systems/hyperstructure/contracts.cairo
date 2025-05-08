@@ -499,6 +499,24 @@ pub mod hyperstructure_systems {
 
                         // increase global total registered points
                         season_prize.total_registered_points += generated_points;
+
+                        // grant hyperstructure victory points achievement
+                        let max_u32: u32 = Bounded::MAX;
+                        let mut victory_points_for_achievement_try_y32: u128 = generated_points
+                            / HYPERSTRUCTURE_POINT_MULTIPLIER;
+                        if victory_points_for_achievement_try_y32 > max_u32.into() {
+                            victory_points_for_achievement_try_y32 = max_u32.into();
+                        }
+                        let victory_points_for_achievement_u32: u32 = victory_points_for_achievement_try_y32
+                            .try_into()
+                            .unwrap();
+                        AchievementTrait::progress(
+                            world,
+                            (*shareholder_address).into(),
+                            Tasks::VICTORY_POINTS,
+                            victory_points_for_achievement_u32,
+                            starknet::get_block_timestamp(),
+                        );
                     }
                 };
 
