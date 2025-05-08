@@ -4,13 +4,14 @@ import { OpenOrderByPrice } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { RealmMetadata } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
-import { useAccount, useReadContract } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft } from "lucide-react"; // Import the icon
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { RealmDetailModal } from "./realm-detail-modal";
+
 interface SeasonPassCardProps {
   pass: OpenOrderByPrice;
   toggleNftSelection?: () => void;
@@ -39,7 +40,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
 
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  const { data: ownerData, isSuccess: isOwnerSuccess } = useReadContract({
+ /* const { data: ownerData, isSuccess: isOwnerSuccess } = useReadContract({
     abi: [
       {
         type: "function",
@@ -53,12 +54,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
     address: seasonPassAddress as `0x${string}`,
     args: [token_id?.toString()],
     enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
-  });
+  });*/
 
-  const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
+  const isOwner = pass.token_owner === BigInt(accountAddress ?? "0");
 
-  const orderOwner = BigInt(pass.owner ?? "0") === ownerData || BigInt(pass.owner ?? "0") === BigInt("0");
-
+  //const orderOwner = BigInt(pass.token_owner ?? "0") === pass.order_owner || BigInt(pass.order_owner ?? "0") === BigInt("0");
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!pass.expiration) return;
@@ -114,11 +114,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   );
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && orderOwner && pass.best_price_hex !== null) {
+    if (pass.expiration !== null  && pass.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, orderOwner, pass.best_price_hex]);
+  }, [pass.expiration, pass.best_price_hex]);
 
   return (
     <>

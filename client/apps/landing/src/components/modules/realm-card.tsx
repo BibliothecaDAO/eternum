@@ -2,8 +2,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useDojo } from "@/hooks/context/dojo-context";
 import { AugmentedRealm } from "@/routes/mint.lazy";
 import { RealmMetadata } from "@/types";
-import { useAccount, useReadContract } from "@starknet-react/core";
-import { CheckCircle2, Loader } from "lucide-react";
+import { useAccount } from "@starknet-react/core";
+import { CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
@@ -62,28 +62,8 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     watch: true,
   });*/
 
-  const {
-    data: realmOwnerData,
-    isSuccess: isRealmOwnerSuccess,
-    isFetching: isFetchingRealmOwner,
-  } = useReadContract({
-    abi: [
-      {
-        type: "function",
-        name: "owner_of",
-        inputs: [{ name: "token_id", type: "core::integer::u256" }],
-        outputs: [{ type: "core::starknet::contract_address::ContractAddress" }],
-        state_mutability: "view",
-      },
-    ] as const,
-    functionName: "owner_of",
-    address: contractAddress as `0x${string}`,
-    args: [tokenId.toString()], // Pass tokenId as string if needed by hook
-    enabled: !!contractAddress && !!tokenId,
-    watch: true,
-  });
 
-  const isOwner = isRealmOwnerSuccess && realmOwnerData === BigInt(accountAddress ?? "");
+  const isOwner = realm.originalRealm?.account_address === (accountAddress ?? "");
 
   // --- Image Loading State & Logic ---
   const cardRef = useRef<HTMLDivElement>(null);
@@ -170,7 +150,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   }, [tokenId, contractAddress, components]); // Add components dependency
 
   const hasSeasonPassMinted = realm.seasonPassMinted
-  const isLoadingStatus =  isFetchingRealmOwner;
+  //const isLoadingStatus =  isFetchingRealmOwner;
 
   return (
     <>
@@ -184,7 +164,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       >
         <div
           className={`absolute inset-0 opacity-5 
-          ${isLoadingStatus ? "bg-gray-500" : hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : "bg-gray-700"} 
+          ${hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : "bg-gray-700"} 
           pointer-events-none`}
         />
 
@@ -192,17 +172,12 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
         {!isSelected && (
           <div
             className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`}
-            title={
-              isLoadingStatus
-                ? "Checking Status..."
-                : hasSeasonPassMinted
+            title={ hasSeasonPassMinted
                   ? "Season Pass Minted"
                   : "Season Pass Available"
             }
           >
-            {isLoadingStatus ? (
-              <Loader className="w-5 h-5 text-gray-400 animate-spin" />
-            ) : hasSeasonPassMinted ? (
+            {hasSeasonPassMinted ? (
               <CheckCircle2 className="w-5 h-5 text-lime-500" />
             ) : null}
           </div>

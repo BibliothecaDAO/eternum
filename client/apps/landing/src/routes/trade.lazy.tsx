@@ -69,7 +69,7 @@ function SeasonPasses() {
     queries: [
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
-        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress),
+        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
       },
       {
         queryKey: ["activeMarketOrdersTotal"],
@@ -297,6 +297,7 @@ function SeasonPasses() {
                     seasonPasses={paginatedPasses}
                     setIsTransferOpen={handleTransferClick}
                     hideTransferButton={true}
+                    checkOwner={true}
                     isCompactGrid={isCompactGrid}
                   />
                 )}
