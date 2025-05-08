@@ -1,7 +1,6 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import {
@@ -20,15 +19,12 @@ import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
-import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
-import { addAddressPadding } from "starknet";
+import { Suspense, useCallback, useState } from "react";
 import { formatUnits } from "viem";
-import { getSeasonPassNfts } from "./season-passes.lazy";
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
@@ -38,19 +34,6 @@ export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenB
 export type TokenBalanceEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
 export type AllTokenEdge = NonNullable<NonNullable<GetAllTokensQuery["tokens"]>["edges"]>[number];
 
-// Filter for season pass NFTs from all tokens query
-const getAllSeasonPassNfts = (data: GetAllTokensQuery | null): AllTokenEdge[] => {
-  return (
-    data?.tokens?.edges?.filter((token): token is AllTokenEdge => {
-      if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-
-      return (
-        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-        addAddressPadding(seasonPassAddress ?? "0x0")
-      );
-    }) ?? []
-  );
-};
 
 function SeasonPasses() {
   const { connectors } = useConnect();
@@ -88,7 +71,7 @@ function SeasonPasses() {
     ],
   });
 
-  const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
+  //const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
 
   const getSeasonPassMetadataString = useCallback((pass: OpenOrderByPrice): string | null => {
     if (pass?.metadata) {
@@ -346,14 +329,14 @@ function SeasonPasses() {
           )}
         </div>
 
-        {isTransferOpen && (
+        {/*isTransferOpen && (
           <TransferSeasonPassDialog
             isOpen={isTransferOpen}
             setIsOpen={setIsTransferOpen}
             seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
             initialSelectedTokenId={tokenIdToTransfer}
           />
-        )}
+        )*/}
       </>
     </div>
   );

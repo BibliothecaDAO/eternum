@@ -1,6 +1,5 @@
-import { MergedNftData } from "@/routes/season-passes.lazy";
+import { OpenOrderByPrice } from "@/hooks/services";
 import { Crown } from "lucide-react";
-import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
 interface RealmGridItem {

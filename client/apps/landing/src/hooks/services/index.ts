@@ -326,9 +326,12 @@ export async function fetchOpenOrdersByPrice(
     name: string | null;
     symbol: string | null;
     metadata: string | null;
+    price_hex: string | null;
     best_price_hex: string | null;
     expiration: number | null;
-    owner: ContractAddress | null;
+    token_owner: ContractAddress | null;
+    order_owner: ContractAddress | null;
+    balance: string | null;
     order_id: string;
   };
 
@@ -340,6 +343,8 @@ export async function fetchOpenOrdersByPrice(
     token_id: parseInt(item.token_id, 16),
     order_id: parseInt(item.order_id, 16),
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
+    token_owner: item.token_owner ? BigInt(item.token_owner) : null,
+    order_owner: item.order_owner ? BigInt(item.order_owner) : null,
   }));
 }
 

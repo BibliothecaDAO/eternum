@@ -32,7 +32,7 @@ export interface MarketOrder {
 }
 
 export interface MergedNftData {
-  node: {
+  node?: {
     tokenMetadata: {
       __typename: "ERC721__Token";
       tokenId: string;
@@ -42,9 +42,10 @@ export interface MergedNftData {
       metadata: string;
     };
   };
-  minPrice: bigint | null;
-  marketplaceOwner: string | null;
-  orderId: string | null;
+  minPrice?: bigint | null;
+  marketplaceOwner?: string | null;
+  orderId?: string | null;
   expiration: string | null;
-  owner: string | null;
+  owner?: string | null;
+  token_id: string;
 }

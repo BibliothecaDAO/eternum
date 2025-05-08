@@ -114,11 +114,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   );
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null  && pass.best_price_hex !== null) {
+    if (pass.expiration !== null && timeRemaining !== "Expired" && pass.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, pass.best_price_hex]);
+  }, [pass.expiration, timeRemaining, pass.best_price_hex]);
 
   return (
     <>
