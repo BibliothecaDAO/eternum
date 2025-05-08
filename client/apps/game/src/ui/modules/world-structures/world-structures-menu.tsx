@@ -9,8 +9,8 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, getHyperstructureProgress, LeaderboardManager } from "@bibliothecadao/eternum";
-import { ContractAddress, HyperstructureInfo, MERCENARIES } from "@bibliothecadao/types";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
+import { ContractAddress, HyperstructureInfo, MERCENARIES } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Filter, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -34,7 +34,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
 
   // Get list of hyperstructures with player contributions
   const myHyperstructureIds = useMemo(() => {
-    const myStructures = LeaderboardManager.instance(components).getHyperstructuresWithContributionsFromPlayer(
+    const myStructures = LeaderboardManager.instance(components).getHyperstructuresWithSharesFromPlayer(
       ContractAddress(account.address),
     );
     return Array.isArray(myStructures) ? myStructures.map((h) => Number(h.entity_id)) : [];
