@@ -52,7 +52,10 @@ pub impl WeightImpl of WeightTrait {
     }
 
     fn add(ref self: Weight, amount: u128) {
-        if self.capacity != Bounded::MAX {
+
+        // the amount > 0 check fixes the case where there is an error
+        // if entity weight > capacity and you try to add a weightless resource
+        if self.capacity != Bounded::MAX && amount.is_non_zero() {
             self.weight += amount;
             assert!(self.weight <= self.capacity, "{} + {} weight > {} capacity", self.weight, amount, self.capacity);
         }
