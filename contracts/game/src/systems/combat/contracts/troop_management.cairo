@@ -386,8 +386,14 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
-            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
+            from_explorer
+                .troops
+                .stamina
+                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+            to_explorer
+                .troops
+                .stamina
+                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -488,7 +494,10 @@ pub mod troop_management_systems {
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            from_explorer
+                .troops
+                .stamina
+                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -516,7 +525,9 @@ pub mod troop_management_systems {
             /////////////////////////////////////////////
 
             // ensure there is no stamina advantage gained by swapping
-            to_structure_troops.stamina.refill(to_structure_troops.category, troop_stamina_config, current_tick);
+            to_structure_troops
+                .stamina
+                .refill(to_structure_troops.category, to_structure_troops.tier, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
@@ -617,8 +628,13 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
-            from_structure_troops.stamina.refill(from_structure_troops.category, troop_stamina_config, current_tick);
+            to_explorer
+                .troops
+                .stamina
+                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+            from_structure_troops
+                .stamina
+                .refill(from_structure_troops.category, from_structure_troops.tier, troop_stamina_config, current_tick);
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;

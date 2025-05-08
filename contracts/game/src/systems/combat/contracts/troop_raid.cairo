@@ -233,6 +233,7 @@ pub mod troop_raid_systems {
                     .stamina
                     .spend(
                         explorer_aggressor_troops.category,
+                        explorer_aggressor_troops.tier,
                         troop_stamina_config,
                         max_explorer_stamina_loss,
                         current_tick,

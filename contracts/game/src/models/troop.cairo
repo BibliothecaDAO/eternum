@@ -505,8 +505,8 @@ pub impl TroopsImpl of TroopsTrait {
         let mut alpha = self;
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(alpha.category, troop_stamina_config, current_tick);
-        bravo.stamina.refill(bravo.category, troop_stamina_config, current_tick);
+        alpha.stamina.refill(alpha.category, alpha.tier, troop_stamina_config, current_tick);
+        bravo.stamina.refill(bravo.category, bravo.tier, troop_stamina_config, current_tick);
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -594,7 +594,7 @@ pub impl TroopsImpl of TroopsTrait {
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
 
         // deduct stamina spent
-        alpha.stamina.spend(alpha.category, troop_stamina_config, alpha_stamina_loss, current_tick, true);
+        alpha.stamina.spend(alpha.category, alpha.tier, troop_stamina_config, alpha_stamina_loss, current_tick, true);
 
         // the defense does not lose stamina
 
@@ -605,6 +605,7 @@ pub impl TroopsImpl of TroopsTrait {
                     .stamina
                     .add(
                         alpha.category,
+                        alpha.tier,
                         troop_stamina_config,
                         troop_stamina_config.stamina_attack_req.into(),
                         current_tick,
@@ -615,6 +616,7 @@ pub impl TroopsImpl of TroopsTrait {
                     .stamina
                     .add(
                         bravo.category,
+                        bravo.tier,
                         troop_stamina_config,
                         troop_stamina_config.stamina_attack_req.into(),
                         current_tick,

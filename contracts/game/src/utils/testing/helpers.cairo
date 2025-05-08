@@ -306,7 +306,7 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
         category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
     };
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-    troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+    troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
     let explorer_id = world.dispatcher.uuid();
     let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord, troops, owner };
     world.write_model_test(@explorer);
@@ -372,7 +372,7 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
     let mut initial_troops = Troops {
         category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
     };
-    initial_troops.stamina.refill(initial_troops.category, troop_stamina_config, current_tick);
+    initial_troops.stamina.refill(initial_troops.category, initial_troops.tier, troop_stamina_config, current_tick);
 
     // Spawn explorer troops model
     let explorer = ExplorerTroops {

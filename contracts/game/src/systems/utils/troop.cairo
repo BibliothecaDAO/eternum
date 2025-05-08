@@ -77,7 +77,7 @@ pub impl iGuardImpl of iGuardTrait {
         }
 
         // update stamina
-        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
         // force stamina to be 0 so it isn't gamed
         // through the refill function and guard deletion
         if troops.count.is_zero() {
@@ -189,7 +189,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
         };
         let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
         let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
@@ -256,6 +256,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                         .stamina
                         .spend(
                             explorer.troops.category,
+                            explorer.troops.tier,
                             troop_stamina_config,
                             stamina_cost.try_into().unwrap(),
                             current_tick,
