@@ -270,7 +270,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         <div className="flex w-full mt-3">
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://discord.gg/XjtWGDx5SW" // TODO: Update with actual Discord link
+            href="https://discord.gg/uQnjZhZPfu"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -282,7 +282,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://x.com/RealmsEternum" // TODO: Update with actual Twitter link
+            href="https://x.com/RealmsEternum"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -294,7 +294,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://eternum-docs.realms.world/" // TODO: Update with actual Docs link
+            href="https://eternum-docs.realms.world/"
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -21,6 +21,7 @@ export const SettlementMinimap = ({
   maxLayers,
   extraPlayerOccupiedLocations = [],
   villageSelect = false,
+  showSelectButton = true,
 }: SettlementMinimapProps) => {
   // Use the settlement state hook to manage state
   const settlementState = useSettlementState(maxLayers, extraPlayerOccupiedLocations);
@@ -67,8 +68,7 @@ export const SettlementMinimap = ({
         onCenterCoordinates={canvasInteractions.centerOnCoordinates}
         onResetMapCenter={canvasInteractions.resetMapCenter}
       />
-
-      <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />
+      {showSelectButton && <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />}
       {/* Canvas */}
       <SettlementCanvas
         maxLayers={maxLayers}
