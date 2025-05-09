@@ -70,8 +70,20 @@ pub mod realm_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
+    use starknet::TxInfo;
     use super::RealmSettlement;
     use super::{IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait};
+
+
+    #[derive(Introspect, Copy, Drop, Serde)]
+    #[dojo::model]
+    pub struct AntiBot {
+        #[key]
+        pub caller: ContractAddress,
+        #[key]
+        pub tx_hash: felt252,
+        used: bool,
+    }
 
 
     #[abi(embed_v0)]
@@ -96,6 +108,17 @@ pub mod realm_systems {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+
+            // anti bot protection
+            let tx_info: TxInfo = starknet::get_tx_info().unbox();
+            let tx_hash: felt252 = tx_info.transaction_hash;
+            let caller: ContractAddress = starknet::get_caller_address();
+
+            let mut anti_bot: AntiBot = world.read_model((caller, tx_hash));
+            assert!(!anti_bot.used, "multicalls not allowed");
+            anti_bot.used = true;
+            world.write_model(@anti_bot);
+
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
