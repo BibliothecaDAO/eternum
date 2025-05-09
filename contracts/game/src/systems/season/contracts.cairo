@@ -26,6 +26,7 @@ pub mod season_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::{
         models::{
