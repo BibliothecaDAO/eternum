@@ -1413,7 +1413,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async explorer_create(props: SystemProps.ExplorerCreateProps) {
     const { for_structure_id, category, tier, amount, spawn_direction, signer } = props;
-    console.log({ props });
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
@@ -1759,6 +1758,27 @@ export class EternumProvider extends EnhancedDojoProvider {
         steal_resources.length, // Size of the span
         ...resourcesCalldata, // Flattened resource tuples
       ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Claim wonder production bonus for a structure
+   *
+   * @param props - Properties for claiming wonder production bonus
+   * @param props.structure_id - ID of the structure claiming the bonus
+   * @param props.wonder_structure_id - ID of the wonder structure providing the bonus
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async claim_wonder_production_bonus(props: SystemProps.ClaimWonderProductionBonusProps) {
+    const { structure_id, wonder_structure_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "claim_wonder_production_bonus",
+      calldata: [structure_id, wonder_structure_id],
     });
 
     return await this.promiseQueue.enqueue(call);

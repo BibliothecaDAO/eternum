@@ -1,5 +1,6 @@
 import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatNumberWithCommas } from "@/utils/formatting";
 
 # ⚔️ Armies
 
@@ -7,12 +8,14 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 
 In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
 interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
-engagement opportunities. Each Realm and Village has a limited number of total armies, from which Lords can choose to
-deploy either field or guard armies. The number of total armies can be increased by upgrading the Realm / Village level.
+engagement opportunities.
 
-Each military building constructed on a Realm or Village also increases total armies by 1. Lords can deploy armies from
-the Military tab in the Local view. The maximum size of an army is
-**{ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount}**.
+Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
+the Realm / Village level as explained in the [Realms](/mechanics/realm-and-villages/realm) section. Each military
+building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
+**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
+view. The maximum size of an army is
+**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
 
 ### Field Armies
 
@@ -36,11 +39,7 @@ Guard armies do not appear on the world map; instead, they occupy defense slots 
 view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
 opening up the Details tab.
 
-Realms and Villages have a maximum number of defense slots based on their current level:
-
-<RealmDefenseSlotsTable />
-
-Other world structures have a static number of defence slots:
+Unlike Realms and Villages, world structures have a static number of defence slots:
 
 <WorldStructureDefenseSlotsTable />
 

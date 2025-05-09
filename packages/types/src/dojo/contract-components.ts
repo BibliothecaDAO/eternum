@@ -258,25 +258,6 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    PlayerConstructionPoints: (() => {
-      return defineComponent(
-        world,
-        {
-          address: RecsType.BigInt,
-          hyperstructure_id: RecsType.Number,
-          unregistered_points: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "PlayerConstructionPoints",
-            types: ["ContractAddress", "u32", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     PlayerRegisteredPoints: (() => {
       return defineComponent(
         world,
@@ -482,6 +463,23 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "StructureLevelConfig",
             types: ["u8", "u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionWonderBonus: (() => {
+      return defineComponent(
+        world,
+        {
+          structure_id: RecsType.Number,
+          bonus_percent_num: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "ProductionWonderBonus",
+            types: ["u32", "u128"],
             customTypes: [],
           },
         },

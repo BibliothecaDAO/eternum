@@ -24,6 +24,7 @@
     "@bibliothecadao/provider": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@dojoengine/recs": "catalog:",
+    "@dojoengine/sdk": "catalog:",
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",
     "eventemitter3": "^5.0.1",

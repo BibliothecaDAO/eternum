@@ -7,7 +7,7 @@ import { Position } from "@/types/position";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";

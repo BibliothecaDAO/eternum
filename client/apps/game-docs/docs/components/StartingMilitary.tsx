@@ -2,9 +2,10 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
 import { StructureType } from "./StartingResources";
-import { colors, resource, section } from "./styles";
+import { colors, formatNumber, resource, section } from "./styles";
 
 type Props = {
+  amount: number;
   structureType: StructureType;
 };
 
@@ -14,10 +15,9 @@ const militaryResourceIds = [26, 27, 28, 29, 30, 31, 32, 33, 34];
 // Military category configuration
 const militaryCategory = { label: "Military", shade: colors.resource.military };
 
-const MilitaryResourceItem = ({ amount }: { amount: number }) => {
+const MilitaryResourceItem = ({ amount, structureType }: { amount: number; structureType: StructureType }) => {
   const [isHovered, setIsHovered] = useState(false);
   const resourceName = "Military";
-  const roundedAmount = amount + 1;
 
   return (
     <div
@@ -45,19 +45,21 @@ const MilitaryResourceItem = ({ amount }: { amount: number }) => {
       </div>
 
       <div style={{ flexGrow: 1, paddingTop: "0.5rem" }}>
-        <div style={resource.nameStyle}>{resourceName}</div>
-        {/* <div style={resource.amountStyle}>{formatNumber(roundedAmount * 2)}</div> */}
-        {/* <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as guards</div> */}
-        {/* <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as field troops</div> */}
-        <div style={resource.amountStyle}>[REDACTED]</div>
+        <div style={resource.nameStyle}>{resourceName} T1 units</div>
+        <div style={resource.amountStyle}>{formatNumber(amount)} </div>
+        <div style={resource.noteStyle}>• {formatNumber(amount - 100)} T1 units in defense slot</div>
+        <div style={resource.noteStyle}>• {formatNumber(100)} T1 units in storage</div>
 
-        <div style={resource.noteStyle}>Note: Troop type depends on realm biome</div>
+        <div style={resource.noteStyle}>
+          Note: The type of troop received depends on the biome that the {structureType.toLowerCase()} is spawned on.
+          Starting troops will always have a combat advantage when defending their home.
+        </div>
       </div>
     </div>
   );
 };
 
-export const StartingMilitary = ({ structureType }: Props) => {
+export const StartingMilitary = ({ amount, structureType }: Props) => {
   const config = ETERNUM_CONFIG();
   const allStartingResources =
     structureType === StructureType.Village ? config.villageStartingResources : config.startingResources;
@@ -97,7 +99,7 @@ export const StartingMilitary = ({ structureType }: Props) => {
 
       <div style={{ ...resource.gridStyle, gridTemplateColumns: "1fr" }}>
         {processedMilitary.map((item, index) => (
-          <MilitaryResourceItem key={index} amount={item.amount} />
+          <MilitaryResourceItem key={index} amount={amount} structureType={structureType} />
         ))}
       </div>
 
@@ -118,8 +120,9 @@ export const StartingMilitary = ({ structureType }: Props) => {
             color: "#9ca3af",
           }}
         >
-          <strong>Note:</strong> Military units will appear as both guards protecting your {structureType.toLowerCase()}{" "}
-          and as field troops you can command.
+          <strong>Note:</strong> Most of the starting troops are automatically deployed as a guard army in a defensive
+          slot, only a handful are provided as tokenized troops in the {structureType.toLowerCase()}’s storage to allow
+          for deployment of field armies. and as field troops you can command.
         </div>
       )}
     </div>
