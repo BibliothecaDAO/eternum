@@ -12,8 +12,7 @@ import { LoadingStateKey } from "../store/use-world-loading";
 
 export const useSyncLeaderboard = () => {
   const {
-    setup: { components },
-    network: { toriiClient },
+    network: { toriiClient, contractComponents },
   } = useDojo();
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -27,10 +26,10 @@ export const useSyncLeaderboard = () => {
       setLoading(LoadingStateKey.Leaderboard, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
-        : getHyperstructureFromTorii(toriiClient, components as any);
+        : getHyperstructureFromTorii(toriiClient, contractComponents as any);
       const guildPromise = subscriptions[Subscription.Guild]
         ? Promise.resolve()
-        : getGuildsFromTorii(toriiClient, components as any);
+        : getGuildsFromTorii(toriiClient, contractComponents as any);
 
       const start = performance.now();
       await Promise.all([hyperstructurePromise, guildPromise]);
@@ -43,15 +42,14 @@ export const useSyncLeaderboard = () => {
       setIsSyncing(false);
     };
     syncState();
-  }, [components]);
+  }, [contractComponents]);
 
   return { isSyncing };
 };
 
 export const useSyncHyperstructure = () => {
   const {
-    setup: { components },
-    network: { toriiClient },
+    network: { toriiClient, contractComponents },
   } = useDojo();
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -65,7 +63,7 @@ export const useSyncHyperstructure = () => {
       setLoading(LoadingStateKey.Hyperstructure, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
-        : getHyperstructureFromTorii(toriiClient, components as any);
+        : getHyperstructureFromTorii(toriiClient, contractComponents as any);
 
       const start = performance.now();
       await Promise.all([hyperstructurePromise]);
@@ -77,15 +75,14 @@ export const useSyncHyperstructure = () => {
       setIsSyncing(false);
     };
     syncState();
-  }, [components]);
+  }, [contractComponents]);
 
   return { isSyncing };
 };
 
 export const useSyncMarket = () => {
   const {
-    setup: { components },
-    network: { toriiClient },
+    network: { toriiClient, contractComponents },
   } = useDojo();
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -99,7 +96,7 @@ export const useSyncMarket = () => {
       setLoading(LoadingStateKey.Market, true);
       const marketPromise = subscriptions[Subscription.Market]
         ? Promise.resolve()
-        : getMarketFromTorii(toriiClient, components as any);
+        : getMarketFromTorii(toriiClient, contractComponents as any);
 
       const start = performance.now();
       await Promise.all([marketPromise]);
@@ -111,15 +108,14 @@ export const useSyncMarket = () => {
       setLoading(LoadingStateKey.Market, false);
     };
     syncState();
-  }, [components]);
+  }, [contractComponents]);
 
   return { isSyncing };
 };
 
 export const useSyncMarketHistory = () => {
   const {
-    setup: { components },
-    network: { toriiClient },
+    network: { toriiClient, contractComponents },
   } = useDojo();
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -133,7 +129,7 @@ export const useSyncMarketHistory = () => {
       setLoading(LoadingStateKey.MarketHistory, true);
       const marketHistoryPromise = subscriptions[Subscription.MarketHistory]
         ? Promise.resolve()
-        : getMarketEventsFromTorii(toriiClient, components as any);
+        : getMarketEventsFromTorii(toriiClient, contractComponents as any);
 
       const start = performance.now();
       await Promise.all([marketHistoryPromise]);
@@ -145,7 +141,7 @@ export const useSyncMarketHistory = () => {
       setIsSyncing(false);
     };
     syncState();
-  }, [components]);
+  }, [contractComponents]);
 
   return { isSyncing };
 };
