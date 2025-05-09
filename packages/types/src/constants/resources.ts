@@ -1,6 +1,33 @@
 import { Resources } from "../types";
 import { ResourcesIds } from "./index";
 
+export const RAIDABLE_RESOURCES = [
+  ResourcesIds.Wood,
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Copper,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Silver,
+  ResourcesIds.Ironwood,
+  ResourcesIds.ColdIron,
+  ResourcesIds.Gold,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Sapphire,
+  ResourcesIds.Ruby,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ignium,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.TrueIce,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Mithral,
+  ResourcesIds.Dragonhide,
+  ResourcesIds.AncientFragment,
+  ResourcesIds.Donkey,
+];
+
 export const resources: Array<Resources> = [
   {
     trait: "Stone",
