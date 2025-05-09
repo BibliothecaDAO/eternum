@@ -6,13 +6,18 @@ import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { getAddressName, getEntityName, toHexString } from "@bibliothecadao/eternum";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { Map, MapPin, User } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useMemo } from "react";
 import { useChatStore } from "../chat/use-chat-store";
 import { getMessageKey } from "../chat/utils";
+
+// Define a type guard to filter out undefined structures
+function isStructureDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
 
 export const MessageIcon = ({
   playerName,
@@ -71,21 +76,23 @@ export const PlayerId = ({
     if (!selectedPlayer) return;
 
     const structuresEntityIds = runQuery([Has(Structure), HasValue(Structure, { owner: selectedPlayer })]);
-    const structures = Array.from(structuresEntityIds).map((entityId) => {
-      const structure = getComponentValue(Structure, entityId);
-      if (!structure) return undefined;
+    const structures = Array.from(structuresEntityIds)
+      .map((entityId) => {
+        const structure = getComponentValue(Structure, entityId);
+        if (!structure) return undefined;
 
-      const position = new PositionType({ x: structure.base.coord_x, y: structure.base.coord_y });
+        const position = new PositionType({ x: structure.base.coord_x, y: structure.base.coord_y });
 
-      const structureName = getEntityName(structure.entity_id, components, true);
-      return {
-        structureName,
-        ...structure,
-        position,
-      };
-    });
+        const structureName = getEntityName(structure.entity_id, components, true);
+        return {
+          structureName,
+          ...structure,
+          position,
+        };
+      })
+      .filter(isStructureDefined); // Use the type guard here
     return structures;
-  }, [selectedPlayer]);
+  }, [selectedPlayer, Structure, components]);
 
   // Count structure types
   const structureCounts = useMemo(() => {
@@ -119,15 +126,15 @@ export const PlayerId = ({
 
       <div className="p-4 flex-1 flex flex-col overflow-hidden">
         {/* Player header */}
-        <div className="flex flex-row gap-4 mb-6 pb-4 border-b border-gold/20">
+        <div className="flex flex-row gap-4 border-gold/20">
           <AvatarImage address={toHexString(selectedPlayer!)} />
 
           <div className="flex flex-col justify-between flex-1">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3 bg-brown/30 p-3 rounded-lg shadow-md flex-1">
-                <User size={18} className="text-gold/80" />
-                <span className="text-xl font-bold text-gold truncate">{playerName || "No player selected"}</span>
-                {playerName && <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />}
+              <div className=" items-center gap-3 rounded-lg shadow-md flex-1">
+                <h4 className=" truncate">{playerName || "No player selected"}</h4>
+
+                <div className=" text-gold">{structureCounts.realms} Realms</div>
               </div>
             </div>
           </div>
@@ -135,72 +142,61 @@ export const PlayerId = ({
 
         {/* Structure counts */}
         {playerStructures && playerStructures.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="flex flex-col items-center p-2 bg-brown/10 rounded-md border border-gold/10">
-              <span className="text-2xl font-bold text-gold">{structureCounts.realms}</span>
-              <span className="text-xs text-gold/80">Realms</span>
-            </div>
-            <div className="flex flex-col items-center p-2 bg-brown/10 rounded-md border border-gold/10">
+          <div className="grid grid-cols-3 gap-2 my-2">
+            <div className="flex flex-col col-span-1 items-center p-1  rounded-md border border-gold/10">
               <span className="text-2xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80">Mines</span>
+              <span className="text-xs text-gold/80 h6">Mines</span>
             </div>
-            <div className="flex flex-col items-center p-2 bg-brown/10 rounded-md border border-gold/10">
+            <div className="flex flex-col col-span-2 items-center p-1  rounded-md border border-gold/10">
               <span className="text-2xl font-bold text-gold">{structureCounts.hyperstructures}</span>
-              <span className="text-xs text-gold/80">Hyperstructures</span>
+              <span className="text-xs text-gold/80 h6">Hyperstructures</span>
             </div>
           </div>
         )}
 
-        {/* Player structures */}
-        <div className="text-gold/90 text-sm font-semibold mb-2 flex items-center gap-2">
-          <Map size={14} />
-          <span>Player Properties</span>
-        </div>
-
         <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {playerStructures?.map((structure) => {
-              if (!structure) return null;
+          <div className="grid grid-cols-1 gap-3">
+            {playerStructures &&
+              playerStructures.map((structure) => {
+                let structureSpecificElement: JSX.Element | null;
+                if (structure.base.category === StructureType.Realm) {
+                  structureSpecificElement = (
+                    <div key={`resources-${structure.entity_id}`}>
+                      <RealmResourcesIO
+                        className="w-full font-normal"
+                        titleClassName="font-normal text-sm"
+                        realmEntityId={structure.entity_id}
+                      />
+                    </div>
+                  );
+                } else {
+                  structureSpecificElement = null;
+                }
 
-              let structureSpecificElement: JSX.Element | null;
-              if (structure?.base.category === StructureType.Realm) {
-                structureSpecificElement = (
-                  <div key={`resources-${structure.entity_id}`}>
-                    <RealmResourcesIO
-                      className="w-full font-normal"
-                      titleClassName="font-normal text-sm"
-                      realmEntityId={structure.entity_id}
-                    />
+                return (
+                  <div
+                    key={structure.entity_id}
+                    className="flex flex-col gap-2 border border-gold/20 p-3 rounded-md bg-brown/5 hover:bg-brown/10 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h6 className="truncate flex-1">{structure.structureName}</h6>
+                      <div className="flex items-center gap-1">
+                        <NavigateToPositionIcon className="w-5 h-5" position={structure.position} />
+                        <ViewOnMapIcon className="w-4 h-4" position={structure.position} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs text-gold/70 mb-2">
+                      <MapPin size={12} />
+                      <span>
+                        Position: {structure.position.getNormalized().x}, {structure.position.getNormalized().y}
+                      </span>
+                    </div>
+
+                    {structureSpecificElement}
                   </div>
                 );
-              } else {
-                structureSpecificElement = null;
-              }
-
-              return (
-                <div
-                  key={structure.entity_id}
-                  className="flex flex-col gap-2 border border-gold/20 p-3 rounded-md bg-brown/5 hover:bg-brown/10 transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <h6 className="text-sm font-bold text-gold mb-2 truncate flex-1">{structure.structureName}</h6>
-                    <div className="flex items-center gap-1">
-                      <NavigateToPositionIcon className="w-5 h-5" position={structure.position} />
-                      <ViewOnMapIcon className="w-4 h-4" position={structure.position} />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-xs text-gold/70 mb-2">
-                    <MapPin size={12} />
-                    <span>
-                      Position: {structure.position.getNormalized().x}, {structure.position.getNormalized().y}
-                    </span>
-                  </div>
-
-                  {structureSpecificElement}
-                </div>
-              );
-            })}
+              })}
 
             {(!playerStructures || playerStructures.length === 0) && (
               <div className="col-span-2 text-center p-4 text-gold/50 italic">No properties found for this player</div>

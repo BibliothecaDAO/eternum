@@ -932,3 +932,5 @@ export interface EditMarketplaceOrderProps {
   new_price: num.BigNumberish;
   signer: AccountInterface;
 }
+
+export interface LeaveGuildProps extends SystemSigner {}

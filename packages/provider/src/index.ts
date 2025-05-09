@@ -1862,6 +1862,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  public async leave_guild(props: SystemProps.LeaveGuildProps) {
+    const { signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
+      entrypoint: "leave_guild",
+      calldata: [],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async set_starting_resources_config(props: SystemProps.SetStartingResourcesConfigProps) {
     const { realmStartingResources, villageStartingResources, signer } = props;
 
