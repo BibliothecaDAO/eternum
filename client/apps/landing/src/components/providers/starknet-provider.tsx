@@ -16,7 +16,7 @@ const otherResources = Object.entries(resourceAddresses)
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-const namespace: string = "eternum";
+const namespace: string = "s1_eternum";
 
 const chain_id =
   env.VITE_PUBLIC_CHAIN === "local"
@@ -30,9 +30,6 @@ const cartridgeController = new ControllerConnector({
   preset,
   namespace,
   slot,
-  tokens: {
-    erc20: [LORDS, ...otherResources],
-  },
 });
 
 export function StarknetProvider({ children, onlyCartridge }: { children: React.ReactNode; onlyCartridge?: boolean }) {

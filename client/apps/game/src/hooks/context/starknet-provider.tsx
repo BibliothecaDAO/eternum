@@ -46,9 +46,7 @@ const nonLocalController = new ControllerConnector({
   policies,
   slot,
   namespace,
-  tokens: {
-    erc20: [LORDS, ...otherResources],
-  },
+
 });
 
 const katanaLocalChain = {
