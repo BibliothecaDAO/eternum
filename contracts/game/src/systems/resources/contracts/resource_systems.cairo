@@ -43,6 +43,7 @@ pub mod resource_systems {
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::systems::utils::troop::iExplorerImpl;
     use starknet::ContractAddress;
 
 
@@ -262,11 +263,7 @@ pub mod resource_systems {
 
             // ensure from explorer is owned by caller
             let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            let from_explorer_owner_structure_id: ID = from_explorer.owner;
-            let from_explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, from_explorer_owner_structure_id,
-            );
-            from_explorer_owner.assert_caller_owner();
+            from_explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure to explorer exists
             let to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
@@ -294,11 +291,7 @@ pub mod resource_systems {
 
             // ensure explorer is owned by caller
             let explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            let explorer_owner_structure_id: ID = explorer.owner;
-            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_owner_structure_id,
-            );
-            explorer_owner.assert_caller_owner();
+            explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure to_structure is a structure
             let to_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
@@ -360,11 +353,7 @@ pub mod resource_systems {
 
             // ensure from explorer is owned by caller
             let explorer: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner_structure_id: ID = explorer.owner;
-            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_owner_structure_id,
-            );
-            explorer_owner.assert_caller_owner();
+            explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // burn resources
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);

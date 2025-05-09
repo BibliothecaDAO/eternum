@@ -206,7 +206,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         self.owner == DAYDREAMS_AGENT_ID
     }
 
-    fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+    fn assert_caller_structure_or_agent_owner(self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
             let agent_owner: AgentOwner = world.read_model(self.explorer_id);
             assert!(agent_owner.address == starknet::get_caller_address(), "caller is not the agent owner");
