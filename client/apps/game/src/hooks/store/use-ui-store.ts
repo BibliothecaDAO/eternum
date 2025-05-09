@@ -19,6 +19,8 @@ type TooltipType = {
 } | null;
 
 interface UIStore {
+  disableButtons: boolean;
+  setDisableButtons: (disable: boolean) => void;
   spectatorRealmEntityId: ID | null;
   setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
@@ -78,6 +80,8 @@ const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
+    disableButtons: false,
+    setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
     spectatorRealmEntityId: null,
     setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
