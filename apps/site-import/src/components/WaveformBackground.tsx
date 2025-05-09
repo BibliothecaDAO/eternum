@@ -4,25 +4,27 @@ import * as THREE from "three";
 export function WaveformBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef(0);
-  const lineMeshesRef = useRef<THREE.Line[]>([]);
+  // Removed lineMeshesRef as it's specific to the old waveform animation.
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
-    // A dark background to make colorful waveforms pop.
+    // A dark background, suitable for a Tron aesthetic.
     scene.background = new THREE.Color(0x000000);
 
     // --- Camera Setup ---
     const camera = new THREE.PerspectiveCamera(
-      60,
+      75, // Wider FOV
       window.innerWidth / window.innerHeight,
-      1,
-      1000
+      0.1, // Near plane closer for being inside the valley
+      2500 // Increased far plane for a longer valley
     );
-    camera.position.set(0, 100, 300);
-    camera.lookAt(0, 0, 0);
+    // Initial camera position inside the valley
+    camera.position.set(0, 20, 180); // Lower Y, adjust Z to be further "in"
+    // Look slightly ahead and down the valley path
+    camera.lookAt(0, 15, 0);
 
     // --- Renderer Setup ---
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -30,92 +32,112 @@ export function WaveformBackground() {
     renderer.setPixelRatio(window.devicePixelRatio);
     containerRef.current.appendChild(renderer.domElement);
 
-    // --- Create Waveform Lines ---
-    // We'll create several horizontal lines that animate as sine waves.
-    const numLines = 10;
-    const waveLength = 400; // Total x-span in scene units.
-    const numPoints = 200; // Number of segments per line.
-    const linesGroup = new THREE.Group();
-    scene.add(linesGroup);
+    // --- Create Ground Plane and Grid ---
+    // Ground plane
+    const planeSize = 4000; // Greatly increased for a longer valley
+    const planeGeometry = new THREE.PlaneGeometry(
+      planeSize,
+      planeSize,
+      200,
+      50
+    ); // Increased X segments for smoother deformation on larger plane
+    const planeMaterial = new THREE.MeshStandardMaterial({
+      color: 0x050505, // Dark color for the ground
+      wireframe: false, // Back to solid
+      metalness: 0.2,
+      roughness: 0.8,
+    });
+    const groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+    groundPlane.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    groundPlane.position.y = 0; // Set at the base of the scene
+    scene.add(groundPlane);
 
-    for (let i = 0; i < numLines; i++) {
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(numPoints * 3);
-      // For each point on the line, x ranges from -waveLength/2 to +waveLength/2.
-      // Initial y = 0, and z is set based on the line's index to vertically separate the strokes.
-      for (let j = 0; j < numPoints; j++) {
-        const x = (j / (numPoints - 1)) * waveLength - waveLength / 2;
-        positions[j * 3] = x;
-        positions[j * 3 + 1] = 0; // y will be animated.
-        // Spread lines vertically (using z-axis) with a 50-unit separation.
-        const z = (i - (numLines - 1) / 2) * 50;
-        positions[j * 3 + 2] = z;
+    // --- Shape the Valley ---
+    const positions = planeGeometry.attributes.position;
+    const vertex = new THREE.Vector3();
+    const valleyWidth = 200; // How wide the flat part of the valley is
+    const valleySteepness = 80; // How steep the walls are
+    const wallHeight = 150; // Maximum height of the valley walls
+
+    for (let i = 0; i < positions.count; i++) {
+      vertex.fromBufferAttribute(positions, i);
+
+      // Create a valley shape:
+      // Raise the terrain on the sides (larger |x| values)
+      // vertex.x is the original x position of the vertex in the plane's local space
+      const distanceFromCenter = Math.abs(vertex.x);
+      let height = 0;
+
+      if (distanceFromCenter > valleyWidth / 2) {
+        // Calculate how far into the "wall" zone the vertex is
+        const wallPenetration = distanceFromCenter - valleyWidth / 2;
+        // Use a smooth curve for the walls (e.g., quadratic or smoothstep-like)
+        // For simplicity, a linear rise capped at wallHeight
+        height = Math.min(
+          wallPenetration * (wallHeight / valleySteepness),
+          wallHeight
+        );
       }
-      geometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(positions, 3)
-      );
 
-      // Set a distinct color for each line by varying the hue.
-      const hue = (i / numLines) * 360;
-      const material = new THREE.LineBasicMaterial({
-        color: new THREE.Color(`hsl(${hue}, 100%, 50%)`),
-      });
-      const line = new THREE.Line(geometry, material);
-      linesGroup.add(line);
-      lineMeshesRef.current.push(line);
+      // Correct derivation: Plane's local Z maps to World Y after rotation. So set local Z to desired height.
+      // positions.getZ(i) is 0 for a PlaneGeometry initially.
+      positions.setZ(i, height); // Sets the local Z, which becomes world Y.
     }
+    planeGeometry.attributes.position.needsUpdate = true;
+    planeGeometry.computeVertexNormals(); // Important for lighting after deforming
+
+    // --- Add Lights ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Soft white light
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Stronger directional light
+    directionalLight.position.set(50, 200, 100); // Position it to cast some shadows
+    directionalLight.target = groundPlane; // Optional: make it look at the ground
+    // directionalLight.castShadow = true; // Enable if you want shadows, requires shadow setup on renderer and objects
+    scene.add(directionalLight);
+
+    // --- Create Character ---
+    // const characterGeometry = new THREE.BoxGeometry(10, 10, 10); // Simple cube character
+    const characterGeometry = new THREE.SphereGeometry(6, 32, 16); // Sphere: radius, widthSegments, heightSegments
+    const characterMaterial = new THREE.MeshStandardMaterial({
+      color: 0xff0000, // Bright red for visibility
+      emissive: 0x330000, // Slight emissiveness
+    });
+    const character = new THREE.Mesh(characterGeometry, characterMaterial);
+    character.position.set(0, 5, 150); // Start in front of initial camera position, on the valley floor
+    scene.add(character);
+
+    // Grid Helper
+    const gridSize = 4000; // Match the plane size
+    const gridDivisions = 100; // Increased divisions for density over larger area
+    const gridColorCenterLine = 0x444444; // Tron-like blue or cyan could be good too
+    const gridColorGrid = 0x222222; // Darker lines
+    const gridHelper = new THREE.GridHelper(
+      gridSize,
+      gridDivisions,
+      new THREE.Color(gridColorCenterLine),
+      new THREE.Color(gridColorGrid)
+    );
+    gridHelper.position.y = 0.1; // Slightly above the plane to avoid z-fighting
+    scene.add(gridHelper);
+
+    // Optional: Add some fog for depth
+    // Adjusted fog for a longer draw distance, starting sooner and becoming dense further out.
+    scene.fog = new THREE.Fog(0x000000, 100, 1200); // color, near distance from camera, far distance from camera
 
     // --- Animation Loop ---
     const animate = () => {
       requestAnimationFrame(animate);
-      timeRef.current += 0.02; // Controls the speed of the animation
+      timeRef.current += 0.01;
 
-      // Pulsing setup: modulate amplitude over time.
-      const baseAmplitude = 20; // Maximum displacement for the sine wave.
-      const pulseFactor = 1 + 0.3 * Math.sin(timeRef.current * 2); // Pulsing effect
-      const amplitude = baseAmplitude * pulseFactor;
+      // Character movement down the valley
+      const characterSpeed = 0.5;
+      character.position.z -= characterSpeed;
 
-      // Noise setup: additional variation for a more organic wave.
-      const noiseAmplitude = 5; // Adjust this value to control noise strength.
-      const noiseFrequency = 0.1; // Controls frequency of the additional noise
-
-      // Update each waveform line.
-      for (const line of lineMeshesRef.current) {
-        const geometry = line.geometry as THREE.BufferGeometry;
-        const positions = geometry.attributes.position.array as Float32Array;
-        const numPts = geometry.attributes.position.count;
-        // Use the line's index within the group as a phase offset.
-        const lineIndex = linesGroup.children.indexOf(line);
-        const phaseOffset = lineIndex * 0.5;
-        for (let j = 0; j < numPts; j++) {
-          const x = positions[j * 3]; // x remains static.
-          const frequency = 0.02; // Frequency of the base sine wave.
-
-          // Base sine wave with pulsing amplitude.
-          const waveY =
-            amplitude * Math.sin(frequency * x + timeRef.current + phaseOffset);
-          // Extra noise component for organic variation.
-          const noiseY =
-            noiseAmplitude *
-            Math.sin(noiseFrequency * x + timeRef.current * 3 + phaseOffset);
-
-          // Combine wave and noise, then quantize to create a blocky effect.
-          const combinedY = waveY + noiseY;
-          const blockSize = 10; // Adjust for desired block granularity.
-          positions[j * 3 + 1] = Math.round(combinedY / blockSize) * blockSize;
-        }
-        geometry.attributes.position.needsUpdate = true;
-
-        // Generative dynamic color shift: update line material color over time.
-        const hueShiftSpeed = 15; // degrees per second, adjust as desired.
-        const hueIncrement = (timeRef.current * hueShiftSpeed) % 360;
-        const baseHue = (lineIndex / numLines) * 360;
-        const newHue = (baseHue + hueIncrement) % 360;
-        (line.material as THREE.LineBasicMaterial).color.set(
-          new THREE.Color(`hsl(${newHue}, 100%, 50%)`)
-        );
-      }
+      // Camera follows character
+      const cameraOffset = new THREE.Vector3(0, 15, 30); // Behind and slightly above the character
+      camera.position.copy(character.position).add(cameraOffset);
+      camera.lookAt(character.position); // Always look at the character
 
       renderer.render(scene, camera);
     };
@@ -132,8 +154,16 @@ export function WaveformBackground() {
       window.removeEventListener("resize", onWindowResize);
       renderer.dispose();
       if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+        // Check if renderer.domElement is a child before removing
+        if (renderer.domElement.parentNode === containerRef.current) {
+          containerRef.current.removeChild(renderer.domElement);
+        }
       }
+      // Dispose geometries and materials if they are not reused
+      planeGeometry.dispose();
+      planeMaterial.dispose();
+      gridHelper.geometry.dispose();
+      (gridHelper.material as THREE.Material).dispose();
     };
   }, []);
 

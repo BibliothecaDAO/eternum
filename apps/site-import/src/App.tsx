@@ -90,7 +90,7 @@ function BackgroundSlideshow({ images }: { images: string[] }) {
 
 function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
   return (
-    <div className="absolute inset-0 bg-background">
+    <div className="absolute inset-0">
       <AnimatePresence initial={false}>
         {selectedGame ? (
           selectedGame.backgroundImages ? (
@@ -900,8 +900,9 @@ function App() {
   // );
   return (
     <motion.div>
+      <WaveformBackground />
       {/* Fixed position background */}
-      <div className="fixed inset-0 bg-background">
+      <div className="fixed inset-0 ">
         <AnimatedBackground selectedGame={selectedGame} />
         <div className="absolute inset-x-0 bottom-0 h-[70vh]" />
       </div>
