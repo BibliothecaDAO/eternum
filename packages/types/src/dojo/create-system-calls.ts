@@ -312,6 +312,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.leave_guild(props);
   };
 
+  const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps) => {
+    await provider.claim_wonder_production_bonus(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -335,6 +339,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     create_building: withAuth(create_building),
+    claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
+
     uuid: uuid,
 
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
