@@ -14,10 +14,9 @@ import { RealmDetailModal } from "./realm-detail-modal";
 
 interface SeasonPassCardProps {
   pass: MergedNftData;
-  toggleNftSelection?: () => void;
-  isSelected?: boolean;
-  metadata?: RealmMetadata;
   checkOwner?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
 interface ListingDetails {
@@ -29,36 +28,21 @@ interface ListingDetails {
 
 const SEASON_PASS_COLLECTION_ID = 1;
 
-export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwner = false }: SeasonPassCardProps) => {
+export const SeasonPassCard = ({ 
+  pass, 
+  checkOwner = false, 
+  isSelected = false,
+  onToggleSelection 
+}: SeasonPassCardProps) => {
   const { token_id, metadata } = pass;
-
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
-
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
-
- /* const { data: ownerData, isSuccess: isOwnerSuccess } = useReadContract({
-    abi: [
-      {
-        type: "function",
-        name: "owner_of",
-        inputs: [{ name: "token_id", type: "core::integer::u256" }],
-        outputs: [{ type: "core::starknet::contract_address::ContractAddress" }],
-        state_mutability: "view",
-      },
-    ] as const,
-    functionName: "owner_of",
-    address: seasonPassAddress as `0x${string}`,
-    args: [token_id?.toString()],
-    enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
-  });*/
 
   const isOwner = pass.token_owner === trimAddress(accountAddress);
 
-  //const orderOwner = BigInt(pass.token_owner ?? "0") === pass.order_owner || BigInt(pass.order_owner ?? "0") === BigInt("0");
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!pass.expiration) return;
@@ -88,14 +72,9 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
     return () => clearInterval(interval);
   }, [pass.expiration]);
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsModalOpen(true);
-  };
-
-  const handleTransferClick = () => {
-    if (toggleNftSelection) {
-      toggleNftSelection();
-    }
   };
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
@@ -123,13 +102,10 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   return (
     <>
       <Card
-        // onClick={handleCardClick}
+        onClick={onToggleSelection}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
           ${isSelected ? "ring-2 ring-offset-2 ring-gold scale-[1.02]" : "hover:ring-1 hover:ring-gold"} 
-          cursor-pointer
-          // Add visual cues for listed status if desired
-          // ${listingDetails.isListed ? "border-green-500" : ""}
-        `}
+          cursor-pointer group`}
       >
         <div className="relative">
           {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
@@ -146,21 +122,32 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
             alt={name ?? "Season Pass"}
             className="w-full object-contain opacity-90 group-hover:opacity-100 transition-all duration-200"
           />
+          
+          {/* Selection Overlay */}
+          <div className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-200
+            ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            <div className="bg-gold text-background px-4 py-2 rounded-md font-bold">
+              {isSelected ? 'Selected' : 'Select'}
+            </div>
+          </div>
+
           {/* Selection Indicator */}
           {isSelected && (
             <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
-              Selected for Mint
+              Selected
             </div>
           )}
-          {/* Listing Indicator (Optional) */}
+          
+          {/* Listing Indicator */}
           {listingDetails.isListed && (
             <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20">
               Listed
             </div>
           )}
         </div>
+
         <CardHeader className="p-4 pb-2">
-          <CardTitle className=" items-center gap-2">
+          <CardTitle className="items-center gap-2">
             <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
               Season 1 Pass
             </div>
@@ -172,7 +159,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
                 .sort((a, b) => {
-                  // Sort resources by rarity
                   const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                   const bWithoutSpace = b.value.toString().replace(/\s/g, "");
                   const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
@@ -191,12 +177,12 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
             </div>
           </CardTitle>
         </CardHeader>
+
         <CardContent className="px-4 pt-2">
           <div className="flex justify-between">
             <div className="flex flex-col">
               {listingActive ? (
-                <div className="text-xl  flex items-center gap-2 font-mono">
-                  {/* Format price with commas, removing unnecessary decimals */}
+                <div className="text-xl flex items-center gap-2 font-mono">
                   {Number(formatUnits(BigInt(pass.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
                   <ResourceIcon resource="Lords" size="sm" />
                 </div>
@@ -219,26 +205,28 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
 
         <CardFooter className="border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2">
           <div className="flex w-full gap-4">
-            {/* Change Sell button variant */}
-            <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
+            <Button 
+              variant={isOwner ? "outline" : "default"} 
+              className="w-full" 
+              onClick={handleCardClick}
+            >
               {isOwner ? "Manage" : "Buy Now"}
             </Button>
 
             {isOwner && (
               <Button
-                variant="default" // Match Buy button style for emphasis
+                variant="default"
                 size="icon"
-                onClick={handleTransferClick}
-                title="Transfer Pass" // Add a tooltip for accessibility
+                onClick={handleCardClick}
+                title="Transfer Pass"
               >
-                <ArrowRightLeft className="h-4 w-4" /> {/* Use the icon */}
+                <ArrowRightLeft className="h-4 w-4" />
               </Button>
             )}
           </div>
         </CardFooter>
       </Card>
 
-      {/* Re-use RealmDetailModal */}
       <RealmDetailModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
@@ -247,7 +235,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
         hasSeasonPassMinted={false}
         marketplaceActions={marketplaceActions}
         collection_id={SEASON_PASS_COLLECTION_ID}
-        // Pass listing details from state
         price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
         orderId={pass.order_id?.toString() ?? undefined}
         isListed={pass.expiration !== null}

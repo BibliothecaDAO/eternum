@@ -1,7 +1,10 @@
+import { OpenOrderByPrice } from "@/hooks/services";
+import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
 import { Crown } from "lucide-react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
+
 interface RealmGridItem {
   colSpan?: {
     sm?: number;
@@ -12,22 +15,24 @@ interface RealmGridItem {
 }
 
 interface SeasonPassRowProps {
-  toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
-  seasonPasses: MergedNftData[];
+  seasonPasses: OpenOrderByPrice[];
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;
   isCompactGrid?: boolean;
+  onToggleSelection: (pass: OpenOrderByPrice) => void;
 }
 
 export const SeasonPassesGrid = ({
-  toggleNftSelection,
   seasonPasses,
   setIsTransferOpen,
   checkOwner,
   hideTransferButton,
   isCompactGrid,
+  onToggleSelection,
 }: SeasonPassRowProps) => {
+  const isSelected = useSelectedPassesStore(state => state.isSelected);
+
   if (!seasonPasses?.length) {
     return (
       <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-8 min-h-[600px] rounded-xl border-2 border-dashed border-gray-200/70 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
@@ -70,10 +75,11 @@ export const SeasonPassesGrid = ({
 
           return (
             <SeasonPassCard
-              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId.toString())}
               key={`${tokenId || ""}`}
               pass={pass}
               checkOwner={checkOwner}
+              isSelected={isSelected(tokenId)}
+              onToggleSelection={() => onToggleSelection(pass)}
             />
           );
         }}
