@@ -45,6 +45,12 @@ const envSchema = z.object({
     .optional()
     .default("0")
     .transform((v) => Number(v)),
+
+  VITE_PUBLIC_SETTLING_START_TIME: z
+    .string()
+    .optional()
+    .default("0")
+    .transform((v) => Number(v)),
 });
 
 let env: z.infer<typeof envSchema>;
