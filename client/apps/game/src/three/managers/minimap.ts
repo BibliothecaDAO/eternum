@@ -1,12 +1,14 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { type ArmyManager } from "@/three/managers/army-manager";
+import { fetchAllTiles, type Tile } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { BiomeType, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { Position } from "@/types/position";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
+import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "../systems/system-manager";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {
@@ -84,9 +86,6 @@ class Minimap {
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
   private camera!: THREE.PerspectiveCamera;
-  private exploredTiles!: Map<number, Map<number, BiomeType>>;
-  private structureManager!: StructureManager;
-  private armyManager!: ArmyManager;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
     width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
@@ -109,6 +108,7 @@ class Minimap {
   private labelImages = new Map<string, HTMLImageElement>();
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
+  private tiles: Tile[] = []; // SQL-fetched tiles
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -124,13 +124,7 @@ class Minimap {
   private needsReclustering: boolean = true;
   private lastZoomRatio: number = 0;
 
-  constructor(
-    worldmapScene: WorldmapScene,
-    exploredTiles: Map<number, Map<number, BiomeType>>,
-    camera: THREE.PerspectiveCamera,
-    structureManager: StructureManager,
-    armyManager: ArmyManager,
-  ) {
+  constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera) {
     this.worldmapScene = worldmapScene;
 
     // Expose the minimap instance globally for UI access
@@ -139,8 +133,9 @@ class Minimap {
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.loadLabelImages();
-      this.initializeCanvas(structureManager, exploredTiles, armyManager, camera);
+      this.initializeCanvas(camera);
       this.canvas.addEventListener("canvasResized", this.handleResize);
+      this.fetchTiles(); // Start fetching tiles
     });
   }
 
@@ -158,16 +153,8 @@ class Minimap {
     });
   }
 
-  private initializeCanvas(
-    structureManager: StructureManager,
-    exploredTiles: Map<number, Map<number, BiomeType>>,
-    armyManager: ArmyManager,
-    camera: THREE.PerspectiveCamera,
-  ) {
+  private initializeCanvas(camera: THREE.PerspectiveCamera) {
     this.context = this.canvas.getContext("2d")!;
-    this.structureManager = structureManager;
-    this.exploredTiles = exploredTiles;
-    this.armyManager = armyManager;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
@@ -284,28 +271,29 @@ class Minimap {
   private drawExploredTiles() {
     if (!this.context) return;
 
-    this.exploredTiles.forEach((rows, col) => {
-      rows.forEach((biome, row) => {
-        const cacheKey = `${col},${row}`;
-        let biomeColor;
+    // Draw SQL-fetched tiles first
+    this.tiles.forEach((tile) => {
+      const cacheKey = `${tile.col},${tile.row}`;
+      let biomeColor;
 
-        if (this.biomeCache.has(cacheKey)) {
-          biomeColor = this.biomeCache.get(cacheKey)!;
-        } else {
-          biomeColor = BIOME_COLORS[biome].getStyle();
-          this.biomeCache.set(cacheKey, biomeColor);
-        }
-        if (this.scaledCoords.has(cacheKey)) {
-          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-          this.context.fillStyle = biomeColor;
-          this.context.fillRect(
-            scaledCol - this.scaleX * (row % 2 !== 0 ? 1 : 0.5),
-            scaledRow - this.scaleY / 2,
-            this.scaleX,
-            this.scaleY,
-          );
-        }
-      });
+      if (this.biomeCache.has(cacheKey)) {
+        biomeColor = this.biomeCache.get(cacheKey)!;
+      } else {
+        const biomeType = BiomeIdToType[tile.biome];
+        biomeColor = BIOME_COLORS[biomeType].getStyle();
+        this.biomeCache.set(cacheKey, biomeColor);
+      }
+
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        this.context.fillStyle = biomeColor;
+        this.context.fillRect(
+          scaledCol - this.scaleX * (tile.row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.scaleY / 2,
+          this.scaleX,
+          this.scaleY,
+        );
+      }
     });
   }
 
@@ -332,8 +320,6 @@ class Minimap {
         let labelImg;
         if (structureType === StructureType.Realm || structureType === StructureType.Village) {
           if (cluster.isMine) {
-            // For player's structures, we use a different icon
-            // Since clusters don't track hasWonder, we just use MY_REALM for all player realm clusters
             labelImg = this.labelImages.get("MY_REALM");
           } else {
             labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
@@ -389,64 +375,73 @@ class Minimap {
     // Clear existing structure clusters
     this.structureClusters.clear();
 
-    const allStructures = this.structureManager.structures.getStructures();
+    // Process each tile to find structures
+    this.tiles.forEach((tile) => {
+      if (!tile.occupier_is_structure) return;
 
-    // Process each structure type separately
-    for (const [structureType, structures] of allStructures) {
+      const structureInfo = getStructureInfoFromTileOccupier(tile.occupier_type);
+      if (!structureInfo) return;
+
+      const { type: structureType } = structureInfo;
+      const playerAddress = useAccountStore.getState().account?.address;
+      // Convert occupier_id to string for comparison
+      const isMine = playerAddress ? tile.occupier_id.toString() === playerAddress : false;
+
       // Skip clustering if this type is not visible
-      if (!this.shouldShowStructureType(structureType)) continue;
+      if (!this.shouldShowStructureType(structureType)) return;
 
-      const clustersForType: EntityCluster[] = [];
-      const processedStructures = new Set<number>();
+      // Get or create cluster array for this structure type
+      if (!this.structureClusters.has(structureType)) {
+        this.structureClusters.set(structureType, []);
+      }
 
-      structures.forEach((structure, index) => {
-        if (processedStructures.has(index)) return;
+      const clusters = this.structureClusters.get(structureType)!;
+      let addedToCluster = false;
 
-        const { col, row } = structure.hexCoords;
-        const isMine = structure.isMine;
+      // Try to add to existing cluster
+      for (const cluster of clusters) {
+        if (cluster.isMine !== isMine) continue;
 
-        // Create a new cluster with this structure
-        const cluster: EntityCluster = {
-          centerCol: col,
-          centerRow: row,
-          entities: [{ col, row, isMine, type: structureType }],
-          isMine: isMine,
+        const distance = this.hexDistance(tile.col, tile.row, cluster.centerCol, cluster.centerRow);
+        if (distance <= this.currentClusterRadius) {
+          cluster.entities.push({
+            col: tile.col,
+            row: tile.row,
+            isMine,
+            type: structureType,
+          });
+          addedToCluster = true;
+          break;
+        }
+      }
+
+      // Create new cluster if not added to existing one
+      if (!addedToCluster) {
+        clusters.push({
+          centerCol: tile.col,
+          centerRow: tile.row,
+          entities: [{ col: tile.col, row: tile.row, isMine, type: structureType }],
+          isMine,
           type: structureType,
-        };
-
-        processedStructures.add(index);
-
-        // Find nearby structures of the same type to add to this cluster
-        structures.forEach((otherStructure, otherIndex) => {
-          if (processedStructures.has(otherIndex)) return;
-
-          const { col: otherCol, row: otherRow } = otherStructure.hexCoords;
-          const distance = this.hexDistance(col, row, otherCol, otherRow);
-
-          // Check if within clustering radius and of the same ownership
-          if (distance <= this.currentClusterRadius && isMine === otherStructure.isMine) {
-            cluster.entities.push({
-              col: otherCol,
-              row: otherRow,
-              isMine: otherStructure.isMine,
-              type: structureType,
-            });
-            processedStructures.add(otherIndex);
-          }
         });
-
-        clustersForType.push(cluster);
-      });
-
-      this.structureClusters.set(structureType, clustersForType);
-    }
+      }
+    });
   }
 
   private clusterArmies() {
     // Reset army clusters
     this.armyClusters = [];
 
-    const allArmies = this.armyManager.getArmies();
+    const allArmies: HexPosition[] = this.tiles
+      .map((tile) => {
+        const explorerInfo = getExplorerInfoFromTileOccupier(tile.occupier_type);
+        if (!explorerInfo) return null;
+        return {
+          col: tile.col,
+          row: tile.row,
+        };
+      })
+      .filter((army) => army !== null);
     if (allArmies.length === 0) return;
 
     // Use grid-based spatial partitioning for efficient clustering
@@ -454,11 +449,9 @@ class Minimap {
 
     // Place armies in grid cells
     allArmies.forEach((army, index) => {
-      const { x: col, y: row } = army.hexCoords.getNormalized();
-
       // Calculate grid cell coordinates (larger than actual clustering radius for efficiency)
-      const gridCol = Math.floor(col / this.currentClusterRadius);
-      const gridRow = Math.floor(row / this.currentClusterRadius);
+      const gridCol = Math.floor(army.col / this.currentClusterRadius);
+      const gridRow = Math.floor(army.row / this.currentClusterRadius);
       const gridKey = `${gridCol},${gridRow}`;
 
       if (!grid.has(gridKey)) {
@@ -467,9 +460,9 @@ class Minimap {
 
       grid.get(gridKey)!.push({
         index,
-        col,
-        row,
-        isMine: army.isMine,
+        col: army.col,
+        row: army.row,
+        isMine: false,
       });
     });
 
@@ -806,6 +799,26 @@ class Minimap {
     if (states.banks !== undefined) this.showBanks = states.banks;
     if (states.fragmentMines !== undefined) this.showFragmentMines = states.fragmentMines;
     if (this.context) this.draw();
+  }
+
+  private async fetchTiles() {
+    console.log("fetchTiles");
+    try {
+      this.tiles = await fetchAllTiles().then((tiles) => {
+        return tiles.map((tile) => {
+          const position = new Position({ x: tile.col, y: tile.row });
+          const { x: col, y: row } = position.getNormalized();
+          return {
+            ...tile,
+            col,
+            row,
+          };
+        });
+      });
+      this.draw(); // Redraw the minimap with new data
+    } catch (error) {
+      console.error("Failed to fetch tiles:", error);
+    }
   }
 }
 
