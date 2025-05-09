@@ -66,7 +66,7 @@ class FXInstance {
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, 0.25, 0);
+      this.label.position.set(0, 0.5, 0);
       this.group.add(this.label);
     }
 
@@ -105,6 +105,15 @@ class FXInstance {
 
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
+    }
+
+    if (this.label) {
+      if (this.label.element) {
+        this.label.element.remove();
+      }
+      if (this.group) {
+        this.group.remove(this.label);
+      }
     }
 
     if (this.group.parent) {
