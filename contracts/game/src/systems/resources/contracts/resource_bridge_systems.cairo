@@ -15,6 +15,7 @@ pub trait IResourceBridgeSystems<T> {
         client_fee_recipient: ContractAddress,
     );
     fn lp_withdraw(ref self: T, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128);
+    fn velords_claim(ref self: T);
 }
 
 
@@ -26,7 +27,8 @@ pub mod resource_bridge_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
     use s1_eternum::models::config::{
-        ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig, WorldConfigUtilImpl,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::config::{SeasonConfigImpl};
     use s1_eternum::models::owner::{OwnerAddressImpl};
@@ -279,5 +281,35 @@ pub mod resource_bridge_systems {
             let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - platform_token_fee_amount;
             iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
         }
+    }
+
+    fn velords_claim(ref self: ContractState) {
+        let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+        // ensure the season has ended
+        // note: season.end_at must to set to avoid fatal bug
+        let season_config = SeasonConfigImpl::get(world);
+        assert!(season_config.has_ended(), "Season has not ended");
+
+        // ensure bridging grace period has not elapsed
+        let bridging_grace_period_end_at = season_config.end_at + season_config.end_grace_seconds.into();
+        assert!(
+            bridging_grace_period_end_at < starknet::get_block_timestamp(), "bridging grace period hasn't ended yet",
+        );
+
+        // get lords contract address
+        let lords_whitelist_rev_config: ResourceRevBridgeWhtelistConfig = world.read_model(ResourceTypes::LORDS);
+        let lords_address = lords_whitelist_rev_config.token;
+        let lords_contract = ERC20ABIDispatcher { contract_address: lords_address };
+        let this = starknet::get_contract_address();
+        let lords_balance = lords_contract.balance_of(this);
+
+        let res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("res_bridge_fee_split_config"),
+        );
+        let velords_address = res_bridge_fee_split_config.velords_fee_recipient;
+
+        // transfer lords to velords
+        assert!(lords_contract.transfer(velords_address, lords_balance), "Failed to transfer LORDS to velords");
     }
 }
