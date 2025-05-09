@@ -9,6 +9,7 @@ import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
   getConfigFromTorii,
+  getGuildsFromTorii,
   getSeasonPrizeFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
@@ -195,5 +196,11 @@ export const initialSync = async (
   await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] address names query", end - start);
+  setInitialSyncProgress(90);
+
+  start = performance.now();
+  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  end = performance.now();
+  console.log("[sync] guilds query", end - start);
   setInitialSyncProgress(100);
 };

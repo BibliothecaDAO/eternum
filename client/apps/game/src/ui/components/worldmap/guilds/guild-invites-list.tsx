@@ -33,12 +33,12 @@ export const GuildInviteList = ({
   });
 
   return (
-    <div className="flex flex-col p-4 border border-gold/30 rounded-xl h-full bg-brown-900/50 backdrop-blur-sm">
-      <GuildInviteListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-        {sortItems(invitedPlayers, activeSort, { sortKey: "rank", sort: "asc" }).map((player) => (
+    <div className="flex flex-col p-2 border border-gold/30  h-full bg-brown-900/50 backdrop-blur-sm">
+      {/* <GuildInviteListHeader activeSort={activeSort} setActiveSort={setActiveSort} /> */}
+      <div className="overflow-y-auto max-h-32 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent gap-2 flex flex-col">
+        {sortItems(invitedPlayers, activeSort, { sortKey: "rank", sort: "asc" }).map((player, index) => (
           <InviteRow
-            key={player.address}
+            key={index}
             player={player}
             isLoading={isLoading}
             viewPlayerInfo={viewPlayerInfo}
@@ -93,7 +93,7 @@ const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelis
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div className="grid grid-cols-5 w-full py-2 px-2 hover:bg-gold/10 rounded-lg transition-colors duration-200 mb-1">
+    <div className="grid grid-cols-5 w-full hover:bg-gold/10  transition-colors duration-200">
       <div
         className="col-span-4 grid grid-cols-1 cursor-pointer"
         onClick={() => {

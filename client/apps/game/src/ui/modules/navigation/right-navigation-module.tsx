@@ -5,7 +5,9 @@ import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
-import { PlayerStructure } from "@bibliothecadao/types";
+import { getEntityInfo } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, PlayerStructure } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -22,6 +24,19 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const structureInfo = useMemo(
+    () => getEntityInfo(structureEntityId, ContractAddress(ConnectedAccount?.address || "0x0"), components),
+    [structureEntityId, ConnectedAccount?.address, components],
+  );
+
+  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
+
+  const disableButtons = !structureIsMine && ConnectedAccount?.address !== "0x0";
+
   const navigation = useMemo(
     () => [
       {
@@ -30,6 +45,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
           <CircleButton
             className="resource-table-selector"
             image={BuildingThumbs.resources}
+            disabled={disableButtons}
             size="xl"
             tooltipLocation="top"
             label="Balance"
@@ -45,6 +61,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             className="production-selector"
             image={BuildingThumbs.production}
             size="xl"
+            disabled={disableButtons}
             tooltipLocation="top"
             label="Production"
             active={view === RightView.Production}
@@ -61,6 +78,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             className="bridge-selector"
             image={BuildingThumbs.bridge}
             size="xl"
+            disabled={disableButtons}
             tooltipLocation="top"
             label="Bridge"
             active={view === RightView.Bridge}

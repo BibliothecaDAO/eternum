@@ -5,7 +5,7 @@ import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { Globe, Lock, MessageCircle } from "lucide-react";
+import { Globe, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface GuildCustom extends GuildInfo {
@@ -48,7 +48,7 @@ export const GuildListHeader = ({
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0 bg-brown/80 backdrop-blur-sm z-10">
+    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0  backdrop-blur-sm z-10">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           key={sortKey}
@@ -103,7 +103,7 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
         </div>
       </div>
 
-      <div className="flex items-center pr-2 min-w-[28px] justify-center">
+      {/* <div className="flex items-center pr-2 min-w-[28px] justify-center">
         {isHovered && !guild.isMember && (
           <MessageCircle
             className="w-4 h-4 text-gold/70 hover:text-gold cursor-pointer transition-colors"
@@ -116,7 +116,7 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
             onMouseLeave={() => setTooltip(null)}
           />
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

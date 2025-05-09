@@ -1,46 +1,43 @@
-import { GuildInviteList } from "@/ui/components/worldmap/guilds/guild-invites-list";
 import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
 import Button from "@/ui/elements/button";
-import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { useSocialStore } from "@/ui/modules/social/socialStore";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, useGuildMembers, useGuildWhitelist, usePlayerWhitelist } from "@bibliothecadao/react";
-import { Building, CalendarDays, Edit, Mail, Shield, UserMinus, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
+import { CalendarDays, Mail, Shield, UserMinus, Users } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { env } from "../../../../../env";
+import { GuildInviteList } from "./guild-invites-list";
 
 interface GuildMembersProps {
   players: PlayerInfo[];
-  selectedGuildEntityId: ContractAddress;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   setIsExpanded: (isExpanded: boolean) => void;
   isOwner?: boolean;
   ownerAddress?: string;
 }
 
-export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
+export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMembersProps) => {
   const {
     setup: {
       components,
-      systemCalls: { join_guild, remove_guild_member, disband_guild, update_whitelist, set_entity_name },
+      systemCalls: { join_guild, remove_guild_member, disband_guild, update_whitelist, leave_guild },
     },
     account: { account },
   } = useDojo();
 
+  const { selectedGuild: selectedGuildEntityId } = useSocialStore();
+
   const guildMembers = useGuildMembers(selectedGuildEntityId);
+
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
   const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
-  const userGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
-    [account.address, components],
-  );
 
-  const selectedGuild = useMemo(
-    () => getGuild(selectedGuildEntityId, ContractAddress(account.address), components),
-    [selectedGuildEntityId, account.address, components],
-  );
+  const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
+
+  const selectedGuild = getGuild(selectedGuildEntityId, ContractAddress(account.address), components);
 
   const playerName = players.find((player) => player.address === ContractAddress(account?.address))?.name;
 
@@ -61,11 +58,10 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
     ? players.find((player) => player.address === guildMaster.address)?.name
     : "Unknown";
 
-  // Set initial naming value when editing
   useEffect(() => {
     if (editName && selectedGuild?.name) {
       setNaming(selectedGuild.name);
-      // Focus the input field when it becomes visible
+
       setTimeout(() => {
         if (textInputRef.current) {
           textInputRef.current.focus();
@@ -74,7 +70,13 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
     }
   }, [editName, selectedGuild?.name]);
 
+  const leaveGuild = useCallback(() => {
+    setIsLoading(true);
+    leave_guild({ signer: account }).finally(() => setIsLoading(false));
+  }, []);
+
   const removeGuildMember = useCallback((address: ContractAddress) => {
+    console.log("removeGuildMember", address);
     setIsLoading(true);
     remove_guild_member({
       player_address_to_remove: address,
@@ -86,7 +88,11 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
 
   const disbandGuild = () => {
     const calldata = [
-      ...guildMembers.filter((member) => !member.isGuildMaster).map((member) => ({ address: member.address })),
+      ...guildMembers
+        .filter((member) => member.address !== ContractAddress(account.address))
+        .map((member) => ({
+          address: member.address,
+        })),
       { address: account.address },
     ];
 
@@ -123,97 +129,43 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
         })
       : undefined;
 
-  const handleChangeName = async () => {
-    if (!naming.trim()) return;
-
-    setIsLoading(true);
-    try {
-      await set_entity_name({ signer: account, entity_id: selectedGuildEntityId, name: naming });
-    } catch (e) {
-      console.error(e);
-    }
-    setIsLoading(false);
-    setEditName(false);
-  };
-
   return (
     <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
-      {/* Guild Header */}
-      <div className="border-b border-gold/20 pb-4 mb-4">
-        {editName ? (
-          <div className="flex flex-col space-y-2 mb-4">
-            <div className="flex items-center">
-              <Edit size={16} className="text-gold/80 mr-2" />
-              <h3 className="text-gold/90 text-sm font-semibold">Rename Tribe</h3>
-            </div>
+      <div className="pb-2">
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="truncate flex items-center">{selectedGuild?.name || "Tribe"}</h2>
+            <div className="flex items-center gap-2">{socialsText && <TwitterShareButton text={socialsText} />}</div>
+          </div>
 
-            <div className="flex gap-2">
-              <TextInput
-                ref={textInputRef}
-                placeholder="New Name"
-                className="flex-1"
-                onChange={(name) => setNaming(name)}
-              />
-              <Button variant="primary" isLoading={isLoading} onClick={handleChangeName} className="whitespace-nowrap">
-                Save Name
-              </Button>
-              <Button variant="outline" onClick={() => setEditName(false)} className="px-3">
-                Cancel
-              </Button>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-2 bg-brown/10 rounded">
+              <Shield size={14} className="text-gold/80" />
+              <span className="text-gold/90 h5">Chief: {guildMasterName}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-brown/10 rounded">
+              <Users size={14} className="text-gold/80" />
+              <span className="text-gold/90 h5">Members: {memberCount}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-brown/10 rounded">
+              <Mail size={14} className="text-gold/80" />
+              <span className="text-gold/90 h5">Invites: {inviteCount}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-brown/10 rounded">
+              <CalendarDays size={14} className="text-gold/80" />
+              <span className="text-gold/90 h5">{selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}</span>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="truncate font-bold text-gold text-xl flex items-center">
-                <Building size={20} className="mr-2 text-gold/80" />
-                {selectedGuild?.name || "Tribe"}
-              </h2>
-              <div className="flex items-center gap-2">
-                {userIsGuildMaster && (
-                  <button
-                    className="p-1.5 rounded-full hover:bg-brown/20 transition-colors"
-                    onClick={() => setEditName(!editName)}
-                  >
-                    <Edit size={16} className="text-gold/80" />
-                  </button>
-                )}
-                {socialsText && (
-                  <div>
-                    <TwitterShareButton text={socialsText} />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2 bg-brown/10 p-2 rounded">
-                <Shield size={14} className="text-gold/80" />
-                <span className="text-gold/90">Chief: {guildMasterName}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-brown/10 p-2 rounded">
-                <Users size={14} className="text-gold/80" />
-                <span className="text-gold/90">Members: {memberCount}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-brown/10 p-2 rounded">
-                <Mail size={14} className="text-gold/80" />
-                <span className="text-gold/90">Invites: {inviteCount}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-brown/10 p-2 rounded">
-                <CalendarDays size={14} className="text-gold/80" />
-                <span className="text-gold/90">{selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}</span>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
+        {/* )} */}
       </div>
-
       {/* Tab Selection - Members vs Invites */}
       {userIsGuildMaster && (
-        <div className="mb-4 flex">
+        <div className="mb-4 flex gap-4">
           <Button
             className={`flex-1 flex items-center justify-center gap-1 ${!viewGuildInvites ? "bg-brown/20" : ""}`}
             variant="outline"
+            size="xs"
             onClick={() => setViewGuildInvites(false)}
           >
             <Users size={16} />
@@ -222,6 +174,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
           <Button
             className={`flex-1 flex items-center justify-center gap-1 ${viewGuildInvites ? "bg-brown/20" : ""}`}
             variant="outline"
+            size="xs"
             onClick={() => setViewGuildInvites(true)}
           >
             <Mail size={16} />
@@ -229,7 +182,6 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
           </Button>
         </div>
       )}
-
       {/* Member or Invite List */}
       <div className="flex-1 min-h-0 border border-gold/10 rounded-md bg-brown/5">
         {viewGuildInvites ? (
@@ -249,7 +201,6 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
           />
         )}
       </div>
-
       {/* Action Buttons */}
       <div className="mt-4 flex gap-2">
         {userGuild?.entityId === selectedGuildEntityId && (
@@ -257,7 +208,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
             className="flex-1 flex items-center justify-center gap-1"
             isLoading={isLoading}
             variant="red"
-            onClick={() => (userGuild.isOwner ? disbandGuild() : removeGuildMember(ContractAddress(account.address)))}
+            onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
           >
             <UserMinus size={16} />
             <span>{userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}</span>
