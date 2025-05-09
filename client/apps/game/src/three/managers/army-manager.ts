@@ -452,7 +452,7 @@ export class ArmyManager {
 
     // Set renderOrder to Infinity on hover
     labelDiv.addEventListener("mouseenter", () => {
-      this.fxManager.playFxAtCoords("compass", position.x, position.y + 2, position.z, 1, "Exploring");
+      this.fxManager.playFxAtCoords("compass", position.x, position.y + 3, position.z, 1, "Exploring");
       label.renderOrder = Infinity;
     });
 

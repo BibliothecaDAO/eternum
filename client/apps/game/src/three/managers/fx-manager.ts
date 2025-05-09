@@ -60,13 +60,14 @@ class FXInstance {
       const div = document.createElement("div");
       div.className = "fx-label";
       div.textContent = labelText;
-      div.style.color = "white";
-      div.style.fontFamily = "Fantasy";
-      div.style.fontSize = "14px";
+      div.style.color = "rgb(223 170 84)";
+      div.style.fontFamily = "Cinzel";
+      div.style.fontSize = "16px";
+      div.style.fontWeight = "bold";
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, 0.5, 0);
+      this.label.position.set(0, 1, 0);
       this.group.add(this.label);
     }
 
