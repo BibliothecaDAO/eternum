@@ -28,8 +28,8 @@ pub mod Tasks {
     pub const BUILD_STANDARD: felt252 = 'BUILD_STANDARD';
     pub const BUILD_SIMPLE: felt252 = 'BUILD_SIMPLE';
     pub const LABOR_PRODUCE: felt252 = 'LABOR_PRODUCE';
-    pub const COMPLETE_ORDER: felt252 = 'COMPLETE_ORDER';
     pub const KILL_AGENT: felt252 = 'KILL_AGENT';
+    pub const BRIDGE_LORDS: felt252 = 'BRIDGE_LORDS';
     pub const WIN_BATTLE: felt252 = 'WIN_BATTLE';
     pub const PRODUCE_T2: felt252 = 'PRODUCE_T2';
     pub const PRODUCE_T3: felt252 = 'PRODUCE_T3';
@@ -94,9 +94,9 @@ pub impl AchievementImpl of AchievementTrait {
             Self::labor_powerhouse_one(),
             Self::labor_powerhouse_two(),
             Self::labor_powerhouse_three(),
-            Self::lord_of_logistics_one(),
-            Self::lord_of_logistics_two(),
-            Self::lord_of_logistics_three(),
+            Self::bridger_one(),
+            Self::bridger_two(),
+            Self::bridger_three(),
             Self::blade_runner(),
             Self::nexus_six(),
             Self::first_blood(),
@@ -612,51 +612,55 @@ pub impl AchievementImpl of AchievementTrait {
     }
 
     #[inline]
-    fn lord_of_logistics_one() -> Achievement {
-        let task = AchievementTaskTrait::new(id: Tasks::COMPLETE_ORDER, total: 10, description: "Complete 10 Orders.");
+    fn bridger_one() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::BRIDGE_LORDS, total: 200, description: "Bridge 200 $lords into the game",
+        );
         Achievement {
-            id: 'LORD_OF_LOGISTICS_ONE',
+            id: 'BRIDGER_ONE',
             hidden: false,
             index: 0,
             points: 5,
-            group: 'Trader',
-            icon: 'fa-truck-fast',
-            title: 'Novice Logistician',
-            description: "The wheels of commerce turn smoothly",
+            group: 'Portal',
+            icon: 'fa-bridge',
+            title: 'Dabbler',
+            description: "First steps into a realm of wealth and influence",
             tasks: array![task].span(),
         }
     }
 
     #[inline]
-    fn lord_of_logistics_two() -> Achievement {
-        let task = AchievementTaskTrait::new(id: Tasks::COMPLETE_ORDER, total: 50, description: "Complete 50 Orders.");
+    fn bridger_two() -> Achievement {
+        let task = AchievementTaskTrait::new(
+            id: Tasks::BRIDGE_LORDS, total: 1000, description: "Bridge 1000 $lords into the game",
+        );
         Achievement {
-            id: 'LORD_OF_LOGISTICS_TWO',
+            id: 'BRIDGER_TWO',
             hidden: false,
             index: 1,
             points: 15,
-            group: 'Trader',
-            icon: 'fa-truck-fast',
-            title: 'Journeyman Logistician',
-            description: "A well-oiled machine of commerce",
+            group: 'Portal',
+            icon: 'fa-bridge',
+            title: 'Cashed-up',
+            description: "Your coffers fill as your ambitions grow",
             tasks: array![task].span(),
         }
     }
 
     #[inline]
-    fn lord_of_logistics_three() -> Achievement {
+    fn bridger_three() -> Achievement {
         let task = AchievementTaskTrait::new(
-            id: Tasks::COMPLETE_ORDER, total: 200, description: "Complete 200 Orders.",
+            id: Tasks::BRIDGE_LORDS, total: 4000, description: "Bridge 4000 $lords into the game",
         );
         Achievement {
-            id: 'LORD_OF_LOGISTICS_THREE',
+            id: 'BRIDGER_THREE',
             hidden: false,
             index: 2,
             points: 30,
-            group: 'Trader',
-            icon: 'fa-truck-fast',
-            title: 'Master Logistician',
-            description: "Master of the supply chain",
+            group: 'Portal',
+            icon: 'fa-bridge',
+            title: 'Money Bags',
+            description: "Legendary wealth that shapes the fate of kingdoms",
             tasks: array![task].span(),
         }
     }

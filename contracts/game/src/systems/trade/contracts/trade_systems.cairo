@@ -44,7 +44,6 @@ pub mod trade_systems {
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::village::{iVillageImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
 
 
@@ -336,11 +335,6 @@ pub mod trade_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
-
-            // grant achievement
-            AchievementTrait::progress(
-                world, taker_structure_owner.into(), Tasks::COMPLETE_ORDER, 1, starknet::get_block_timestamp(),
-            );
         }
 
 
