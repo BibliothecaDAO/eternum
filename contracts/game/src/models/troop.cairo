@@ -140,9 +140,16 @@ pub impl GuardImpl of GuardTrait {
             category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Default::default(),
         };
         self.delta = default_troops;
+        self.delta_destroyed_tick = 0;
+
         self.charlie = default_troops;
+        self.charlie_destroyed_tick = 0;
+
         self.bravo = default_troops;
+        self.bravo_destroyed_tick = 0;
+
         self.alpha = default_troops;
+        self.alpha_destroyed_tick = 0;
     }
 
     fn from_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
