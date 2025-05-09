@@ -95,7 +95,7 @@ export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 =
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
 
 export const QUEST_FIND_PROBABILITY = 1; // 1/60_000 = 1%
-export const QUEST_FIND_FAIL_PROBABILITY = 59_999; // 59_999/60_000 = 99.99833333333333%
+export const QUEST_FIND_FAIL_PROBABILITY = 99; // 59_999/60_000 = 99.99833333333333%
 
 // This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
