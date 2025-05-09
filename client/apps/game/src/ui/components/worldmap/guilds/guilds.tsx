@@ -4,10 +4,11 @@ import { PRIZE_POOL_GUILDS } from "@/ui/constants";
 import Button from "@/ui/elements/button";
 import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
+import { useSocialStore } from "@/ui/modules/social/socialStore";
 import { sortItems } from "@/ui/utils/utils";
 import { calculateGuildLordsPrize, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -26,25 +27,30 @@ export const Guilds = ({
     account: { account },
   } = useDojo();
 
-  const guilds = useGuilds();
-  const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
-  const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
-    [account.address, components],
-  );
-
-  const showGuildButton = playerGuild?.entityId;
+  const {
+    guildsViewGuildInvites,
+    guildsGuildSearchTerm,
+    guildsActiveSort,
+    setGuildsViewGuildInvites,
+    setGuildsGuildSearchTerm,
+    setGuildsActiveSort,
+  } = useSocialStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingGuild, setIsCreatingGuild] = useState(false);
-  const [viewGuildInvites, setViewGuildInvites] = useState(false);
-  const [guildSearchTerm, setGuildSearchTerm] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [guildName, setGuildName] = useState("");
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "rank",
     sort: "asc",
   });
+
+  const guilds = useGuilds();
+  const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
+  const playerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
+    [account.address, components, isLoading],
+  );
 
   // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
@@ -113,35 +119,46 @@ export const Guilds = ({
     () =>
       sortItems(
         guildsWithStats.filter((guild) => {
-          const nameMatch = guild.name.toLowerCase().startsWith(guildSearchTerm.toLowerCase());
-          if (viewGuildInvites) {
+          const nameMatch = guild.name.toLowerCase().startsWith(guildsGuildSearchTerm.toLowerCase());
+          if (guildsViewGuildInvites) {
             return nameMatch && guildInvites.some((invite) => invite.entityId === guild.entityId);
           }
           return nameMatch;
         }),
-        activeSort,
+        guildsActiveSort,
         { sortKey: "rank", sort: "asc" },
       ),
-    [guildsWithStats, guildSearchTerm, guildInvites, viewGuildInvites, activeSort],
+    [guildsWithStats, guildsGuildSearchTerm, guildInvites, guildsViewGuildInvites, guildsActiveSort],
   );
 
-  const handleCreateGuild = (guildName: string, isPublic: boolean) => {
+  const handleCreateGuild = async (guildName: string, isPublic: boolean) => {
     setIsLoading(true);
-    setIsCreatingGuild(false);
-    create_guild({
-      is_public: isPublic,
-      guild_name: guildName,
-      signer: account,
-    }).finally(() => setIsLoading(false));
+    try {
+      await create_guild({
+        is_public: isPublic,
+        guild_name: guildName,
+        signer: account,
+      });
+      // Assuming synchronous success or if create_guild doesn't throw,
+      // optimistically update UI.
+      setIsCreatingGuild(false); // Close the form
+      setGuildName(""); // Reset form state
+      setIsPublic(true); // Reset form state
+    } catch (error) {
+      console.error("Failed to create guild:", error);
+      // On error, form remains open, isLoading will become false.
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleIsCreatingGuild = () => {
-    setIsCreatingGuild((prev) => !prev);
-    if (!isCreatingGuild) {
-      setIsPublic(true);
+    const willBeCreating = !isCreatingGuild;
+    setIsCreatingGuild(willBeCreating);
+    if (willBeCreating) {
+      // If opening the form
       setGuildName("");
-    } else {
-      setGuildSearchTerm("");
+      setIsPublic(true);
     }
   };
 
@@ -149,55 +166,49 @@ export const Guilds = ({
     <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
       <div className="flex flex-col space-y-4 mb-4">
         <div className="flex flex-row gap-4 justify-between">
-          <Button variant="gold" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
-            {viewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
+          <Button onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
+            {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
           </Button>
-          {showGuildButton ? (
-            <Button
-              className="text-ellipsis uppercase font-medium bg-blueish/20 hover:bg-gold/80 transition-colors duration-200"
-              variant="primary"
-              onClick={() => viewGuildMembers(playerGuild.entityId)}
-            >
+          {playerGuild?.entityId ? (
+            <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)}>
               Tribe {playerGuild.name}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <Button isLoading={isLoading} variant="primary" className="w-full" onClick={toggleIsCreatingGuild}>
-              {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
+              Create Tribe
             </Button>
           )}
         </div>
 
-        <div className="w-full">
-          {isCreatingGuild ? (
-            <CreateGuildButton
-              handleCreateGuild={handleCreateGuild}
-              guildName={guildName}
-              setGuildName={setGuildName}
-              isPublic={isPublic}
-              setIsPublic={setIsPublic}
-            />
-          ) : (
-            <TextInput
-              placeholder="Search Tribe . . ."
-              onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)}
-              className="w-full button-wood"
-            />
-          )}
-        </div>
+        {!playerGuild?.entityId && isCreatingGuild && (
+          <CreateGuildButton
+            handleCreateGuild={handleCreateGuild}
+            guildName={guildName}
+            setGuildName={setGuildName}
+            isPublic={isPublic}
+            setIsPublic={setIsPublic}
+          />
+        )}
+        <TextInput
+          placeholder="Search Tribe . . ."
+          value={guildsGuildSearchTerm}
+          onChange={(searchTerm) => setGuildsGuildSearchTerm(searchTerm)}
+          className="w-full button-wood"
+        />
       </div>
 
       <div className="flex-1 min-h-0">
         <div className="flex flex-col h-full rounded-xl backdrop-blur-sm">
-          <GuildListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
+          <GuildListHeader activeSort={guildsActiveSort} setActiveSort={setGuildsActiveSort} />
           <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {filteredGuilds.map((guild) => (
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
-            {!filteredGuilds.length && viewGuildInvites && (
+            {!filteredGuilds.length && guildsViewGuildInvites && (
               <p className="text-center italic text-gold/70 py-4">No Tribe Invites Received</p>
             )}
-            {!filteredGuilds.length && !viewGuildInvites && guildSearchTerm && (
+            {!filteredGuilds.length && !guildsViewGuildInvites && guildsGuildSearchTerm && (
               <p className="text-center italic text-gold/70 py-4">No Tribes Found</p>
             )}
           </div>

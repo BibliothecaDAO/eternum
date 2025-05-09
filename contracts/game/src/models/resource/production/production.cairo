@@ -1,3 +1,4 @@
+use core::num::traits::Bounded;
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use dojo::model::ModelStorage;
@@ -9,10 +10,11 @@ use s1_eternum::models::config::{ResourceFactoryConfig};
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl,
+    TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureImpl};
+use s1_eternum::models::structure::{StructureImpl, StructureOwnerStoreImpl};
 use s1_eternum::models::weight::{Weight};
+use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
 use s1_eternum::utils::math::{PercentageValueImpl};
 use s1_eternum::utils::math::{min};
 
@@ -153,6 +155,41 @@ pub impl ProductionImpl of ProductionTrait {
 
 #[generate_trait]
 pub impl ProductionStrategyImpl of ProductionStrategyTrait {
+    fn _grant_producer_achievement(
+        ref world: WorldStorage, owner: starknet::ContractAddress, resource_type: u8, amount: u128,
+    ) {
+        if amount > RESOURCE_PRECISION {
+            let mut amount_check_u32: u128 = amount / RESOURCE_PRECISION;
+            let max_u32: u32 = Bounded::MAX;
+            if amount_check_u32 > max_u32.into() {
+                panic!("amount is too large. try producing in batches of <= 4 billion resources");
+            }
+            let amount_u32: u32 = amount_check_u32.try_into().unwrap();
+            if resource_type == ResourceTypes::LABOR {
+                AchievementTrait::progress(
+                    world, owner.into(), Tasks::LABOR_PRODUCE, amount_u32, starknet::get_block_timestamp(),
+                );
+            } else if TroopResourceImpl::is_troop(resource_type) {
+                if TroopResourceImpl::is_t2_troop(resource_type) {
+                    AchievementTrait::progress(
+                        world, owner.into(), Tasks::PRODUCE_T2, 1, starknet::get_block_timestamp(),
+                    );
+                }
+
+                if TroopResourceImpl::is_t3_troop(resource_type) {
+                    AchievementTrait::progress(
+                        world, owner.into(), Tasks::PRODUCE_T3, 1, starknet::get_block_timestamp(),
+                    );
+                }
+            } else {
+                AchievementTrait::progress(
+                    world, owner.into(), Tasks::RESOURCE_PRODUCE, amount_u32, starknet::get_block_timestamp(),
+                );
+            }
+        }
+    }
+
+
     // burn resource for production of labor
     fn burn_resource_for_labor_production(
         ref world: WorldStorage, from_entity_id: ID, from_resource_type: u8, from_resource_amount: u128,
@@ -196,6 +233,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
+
+        // grant achievement
+        let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
+        Self::_grant_producer_achievement(ref world, from_entity_owner, ResourceTypes::LABOR, produced_labor_amount);
         // todo add event here
     }
 
@@ -248,6 +289,12 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
+
+        // grant achievement
+        let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
+        Self::_grant_producer_achievement(
+            ref world, from_entity_owner, produced_resource_type, produced_resource_amount,
+        );
         // todo add event here
     }
 
@@ -295,6 +342,8 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         );
         let mut produced_resource_production: Production = produced_resource.production;
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
+        assert!(produceable_amount.is_non_zero(), "can't produce this resource in standard mode");
+
         let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produceable_amount,
         );
@@ -304,6 +353,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
+
+        // grant achievement
+        let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
+        Self::_grant_producer_achievement(ref world, from_entity_owner, produced_resource_type, produceable_amount);
         // todo add event here
     }
 }

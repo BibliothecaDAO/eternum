@@ -1,27 +1,4 @@
-import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/types";
-
-// Food consumption rates (wheat/fish) per troop unit, scaled by resource precision
-// Example: explore_wheat_burn_amount of 10 means 10 * RESOURCE_PRECISION wheat consumed per troop during exploration
-export const TROOPS_FOOD_CONSUMPTION: Record<number, TroopFoodConsumption> = {
-  [ResourcesIds.Paladin]: {
-    explore_wheat_burn_amount: 10,
-    explore_fish_burn_amount: 10,
-    travel_wheat_burn_amount: 4,
-    travel_fish_burn_amount: 4,
-  },
-  [ResourcesIds.Knight]: {
-    explore_wheat_burn_amount: 10,
-    explore_fish_burn_amount: 10,
-    travel_wheat_burn_amount: 5,
-    travel_fish_burn_amount: 5,
-  },
-  [ResourcesIds.Crossbowman]: {
-    explore_wheat_burn_amount: 6,
-    explore_fish_burn_amount: 6,
-    travel_wheat_burn_amount: 3,
-    travel_fish_burn_amount: 3,
-  },
-};
+import { ResourcesIds } from "@bibliothecadao/types";
 
 export const TROOP_DAMAGE_RAID_PERCENT_NUM = 1_000; //10%
 
@@ -29,7 +6,7 @@ export const TROOP_BASE_DAMAGE = 1844674407370955161600n; // 100
 export const TROOP_T2_DAMAGE_MULTIPLIER = 46116860184273879040n; // 2.5
 export const TROOP_T3_DAMAGE_MULTIPLIER = 129127208515966861312n; // 7
 export const TROOP_DAMAGE_BIOME_BONUS_NUM = 3_000; // 3_000/10_000 = 30%
-export const TROOP_DAMAGE_SCALING_FACTOR = 64563604257983430656n; // 3.5
+export const TROOP_DAMAGE_SCALING_FACTOR = 55340232221128654848n; // 3
 export const TROOP_DAMAGE_BETA_SMALL = 4611686018427387904n; // 0.25
 export const TROOP_DAMAGE_BETA_LARGE = 2213609288845146193n; // 0.12
 export const TROOP_DAMAGE_C0 = 100_000n * BigInt(2) ** BigInt(64);

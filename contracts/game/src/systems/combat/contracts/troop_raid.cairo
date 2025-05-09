@@ -39,6 +39,7 @@ pub mod troop_raid_systems {
         resource::{iResourceTransferImpl}, structure::iStructureImpl,
         troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl},
     };
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::utils::math::{PercentageValueImpl};
     use s1_eternum::utils::random::{VRFImpl};
@@ -233,6 +234,7 @@ pub mod troop_raid_systems {
                     .stamina
                     .spend(
                         explorer_aggressor_troops.category,
+                        explorer_aggressor_troops.tier,
                         troop_stamina_config,
                         max_explorer_stamina_loss,
                         current_tick,
@@ -244,6 +246,15 @@ pub mod troop_raid_systems {
                 if explorer_aggressor_troops.count.is_zero() {
                     if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                         iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
+
+                        // grant kill agent achievement
+                        AchievementTrait::progress(
+                            world,
+                            guarded_structure_owner.into(),
+                            Tasks::KILL_AGENT,
+                            1,
+                            starknet::get_block_timestamp(),
+                        );
                     } else {
                         let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                             ref world, explorer_aggressor.owner,
@@ -291,6 +302,18 @@ pub mod troop_raid_systems {
                 );
                 structure_weight.store(ref world, structure_id);
                 explorer_weight.store(ref world, explorer_id);
+
+                // grant raid achievement
+                let explorer_structure_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, explorer_aggressor.owner,
+                );
+                AchievementTrait::progress(
+                    world,
+                    explorer_structure_owner_address.into(),
+                    Tasks::SUCCESSFUL_RAID,
+                    1,
+                    starknet::get_block_timestamp(),
+                );
             };
 
             world

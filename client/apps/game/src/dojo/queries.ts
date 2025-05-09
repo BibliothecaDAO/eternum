@@ -23,6 +23,7 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
+    "s1_eternum-ProductionWonderBonus",
   ];
 
   // Create promises for both queries without awaiting them
@@ -209,7 +210,6 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     "s1_eternum-HyperstructureShareholders",
     "s1_eternum-HyperstructureRequirements",
     "s1_eternum-PlayerRegisteredPoints",
-    "s1_eternum-PlayerConstructionPoints",
   ];
 
   return getEntities(client, query, components as any, [], hyperstructureModels, EVENT_QUERY_LIMIT, false);
@@ -244,7 +244,8 @@ export const getEntitiesFromTorii = async <S extends Schema>(
             ],
           },
         };
-  return getEntities(client, query, components as any, [], entityModels, 40_000);
+
+  return getEntities(client, query, components as any, [], entityModels, 40_000, true);
 };
 
 export const getMarketFromTorii = async <S extends Schema>(

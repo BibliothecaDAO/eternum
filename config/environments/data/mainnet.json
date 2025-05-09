@@ -332,7 +332,7 @@
     },
     {
       "resource": 37,
-      "amount": 0.01
+      "amount": 0.005
     }
   ],
   "26": [
@@ -942,7 +942,7 @@
   "21": 1000,
   "22": 1000,
   "23": 1000,
-  "24": 1000,
+  "24": 100,
   "25": 0,
   "26": 5000,
   "27": 5000,
@@ -1050,11 +1050,15 @@
 "armiesTickIntervalInSeconds": 3600
 },
 "carryCapacityGram": {
-"0": 0,
-"1": 400000000000,
-"2": 500000,
-"3": 10000,
-"4": 300000000
+  "0": 0,
+  "1": 1000000000,
+  "2": 500000,
+  "3": 10000,
+  "4": 1000000000,
+  "5": 1000000000,
+  "6": 3000000000,
+  "7": 1000000000,
+  "8": 500000000
 },
 "speed": {
 "donkey": 9,
@@ -1874,7 +1878,7 @@
 "hyperstructures": {
 "hyperstructureInitializationShardsCost": {
   "resource": 24,
-  "amount": 50000000
+  "amount": 20000000
 },
 "hyperstructureConstructionCost": [
   {
@@ -2054,7 +2058,7 @@
 },
 {
   "resource": 25,
-  "amount": 2000
+  "amount": 3000
 },
 {
   "resource": 26,
@@ -2084,7 +2088,7 @@
 },
 {
   "resource": 25,
-  "amount": 500
+  "amount": 1500
 },
 {
   "resource": 26,
@@ -2164,15 +2168,15 @@
   },
   {
     "resource": 35,
-    "amount": 9000000
+    "amount": 6000000
   },
   {
     "resource": 36,
-    "amount": 9000000
+    "amount": 6000000
   },
   {
     "resource": 15,
-    "amount": 1000000
+    "amount": 750000
   },
   {
     "resource": 14,

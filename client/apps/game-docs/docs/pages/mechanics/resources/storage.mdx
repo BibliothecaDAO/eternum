@@ -6,10 +6,10 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 
 # 🏺 Storage System
 
-Storage limits the amount of resources your Realm or Village can hold. Effective management of your storage capacity is
-essential for successful development. Each Realm and Village begins with a base capacity of
-**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg per material type**.
-When you reach this maximum capacity, you'll need to construct storehouses to expand your storage capabilities.
+Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
+storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
+**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll need to
+construct storehouses to expand your storage capabilities.
 
 ## Material Weights
 
@@ -22,11 +22,21 @@ Materials in Eternum have different weights that affect storage:
 Expand your storage capacity to support your growing realm:
 
 - **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage per
-  material
+  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage capacity.
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **Danger**: When storage is full new production is wasted
+
+## World Structure Storage
+
+All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
+capacities are as follows:
+
+| Structure Type | Storage Capacity                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
+| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
+| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
 
 ## Storage Management Tips
 

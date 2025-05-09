@@ -28,6 +28,7 @@ pub mod village_systems {
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
     use super::super::super::super::models::position::CoordTrait;
 
@@ -126,6 +127,10 @@ pub mod village_systems {
                 village_coord,
                 BuildingCategory::ResourceLabor,
                 BuildingImpl::center(),
+            );
+
+            AchievementTrait::progress(
+                world, caller.into(), Tasks::VILLAGE_SETTLEMENT, 1, starknet::get_block_timestamp(),
             );
 
             village_id.into()

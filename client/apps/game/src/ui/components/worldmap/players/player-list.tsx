@@ -1,5 +1,4 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
@@ -7,7 +6,7 @@ import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { MessageCircle, Search, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface PlayerCustom extends PlayerInfo {
@@ -60,25 +59,6 @@ export const PlayerList = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-3 relative">
-        <input
-          type="text"
-          placeholder="Search players or tribes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full py-2 px-3 pl-9 bg-brown/20 border border-gold/30 rounded-md text-gold placeholder-gold/50 focus:outline-none focus:border-gold/60 transition-all duration-200"
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold/50 w-4 h-4" />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold/50 hover:text-gold transition-colors"
-          >
-            ×
-          </button>
-        )}
-      </div>
-
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
 
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
@@ -101,10 +81,6 @@ export const PlayerList = ({
             {searchQuery && <p className="text-xs mt-1">Try adjusting your search query</p>}
           </div>
         )}
-      </div>
-
-      <div className="mt-2 text-xs text-gold/60 text-right">
-        {sortedPlayers.length} player{sortedPlayers.length !== 1 ? "s" : ""} found
       </div>
     </div>
   );
@@ -140,7 +116,7 @@ const PlayerListHeader = ({
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0 bg-brown/80 backdrop-blur-sm z-10">
+    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0 z-10">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           key={sortKey}
@@ -161,15 +137,6 @@ const PlayerListHeader = ({
   );
 };
 
-interface PlayerRowProps {
-  player: PlayerCustom;
-  onClick: () => void;
-  isGuildMaster: boolean;
-  whitelistPlayer: (address: ContractAddress) => void;
-  removePlayerFromWhitelist: (address: ContractAddress) => void;
-  isLoading: boolean;
-}
-
 const PlayerRow = ({
   player,
   onClick,
@@ -177,14 +144,21 @@ const PlayerRow = ({
   whitelistPlayer,
   removePlayerFromWhitelist,
   isLoading,
-}: PlayerRowProps) => {
+}: {
+  player: PlayerCustom;
+  onClick: () => void;
+  isGuildMaster: boolean;
+  whitelistPlayer: (address: ContractAddress) => void;
+  removePlayerFromWhitelist: (address: ContractAddress) => void;
+  isLoading: boolean;
+}) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
       className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
-        "bg-blueish/30 hover:bg-blueish/40 text-brown border border-gold/40": player.isUser,
+        "bg-gold/30 hover:bg-blueish/40  border border-gold/40": player.isUser,
         "hover:bg-gold/10 border border-transparent hover:border-gold/20": !player.isUser,
       })}
       onMouseEnter={() => setIsHovered(true)}
@@ -200,7 +174,7 @@ const PlayerRow = ({
           {player.rank === Number.MAX_SAFE_INTEGER ? "☠️" : `#${player.rank}`}
         </p>
         <div className="col-span-2 flex items-center gap-1">
-          <span className="truncate">{player.name}</span>
+          <h6 className="truncate text-xs">{player.name}</h6>
         </div>
         <p
           className={clsx("col-span-2 truncate", {
@@ -227,7 +201,26 @@ const PlayerRow = ({
       </div>
 
       <div className="flex items-center pr-2 min-w-[28px] justify-center">
-        {isGuildMaster && !player.isUser ? (
+        {!player.isUser && (
+          <Invite
+            onClick={() => {
+              whitelistPlayer(player.address);
+              setTooltip(null);
+            }}
+            className={clsx("w-5 h-5 fill-gold hover:fill-amber-400 transition-all duration-200", {
+              "animate-pulse opacity-50 pointer-events-none": isLoading,
+              "cursor-pointer": !isLoading,
+            })}
+            onMouseEnter={() =>
+              setTooltip({
+                content: <div className="text-gold">Invite to tribe</div>,
+                position: "top",
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+          />
+        )}
+        {/* {isGuildMaster && !player.isUser ? (
           player.isInvited ? (
             <Trash
               onClick={() => {
@@ -279,7 +272,7 @@ const PlayerRow = ({
               onMouseLeave={() => setTooltip(null)}
             />
           )
-        )}
+        )} */}
       </div>
     </div>
   );

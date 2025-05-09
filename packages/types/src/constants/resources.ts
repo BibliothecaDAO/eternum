@@ -1,6 +1,33 @@
 import { Resources } from "../types";
 import { ResourcesIds } from "./index";
 
+export const RAIDABLE_RESOURCES = [
+  ResourcesIds.Wood,
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Copper,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Silver,
+  ResourcesIds.Ironwood,
+  ResourcesIds.ColdIron,
+  ResourcesIds.Gold,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Sapphire,
+  ResourcesIds.Ruby,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ignium,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.TrueIce,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Mithral,
+  ResourcesIds.Dragonhide,
+  ResourcesIds.AncientFragment,
+  ResourcesIds.Donkey,
+];
+
 export const resources: Array<Resources> = [
   {
     trait: "Stone",
@@ -369,7 +396,7 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Diamonds]: 16.72,
   [ResourcesIds.Sapphire]: 20.3,
   [ResourcesIds.Ruby]: 20.98,
-  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.99,
   [ResourcesIds.Ignium]: 29.15,
   [ResourcesIds.EtherealSilica]: 30.95,
   [ResourcesIds.TrueIce]: 36.06,

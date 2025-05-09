@@ -286,9 +286,9 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceMithral]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [BuildingType.ResourceDragonhide]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   // T1 Military Buildings - primarily Uncommon resources
-  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 250_000 }],
-  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 300_000 }],
-  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 600_000 }],
+  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 560_000 }],
+  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 590_000 }],
+  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 590_000 }],
 
   // T2 Military Buildings - include Rare resources
   [BuildingType.ResourceKnightT2]: [],

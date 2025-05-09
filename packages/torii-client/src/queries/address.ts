@@ -1,14 +1,25 @@
 import { Query, ToriiClient } from "@dojoengine/torii-wasm";
 // import { shortString } from "starknet";
 
+// export interface Query {
+//   pagination: Pagination;
+//   clause: Clause | undefined;
+//   no_hashed_keys: boolean;
+//   models: string[];
+//   historical: boolean;
+// }
+
 export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, address: string) => {
   const query: Query = {
-    limit: 1,
-    offset: 0,
-    entity_models: ["s1_eternum-AddressName"],
-    dont_include_hashed_keys: false,
-    entity_updated_after: 0,
-    order_by: [],
+    pagination: {
+      limit: 1,
+      cursor: undefined,
+      direction: "Forward",
+      order_by: [],
+    },
+    no_hashed_keys: false,
+    models: ["s1_eternum-AddressName"],
+    historical: false,
     clause: {
       Keys: {
         keys: [address],
@@ -17,9 +28,9 @@ export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, ad
       },
     },
   };
-  const addressName = await toriiClient.getEntities(query, false);
-  if (Object.keys(addressName).length > 0) {
-    return addressName[Object.keys(addressName)[0]]["s1_eternum-AddressName"]["name"]["value"] as string;
+  const addressName = await toriiClient.getEntities(query);
+  if (addressName.items.length > 0) {
+    return addressName.items[0].models["s1_eternum-AddressName"]["name"]["value"] as string;
   } else {
     return null;
   }

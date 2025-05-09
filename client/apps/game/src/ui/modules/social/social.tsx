@@ -6,17 +6,16 @@ import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/guild-members";
 import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
-import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { Tabs } from "@/ui/elements/tab";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { RefreshCw, Shapes, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { EndSeasonButton } from "./end-season-button";
+import { Shapes, Users } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { PlayerId } from "./player-id";
+import { useSocialStore } from "./socialStore";
 
 export const Social = () => {
   const {
@@ -27,14 +26,26 @@ export const Social = () => {
     },
   } = useDojo();
 
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
-  const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
-  const [isUpdatePointsLoading, setIsUpdatePointsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<ContractAddress>(0n);
-  const [selectedPlayer, setSelectedPlayer] = useState<ContractAddress>(0n);
-  const [playersByRank, setPlayersByRank] = useState<[ContractAddress, number][]>([]);
+  const {
+    selectedTab,
+    isExpanded,
+    isRegisterLoading,
+    isSharePointsLoading,
+    isUpdatePointsLoading,
+    selectedGuild,
+    selectedPlayer,
+    playersByRank,
+    playerInfo,
+    setSelectedTab,
+    setIsExpanded,
+    setIsRegisterLoading,
+    setIsSharePointsLoading,
+    setIsUpdatePointsLoading,
+    setSelectedGuild,
+    setSelectedPlayer,
+    setPlayersByRank,
+    setPlayerInfo,
+  } = useSocialStore();
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
@@ -45,11 +56,11 @@ export const Social = () => {
     // update first time
     LeaderboardManager.instance(components).updatePoints();
     setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
-  }, [components]);
+  }, [components, setPlayersByRank]);
 
-  const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
-    getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
-  );
+  useEffect(() => {
+    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
+  }, [players, account.address, playersByRank, components, setPlayerInfo]);
 
   const hyperstructuresEntityIds = useMemo(() => {
     return Array.from(runQuery([Has(components.Hyperstructure)]))
@@ -93,10 +104,6 @@ export const Social = () => {
       setIsSharePointsLoading(false);
     }
   };
-
-  useEffect(() => {
-    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
-  }, [playersByRank]);
 
   const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {
@@ -142,16 +149,20 @@ export const Social = () => {
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
         ) : (
-          <GuildMembers
-            players={playerInfo}
-            selectedGuildEntityId={selectedGuild}
-            viewPlayerInfo={viewPlayerInfo}
-            setIsExpanded={setIsExpanded}
-          />
+          <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
       },
     ],
-    [selectedTab, isExpanded, selectedGuild, selectedPlayer, playerInfo],
+    [
+      selectedTab,
+      isExpanded,
+      selectedGuild,
+      selectedPlayer,
+      playerInfo,
+      viewPlayerInfo,
+      viewGuildMembers,
+      setIsExpanded,
+    ],
   );
 
   const SocialContent = () => {
@@ -160,17 +171,17 @@ export const Social = () => {
       <LoadingAnimation />
     ) : (
       <Tabs
-        size="medium"
+        size="small"
         selectedIndex={selectedTab}
         onChange={(index: number) => {
           setSelectedTab(index);
           setIsExpanded(false);
           setSelectedPlayer(0n);
         }}
-        className="h-full"
+        className="h-full mt-3"
       >
         <div className="flex flex-col h-full">
-          <Tabs.List className="mb-2 px-1">
+          <Tabs.List className="">
             {tabs.map((tab) => (
               <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
                 {tab.label}
@@ -178,7 +189,7 @@ export const Social = () => {
             ))}
           </Tabs.List>
 
-          <div className="flex justify-center gap-4 mt-1 mb-3 px-4">
+          {/* <div className="flex justify-center gap-4 mt-1 mb-3 px-4">
             <Button
               isLoading={isRegisterLoading || isSharePointsLoading}
               variant="gold"
@@ -202,7 +213,7 @@ export const Social = () => {
             </Button>
 
             <EndSeasonButton className="flex items-center" />
-          </div>
+          </div> */}
 
           <Tabs.Panels className="overflow-hidden flex-1">
             {tabs.map((tab) => (

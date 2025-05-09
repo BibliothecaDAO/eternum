@@ -1,4 +1,4 @@
-import { formatGuildMembers, formatGuilds, getGuildMember } from "@bibliothecadao/eternum";
+import { formatGuildMembers, formatGuilds, getAddressName } from "@bibliothecadao/eternum";
 import { ContractAddress, type GuildMemberInfo } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
@@ -42,7 +42,11 @@ export const useGuildWhitelist = (guildEntityId: ContractAddress) => {
     .map((entity) => {
       const whitelist = getComponentValue(components.GuildWhitelist, entity);
       if (!whitelist) return;
-      return getGuildMember(whitelist.address, components);
+      return {
+        address: whitelist.address,
+        guildEntityId: Number(whitelist.guild_id),
+        name: getAddressName(whitelist.address, components),
+      };
     })
     .filter(Boolean) as GuildMemberInfo[];
 };
@@ -58,5 +62,6 @@ export const usePlayerWhitelist = (playerAddress: ContractAddress) => {
       whitelisted: true,
     }),
   ]);
+
   return formatGuilds(whitelist, playerAddress, components);
 };

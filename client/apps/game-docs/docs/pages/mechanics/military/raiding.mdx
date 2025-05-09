@@ -1,10 +1,32 @@
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { RAIDABLE_RESOURCES } from "@bibliothecadao/types";
+import { resource } from "@/components/styles";
+import { RaidableResources } from "@/components/RaidableResources";
+
 # 💰 Raiding
 
 Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
-first having to battle through enemy guard armies. Lords can direct their armies to complete this action but selecting
+first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
 the 'raid' action when attacking an enemy structure.
 
 ![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
+
+## Raid Requirements
+
+Before attempting a raid, your army must meet the following requirements:
+
+- Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
+- Be adjacent to the target structure
+- Structure must contain raidable resources
+
+## Raidable Resources
+
+Raidable resources are stolen based on rarity, with the most valuable taken first. Rarer resources are prioritized
+during raids:
+
+<RaidableResources />
+
+<div style={resource.noteStyle}>Note: Tokens such as $LORDS and $STRK cannot be stolen through raiding.</div>
 
 ## Raid Success
 
@@ -25,8 +47,8 @@ only be stolen from another player by claiming a Realm into which tokens have be
 
 At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
 army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
-pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to **20%** of
-that which would be applied in an attack action.
+pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
+**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
 
 Damage from a raiding action is calculated according to the following rules:
 
@@ -49,5 +71,27 @@ calculations result in the following:
 
 Applying the raid damage modifier, actual losses become:
 
-- Guards: Slot 1 loses **36** troops (**20%** of 180), Slot 2 loses **30** troops (**20%** of 150).
-- Raiders: Lose **64** troops total (**20%** of 320).
+- Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
+  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
+- Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
+
+## Raid Outcomes
+
+After a raid attempt, one of two outcomes will occur:
+
+1. **Successful Raid**
+
+   - Resources are transferred to your army's inventory
+   - Resources are limited by your army's carrying capacity
+   - Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
+     combat damage)
+   - Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+2. **Failed Raid**
+   - No resources are stolen
+   - Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
+     normal combat damage)
+   - Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
+armies present. If no guard armies are present, the raid automatically succeeds.

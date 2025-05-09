@@ -36,9 +36,9 @@ export const GuildMemberList = ({
   });
 
   return (
-    <div className="flex flex-col rounded-xl h-full bg-brown-900/50 backdrop-blur-sm">
-      <GuildMemberListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="mt-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+    <div className="flex flex-col rounded-xl h-full">
+      {/* <GuildMemberListHeader activeSort={activeSort} setActiveSort={setActiveSort} /> */}
+      <div className=" overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         {sortItems(guildMembers, activeSort, { sortKey: "name", sort: "asc" }).map((guildMember) => (
           <GuildMemberRow
             key={guildMember.address}

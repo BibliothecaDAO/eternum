@@ -3,11 +3,11 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getEntityName, getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { Search } from "lucide-react";
-import { KeyboardEvent, useMemo, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 
 export const PlayersPanel = ({
   players,
@@ -31,6 +31,16 @@ export const PlayersPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue]);
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
@@ -67,7 +77,7 @@ export const PlayersPanel = ({
       };
     });
     return playersWithStructures;
-  }, [isLoading, players]);
+  }, [isLoading, players, components, account.address]);
 
   const filteredPlayers = useMemo(() => {
     const normalizedTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
@@ -145,7 +155,7 @@ export const PlayersPanel = ({
         )}
       </div>
 
-      <div className="flex-1 min-h-0 border border-gold/20 rounded-md bg-brown/10">
+      <div className="flex-1 min-h-0">
         <PlayerList
           players={filteredPlayers}
           viewPlayerInfo={viewPlayerInfo}

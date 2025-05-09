@@ -258,25 +258,6 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    PlayerConstructionPoints: (() => {
-      return defineComponent(
-        world,
-        {
-          address: RecsType.BigInt,
-          hyperstructure_id: RecsType.Number,
-          unregistered_points: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "PlayerConstructionPoints",
-            types: ["ContractAddress", "u32", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     PlayerRegisteredPoints: (() => {
       return defineComponent(
         world,
@@ -482,6 +463,23 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "StructureLevelConfig",
             types: ["u8", "u32", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionWonderBonus: (() => {
+      return defineComponent(
+        world,
+        {
+          structure_id: RecsType.Number,
+          bonus_percent_num: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "ProductionWonderBonus",
+            types: ["u32", "u128"],
             customTypes: [],
           },
         },
@@ -1089,15 +1087,15 @@ export function defineContractComponents(world: World) {
           expires_at: RecsType.Number,
           maker_gives_resource_type: RecsType.Number,
           taker_pays_resource_type: RecsType.Number,
-          maker_gives_min_resource_amount: RecsType.Number,
-          taker_pays_min_resource_amount: RecsType.Number,
+          maker_gives_min_resource_amount: RecsType.BigInt,
+          taker_pays_min_resource_amount: RecsType.BigInt,
           maker_gives_max_count: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Trade",
-            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u32", "u32", "u64"],
+            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u64", "u64", "u64"],
             customTypes: [],
           },
         },

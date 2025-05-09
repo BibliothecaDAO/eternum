@@ -43,9 +43,9 @@ export default defineConfig({
         { text: "Key Concepts", link: "/mechanics/key-concepts" },
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
+        { text: "$LORDS Token", link: "/overview/lords" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
-        { text: "Bridging", link: "/overview/bridging" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },
       ],
     },
@@ -72,6 +72,7 @@ export default defineConfig({
             { text: "Production", link: "/mechanics/resources/production" },
             { text: "Storage", link: "/mechanics/resources/storage" },
             { text: "Transfers & Trade", link: "/mechanics/resources/transfers-and-trade" },
+            { text: "Bridging", link: "/mechanics/resources/bridging" },
           ],
         },
         {

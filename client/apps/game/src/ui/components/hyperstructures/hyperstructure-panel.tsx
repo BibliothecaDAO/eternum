@@ -16,8 +16,8 @@ import {
   multiplyByPrecision,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { Access, ContractAddress, MAX_NAME_LENGTH, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
+import { Access, ContractAddress, MAX_NAME_LENGTH, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -185,13 +185,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
       hyperstructure?.access === Access[Access.Public]
     );
   }, [newContributions]);
-
-  const initialPoints = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getCompletionPoints(
-      ContractAddress(account.address),
-      entity.entity_id,
-    );
-  }, [updates]);
 
   const myShares = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
@@ -364,10 +357,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
       )}
 
       <div className="grid grid-cols-4 gap-1 w-full mb-1">
-        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="uppercase text-[10px]">Initial points</div>
-          <div className="font-bold text-sm">{currencyIntlFormat(initialPoints)}</div>
-        </div>
         <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Progress</div>
           <div className="font-bold text-sm">{currencyIntlFormat(progresses.percentage)}%</div>

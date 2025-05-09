@@ -59,6 +59,7 @@ mod production_systems {
         resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     #[abi(embed_v0)]
@@ -126,6 +127,17 @@ mod production_systems {
 
             // pay one time cost of the building
             building.make_payment(building_count, ref world, use_simple);
+
+            // give achievement
+            if use_simple {
+                AchievementTrait::progress(
+                    world, structure_owner.into(), Tasks::BUILD_SIMPLE, 1, starknet::get_block_timestamp(),
+                );
+            } else {
+                AchievementTrait::progress(
+                    world, structure_owner.into(), Tasks::BUILD_STANDARD, 1, starknet::get_block_timestamp(),
+                );
+            }
         }
 
 

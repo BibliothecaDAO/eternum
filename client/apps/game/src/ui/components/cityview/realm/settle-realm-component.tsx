@@ -1,5 +1,3 @@
-import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
-import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -8,11 +6,12 @@ import { SettlementLocation } from "@/ui/components/settlement/settlement-types"
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
-import { getMaxLayer } from "@/utils/settlement";
 import { getOffchainRealm, unpackValue } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/types";
 import { gql } from "graphql-request";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
 
@@ -107,6 +106,8 @@ export const SeasonPassRealm = ({
   className,
   onSelectLocation,
   occupiedLocations = [],
+  realmCount,
+  maxLayers,
 }: {
   seasonPassRealm: SeasonPassRealm;
   selected: boolean;
@@ -114,50 +115,95 @@ export const SeasonPassRealm = ({
   className?: string;
   onSelectLocation?: (realmId: number, location: SettlementLocation | null) => void;
   occupiedLocations?: SettlementLocation[];
+  realmCount: number;
+  maxLayers: number | null;
 }) => {
-  const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
-  const [maxLayers, setMaxLayers] = useState<number | null>(null); // Default to null
-  const [realmCount, setRealmCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const maxLayer = getMaxLayer(realmCount);
-    setMaxLayers(maxLayer);
-  }, [realmCount]);
-
-  useEffect(() => {
-    const fetchRealmCount = async () => {
-      setIsLoading(true);
-      const count = await queryRealmCount();
-      setRealmCount(count ?? 0);
-      setIsLoading(false);
-    };
-    fetchRealmCount();
-  }, []);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSettled, setIsSettled] = useState(false);
+
+  const setLocationRef = useRef<SettlementLocation | null>(null);
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { create_multiple_realms },
+    },
+  } = useDojo();
+
+  const settleRealms = async (realmIds: number[]) => {
+    if (realmIds.length === 0) return;
+
+    const locationToUseForSettlement = setLocationRef.current;
+
+    setIsLoading(true);
+    try {
+      const toSettle = [];
+      for (const realmId of realmIds) {
+        if (!locationToUseForSettlement) {
+          console.warn(`Attempted to settle realm ID ${realmId} but location (from ref) is not set. Skipping.`);
+          continue;
+        }
+
+        toSettle.push({
+          realm_id: realmId,
+          realm_settlement: {
+            side: locationToUseForSettlement.side,
+            layer: locationToUseForSettlement.layer,
+            point: locationToUseForSettlement.point,
+          },
+        });
+      }
+
+      if (toSettle.length === 0) {
+        console.log("No realms are eligible for settlement with the current location information.");
+        setIsLoading(false);
+        return;
+      }
+
+      await create_multiple_realms({
+        realms: toSettle,
+        owner: account.address,
+        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
+        signer: account,
+        season_pass_address: getSeasonPassAddress(),
+      });
+      toast.success("Realms settled successfully");
+      setIsSettled(true);
+    } catch (error) {
+      toast.error("Error settling realms");
+      console.error("Error settling realms:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLocationSelect = (location: SettlementLocation) => {
+    console.log("location selected via modal, updating state and ref:", location);
+
+    setLocationRef.current = location;
+
     if (onSelectLocation) {
       onSelectLocation(seasonPassRealm.realmId, location);
-      toggleModal(null);
     }
   };
 
   const handleCancelLocation = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent onClick
+    e.stopPropagation();
 
     if (onSelectLocation && seasonPassRealm.selectedLocation) {
-      // Pass null to indicate cancellation
       onSelectLocation(seasonPassRealm.realmId, null);
     }
   };
 
   const handleConfirmLocation = () => {
-    toggleModal(null); // Close the modal
+    settleRealms([seasonPassRealm.realmId]);
+    toggleModal(null);
   };
 
   const handleSelectLocationClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent onClick
+    e.stopPropagation();
     if (!maxLayers) return;
     toggleModal(
       <SettlementMinimapModal
@@ -186,27 +232,25 @@ export const SeasonPassRealm = ({
   return (
     <div
       key={seasonPassRealm.realmId}
-      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md bg-dark-wood transition-colors duration-200 ${
+      className={`flex flex-col gap-2 p-2 panel-wood rounded-md bg-dark-wood transition-colors duration-200 relative ${
         selected ? "border-gold/40 bg-black/80" : "border-transparent"
       } ${className} border hover:border-gold cursor-pointer`}
       onClick={() => setSelected(!selected)}
     >
-      <div className="flex flex-row items-center gap-2 justify-between">
-        <h5 className="font-semibold text-gold">{seasonPassRealm.name}</h5>
-        <div className="flex items-center self-start pt-1">
-          {selected ? (
-            <CheckboxChecked className="w-6 h-6 fill-current text-gold" />
-          ) : (
-            <CheckboxUnchecked className="w-6 h-6 fill-current text-gold" />
-          )}
+      {isLoading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="w-10 h-10 border-t-2 border-b-2 border-gold rounded-full animate-spin"></div>
         </div>
+      )}
+      <div className="flex flex-row items-center gap-2 justify-between">
+        <h4 className="font-semibold text-gold">{seasonPassRealm.name}</h4>
       </div>
       <div className="flex gap-2 z-10 items-end">
         {resourcesProduced.map((resourceId) => (
           <ResourceIcon
             className=""
             resource={ResourcesIds[resourceId]}
-            size="lg"
+            size="md"
             key={resourceId}
             withTooltip={false}
           />
@@ -214,7 +258,11 @@ export const SeasonPassRealm = ({
       </div>
 
       <div className="mt-auto border-t border-gold/20 pt-2">
-        {normalizedSelectedLocation ? (
+        {isSettled ? (
+          <div className="flex items-center justify-center h-full py-2">
+            <h5 className="text-gold font-semibold">Realm Settled!</h5>
+          </div>
+        ) : normalizedSelectedLocation ? (
           <div className="flex flex-col gap-1">
             <h6 className="text-xs text-gold/70">Selected Location</h6>
             <div className="flex justify-between items-center">
@@ -222,17 +270,24 @@ export const SeasonPassRealm = ({
                 ({normalizedSelectedLocation.x}, {normalizedSelectedLocation.y})
               </h5>
               <div className="flex gap-2">
-                <Button onClick={handleCancelLocation} variant="danger" className="!p-1">
+                <Button onClick={handleCancelLocation} disabled={isLoading} variant="danger" className="!p-1">
                   <span className="text-lg leading-none">✕</span>
                 </Button>
-                <Button onClick={handleSelectLocationClick} isLoading={isLoading} variant="primary" className="!p-1">
+                <Button onClick={handleSelectLocationClick} disabled={isLoading} variant="primary" className="!p-1">
                   <MapIcon className="w-4 h-4 fill-current" />
                 </Button>
               </div>
             </div>
           </div>
         ) : (
-          <Button isPulsing={true} onClick={handleSelectLocationClick} variant="primary" size="md" className="w-full">
+          <Button
+            isPulsing={true}
+            onClick={handleSelectLocationClick}
+            disabled={isLoading}
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
             <div className="flex items-center justify-center gap-2">
               <MapIcon className="w-4 h-4 fill-current" />
               <div>Select Location</div>

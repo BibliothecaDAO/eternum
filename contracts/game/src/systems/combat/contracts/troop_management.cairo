@@ -386,8 +386,14 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
-            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
+            from_explorer
+                .troops
+                .stamina
+                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+            to_explorer
+                .troops
+                .stamina
+                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -488,7 +494,10 @@ pub mod troop_management_systems {
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
+            from_explorer
+                .troops
+                .stamina
+                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -516,7 +525,9 @@ pub mod troop_management_systems {
             /////////////////////////////////////////////
 
             // ensure there is no stamina advantage gained by swapping
-            to_structure_troops.stamina.refill(to_structure_troops.category, troop_stamina_config, current_tick);
+            to_structure_troops
+                .stamina
+                .refill(to_structure_troops.category, to_structure_troops.tier, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
@@ -617,8 +628,13 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
-            from_structure_troops.stamina.refill(from_structure_troops.category, troop_stamina_config, current_tick);
+            to_explorer
+                .troops
+                .stamina
+                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+            from_structure_troops
+                .stamina
+                .refill(from_structure_troops.category, from_structure_troops.tier, troop_stamina_config, current_tick);
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -655,6 +671,7 @@ pub mod troop_management_systems {
 
 #[cfg(test)]
 mod tests {
+    use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorageTrait};
     use dojo_cairo_test::{
@@ -708,6 +725,7 @@ mod tests {
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
+                TestResource::Event(e_TrophyProgression::TEST_CLASS_HASH),
                 // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH),
@@ -826,9 +844,11 @@ mod tests {
         );
     }
 
-    /// @notice Tests adding troops to a guard slot that already contains troops of the same type and tier.
+    /// @notice Tests adding troops to a guard slot that already contains troops of the same type
+    /// and tier.
     /// @dev Verifies the happy path for `guard_add` when adding to an existing stack.
-    /// Checks correct count increment, potential stamina update, StructureBase updates, and resource deduction.
+    /// Checks correct count increment, potential stamina update, StructureBase updates, and
+    /// resource deduction.
     #[test]
     fn guard_add_success_existing_slot() {
         // Arrange
@@ -974,7 +994,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `guard_add` reverts if the structure lacks sufficient resources for payment.
+    /// @notice Tests that `guard_add` reverts if the structure lacks sufficient resources for
+    /// payment.
     /// @dev Required by the internal `iTroopImpl::make_payment` call.
     #[test]
     #[should_panic(expected: ("Insufficient Balance: T1 KNIGHT (id: 4, balance: 0) < 1000000000", 'ENTRYPOINT_FAILED'))]
@@ -1005,7 +1026,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `guard_add` reverts when adding to an existing slot with a different troop type (category).
+    /// @notice Tests that `guard_add` reverts when adding to an existing slot with a different
+    /// troop type (category).
     /// @dev Required by the `assert!(troops.category == category ...)` check within the if block.
     #[test]
     #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
@@ -1054,7 +1076,8 @@ mod tests {
         // Assert 2 - Handled by should_panic
     }
 
-    /// @notice Tests that `guard_add` reverts when adding to an existing slot with a different troop tier.
+    /// @notice Tests that `guard_add` reverts when adding to an existing slot with a different
+    /// troop tier.
     /// @dev Required by the `assert!(... && troops.tier == tier)` check within the if block.
     #[test]
     #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
@@ -1141,7 +1164,8 @@ mod tests {
 
     // II. guard_delete tests
     /// @notice Tests deleting an existing, non-empty guard slot successfully.
-    /// @dev Verifies the happy path for `guard_delete`. Checks model updates (GuardTroops, StructureBase).
+    /// @dev Verifies the happy path for `guard_delete`. Checks model updates (GuardTroops,
+    /// StructureBase).
     #[test]
     fn guard_delete_success() {
         // Arrange
@@ -1304,7 +1328,8 @@ mod tests {
     // III. explorer_create tests
     /// @notice Tests creating a new explorer successfully.
     /// @dev Verifies the happy path for `explorer_create`. Checks creation of ExplorerTroops,
-    /// StructureBase/StructureTroopExplorerStoreImpl updates, Tile occupation, resource deduction, and ID return.
+    /// StructureBase/StructureTroopExplorerStoreImpl updates, Tile occupation, resource deduction,
+    /// and ID return.
     #[test]
     fn explorer_create_success() {
         // Arrange
@@ -1382,7 +1407,8 @@ mod tests {
     }
 
     /// @notice Tests that `explorer_create` reverts if the amount is zero.
-    /// @dev Although the direct assert is in `guard_add`, payment likely enforces non-zero. Verifies this path.
+    /// @dev Although the direct assert is in `guard_add`, payment likely enforces non-zero.
+    /// Verifies this path.
     #[test]
     #[should_panic(expected: ("amount must be greater than 0", 'ENTRYPOINT_FAILED'))]
     fn explorer_create_revert_zero_amount() {
@@ -1523,7 +1549,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @dev Required by the `assert!(structure.troop_explorer_count < structure.troop_max_explorer_count.into())`
+    /// @dev Required by the `assert!(structure.troop_explorer_count <
+    /// structure.troop_max_explorer_count.into())`
     /// check.
     #[test]
     #[should_panic(expected: ("reached limit of troops for your structure", 'ENTRYPOINT_FAILED'))]
@@ -1570,8 +1597,8 @@ mod tests {
         // Assert 2 - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_create` reverts if the structure has reached the global explorer limit per
-    /// structure.
+    /// @notice Tests that `explorer_create` reverts if the structure has reached the global
+    /// explorer limit per structure.
     /// @dev Required by the `assert!(structure.troop_explorer_count <
     /// troop_limit_config.explorer_max_party_count.into())` check.
     #[test]
@@ -1614,7 +1641,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_create` reverts if the designated spawn tile is already occupied.
+    /// @notice Tests that `explorer_create` reverts if the designated spawn tile is already
+    /// occupied.
     /// @dev Required by the `assert!(tile.not_occupied())` check.
     #[test]
     #[should_panic(expected: ("explorer spawn location is occupied", 'ENTRYPOINT_FAILED'))]
@@ -1660,8 +1688,8 @@ mod tests {
 
     // IV. explorer_add tests
     /// @notice Tests adding troops to an existing explorer successfully.
-    /// @dev Verifies the happy path for `explorer_add`. Checks ExplorerTroops count/capacity update and resource
-    /// deduction.
+    /// @dev Verifies the happy path for `explorer_add`. Checks ExplorerTroops count/capacity update
+    /// and resource deduction.
     #[test]
     fn explorer_add_success() {
         // Arrange
@@ -1755,7 +1783,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_add` reverts if the amount is not divisible by RESOURCE_PRECISION.
+    /// @notice Tests that `explorer_add` reverts if the amount is not divisible by
+    /// RESOURCE_PRECISION.
     /// @dev Required by the `assert!(amount % RESOURCE_PRECISION == 0)` check.
     #[test]
     #[should_panic(expected: ("amount must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
@@ -1844,8 +1873,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_add` reverts if the caller does not own the explorer's home structure.
-    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner()` check.
+    /// @notice Tests that `explorer_add` reverts if the caller does not own the explorer's home
+    /// structure.
+    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world,
+    /// explorer.owner).assert_caller_owner()` check.
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_add_revert_not_owner() {
@@ -1887,9 +1918,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_add` reverts if the explorer is not adjacent to its home structure (or wrong
-    /// direction).
-    /// @dev Required by the `assert!(explorer_owner_structure.coord() == explorer.coord.neighbor(home_direction))`
+    /// @notice Tests that `explorer_add` reverts if the explorer is not adjacent to its home
+    /// structure (or wrong direction).
+    /// @dev Required by the `assert!(explorer_owner_structure.coord() ==
+    /// explorer.coord.neighbor(home_direction))`
     /// check.
     #[test]
     #[should_panic(expected: ("explorer not adjacent to home structure", 'ENTRYPOINT_FAILED'))]
@@ -1993,7 +2025,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_add` reverts if adding troops would exceed the explorer's troop limit.
+    /// @notice Tests that `explorer_add` reverts if adding troops would exceed the explorer's troop
+    /// limit.
     /// @dev Required by the `assert!(explorer.troops.count <= ...)` check.
     #[test]
     #[should_panic(expected: ("reached limit of explorers amount per army", 'ENTRYPOINT_FAILED'))]
@@ -2042,8 +2075,8 @@ mod tests {
 
     // V. explorer_delete tests
     /// @notice Tests deleting an existing explorer successfully.
-    /// @dev Verifies the happy path for `explorer_delete`. Checks ExplorerTroops deletion, StructureBase/Store updates,
-    /// Tile freeing.
+    /// @dev Verifies the happy path for `explorer_delete`. Checks ExplorerTroops deletion,
+    /// StructureBase/Store updates, Tile freeing.
     #[test]
     fn explorer_delete_success() {
         // Arrange
@@ -2167,8 +2200,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_delete` reverts if the caller does not own the explorer's home structure.
-    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner()` check.
+    /// @notice Tests that `explorer_delete` reverts if the caller does not own the explorer's home
+    /// structure.
+    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world,
+    /// explorer.owner).assert_caller_owner()` check.
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn explorer_delete_revert_not_owner() {
@@ -2208,9 +2243,10 @@ mod tests {
     }
 
     // VI. explorer_explorer_swap tests
-    /// @notice Tests swapping troops between two valid, adjacent explorers owned by the same structure.
-    /// @dev Verifies the happy path for `explorer_explorer_swap`. Checks count/capacity/stamina updates for both
-    /// explorers.
+    /// @notice Tests swapping troops between two valid, adjacent explorers owned by the same
+    /// structure.
+    /// @dev Verifies the happy path for `explorer_explorer_swap`. Checks count/capacity/stamina
+    /// updates for both explorers.
     #[test]
     fn explorer_swap_success() {
         // Arrange
@@ -2301,7 +2337,8 @@ mod tests {
         assert(final_knight_balance_realm2 == starting_knight_t1_amount - create_amount_to, 'Final Balance Realm 2');
     }
 
-    /// @notice Tests swapping troops when the swap amount equals the source explorer's total troops, causing deletion.
+    /// @notice Tests swapping troops when the swap amount equals the source explorer's total
+    /// troops, causing deletion.
     /// @dev Required by the `assert!(structure.troop_explorer_count <
     /// troop_limit_config.explorer_max_party_count.into())` check.
     #[test]
@@ -2491,8 +2528,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_explorer_swap` reverts if the caller does not own the explorers' home structure.
-    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner()`
+    /// @notice Tests that `explorer_explorer_swap` reverts if the caller does not own the
+    /// explorers' home structure.
+    /// @dev Required by the `StructureOwnerStoreImpl::retrieve(ref world,
+    /// from_explorer.owner).assert_caller_owner()`
     /// check.
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
@@ -2638,7 +2677,8 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_explorer_swap` reverts if the swap count exceeds the source explorer's troops.
+    /// @notice Tests that `explorer_explorer_swap` reverts if the swap count exceeds the source
+    /// explorer's troops.
     /// @dev Required by the `assert!(count <= from_explorer.troops.count)` check.
     #[test]
     #[should_panic(expected: ("insufficient troops in source explorer", 'ENTRYPOINT_FAILED'))]
