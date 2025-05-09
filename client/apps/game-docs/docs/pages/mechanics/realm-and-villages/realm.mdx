@@ -3,6 +3,7 @@ import { StartingMilitary } from "@/components/StartingMilitary";
 import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
 import { RealmLeveling } from "@/components/RealmLeveling";
+import { importantNote } from "@/components/styles";
 
 # 🏰 Realms
 
@@ -30,31 +31,9 @@ production potential and overall experience.
 
 ![Realm Settling Screen](/screenshots/settling.png)
 
-<div
-  style={{
-    padding: "1.5rem",
-    marginBottom: "1.5rem",
-    backgroundColor: "rgba(40, 30, 20, 0.5)",
-    borderRadius: "0.75rem",
-    borderLeft: `4px solid #f0b060`,
-    borderBottom: `1px solid #4d3923`,
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  }}
->
-  <h3
-    style={{
-      fontSize: "1.1rem",
-      fontWeight: "bold",
-      color: "#f0b060",
-      marginBottom: "0.75rem",
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-    }}
-  >
-    ⚠️ IMPORTANT NOTE
-  </h3>
-  <p style={{ color: "#dfc296" }}>
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>
     When the game starts, all structures are immune to attacks and raids for 24 hours. Once the first day of gameplay
     has concluded, there are no more instances of immunity, all Realms and Villages settling into the game after this
     time will need to rely on their starting defences and consider their starting locations carefully. Lords entering
@@ -70,7 +49,7 @@ production potential and overall experience.
 ### Starting Military
 
 Each Realm starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
-number of troops remain within the Realm’s storage to be deployed as a field army should the Realm Lord wish to explore
+number of troops remain within the Realm's storage to be deployed as a field army should the Realm Lord wish to explore
 beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer process
 explained in the [Movement & Exploration](/mechanics/worldmap-movement/movement) section. The specific type of military
 unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that particular

@@ -377,6 +377,31 @@ export const resource = {
   },
 };
 
+// Important note styles
+export const importantNote = {
+  container: {
+    padding: "1.5rem",
+    marginBottom: "1.5rem",
+    backgroundColor: colors.background.medium,
+    borderRadius: "0.75rem",
+    borderLeft: `4px solid ${colors.primary}`,
+    borderBottom: `1px solid ${colors.border}`,
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+  },
+  title: {
+    fontSize: "1.1rem",
+    fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: "0.75rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  content: {
+    color: colors.secondary,
+  },
+};
+
 // Troop styles
 export const troop = {
   grid: {

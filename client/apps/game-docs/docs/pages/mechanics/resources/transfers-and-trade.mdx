@@ -1,3 +1,5 @@
+import { importantNote } from "@/components/styles";
+
 # 📜 Transfers & Trade
 
 ## Transport
@@ -28,31 +30,9 @@ weight of the materials being moved. Once a transfer is initiated, it cannot be 
 some time depending on the distance to the destination structure. Upon arrival, transferred materials and donkeys must
 be manually claimed via the 'Resource Arrivals' tab before they become available for use.
 
-<div
-  style={{
-    padding: "1.5rem",
-    marginBottom: "1.5rem",
-    backgroundColor: "rgba(40, 30, 20, 0.5)",
-    borderRadius: "0.75rem",
-    borderLeft: `4px solid #f0b060`,
-    borderBottom: `1px solid #4d3923`,
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  }}
->
-  <h3
-    style={{
-      fontSize: "1.1rem",
-      fontWeight: "bold",
-      color: "#f0b060",
-      marginBottom: "0.75rem",
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-    }}
-  >
-    ⚠️ IMPORTANT NOTE
-  </h3>
-  <p style={{ color: "#dfc296" }}>
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>
     In Season 1, resource arrivals are restricted by 'gates' to assist in reducing the load that resource arrival
     entities have on the game. As donkeys arrive at their destination bearing their various goods, they need to wait
     until the start of a new Eternum Day for the structure's arrival gate to open before they can enter and be claimed
