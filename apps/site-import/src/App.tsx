@@ -22,119 +22,8 @@ import { getTreasuryBalance } from "./lib/getTreasuryBalance";
 import { EthplorerToken, getLordsInfo } from "./lib/getLordsPrice";
 import { getLordsBalance } from "./lib/getLordsBalance";
 
-function useCountAnimation(end: number, duration: number = 2) {
-  const [count, setCount] = useState(0);
-  const nodeRef = useRef(0);
-  const startTime = useRef(Date.now());
-
-  useEffect(() => {
-    const animate = () => {
-      const now = Date.now();
-      const progress = Math.min(
-        (now - startTime.current) / (duration * 1000),
-        1
-      );
-
-      if (progress < 1) {
-        nodeRef.current = Math.floor(end * progress);
-        setCount(nodeRef.current);
-        requestAnimationFrame(animate);
-      } else {
-        setCount(end);
-      }
-    };
-
-    requestAnimationFrame(animate);
-    return () => {
-      nodeRef.current = 0;
-      startTime.current = Date.now();
-    };
-  }, [end, duration]);
-
-  return count;
-}
-
-function AnimatedStat({
-  value,
-  label,
-  prefix = "",
-  suffix = "",
-  icon,
-  trend,
-}: {
-  value: number;
-  label: string;
-  prefix?: string;
-  suffix?: string;
-  icon: string;
-  trend: string;
-}) {
-  const count = useCountAnimation(value);
-  const isPositiveTrend = trend.startsWith("+");
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    >
-      <Card className="backdrop-blur-md bg-black/20 border-white/5 hover:bg-black/30 transition-all duration-300 group">
-        <CardHeader className="pb-2 uppercase">
-          <div className="flex items-center justify-between mb-8">
-            <CardDescription className="text-lg font-medium">
-              <motion.h3
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400 }}
-              >
-                {label}
-              </motion.h3>
-            </CardDescription>
-            <motion.svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.7, ease: "easeInOut" }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-            </motion.svg>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <motion.div initial="initial" whileHover="hover" animate="initial">
-            <motion.div
-              variants={{
-                initial: { y: 0 },
-                hover: { y: -5 },
-              }}
-              transition={{ type: "spring", stiffness: 400 }}
-            >
-              <CardTitle className="text-2xl font-bold">
-                {prefix}
-                {count.toLocaleString()}
-                {suffix}
-              </CardTitle>
-            </motion.div>
-            <motion.div
-              variants={{
-                initial: { opacity: 0.7, y: 0 },
-                hover: { opacity: 1, y: -5 },
-              }}
-              transition={{ type: "spring", stiffness: 400 }}
-              className={`text-sm ${
-                isPositiveTrend ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              {trend}
-            </motion.div>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
+import { ModeToggle } from "./components/ui/mode-toggle";
+import { AnimatedStat } from "./components/animated-stat";
 
 function BackgroundSlideshow({ images }: { images: string[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -154,7 +43,7 @@ function BackgroundSlideshow({ images }: { images: string[] }) {
           key={currentIndex}
           className="absolute inset-0 bg-cover bg-center"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 0.7 }}
           exit={{ opacity: 0 }}
           transition={{
             duration: 1.5,
@@ -167,7 +56,7 @@ function BackgroundSlideshow({ images }: { images: string[] }) {
         <motion.div
           key={`prev-${currentIndex}`}
           className="absolute inset-0 bg-cover bg-center"
-          initial={{ opacity: 1 }}
+          initial={{ opacity: 0.7 }}
           animate={{ opacity: 0 }}
           transition={{
             duration: 1.5,
@@ -187,7 +76,7 @@ function BackgroundSlideshow({ images }: { images: string[] }) {
           <motion.div
             key={index}
             className={`w-2 h-2 rounded-full ${
-              index === currentIndex ? "bg-primary" : "bg-white/50"
+              index === currentIndex ? "bg-primary" : "bg-muted"
             }`}
             initial={{ scale: 0.8 }}
             animate={{ scale: index === currentIndex ? 1 : 0.8 }}
@@ -201,7 +90,7 @@ function BackgroundSlideshow({ images }: { images: string[] }) {
 
 function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 bg-background">
       <AnimatePresence initial={false}>
         {selectedGame ? (
           selectedGame.backgroundImages ? (
@@ -209,9 +98,9 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
           ) : (
             <motion.div
               key={selectedGame.id}
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 "
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              animate={{ opacity: 0.7 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1, ease: "easeInOut" }}
               style={{
@@ -220,7 +109,6 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
             />
           )
         ) : (
-          // <Background />
           <WaveformBackground />
         )}
       </AnimatePresence>
@@ -246,19 +134,23 @@ function TopBar({
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
-      <div className="mx-4 mt-4">
-        <Card className="backdrop-blur-md bg-black/30 border-white/10">
-          <CardContent className="py-4">
-            <div className="container mx-auto flex items-center justify-between">
-              <div className="flex items-center space-x-8">
+      <div className="mx-2 sm:mx-4 mt-2 sm:mt-4">
+        <Card className="backdrop-blur-md">
+          <CardContent className="py-2 sm:py-4">
+            <div className="container mx-auto flex items-center justify-between px-2 sm:px-4">
+              <div className="flex items-center space-x-2 sm:space-x-8">
                 <h1
-                  className="text-2xl font-bold cursor-pointer text-primary transition-colors"
+                  className="text-xl sm:text-2xl font-bold cursor-pointer text-primary transition-colors"
                   onClick={onTitleClick}
                 >
-                  <img src="/rw-logo.svg" alt="Realms.World" className="w-18" />
+                  <img
+                    src="/rw-logo.svg"
+                    alt="Realms.World"
+                    className="w-14 sm:w-18"
+                  />
                 </h1>
-                <div className="flex items-center space-x-2 text-muted-foreground">
-                  <span className="text-sm">
+                <div className="hidden sm:flex items-center space-x-2 text-muted-foreground">
+                  <span className="text-xs sm:text-sm">
                     {time.toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -271,22 +163,18 @@ function TopBar({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <span className="text-sm">LORDS:</span>
-                    <span className="text-sm">
+                    <span className="text-xs sm:text-sm">LORDS:</span>
+                    <span className="text-xs sm:text-sm">
                       ${lordsPrice?.toLocaleString()}
                     </span>
-                    {/* className={`text-sm ${
-                        lordsPrice.startsWith("+")
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}*/}
                   </motion.div>
+                  <ModeToggle />
                 </div>
               </div>
 
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2 sm:space-x-6">
                 {/* Social Links */}
-                <div className="flex items-center space-x-4">
+                <div className="hidden sm:flex items-center space-x-4">
                   {socials.map((social) => (
                     <a
                       key={social.id}
@@ -306,17 +194,20 @@ function TopBar({
                     </a>
                   ))}
                 </div>
-                <span className="h-6 w-px bg-border" />
+                <span className="hidden sm:block h-6 w-px bg-border" />
 
                 {/* Auth Buttons */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                   <a
                     href="https://account.realms.world/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Button className="cursor-pointer">Log In</Button>
+                    <Button size="sm" className="cursor-pointer">
+                      Log In
+                    </Button>
                   </a>
+                  <ModeToggle />
                 </div>
               </div>
             </div>
@@ -332,19 +223,19 @@ function FooterSection() {
     <section className="min-h-[50vh] flex items-end w-full">
       <div className="w-full">
         {/* Main Footer Content */}
-        <div className="container mx-auto px-4 py-20">
+        <div className="container mx-auto px-4 py-10 sm:py-20">
           <motion.div
-            className="space-y-16"
+            className="space-y-12 sm:space-y-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
             {/* Top Section */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
               {/* Brand Column */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold">LORDS</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-xl sm:text-2xl font-bold">LORDS</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
                   The future of gaming is onchain. Join us in building the next
                   generation of games.
                 </p>
@@ -370,26 +261,9 @@ function FooterSection() {
                 </div>
               </div>
 
-              {/* Quick Links 
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Quick Links</h3>
-                <ul className="space-y-3">
-                  {["Games", "Staking", "Docs", "Blog"].map((item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>*/}
-
               {/* Resources */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold">Resources</h3>
+                <h3 className="text-xl sm:text-2xl font-bold">Resources</h3>
                 <ul className="space-y-3">
                   <li>
                     <a
@@ -442,40 +316,18 @@ function FooterSection() {
                 </ul>
               </div>
               <div></div>
-              {/* Newsletter
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Stay Updated</h3>
-                <p className="text-muted-foreground">
-                  Subscribe to our newsletter for the latest updates and
-                  announcements.
-                </p>
-                <Card className="backdrop-blur-md bg-black/20 border-white/10">
-                  <CardContent className="pt-6">
-                    <div className="flex space-x-2">
-                      <input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="flex-1 bg-transparent border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <Button size="sm" className="shrink-0">
-                        Subscribe
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div> */}
             </div>
           </motion.div>
         </div>
 
         {/* Bottom Bar - Full Width */}
-        <div className="w-full border-t border-white/10">
+        <div className="w-full border-t">
           <div className="container mx-auto px-4">
-            <div className="py-6 flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 © {new Date().getFullYear()} BiblioDAO. All rights reserved.
               </p>
-              <div className="flex space-x-6 text-sm text-muted-foreground">
+              <div className="flex space-x-4 sm:space-x-6 text-xs sm:text-sm text-muted-foreground">
                 <a href="#" className="hover:text-primary transition-colors">
                   Privacy Policy
                 </a>
@@ -493,22 +345,22 @@ function FooterSection() {
 
 function TokenomicsSection() {
   return (
-    <section className=" flex items-center container mx-auto px-4 py-16">
+    <section className=" flex items-center container mx-auto px-4 py-8 sm:py-16">
       <motion.div
-        className="w-full space-y-8"
+        className="w-full space-y-6 sm:space-y-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
         {/* Header */}
         <motion.div
-          className="max-w-2xl space-y-4"
+          className="max-w-2xl space-y-3 sm:space-y-4 text-center sm:text-left mx-auto sm:mx-0"
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          <h2 className="text-4xl font-bold">Tokenomics</h2>
-          <p className="text-xl text-muted-foreground">
+          <h2 className="text-3xl sm:text-4xl font-bold">Tokenomics</h2>
+          <p className="text-lg sm:text-xl text-muted-foreground">
             LORDS token powers the entire gaming ecosystem, providing value
             through staking, gameplay rewards, and governance.
           </p>
@@ -533,7 +385,7 @@ function TokenomicsSection() {
 function TreasurySection() {
   const { data: proposalsQuery } = useQuery(
     getProposalsQueryOptions({
-      limit: 5,
+      limit: 3,
       skip: 0,
       current: 1,
       searchQuery: "",
@@ -568,25 +420,27 @@ function TreasurySection() {
     }
   };
   return (
-    <section className="min-h-screen flex items-center container mx-auto px-2 sm:px-4 py-16 sm:py-32">
+    <section className="min-h-screen flex items-center container mx-auto px-2 sm:px-4 py-8 sm:py-16 md:py-32">
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-16 w-full"
+        className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-16 w-full"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Left Column - Governance */}
         <div className="space-y-4 sm:space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-bold">DAO Treasury</h2>
-          <p className="text-lg sm:text-xl text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+            DAO Treasury
+          </h2>
+          <p className="text-md sm:text-lg md:text-xl text-muted-foreground">
             Decentralized governance powered by Realms. Each Realm represents
             one vote in the DAO.
           </p>
 
-          <Card className="backdrop-blur-md bg-black/20 border-white/10">
+          <Card className="backdrop-blur-md">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="text-base sm:text-lg font-medium text-muted-foreground">
+                <CardDescription className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground">
                   Governance Model
                 </CardDescription>
                 <svg
@@ -595,7 +449,7 @@ function TreasurySection() {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground"
+                  className="w-4 h-4 sm:w-5 md:w-6 text-muted-foreground"
                 >
                   <path
                     strokeLinecap="round"
@@ -605,17 +459,21 @@ function TreasurySection() {
                 </svg>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="text-base sm:text-lg font-semibold">1 Realm = 1 Vote</h4>
-                <p className="text-sm sm:text-base text-muted-foreground">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="space-y-1 sm:space-y-2">
+                <h4 className="text-sm sm:text-base md:text-lg font-semibold">
+                  1 Realm = 1 Vote
+                </h4>
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
                   Each Realm holder gets one vote in governance decisions,
                   ensuring fair representation in the DAO.
                 </p>
               </div>
-              <div className="space-y-2">
-                <h4 className="text-base sm:text-lg font-semibold">Treasury Control</h4>
-                <p className="text-sm sm:text-base text-muted-foreground">
+              <div className="space-y-1 sm:space-y-2">
+                <h4 className="text-sm sm:text-base md:text-lg font-semibold">
+                  Treasury Control
+                </h4>
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
                   Vote on treasury allocations, protocol upgrades, and ecosystem
                   development.
                 </p>
@@ -626,26 +484,28 @@ function TreasurySection() {
 
         {/* Right Column - Treasury Balance */}
         <div className="space-y-4 sm:space-y-6">
-          <Card className="backdrop-blur-md bg-black/20 border-white/10">
+          <Card className="backdrop-blur-md">
             <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl">Treasury Balance</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                Treasury Balance
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm md:text-base">
                 Current allocation of treasury assets
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* LORDS Balance */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">LORDS</span>
                     <span>
                       {treasuryBalance?.LORDS.amount.toLocaleString()}
                     </span>
                   </div>
-                  <div className="w-full bg-white/5">
+                  <div className="w-full bg-muted">
                     <div
-                      className="bg-primary h-2"
+                      className="bg-primary h-1.5 sm:h-2"
                       style={{
                         width: `${
                           ((treasuryBalance?.LORDS.usdValue ?? 0) /
@@ -658,7 +518,7 @@ function TreasurySection() {
                 </div>
 
                 {/* ETH Balance */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">ETH + WETH</span>
                     <span>
@@ -668,9 +528,9 @@ function TreasurySection() {
                       ).toLocaleString()}
                     </span>
                   </div>
-                  <div className="w-full bg-white/5">
+                  <div className="w-full bg-muted">
                     <div
-                      className="bg-blue-500 h-2"
+                      className="h-1.5 sm:h-2"
                       style={{
                         width: `${
                           (((treasuryBalance?.ETH.usdValue ?? 0) +
@@ -678,26 +538,28 @@ function TreasurySection() {
                             totalTreasuryBalance) *
                           100
                         }%`,
+                        backgroundColor: "hsl(var(--theme-blue-500))",
                       }}
                     />
                   </div>
                 </div>
 
                 {/* USDC Balance */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">USDC</span>
                     <span>{treasuryBalance?.USDC.amount.toLocaleString()}</span>
                   </div>
-                  <div className="w-full bg-white/5">
+                  <div className="w-full bg-muted">
                     <div
-                      className="bg-green-500 h-2"
+                      className="h-1.5 sm:h-2"
                       style={{
                         width: `${
                           ((treasuryBalance?.USDC.usdValue ?? 0) /
                             totalTreasuryBalance) *
                           100
                         }%`,
+                        backgroundColor: "hsl(var(--theme-green-500))",
                       }}
                     />
                   </div>
@@ -705,10 +567,12 @@ function TreasurySection() {
               </div>
 
               {/* Total Value */}
-              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10">
+              <div className="mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-base sm:text-lg font-semibold">Total Value</span>
-                  <span className="text-xl sm:text-2xl font-bold">
+                  <span className="text-sm sm:text-base md:text-lg font-semibold">
+                    Total Value
+                  </span>
+                  <span className="text-lg sm:text-xl md:text-2xl font-bold">
                     ${totalTreasuryBalance.toLocaleString()}
                   </span>
                 </div>
@@ -717,12 +581,14 @@ function TreasurySection() {
           </Card>
 
           {/* Recent Proposals */}
-          <Card className="backdrop-blur-md bg-black/20 border-white/10">
+          <Card className="backdrop-blur-md">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl sm:text-2xl">Recent Proposals</CardTitle>
-                  <CardDescription className="text-sm sm:text-base">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                    Recent Proposals
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm md:text-base">
                     Latest governance activities
                   </CardDescription>
                 </div>
@@ -738,14 +604,14 @@ function TreasurySection() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {proposalsQuery?.proposals?.map((proposal) => (
                   <div
                     key={proposal?.metadata?.title}
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <div className="text-sm sm:text-base font-medium">
+                      <div className="text-xs sm:text-sm md:text-base font-medium">
                         {proposal?.metadata?.title}
                       </div>
                       <div className="text-xs sm:text-sm text-muted-foreground">
@@ -757,10 +623,12 @@ function TreasurySection() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm sm:text-base font-medium">
+                      <div className="text-xs sm:text-sm md:text-base font-medium">
                         {proposal?.scores_total}
                       </div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">Votes</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">
+                        Votes
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -784,47 +652,49 @@ function IntroSection({
       queryFn: getLordsBalance,
     })
   );
+
+  console.log(lordsInfo);
+
   return (
     <motion.div
-      className="min-h-[70vh] container mx-auto px-2 sm:px-4 py-12 sm:py-20 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-16 items-start"
+      className="min-h-[70vh] container mx-auto px-2 sm:px-4 py-8 sm:py-12 md:py-20 grid grid-cols-1 gap-6 sm:gap-8 md:gap-16 items-start"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
-      {/* Left Column - Heading and Players */}
-      <div className="space-y-8 sm:space-y-12">
+      {/* Heading and Players Section - now spans full width and text is centered */}
+      <div className="space-y-6 sm:space-y-8 md:space-y-12 text-center">
         {/* Title Section */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <motion.div
-            className="text-4xl sm:text-6xl font-bold"
+            className="text-3xl sm:text-4xl md:text-6xl font-bold"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
           >
-            <h1>Forever Gaming</h1>
             <motion.h1
               className="block text-primary"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              onchain
+              onchain gaming
             </motion.h1>
           </motion.div>
 
           <motion.p
-            className="text-lg sm:text-xl text-muted-foreground"
+            className="text-md sm:text-lg md:text-xl text-muted-foreground"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Onchain gaming, powered by $LORDS.
+            powered by $LORDS
           </motion.p>
         </div>
       </div>
 
-      {/* Right Column - Stats */}
+      {/* Stats Section - now appears below the heading section */}
       <motion.div
-        className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4"
+        className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
         variants={{
           hidden: { opacity: 0 },
           show: {
@@ -837,28 +707,123 @@ function IntroSection({
         initial="hidden"
         animate="show"
       >
-        {stats.map((stat) => {
-          // Calculate market cap if this is the market cap stat
-          if (stat.id === "marketCap" && lordsInfo?.price?.marketCapUsd) {
-            stat.value = parseFloat(lordsInfo.price.marketCapUsd);
-            stat.trend = lordsInfo.price.diff7d
-              ? `${lordsInfo.price.diff7d}%`
-              : "";
+        {stats.map((baseStat) => {
+          let displayValue: number = 0;
+          let displayTrend: string = "";
+
+          const priceInfo = lordsInfo?.price as any;
+          const lordsInfoData = lordsInfo as any;
+
+          switch (baseStat.id) {
+            case "marketCap":
+              if (priceInfo?.marketCapUsd) {
+                displayValue =
+                  typeof priceInfo.marketCapUsd === "string"
+                    ? parseFloat(priceInfo.marketCapUsd)
+                    : priceInfo.marketCapUsd;
+                const trendVal = priceInfo.diff7d;
+                if (typeof trendVal === "number") {
+                  displayTrend = `${trendVal > 0 ? "+" : ""}${trendVal.toFixed(
+                    2
+                  )}%`;
+                }
+              }
+              break;
+            case "staked":
+              if (veLordsSupply !== undefined) {
+                displayValue = veLordsSupply;
+              }
+              displayTrend = baseStat.trend || "";
+              break;
+            case "volume24h":
+              if (priceInfo?.volume24h) {
+                displayValue =
+                  typeof priceInfo.volume24h === "string"
+                    ? parseFloat(priceInfo.volume24h)
+                    : priceInfo.volume24h;
+                const trendVal = priceInfo.volDiff1;
+                if (typeof trendVal === "number") {
+                  displayTrend = `${trendVal > 0 ? "+" : ""}${trendVal.toFixed(
+                    2
+                  )}%`;
+                }
+              }
+              break;
+            case "priceChange7d":
+              if (priceInfo?.diff7d) {
+                const trendValNum =
+                  typeof priceInfo.diff7d === "string"
+                    ? parseFloat(priceInfo.diff7d)
+                    : priceInfo.diff7d;
+                displayValue = trendValNum;
+                if (typeof trendValNum === "number") {
+                  displayTrend = `${
+                    trendValNum > 0 ? "+" : ""
+                  }${trendValNum.toFixed(2)}%`;
+                }
+              }
+              break;
+            case "availableSupply":
+              if (priceInfo?.availableSupply) {
+                displayValue =
+                  typeof priceInfo.availableSupply === "string"
+                    ? parseFloat(priceInfo.availableSupply)
+                    : priceInfo.availableSupply;
+              }
+              break;
+            case "totalSupply":
+              if (lordsInfoData?.totalSupply && lordsInfoData?.decimals) {
+                const totalSupplyNum = parseFloat(lordsInfoData.totalSupply);
+                const decimalsNum = parseInt(lordsInfoData.decimals);
+                if (!isNaN(totalSupplyNum) && !isNaN(decimalsNum)) {
+                  displayValue = totalSupplyNum / 10 ** decimalsNum;
+                }
+              }
+              break;
+            case "currentPrice":
+              if (priceInfo?.rate) {
+                displayValue =
+                  typeof priceInfo.rate === "string"
+                    ? parseFloat(priceInfo.rate)
+                    : priceInfo.rate;
+                const trendVal = priceInfo.diff;
+                if (typeof trendVal === "number") {
+                  displayTrend = `${trendVal > 0 ? "+" : ""}${trendVal.toFixed(
+                    2
+                  )}%`;
+                }
+              }
+              break;
+            case "priceChange24h":
+              if (priceInfo?.diff) {
+                const trendValNum =
+                  typeof priceInfo.diff === "string"
+                    ? parseFloat(priceInfo.diff)
+                    : priceInfo.diff;
+                displayValue = trendValNum;
+                if (typeof trendValNum === "number") {
+                  displayTrend = `${
+                    trendValNum > 0 ? "+" : ""
+                  }${trendValNum.toFixed(2)}%`;
+                }
+              }
+              break;
+            case "tokenHolders":
+              if (lordsInfoData?.holdersCount) {
+                displayValue =
+                  typeof lordsInfoData.holdersCount === "string"
+                    ? parseFloat(lordsInfoData.holdersCount)
+                    : lordsInfoData.holdersCount;
+              }
+              break;
+            default:
+              displayValue = baseStat.value ?? 0;
+              displayTrend = baseStat.trend ?? "";
           }
-          if (stat.id === "staked" && veLordsSupply) {
-            stat.value = veLordsSupply;
-            //stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
-          }
-          if (stat.id === "volume24h" && lordsInfo?.price?.volume24h) {
-            stat.value = parseFloat(lordsInfo.price.volume24h);
-          }
-          if (stat.id === "priceChange7d" && lordsInfo?.price?.diff7d) {
-            stat.value = parseFloat(lordsInfo.price.diff7d);
-            //stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
-          }
+
           return (
             <motion.div
-              key={stat.id}
+              key={baseStat.id}
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 show: {
@@ -873,12 +838,12 @@ function IntroSection({
               }}
             >
               <AnimatedStat
-                value={stat.value}
-                label={stat.label}
-                prefix={stat.prefix}
-                suffix={stat.suffix}
-                icon={stat.icon}
-                trend={stat.trend}
+                value={displayValue}
+                label={baseStat.label}
+                prefix={baseStat.prefix}
+                suffix={baseStat.suffix}
+                icon={baseStat.icon}
+                trend={displayTrend}
               />
             </motion.div>
           );
@@ -896,8 +861,8 @@ function LiveIndicator() {
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 2, repeat: Infinity }}
     >
-      <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
-      <span className="text-sm text-emerald-500">Live</span>
+      <div className="w-2 h-2 rounded-full bg-positive mr-2" />
+      <span className="text-sm text-positive">Live</span>
     </motion.div>
   );
 }
@@ -927,27 +892,18 @@ function App() {
       queryFn: getLordsInfo,
     })
   );
+  const { data: veLordsSupply } = useQuery(
+    queryOptions({
+      queryKey: ["veLordsSupply"],
+      queryFn: getLordsBalance,
+    })
+  );
   return (
-    <motion.div className="font-body text-foreground bg-background/95 relative">
+    <motion.div>
       {/* Fixed position background */}
-      <div className="fixed inset-0">
+      <div className="fixed inset-0 bg-background">
         <AnimatedBackground selectedGame={selectedGame} />
-        <div className="absolute inset-x-0 bottom-0 h-[70vh] bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-      </div>
-
-      {/* Border Frame */}
-      <div className="fixed inset-0 z-40 pointer-events-none">
-        <div className="mx-2 sm:mx-4 mt-4 h-full flex flex-col">
-          {/* Top spacer for header */}
-          {/* <div className="h-[72px]" /> */}
-          {/* Border frame with bottom border */}
-          <div className="flex-1 relative">
-            {/* Side borders */}
-            <div className="absolute inset-0 border-l border-r border-white/20" />
-            {/* Bottom border */}
-            <div className="absolute bottom-0 left-0 right-0 border-b border-white/20" />
-          </div>
-        </div>
+        <div className="absolute inset-x-0 bottom-0 h-[70vh]" />
       </div>
 
       {/* Scrollable content */}
@@ -962,18 +918,18 @@ function App() {
           onTitleClick={handleTitleClick}
         />
 
-        <div className="min-h-screen pt-16 sm:pt-24 mx-2 sm:mx-4">
+        <div className="min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4">
           {/* Intro Section */}
           {!selectedGame && <IntroSection lordsInfo={lordsInfo} />}
           {/* Games Section */}
           <section
             className={`relative z-10 transition-all duration-500 ${
-              selectedGame ? "mt-0" : "mt-8 sm:mt-20"
+              selectedGame ? "mt-0" : "mt-6 sm:mt-8 md:mt-20"
             }`}
           >
-            <div className="container mx-auto px-2 sm:px-4 mb-4 sm:mb-8">
+            <div className="container mx-auto px-1 sm:px-2 md:px-4 mb-3 sm:mb-4 md:mb-8">
               <motion.h2
-                className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4"
+                className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -989,7 +945,7 @@ function App() {
             >
               <div className="relative">
                 <div
-                  className="flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-hide py-4 px-2 sm:px-4 scroll-smooth"
+                  className="flex space-x-3 sm:space-x-4 md:space-x-6 overflow-x-auto scrollbar-hide py-2 sm:py-4 px-1 sm:px-2 md:px-4 scroll-smooth"
                   ref={scrollContainerRef}
                   style={{ scrollBehavior: "smooth" }}
                 >
@@ -997,8 +953,8 @@ function App() {
                     <motion.div
                       key={game.id}
                       layoutId={`game-${game.id}`}
-                      className={`game-tile flex-shrink-0 w-[280px] sm:w-[400px] relative aspect-video bg-card overflow-hidden 
-                        hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-lg
+                      className={`game-tile flex-shrink-0 w-[240px] sm:w-[320px] md:w-[400px] relative aspect-video bg-card overflow-hidden 
+                        hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-md sm:rounded-lg
                         ${
                           selectedGame?.id === game.id
                             ? "ring-2 ring-primary scale-105"
@@ -1029,13 +985,13 @@ function App() {
                       {game.isLive && (
                         <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex items-center space-x-2">
                           <motion.div
-                            className="flex items-center bg-background/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full"
+                            className="flex items-center bg-card/80 backdrop-blur-sm px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 rounded-full"
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 + 0.3 }}
                           >
                             <motion.div
-                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 mr-1 sm:mr-2"
+                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2"
                               animate={{ opacity: [1, 0.5, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
@@ -1047,14 +1003,14 @@ function App() {
                       )}
 
                       {/* Title and Player Count Overlay - Bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-background/90 to-transparent">
+                      <div className="absolute bottom-0 left-0 right-0 p-1.5 sm:p-2 md:p-4 bg-gradient-to-t from-background/90 to-transparent">
                         <motion.div
-                          className="space-y-1 sm:space-y-2"
+                          className="space-y-0.5 sm:space-y-1 md:space-y-2"
                           initial={{ y: 20, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           transition={{ delay: index * 0.1 + 0.3 }}
                         >
-                          <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                          <h2 className="text-sm sm:text-base md:text-lg font-semibold text-foreground">
                             {game.title}
                           </h2>
                           {game.players && (
@@ -1063,7 +1019,7 @@ function App() {
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
-                                className="w-3 h-3 sm:w-4 sm:h-4 mr-1"
+                                className="w-2.5 h-2.5 sm:w-3 md:w-4 mr-1"
                               >
                                 <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
                               </svg>
@@ -1077,7 +1033,7 @@ function App() {
                 </div>
                 <button
                   onClick={scrollLeft}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-1.5 sm:p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1096,7 +1052,7 @@ function App() {
                 </button>
                 <button
                   onClick={scrollRight}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-1.5 sm:p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 hover:bg-muted/70 backdrop-blur-sm p-1 sm:p-1.5 md:p-2 rounded-full transition-all duration-300 z-10 cursor-pointer"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1127,22 +1083,22 @@ function App() {
             {selectedGame && (
               <motion.div
                 key={`details-${selectedGame.id}`}
-                className="fixed bottom-0 left-0 right-0 z-20 pb-4 sm:pb-8"
+                className="fixed bottom-0 left-0 right-0 z-20 pb-2 sm:pb-4 md:pb-8"
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 100, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
               >
-                <div className="container mx-auto px-2 sm:px-4">
-                  <Card className="backdrop-blur-md bg-background/30 border-border">
-                    <CardContent className="py-4 sm:py-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+                <div className="container mx-auto px-1 sm:px-2 md:px-4">
+                  <Card className="backdrop-blur-md border-border">
+                    <CardContent className="py-3 sm:py-4 md:py-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-8">
                         {/* Left Column - Basic Info */}
-                        <div className="space-y-4 sm:space-y-6">
-                          <div className="space-y-2">
+                        <div className="space-y-3 sm:space-y-4 md:space-y-6">
+                          <div className="space-y-1 sm:space-y-2">
                             <div className="flex items-center space-x-2 sm:space-x-4 text-foreground">
                               <motion.h2
-                                className="text-3xl sm:text-5xl font-bold"
+                                className="text-2xl sm:text-3xl md:text-5xl font-bold"
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
@@ -1152,7 +1108,7 @@ function App() {
                               {selectedGame.isLive && <LiveIndicator />}
                             </div>
                             <motion.p
-                              className="text-base sm:text-lg text-muted-foreground"
+                              className="text-sm sm:text-base md:text-lg text-muted-foreground"
                               initial={{ y: 20, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
                               transition={{ delay: 0.3 }}
@@ -1162,12 +1118,13 @@ function App() {
                           </div>
 
                           <motion.div
-                            className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4"
+                            className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 md:space-x-4"
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
                           >
                             <Button
+                              size="sm"
                               onClick={() =>
                                 window.open(
                                   selectedGame.links?.homepage,
@@ -1179,6 +1136,7 @@ function App() {
                             </Button>
                             {selectedGame.whitepaper && (
                               <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() =>
                                   window.open(selectedGame.whitepaper, "_blank")
@@ -1186,7 +1144,7 @@ function App() {
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
-                                  className="w-4 h-4 mr-2"
+                                  className="w-3 h-3 sm:w-4 mr-1 sm:mr-2"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
@@ -1201,31 +1159,31 @@ function App() {
                         </div>
 
                         {/* Right Column - Stats & Details */}
-                        <div className="space-y-4 sm:space-y-6">
+                        <div className="space-y-3 sm:space-y-4 md:space-y-6">
                           <motion.div
-                            className="grid grid-cols-2 gap-2 sm:gap-4"
+                            className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-4"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                           >
-                            <div className="space-y-1 sm:space-y-2">
-                              <div className="text-xs sm:text-sm text-gray-400">
+                            <div className="space-y-0.5 sm:space-y-1 md:space-y-2">
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 Status
                               </div>
                               <Badge
                                 variant="outline"
-                                className={`
+                                className={`text-xs sm:text-sm
                                   ${
                                     selectedGame.status === "mainnet" &&
-                                    "border-emerald-500 text-emerald-500"
+                                    "border-positive text-positive"
                                   }
                                   ${
                                     selectedGame.status === "testnet" &&
-                                    "border-amber-500 text-amber-500"
+                                    "border-warning text-warning"
                                   }
                                   ${
                                     selectedGame.status === "development" &&
-                                    "border-sky-500 text-sky-500"
+                                    "border-info text-info"
                                   }
                                 `}
                               >
@@ -1233,30 +1191,35 @@ function App() {
                               </Badge>
                             </div>
 
-                            <div className="space-y-1 sm:space-y-2">
-                              <div className="text-xs sm:text-sm text-gray-400">
+                            <div className="space-y-0.5 sm:space-y-1 md:space-y-2">
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 Studio
                               </div>
-                              <Badge variant="default" className="text-white">
+                              <Badge
+                                variant="default"
+                                className="text-xs sm:text-sm"
+                              >
                                 {selectedGame.studio}
                               </Badge>
                             </div>
 
                             {selectedGame.players && (
-                              <div className="space-y-1 sm:space-y-2 text-foreground">
-                                <div className="text-xs sm:text-sm text-gray-400">
+                              <div className="space-y-0.5 sm:space-y-1 md:space-y-2 text-foreground">
+                                <div className="text-xs sm:text-sm text-muted-foreground">
                                   Active Players
                                 </div>
-                                <div className="text-xl sm:text-2xl font-bold">
+                                <div className="text-lg sm:text-xl md:text-2xl font-bold">
                                   {selectedGame.players.toLocaleString()}
                                 </div>
                               </div>
                             )}
 
                             {selectedGame.tvl && (
-                              <div className="space-y-1 sm:space-y-2 text-foreground">
-                                <div className="text-xs sm:text-sm text-gray-400">TVL</div>
-                                <div className="text-xl sm:text-2xl font-bold">
+                              <div className="space-y-0.5 sm:space-y-1 md:space-y-2 text-foreground">
+                                <div className="text-xs sm:text-sm text-muted-foreground">
+                                  TVL
+                                </div>
+                                <div className="text-lg sm:text-xl md:text-2xl font-bold">
                                   ${selectedGame.tvl.toLocaleString()}
                                 </div>
                               </div>

@@ -16,11 +16,11 @@ const tokenomicsData = [
 
 export function TokenomicsChart() {
   return (
-    <Card className="backdrop-blur-md bg-black/20 border-white/10 w-full">
+    <Card className="backdrop-blur-md  w-full">
       <CardHeader className="items-center pb-0">
         <CardTitle className="text-4xl">Token Distribution</CardTitle>
         <CardDescription className="text-2xl">
-          Total Supply: 500,000,000 LORDS
+          Total Supply: 300,000,000 LORDS
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
