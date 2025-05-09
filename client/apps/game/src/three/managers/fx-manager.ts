@@ -6,6 +6,7 @@ type FXType = "skull" | "compass" | string;
 interface FXConfig {
   textureUrl: string;
   animate: (fx: FXInstance, elapsed: number) => boolean; // return false to stop
+  isInfinite?: boolean; // if true, effect will continue until manually stopped
 }
 
 // -------------------- FXInstance --------------------
@@ -23,6 +24,10 @@ class FXInstance {
   public labelBaseText?: string;
   public type: FXType;
   public animateCallback: (fx: FXInstance, elapsed: number) => boolean;
+  public isInfinite: boolean;
+  private isEnding: boolean = false;
+  private endStartTime: number = 0;
+  private endDuration: number = 0.5; // Duration of fade out in seconds
 
   constructor(
     scene: THREE.Scene,
@@ -34,6 +39,7 @@ class FXInstance {
     size: number,
     labelText: string | undefined,
     animateCallback: (fx: FXInstance, elapsed: number) => boolean,
+    isInfinite: boolean = false,
   ) {
     this.clock = new THREE.Clock();
     this.group = new THREE.Group();
@@ -43,6 +49,7 @@ class FXInstance {
     this.baseSize = size;
     this.type = type;
     this.animateCallback = animateCallback;
+    this.isInfinite = isInfinite;
 
     this.material = new THREE.SpriteMaterial({
       map: texture,
@@ -67,7 +74,7 @@ class FXInstance {
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, 1, 0);
+      this.label.position.set(0, 1.15, 0);
       this.group.add(this.label);
     }
 
@@ -77,6 +84,13 @@ class FXInstance {
 
   public onComplete(resolve: () => void) {
     this.resolvePromise = resolve;
+  }
+
+  public startEnding() {
+    if (!this.isEnding) {
+      this.isEnding = true;
+      this.endStartTime = this.clock.getElapsedTime();
+    }
   }
 
   private animate = () => {
@@ -89,9 +103,28 @@ class FXInstance {
       this.label.element.textContent = this.labelBaseText + ".".repeat(dotCount);
     }
 
+    // Handle ending animation
+    if (this.isEnding) {
+      const endElapsed = elapsed - this.endStartTime;
+      if (endElapsed < this.endDuration) {
+        // Fade out
+        const fadeProgress = endElapsed / this.endDuration;
+        this.material.opacity = 1 - fadeProgress;
+
+        // Optional: Add some upward movement during fade out
+        const moveUp = fadeProgress * 0.5;
+        this.group.position.y = this.initialY + moveUp;
+      } else {
+        // End animation complete, destroy the instance
+        this.resolvePromise?.();
+        this.destroy();
+        return;
+      }
+    }
+
     const alive = this.animateCallback(this, elapsed);
 
-    if (!alive) {
+    if (!alive && !this.isInfinite) {
       this.resolvePromise?.();
       this.destroy();
       return;
@@ -170,27 +203,17 @@ export class FXManager {
     this.registerFX("compass", {
       textureUrl: "textures/compass.png",
       animate: (fx, t) => {
-        const duration = 3.0;
-
+        // Fade in animation
         if (t < 0.3) {
           fx.material.opacity = t / 0.3;
-        } else if (t < duration) {
-          fx.material.opacity = 1;
-        } else if (t < duration + 0.5) {
-          fx.material.opacity = 1 - (t - duration) / 0.5;
         } else {
-          return false;
+          fx.material.opacity = 1;
         }
 
         // Ensure the sprite is facing the camera
         fx.sprite.material.rotation = t * 2;
 
-        // Keep the label upright
-        // if (fx.label) {
-        //   fx.label.rotation.z = -fx.sprite.material.rotation;
-        // }
-
-        return true;
+        return true; // Always return true to keep it running
       },
     });
   }
@@ -207,21 +230,36 @@ export class FXManager {
     this.fxConfigs.set(type, config);
   }
 
-  playFxAtCoords(type: FXType, x: number, y: number, z: number, size?: number, labelText?: string): Promise<void> {
+  playFxAtCoords(
+    type: FXType,
+    x: number,
+    y: number,
+    z: number,
+    size?: number,
+    labelText?: string,
+    isInfinite: boolean = false,
+  ): { promise: Promise<void>; end: () => void } {
     const config = this.fxConfigs.get(type);
     if (!config) {
       console.warn(`FX type '${type}' is not registered.`);
-      return Promise.reject(`FX type '${type}' not registered.`);
+      return {
+        promise: Promise.reject(`FX type '${type}' not registered.`),
+        end: () => {},
+      };
     }
 
     const texture = this.textures.get(config.textureUrl);
     if (!texture || !texture.image) {
       console.warn("Texture not loaded yet, skipping FX");
-      return Promise.reject("Texture not loaded");
+      return {
+        promise: Promise.reject("Texture not loaded"),
+        end: () => {},
+      };
     }
 
-    return new Promise((resolve) => {
-      const fxInstance = new FXInstance(
+    let fxInstance: FXInstance | null = null;
+    const promise = new Promise<void>((resolve) => {
+      fxInstance = new FXInstance(
         this.scene,
         texture,
         type,
@@ -231,13 +269,14 @@ export class FXManager {
         size ?? this.defaultSize,
         labelText,
         config.animate,
+        isInfinite || config.isInfinite,
       );
 
       fxInstance.onComplete(resolve);
       this.activeFX.add(fxInstance);
 
       const cleanup = () => {
-        this.activeFX.delete(fxInstance);
+        this.activeFX.delete(fxInstance!);
       };
 
       const originalDestroy = fxInstance.destroy;
@@ -246,6 +285,15 @@ export class FXManager {
         cleanup();
       };
     });
+
+    return {
+      promise,
+      end: () => {
+        if (fxInstance && !fxInstance.isDestroyed) {
+          fxInstance.startEnding();
+        }
+      },
+    };
   }
 
   destroy() {

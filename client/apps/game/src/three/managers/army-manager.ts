@@ -343,19 +343,20 @@ export class ArmyManager {
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
 
-    this.fxManager
-      .playFxAtCoords(
-        "skull",
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
-      )
-      .then(() => {
-        this.armies.delete(entityId);
-        this.armyModel.removeLabel(entityId);
-        this.entityIdLabels.delete(entityId);
-        this.renderVisibleArmies(this.currentChunkKey!);
-      });
+    const { promise } = this.fxManager.playFxAtCoords(
+      "skull",
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
+      1,
+      "Defeated!",
+    );
+    promise.then(() => {
+      this.armies.delete(entityId);
+      this.armyModel.removeLabel(entityId);
+      this.entityIdLabels.delete(entityId);
+      this.renderVisibleArmies(this.currentChunkKey!);
+    });
   }
 
   public getArmies() {
@@ -452,7 +453,18 @@ export class ArmyManager {
 
     // Set renderOrder to Infinity on hover
     labelDiv.addEventListener("mouseenter", () => {
-      this.fxManager.playFxAtCoords("compass", position.x, position.y + 2.5, position.z, 1, "Exploring");
+      const { promise, end } = this.fxManager.playFxAtCoords(
+        "compass",
+        position.x,
+        position.y + 2.5,
+        position.z,
+        0.95,
+        "Exploring...",
+        true,
+      );
+      setTimeout(() => {
+        end();
+      }, 5000);
       label.renderOrder = Infinity;
     });
 
