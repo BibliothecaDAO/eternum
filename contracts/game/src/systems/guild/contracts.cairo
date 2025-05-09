@@ -66,8 +66,8 @@ pub mod guild_systems {
     use s1_eternum::models::config::SeasonConfigImpl;
     use s1_eternum::models::guild::{Guild, GuildMember, GuildWhitelist};
     use s1_eternum::models::structure::StructureOwnerStats;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
-
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
         fn create_guild(ref self: ContractState, public: bool, name: felt252) {
@@ -92,6 +92,11 @@ pub mod guild_systems {
             guild.name = name;
             world.write_model(@guild);
             world.write_model(@GuildMember { member: caller_address, guild_id: caller_address });
+
+            // grant create or join guild achievement
+            AchievementTrait::progress(
+                world, caller_address.into(), Tasks::JOIN_TRIBE, 1, starknet::get_block_timestamp(),
+            );
         }
 
         fn join_guild(ref self: ContractState, guild_id: ContractAddress) {
@@ -130,6 +135,11 @@ pub mod guild_systems {
             guild_member.guild_id = guild_id;
             world.write_model(@new_guild);
             world.write_model(@guild_member);
+
+            // grant join guild achievement
+            AchievementTrait::progress(
+                world, caller_address.into(), Tasks::JOIN_TRIBE, 1, starknet::get_block_timestamp(),
+            );
         }
 
         fn leave_guild(ref self: ContractState) {
