@@ -892,12 +892,12 @@ function App() {
       queryFn: getLordsInfo,
     })
   );
-  const { data: veLordsSupply } = useQuery(
-    queryOptions({
-      queryKey: ["veLordsSupply"],
-      queryFn: getLordsBalance,
-    })
-  );
+  // const { data: veLordsSupply } = useQuery(
+  //   queryOptions({
+  //     queryKey: ["veLordsSupply"],
+  //     queryFn: getLordsBalance,
+  //   })
+  // );
   return (
     <motion.div>
       {/* Fixed position background */}
