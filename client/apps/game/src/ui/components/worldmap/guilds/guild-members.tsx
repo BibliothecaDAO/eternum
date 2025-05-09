@@ -197,6 +197,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
           <GuildInviteList
             invitedPlayers={invitedPlayers}
             isLoading={isLoading}
+            userIsGuildMaster={userIsGuildMaster}
             viewPlayerInfo={viewPlayerInfo}
             removePlayerFromWhitelist={removePlayerFromWhitelist}
           />

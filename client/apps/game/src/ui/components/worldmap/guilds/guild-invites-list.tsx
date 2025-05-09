@@ -7,29 +7,19 @@ import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
-interface GuildInviteListProps {
-  invitedPlayers: GuildMemberInfo[];
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-  userIsGuildMaster: boolean;
-}
-
-interface InviteRowProps {
-  player: GuildMemberInfo;
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-  userIsGuildMaster: boolean;
-}
-
 export const GuildInviteList = ({
   invitedPlayers,
   isLoading,
   viewPlayerInfo,
   removePlayerFromWhitelist,
   userIsGuildMaster,
-}: GuildInviteListProps) => {
+}: {
+  invitedPlayers: GuildMemberInfo[];
+  isLoading: boolean;
+  viewPlayerInfo: (playerAddress: ContractAddress) => void;
+  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
+  userIsGuildMaster: boolean;
+}) => {
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
@@ -99,7 +89,13 @@ const InviteRow = ({
   viewPlayerInfo,
   removePlayerFromWhitelist,
   userIsGuildMaster,
-}: InviteRowProps) => {
+}: {
+  player: GuildMemberInfo;
+  isLoading: boolean;
+  viewPlayerInfo: (playerAddress: ContractAddress) => void;
+  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
+  userIsGuildMaster: boolean;
+}) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
