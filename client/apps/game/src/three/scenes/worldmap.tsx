@@ -190,7 +190,7 @@ export default class WorldmapScene extends HexagonScene {
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
 
-    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
+    this.minimap = new Minimap(this, this.camera);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
