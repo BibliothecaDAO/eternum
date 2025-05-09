@@ -239,7 +239,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
     [CapacityConfig.VillageStructure]: 1_000_000 * 1000, // 1m kg
     [CapacityConfig.HyperstructureStructure]: 3_000_000 * 1000, // 3m kg
-    [CapacityConfig.BankStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.BankStructure]: 2_000_000 * 1000, // 2m kg
     [CapacityConfig.FragmentMineStructure]: 500_000 * 1000, // 500k kg
     [CapacityConfig.Donkey]: 500 * 1000, // 500 kg per donkey
     // 10_000 gr per army
