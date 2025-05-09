@@ -132,16 +132,22 @@ export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
 export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
 export const LORDS_ADDRESS = "0x0"; // set in indexer.sh
 
-export const VELORDS_FEE_ON_DEPOSIT = 400; // 4%
-export const VELORDS_FEE_ON_WITHDRAWAL = 400; // 4%
-export const SEASON_POOL_FEE_ON_DEPOSIT = 400; // 4%
-export const SEASON_POOL_FEE_ON_WITHDRAWAL = 400; // 4%
-export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
-export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
-export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
-export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
+export const VELORDS_FEE_ON_DEPOSIT = 250; // 2.5%
+export const SEASON_POOL_FEE_ON_DEPOSIT = 250; // 2.5%
+export const CLIENT_FEE_ON_DEPOSIT = 250; // 2.5%
 export const REALM_FEE_ON_DEPOSIT = 500; // 5%
+
+export const VELORDS_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const SEASON_POOL_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const CLIENT_FEE_ON_WITHDRAWAL = 250; // 2.5%
 export const REALM_FEE_ON_WITHDRAWAL = 500; // 5%
+
+
+export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
+
+//######### TODO: CHANGE SEASON POOL RECIPIENT #########
+
+export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
 export const MAX_NUM_BANKS = 6;
 
 const ONE_MINUTE_IN_SECONDS = 60;
@@ -157,7 +163,7 @@ export const SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECO
 
 export const TRADE_MAX_COUNT = 10;
 
-export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const AGENT_CONTROLLER_ADDRESS = "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344"; // set in indexer.sh
 export const AGENT_MAX_LIFETIME_COUNT = 10_000;
 export const AGENT_MAX_CURRENT_COUNT = 1_000;
 export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 5;
@@ -167,7 +173,7 @@ export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
 
 // catridge address should go here
-export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39";
+export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83";
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
