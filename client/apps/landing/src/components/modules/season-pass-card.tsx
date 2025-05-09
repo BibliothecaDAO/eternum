@@ -104,7 +104,9 @@ export const SeasonPassCard = ({
       <Card
         onClick={onToggleSelection}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected ? "ring-2 ring-offset-2 ring-gold scale-[1.02]" : "hover:ring-1 hover:ring-gold"} 
+          ${isSelected 
+            ? "ring-2 ring-offset-2 ring-gold scale-[1.02] bg-gold/5" 
+            : "hover:ring-1 hover:ring-gold hover:bg-gold/5"} 
           cursor-pointer group`}
       >
         <div className="relative">
@@ -120,7 +122,8 @@ export const SeasonPassCard = ({
           <img
             src={image}
             alt={name ?? "Season Pass"}
-            className="w-full object-contain opacity-90 group-hover:opacity-100 transition-all duration-200"
+            className={`w-full object-contain transition-all duration-200
+              ${isSelected ? 'opacity-100' : 'opacity-90 group-hover:opacity-100'}`}
           />
           
           {/* Selection Overlay */}
@@ -146,7 +149,7 @@ export const SeasonPassCard = ({
           )}
         </div>
 
-        <CardHeader className="p-4 pb-2">
+        <CardHeader className={`p-4 pb-2 ${isSelected ? 'bg-gold/5' : ''}`}>
           <CardTitle className="items-center gap-2">
             <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
               Season 1 Pass
@@ -178,7 +181,7 @@ export const SeasonPassCard = ({
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="px-4 pt-2">
+        <CardContent className={`px-4 pt-2 ${isSelected ? 'bg-gold/5' : ''}`}>
           <div className="flex justify-between">
             <div className="flex flex-col">
               {listingActive ? (
@@ -203,7 +206,8 @@ export const SeasonPassCard = ({
           </div>
         </CardContent>
 
-        <CardFooter className="border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2">
+        <CardFooter className={`border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2
+          ${isSelected ? 'bg-gold/5' : ''}`}>
           <div className="flex w-full gap-4">
             <Button 
               variant={isOwner ? "outline" : "default"} 

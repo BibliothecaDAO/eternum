@@ -78,7 +78,7 @@ export const SeasonPassesGrid = ({
               key={`${tokenId || ""}`}
               pass={pass}
               checkOwner={checkOwner}
-              isSelected={isSelected(tokenId)}
+              isSelected={isSelected(tokenId.toString())}
               onToggleSelection={() => onToggleSelection(pass)}
             />
           );
