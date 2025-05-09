@@ -1,6 +1,9 @@
+import { importantNote } from "@/components/styles";
+
 ---
-title: Cartridge Controller
-description: Using the Cartridge Controller in Eternum
+
+title: Cartridge Controller description: Using the Cartridge Controller in Eternum
+
 ---
 
 # Cartridge Controller
@@ -31,7 +34,15 @@ There are multiple ways to securely sign up:
 - **Discord**: Connect using your Discord account.
 - **Wallet Connect**: Connect using a wide range of wallets.
 
-<br />
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>
+    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
+    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
+    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
+  </p>
+</div>
+
 Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
 session.
 

@@ -492,7 +492,6 @@ export const StandardTroopProduction = () => {
 export const LaborProduction = () => {
   const config = ETERNUM_CONFIG();
   const laborOutputPerResource = config.resources.laborOutputPerResource;
-  console.log({ laborOutputPerResource });
 
   const laborOutputPerSecond = config.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor] || 0;
 

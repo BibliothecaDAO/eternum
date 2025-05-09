@@ -43,6 +43,7 @@ export default defineConfig({
         { text: "Key Concepts", link: "/mechanics/key-concepts" },
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
+        { text: "$LORDS Token", link: "/overview/lords" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Bridging", link: "/overview/bridging" },
