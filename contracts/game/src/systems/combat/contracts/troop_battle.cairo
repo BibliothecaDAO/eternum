@@ -429,11 +429,7 @@ pub mod troop_battle_systems {
             // grant fortress achievement
             if guard_troops.count.is_non_zero() {
                 AchievementTrait::progress(
-                    world,
-                    guarded_structure_owner.into(),
-                    Tasks::DEFEND_STRUCTURE,
-                    1,
-                    starknet::get_block_timestamp(),
+                    world, guarded_structure_owner.into(), Tasks::DEFEND_STRUCTURE, 1, starknet::get_block_timestamp(),
                 );
             }
         }
