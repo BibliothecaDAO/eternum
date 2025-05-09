@@ -197,7 +197,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
               {listingActive ? (
                 <div className="text-xl  flex items-center gap-2 font-mono">
                   {/* Format price with commas, removing unnecessary decimals */}
-                  {Number(formatUnits(pass.best_price_hex ?? BigInt(0), 18)).toLocaleString()}{" "}
+                  {Number(formatUnits(BigInt(pass.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
                   <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
@@ -248,7 +248,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
         marketplaceActions={marketplaceActions}
         collection_id={SEASON_PASS_COLLECTION_ID}
         // Pass listing details from state
-        price={pass.best_price_hex ?? undefined}
+        price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
         orderId={pass.order_id?.toString() ?? undefined}
         isListed={pass.expiration !== null}
         expiration={pass.expiration ? Number(pass.expiration) : undefined}

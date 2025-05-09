@@ -118,7 +118,7 @@ export default function TransferSeasonPassDialog({
       setSelectedRealms([]);
     } else {
       // Select all realms
-      setSelectedRealms(seasonPassMints.map((mint) => mint?.token_id || ""));
+      setSelectedRealms(seasonPassMints.map((mint) => mint?.token_id.toString() || ""));
     }
   };
 
@@ -145,11 +145,11 @@ export default function TransferSeasonPassDialog({
             </TableHeader>
             <TableBody>
               {seasonPassMints?.map((seasonPassMint) => {
-                const parsedMetadata: RealmMetadata | null = seasonPassMint?.node.tokenMetadata.metadata
-                  ? JSON.parse(seasonPassMint?.node.tokenMetadata.metadata)
+                const parsedMetadata: RealmMetadata | null = seasonPassMint?.metadata
+                  ? JSON.parse(seasonPassMint?.metadata)
                   : null;
                 const { attributes, name } = parsedMetadata ?? {};
-                const tokenId = seasonPassMint?.node.tokenMetadata.tokenId;
+                const tokenId = seasonPassMint?.token_id.toString();
 
                 return (
                   <TableRow key={tokenId}>

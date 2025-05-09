@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
-import { displayAddress, trimAddress } from "@/lib/utils";
+import { displayAddress } from "@/lib/utils";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -52,15 +52,10 @@ function SeasonPasses() {
           address
             ? fetchTokenBalancesWithMetadata(
                 seasonPassAddress,
-                trimAddress(address) /*, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE*/,
+                address /*, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE*/,
               )
             : null,
       },
-      /*{
-        queryKey: ["marketplaceOrders", marketplaceAddress],
-        queryFn: () => execute(GET_MARKETPLACE_ORDERS, { limit: 8000 }),
-        refetchInterval: 15_000,
-      },*/
     ],
   });
 
@@ -248,7 +243,7 @@ function SeasonPasses() {
           )}
           {/* End Pagination Controls */}
 
-          {isTransferOpen && (
+          {isTransferOpen && seasonPassTokenBalanceQuery.data && (
             <TransferSeasonPassDialog
               isOpen={isTransferOpen}
               setIsOpen={handleDialogClose}

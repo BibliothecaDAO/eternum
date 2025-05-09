@@ -25,5 +25,5 @@ export function displayAddress(string: string) {
 
 export const trimAddress = (addr?: string): string => {
   if (!addr || !addr.startsWith("0x")) return addr || "";
-  return "0x" + addr.slice(2).replace(/^0+/, '');
+  return "0x" + addr.slice(2).replace(/^0+/, "");
 };

@@ -1,3 +1,4 @@
+import { trimAddress } from "@/lib/utils";
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
 import { env } from "../../../env";
 
@@ -163,38 +164,38 @@ WITH limited_active_orders AS (
   `,
 
   TOKEN_BALANCES_WITH_METADATA: `
-WITH active_orders AS (
-SELECT
-printf("0x%064x", mo."order.token_id") AS token_id_hex,
-mo."order.price" AS price,
-mo."order.expiration" AS expiration,
-mo."order.owner" AS order_owner,
-mo.order_id
-FROM "marketplace-MarketOrderModel" AS mo
-WHERE mo."order.active" = 1
-AND mo."order.owner" = '{ownerAddress}'
-GROUP BY token_id_hex
-)
-SELECT
-tb.token_id,
-tb.balance,
-tb.contract_address,
-tb.account_address as token_owner,
-t.name,
-t.symbol,
-t.metadata,
-ao.price,
-ao.expiration,
-ao.order_owner,
-ao.order_id
-FROM token_balances tb
-LEFT JOIN tokens t
-ON t.token_id = substr(tb.token_id, instr(tb.token_id, ':') + 1)
-AND t.contract_address = '{contractAddress}'
-LEFT JOIN active_orders ao
-ON ao.token_id_hex = substr(tb.token_id, instr(tb.token_id, ':') + 1)
-WHERE tb.contract_address = '{contractAddress}'
-AND tb.account_address = '{accountAddress}';
+  WITH active_orders AS (
+    SELECT
+      printf("0x%064x", mo."order.token_id") AS token_id_hex,
+      mo."order.price" AS price,
+      mo."order.expiration" AS expiration,
+      mo."order.owner" AS order_owner,
+      mo.order_id
+    FROM "marketplace-MarketOrderModel" AS mo
+    WHERE mo."order.active" = 1
+    AND mo."order.owner" = '{accountAddress}'
+    GROUP BY token_id_hex
+  )
+  SELECT
+    tb.token_id,
+    tb.balance,
+    tb.contract_address,
+    tb.account_address as token_owner,
+    t.name,
+    t.symbol,
+    t.metadata,
+    ao.price as best_price_hex,
+    ao.expiration,
+    ao.order_owner,
+    ao.order_id
+  FROM token_balances tb
+  LEFT JOIN tokens t
+    ON t.token_id = substr(tb.token_id, instr(tb.token_id, ':') + 1)
+    AND t.contract_address = '{contractAddress}'
+  LEFT JOIN active_orders ao
+    ON ao.token_id_hex = substr(tb.token_id, instr(tb.token_id, ':') + 1)
+  WHERE tb.contract_address = '{contractAddress}'
+  AND tb.account_address = '{trimmedAccountAddress}';
   `,
 };
 
@@ -417,7 +418,7 @@ export interface TokenBalanceWithToken {
   name: string | null;
   symbol: string | null;
   expiration: number | null;
-  price: bigint | null;
+  best_price_hex: bigint | null;
   metadata: string | null;
 }
 
@@ -428,6 +429,9 @@ export async function fetchTokenBalancesWithMetadata(
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress).replace(
     "{accountAddress}",
     accountAddress,
+  ).replace(
+    "{trimmedAccountAddress}",
+    trimAddress(accountAddress),
   );
   console.log(query);
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
@@ -438,6 +442,7 @@ export async function fetchTokenBalancesWithMetadata(
   const rawData = await response.json();
   return rawData.map((item: TokenBalanceWithToken) => ({
     ...item,
-    token_id: parseInt(item.token_id?.split(':')[1] ?? "0", 16),
+    token_id: parseInt(item.token_id?.split(":")[1] ?? "0", 16),
+    best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
   }));
 }
