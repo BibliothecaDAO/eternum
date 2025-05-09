@@ -6,7 +6,7 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { getComponentValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AccountInterface, shortString } from "starknet";
 
 export const useSetAddressName = (value: SetupResult, controllerAccount: AccountInterface | null, connector: any) => {
@@ -16,10 +16,13 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
 
   const setAddressName = useAddressStore((state) => state.setAddressName);
   const [isAddressNameSet, setIsAddressNameSet] = useState(false);
+  const hasSetUsername = useRef(false);
 
   useEffect(() => {
     // set usser name for the controller account
     const setUserName = async () => {
+      if (hasSetUsername.current) return;
+
       let username;
       try {
         username = await (connector as unknown as ControllerConnector)?.username();
@@ -39,10 +42,11 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
       value.systemCalls.set_address_name(calldata);
       setAddressName(username);
       setIsAddressNameSet(true);
+      hasSetUsername.current = true;
     };
 
     const handleAddressName = async () => {
-      if (controllerAccount) {
+      if (controllerAccount && !hasSetUsername.current) {
         const address = ContractAddress(controllerAccount.address);
         // can use because we have synced all address names
         const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([address]))?.name;
@@ -53,6 +57,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
           const decodedAddressName = shortString.decodeShortString(addressName?.toString());
           setAddressName(decodedAddressName);
           setIsAddressNameSet(true);
+          hasSetUsername.current = true;
         }
       }
     };
