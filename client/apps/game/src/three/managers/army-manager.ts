@@ -36,7 +36,7 @@ export class ArmyManager {
   private labelsGroup: THREE.Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
-  private deathFxManager: FXManager;
+  private fxManager: FXManager;
 
   constructor(
     scene: THREE.Scene,
@@ -53,7 +53,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.deathFxManager = new FXManager(scene, "/textures/skull.png", 1);
+    this.fxManager = new FXManager(scene, 1);
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -343,18 +343,20 @@ export class ArmyManager {
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
 
-    this.deathFxManager
-      .playFxAtCoords(
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
-        this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
-      )
-      .then(() => {
-        this.armies.delete(entityId);
-        this.armyModel.removeLabel(entityId);
-        this.entityIdLabels.delete(entityId);
-        this.renderVisibleArmies(this.currentChunkKey!);
-      });
+    const { promise } = this.fxManager.playFxAtCoords(
+      "skull",
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
+      1,
+      "Defeated!",
+    );
+    promise.then(() => {
+      this.armies.delete(entityId);
+      this.armyModel.removeLabel(entityId);
+      this.entityIdLabels.delete(entityId);
+      this.renderVisibleArmies(this.currentChunkKey!);
+    });
   }
 
   public getArmies() {

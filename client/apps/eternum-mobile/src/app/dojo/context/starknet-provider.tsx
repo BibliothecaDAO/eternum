@@ -6,7 +6,6 @@ import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../../env";
-import { policies } from "./policies";
 
 const resourceAddresses = getResourceAddresses();
 
@@ -43,7 +42,6 @@ const nonLocalController = new ControllerConnector({
       ? constants.StarknetChainId.SN_MAIN
       : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  policies,
   slot,
   namespace,
   tokens: {

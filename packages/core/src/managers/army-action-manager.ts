@@ -359,6 +359,7 @@ export class ArmyActionManager {
     };
   };
 
+  // @ts-ignore
   private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
@@ -402,7 +403,7 @@ export class ArmyActionManager {
     const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) return;
 
-    const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
+    // const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
 
     try {
       await this.systemCalls.explorer_move({
@@ -415,7 +416,7 @@ export class ArmyActionManager {
       console.log({ e });
     } finally {
       // remove all non visual overrides
-      removeOverrides();
+      // removeOverrides();
     }
   };
 
