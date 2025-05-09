@@ -314,7 +314,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps) => {
     await provider.claim_wonder_production_bonus(props);
-    
+  };
+
   const start_quest = async (props: SystemProps.StartQuestProps) => {
     await provider.start_quest(props);
   };
@@ -406,7 +407,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     accept_marketplace_order: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),
     edit_marketplace_order: withAuth(edit_marketplace_order),
-    
+
     leave_guild: withAuth(leave_guild),
 
     start_quest: withAuth(start_quest),

@@ -88,15 +88,14 @@ export const SHARDS_MINES_FAIL_PROBABILITY = 149; // 149/150 = 99.33%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
-
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
 export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
 
-export const QUEST_FIND_PROBABILITY = 5; // 5/100 = 5%
-export const QUEST_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
+export const QUEST_FIND_PROBABILITY = 1; // 1/100 = 1%
+export const QUEST_FIND_FAIL_PROBABILITY = 99; // 99/100 = 99%
 
 // This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
