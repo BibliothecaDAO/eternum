@@ -46,7 +46,6 @@ export default defineConfig({
         { text: "$LORDS Token", link: "/overview/lords" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
-        { text: "Bridging", link: "/overview/bridging" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },
       ],
     },
