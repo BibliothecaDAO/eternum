@@ -13,8 +13,6 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
-import { execute } from "@/hooks/gql/execute";
-import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
@@ -43,7 +41,7 @@ function SeasonPasses() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const [openOrdersByPrice, totals, myNftsQuery] = useSuspenseQueries({
+  const [openOrdersByPrice, totals] = useSuspenseQueries({
     queries: [
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
@@ -52,16 +50,7 @@ function SeasonPasses() {
       {
         queryKey: ["activeMarketOrdersTotal"],
         queryFn: () => fetchActiveMarketOrdersTotal(),
-        refetchInterval: 60_000,
-      },
-      {
-        queryKey: ["erc721Balance", address, "seasonPasses"],
-        queryFn: () =>
-          execute(GET_ACCOUNT_TOKENS, {
-            accountAddress: address ?? "",
-            offset: 0,
-            limit: 1000,
-          }),
+        refetchInterval: 30_000,
       },
     ],
   });

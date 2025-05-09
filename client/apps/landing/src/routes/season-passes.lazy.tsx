@@ -55,6 +55,7 @@ function SeasonPasses() {
                 address /*, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE*/,
               )
             : null,
+        refetchInterval: 15_000,
       },
     ],
   });
