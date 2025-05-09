@@ -182,7 +182,14 @@ export class FXManager {
           return false;
         }
 
-        fx.group.rotation.z = t * 2;
+        // Ensure the sprite is facing the camera
+        fx.sprite.material.rotation = t * 2;
+
+        // Keep the label upright
+        // if (fx.label) {
+        //   fx.label.rotation.z = -fx.sprite.material.rotation;
+        // }
+
         return true;
       },
     });
