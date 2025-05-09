@@ -4,7 +4,7 @@ import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { useSocialStore } from "@/ui/modules/social/socialStore";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo, useGuildMembers, useGuildWhitelist, usePlayerWhitelist } from "@bibliothecadao/react";
+import { useDojo, useGuildMembers, useGuildWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { CalendarDays, Mail, Shield, UserMinus, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,7 +33,6 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
   const guildMembers = useGuildMembers(selectedGuildEntityId);
 
   const invitedPlayers = useGuildWhitelist(selectedGuildEntityId);
-  const userWhitelist = usePlayerWhitelist(ContractAddress(account.address));
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
 
@@ -48,11 +47,12 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
   const textInputRef = useRef<HTMLInputElement>(null);
 
   const userIsGuildMaster = userGuild?.isOwner ? userGuild.entityId === selectedGuildEntityId : false;
-  const userIsInvited = userWhitelist.find((list) => list.entityId === selectedGuildEntityId);
 
-  // Calculate some stats
+  const userIsInvited = invitedPlayers.find((list) => list.address === ContractAddress(account.address));
+
   const memberCount = guildMembers.length;
   const inviteCount = invitedPlayers.length;
+
   const guildMaster = guildMembers.find((member) => member.isGuildMaster);
   const guildMasterName = guildMaster
     ? players.find((player) => player.address === guildMaster.address)?.name
@@ -183,6 +183,15 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
         </div>
       )}
       {/* Member or Invite List */}
+      <div className="flex gap-2 justify-between">
+        <Button size="xs" onClick={() => setViewGuildInvites(false)}>
+          Members
+        </Button>
+        <Button size="xs" onClick={() => setViewGuildInvites(true)}>
+          Invites
+        </Button>
+      </div>
+
       <div className="flex-1 min-h-0 border border-gold/10 rounded-md bg-brown/5">
         {viewGuildInvites ? (
           <GuildInviteList
