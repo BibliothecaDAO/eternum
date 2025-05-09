@@ -119,7 +119,6 @@ pub mod realm_systems {
             anti_bot.used = true;
             world.write_model(@anti_bot);
 
-
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("season_addresses_config"),
