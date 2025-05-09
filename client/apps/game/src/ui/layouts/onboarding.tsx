@@ -9,7 +9,7 @@ import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/step
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { Castle, FileText, MessageSquare, Play, Twitter as TwitterIcon } from "lucide-react";
+import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
@@ -217,10 +217,44 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   };
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
+
+  const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = Date.now() / 1000;
+      const timeLeft = env.VITE_PUBLIC_SETTLING_START_TIME - now;
+
+      if (timeLeft <= 0) {
+        setSettlingStartTimeRemaining("");
+        return;
+      }
+
+      const days = Math.floor(timeLeft / (60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (60 * 60 * 24)) / (60 * 60));
+      const minutes = Math.floor((timeLeft % (60 * 60)) / 60);
+      const seconds = Math.floor(timeLeft % 60);
+      const time = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+      setSettlingStartTimeRemaining(time);
+    };
+
+    updateTimer();
+
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     hasAcceptedToS && (
       <div className="space-y-4">
-        {seasonPassRealms.length > 0 && (
+        {settlingStartTimeRemaining && (
+          <div className="text-center text-xl">
+            Settling will being in <br /> <span className="text-gold font-bold">{settlingStartTimeRemaining}</span>
+          </div>
+        )}
+        {seasonPassRealms.length > 0 && !settlingStartTimeRemaining && (
           <Button
             isPulsing={true}
             size="lg"
@@ -239,7 +273,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         )}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            <a className="w-full" target="_blank" rel="noopener noreferrer">
+            {/* <a className="w-full" target="_blank" rel="noopener noreferrer">
               <Button
                 size="lg"
                 onClick={handleVillagePassClick}
@@ -250,7 +284,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
                   <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
                 </div>
               </Button>
-            </a>
+            </a> */}
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}
