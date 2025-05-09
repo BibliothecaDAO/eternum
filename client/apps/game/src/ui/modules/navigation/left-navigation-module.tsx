@@ -38,6 +38,7 @@ export const LeftNavigationModule = memo(() => {
 
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
+  const disableButtons = useUIStore((state) => state.disableButtons);
 
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
@@ -51,11 +52,6 @@ export const LeftNavigationModule = memo(() => {
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
     [structureEntityId, account.address, components],
   );
-
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const seasonHasStarted = false;
-  const disableButtons = (!structureIsMine && account.address !== "0x0") || !seasonHasStarted;
 
   const isRealmOrVillage = useMemo(
     () =>

@@ -21,6 +21,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const disableButtons = useUIStore((state) => state.disableButtons);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -32,10 +33,6 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
     () => getEntityInfo(structureEntityId, ContractAddress(ConnectedAccount?.address || "0x0"), components),
     [structureEntityId, ConnectedAccount?.address, components],
   );
-
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const disableButtons = !structureIsMine && ConnectedAccount?.address !== "0x0";
 
   const navigation = useMemo(
     () => [
