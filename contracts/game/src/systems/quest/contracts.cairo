@@ -462,6 +462,7 @@ mod tests {
     use s1_eternum::models::config::{CombatConfigImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::map::{m_BiomeDiscovered};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::resource::{
@@ -527,6 +528,7 @@ mod tests {
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 // other models
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
+                TestResource::Model(m_BiomeDiscovered::TEST_CLASS_HASH),
                 // quest models
                 TestResource::Model(m_QuestTile::TEST_CLASS_HASH), TestResource::Model(m_Quest::TEST_CLASS_HASH),
                 TestResource::Model(m_QuestRegistrations::TEST_CLASS_HASH),
