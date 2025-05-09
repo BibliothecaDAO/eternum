@@ -76,6 +76,7 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
+  private compassEffects: Map<string, () => void> = new Map();
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -349,7 +350,18 @@ export default class WorldmapScene extends HexagonScene {
       const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
       // Play compass effect if the hex is not explored
       if (!isExplored) {
-        this.fxManager.playFxAtCoords("compass", position.x, position.y + 2.5, position.z, 0.95, "Exploring...", true);
+        const { promise, end } = this.fxManager.playFxAtCoords(
+          "compass",
+          position.x,
+          position.y + 2.5,
+          position.z,
+          0.95,
+          "Exploring...",
+          true,
+        );
+        // Store the end function with the hex coordinates as key
+        const key = `${targetHex.col},${targetHex.row}`;
+        this.compassEffects.set(key, end);
       }
 
       armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
@@ -574,6 +586,14 @@ export default class WorldmapScene extends HexagonScene {
 
     const col = normalized.x;
     const row = normalized.y;
+
+    // Check if there's a compass effect for this hex and end it
+    const key = `${hexCoords.col},${hexCoords.row}`;
+    const endCompass = this.compassEffects.get(key);
+    if (endCompass) {
+      endCompass();
+      this.compassEffects.delete(key);
+    }
 
     if (removeExplored) {
       const chunkRow = parseInt(this.currentChunk.split(",")[0]);
