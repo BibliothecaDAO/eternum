@@ -8,19 +8,19 @@ import {
 } from "@/components/ui/card";
 
 const tokenomicsData = [
-  { allocation: "Staking Rewards", value: 40, fill: "hsl(var(--chart-1))" },
-  { allocation: "Game Rewards", value: 35, fill: "hsl(var(--chart-2))" },
-  { allocation: "Development", value: 15, fill: "hsl(var(--chart-3))" },
-  { allocation: "Community", value: 10, fill: "hsl(var(--chart-4))" },
+  { allocation: "Staking Rewards", value: 40, fill: "oklch(0.43 0.04 41.99)" },
+  { allocation: "Game Rewards", value: 35, fill: "oklch(0.92 0.07 74.37)" },
+  { allocation: "Development", value: 15, fill: "oklch(0.93 0 0)" },
+  { allocation: "Community", value: 10, fill: "oklch(0.94 0.05 75.50)" },
 ];
 
 export function TokenomicsChart() {
   return (
-    <Card className="backdrop-blur-md  w-full">
+    <Card className="backdrop-blur-md  sm:w-1/2 mx-auto">
       <CardHeader className="items-center pb-0">
         <CardTitle className="text-4xl">Token Distribution</CardTitle>
         <CardDescription className="text-2xl">
-          Total Supply: 300,000,000 LORDS
+          Supply: 300,000,000 LORDS
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
