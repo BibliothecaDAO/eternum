@@ -13,14 +13,14 @@ import { seasonPassAddress } from "@/config";
 import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import useDebounce from "@/hooks/use-debounce";
 import { displayAddress } from "@/lib/utils";
-import { RealmMetadata, SeasonPassMint } from "@/types";
+import { MergedNftData, RealmMetadata } from "@/types";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { TypeH3 } from "../typography/type-h3";
 
 interface TransferSeasonPassProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  seasonPassMints: SeasonPassMint[];
+  seasonPassMints: MergedNftData[];
   initialSelectedTokenId?: string | null;
 }
 
@@ -118,7 +118,7 @@ export default function TransferSeasonPassDialog({
       setSelectedRealms([]);
     } else {
       // Select all realms
-      setSelectedRealms(seasonPassMints.map((mint) => mint?.node?.tokenMetadata?.tokenId || ""));
+      setSelectedRealms(seasonPassMints.map((mint) => mint?.token_id || ""));
     }
   };
 
