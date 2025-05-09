@@ -10,6 +10,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
@@ -302,16 +303,18 @@ function SeasonPasses() {
             {viewMode === "my" ? "View and manage your Season Pass NFTs" : "Browse all available Season Pass NFTs."}
           </p>
 
-          {/* Filter UI */}
-          <div>
-            <TraitFilterUI
-              allTraits={allTraits}
-              selectedFilters={selectedFilters}
-              handleFilterChange={handleFilterChange}
-              clearFilter={clearFilter}
-              clearAllFilters={clearAllFilters}
-            />
-          </div>
+          <ScrollHeader>
+            {/* Filter UI */}
+            <div className="flex justify-end my-2 gap-4 px-4">
+              <TraitFilterUI
+                allTraits={allTraits}
+                selectedFilters={selectedFilters}
+                handleFilterChange={handleFilterChange}
+                clearFilter={clearFilter}
+                clearAllFilters={clearAllFilters}
+              />
+            </div>
+          </ScrollHeader>
 
           {/* Grid container - Removed extra bottom padding */}
           <div className="flex-grow overflow-y-auto pt-0 px-2 pb-4">
