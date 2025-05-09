@@ -359,7 +359,6 @@ const hyperstructureModels = [
   "s1_eternum-HyperstructureShareholders",
   // Leaderboard
   "s1_eternum-PlayerRegisteredPoints",
-  "s1_eternum-PlayerConstructionPoints",
 ];
 
 export const syncStructureData = async (

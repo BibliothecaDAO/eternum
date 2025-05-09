@@ -369,7 +369,7 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Diamonds]: 16.72,
   [ResourcesIds.Sapphire]: 20.3,
   [ResourcesIds.Ruby]: 20.98,
-  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.99,
   [ResourcesIds.Ignium]: 29.15,
   [ResourcesIds.EtherealSilica]: 30.95,
   [ResourcesIds.TrueIce]: 36.06,

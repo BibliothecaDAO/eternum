@@ -9,7 +9,8 @@ import { RealmLeveling } from "@/components/RealmLeveling";
 The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
 limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
 in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
-and its associated Season Pass.
+and its associated Season Pass. This metadata also aligns each Realm to one of sixteen ancient Orders, however the
+meaning of this alignment has been lost to the mist… for now.
 
 <img
   src="/images/buildings/construction/castleOne.png"
@@ -29,17 +30,53 @@ production potential and overall experience.
 
 ![Realm Settling Screen](/screenshots/settling.png)
 
+<div
+  style={{
+    padding: "1.5rem",
+    marginBottom: "1.5rem",
+    backgroundColor: "rgba(40, 30, 20, 0.5)",
+    borderRadius: "0.75rem",
+    borderLeft: `4px solid #f0b060`,
+    borderBottom: `1px solid #4d3923`,
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+  }}
+>
+  <h3
+    style={{
+      fontSize: "1.1rem",
+      fontWeight: "bold",
+      color: "#f0b060",
+      marginBottom: "0.75rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+    }}
+  >
+    ⚠️ IMPORTANT NOTE
+  </h3>
+  <p style={{ color: "#dfc296" }}>
+    When the game starts, all structures are immune to attacks and raids for 24 hours. Once the first day of gameplay
+    has concluded, there are no more instances of immunity, all Realms and Villages settling into the game after this
+    time will need to rely on their starting defences and consider their starting locations carefully. Lords entering
+    the game after the immunity period are advised to make use of the spectator mode to scout for relatively safe
+    spawning locations before initiating a settling transaction.
+  </p>
+</div>
+
 ### Starting Resources
 
 <StartingResources structureType={StructureType.Realm} />
 
 ### Starting Military
 
-Each Realm begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
-military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
-particular environment.
+Each Realm starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
+number of troops remain within the Realm’s storage to be deployed as a field army should the Realm Lord wish to explore
+beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer process
+explained in the [Movement & Exploration](/mechanics/worldmap-movement/movement) section. The specific type of military
+unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that particular
+environment.
 
-<StartingMilitary structureType={StructureType.Realm} />
+<StartingMilitary amount={5000} structureType={StructureType.Realm} />
 
 ### Realm Progression
 

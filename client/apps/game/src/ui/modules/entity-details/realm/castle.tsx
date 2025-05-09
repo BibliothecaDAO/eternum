@@ -11,20 +11,56 @@ import {
   getRealmInfo,
   getStructure,
 } from "@bibliothecadao/eternum";
-import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
-import { useMemo, useState } from "react";
+import {
+  ContractAddress,
+  ID,
+  LEVEL_DESCRIPTIONS,
+  RealmLevels,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
+import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArrowUpRightIcon, PlusIcon } from "lucide-react";
+import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
+import { useComponentValue } from "@dojoengine/react";
+import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
+
+const WONDER_BONUS_DISTANCE = 12;
+
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
+  const [isLevelUpLoading, setIsLevelUpLoading] = useState(false);
+  const [wonderStructureId, setWonderStructureId] = useState<ID | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const productionWonderBonus = useComponentValue(
+    dojo.setup.components.ProductionWonderBonus,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
+  );
+  const hasActivatedWonderBonus = !!productionWonderBonus;
 
+  const onActivateWonderBonus = async () => {
+    setIsWonderBonusLoading(true);
+    if (!wonderStructureId) return;
+
+    try {
+      await dojo.setup.systemCalls.claim_wonder_production_bonus({
+        signer: dojo.account.account,
+        wonder_structure_id: wonderStructureId,
+        structure_id: structureEntityId,
+      });
+      setIsWonderBonusLoading(false);
+    } catch (error) {
+      console.error("Error claiming wonder production bonus:", error);
+      setIsWonderBonusLoading(false);
+    }
+    setIsWonderBonusLoading(false);
+  };
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
     [structureEntityId, dojo.setup.components],
@@ -34,6 +70,22 @@ export const Castle = () => {
     () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
     [structureEntityId, dojo.account.account.address, dojo.setup.components],
   );
+
+  useEffect(() => {
+    const checkNearWonder = async () => {
+      if (!structure) return;
+      const wonderStructureId = await getSurroundingWonderBonusFromToriiClient(
+        dojo.network.toriiClient,
+        WONDER_BONUS_DISTANCE,
+        {
+          col: structure.position.x,
+          row: structure.position.y,
+        },
+      );
+      setWonderStructureId(wonderStructureId);
+    };
+    checkNearWonder();
+  }, [structure]);
 
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;
@@ -55,14 +107,20 @@ export const Castle = () => {
   }, [getBalance, structureEntityId]);
 
   const levelUpRealm = async () => {
-    setIsLoading(true);
+    setIsLevelUpLoading(true);
     if (!realmInfo) return;
 
-    await dojo.setup.systemCalls.upgrade_realm({
-      signer: dojo.account.account,
-      realm_entity_id: realmInfo.entityId,
-    });
-    setIsLoading(false);
+    try {
+      await dojo.setup.systemCalls.upgrade_realm({
+        signer: dojo.account.account,
+        realm_entity_id: realmInfo.entityId,
+      });
+      setIsLevelUpLoading(false);
+    } catch (error) {
+      console.error("Error upgrading realm:", error);
+      setIsLevelUpLoading(false);
+    }
+    setIsLevelUpLoading(false);
   };
 
   if (!realmInfo) return null;
@@ -71,34 +129,76 @@ export const Castle = () => {
   return (
     structure && (
       <div className="castle-selector w-full text-sm">
-        <div className="p-2 space-y-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 justify-between w-full">
-                <h5 className="text-2xl">{RealmLevels[realmInfo.level]}</h5>
-                {getNextRealmLevel && isOwner && (
-                  <Button
-                    variant={checkBalance ? "gold" : "outline"}
-                    disabled={!checkBalance}
-                    isLoading={isLoading}
-                    onClick={levelUpRealm}
-                  >
-                    {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
-
-                    <ArrowUpRightIcon className="w-4 h-4 ml-4" />
-                  </Button>
-                )}
+        <div className="p-4 space-y-6">
+          {/* Wonder Bonus Section */}
+          {wonderStructureId && (
+            <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-gold/20 p-3 rounded-lg">
+                      <SparklesIcon className="w-7 h-7 text-gold" />
+                    </div>
+                    <div>
+                      <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Available</h6>
+                      <p className="text-gold/90 text-sm">
+                        {hasActivatedWonderBonus
+                          ? "✨ Currently receiving +20% production bonus"
+                          : "Activate to receive +20% production bonus"}
+                      </p>
+                    </div>
+                  </div>
+                  {!hasActivatedWonderBonus && (
+                    <Button
+                      variant="outline"
+                      onClick={onActivateWonderBonus}
+                      isLoading={isWonderBonusLoading}
+                      className="min-w-[160px] hover:bg-gold/10 animate-pulse"
+                    >
+                      Activate Bonus
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
+          )}
 
+          {/* Realm Level Section */}
+          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-gold/10 p-2 rounded-lg">
+                  <CrownIcon className="w-6 h-6 text-gold" />
+                </div>
+                <h5 className="text-2xl font-bold text-gold">{RealmLevels[realmInfo.level]}</h5>
+              </div>
+
+              {getNextRealmLevel && isOwner && (
+                <Button
+                  variant={checkBalance ? "gold" : "outline"}
+                  disabled={!checkBalance}
+                  isLoading={isLevelUpLoading}
+                  onClick={levelUpRealm}
+                  className="w-full"
+                >
+                  {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
+                  <ArrowUpRightIcon className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+
+            {/* Upgrade Requirements Section */}
             {getNextRealmLevel && isOwner && (
-              <div className="bg-gold/5 border border-gold/10 rounded px-4 py-4 space-y-3">
+              <div className="bg-gold/5 border border-gold/10 rounded-lg px-4 py-4 space-y-3">
                 <div>
-                  <h6 className="">Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}</h6>
-                  <p className="text-gold/90 mb-3">
+                  <h6 className="text-gold font-semibold mb-2">
+                    Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}
+                  </h6>
+                  <p className="text-gold/90 mb-4 text-sm">
                     {LEVEL_DESCRIPTIONS[(realmInfo.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
                       <ResourceCost
                         key={a.resource}
@@ -114,20 +214,27 @@ export const Castle = () => {
             )}
           </div>
 
-          <div className="pt-2">
+          {/* Resources Section */}
+          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
             {structure && structure.structure.base.category === StructureType.Realm && (
-              <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entityId} />
+              <RealmResourcesIO
+                size="md"
+                titleClassName="uppercase font-semibold text-gold"
+                realmEntityId={structure.entityId}
+              />
             )}
           </div>
 
+          {/* Labor Production Button */}
           {isOwner && (
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center">
               <Button
                 onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
                 variant="primary"
                 withoutSound
+                className="w-full max-w-[300px]"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <PlusIcon className="w-4 h-4" />
                   Produce Labor
                 </div>

@@ -122,7 +122,7 @@ export default function TroopMovementTable() {
               <span>⚡</span> Stamina
             </div>
             <div style={section.sectionGrid}>
-              <StatItem label="Initial Stamina" value={config.troop.stamina.staminaInitial} />
+              <StatItem label="Stamina on Deployment" value={config.troop.stamina.staminaInitial} />
               <StatItem label="Gain Per Eternum Day" value={config.troop.stamina.staminaGainPerTick} />
             </div>
           </div>

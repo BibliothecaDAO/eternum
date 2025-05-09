@@ -1,5 +1,3 @@
-import { EfficiencyTable } from "@/components/EfficienyTable";
-
 # 📜 Transfers & Trade
 
 ## Transport
@@ -29,6 +27,40 @@ is capable of carrying up to 500 kg of materials, so the number of donkeys requi
 weight of the materials being moved. Once a transfer is initiated, it cannot be cancelled, and the journey will take
 some time depending on the distance to the destination structure. Upon arrival, transferred materials and donkeys must
 be manually claimed via the 'Resource Arrivals' tab before they become available for use.
+
+<div
+  style={{
+    padding: "1.5rem",
+    marginBottom: "1.5rem",
+    backgroundColor: "rgba(40, 30, 20, 0.5)",
+    borderRadius: "0.75rem",
+    borderLeft: `4px solid #f0b060`,
+    borderBottom: `1px solid #4d3923`,
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+  }}
+>
+  <h3
+    style={{
+      fontSize: "1.1rem",
+      fontWeight: "bold",
+      color: "#f0b060",
+      marginBottom: "0.75rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+    }}
+  >
+    ⚠️ IMPORTANT NOTE
+  </h3>
+  <p style={{ color: "#dfc296" }}>
+    In Season 1, resource arrivals are restricted by 'gates' to assist in reducing the load that resource arrival
+    entities have on the game. As donkeys arrive at their destination bearing their various goods, they need to wait
+    until the start of a new Eternum Day for the structure's arrival gate to open before they can enter and be claimed
+    by the owning Lord. For example, if a transfer arrives at 2:56 p.m. the owner of the structure will only need to
+    wait until 3:00 p.m. for the transfer to become claimable, however if the transfer arrives at 3:02 p.m., the goods
+    won't be claimable until the next Eternum Day starts (4 p.m.).
+  </p>
+</div>
 
 ## Banks & Marketplaces
 
@@ -63,19 +95,3 @@ first.
 Complementing the AMM, the Orderbook is a peer-to-peer marketplace, allowing Lords to place precise buy or sell orders
 at chosen quantities and prices. This traditional method of trading incurs lower fees and offers Lords strategic
 control, enabling them to manage market conditions to their advantage and set OTC orders for friends and allies.
-
-## Bridging (Portals)
-
-Portals provide Lords with the ability to bridge materials into and out of Eternum, connecting the in-game economy with
-the Starknet infrastructure layer. Portals are mysterious and unstable devices, so they tend to burn up most of the
-materials sent through. However, there is evidence that the power of the Hyperstructures can increase the stability of
-Portals throughout Eternum. As Lords manage to reestablish these mighty structures throughout the land, the efficiency
-of bridging in and out of Eternum improves for all.
-
-<EfficiencyTable />
-
-Each Realm comes equipped with a Portal. Realm Lords are able to bridge materials both into and out of their Realms
-directly. Villages, however, have more limited bridging capabilities—they can bridge materials out of Eternum, but not
-in. This is in line with their existing restrictions on receiving troops from external sources. They are also limited to
-utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
-tokens bridged out of the game.

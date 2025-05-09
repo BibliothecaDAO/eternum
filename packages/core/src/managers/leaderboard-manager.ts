@@ -1,5 +1,5 @@
 import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao/types";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getGuildFromPlayerAddress } from "../utils";
 
@@ -140,21 +140,17 @@ export class LeaderboardManager {
     return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
   }
 
-  public getHyperstructuresWithContributionsFromPlayer = (address: ContractAddress) => {
-    const playerConstructionPoints = runQuery([HasValue(this.components.PlayerConstructionPoints, { address })]);
-    const hyperstructureEntityIds = Array.from(playerConstructionPoints).map(
-      (entityId) => getComponentValue(this.components.PlayerConstructionPoints, entityId)?.hyperstructure_id ?? 0,
-    );
-    return new Set(hyperstructureEntityIds);
-  };
-
-  public getCompletionPoints = (address: ContractAddress, hyperstructureId: number) => {
-    const playerContribution = getComponentValue(
-      this.components.PlayerConstructionPoints,
-      getEntityIdFromKeys([address, BigInt(hyperstructureId)]),
-    );
-
-    return Number(playerContribution?.unregistered_points) ?? 0;
+  public getHyperstructuresWithSharesFromPlayer = (address: ContractAddress) => {
+    const hyperstructures = runQuery([Has(this.components.Hyperstructure)]);
+    const hyperstructuresWithShares: ID[] = Array.from(hyperstructures)
+      .map((entityId) => {
+        const hyperstructure = getComponentValue(this.components.Hyperstructure, entityId);
+        if (!hyperstructure || !hyperstructure.initialized) return;
+        const playerShares = this.getPlayerShares(address, hyperstructure.hyperstructure_id);
+        if (playerShares > 0) return hyperstructure.hyperstructure_id;
+      })
+      .filter((id) => id !== undefined);
+    return new Set(hyperstructuresWithShares);
   };
 
   public isSeasonOver = () => {

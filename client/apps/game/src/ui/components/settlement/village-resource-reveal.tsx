@@ -2,11 +2,11 @@ import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
 
 // Define common resource types for the roulette
@@ -40,7 +40,8 @@ export const VillageResourceReveal = ({
 }) => {
   const {
     setup: {
-      components: { Tile, Structure },
+      network: { toriiClient },
+      components: { Tile },
       account: { account },
     },
   } = useDojo();
@@ -55,12 +56,36 @@ export const VillageResourceReveal = ({
   const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
 
   // Check if player is owner in case someone else settles at same time
-  const revealedResource = useMemo(() => {
-    if (!tile?.occupier_id) return null;
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
-    if (!structure || structure.owner !== ContractAddress(account.address)) return null;
-    return unpackValue(structure?.resources_packed)?.[0];
-  }, [tile?.occupier_id, account.address]);
+  const [revealedResource, setRevealedResource] = useState<number | null>(null);
+
+  useEffect(() => {
+    // tiles get updated before structure in recs, so we're fetching directly the structure from torii
+    const fetchResourceData = async () => {
+      if (!tile?.occupier_id) return;
+
+      try {
+        const structureData = await getStructureFromToriiClient(toriiClient, tile.occupier_id);
+
+        if (
+          !structureData ||
+          !structureData.structure ||
+          BigInt(structureData.structure.owner) !== BigInt(account.address)
+        ) {
+          return;
+        }
+
+        // Access resources from the structure data
+        if (structureData.structure.resources_packed) {
+          const resourceValue = unpackValue(structureData.structure.resources_packed)?.[0];
+          setRevealedResource(resourceValue);
+        }
+      } catch (error) {
+        console.error("Error fetching structure data:", error);
+      }
+    };
+
+    fetchResourceData();
+  }, [tile?.occupier_id, account.address, toriiClient]);
 
   // Generate random resources for the roulette
   const generateRandomResources = useCallback(() => {
