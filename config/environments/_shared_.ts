@@ -1,4 +1,3 @@
-import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
 import { CapacityConfig, RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
@@ -95,6 +94,9 @@ export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
 
+export const QUEST_FIND_PROBABILITY = 1; // 1/60_000 = 1%
+export const QUEST_FIND_FAIL_PROBABILITY = 59_999; // 59_999/60_000 = 99.99833333333333%
+
 // This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
 export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_750; // 9_750 / 10_000 = 97.5%
@@ -146,7 +148,7 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 
 //######### TODO: CHANGE SEASON POOL RECIPIENT #########
 
-export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
+export const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553";
 export const MAX_NUM_BANKS = 6;
 
 const ONE_MINUTE_IN_SECONDS = 60;
@@ -228,6 +230,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
+    questFindProbability: QUEST_FIND_PROBABILITY,
+    questFindFailProbability: QUEST_FIND_FAIL_PROBABILITY,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
