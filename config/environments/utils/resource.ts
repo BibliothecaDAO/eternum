@@ -195,7 +195,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   ],
   [ResourcesIds.Donkey]: [
     { resource: ResourcesIds.Wheat, amount: 25 },
-    { resource: ResourcesIds.Lords, amount: 0.01 },
+    { resource: ResourcesIds.Lords, amount: 0.005 },
   ],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
