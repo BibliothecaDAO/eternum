@@ -120,6 +120,7 @@ WITH limited_active_orders AS (
                = ltrim(lower(replace(tb.account_address, "0x","")), "0")
            AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
     WHERE  mo."order.active" = 1
+      AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
     )
 
@@ -159,6 +160,41 @@ WITH limited_active_orders AS (
       ON t.token_id = substr(r.token_id, instr(r.token_id, ':') + 1)
     WHERE r.contract_address = '{realmsAddress}'
       AND r.account_address = '{accountAddress}'
+  `,
+
+  TOKEN_BALANCES_WITH_METADATA: `
+WITH active_orders AS (
+SELECT
+printf("0x%064x", mo."order.token_id") AS token_id_hex,
+mo."order.price" AS price,
+mo."order.expiration" AS expiration,
+mo."order.owner" AS order_owner,
+mo.order_id
+FROM "marketplace-MarketOrderModel" AS mo
+WHERE mo."order.active" = 1
+AND mo."order.owner" = '{ownerAddress}'
+GROUP BY token_id_hex
+)
+SELECT
+tb.token_id,
+tb.balance,
+tb.contract_address,
+tb.account_address as token_owner,
+t.name,
+t.symbol,
+t.metadata,
+ao.price,
+ao.expiration,
+ao.order_owner,
+ao.order_id
+FROM token_balances tb
+LEFT JOIN tokens t
+ON t.token_id = substr(tb.token_id, instr(tb.token_id, ':') + 1)
+AND t.contract_address = '{contractAddress}'
+LEFT JOIN active_orders ao
+ON ao.token_id_hex = substr(tb.token_id, instr(tb.token_id, ':') + 1)
+WHERE tb.contract_address = '{contractAddress}'
+AND tb.account_address = '{accountAddress}';
   `,
 };
 
@@ -205,8 +241,8 @@ export interface OpenOrderByPrice {
   metadata: string | null;
   best_price_hex: bigint | null;
   expiration: number | null;
-  token_owner: ContractAddress | null;
-  order_owner: ContractAddress | null;
+  token_owner: string | null;
+  order_owner: string | null;
   balance: string | null;
 }
 
@@ -307,12 +343,14 @@ export async function fetchActiveMarketOrdersTotal(): Promise<ActiveMarketOrders
  */
 export async function fetchOpenOrdersByPrice(
   contractAddress: string,
-  limit: number,
-  offset: number,
+  ownerAddress?: string,
+  limit?: number,
+  offset?: number,
 ): Promise<OpenOrderByPrice[]> {
   const query = QUERIES.OPEN_ORDERS_BY_PRICE.replaceAll("{contractAddress}", contractAddress)
-    .replace("{limit}", limit.toString() ?? "20")
-    .replace("{offset}", offset.toString() ?? "0");
+    .replace("{limit}", limit?.toString() ?? "20")
+    .replace("{offset}", offset?.toString() ?? "0")
+    .replace("{ownerAddress}", ownerAddress?.toString() ?? "");
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
 
@@ -322,12 +360,13 @@ export async function fetchOpenOrdersByPrice(
 
   // Define the type for the raw API response
   type RawOpenOrderByPrice = {
-    token_id: string;
+    token_id: number;
     name: string | null;
     symbol: string | null;
     metadata: string | null;
     price_hex: string | null;
     best_price_hex: string | null;
+    token_id_hex: string | null;
     expiration: number | null;
     token_owner: ContractAddress | null;
     order_owner: ContractAddress | null;
@@ -340,11 +379,11 @@ export async function fetchOpenOrdersByPrice(
   // Parse hex strings to bigint
   return rawData.map((item) => ({
     ...item,
-    token_id: parseInt(item.token_id, 16),
+    token_id: parseInt(item.token_id_hex ?? "0", 16),
     order_id: parseInt(item.order_id, 16),
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
-    token_owner: item.token_owner ? BigInt(item.token_owner) : null,
-    order_owner: item.order_owner ? BigInt(item.order_owner) : null,
+    token_owner: item.token_owner?.toString() ?? null,
+    order_owner: item.order_owner?.toString() ?? null,
   }));
 }
 
@@ -368,4 +407,37 @@ export async function fetchSeasonPassRealmsByAddress(
   }
 
   return await response.json();
+}
+
+export interface TokenBalanceWithToken {
+  token_id: string;
+  balance: string;
+  contract_address: string;
+  account_address: string;
+  name: string | null;
+  symbol: string | null;
+  expiration: number | null;
+  price: bigint | null;
+  metadata: string | null;
+}
+
+export async function fetchTokenBalancesWithMetadata(
+  contractAddress: string,
+  accountAddress: string,
+): Promise<TokenBalanceWithToken[]> {
+  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress).replace(
+    "{accountAddress}",
+    accountAddress,
+  );
+  console.log(query);
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch token balances with tokens: ${response.statusText}`);
+  }
+  const rawData = await response.json();
+  return rawData.map((item: TokenBalanceWithToken) => ({
+    ...item,
+    token_id: parseInt(item.token_id?.split(':')[1] ?? "0", 16),
+  }));
 }

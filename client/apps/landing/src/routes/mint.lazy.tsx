@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress, seasonPassAddress } from "@/config";
 import useNftSelection from "@/hooks/use-nft-selection";
-import { displayAddress } from "@/lib/utils";
+import { displayAddress, trimAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -46,10 +46,7 @@ function Mint() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
-  const trimAddress = (addr?: string): string => {
-    if (!addr || !addr.startsWith("0x")) return addr || "";
-    return "0x" + addr.slice(2).replace(/^0+/, '');
-  };
+
 
   const trimmedAddress = trimAddress(address);
 

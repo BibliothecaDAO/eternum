@@ -1,4 +1,4 @@
-import { OpenOrderByPrice } from "@/hooks/services";
+import { MergedNftData } from "@/types";
 import { Crown } from "lucide-react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
@@ -8,12 +8,12 @@ interface RealmGridItem {
     md?: number;
     lg?: number;
   };
-  data: OpenOrderByPrice;
+  data: MergedNftData;
 }
 
 interface SeasonPassRowProps {
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
-  seasonPasses: OpenOrderByPrice[];
+  seasonPasses: MergedNftData[];
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;

@@ -14,7 +14,6 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
-import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
 import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
@@ -30,10 +29,6 @@ export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
   pendingComponent: FullPageLoader,
 });
-export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-export type TokenBalanceEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-export type AllTokenEdge = NonNullable<NonNullable<GetAllTokensQuery["tokens"]>["edges"]>[number];
-
 
 function SeasonPasses() {
   const { connectors } = useConnect();
@@ -52,7 +47,7 @@ function SeasonPasses() {
     queries: [
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
-        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
       },
       {
         queryKey: ["activeMarketOrdersTotal"],

@@ -1,8 +1,8 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
-import { OpenOrderByPrice } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { RealmMetadata } from "@/types";
+import { trimAddress } from "@/lib/utils";
+import { MergedNftData, RealmMetadata } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft } from "lucide-react"; // Import the icon
@@ -13,7 +13,7 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 import { RealmDetailModal } from "./realm-detail-modal";
 
 interface SeasonPassCardProps {
-  pass: OpenOrderByPrice;
+  pass: MergedNftData;
   toggleNftSelection?: () => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
@@ -56,7 +56,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
     enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
   });*/
 
-  const isOwner = pass.token_owner === BigInt(accountAddress ?? "0");
+  const isOwner = pass.token_owner === trimAddress(accountAddress);
 
   //const orderOwner = BigInt(pass.token_owner ?? "0") === pass.order_owner || BigInt(pass.order_owner ?? "0") === BigInt("0");
   // Calculate time remaining for auctions about to expire
