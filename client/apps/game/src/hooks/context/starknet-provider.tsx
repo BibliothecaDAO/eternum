@@ -46,7 +46,6 @@ const nonLocalController = new ControllerConnector({
   policies,
   slot,
   namespace,
-
 });
 
 const katanaLocalChain = {
