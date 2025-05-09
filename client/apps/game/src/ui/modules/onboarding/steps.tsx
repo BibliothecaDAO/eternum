@@ -277,7 +277,7 @@ export const StepOne = () => {
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      {/* <SpectateButton onClick={onSpectatorModeClick} /> */}
+      <SpectateButton onClick={onSpectatorModeClick} />
     </div>
   );
 };
@@ -350,7 +350,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const [maxLayers, setMaxLayers] = useState<number | null>(null);
 
   useEffect(() => {
-    setMaxLayers(getMaxLayer(realmCount));
+    const maxLayer = getMaxLayer(realmCount);
+    setMaxLayers(maxLayer);
   }, [realmCount]);
 
   useEffect(() => {

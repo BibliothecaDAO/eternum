@@ -54,7 +54,8 @@ export const LeftNavigationModule = memo(() => {
 
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
-  const disableButtons = !structureIsMine && account.address !== "0x0";
+  const seasonHasStarted = false;
+  const disableButtons = (!structureIsMine && account.address !== "0x0") || !seasonHasStarted;
 
   const isRealmOrVillage = useMemo(
     () =>
