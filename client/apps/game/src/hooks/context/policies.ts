@@ -161,6 +161,10 @@ export const policies = toSessionPolicies({
           entrypoint: "join_guild",
         },
         {
+          name: "leave_guild",
+          entrypoint: "leave_guild",
+        },
+        {
           name: "whitelist_player",
           entrypoint: "whitelist_player",
         },
@@ -183,6 +187,14 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
+        },
+        {
+          name: "update_whitelist",
+          entrypoint: "update_whitelist",
+        },
+        {
+          name: "remove_member",
+          entrypoint: "remove_member",
         },
       ],
     },

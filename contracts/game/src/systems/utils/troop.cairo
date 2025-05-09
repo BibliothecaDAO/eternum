@@ -77,7 +77,7 @@ pub impl iGuardImpl of iGuardTrait {
         }
 
         // update stamina
-        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
         // force stamina to be 0 so it isn't gamed
         // through the refill function and guard deletion
         if troops.count.is_zero() {
@@ -189,7 +189,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
         };
         let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
         let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
@@ -206,7 +206,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         self.owner == DAYDREAMS_AGENT_ID
     }
 
-    fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+    fn assert_caller_structure_or_agent_owner(self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
             let agent_owner: AgentOwner = world.read_model(self.explorer_id);
             assert!(agent_owner.address == starknet::get_caller_address(), "caller is not the agent owner");
@@ -256,6 +256,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                         .stamina
                         .spend(
                             explorer.troops.category,
+                            explorer.troops.tier,
                             troop_stamina_config,
                             stamina_cost.try_into().unwrap(),
                             current_tick,
@@ -587,12 +588,14 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
         let random_troop_type_index: u128 = random::random(seed, salt, troop_types.len().into());
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
-
-        let troop_tiers: Array<TroopTier> = array![TroopTier::T1, TroopTier::T2, TroopTier::T3];
-        let random_troop_tier_index: u128 = random::random(
-            seed + 14, salt + random_troop_type_index, troop_tiers.len().into(),
-        );
-        let troop_tier: TroopTier = *troop_tiers.at(random_troop_tier_index.try_into().unwrap());
+        let troop_tier: TroopTier = *random::choices(
+            array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
+            array![80, 15, 5].span(),
+            array![].span(),
+            1,
+            true,
+            seed + 15,
+        )[0];
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();

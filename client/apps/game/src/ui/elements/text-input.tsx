@@ -4,6 +4,7 @@ import React from "react";
 interface TextInputProps {
   disabled?: boolean;
   onChange: (value: string) => void;
+  value?: string;
   className?: string;
   placeholder?: string;
   maxLength?: number;
@@ -13,7 +14,7 @@ interface TextInputProps {
 }
 
 const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
-  const { disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
+  const { disabled, onChange, value, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
 
   return (
     <form
@@ -35,6 +36,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         )}
         disabled={disabled || false}
         type="text"
+        value={value}
         onChange={(e) => onChange(e.currentTarget.value)}
         placeholder={placeholder}
         maxLength={maxLength}

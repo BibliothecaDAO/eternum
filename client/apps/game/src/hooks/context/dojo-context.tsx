@@ -5,7 +5,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
-import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
@@ -110,6 +109,19 @@ const DojoContextProvider = ({
 
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting, connector } = useAccount();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUsername = async () => {
+      let username = await (connector as unknown as ControllerConnector)?.username();
+      console.log({ username, connector });
+      if (!username) {
+        username = "adventurer"; // Default to adventurer in local mode
+      }
+      setUsername(username);
+    };
+    getUsername();
+  }, [connector]);
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
   const [retries, setRetries] = useState(0);
@@ -148,6 +160,21 @@ const DojoContextProvider = ({
     }
   }, [controllerAccount, retries]);
 
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (username && showBlankOverlay) {
+      const showTimer = setTimeout(() => {
+        setShowWelcome(true);
+        const hideTimer = setTimeout(() => {
+          setShowWelcome(false);
+        }, 4000);
+        return () => clearTimeout(hideTimer);
+      }, 2000);
+      return () => clearTimeout(showTimer);
+    }
+  }, [username, showBlankOverlay]);
+
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
@@ -176,7 +203,7 @@ const DojoContextProvider = ({
                       <span className="flex-grow text-center">Log In</span>
                     </div>
                   </Button>
-                  <SpectateButton onClick={onSpectatorModeClick} />
+                  {/* <SpectateButton onClick={onSpectatorModeClick} /> */}
 
                   <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full" size="lg">
@@ -202,17 +229,28 @@ const DojoContextProvider = ({
 
   // Once account is set, render the children
   return (
-    <DojoContext.Provider
-      value={{
-        ...value,
-        masterAccount,
-        account: {
-          account: accountToUse,
-          accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
-        },
-      }}
-    >
-      {children}
-    </DojoContext.Provider>
+    <>
+      {username && showBlankOverlay && (
+        <div
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-brown/80 text-gold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ${
+            showWelcome ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          Welcome, {username}!
+        </div>
+      )}
+      <DojoContext.Provider
+        value={{
+          ...value,
+          masterAccount,
+          account: {
+            account: accountToUse,
+            accountDisplay: displayAddress((accountToUse as Account | AccountInterface)?.address || ""),
+          },
+        }}
+      >
+        {children}
+      </DojoContext.Provider>
+    </>
   );
 };

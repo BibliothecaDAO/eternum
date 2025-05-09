@@ -1065,8 +1065,8 @@ export const setSeasonConfig = async (config: Config) => {
     season_pass_address: config.config.setup!.addresses.seasonPass,
     realms_address: config.config.setup!.addresses.realms,
     lords_address: config.config.setup!.addresses.lords,
-    start_settling_at: startSettlingAt,
-    start_main_at: startMainAt,
+    start_settling_at: 1746795600,
+    start_main_at: 1747227600,
     bridge_close_end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };

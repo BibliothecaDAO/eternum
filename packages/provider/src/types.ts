@@ -51,6 +51,7 @@ export enum TransactionType {
   ACCEPT_MARKETPLACE_ORDER = "accept_marketplace_order",
   CANCEL_MARKETPLACE_ORDER = "cancel_marketplace_order",
   EDIT_MARKETPLACE_ORDER = "edit_marketplace_order",
+  LEAVE_GUILD = "leave_guild",
   START_QUEST = "start_quest",
   CLAIM_REWARD = "claim_reward",
   GET_GAME_COUNT = "get_game_count",

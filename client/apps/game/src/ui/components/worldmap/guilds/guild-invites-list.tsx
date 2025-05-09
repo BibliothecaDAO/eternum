@@ -7,42 +7,36 @@ import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 
-interface GuildInviteListProps {
-  invitedPlayers: GuildMemberInfo[];
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-}
-
-interface InviteRowProps {
-  player: GuildMemberInfo;
-  isLoading: boolean;
-  viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
-}
-
 export const GuildInviteList = ({
   invitedPlayers,
   isLoading,
   viewPlayerInfo,
   removePlayerFromWhitelist,
-}: GuildInviteListProps) => {
+  userIsGuildMaster,
+}: {
+  invitedPlayers: GuildMemberInfo[];
+  isLoading: boolean;
+  viewPlayerInfo: (playerAddress: ContractAddress) => void;
+  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
+  userIsGuildMaster: boolean;
+}) => {
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
 
   return (
-    <div className="flex flex-col p-4 border border-gold/30 rounded-xl h-full bg-brown-900/50 backdrop-blur-sm">
-      <GuildInviteListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-        {sortItems(invitedPlayers, activeSort, { sortKey: "rank", sort: "asc" }).map((player) => (
+    <div className="flex flex-col p-2 border border-gold/30  h-full bg-brown-900/50 backdrop-blur-sm">
+      {/* <GuildInviteListHeader activeSort={activeSort} setActiveSort={setActiveSort} /> */}
+      <div className="overflow-y-auto max-h-32 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent gap-2 flex flex-col">
+        {sortItems(invitedPlayers, activeSort, { sortKey: "rank", sort: "asc" }).map((player, index) => (
           <InviteRow
-            key={player.address}
+            key={index}
             player={player}
             isLoading={isLoading}
             viewPlayerInfo={viewPlayerInfo}
             removePlayerFromWhitelist={removePlayerFromWhitelist}
+            userIsGuildMaster={userIsGuildMaster}
           />
         ))}
         {!invitedPlayers.length && <p className="text-center italic text-gold/70 py-4">No Tribe Invites Sent</p>}
@@ -89,11 +83,23 @@ const GuildInviteListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) =
   );
 };
 
-const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelist }: InviteRowProps) => {
+const InviteRow = ({
+  player,
+  isLoading,
+  viewPlayerInfo,
+  removePlayerFromWhitelist,
+  userIsGuildMaster,
+}: {
+  player: GuildMemberInfo;
+  isLoading: boolean;
+  viewPlayerInfo: (playerAddress: ContractAddress) => void;
+  removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
+  userIsGuildMaster: boolean;
+}) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div className="grid grid-cols-5 w-full py-2 px-2 hover:bg-gold/10 rounded-lg transition-colors duration-200 mb-1">
+    <div className="grid grid-cols-5 w-full hover:bg-gold/10  transition-colors duration-200">
       <div
         className="col-span-4 grid grid-cols-1 cursor-pointer"
         onClick={() => {
@@ -103,25 +109,27 @@ const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelis
         <p className="truncate font-semibold text-gold/90">{player.name}</p>
       </div>
 
-      <Trash
-        onClick={() => {
-          removePlayerFromWhitelist(player.address!);
-          setTooltip(null);
-        }}
-        className={clsx(
-          "m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all",
-          {
-            "pointer-events-none": isLoading,
-          },
-        )}
-        onMouseEnter={() =>
-          setTooltip({
-            content: <div>Revoke tribe invitation</div>,
-            position: "top",
-          })
-        }
-        onMouseLeave={() => setTooltip(null)}
-      />
+      {userIsGuildMaster && (
+        <Trash
+          onClick={() => {
+            removePlayerFromWhitelist(player.address!);
+            setTooltip(null);
+          }}
+          className={clsx(
+            "m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all",
+            {
+              "pointer-events-none": isLoading,
+            },
+          )}
+          onMouseEnter={() =>
+            setTooltip({
+              content: <div>Revoke tribe invitation</div>,
+              position: "top",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+        />
+      )}
     </div>
   );
 };

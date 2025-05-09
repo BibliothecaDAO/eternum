@@ -308,6 +308,13 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.edit_marketplace_order(props);
   };
 
+  const leave_guild = async (props: SystemProps.LeaveGuildProps) => {
+    await provider.leave_guild(props);
+  };
+
+  const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps) => {
+    await provider.claim_wonder_production_bonus(props);
+    
   const start_quest = async (props: SystemProps.StartQuestProps) => {
     await provider.start_quest(props);
   };
@@ -343,6 +350,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     create_building: withAuth(create_building),
+    claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
+
     uuid: uuid,
 
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
@@ -397,6 +406,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     accept_marketplace_order: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),
     edit_marketplace_order: withAuth(edit_marketplace_order),
+    
+    leave_guild: withAuth(leave_guild),
 
     start_quest: withAuth(start_quest),
     claim_reward: withAuth(claim_reward),

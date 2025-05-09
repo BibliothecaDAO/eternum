@@ -49,7 +49,7 @@ export const WrongNetworkDialog = () => {
     <Dialog open={isWrongNetwork}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Wrong Network</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-primary">Wrong Network</DialogTitle>
         </DialogHeader>
         <DialogDescription>
           You are on the wrong network. Please switch to {import.meta.env.VITE_PUBLIC_CHAIN}

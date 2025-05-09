@@ -277,7 +277,7 @@ export const StepOne = () => {
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      <SpectateButton onClick={onSpectatorModeClick} />
+      {/* <SpectateButton onClick={onSpectatorModeClick} /> */}
     </div>
   );
 };
@@ -307,16 +307,23 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
 
   useEffect(() => {
-    getUnusedSeasonPasses(
-      account.address,
-      realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
-    ).then((unsettledSeasonPassRealms) => {
-      if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
+    const fetchPasses = async () => {
+      try {
+        const unsettledSeasonPassRealms = await getUnusedSeasonPasses(
+          account.address,
+          realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
+        );
         setSeasonPassRealms(unsettledSeasonPassRealms);
-        setLoading(false);
+        if (unsettledSeasonPassRealms.length === 0) {
+          onPrevious();
+        }
+      } catch (error) {
+        console.error("Error fetching unused season passes:", error);
       }
-    });
-  }, [loading, realms, account.address, Structure]);
+    };
+
+    fetchPasses();
+  }, [account.address, realms, Structure, onPrevious]);
 
   const handleSelectLocation = (realmId: number, location: SettlementLocation | null) => {
     setSeasonPassRealms((prevRealms) =>
@@ -354,51 +361,25 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   }, []);
 
   const seasonPassElements = useMemo(() => {
-    const elements = [];
-    for (let i = 0; i < seasonPassRealms.length; i += 2) {
-      const seasonPassElement = seasonPassRealms[i];
-      const seasonPassElement2 = seasonPassRealms[i + 1];
-      elements.push(
-        <div className="grid grid-cols-2 gap-3" key={`realm-row-${i}`}>
-          <SeasonPassRealm
-            key={seasonPassElement.realmId}
-            seasonPassRealm={seasonPassElement}
-            selected={selectedRealms.includes(seasonPassElement.realmId)}
-            setSelected={(selected) =>
-              setSelectedRealms(
-                selected
-                  ? [...selectedRealms, seasonPassElement.realmId]
-                  : selectedRealms.filter((id) => id !== seasonPassElement.realmId),
-              )
-            }
-            onSelectLocation={handleSelectLocation}
-            occupiedLocations={occupiedLocations}
-            realmCount={realmCount}
-            maxLayers={maxLayers}
-          />
-          {seasonPassElement2 && (
-            <SeasonPassRealm
-              key={seasonPassElement2.realmId}
-              seasonPassRealm={seasonPassElement2}
-              selected={selectedRealms.includes(seasonPassElement2.realmId)}
-              setSelected={(selected) =>
-                setSelectedRealms(
-                  selected
-                    ? [...selectedRealms, seasonPassElement2.realmId]
-                    : selectedRealms.filter((id) => id !== seasonPassElement2.realmId),
-                )
-              }
-              onSelectLocation={handleSelectLocation}
-              occupiedLocations={occupiedLocations}
-              realmCount={realmCount}
-              maxLayers={maxLayers}
-            />
-          )}
-        </div>,
-      );
-    }
-    return elements;
-  }, [seasonPassRealms, selectedRealms]);
+    return seasonPassRealms.map((seasonPassElement) => (
+      <SeasonPassRealm
+        key={seasonPassElement.realmId}
+        seasonPassRealm={seasonPassElement}
+        selected={selectedRealms.includes(seasonPassElement.realmId)}
+        setSelected={(selected) =>
+          setSelectedRealms(
+            selected
+              ? [...selectedRealms, seasonPassElement.realmId]
+              : selectedRealms.filter((id) => id !== seasonPassElement.realmId),
+          )
+        }
+        onSelectLocation={handleSelectLocation}
+        occupiedLocations={occupiedLocations}
+        realmCount={realmCount}
+        maxLayers={maxLayers}
+      />
+    ));
+  }, [seasonPassRealms, selectedRealms, handleSelectLocation, occupiedLocations, realmCount, maxLayers]);
 
   return (
     <motion.div
@@ -408,43 +389,33 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div
-        className={`self-center border-[0.5px] border-gradient rounded-lg w-full relative z-50 backdrop-filter
+      {seasonPassRealms.length === 0 && !loading ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-gold">No Realms</h3>
+          <p className="text-gray-400">You need to have at least one realm to settle a season pass.</p>
+          <Button size="lg" onClick={onPrevious}>
+            Go Back
+          </Button>
+        </div>
+      ) : (
+        <div
+          className={`self-center border-[0.5px] border-gradient rounded-lg w-full relative z-50 backdrop-filter
 		 p-8`}
-      >
-        <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
-          <Header onPrevious={onPrevious} />
+        >
+          <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
+            <Header onPrevious={onPrevious} />
 
-          {/* <div className=" w-full mt-auto">
-            <Button
-              disabled={settleableRealms.length === 0 || loading}
-              onClick={() => settleRealms(settleableRealms)}
-              className={`w-full lg:h-10 h-12 !text-black !normal-case rounded-md ${
-                settleableRealms.length === 0 || loading
-                  ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
-                  : "!bg-gold hover:!bg-gold/80"
-              }`}
-            >
-              {loading ? (
-                <img src="/images/logos/eternum-loader.png" className="w-7" />
-              ) : (
-                <div className="text-lg !font-normal">
-                  {settleableRealms.length === 0 ? "Select Realms & Locations" : `Settle (${settleableRealms.length})`}
+            <div className="relative flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+              {loading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-md">
+                  <img src="/images/logos/eternum-loader.png" className="w-10 h-10 animate-spin" alt="Loading..." />
                 </div>
               )}
-            </Button>
-          </div> */}
-
-          <div className="relative flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
-            {loading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-md">
-                <img src="/images/logos/eternum-loader.png" className="w-10 h-10 animate-spin" alt="Loading..." />
-              </div>
-            )}
-            {seasonPassElements}
+              <div className="grid grid-cols-2 gap-3">{seasonPassElements}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

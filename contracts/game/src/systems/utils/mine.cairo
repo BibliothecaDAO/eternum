@@ -66,7 +66,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
-        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();
+        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
         let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
         iMercenariesImpl::add(
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,

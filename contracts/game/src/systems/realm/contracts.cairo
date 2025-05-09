@@ -68,9 +68,22 @@ pub mod realm_systems {
     };
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
+    use starknet::TxInfo;
     use super::RealmSettlement;
     use super::{IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait};
+
+
+    #[derive(Introspect, Copy, Drop, Serde)]
+    #[dojo::model]
+    pub struct AntiBot {
+        #[key]
+        pub caller: ContractAddress,
+        #[key]
+        pub tx_hash: felt252,
+        used: bool,
+    }
 
 
     #[abi(embed_v0)]
@@ -95,6 +108,16 @@ pub mod realm_systems {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+
+            // anti bot protection
+            let tx_info: TxInfo = starknet::get_tx_info().unbox();
+            let tx_hash: felt252 = tx_info.transaction_hash;
+            let caller: ContractAddress = starknet::get_caller_address();
+
+            let mut anti_bot: AntiBot = world.read_model((caller, tx_hash));
+            assert!(!anti_bot.used, "multicalls not allowed");
+            anti_bot.used = true;
+            world.write_model(@anti_bot);
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
@@ -129,14 +152,16 @@ pub mod realm_systems {
                 .create_internal(owner, realm_id, resources, order, wonder, coord);
 
             // collect lords attached to season pass and bridge into the realm
-            // let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
+            // let lords_amount_attached: u256 =
+            // InternalRealmLogicImpl::collect_lords_from_season_pass(
             //     season_addresses_config.season_pass_address, realm_id,
             // );
 
             // // bridge attached lords into the realm
             // if lords_amount_attached.is_non_zero() {
             //     InternalRealmLogicImpl::bridge_lords_into_realm(
-            //         ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
+            //         ref world, season_addresses_config.lords_address, structure_id,
+            //         lords_amount_attached, frontend,
             //     );
             // }
 
@@ -163,6 +188,11 @@ pub mod realm_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+
+            // emit achievement progression
+            AchievementTrait::progress(
+                world, owner.into(), Tasks::REALM_SETTLEMENT, 1, starknet::get_block_timestamp(),
+            );
 
             structure_id.into()
         }

@@ -39,10 +39,10 @@ export class CombatSimulator {
   private readonly t3DamageMultiplier: number;
   private readonly staminaAttackThreshold: number;
   private readonly baseDamageFactor: number;
-  private readonly betaSmall: number;
-  private readonly betaLarge: number;
-  private readonly c0: number;
-  private readonly delta: number;
+  // private readonly betaSmall: number;
+  // private readonly betaLarge: number;
+  // private readonly c0: number;
+  // private readonly delta: number;
 
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
@@ -52,10 +52,10 @@ export class CombatSimulator {
     this.t3DamageMultiplier = divideWithPrecision(params.t3_damage_multiplier, CombatSimulator.MAX_U64);
     this.staminaAttackThreshold = params.stamina_attack_req;
     this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
-    this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
-    this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
-    this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
-    this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
+    // this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
+    // this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
+    // this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
+    // this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
   }
 
   private getTierValue(tier: TroopTier): number {
@@ -81,10 +81,8 @@ export class CombatSimulator {
     }
   }
 
-  private calculateEffectiveBeta(totalTroops: number): number {
-    return (
-      this.betaSmall - (this.betaSmall - this.betaLarge) * ((Math.tanh((totalTroops - this.c0) / this.delta) + 1) / 2)
-    );
+  private calculateEffectiveBeta(): number {
+    return 0.2;
   }
 
   /**
@@ -103,7 +101,7 @@ export class CombatSimulator {
     biome: BiomeType,
   ): { attackerDamage: number; defenderDamage: number } {
     const totalTroops = attacker.troopCount + defender.troopCount;
-    const betaEff = this.calculateEffectiveBeta(totalTroops);
+    const betaEff = this.calculateEffectiveBeta();
 
     if (totalTroops === 0) {
       return { attackerDamage: 0, defenderDamage: 0 };
@@ -139,7 +137,7 @@ export class CombatSimulator {
       damage_biome_bonus_num: 3000,
       damage_beta_small: 4611686018427387904n, // 0.25
       damage_beta_large: 2213609288845146193n, // 0.12
-      damage_scaling_factor: 64563604257983430656n, // 3.5
+      damage_scaling_factor: 55340232221128654848n, // 3
       damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
       damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100

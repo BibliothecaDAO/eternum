@@ -1,4 +1,3 @@
-use achievement::store::{StoreTrait};
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
@@ -6,7 +5,6 @@ use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
 use s1_eternum::models::weight::{Weight};
-use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 use starknet::ContractAddress;
 
@@ -70,13 +68,6 @@ pub impl iDonkeyImpl of iDonkeyTrait {
                         timestamp: time,
                     },
                 );
-
-            // [Achievement] Consume donkeys
-            let count: u32 = (donkey_amount / RESOURCE_PRECISION).try_into().unwrap();
-            let player_id: felt252 = player_address.into();
-            let task_id = Task::Breeder.identifier();
-            let mut store = StoreTrait::new(world);
-            store.progress(player_id, task_id, count, time);
         }
     }
 }

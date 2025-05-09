@@ -19,9 +19,7 @@ import { useMemo, useState } from "react";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
-
   const { currentBlockTimestamp } = useBlockTimestamp();
-
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 

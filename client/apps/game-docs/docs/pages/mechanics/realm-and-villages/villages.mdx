@@ -35,11 +35,14 @@ possible hexes they spawn on by selecting a compass direction.
 
 ### Starting Military
 
-Each Village begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
-military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
+Each Village starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
+number of troops remain within the Village’s storage to be deployed as a field army should the Village Lord wish to
+explore beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer
+process explained in the [Movement & Exploration](/mechanics/worldmap-movement/movement) section. The specific type of
+military unit is determined by your Village's biome, and is strategically chosen to have a combat advantage in that
 particular environment.
 
-<StartingMilitary structureType={StructureType.Village} />
+<StartingMilitary amount={1000} structureType={StructureType.Village} />
 
 ### Resource Roll
 
