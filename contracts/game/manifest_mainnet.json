@@ -8435,7 +8435,7 @@
     },
     {
       "address": "0x31973536315f0915760065cdbe90accf397a7163e77fcf57a570ae9e0210560",
-      "class_hash": "0x4f6d6b1aa5331b3f8ac7360cb63a1cfed93198eba87cf29b32029b8bacd43d",
+      "class_hash": "0x4ea45093b333892b70d46e97dc799cf5d3e33955afaa912f4acdf99158753a8",
       "abi": [
         {
           "type": "impl",
@@ -12304,6 +12304,12 @@
       "class_hash": "0x5b29c152adf28ee09a7bda0dd5a91509928dced9b85f53b3453693af8b1e9ad",
       "tag": "s1_eternum-AgentOwner",
       "selector": "0x4b0db2589fac99b5de94eeb279e466737fdf06029e398c9d2f89fbf91ed1318"
+    },
+    {
+      "members": [],
+      "class_hash": "0x5826cab045c105f80a401f5dc55e86a0e081a22a583b6301b3c9d234c3abec3",
+      "tag": "s1_eternum-AntiBot",
+      "selector": "0x344804b2eb95394730da8909ac2aa5d50715b8ed1715e0eef00953b34345183"
     },
     {
       "members": [],
