@@ -5,7 +5,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
-import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
@@ -204,7 +203,7 @@ const DojoContextProvider = ({
                       <span className="flex-grow text-center">Log In</span>
                     </div>
                   </Button>
-                  <SpectateButton onClick={onSpectatorModeClick} />
+                  {/* <SpectateButton onClick={onSpectatorModeClick} /> */}
 
                   <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
                     <Button className="w-full" size="lg">
