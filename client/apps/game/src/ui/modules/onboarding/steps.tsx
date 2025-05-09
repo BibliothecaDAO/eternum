@@ -277,7 +277,7 @@ export const StepOne = () => {
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      <SpectateButton onClick={onSpectatorModeClick} />
+      {/* <SpectateButton onClick={onSpectatorModeClick} /> */}
     </div>
   );
 };
