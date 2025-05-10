@@ -7,8 +7,6 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ShepherdJourneyProvider } from "react-shepherd";
-import "shepherd.js/dist/css/shepherd.css";
 
 import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
@@ -194,15 +192,13 @@ async function init() {
   inject();
   root.render(
     <React.StrictMode>
-      <ShepherdJourneyProvider>
-        <StarknetProvider>
-          <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
-            <MetagameProvider>
-              <App backgroundImage={backgroundImage} />
-            </MetagameProvider>
-          </DojoProvider>
-        </StarknetProvider>
-      </ShepherdJourneyProvider>
+      <StarknetProvider>
+        <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
+          <MetagameProvider>
+            <App backgroundImage={backgroundImage} />
+          </MetagameProvider>
+        </DojoProvider>
+      </StarknetProvider>
     </React.StrictMode>,
   );
 }

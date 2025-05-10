@@ -39,8 +39,8 @@ export const ImmunityTimer = ({
           <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse mr-2"></div>
           <div className="text-sm font-semibold text-blue-300 uppercase tracking-wider">Protected</div>
         </div>
-        <div className="text-xs text-blue-300/80">Immunity Shield</div>
       </div>
+      <div className="text-xs text-blue-300/80">Immunity Shield</div>
 
       {/* Timer display */}
       <div className="text-lg font-bold text-white mb-2">{formatTime(timer)}</div>

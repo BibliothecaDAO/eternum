@@ -4,12 +4,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
+import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useQuests } from "@bibliothecadao/react";
 import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
-import { Tile } from "@bibliothecadao/types";
+import { ContractAddress, Tile } from "@bibliothecadao/types";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -73,6 +74,32 @@ const RealmTransferManager = lazy(() =>
   import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
 );
 
+const CustomHooks = () => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+
+  const setDisableButtons = useUIStore((state) => state.setDisableButtons);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const structureInfo = useMemo(
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    [structureEntityId, account.address, components],
+  );
+
+  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
+
+  const seasonHasStarted = useMemo(() => env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000, []);
+
+  useEffect(() => {
+    const disableButtons = !structureIsMine || account.address === "0x0" || !seasonHasStarted;
+    setDisableButtons(disableButtons);
+  }, [setDisableButtons, structureIsMine, account.address, seasonHasStarted]);
+
+  return null;
+};
+
 // Modal component to prevent unnecessary World re-renders
 const ModalOverlay = () => {
   const showModal = useUIStore((state) => state.showModal);
@@ -124,7 +151,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         );
         const end = performance.now();
 
-        console.log(structures);
         console.log(
           `[sync] structures query structures ${structures.map((s) => `${s.entityId}(${s.position.col},${s.position.row})`)}`,
           end - start,
@@ -273,6 +299,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   return (
     <>
+      <CustomHooks />
       <NotLoggedInMessage />
 
       {/* Main world layer */}

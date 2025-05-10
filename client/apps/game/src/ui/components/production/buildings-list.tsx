@@ -97,6 +97,7 @@ export const BuildingsList = ({
                     resourceManager={resourceManager}
                     maxCapacityKg={storeCapacityKg.capacityKg}
                     size="large"
+                    showTransfer={false}
                   />
                 </div>
               </div>
