@@ -47,13 +47,13 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   questGames: [
     {
-      address: "0x25dd1faa4f94d1ddd523d7db4697c10a34a09d7b55b4758995a070fd9d61498",
+      address: "0x2418e02ae43901d8aa8ab5c4b676740dccdcf1c94f13344a978ebe6077b109",
       levels: [
         { target_score: 26, settings_id: 1, time_limit: 86400 },
         { target_score: 51, settings_id: 2, time_limit: 86400 },
         { target_score: 51, settings_id: 3, time_limit: 86400 },
         { target_score: 51, settings_id: 4, time_limit: 86400 },
-        { target_score: 101, settings_id: 9, time_limit: 86400 },
+        { target_score: 101, settings_id: 5, time_limit: 86400 },
       ],
       overwrite: true,
     },
