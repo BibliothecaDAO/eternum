@@ -364,18 +364,25 @@ function ChatModule() {
     };
   }, [chatClient]);
 
+  const joinedRoomsRef = useRef(new Set<string>());
+
   // Automatically join all available rooms to receive notifications
   useEffect(() => {
     if (chatClient && chatClient.socket && chatClient.socket.connected && availableRooms.length > 0) {
-      console.log(
-        "Auto-joining available rooms for notifications:",
-        availableRooms.map((room) => room.id),
-      );
       availableRooms.forEach((room) => {
-        chatClient.joinRoom(room.id);
+        if (!joinedRoomsRef.current.has(room.id)) {
+          console.log(`Auto-joining room for notifications: ${room.id}`);
+          chatClient.joinRoom(room.id);
+          joinedRoomsRef.current.add(room.id);
+        }
       });
     }
-  }, [chatClient, availableRooms, chatClient?.socket?.connected]); // Ensure dependencies are correct
+    // If the socket disconnects, we might want to clear joinedRoomsRef
+    // so it attempts to rejoin when connection is re-established.
+    // However, the current ChatClient re-initialization on disconnect/reconnect might handle this implicitly
+    // by creating a new client instance, which would also mean a new joinedRoomsRef effectively.
+    // For now, let's keep the dependencies simple.
+  }, [chatClient, availableRooms, chatClient?.socket?.connected]);
 
   // Join a room
   const joinRoom = (e: React.FormEvent) => {
