@@ -121,6 +121,7 @@ WITH limited_active_orders AS (
                = ltrim(lower(replace(tb.account_address, "0x","")), "0")
            AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
     WHERE  mo."order.active" = 1
+      AND  mo."order.expiration" > strftime('%s','now')
       AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
     )
@@ -173,7 +174,9 @@ WITH limited_active_orders AS (
       mo.order_id
     FROM "marketplace-MarketOrderModel" AS mo
     WHERE mo."order.active" = 1
-    AND mo."order.owner" = '{accountAddress}'
+      AND mo."order.owner" = '{accountAddress}'
+      AND  mo."order.expiration" > strftime('%s','now')
+
     GROUP BY token_id_hex
   )
   SELECT

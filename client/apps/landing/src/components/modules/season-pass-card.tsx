@@ -5,7 +5,7 @@ import { trimAddress } from "@/lib/utils";
 import { MergedNftData, RealmMetadata } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
 import { useAccount } from "@starknet-react/core";
-import { ArrowRightLeft } from "lucide-react"; // Import the icon
+import { ArrowRightLeft, Check, Plus } from "lucide-react"; // Import the icon
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -105,7 +105,7 @@ export const SeasonPassCard = ({
         onClick={onToggleSelection}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
           ${isSelected 
-            ? "ring-2 ring-offset-2 ring-gold scale-[1.02] bg-gold/5" 
+            ? "ring-1  ring-gold scale-[1.01] bg-gold/5" 
             : "hover:ring-1 hover:ring-gold hover:bg-gold/5"} 
           cursor-pointer group`}
       >
@@ -127,20 +127,14 @@ export const SeasonPassCard = ({
           />
           
           {/* Selection Overlay */}
-          <div className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-200
+          <div className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
             ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <div className="bg-gold text-background px-4 py-2 rounded-md font-bold">
-              {isSelected ? 'Selected' : 'Select'}
+            <div className="bg-gold text-background rounded-full font-bold m-2">
+              {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             </div>
           </div>
 
-          {/* Selection Indicator */}
-          {isSelected && (
-            <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
-              Selected
-            </div>
-          )}
-          
+
           {/* Listing Indicator */}
           {listingDetails.isListed && (
             <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20">
@@ -214,7 +208,7 @@ export const SeasonPassCard = ({
               className="w-full" 
               onClick={handleCardClick}
             >
-              {isOwner ? "Manage" : "Buy Now"}
+              {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
             </Button>
 
             {isOwner && (

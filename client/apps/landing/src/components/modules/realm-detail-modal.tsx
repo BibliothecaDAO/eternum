@@ -60,7 +60,7 @@ export const RealmDetailModal = ({
     listItem,
     cancelOrder,
     editOrder,
-    acceptOrder,
+    acceptOrders,
     isLoading,
     approveMarketplace,
     seasonPassApproved,
@@ -185,9 +185,9 @@ export const RealmDetailModal = ({
   const handleAcceptOrder = async () => {
     if (!orderId || price === undefined) return; // Validate both orderId and price exist
     try {
-      await acceptOrder({
-        order_id: BigInt(orderId),
-        price: price,
+      await acceptOrders({
+        order_ids: [BigInt(orderId)],
+        totalPrice: price,
       });
 
       setIsSyncing(true);

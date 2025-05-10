@@ -1,4 +1,3 @@
-import { OpenOrderByPrice } from "@/hooks/services";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
 import { Crown } from "lucide-react";
@@ -15,12 +14,12 @@ interface RealmGridItem {
 }
 
 interface SeasonPassRowProps {
-  seasonPasses: OpenOrderByPrice[];
+  seasonPasses: MergedNftData[];
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;
   isCompactGrid?: boolean;
-  onToggleSelection: (pass: OpenOrderByPrice) => void;
+  onToggleSelection?: (pass: MergedNftData) => void;
 }
 
 export const SeasonPassesGrid = ({
@@ -79,7 +78,7 @@ export const SeasonPassesGrid = ({
               pass={pass}
               checkOwner={checkOwner}
               isSelected={isSelected(tokenId.toString())}
-              onToggleSelection={() => onToggleSelection(pass)}
+              onToggleSelection={() => onToggleSelection?.(pass)}
             />
           );
         }}

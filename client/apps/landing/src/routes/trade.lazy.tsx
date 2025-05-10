@@ -1,4 +1,5 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { Button } from "@/components/ui/button";
@@ -205,6 +206,8 @@ function SeasonPasses() {
   // Replace the selection state with the store
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore();
 
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <>
@@ -318,7 +321,10 @@ function SeasonPasses() {
                       </span>
                     )}
                   </div>
-                  <Button className="mr-4">
+                  <Button 
+                    className="mr-4"
+                    onClick={() => setIsPurchaseDialogOpen(true)}
+                  >
                     Buy ({selectedPasses.length}) Passes
                   </Button>
 
@@ -378,6 +384,11 @@ function SeasonPasses() {
           />
         )*/}
       </>
+
+      <PurchaseDialog 
+        isOpen={isPurchaseDialogOpen}
+        onOpenChange={setIsPurchaseDialogOpen}
+      />
     </div>
   );
 }
