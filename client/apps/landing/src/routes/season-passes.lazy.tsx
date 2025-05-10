@@ -300,7 +300,7 @@ function SeasonPasses() {
             {viewMode === "my" ? "Your Season Passes" : "All Season Passes"}
           </h2>
           <p className="text-center text-muted-foreground mb-6">
-            {viewMode === "my" ? "View and manage your Season Pass NFTs" : "Browse all available Season Pass NFTs."}
+            {viewMode === "my" ? "View and manage your Season Pass NFTs." : "Browse all available Season Pass NFTs."}
           </p>
 
           <ScrollHeader>

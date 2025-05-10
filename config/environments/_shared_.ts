@@ -94,8 +94,21 @@ export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
 
-export const QUEST_FIND_PROBABILITY = 1; // 1/60_000 = 1%
-export const QUEST_FIND_FAIL_PROBABILITY = 99; // 59_999/60_000 = 99.99833333333333%
+export const QUEST_FIND_PROBABILITY = 1; // 1/100 = 1%
+export const QUEST_FIND_FAIL_PROBABILITY = 99; // 99/100 = 99%
+export const QUEST_GAME_LEVELS = [
+  {
+    address: "0x01e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7", // DARKSHUFFLE GAME ADDRESS
+    levels: [
+      { target_score: 26, settings_id: 3, time_limit: 86400 }, // NEWBIE
+      { target_score: 26, settings_id: 6, time_limit: 86400 }, // EASY
+      { target_score: 26, settings_id: 4, time_limit: 86400 }, // MEDIUM
+      { target_score: 51, settings_id: 1, time_limit: 86400 }, // HARD
+      { target_score: 101, settings_id: 5, time_limit: 86400 }, // NIGHTMARE
+    ],
+    overwrite: true,
+  },
+];
 
 // This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
@@ -346,6 +359,7 @@ export const EternumGlobalConfig: Config = {
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
+  questGames: QUEST_GAME_LEVELS,
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

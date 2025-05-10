@@ -1046,7 +1046,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "questFindProbability": 1,
-    "questFindFailProbability": 59999
+    "questFindFailProbability": 99
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
