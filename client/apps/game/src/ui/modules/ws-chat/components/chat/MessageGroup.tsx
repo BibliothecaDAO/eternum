@@ -32,7 +32,7 @@ const MessageGroupComponent = React.memo(
             >
               {msg.senderId === userId ? "You" : group.senderUsername || msg.senderId}
             </span>
-            <span className="">{msg.message}</span>
+            <span className="break-words">{msg.message}</span>
           </div>
         ))}
       </div>
