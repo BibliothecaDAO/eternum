@@ -14,15 +14,24 @@ import {
   configManager,
   getBalance,
   getGuardsByStructure,
+  getRemainingCapacityInKg,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+
+const formatAmount = (amount: number) => {
+  return Intl.NumberFormat("en-US", {
+    notation: amount < 0.01 ? "standard" : "compact",
+    maximumFractionDigits: amount < 0.01 ? 6 : 2,
+  }).format(amount);
+};
 
 const TooltipContent = memo(
   ({
@@ -80,6 +89,8 @@ const TooltipContent = memo(
             isExplored={isExplored}
             path={actionPath.slice(1)}
           />
+        ) : actionType === ActionType.Quest ? (
+          <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
         ) : (
           <AttackInfo
             selectedEntityId={Number(selectedEntityId)}
@@ -314,6 +325,60 @@ const AttackInfo = memo(
               </div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  },
+);
+
+const QuestInfo = memo(
+  ({
+    selectedEntityId,
+    path,
+    components,
+  }: {
+    selectedEntityId: ID;
+    path: ActionPath[];
+    components: ClientComponents;
+  }) => {
+    const questCoords = path[path.length - 1].hex;
+
+    const tileEntity = getComponentValue(
+      components.Tile,
+      getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
+    );
+
+    const questTileEntity = getComponentValue(
+      components.QuestTile,
+      getEntityIdFromKeys([BigInt(tileEntity?.occupier_id || 0)]),
+    );
+
+    const rewardAmount = questTileEntity?.amount ?? 0;
+
+    const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+
+    const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resources!), [resources]);
+
+    const hasEnoughCapacity = useMemo(() => {
+      return remainingCapacity >= Number(rewardAmount) / 10 ** 9;
+    }, [remainingCapacity, rewardAmount]);
+
+    return (
+      <div className="flex flex-col p-1 text-xs">
+        {/* Reward */}
+        {!hasEnoughCapacity && (
+          <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+            <div className="flex">
+              <span className="w-5">⚠️</span>
+              <span>Too heavy to claim reward</span>
+            </div>
+          </div>
+        )}
+        <div className="flex flex-row text-xs ml-1">
+          <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
+          <div className="flex flex-col p-1 text-xs">
+            <div>+{formatAmount(Number(rewardAmount) / 10 ** 9)} Random resource</div>
+          </div>
         </div>
       </div>
     );

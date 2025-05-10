@@ -17,6 +17,8 @@ const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
       return new THREE.Vector3(1.8, 0.3, 2.0); // Holy purple-pink
     case ActionType.Build:
       return new THREE.Vector3(1.5, 1.2, 0.0); // Golden amber
+    case ActionType.Quest:
+      return new THREE.Vector3(1.0, 1.0, 0.0); // Bright yellow
     default:
       return new THREE.Vector3(1.0, 1.5, 2.0); // Ethereal blue-white
   }

@@ -11,6 +11,7 @@ const ENTITY_TOGGLES = [
   { id: "hyperstructures", label: "Hyperstructures", imagePath: "/images/labels/hyperstructure.png" },
   { id: "banks", label: "Banks", imagePath: `images/resources/${ResourcesIds.Lords}.png` },
   { id: "fragmentMines", label: "Fragment Mines", imagePath: "/images/labels/fragment_mine.png" },
+  { id: "quests", label: "Quests", imagePath: "/images/labels/quest.png" },
 ];
 
 export const MiniMapNavigation = () => {
@@ -25,6 +26,7 @@ export const MiniMapNavigation = () => {
     hyperstructures: true,
     banks: true,
     fragmentMines: true,
+    quests: true,
   });
 
   const toggleExpand = () => {
@@ -132,6 +134,9 @@ export const MiniMapNavigation = () => {
           break;
         case "fragmentMines":
           minimap.toggleFragmentMines(checked);
+          break;
+        case "quests":
+          minimap.toggleQuests(checked);
           break;
       }
     }

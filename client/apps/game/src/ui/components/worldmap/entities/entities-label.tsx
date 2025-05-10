@@ -1,12 +1,13 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
-import { getEntityIdFromKeys, isTileOccupierStructure } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
+import { QuestEntityDetail } from "./quest-entity-detail";
 import { StructureEntityDetail } from "./structure-entity-detail";
 
 export const EntityInfoLabel = memo(() => {
@@ -37,6 +38,10 @@ export const EntityInfoLabel = memo(() => {
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
 
+  const isQuest = useMemo(() => {
+    return isTileOccupierQuest(tile?.occupier_type || 0);
+  }, [tile]);
+
   if (!tile?.occupier_id) {
     return null;
   }
@@ -50,6 +55,8 @@ export const EntityInfoLabel = memo(() => {
           showButtons={false}
           maxInventory={3}
         />
+      ) : isQuest ? (
+        <QuestEntityDetail questEntityId={tile.occupier_id} compact={true} />
       ) : (
         <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={true} />
       )}
