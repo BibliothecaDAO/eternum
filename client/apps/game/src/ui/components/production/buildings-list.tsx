@@ -132,7 +132,7 @@ export const BuildingsList = ({
                   onClick={() => onSelectProduction(null)}
                   className="px-4 py-2 text-sm button button-ghost hover:button-ghost-hover"
                 >
-                  Change Building
+                  Change Resource
                 </button>
               </div>
             </motion.div>
