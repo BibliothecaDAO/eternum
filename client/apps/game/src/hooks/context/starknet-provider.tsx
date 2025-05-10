@@ -1,4 +1,3 @@
-import { getResourceAddresses } from "@/utils/addresses";
 import { ControllerConnector } from "@cartridge/connector";
 import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
@@ -8,24 +7,22 @@ import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 
-const resourceAddresses = getResourceAddresses();
-
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
-
-const LORDS = resourceAddresses["LORDS"][1].toString();
-const otherResources = Object.entries(resourceAddresses)
-  .filter(([key]) => key !== "LORDS")
-  .map(([_, [__, address]]) => address)
-  .toString();
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
+
+const chain_id = isLocal
+  ? KATANA_CHAIN_ID
+  : env.VITE_PUBLIC_CHAIN === "sepolia"
+    ? constants.StarknetChainId.SN_SEPOLIA
+    : constants.StarknetChainId.SN_MAIN;
 
 const nonLocalController = new ControllerConnector({
   chains: [
@@ -43,7 +40,7 @@ const nonLocalController = new ControllerConnector({
       ? constants.StarknetChainId.SN_MAIN
       : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  policies,
+  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : policies,
   slot,
   namespace,
 });

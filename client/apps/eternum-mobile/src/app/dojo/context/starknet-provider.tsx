@@ -27,6 +27,12 @@ const namespace: string = "s1_eternum";
 
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
+const chain_id = isLocal
+  ? KATANA_CHAIN_ID
+  : env.VITE_PUBLIC_CHAIN === "sepolia"
+    ? constants.StarknetChainId.SN_SEPOLIA
+    : constants.StarknetChainId.SN_MAIN;
+
 const nonLocalController = new ControllerConnector({
   chains: [
     {
@@ -43,7 +49,7 @@ const nonLocalController = new ControllerConnector({
       ? constants.StarknetChainId.SN_MAIN
       : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  policies,
+  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : policies,
   slot,
   namespace,
   tokens: {
