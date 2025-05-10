@@ -74,8 +74,8 @@ export const SecondaryMenuItems = () => {
   }, [structureEntityId, hasSeasonEnded]);
 
   return (
-    <div className="flex panel-wood ">
-      <div className="top-right-navigation-selector self-center flex ">
+    <div className="flex h-full ml-auto">
+      <div className="top-right-navigation-selector self-center flex  space-x-2 mr-1">
         <HomeButton />
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>

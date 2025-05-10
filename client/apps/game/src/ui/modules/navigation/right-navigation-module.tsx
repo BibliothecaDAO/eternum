@@ -19,6 +19,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const disableButtons = useUIStore((state) => state.disableButtons);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -30,6 +31,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
           <CircleButton
             className="resource-table-selector"
             image={BuildingThumbs.resources}
+            disabled={disableButtons}
             size="xl"
             tooltipLocation="top"
             label="Balance"
@@ -45,6 +47,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             className="production-selector"
             image={BuildingThumbs.production}
             size="xl"
+            disabled={disableButtons}
             tooltipLocation="top"
             label="Production"
             active={view === RightView.Production}
@@ -61,6 +64,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             className="bridge-selector"
             image={BuildingThumbs.bridge}
             size="xl"
+            disabled={disableButtons}
             tooltipLocation="top"
             label="Bridge"
             active={view === RightView.Bridge}
@@ -69,7 +73,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
         ),
       },
     ],
-    [view, structureEntityId],
+    [view, structureEntityId, disableButtons],
   );
 
   const isOffscreen = view === RightView.None;

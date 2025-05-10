@@ -1,4 +1,3 @@
-import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
 import { CapacityConfig, RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
@@ -89,11 +88,14 @@ export const SHARDS_MINES_FAIL_PROBABILITY = 149; // 149/150 = 99.33%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
-export const AGENT_FIND_PROBABILITY = 8; // 8/100 = 8%
-export const AGENT_FIND_FAIL_PROBABILITY = 92; // 92/100 = 92%
+export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
+export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
+
+export const QUEST_FIND_PROBABILITY = 1; // 1/60_000 = 1%
+export const QUEST_FIND_FAIL_PROBABILITY = 99; // 59_999/60_000 = 99.99833333333333%
 
 // This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
@@ -132,16 +134,21 @@ export const SEASON_PASS_ADDRESS = "0x0"; // set in indexer.sh
 export const REALMS_ADDRESS = "0x0"; // set in indexer.sh
 export const LORDS_ADDRESS = "0x0"; // set in indexer.sh
 
-export const VELORDS_FEE_ON_DEPOSIT = 400; // 4%
-export const VELORDS_FEE_ON_WITHDRAWAL = 400; // 4%
-export const SEASON_POOL_FEE_ON_DEPOSIT = 400; // 4%
-export const SEASON_POOL_FEE_ON_WITHDRAWAL = 400; // 4%
-export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
-export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
-export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
-export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
+export const VELORDS_FEE_ON_DEPOSIT = 250; // 2.5%
+export const SEASON_POOL_FEE_ON_DEPOSIT = 250; // 2.5%
+export const CLIENT_FEE_ON_DEPOSIT = 250; // 2.5%
 export const REALM_FEE_ON_DEPOSIT = 500; // 5%
+
+export const VELORDS_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const SEASON_POOL_FEE_ON_WITHDRAWAL = 250; // 2.5%
+export const CLIENT_FEE_ON_WITHDRAWAL = 250; // 2.5%
 export const REALM_FEE_ON_WITHDRAWAL = 500; // 5%
+
+export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
+
+//######### TODO: CHANGE SEASON POOL RECIPIENT #########
+
+export const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553";
 export const MAX_NUM_BANKS = 6;
 
 const ONE_MINUTE_IN_SECONDS = 60;
@@ -150,21 +157,24 @@ const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
 export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
-export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 2 days
+
+// probably best if both these values are the same
+export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 7 days
+export const SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 7; // 7 days
 
 export const TRADE_MAX_COUNT = 10;
 
-export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const AGENT_CONTROLLER_ADDRESS = "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344"; // set in indexer.sh
 export const AGENT_MAX_LIFETIME_COUNT = 10_000;
 export const AGENT_MAX_CURRENT_COUNT = 1_000;
-export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 5;
-export const AGENT_MAX_SPAWN_LORDS_AMOUNT = 10;
+export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 10;
+export const AGENT_MAX_SPAWN_LORDS_AMOUNT = 35;
 
 export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
 
 // catridge address should go here
-export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39";
+export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83";
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
@@ -220,6 +230,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
+    questFindProbability: QUEST_FIND_PROBABILITY,
+    questFindFailProbability: QUEST_FIND_FAIL_PROBABILITY,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
@@ -230,7 +242,7 @@ export const EternumGlobalConfig: Config = {
     [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
     [CapacityConfig.VillageStructure]: 1_000_000 * 1000, // 1m kg
     [CapacityConfig.HyperstructureStructure]: 3_000_000 * 1000, // 3m kg
-    [CapacityConfig.BankStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.BankStructure]: 2_000_000 * 1000, // 2m kg
     [CapacityConfig.FragmentMineStructure]: 500_000 * 1000, // 500k kg
     [CapacityConfig.Donkey]: 500 * 1000, // 500 kg per donkey
     // 10_000 gr per army
@@ -308,6 +320,7 @@ export const EternumGlobalConfig: Config = {
     startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
     startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
+    pointRegistrationCloseAfterEndSeconds: SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS,
   },
   bridge: {
     velords_fee_on_dpt_percent: VELORDS_FEE_ON_DEPOSIT,

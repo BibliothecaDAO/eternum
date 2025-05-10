@@ -216,7 +216,8 @@ pub mod quest_systems {
             let game: QuestLevels = world.read_model(quest_tile.game_address);
             let config: Level = *game.levels.at(quest_tile.level.into());
 
-            // we don't currently use start delay but could be used as part of future, multi-player raid feature
+            // we don't currently use start delay but could be used as part of future, multi-player
+            // raid feature
             let game_start_delay: Option<u64> = Option::None;
 
             // use optional expiration if set on level config
@@ -450,6 +451,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
 #[cfg(test)]
 mod tests {
+    use achievement::events::index::{e_TrophyCreation, e_TrophyProgression};
     use core::num::traits::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
@@ -460,6 +462,7 @@ mod tests {
     use s1_eternum::models::config::{CombatConfigImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::map::{m_BiomeDiscovered};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::resource::{
@@ -525,6 +528,7 @@ mod tests {
                 TestResource::Model(m_Resource::TEST_CLASS_HASH),
                 // other models
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
+                TestResource::Model(m_BiomeDiscovered::TEST_CLASS_HASH),
                 // quest models
                 TestResource::Model(m_QuestTile::TEST_CLASS_HASH), TestResource::Model(m_Quest::TEST_CLASS_HASH),
                 TestResource::Model(m_QuestRegistrations::TEST_CLASS_HASH),
@@ -539,6 +543,9 @@ mod tests {
                 TestResource::Model(m_SettingsCounter::TEST_CLASS_HASH),
                 TestResource::Model(m_SettingsDetails::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
+                // achievements
+                TestResource::Event(e_TrophyCreation::TEST_CLASS_HASH),
+                TestResource::Event(e_TrophyProgression::TEST_CLASS_HASH),
                 // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH),
@@ -1231,8 +1238,8 @@ mod tests {
         assert!(quest_tile.participant_count == 1, "Quest should have 1 participant");
 
         // Try to start the same quest with the same explorer a second time
-        // This should fail with "Realm or Village has already attempted this quest" since the explorer belongs to the
-        // same realm
+        // This should fail with "Realm or Village has already attempted this quest" since the
+        // explorer belongs to the same realm
         quest_system.start_quest(quest_tile.id, explorer_id, 'player1', realm_owner);
     }
 

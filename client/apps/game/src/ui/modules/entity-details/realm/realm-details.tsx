@@ -19,9 +19,7 @@ import { useMemo, useState } from "react";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
-
   const { currentBlockTimestamp } = useBlockTimestamp();
-
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -68,6 +66,26 @@ export const RealmVillageDetails = () => {
   return (
     structure && (
       <div className="p-3 space-y-4">
+        {isImmune && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                content: (
+                  <>
+                    This structure is currently immune to attacks.
+                    <br />
+                    During this period, you are also unable to attack other players.
+                  </>
+                ),
+                position: "top",
+              });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+            className="h6 text-lg text-green bg-green/10 px-4 py-1.5 rounded-lg animate-pulse"
+          >
+            Realm is Immune for: {formatTime(timer)}
+          </div>
+        )}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -84,27 +102,6 @@ export const RealmVillageDetails = () => {
               {displayAddress(address)}
             </span>
           </div>
-
-          {isImmune && (
-            <div
-              onMouseEnter={() => {
-                setTooltip({
-                  content: (
-                    <>
-                      This structure is currently immune to attacks.
-                      <br />
-                      During this period, you are also unable to attack other players.
-                    </>
-                  ),
-                  position: "top",
-                });
-              }}
-              onMouseLeave={() => setTooltip(null)}
-              className="font-bold text-lg text-green bg-green/10 px-4 py-1.5 rounded-lg animate-pulse"
-            >
-              Immune for: {formatTime(timer)}
-            </div>
-          )}
         </div>
 
         {(isRealm || isVillage) && (

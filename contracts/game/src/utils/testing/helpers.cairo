@@ -73,7 +73,7 @@ pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
         t2_damage_multiplier: 46116860184273879040, // 2.5
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30% // percentage bonus for biome damage
-        damage_scaling_factor: 64563604257983430656, // 3.5
+        damage_scaling_factor: 55340232221128654848, // 3
         damage_beta_small: 4611686018427387904, // 0.25
         damage_beta_large: 2213609288845146193, // 0.12
         damage_c0: 100_000 * FixedTrait::ONE().mag,
@@ -306,7 +306,7 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
         category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
     };
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-    troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+    troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
     let explorer_id = world.dispatcher.uuid();
     let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord, troops, owner };
     world.write_model_test(@explorer);
@@ -372,7 +372,7 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
     let mut initial_troops = Troops {
         category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
     };
-    initial_troops.stamina.refill(initial_troops.category, troop_stamina_config, current_tick);
+    initial_troops.stamina.refill(initial_troops.category, initial_troops.tier, troop_stamina_config, current_tick);
 
     // Spawn explorer troops model
     let explorer = ExplorerTroops {

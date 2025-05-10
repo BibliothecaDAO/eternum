@@ -101,12 +101,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
-        className="top-left-navigation-selector flex flex-wrap bg-dark-wood panel-wood panel-wood-corners"
+        className="top-left-navigation-selector flex flex-wrap bg-dark-wood panel-wood panel-wood-corners w-full"
         variants={slideDown}
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center  text-center  relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 text-gold justify-center  text-center  relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -118,7 +118,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectTrigger className="truncate ">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className=" panel-wood bg-dark-wood">
+                <SelectContent className=" panel-wood bg-dark-wood -ml-2">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
                       <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
@@ -196,10 +196,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             </div>
           </div>
         </div>
-      </motion.div>
-      <div className="relative">
         <SecondaryMenuItems />
-      </div>
+      </motion.div>
     </div>
   );
 });

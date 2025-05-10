@@ -24,8 +24,8 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RAIDABLE_RESOURCES,
   resources,
-  ResourcesIds,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
@@ -33,33 +33,6 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
-
-const RAIDABLE_RESOURCES = [
-  ResourcesIds.Wood,
-  ResourcesIds.Stone,
-  ResourcesIds.Coal,
-  ResourcesIds.Copper,
-  ResourcesIds.Obsidian,
-  ResourcesIds.Silver,
-  ResourcesIds.Ironwood,
-  ResourcesIds.ColdIron,
-  ResourcesIds.Gold,
-  ResourcesIds.Hartwood,
-  ResourcesIds.Diamonds,
-  ResourcesIds.Sapphire,
-  ResourcesIds.Ruby,
-  ResourcesIds.DeepCrystal,
-  ResourcesIds.Ignium,
-  ResourcesIds.EtherealSilica,
-  ResourcesIds.TrueIce,
-  ResourcesIds.TwilightQuartz,
-  ResourcesIds.AlchemicalSilver,
-  ResourcesIds.Adamantine,
-  ResourcesIds.Mithral,
-  ResourcesIds.Dragonhide,
-  ResourcesIds.AncientFragment,
-  ResourcesIds.Donkey,
-];
 
 enum RaidOutcome {
   Success = "Success",

@@ -13,15 +13,16 @@ export const RealmDefenseSlotsTable = () => {
   return (
     <div style={section.wrapper}>
       <div style={section.accentedTitle}>
-        <span style={{ marginRight: "0.5rem" }}>🛡️</span>Guard Slots by Realm Level
+        <span style={{ marginRight: "0.5rem" }}>⚔️</span>Armies by Realm Level
       </div>
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
             <tr>
               <th style={table.headerCell}>Realm / Village Level</th>
-              <th style={table.headerCell}>No. Guard Slots</th>
+              <th style={table.headerCell}>No. Guard Armies</th>
               <th style={table.headerCell}>Slot Name</th>
+              <th style={table.headerCell}>No. Field Armies</th>
             </tr>
           </thead>
           <tbody>
@@ -30,6 +31,7 @@ export const RealmDefenseSlotsTable = () => {
                 <td style={table.cell}>{item.level}</td>
                 <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.slots}</td>
                 <td style={table.cell}>{item.slotName}</td>
+                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.slots}</td>
               </tr>
             ))}
           </tbody>

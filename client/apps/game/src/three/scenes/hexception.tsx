@@ -39,7 +39,7 @@ import clsx from "clsx";
 import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {

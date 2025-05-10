@@ -38,7 +38,7 @@ const TwitterShareButton: React.FC<Props> = ({
         <div className={`flex items-center justify-center mr-2 ${iconSizeClasses[buttonSize]}`}>
           <TwitterIcon className={`${hover ? "animate-pulse" : ""} transition-all duration-300`} />
         </div>
-        <span>{callToActionText ? callToActionText : "Share on X"}</span>
+        <span>{callToActionText ? callToActionText : "Share"}</span>
       </Button>
     </a>
   );

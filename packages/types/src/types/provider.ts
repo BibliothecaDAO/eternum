@@ -317,6 +317,11 @@ export interface RemovePlayerFromWhitelist extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 
+export interface ClaimWonderProductionBonusProps extends SystemSigner {
+  structure_id: num.BigNumberish;
+  wonder_structure_id: num.BigNumberish;
+}
+
 export interface MintStartingResources extends SystemSigner {
   config_ids: num.BigNumberish[];
   realm_entity_id: num.BigNumberish;
@@ -516,7 +521,8 @@ export interface SetSeasonConfigProps extends SystemSigner {
   lords_address: num.BigNumberish;
   start_settling_at: num.BigNumberish;
   start_main_at: num.BigNumberish;
-  end_grace_seconds: num.BigNumberish;
+  bridge_close_end_grace_seconds: num.BigNumberish;
+  point_registration_grace_seconds: num.BigNumberish;
 }
 
 export interface SetVRFConfigProps extends SystemSigner {
@@ -926,3 +932,5 @@ export interface EditMarketplaceOrderProps {
   new_price: num.BigNumberish;
   signer: AccountInterface;
 }
+
+export interface LeaveGuildProps extends SystemSigner {}

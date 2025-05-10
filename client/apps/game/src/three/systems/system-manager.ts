@@ -137,33 +137,14 @@ export class SystemManager {
   private setupSystem<T>(
     component: Component,
     callback: (value: T) => void,
-    getUpdate: (update: any) => T | undefined,
+    getUpdate: (update: any) => T | Promise<T | undefined>,
     runOnInit = true,
-    maxRetries = 10,
-    retryDelay = 500,
   ) {
-    const handleUpdate = (update: any) => {
-      const value = getUpdate(update);
+    const handleUpdate = async (update: any) => {
+      const value = await getUpdate(update);
       if (value) {
         callback(value);
-        return;
       }
-
-      let retries = 0;
-      const tryGetUpdate = () => {
-        const value = getUpdate(update);
-        if (value) {
-          callback(value);
-          return;
-        }
-
-        retries++;
-        if (retries < maxRetries) {
-          setTimeout(tryGetUpdate, retryDelay);
-        }
-      };
-
-      setTimeout(tryGetUpdate, retryDelay);
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, {
@@ -177,22 +158,31 @@ export class SystemManager {
         this.setupSystem(
           this.setup.components.Tile,
           callback,
-          (update: any): ArmySystemUpdate | undefined => {
+          async (update: any): Promise<ArmySystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.Tile)) {
               const [currentState, _prevState] = update.value;
               const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
 
-              // leaving this condition here so that typescript is happy.
               if (!explorer) return;
 
-              const owner = getComponentValue(
-                this.setup.components.ExplorerTroops,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              )?.owner;
+              // Add retry mechanism for getting explorer troops
+              let explorerTroops = null;
+              let retries = 3;
+              while (retries > 0) {
+                explorerTroops = getComponentValue(
+                  this.setup.components.ExplorerTroops,
+                  getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+                );
+                console.log({ explorerTroops, retries });
+                if (explorerTroops) break;
+                await new Promise((resolve) => setTimeout(resolve, 100)); // Wait 100ms between retries
+                retries--;
+              }
 
-              const structure = owner
-                ? getComponentValue(this.setup.components.Structure, getEntityIdFromKeys([BigInt(owner)]))
-                : undefined;
+              const structure = getComponentValue(
+                this.setup.components.Structure,
+                getEntityIdFromKeys([BigInt(explorerTroops?.owner || 0)]),
+              );
 
               return {
                 entityId: currentState.occupier_id,
@@ -212,15 +202,12 @@ export class SystemManager {
         this.setupSystem(
           this.setup.components.ExplorerTroops,
           callback,
-          (update: any): ID | undefined => {
+          async (update: any): Promise<ID | undefined> => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
-                // when explorer_troop is removed, torii streams an empty object which is removed from components in setEntities.
-                // we need to catch that update update.value[currentState, prevState];
-                // if explorer is undefined && prevState has values, that means component has been removed
                 return prevState.explorer_id;
               }
             }
@@ -234,7 +221,7 @@ export class SystemManager {
   public get Structure() {
     return {
       onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
-        this.setupSystem(this.setup.components.HyperstructureRequirements, callback, (update: any) => {
+        this.setupSystem(this.setup.components.HyperstructureRequirements, callback, async (update: any) => {
           const structure = getComponentValue(
             this.setup.components.Structure,
             getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
@@ -254,7 +241,7 @@ export class SystemManager {
         });
       },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Tile, callback, (update: any) => {
+        this.setupSystem(this.setup.components.Tile, callback, async (update: any) => {
           if (isComponentUpdate(update, this.setup.components.Tile)) {
             const [currentState, _prevState] = update.value;
 
@@ -298,7 +285,7 @@ export class SystemManager {
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Tile, callback, (update: any) => {
+        this.setupSystem(this.setup.components.Tile, callback, async (update: any) => {
           const newState = update.value[0];
           const prevState = update.value[1];
 
@@ -321,7 +308,7 @@ export class SystemManager {
         this.setupSystem(
           this.setup.components.Building,
           callback,
-          (update: any) => {
+          async (update: any) => {
             if (isComponentUpdate(update, this.setup.components.Building)) {
               const building = getComponentValue(this.setup.components.Building, update.entity);
               if (!building) return;

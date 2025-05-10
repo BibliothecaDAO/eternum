@@ -173,7 +173,7 @@ function SeasonPasses() {
               {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
             </Button>
             </div>
-            </ScrollHeader>
+          </ScrollHeader>
 
           {/* Grid container - Removed extra bottom padding */}
           <div className="flex-grow overflow-y-auto pt-0 px-2 pb-4">

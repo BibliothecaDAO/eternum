@@ -336,11 +336,12 @@ const OrderRow = memo(
         setLoading(true);
         setConfirmOrderModal(false);
 
+        let v = !isBuy ? calculatedResourceAmount : calculatedLords;
         await dojo.setup.systemCalls.accept_order({
           signer: dojo.account.account,
           taker_id: entityId,
           trade_id: offer.tradeId,
-          taker_buys_count: isBuy ? calculatedResourceAmount : calculatedLords,
+          taker_buys_count: Math.ceil(v / offer.makerGivesMinResourceAmount),
         });
       } catch (error) {
         console.error("Failed to accept order", error);

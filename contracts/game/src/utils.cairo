@@ -1,3 +1,4 @@
+pub mod achievements;
 pub mod cartridge;
 pub mod map;
 pub mod math;

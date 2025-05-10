@@ -8,9 +8,9 @@ pub trait ITradeSystems<T> {
         taker_id: ID,
         maker_gives_resource_type: u8,
         taker_pays_resource_type: u8,
-        maker_gives_min_resource_amount: u32,
+        maker_gives_min_resource_amount: u64,
         maker_gives_max_count: u64, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
-        taker_pays_min_resource_amount: u32,
+        taker_pays_min_resource_amount: u64,
         expires_at: u32,
     ) -> ID;
     fn accept_order(ref self: T, taker_id: ID, trade_id: ID, taker_buys_count: u64);
@@ -91,9 +91,9 @@ pub mod trade_systems {
             taker_id: ID,
             maker_gives_resource_type: u8,
             taker_pays_resource_type: u8,
-            maker_gives_min_resource_amount: u32,
+            maker_gives_min_resource_amount: u64,
             maker_gives_max_count: u64, // maker_gives_resource_amount = maker_gives_min_resource_amount * maker_gives_max_count
-            taker_pays_min_resource_amount: u32,
+            taker_pays_min_resource_amount: u64,
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -258,35 +258,47 @@ pub mod trade_systems {
             let maker_gives_resource_amount: u128 = taker_buys_count.into()
                 * trade.maker_gives_min_resource_amount.into();
             let mut taker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, trade.taker_id, arrival_day, arrival_slot,
+                ref world, taker_id, arrival_day, arrival_slot,
             );
             let mut taker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, trade.taker_id, arrival_day,
+                ref world, taker_id, arrival_day,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref taker_resources_array,
                 array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
                 ref taker_resource_arrival_total_amount,
             );
-            ResourceArrivalImpl::write_slot(
-                ref world, trade.taker_id, arrival_day, arrival_slot, taker_resources_array,
-            );
-            ResourceArrivalImpl::write_day_total(
-                ref world, trade.taker_id, arrival_day, taker_resource_arrival_total_amount,
-            );
+            ResourceArrivalImpl::write_slot(ref world, taker_id, arrival_day, arrival_slot, taker_resources_array);
+            ResourceArrivalImpl::write_day_total(ref world, taker_id, arrival_day, taker_resource_arrival_total_amount);
 
             // burn enough taker donkeys to carry resources given by maker
-            let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, trade.taker_id);
+            let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, taker_id);
             let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
                 ref world, trade.maker_gives_resource_type,
             );
             let maker_resource_weight: u128 = maker_gives_resource_amount.into() * maker_resource_weight_grams;
             let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
             iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure_owner);
+            iDonkeyImpl::burn_finialize(ref world, taker_id, taker_donkey_amount, taker_structure_owner);
+
+            // deduct taker's resources
+            let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                ref world, trade.taker_pays_resource_type,
+            );
+            let mut taker_resource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                taker_id,
+                trade.taker_pays_resource_type,
+                ref taker_structure_weight,
+                taker_resource_weight_grams,
+                true,
+            );
+            taker_resource
+                .spend(taker_pays_resource_amount.into(), ref taker_structure_weight, taker_resource_weight_grams);
+            taker_resource.store(ref world);
 
             // update taker structure weight
-            taker_structure_weight.store(ref world, trade.taker_id);
+            taker_structure_weight.store(ref world, taker_id);
 
             // finalize maker donkey burn to pickup resource from taker
             let mut maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(

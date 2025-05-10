@@ -39,7 +39,8 @@ import {
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { FXManager } from "../managers/fx-manager";
 import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
@@ -75,6 +76,7 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
+  private compassEffects: Map<string, () => void> = new Map();
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -83,6 +85,8 @@ export default class WorldmapScene extends HexagonScene {
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
+
+  private fxManager: FXManager;
 
   constructor(
     dojoContext: SetupResult,
@@ -94,6 +98,7 @@ export default class WorldmapScene extends HexagonScene {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.dojo = dojoContext;
+    this.fxManager = new FXManager(this.scene, 1);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -185,7 +190,7 @@ export default class WorldmapScene extends HexagonScene {
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
 
-    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
+    this.minimap = new Minimap(this, this.camera);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -339,6 +344,26 @@ export default class WorldmapScene extends HexagonScene {
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
+
+      // Get the target position for the compass effect
+      const targetHex = actionPath[actionPath.length - 1].hex;
+      const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
+      // Play compass effect if the hex is not explored
+      if (!isExplored) {
+        const { promise, end } = this.fxManager.playFxAtCoords(
+          "compass",
+          position.x,
+          position.y + 2.5,
+          position.z,
+          0.95,
+          "Exploring...",
+          true,
+        );
+        // Store the end function with the hex coordinates as key
+        const key = `${targetHex.col},${targetHex.row}`;
+        this.compassEffects.set(key, end);
+      }
+
       armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
       this.state.updateEntityActionHoveredHex(null);
     }
@@ -561,6 +586,14 @@ export default class WorldmapScene extends HexagonScene {
 
     const col = normalized.x;
     const row = normalized.y;
+
+    // Check if there's a compass effect for this hex and end it
+    const key = `${hexCoords.col},${hexCoords.row}`;
+    const endCompass = this.compassEffects.get(key);
+    if (endCompass) {
+      endCompass();
+      this.compassEffects.delete(key);
+    }
 
     if (removeExplored) {
       const chunkRow = parseInt(this.currentChunk.split(",")[0]);

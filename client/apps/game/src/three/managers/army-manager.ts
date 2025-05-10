@@ -7,12 +7,13 @@ import { Position } from "@/types/position";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { FXManager } from "./fx-manager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -35,6 +36,7 @@ export class ArmyManager {
   private labelsGroup: THREE.Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
+  private fxManager: FXManager;
 
   constructor(
     scene: THREE.Scene,
@@ -51,6 +53,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.fxManager = new FXManager(scene, 1);
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -339,11 +342,21 @@ export class ArmyManager {
 
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
-    if (!this.armies.delete(entityId)) return;
 
-    this.armyModel.removeLabel(entityId);
-    this.entityIdLabels.delete(entityId);
-    this.renderVisibleArmies(this.currentChunkKey!);
+    const { promise } = this.fxManager.playFxAtCoords(
+      "skull",
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
+      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
+      1,
+      "Defeated!",
+    );
+    promise.then(() => {
+      this.armies.delete(entityId);
+      this.armyModel.removeLabel(entityId);
+      this.entityIdLabels.delete(entityId);
+      this.renderVisibleArmies(this.currentChunkKey!);
+    });
   }
 
   public getArmies() {

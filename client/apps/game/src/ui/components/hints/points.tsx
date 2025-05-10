@@ -10,8 +10,7 @@ export const Points = () => {
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
             Points are needed for victory in Eternum. You can only generate them via constructing Hyperstructures. Once
-            built, Hyperstructures generate points per tick. The owner of the Hyperstructure can spend these points on
-            powerful abilities.
+            built, Hyperstructures generate points per tick.
           </p>
         </div>
       </section>

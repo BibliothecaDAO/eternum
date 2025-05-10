@@ -21,9 +21,9 @@ import {
 } from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
-import Stats from "three/examples/jsm/libs/stats.module";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
 

@@ -9,7 +9,7 @@ import {
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
-import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import { Clause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
 import {
   debouncedGetDonkeysAndArmiesFromTorii,
@@ -51,7 +51,7 @@ const handleVisualOverrides = (entityBatch: Record<string, any>, components: Cli
 const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
-  entityKeyClause: EntityKeysClause[],
+  entityKeyClause: Clause | undefined,
   logging: boolean = true,
 ) => {
   if (logging) console.log("Starting syncEntities");
@@ -133,7 +133,7 @@ const syncEntitiesDebounced = async (
 export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, undefined, false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
@@ -359,7 +359,6 @@ const hyperstructureModels = [
   "s1_eternum-HyperstructureShareholders",
   // Leaderboard
   "s1_eternum-PlayerRegisteredPoints",
-  "s1_eternum-PlayerConstructionPoints",
 ];
 
 export const syncStructureData = async (

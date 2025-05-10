@@ -4,9 +4,8 @@ import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
-import { shortString, constants } from "starknet";
+import { constants, shortString } from "starknet";
 import { env } from "../../../env";
-import { policies } from "./policies";
 
 const resourceAddresses = getResourceAddresses();
 
@@ -43,12 +42,8 @@ const nonLocalController = new ControllerConnector({
       ? constants.StarknetChainId.SN_MAIN
       : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  policies,
-  slot,
   namespace,
-  tokens: {
-    erc20: [LORDS, ...otherResources],
-  },
+  slot,
 });
 
 const katanaLocalChain = {

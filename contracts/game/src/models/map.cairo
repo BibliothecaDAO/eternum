@@ -2,6 +2,17 @@ use core::num::traits::zero::Zero;
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::Coord;
 
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BiomeDiscovered {
+    #[key]
+    pub by_address: starknet::ContractAddress,
+    #[key]
+    pub biome: u8,
+    pub discovered: bool,
+}
+
+
 #[derive(Copy, Drop, Serde, IntrospectPacked)]
 #[dojo::model]
 pub struct Tile {
