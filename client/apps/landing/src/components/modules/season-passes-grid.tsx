@@ -1,8 +1,7 @@
-import { MergedNftData } from "@/routes/season-passes.lazy";
+import { MergedNftData } from "@/types";
 import { Crown } from "lucide-react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
-
 interface RealmGridItem {
   colSpan?: {
     sm?: number;
@@ -66,13 +65,12 @@ export const SeasonPassesGrid = ({
         items={gridItems}
         renderItem={(item) => {
           const pass = item.data;
-          if (!pass?.node) return null;
-          const tokenId =
-            pass.node.tokenMetadata.__typename === "ERC721__Token" ? pass.node.tokenMetadata.tokenId : null;
+          if (!pass) return null;
+          const tokenId = pass.token_id;
 
           return (
             <SeasonPassCard
-              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId)}
+              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId.toString())}
               key={`${tokenId || ""}`}
               pass={pass}
               checkOwner={checkOwner}

@@ -21,3 +21,24 @@ export type SeasonPassMint = {
     };
   };
 } | null;
+
+export interface MarketOrder {
+  active: boolean;
+  token_id: string;
+  collection_id: string;
+  owner: string;
+  price: string;
+  expiration: string;
+}
+
+export interface MergedNftData {
+  metadata: string | null;
+  minPrice?: bigint | null;
+  marketplaceOwner?: string | null;
+  order_id?: number | null;
+  expiration: number | null;
+  token_owner?: string | null;
+  order_owner?: string | null;
+  best_price_hex?: bigint | null;
+  token_id: string | number;
+}
