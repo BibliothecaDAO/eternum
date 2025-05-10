@@ -28,7 +28,7 @@ function ChatModule() {
   const [userToken, setUserToken] = useState<string>(initialToken);
   const [username, setUsername] = useState<string>("");
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
-  const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(true);
+  const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(false);
   // Add state for showing room creation
   const [showRoomCreation, setShowRoomCreation] = useState<boolean>(false);
 
@@ -559,9 +559,9 @@ function ChatModule() {
             isMobileView ? "absolute z-10" : "w-72"
           } md:w-72 md:relative from-black to-gray-950 text-gray-200 shadow-lg flex-shrink-0 flex flex-col border-r border-gold/30`}
         >
-          <div className="px-4 py-3 border-b border-gold/30">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+          <div className="px-1 py-1 border-b border-gold/30">
+            <div className="flex items-center justify-between gap-2 border-b border-gold/30 pb-1">
+              <div className="flex items-center gap-2 ">
                 <button
                   onClick={() => setIsRoomsVisible(!isRoomsVisible)}
                   className="text-gold/70 hover:text-gold transition-colors"
@@ -621,7 +621,7 @@ function ChatModule() {
               </form>
             )}
 
-            <div className={`${isRoomsVisible ? "block" : "hidden"} mt-3`}>
+            <div className={`${isRoomsVisible ? "block" : "hidden"}`}>
               <div className="overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
                 {isLoadingRooms ? (
                   <div className="flex items-center justify-center py-4">
@@ -639,10 +639,8 @@ function ChatModule() {
                     {filteredRooms.map((room) => (
                       <li
                         key={room.id}
-                        className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
-                          room.id === activeRoom
-                            ? "bg-orange-600/20 border-l-2 border-orange-500"
-                            : "hover:bg-gray-800/50"
+                        className={`flex items-center px-1 py-1 cursor-pointer transition-colors h6 ${
+                          room.id === activeRoom ? "bg-orange/20 border-l-2 border-orange" : "hover:bg-gray/50"
                         }`}
                         onClick={() => joinRoomFromSidebar(room.id)}
                       >
@@ -681,7 +679,7 @@ function ChatModule() {
           </div>
 
           {/* Users Section */}
-          <div className="px-4 py-3 flex-1 overflow-hidden flex flex-col">
+          <div className="px-1 py-1 flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between">
               <input
                 type="text"
@@ -690,11 +688,10 @@ function ChatModule() {
                 onChange={(e) => setUserSearch(e.target.value)}
                 className="w-full pl-3 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
               />
-              <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
             </div>
 
             {/* User Search */}
-            <div className="relative mb-3">
+            <div className="relative">
               {userSearch && (
                 <button
                   className="absolute right-2 top-2.5 text-gray-400 hover:text-white"
@@ -724,23 +721,26 @@ function ChatModule() {
                   <p className="text-gray-400 text-center text-sm py-2">No users found</p>
                 )
               ) : (
-                <div className="space-y-4">
+                <div className="">
                   {/* Online Users */}
                   {filteredUsers.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-                        Online
+                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 justify-between ">
+                        Online Lords{" "}
+                        <span className="bg-green-600 px-2 py-0.5 text-xs font-medium">
+                          <span className="text-green">{onlineUsers.length}</span>
+                        </span>
                       </div>
-                      <ul className="space-y-2">
+                      <ul className="">
                         {filteredUsers.map((user) => (
                           <li
                             key={user.id}
-                            className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
+                            className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
                               user.id === userId
-                                ? "bg-orange-600/20 border-l-2 border-orange-500"
+                                ? "bg-orange-600/20 border-l-2 border-orange "
                                 : user.id === directMessageRecipient
-                                  ? "bg-orange-600/10 border-l-2 border-orange-400"
-                                  : "hover:bg-gray-800/50 hover:border-l-2 hover:border-gray-500 active:bg-orange-600/10 active:border-orange-400"
+                                  ? "bg-orange/10 border-l-2 border-orange"
+                                  : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
                             }`}
                           >
                             <button
@@ -783,7 +783,7 @@ function ChatModule() {
                         {filteredOfflineUsers.map((user) => (
                           <li
                             key={user.id}
-                            className={`flex items-center px-3 py-2 cursor-pointer transition-colors opacity-60 ${
+                            className={`flex items-center px-2 cursor-pointer transition-colors opacity-60 ${
                               user.id === directMessageRecipient
                                 ? "bg-gray-800/30 border-l-2 border-gray-500"
                                 : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
@@ -828,7 +828,7 @@ function ChatModule() {
         {/* Chat Header */}
         <div className="from-black px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center">
-            <div className="truncate">
+            <div className="truncate h6">
               {directMessageRecipient ? (
                 `Chat with ${
                   onlineUsers.find((user) => user.id === directMessageRecipient)?.username || directMessageRecipient
