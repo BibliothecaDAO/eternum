@@ -94,6 +94,10 @@ function ChatModule() {
   // Unread messages state - track unread messages by user ID
   const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
 
+  const hasUnreadMessages = useMemo(() => {
+    return Object.values(unreadMessages).some((count) => count > 0);
+  }, [unreadMessages]);
+
   // Auto-scroll to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -319,7 +323,7 @@ function ChatModule() {
     setMessages,
   );
 
-  useRoomMessageEvents(chatClient, addMessage, setIsLoadingMessages, setMessages);
+  useRoomMessageEvents(chatClient, activeRoom, addMessage, setUnreadMessages, setIsLoadingMessages, setMessages);
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
@@ -360,6 +364,19 @@ function ChatModule() {
     };
   }, [chatClient]);
 
+  // Automatically join all available rooms to receive notifications
+  useEffect(() => {
+    if (chatClient && chatClient.socket && chatClient.socket.connected && availableRooms.length > 0) {
+      console.log(
+        "Auto-joining available rooms for notifications:",
+        availableRooms.map((room) => room.id),
+      );
+      availableRooms.forEach((room) => {
+        chatClient.joinRoom(room.id);
+      });
+    }
+  }, [chatClient, availableRooms, chatClient?.socket?.connected]); // Ensure dependencies are correct
+
   // Join a room
   const joinRoom = (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,6 +392,12 @@ function ChatModule() {
 
     // First set active room to update UI
     setActiveRoom(newRoomId);
+
+    // Clear unread messages for this new room
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [newRoomId]: 0,
+    }));
 
     // Then join the socket.io room
     chatClient.joinRoom(newRoomId);
@@ -401,6 +424,12 @@ function ChatModule() {
     // First set active room to update UI
     setActiveRoom(roomId);
 
+    // Clear unread messages for this room
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [roomId]: 0,
+    }));
+
     // Then join the socket.io room
     chatClient.joinRoom(roomId);
 
@@ -418,13 +447,39 @@ function ChatModule() {
 
   // Filter users based on search input
   const filteredUsers = useMemo(() => {
-    return filterUsersBySearch(onlineUsers, userSearch);
-  }, [onlineUsers, userSearch]);
+    const users = filterUsersBySearch(onlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) {
+        return -1; // A comes first
+      }
+      if (!unreadA && unreadB) {
+        return 1; // B comes first
+      }
+      // If both have or don't have unread, sort by username
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [onlineUsers, userSearch, unreadMessages]);
 
   // Filter offline users based on search input
   const filteredOfflineUsers = useMemo(() => {
-    return filterUsersBySearch(offlineUsers, userSearch);
-  }, [offlineUsers, userSearch]);
+    const users = filterUsersBySearch(offlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) {
+        return -1; // A comes first
+      }
+      if (!unreadA && unreadB) {
+        return 1; // B comes first
+      }
+      // If both have or don't have unread, sort by username
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [offlineUsers, userSearch, unreadMessages]);
 
   // Add resize listener to detect mobile view
   useEffect(() => {
@@ -463,26 +518,31 @@ function ChatModule() {
 
   if (isMinimized) {
     return (
-      <CircleButton
-        onClick={() => setIsMinimized(false)}
-        size="lg"
-        className="fixed bottom-2 left-2 pointer-events-auto"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div className="fixed bottom-2 left-2 pointer-events-auto z-50">
+        <CircleButton
+          onClick={() => setIsMinimized(false)}
+          size="lg"
+          // className="fixed bottom-2 left-2 pointer-events-auto" // Moved to parent div
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-      </CircleButton>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </CircleButton>
+        {hasUnreadMessages && (
+          <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 border border-white bg-green pointer-events-none animate-pulse"></span>
+        )}
+      </div>
     );
   }
 
@@ -606,6 +666,12 @@ function ChatModule() {
                         {room.userCount && (
                           <span className="ml-auto bg-gray-600/70 px-2 py-0.5 text-xs">{room.userCount}</span>
                         )}
+                        {/* Unread message notification badge for rooms */}
+                        {unreadMessages[room.id] > 0 && (
+                          <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {unreadMessages[room.id]}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -696,7 +762,7 @@ function ChatModule() {
                               <div className="ml-auto w-2 h-2 bg-green-500"></div>
                               {/* Unread message notification badge */}
                               {user.id !== userId && unreadMessages[user.id] > 0 && (
-                                <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5">
+                                <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
                                   {unreadMessages[user.id]}
                                 </span>
                               )}
@@ -738,7 +804,7 @@ function ChatModule() {
                               </span>
                               {/* Unread message notification badge */}
                               {unreadMessages[user.id] > 0 && (
-                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5">
+                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
                                   {unreadMessages[user.id]}
                                 </span>
                               )}
