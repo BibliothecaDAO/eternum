@@ -17,6 +17,8 @@ interface SeasonPassCardProps {
   checkOwner?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  toggleNftSelection?: () => void;
+
 }
 
 interface ListingDetails {
@@ -32,7 +34,8 @@ export const SeasonPassCard = ({
   pass, 
   checkOwner = false, 
   isSelected = false,
-  onToggleSelection 
+  onToggleSelection,
+  toggleNftSelection,
 }: SeasonPassCardProps) => {
   const { token_id, metadata } = pass;
   const { address: accountAddress } = useAccount();
@@ -75,6 +78,11 @@ export const SeasonPassCard = ({
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsModalOpen(true);
+  };
+  const handleTransferClick = () => {
+    if (toggleNftSelection) {
+      toggleNftSelection();
+    }
   };
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
@@ -215,7 +223,7 @@ export const SeasonPassCard = ({
               <Button
                 variant="default"
                 size="icon"
-                onClick={handleCardClick}
+                onClick={handleTransferClick}
                 title="Transfer Pass"
               >
                 <ArrowRightLeft className="h-4 w-4" />

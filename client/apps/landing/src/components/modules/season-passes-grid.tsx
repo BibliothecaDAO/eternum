@@ -79,6 +79,7 @@ export const SeasonPassesGrid = ({
               checkOwner={checkOwner}
               isSelected={isSelected(tokenId.toString())}
               onToggleSelection={() => onToggleSelection?.(pass)}
+              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId)}
             />
           );
         }}
