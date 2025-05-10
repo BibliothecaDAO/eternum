@@ -219,6 +219,8 @@ export const CurrentQuest = ({
     }
   };
 
+  if (!questTile) return null;
+
   return (
     <div
       className={`h-full flex flex-col items-center gap-2 p-4 ${!questExplorerUsed ? "opacity-70 pointer-events-none grayscale-[50%]" : ""}`}
@@ -252,7 +254,7 @@ export const CurrentQuest = ({
                   {isCompleted && (
                     <div className="flex flex-row items-center gap-1 text-green border border-green/20 bg-green/10 rounded-lg p-1">
                       <span>+</span>
-                      <QuestReward quest={questTile!} />
+                      <QuestReward quest={questTile} />
                     </div>
                   )}
                   <div className={`px-2 py-1 rounded text-xxs font-bold ${getBadgeClass()}`}>{questStatus}</div>
