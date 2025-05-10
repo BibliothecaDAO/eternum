@@ -13,8 +13,5 @@ export function createClientComponents({ contractComponents }: { contractCompone
     Structure: overridableComponent(contractComponents.Structure),
     StructureBuildings: overridableComponent(contractComponents.StructureBuildings),
     ResourceArrival: overridableComponent(contractComponents.ResourceArrival),
-    Quest: overridableComponent(contractComponents.Quest),
-    QuestTile: overridableComponent(contractComponents.QuestTile),
-    QuestLevels: overridableComponent(contractComponents.QuestLevels),
   };
 }
