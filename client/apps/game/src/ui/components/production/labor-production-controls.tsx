@@ -5,8 +5,8 @@ import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
@@ -119,15 +119,19 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   }, [selectedResources, availableResources]);
 
   return (
-    <div className="bg-brown/20 p-4 rounded-lg">
-      <h3 className="text-2xl font-bold mb-4">Labor Production</h3>
+    <div className=" py-4">
+      <h3 className=" mb-4">Labor Production</h3>
 
       <div className="space-y-4 mb-4">
         {selectedResources.map((resource, index) => (
           <div key={index} className="flex gap-4 items-center">
             <div className="flex-1">
               <SelectResource
-                onSelect={(resourceId) => updateResourceId(index, resourceId || 0)}
+                onSelect={(resourceId) => {
+                  if (resourceId !== null) {
+                    updateResourceId(index, resourceId);
+                  }
+                }}
                 className="w-full bg-dark-brown rounded border border-gold/30"
                 realmProduction={true}
                 defaultValue={resource.id}
@@ -137,9 +141,9 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
 
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <ResourceIcon resource={ResourcesIds[resource.id]} size="sm" />
+                {/* <ResourceIcon resource={ResourcesIds[resource.id]} size="sm" /> */}
                 <div className="flex items-center justify-between w-full">
-                  <div className="w-2/3">
+                  <div>
                     <NumberInput
                       value={resource.amount}
                       onChange={(value) => updateResourceAmount(index, value)}
@@ -148,49 +152,53 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       onClick={() => handleMaxClick(index)}
-                      className="px-2 py-1 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
+                      variant="secondary"
+                      className="px-2 py-1 gap-4 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
                     >
                       MAX
-                    </button>
-                    <span className="text-sm font-medium text-gold/60">
-                      {divideByPrecision(
-                        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
-                      )}
-                    </span>
+                      <span>
+                        {divideByPrecision(
+                          Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+                        )
+                          .toString()
+                          .toLocaleString()}
+                      </span>
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <Button onClick={() => removeResource(index)} variant="secondary" className="px-2">
+            <Button onClick={() => removeResource(index)} variant="danger" className="px-2">
               Remove
             </Button>
           </div>
         ))}
 
-        <Button onClick={addResource} variant="secondary" className="w-full">
-          Add Resource
-        </Button>
+        {selectedResources.length === 0 && (
+          <Button onClick={addResource} variant="secondary" className="w-full">
+            Add Resource
+          </Button>
+        )}
       </div>
 
       <>
-        <div className="mb-4 p-4 rounded-lg border-2 border-gold/30">
-          <h4 className="text-xl mb-2">Production Details</h4>
-          <div className="space-y-3 text-gold/80">
-            <div className="flex items-center gap-2">
-              <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="sm" />
+        <div className="mb-4 p-4 panel-wood border-gold/30 bg-green/5">
+          <div className=" flex justify-between text-gold/80 gap-4 flex-wrap">
+            <h3 className="flex items-center gap-2">
+              <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="xl" />
               <span>Total Labor Generated:</span>
               <span className="font-medium">{formatStringNumber(Number(laborAmount), 0)}</span>
-            </div>
+            </h3>
 
-            <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
+            <h4 className="flex items-center gap-2 justify-center  rounded-md">
               <span>Time Required:</span>
               <span className="font-medium">
                 {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}
               </span>
-            </div>
+            </h4>
           </div>
         </div>
 
