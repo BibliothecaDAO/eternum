@@ -197,8 +197,6 @@ function ChatModule() {
   // Set direct message recipient from online users list
   const selectRecipient = useCallback(
     (recipientId: string) => {
-      console.log(`Selecting recipient: ${recipientId}`);
-
       // Show loading state immediately
       setIsLoadingMessages(true);
 
@@ -210,8 +208,6 @@ function ChatModule() {
         ...prev,
         [recipientId]: 0,
       }));
-
-      console.log(chatClient);
 
       // Request message history with this user
       if (chatClient) {
@@ -395,8 +391,6 @@ function ChatModule() {
   // Join a room from the sidebar
   const joinRoomFromSidebar = (roomId: string) => {
     if (!chatClient) return;
-
-    console.log(`Joining room from sidebar: ${roomId}`);
 
     // Show loading state immediately
     setIsLoadingMessages(true);
