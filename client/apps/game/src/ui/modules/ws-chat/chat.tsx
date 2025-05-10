@@ -28,7 +28,7 @@ function ChatModule() {
   const [userToken, setUserToken] = useState<string>(initialToken);
   const [username, setUsername] = useState<string>("");
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
-  const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(true);
+  const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(false);
   // Add state for showing room creation
   const [showRoomCreation, setShowRoomCreation] = useState<boolean>(false);
 
@@ -93,6 +93,10 @@ function ChatModule() {
 
   // Unread messages state - track unread messages by user ID
   const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+
+  const hasUnreadMessages = useMemo(() => {
+    return Object.values(unreadMessages).some((count) => count > 0);
+  }, [unreadMessages]);
 
   // Auto-scroll to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -197,8 +201,6 @@ function ChatModule() {
   // Set direct message recipient from online users list
   const selectRecipient = useCallback(
     (recipientId: string) => {
-      console.log(`Selecting recipient: ${recipientId}`);
-
       // Show loading state immediately
       setIsLoadingMessages(true);
 
@@ -210,8 +212,6 @@ function ChatModule() {
         ...prev,
         [recipientId]: 0,
       }));
-
-      console.log(chatClient);
 
       // Request message history with this user
       if (chatClient) {
@@ -323,7 +323,7 @@ function ChatModule() {
     setMessages,
   );
 
-  useRoomMessageEvents(chatClient, addMessage, setIsLoadingMessages, setMessages);
+  useRoomMessageEvents(chatClient, activeRoom, addMessage, setUnreadMessages, setIsLoadingMessages, setMessages);
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
@@ -364,6 +364,26 @@ function ChatModule() {
     };
   }, [chatClient]);
 
+  const joinedRoomsRef = useRef(new Set<string>());
+
+  // Automatically join all available rooms to receive notifications
+  useEffect(() => {
+    if (chatClient && chatClient.socket && chatClient.socket.connected && availableRooms.length > 0) {
+      availableRooms.forEach((room) => {
+        if (!joinedRoomsRef.current.has(room.id)) {
+          console.log(`Auto-joining room for notifications: ${room.id}`);
+          chatClient.joinRoom(room.id);
+          joinedRoomsRef.current.add(room.id);
+        }
+      });
+    }
+    // If the socket disconnects, we might want to clear joinedRoomsRef
+    // so it attempts to rejoin when connection is re-established.
+    // However, the current ChatClient re-initialization on disconnect/reconnect might handle this implicitly
+    // by creating a new client instance, which would also mean a new joinedRoomsRef effectively.
+    // For now, let's keep the dependencies simple.
+  }, [chatClient, availableRooms, chatClient?.socket?.connected]);
+
   // Join a room
   const joinRoom = (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,6 +399,12 @@ function ChatModule() {
 
     // First set active room to update UI
     setActiveRoom(newRoomId);
+
+    // Clear unread messages for this new room
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [newRoomId]: 0,
+    }));
 
     // Then join the socket.io room
     chatClient.joinRoom(newRoomId);
@@ -396,8 +422,6 @@ function ChatModule() {
   const joinRoomFromSidebar = (roomId: string) => {
     if (!chatClient) return;
 
-    console.log(`Joining room from sidebar: ${roomId}`);
-
     // Show loading state immediately
     setIsLoadingMessages(true);
 
@@ -406,6 +430,12 @@ function ChatModule() {
 
     // First set active room to update UI
     setActiveRoom(roomId);
+
+    // Clear unread messages for this room
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [roomId]: 0,
+    }));
 
     // Then join the socket.io room
     chatClient.joinRoom(roomId);
@@ -424,13 +454,39 @@ function ChatModule() {
 
   // Filter users based on search input
   const filteredUsers = useMemo(() => {
-    return filterUsersBySearch(onlineUsers, userSearch);
-  }, [onlineUsers, userSearch]);
+    const users = filterUsersBySearch(onlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) {
+        return -1; // A comes first
+      }
+      if (!unreadA && unreadB) {
+        return 1; // B comes first
+      }
+      // If both have or don't have unread, sort by username
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [onlineUsers, userSearch, unreadMessages]);
 
   // Filter offline users based on search input
   const filteredOfflineUsers = useMemo(() => {
-    return filterUsersBySearch(offlineUsers, userSearch);
-  }, [offlineUsers, userSearch]);
+    const users = filterUsersBySearch(offlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) {
+        return -1; // A comes first
+      }
+      if (!unreadA && unreadB) {
+        return 1; // B comes first
+      }
+      // If both have or don't have unread, sort by username
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [offlineUsers, userSearch, unreadMessages]);
 
   // Add resize listener to detect mobile view
   useEffect(() => {
@@ -469,26 +525,31 @@ function ChatModule() {
 
   if (isMinimized) {
     return (
-      <CircleButton
-        onClick={() => setIsMinimized(false)}
-        size="lg"
-        className="fixed bottom-2 left-2 pointer-events-auto"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div className="fixed bottom-2 left-2 pointer-events-auto z-50">
+        <CircleButton
+          onClick={() => setIsMinimized(false)}
+          size="lg"
+          // className="fixed bottom-2 left-2 pointer-events-auto" // Moved to parent div
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-      </CircleButton>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </CircleButton>
+        {hasUnreadMessages && (
+          <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 border border-white bg-green pointer-events-none animate-pulse"></span>
+        )}
+      </div>
     );
   }
 
@@ -505,9 +566,9 @@ function ChatModule() {
             isMobileView ? "absolute z-10" : "w-72"
           } md:w-72 md:relative from-black to-gray-950 text-gray-200 shadow-lg flex-shrink-0 flex flex-col border-r border-gold/30`}
         >
-          <div className="px-4 py-3 border-b border-gold/30">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+          <div className="px-1 py-1 border-b border-gold/30">
+            <div className="flex items-center justify-between gap-2 border-b border-gold/30 pb-1">
+              <div className="flex items-center gap-2 ">
                 <button
                   onClick={() => setIsRoomsVisible(!isRoomsVisible)}
                   className="text-gold/70 hover:text-gold transition-colors"
@@ -567,7 +628,7 @@ function ChatModule() {
               </form>
             )}
 
-            <div className={`${isRoomsVisible ? "block" : "hidden"} mt-3`}>
+            <div className={`${isRoomsVisible ? "block" : "hidden"}`}>
               <div className="overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
                 {isLoadingRooms ? (
                   <div className="flex items-center justify-center py-4">
@@ -585,10 +646,8 @@ function ChatModule() {
                     {filteredRooms.map((room) => (
                       <li
                         key={room.id}
-                        className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
-                          room.id === activeRoom
-                            ? "bg-orange-600/20 border-l-2 border-orange-500"
-                            : "hover:bg-gray-800/50"
+                        className={`flex items-center px-1 py-1 cursor-pointer transition-colors h6 ${
+                          room.id === activeRoom ? "bg-orange/20 border-l-2 border-orange" : "hover:bg-gray/50"
                         }`}
                         onClick={() => joinRoomFromSidebar(room.id)}
                       >
@@ -612,6 +671,12 @@ function ChatModule() {
                         {room.userCount && (
                           <span className="ml-auto bg-gray-600/70 px-2 py-0.5 text-xs">{room.userCount}</span>
                         )}
+                        {/* Unread message notification badge for rooms */}
+                        {unreadMessages[room.id] > 0 && (
+                          <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {unreadMessages[room.id]}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -621,7 +686,7 @@ function ChatModule() {
           </div>
 
           {/* Users Section */}
-          <div className="px-4 py-3 flex-1 overflow-hidden flex flex-col">
+          <div className="px-1 py-1 flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between">
               <input
                 type="text"
@@ -630,11 +695,10 @@ function ChatModule() {
                 onChange={(e) => setUserSearch(e.target.value)}
                 className="w-full pl-3 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
               />
-              <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
             </div>
 
             {/* User Search */}
-            <div className="relative mb-3">
+            <div className="relative">
               {userSearch && (
                 <button
                   className="absolute right-2 top-2.5 text-gray-400 hover:text-white"
@@ -664,23 +728,26 @@ function ChatModule() {
                   <p className="text-gray-400 text-center text-sm py-2">No users found</p>
                 )
               ) : (
-                <div className="space-y-4">
+                <div className="">
                   {/* Online Users */}
                   {filteredUsers.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-                        Online
+                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 justify-between ">
+                        Online Lords{" "}
+                        <span className="bg-green-600 px-2 py-0.5 text-xs font-medium">
+                          <span className="text-green">{onlineUsers.length}</span>
+                        </span>
                       </div>
-                      <ul className="space-y-2">
+                      <ul className="">
                         {filteredUsers.map((user) => (
                           <li
                             key={user.id}
-                            className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
+                            className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
                               user.id === userId
-                                ? "bg-orange-600/20 border-l-2 border-orange-500"
+                                ? "bg-orange-600/20 border-l-2 border-orange "
                                 : user.id === directMessageRecipient
-                                  ? "bg-orange-600/10 border-l-2 border-orange-400"
-                                  : "hover:bg-gray-800/50 hover:border-l-2 hover:border-gray-500 active:bg-orange-600/10 active:border-orange-400"
+                                  ? "bg-orange/10 border-l-2 border-orange"
+                                  : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
                             }`}
                           >
                             <button
@@ -702,7 +769,7 @@ function ChatModule() {
                               <div className="ml-auto w-2 h-2 bg-green-500"></div>
                               {/* Unread message notification badge */}
                               {user.id !== userId && unreadMessages[user.id] > 0 && (
-                                <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5">
+                                <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
                                   {unreadMessages[user.id]}
                                 </span>
                               )}
@@ -723,7 +790,7 @@ function ChatModule() {
                         {filteredOfflineUsers.map((user) => (
                           <li
                             key={user.id}
-                            className={`flex items-center px-3 py-2 cursor-pointer transition-colors opacity-60 ${
+                            className={`flex items-center px-2 cursor-pointer transition-colors opacity-60 ${
                               user.id === directMessageRecipient
                                 ? "bg-gray-800/30 border-l-2 border-gray-500"
                                 : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
@@ -744,7 +811,7 @@ function ChatModule() {
                               </span>
                               {/* Unread message notification badge */}
                               {unreadMessages[user.id] > 0 && (
-                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5">
+                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
                                   {unreadMessages[user.id]}
                                 </span>
                               )}
@@ -768,7 +835,7 @@ function ChatModule() {
         {/* Chat Header */}
         <div className="from-black px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center">
-            <div className="truncate">
+            <div className="truncate h6">
               {directMessageRecipient ? (
                 `Chat with ${
                   onlineUsers.find((user) => user.id === directMessageRecipient)?.username || directMessageRecipient

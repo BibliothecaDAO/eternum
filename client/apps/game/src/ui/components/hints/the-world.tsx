@@ -6,17 +6,17 @@ export const TheWorld = () => {
       title: "Time to Build",
       icon: <ResourceIcon size="xl" resource="Ancient Fragment" />,
       content:
-        "You have been chosen to lead your people to greatness. You must build your empire, forge alliances, and conquer your enemies. Only the strong will survive.",
+        "You have been chosen to lead your people to greatness. You must build your empire, forge alliances, and conquer your enemies. Only the strong will survive in the lands of Eternum.",
     },
     {
-      title: "The Hyperstructures",
+      title: "The Enigmatic Hyperstructures",
       content:
-        "Long before recorded history, the Ancients constructed vast hyperstructures to harness the energies of the cosmos. These colossal edifices, buried and forgotten, hold the key to untold power. As the world awakens, it becomes clear that the fragments of these hyperstructures are scattered across the land, each containing a piece of their ancient might. ",
+        "Long before recorded history, the Ancients constructed vast Hyperstructures. These colossal edifices, now found as dormant Foundations scattered across Eternum, hold the key to ultimate power and victory. Rebuilding and controlling these structures by gathering Ancient Fragments, vast amounts of resources, and labor is the primary path to winning a season. They are the ultimate strategic targets, demanding cooperation and might to secure.",
     },
     {
-      title: "Your Mission",
+      title: "Forge Your Legacy in a Living World",
       content:
-        "Your mission is to explore the world, uncover the fragments, and harness their power to build your empire. As you build, you will attract the attention of other players, who will seek to ally with you or challenge your rule. The world is vast and full of danger, but with the right strategy, you can rise to the top and become the most powerful ruler in Eternum.",
+        "Your journey in Eternum is one of exploration, expansion, and influence. Venture into the unknown to discover vital resources, claim valuable Fragment Mines that yield Ancient Fragments, and secure Hyperstructure Foundations. Engage in a dynamic, player-driven economy where every material is produced and traded. Raise armies not just for conquest, but to defend your holdings and project your power. Form or join Tribes to cooperate, strategize, and wage wars. While the grandest glory lies in dominating Hyperstructures, Eternum offers many paths to greatness—be it through economic supremacy, military renown, or cunning diplomacy. The world is vast and full of challenges and opportunities; carve out your destiny.",
     },
   ];
 

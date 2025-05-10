@@ -5,9 +5,7 @@ import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
-import { getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, PlayerStructure } from "@bibliothecadao/types";
+import { PlayerStructure } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -24,15 +22,6 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
   const disableButtons = useUIStore((state) => state.disableButtons);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
-
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(ConnectedAccount?.address || "0x0"), components),
-    [structureEntityId, ConnectedAccount?.address, components],
-  );
 
   const navigation = useMemo(
     () => [
@@ -84,7 +73,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
         ),
       },
     ],
-    [view, structureEntityId],
+    [view, structureEntityId, disableButtons],
   );
 
   const isOffscreen = view === RightView.None;
