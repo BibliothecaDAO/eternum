@@ -40,7 +40,7 @@ import {
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ArmySystemUpdate, QuestSystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";

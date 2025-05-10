@@ -4,7 +4,7 @@ import { fetchAllTiles, type Tile } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { Position } from "@/types/position";
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
@@ -549,26 +549,33 @@ class Minimap {
   private drawQuests() {
     if (!this.context || !this.showQuests) return;
 
-    const allQuests = this.questManager.quests.getQuests();
-    for (const [questType, quests] of allQuests) {
-      quests.forEach((quest) => {
-        const { x: col, y: row } = quest.hexCoords.getNormalized();
-        const cacheKey = `${col},${row}`;
-        if (this.scaledCoords.has(cacheKey)) {
-          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-          const labelImg = this.labelImages.get("QUEST");
-          if (!labelImg) return;
+    const allQuests: HexPosition[] = this.tiles
+      .map((tile) => {
+        const questTile = tile.occupier_type === TileOccupier.Quest;
+        if (!questTile) return null;
+        return {
+          col: tile.col,
+          row: tile.row,
+        };
+      })
+      .filter((quest) => quest !== null);
 
-          this.context.drawImage(
-            labelImg,
-            scaledCol - this.questSize.width * (row % 2 !== 0 ? 1 : 0.5),
-            scaledRow - this.questSize.height / 2,
-            this.questSize.width,
-            this.questSize.height,
-          );
-        }
-      });
-    }
+    allQuests.forEach((quest) => {
+      const cacheKey = `${quest.col},${quest.row}`;
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        const labelImg = this.labelImages.get("QUEST");
+        if (!labelImg) return;
+
+        this.context.drawImage(
+          labelImg,
+          scaledCol - this.questSize.width * (quest.row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.questSize.height / 2,
+          this.questSize.width,
+          this.questSize.height,
+        );
+      }
+    });
   }
 
   drawCamera() {
