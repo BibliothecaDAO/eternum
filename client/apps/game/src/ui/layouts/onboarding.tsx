@@ -173,7 +173,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   } = useDojo();
   const { Structure } = components;
 
-  const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
+  const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realmsEntities = usePlayerOwnedRealmEntities();
@@ -247,7 +247,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   }, []);
 
   return (
-    hasAcceptedToS && (
+    hasAcceptedTS && (
       <div className="space-y-4">
         {settlingStartTimeRemaining && (
           <div className="text-center text-xl">

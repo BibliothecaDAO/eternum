@@ -23,29 +23,34 @@ export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
   const step1Content = useMemo(
     () => (
       <div className="space-y-6">
-        <div className="text-xl font-bold">
-          Did you know that Eternum is a fully onchain game with immutable contracts?
-        </div>
+        <div className="text-xl font-bold">NOTICE</div>
 
         <section>
-          <div className="text-lg font-bold mb-2">Important information:</div>
-          <p>Bridges out of the game permanently close 48 hours after victory.</p>
+          <ul className="list-disc pl-6 space-y-3">
+            <li>
+              After the game begins, you will see that you can bridge some regular ERC20 tokens (e.g.{" "}
+              <span className="font-bold">$LORDS</span>) in and out of the game.
+            </li>
+            <li>
+              <span className="font-bold">This bridge will close 7 days after the game ends.</span>
+            </li>
+            <li>
+              <span className="underline font-bold">You are advised</span> to bridge out any resources you don't want to
+              lose after the game ends.
+            </li>
+            <li>
+              <span className="font-bold">
+                Any resources left in the game after the 7 day grace period are permanently locked in the contract (aka
+                burned),
+              </span>{" "}
+              <span className="font-bold">with $LORDS being the exception.</span>
+            </li>
+            <li>All $LORDS left are transferred to the VELORDS staking smart contract.</li>
+          </ul>
         </section>
 
         <section>
-          <p>
-            You bridge tokens in and out of the game. The game bridge is closed forever 48 hours after the game ends.
-            Any tokens left in the game at that time are permanently locked in the contract (aka burned).
-          </p>
-        </section>
-
-        <section>
-          <p>
-            Bridging out of the game is done by sending resources to a bank.{" "}
-            <strong>That takes time and requires donkeys.</strong> It's part of the game - with immutable contracts code
-            is law. Plan around it, it is your responsibility to bridge out and the developers cannot do anything to
-            change the code after deployment.
-          </p>
+          <p>Please plan around this as the developers will not be able to help you after the game ends.</p>
         </section>
 
         <div className="w-full flex justify-center">
@@ -59,7 +64,7 @@ export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
   const step2Content = useMemo(
     () => (
       <div className="space-y-6">
-        <div className="text-xl font-bold">Important disclaimer. Please Read Carefully.</div>
+        <div className="text-xl font-bold">Important Disclaimer! Please read carefully.</div>
 
         <section>
           <p>
@@ -68,18 +73,23 @@ export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
           </p>
         </section>
 
-        <section className="mb-4 text-lg font-bold">
-          <p>All Tokens Are Locked In Game Contract 48 hours after the game is won (Season End)</p>
-        </section>
-
         <section className="mb-4">
           <p>
             A season of Eternum concludes when a single player achieves the required number of Victory Points and clicks
-            the "End Season" button. 48 hours after this point:
+            the "End Season" button.
+            <br />
+            <br />
+            <span className="font-bold"> Within 7 days after the "End Season" button is clicked:</span>
           </p>
           <ul className="list-disc pl-6 mt-2">
             <li className="text-base font-bold">
-              ALL $LORDS tokens and in-game resources are permanently locked within the game.
+              Players are strongly encouraged to bridge out their $LORDS tokens and other in-game resources. ALL $LORDS
+              tokens and in-game resources are permanently locked within the game after the 7 day grace period elapses.
+            </li>
+            <li className="text-base font-bold">
+              Players will be allowed to register their victory points in order to be eligible to receive a portion of
+              the rewards pool. If you do not register your victory points within the 7 day grace period, you may not be
+              eligible to receive a portion of the rewards pool.
             </li>
             <li>
               Players are encouraged to review the{" "}
@@ -91,9 +101,10 @@ export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
               >
                 documentation
               </a>{" "}
-              for instructions on how to bridge tokens out during the active gameplay phase. Be aware that bridging out
-              is from a bank. That means donkeys are needed, travel time is required - and all other kinds of unforeseen
-              events can delay your exit. Plan accordingly as there is no Plan B.
+              for instructions on how to bridge tokens out during the gameplay
+              <br />
+              <br />
+              <span className="font-bold">Plan accordingly.</span>
             </li>
           </ul>
         </section>

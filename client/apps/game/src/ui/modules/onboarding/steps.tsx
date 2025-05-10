@@ -199,7 +199,7 @@ export const StepOne = () => {
     account: { account },
     setup,
   } = useDojo();
-  const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
+  const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
   const setShowToS = useUIStore((state) => state.setShowToS);
   const { connector } = useAccount();
 
@@ -261,7 +261,7 @@ export const StepOne = () => {
 
   return (
     <div className="flex flex-row justify-center space-y-4 items-center flex-wrap">
-      {hasAcceptedToS ? (
+      {hasAcceptedTS ? (
         <Button
           size="lg"
           variant="gold"
