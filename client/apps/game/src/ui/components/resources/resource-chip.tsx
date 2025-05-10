@@ -18,12 +18,14 @@ export const ResourceChip = ({
   maxCapacityKg,
   size = "default",
   hideZeroBalance = false,
+  showTransfer = true,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   maxCapacityKg: number;
   size?: "default" | "large";
   hideZeroBalance?: boolean;
+  showTransfer?: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -169,22 +171,24 @@ export const ResourceChip = ({
           {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
         </div>
       </div>
-      <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-          />
-        </svg>
-      </button>
+      {showTransfer && (
+        <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
