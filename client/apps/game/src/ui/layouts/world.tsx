@@ -292,10 +292,18 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   }, [quests, syncQuestTiles]);
 
   const { data: minigames } = useMiniGames({});
-  minigameStore.setMinigames(minigames);
 
   const { data: settingsMetadata } = useGameSettingsMetadata({ gameAddress: minigames?.[0]?.contract_address });
-  minigameStore.setSettingsMetadata(settingsMetadata);
+
+  useEffect(() => {
+    if (minigames) {
+      minigameStore.setMinigames(minigames);
+    }
+
+    if (settingsMetadata) {
+      minigameStore.setSettingsMetadata(settingsMetadata);
+    }
+  }, [minigames, settingsMetadata, minigameStore]);
 
   return (
     <>

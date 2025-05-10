@@ -1,6 +1,6 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
-import { getQuests } from "@/ui/components/quest/quest-utils";
+import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { getArmy, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { ContractAddress, ID, StructureType } from "@bibliothecadao/types";
@@ -25,21 +25,26 @@ export const RealmsContainer = ({
   } = useDojo();
   const playerStructures = usePlayerStructures();
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
-  const questLevelsEntity = getComponentValue(
-    QuestLevels,
-    getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
-  );
+  const questTileEntity = useMemo(() => {
+    const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+    return getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
+  }, [targetHex]);
+
+  const questLevelsEntity = useMemo(() => {
+    return getComponentValue(QuestLevels, getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]));
+  }, [questTileEntity]);
 
   const questLevels = questLevelsEntity?.levels ?? [];
   const questLevel = questLevels[questTileEntity?.level ?? 0] as any;
 
   const scores = useMinigameStore((state) => state.scores);
 
-  const quests = getQuests(components, questTileEntity?.game_address as string, questTileEntity?.id ?? 0);
+  const quests = useGetQuests(questTileEntity?.game_address as string, questTileEntity?.id ?? 0);
 
-  const armyInfo = getArmy(explorerEntityId, ContractAddress(account?.address), components);
+  const armyInfo = useMemo(
+    () => getArmy(explorerEntityId, ContractAddress(account?.address), components),
+    [explorerEntityId, account?.address, components],
+  );
 
   const realmsOrVillages = useMemo(() => {
     const matchingStructureEntityId = armyInfo?.structure?.entity_id;
@@ -67,6 +72,8 @@ export const RealmsContainer = ({
     return questTileEntity?.capacity === questTileEntity?.participant_count;
   }, [questTileEntity]);
 
+  if (!armyInfo) return null;
+
   return (
     <div className="grid grid-cols-3 gap-3 overflow-y-auto w-3/4 mx-auto p-5">
       {realmsOrVillages.map((structure, index) => {
@@ -75,7 +82,7 @@ export const RealmsContainer = ({
             <QuestRealm
               questLevelInfo={questLevel}
               structureInfo={structure}
-              armyInfo={armyInfo!}
+              armyInfo={armyInfo}
               questEntities={quests}
               questGames={scores}
               fullCapacity={fullCapacity}

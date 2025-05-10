@@ -27,11 +27,15 @@ export const QuestRealm = ({
   loadingQuests,
 }: QuestRealmProps) => {
   const structureEntityId = structureInfo.structure.entity_id;
-  const questExplorerUsed = structureEntityId === armyInfo?.structure?.entity_id;
+  const questExplorerUsed = useMemo(
+    () => structureEntityId === armyInfo?.structure?.entity_id,
+    [structureEntityId, armyInfo],
+  );
   const explorers = useExplorersByStructure({ structureEntityId: structureInfo.entityId });
 
-  const questEntitiesWithExplorers = questEntities.filter((quest) =>
-    explorers.some((explorer) => explorer.entityId === quest?.explorer_id),
+  const questEntitiesWithExplorers = useMemo(
+    () => questEntities.filter((quest) => explorers.some((explorer) => explorer.entityId === quest?.explorer_id)),
+    [questEntities, explorers],
   );
   const quest = questEntitiesWithExplorers[0]; // there should only be one quest per realm / village
   const isCompleted = quest?.completed;

@@ -37,14 +37,18 @@ export const QuestModal = ({
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
-  const questLevelsEntity = getComponentValue(
-    QuestLevels,
-    getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
-  );
+  const questTileEntity = useMemo(() => {
+    const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+    return getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
+  }, [targetHex]);
 
-  const queryGameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
+  const queryGameAddress = useMemo(() => {
+    const questLevelsEntity = getComponentValue(
+      QuestLevels,
+      getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
+    );
+    return questLevelsEntity?.game_address ?? "0x0";
+  }, [questTileEntity]);
 
   const attributeFilters = useMemo(() => {
     return [questTileEntity?.id];

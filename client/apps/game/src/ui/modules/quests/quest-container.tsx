@@ -2,11 +2,11 @@ import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CurrentQuest } from "@/ui/components/quest/quest-realm-component";
-import { getQuestForExplorer, getQuests } from "@/ui/components/quest/quest-utils";
+import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getArmy, getRemainingCapacityInKg, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure, useGetQuestForExplorer, usePlayerStructures } from "@bibliothecadao/react";
 import { ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -54,7 +54,7 @@ export const QuestContainer = ({
   const updateScore = useMinigameStore((state) => state.updateScore);
   const queryGameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
 
-  const quests = getQuests(components, questTileEntity?.game_address as string, questTileEntity?.id ?? 0);
+  const quests = useGetQuests(questTileEntity?.game_address as string, questTileEntity?.id ?? 0);
 
   const handleStartQuest = async () => {
     if (!selectedHex) return;
@@ -86,7 +86,10 @@ export const QuestContainer = ({
     }
   };
 
-  const armyInfo = getArmy(explorerEntityId, ContractAddress(account?.address), components);
+  const armyInfo = useMemo(
+    () => getArmy(explorerEntityId, ContractAddress(account?.address), components),
+    [explorerEntityId, account?.address, components],
+  );
 
   const realmsOrVillages = useMemo(() => {
     const matchingStructureEntityId = armyInfo?.structure?.entity_id;
@@ -124,7 +127,7 @@ export const QuestContainer = ({
     return remainingExplorerCapacity >= Number(rewardAmount) / 10 ** 9;
   }, [remainingExplorerCapacity, rewardAmount]);
 
-  const currentQuestEntity = getQuestForExplorer(components, explorerEntityId, questTileEntity?.id ?? 0);
+  const currentQuestEntity = useGetQuestForExplorer(explorerEntityId, questTileEntity?.id ?? 0);
 
   const currentQuest = getComponentValue(components.Quest, currentQuestEntity);
 

@@ -4,7 +4,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ID } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { QuestReward } from "../../resources/quest-reward";
 
@@ -33,21 +33,27 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
   }, [questEntityId]);
 
   const minigames = useMinigameStore((state) => state.minigames);
-  const game = minigames?.find(
-    (miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n),
+  const game = useMemo(
+    () => minigames?.find((miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n)),
+    [minigames, quest?.game_address],
   );
-  const slotsRemaining = (quest?.capacity ?? 0) - (quest?.participant_count ?? 0);
-  const hasSlotsRemaining = slotsRemaining > 0;
+  const slotsRemaining = useMemo(
+    () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),
+    [quest?.capacity, quest?.participant_count],
+  );
+  const hasSlotsRemaining = useMemo(() => slotsRemaining > 0, [slotsRemaining]);
 
   // Precompute common class strings for consistency with ArmyEntityDetail
   const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-  const questLevelsEntity = getComponentValue(
-    components.QuestLevels,
-    getEntityIdFromKeys([BigInt(quest?.game_address || 0)]),
+  const questLevelsEntity = useMemo(
+    () => getComponentValue(components.QuestLevels, getEntityIdFromKeys([BigInt(quest?.game_address || 0)])),
+    [components, quest?.game_address],
   );
 
   const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as any;
+
+  if (!quest) return null;
 
   return (
     <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -68,7 +74,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       <div className="flex flex-row justify-between mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Reward</div>
-          <QuestReward quest={quest!} />
+          <QuestReward quest={quest} />
         </div>
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Remaining</div>

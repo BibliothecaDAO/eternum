@@ -1,34 +1,33 @@
-import { ClientComponents } from "@bibliothecadao/types";
+import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { useMemo } from "react";
 
-export const getQuests = (components: ClientComponents, gameAddress: string, questTileId: number) => {
-  const gameIdsQueryFrament = !!questTileId
-    ? [
-        Has(components.Quest),
-        HasValue(components.Quest, {
-          game_address: gameAddress,
-          quest_tile_id: questTileId,
-        }),
-      ]
-    : [HasValue(components.Quest, { game_address: "0x0" })];
+export const useGetQuests = (gameAddress: string, questTileId: number) => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const gameIdsQueryFrament = useMemo(
+    () =>
+      !!questTileId
+        ? [
+            Has(components.Quest),
+            HasValue(components.Quest, {
+              game_address: gameAddress,
+              quest_tile_id: questTileId,
+            }),
+          ]
+        : [HasValue(components.Quest, { game_address: "0x0" })],
+    [components, gameAddress, questTileId],
+  );
 
   const questEntities = useEntityQuery([...gameIdsQueryFrament]);
 
-  const quests = questEntities.map((questEntity) => {
-    return getComponentValue(components.Quest, questEntity);
-  });
+  const quests = useMemo(() => {
+    return questEntities.map((questEntity) => {
+      return getComponentValue(components.Quest, questEntity);
+    });
+  }, [components, questEntities]);
+
   return quests;
-};
-
-/**
- * Gets the current quest for an explorer
- */
-export const getQuestForExplorer = (components: ClientComponents, explorerId: number, questTileId: number) => {
-  const entity = useEntityQuery([
-    Has(components.Quest),
-    HasValue(components.Quest, { explorer_id: explorerId, quest_tile_id: questTileId }),
-  ]);
-
-  return entity.values().next().value!;
 };
