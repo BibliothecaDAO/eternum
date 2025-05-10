@@ -8,6 +8,17 @@ const QUERIES = {
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
+  ALL_TILES: `
+    SELECT DISTINCT
+        col,
+        row,
+        biome,
+        occupier_id,
+        occupier_type,
+        occupier_is_structure
+    FROM \`s1_eternum-Tile\`
+    ORDER BY col, row;
+  `,
   TOKEN_TRANSFERS: `
     WITH token_meta AS ( 
         SELECT contract_address,
@@ -69,6 +80,15 @@ export interface StructureLocation {
   "base.coord_x": number;
   "base.coord_y": number;
   owner: ContractAddress;
+}
+
+export interface Tile {
+  col: number;
+  row: number;
+  biome: number;
+  occupier_id: number;
+  occupier_type: number;
+  occupier_is_structure: boolean;
 }
 
 type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";
@@ -187,6 +207,20 @@ export async function fetchStructureByCoord(coordX: number, coordY: number): Pro
 
   if (!response.ok) {
     throw new Error(`Failed to fetch structure details: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch all tiles on the map from the API
+ */
+export async function fetchAllTiles(): Promise<Tile[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.ALL_TILES)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tiles: ${response.statusText}`);
   }
 
   return await response.json();
