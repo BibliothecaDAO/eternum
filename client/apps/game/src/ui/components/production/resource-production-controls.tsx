@@ -1,6 +1,7 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { Tabs } from "@/ui/elements/tab";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
@@ -155,13 +156,12 @@ export const ResourceProductionControls = ({
     return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
   }, [realm.entityId, selectedResource, components]);
 
-  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
+  const [selectedTab, setSelectedTab] = useState(0);
 
-  return (
-    <div className=" p-4 rounded-lg">
-      <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
-
-      <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
+  const tabs = [
+    {
+      label: "Standard Production",
+      component: (
         <RawResourcesPanel
           selectedResource={selectedResource}
           productionAmount={productionAmount}
@@ -171,67 +171,103 @@ export const ResourceProductionControls = ({
           onSelect={() => setUseRawResources(true)}
           outputResource={outputResource}
         />
+      ),
+    },
+    {
+      label: "Simple Production",
+      component: (
+        <div>
+          {" "}
+          {laborCurrentInputs.length > 0 && (
+            <LaborResourcesPanel
+              selectedResource={selectedResource}
+              productionAmount={productionAmount}
+              setProductionAmount={setProductionAmount}
+              resourceBalances={resourceBalances}
+              isSelected={!useRawResources}
+              onSelect={() => setUseRawResources(false)}
+            />
+          )}
+        </div>
+      ),
+    },
+  ];
 
-        {laborCurrentInputs.length > 0 && (
-          <LaborResourcesPanel
-            selectedResource={selectedResource}
-            productionAmount={productionAmount}
-            setProductionAmount={setProductionAmount}
-            resourceBalances={resourceBalances}
-            isSelected={!useRawResources}
-            onSelect={() => setUseRawResources(false)}
-          />
-        )}
+  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
+
+  return (
+    <div className=" p-6 rounded-lg panel-wood">
+      <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="mb-4">
+            <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
+            <p className="text-xl text-gold/80 mb-4">
+              You can input the output here and it will be automatically calculated.
+            </p>
+            <div className="flex items-center gap-4 mb-4 w-72">
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={ResourcesIds[selectedResource]} size="xl" />
+              </div>
+              <NumberInput
+                value={Math.round(productionAmount)}
+                onChange={(value) => setProductionAmount(value)}
+                min={1}
+                className="rounded-md border-gold/30 hover:border-gold/50"
+              />
+            </div>
+          </div>
+        </div>
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => {
+            setSelectedTab(index);
+          }}
+        >
+          <Tabs.List className="p-2 w-full">
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
       </div>
 
       {/* Output */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="mb-4 p-4 rounded-lg border-2 border-gold/30 panel-gold">
-          <h4 className=" mb-2">Production Output</h4>
-          <p className="text-xl text-gold/80 mb-4">
-            You can input the output here and it will be automatically calculated.
-          </p>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <ResourceIcon resource={ResourcesIds[selectedResource]} size="xl" />
-              <span className="text-gold/80">Amount</span>
-            </div>
-            <NumberInput
-              value={Math.round(productionAmount)}
-              onChange={(value) => setProductionAmount(value)}
-              min={1}
-              className="rounded-md border-gold/30 hover:border-gold/50"
-            />
+
+      <div className="flex flex-col gap-2">
+        <div className="flex  justify-between gap-2">
+          {" "}
+          <div>
+            <h2 className="flex items-center gap-2 mt-4">
+              {productionAmount.toLocaleString()} {ResourcesIds[selectedResource]}
+              <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
+            </h2>
           </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className=" text-xl my-4">
-            You will be charged for the production of {productionAmount.toLocaleString()}{" "}
-            <span className="flex items-center gap-2">
-              {" "}
-              {ResourcesIds[selectedResource]}
-              <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" />
-            </span>
-          </div>
-          <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md  text-2xl">
-            <span className="text-gold/80">Production Time:</span>
+          <h4 className="flex items-center gap-2">
+            <span className="text-gold/80">Time Required:</span>
             <span>
               {ticks
                 ? formatTime(Math.floor((ticks / buildingCount) * (realm.category === StructureType.Village ? 2 : 1)))
                 : "0s"}
             </span>
-          </div>
-          <Button
-            onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-            disabled={isDisabled}
-            isLoading={isLoading}
-            variant={isDisabled ? "default" : "gold"}
-            className="px-8 py-2"
-            size="lg"
-          >
-            {isDisabled ? "Not enough resources" : "Start Production"}
-          </Button>
+          </h4>{" "}
         </div>
+
+        <Button
+          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
+          disabled={isDisabled}
+          isLoading={isLoading}
+          variant={isDisabled ? "default" : "gold"}
+          className="px-8 py-2"
+          size="lg"
+        >
+          {isDisabled ? "Not enough resources" : "Start Production"}
+        </Button>
       </div>
     </div>
   );

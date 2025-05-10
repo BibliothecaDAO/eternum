@@ -48,21 +48,12 @@ export const LaborResourcesPanel = ({
   };
 
   return (
-    <div
-      className={`p-4 rounded-lg border-2 cursor-pointer ${
-        isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-50"
-      }`}
-      onClick={onSelect}
-    >
-      <h4 className="text-xl mb-2">Labor</h4>
-      <div className="space-y-2">
+    <div className={`cursor-pointer`} onClick={onSelect}>
+      <div>
         {laborInputResources?.map((input) => {
           const balance = resourceBalances[input.resource] || 0;
           return (
-            <div
-              key={input.resource}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors"
-            >
+            <div key={input.resource} className="flex items-center gap-3 my-1  transition-colors">
               <ResourceIcon resource={ResourcesIds[input.resource]} size="lg" />
               <div className="flex items-center justify-between w-full">
                 <span
