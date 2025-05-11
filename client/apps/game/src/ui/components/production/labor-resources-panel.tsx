@@ -1,6 +1,5 @@
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 interface LaborResourcesPanelProps {
@@ -10,6 +9,9 @@ interface LaborResourcesPanelProps {
   resourceBalances: Record<number, number>;
   isSelected: boolean;
   onSelect: () => void;
+  laborInputResources: { resource: number; amount: number }[];
+  resourceOutputPerInputResources: number;
+  laborBurnPerResourceOutput: number;
 }
 
 export const LaborResourcesPanel = ({
@@ -19,16 +21,15 @@ export const LaborResourcesPanel = ({
   resourceBalances,
   isSelected,
   onSelect,
+  laborInputResources,
+  resourceOutputPerInputResources,
+  laborBurnPerResourceOutput,
 }: LaborResourcesPanelProps) => {
-  const laborConfig = configManager.getLaborConfig(selectedResource);
-  const laborInputResources = laborConfig?.inputResources;
-  const resourceOutputPerInputResources = laborConfig?.resourceOutputPerInputResources ?? 0;
-
   const handleInputChange = (value: number, inputResource: number) => {
     if (!laborInputResources) return;
     const resourceConfig = laborInputResources.find((r) => r.resource === inputResource);
     if (!resourceConfig) return;
-    const newAmount = (value / laborConfig.laborBurnPerResourceOutput) * laborConfig.resourceOutputPerInputResources;
+    const newAmount = (value / laborBurnPerResourceOutput) * resourceOutputPerInputResources;
     setProductionAmount(newAmount);
   };
 
@@ -37,7 +38,7 @@ export const LaborResourcesPanel = ({
 
     const maxAmounts = laborInputResources.map((input) => {
       const balance = resourceBalances[input.resource] || 0;
-      return Math.floor((balance / input.amount) * laborConfig.resourceOutputPerInputResources);
+      return Math.floor((balance / input.amount) * resourceOutputPerInputResources);
     });
 
     return Math.max(1, Math.min(...maxAmounts));
