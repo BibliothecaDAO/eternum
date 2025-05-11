@@ -625,6 +625,9 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../../../packages/provider
+      '@bibliothecadao/react':
+        specifier: workspace:*
+        version: link:../../../packages/react
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../../../packages/types

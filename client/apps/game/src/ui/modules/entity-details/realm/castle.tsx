@@ -129,7 +129,7 @@ export const Castle = () => {
   return (
     structure && (
       <div className="castle-selector w-full text-sm">
-        <div className="p-4 space-y-6">
+        <div className="space-y-2">
           {/* Wonder Bonus Section */}
           {wonderStructureId && (
             <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
