@@ -85,16 +85,16 @@ importers:
         version: 0.7.13(@metamask/sdk@0.32.1(bufferutil@4.0.9)(encoding@0.1.13)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.2(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(open@10.1.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(starknetkit@2.10.4(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/react':
         specifier: 'catalog:'
-        version: 1.5.3(@types/node@20.17.44)(@types/react@18.3.21)(bufferutil@4.0.9)(immer@10.1.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@types/node@20.17.42)(@types/react@18.3.21)(bufferutil@4.0.9)(immer@10.1.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/recs':
         specifier: 'catalog:'
         version: 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/sdk':
         specifier: 'catalog:'
-        version: 1.5.3(@tanstack/react-query@5.75.5(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.5.3(@types/node@20.17.44)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@types/node@20.17.42)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.5.3
@@ -128,7 +128,7 @@ importers:
         version: link:packages/react
       '@types/node':
         specifier: ^20.17.30
-        version: 20.17.44
+        version: 20.17.42
       '@types/react':
         specifier: ^18.3.20
         version: 18.3.21
@@ -152,10 +152,10 @@ importers:
         version: 5.8.3
       vite:
         specifier: ^5.4.16
-        version: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
+        version: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   client:
     dependencies:
@@ -228,7 +228,7 @@ importers:
         version: 8.1.0(rollup@4.40.2)(typescript@5.8.3)
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       '@types/react':
         specifier: ^18.3.3
         version: 18.3.21
@@ -237,7 +237,7 @@ importers:
         version: 18.3.7(@types/react@18.3.21)
       '@vitejs/plugin-react':
         specifier: ^4.3.1
-        version: 4.4.1(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 4.4.1(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       globals:
         specifier: ^15.9.0
         version: 15.15.0
@@ -246,16 +246,16 @@ importers:
         version: 0.9.36(@types/react@18.3.21)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       vite-plugin-mkcert:
         specifier: ^1.17.6
-        version: 1.17.8(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 1.17.8(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       vite-plugin-svgr:
         specifier: ^4.2.0
-        version: 4.3.0(rollup@4.40.2)(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 4.3.0(rollup@4.40.2)(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       vite-plugin-top-level-await:
         specifier: ^1.4.1
-        version: 1.5.0(@swc/helpers@0.5.17)(rollup@4.40.2)(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 1.5.0(@swc/helpers@0.5.17)(rollup@4.40.2)(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       vite-plugin-wasm:
         specifier: ^3.3.0
-        version: 3.4.1(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 3.4.1(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
 
   client/apps/eternum-mobile:
     dependencies:
@@ -306,10 +306,10 @@ importers:
         version: 3.7.2(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.6.3)(utf-8-validate@5.0.10)
       '@tanstack/react-router':
         specifier: ^1.74.0
-        version: 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/router-devtools':
         specifier: ^1.74.0
-        version: 1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
+        version: 1.119.1(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -358,7 +358,7 @@ importers:
         version: 4.17.16
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       '@types/react':
         specifier: ^18.3.18
         version: 18.3.21
@@ -367,7 +367,7 @@ importers:
         version: 18.3.7(@types/react@18.3.21)
       '@vitejs/plugin-react':
         specifier: ^4.3.4
-        version: 4.4.1(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 4.4.1(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.21(postcss@8.5.3)
@@ -397,10 +397,10 @@ importers:
         version: 8.32.0(eslint@9.26.0(jiti@2.4.2))(typescript@5.6.3)
       vite:
         specifier: ^6.0.5
-        version: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+        version: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
       vite-plugin-mkcert:
         specifier: ^1.17.6
-        version: 1.17.8(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 1.17.8(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
 
   client/apps/game:
     dependencies:
@@ -427,10 +427,10 @@ importers:
         version: 1.5.3(@starknet-react/core@3.7.2(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))
       '@dojoengine/sdk':
         specifier: 'catalog:'
-        version: 1.5.3(@tanstack/react-query@5.75.5(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.5.3(@types/node@20.17.44)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@types/node@20.17.42)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.5.3
@@ -454,7 +454,7 @@ importers:
         version: 3.7.2(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@vercel/analytics':
         specifier: ^1.2.2
-        version: 1.5.0(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        version: 1.5.0(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -470,6 +470,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      metagame-sdk:
+        specifier: ^0.0.16
+        version: 0.0.16(@dojoengine/sdk@1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4))(typescript@5.8.3)(zustand@4.5.6(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1))
       open:
         specifier: 'catalog:'
         version: 10.1.2
@@ -505,7 +508,7 @@ importers:
         version: 4.0.4(react@18.3.1)
       vite-plugin-pwa:
         specifier: ^0.20.5
-        version: 0.20.5(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))(workbox-build@7.3.0(@types/babel__core@7.20.5))(workbox-window@7.3.0)
+        version: 0.20.5(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))(workbox-build@7.3.0(@types/babel__core@7.20.5))(workbox-window@7.3.0)
       wouter:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
@@ -518,7 +521,7 @@ importers:
         version: 4.17.16
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       '@types/platform':
         specifier: ^1.3.6
         version: 1.3.6
@@ -554,7 +557,7 @@ importers:
         version: 3.3.3
       fumadocs-mdx:
         specifier: ^11.6.0
-        version: 11.6.2(acorn@8.14.1)(fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        version: 11.6.2(acorn@8.14.1)(fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
@@ -681,10 +684,10 @@ importers:
         version: 3.7.2(bufferutil@4.0.9)(get-starknet-core@3.3.5(starknet@6.23.1(encoding@0.1.13)))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@tanstack/react-query':
         specifier: ^5.59.15
-        version: 5.75.5(react@18.3.1)
+        version: 5.75.4(react@18.3.1)
       '@tanstack/react-router':
         specifier: ^1.74.0
-        version: 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       cmdk:
         specifier: 1.0.0
         version: 1.0.0(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -699,7 +702,7 @@ importers:
         version: 2.12.4(@types/react@18.3.21)(react@18.3.1)
       nuqs:
         specifier: ^2.0.4
-        version: 2.4.3(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router-dom@6.30.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router@6.30.0(react@18.3.1))(react@18.3.1)
+        version: 2.4.3(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router-dom@6.30.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router@6.30.0(react@18.3.1))(react@18.3.1)
       open:
         specifier: 'catalog:'
         version: 10.1.2
@@ -772,10 +775,10 @@ importers:
         version: 8.6.12(storybook@8.6.12(bufferutil@4.0.9)(prettier@3.5.3)(utf-8-validate@5.0.10))
       '@tanstack/router-devtools':
         specifier: ^1.74.0
-        version: 1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
+        version: 1.119.1(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
       '@tanstack/router-plugin':
         specifier: ^1.73.1
-        version: 1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
+        version: 1.119.0(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
       '@types/react':
         specifier: 'catalog:'
         version: 18.3.21
@@ -840,7 +843,7 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
@@ -855,7 +858,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   packages/dojo:
     dependencies:
@@ -873,7 +876,7 @@ importers:
         version: 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/sdk':
         specifier: 'catalog:'
-        version: 1.5.3(@tanstack/react-query@5.75.5(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@scure/starknet':
         specifier: ^1.1.0
         version: 1.1.0
@@ -889,7 +892,7 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
@@ -904,7 +907,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   packages/provider:
     dependencies:
@@ -929,7 +932,7 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
@@ -944,7 +947,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   packages/react:
     dependencies:
@@ -996,11 +999,11 @@ importers:
         version: link:../types
       '@dojoengine/sdk':
         specifier: 'catalog:'
-        version: 1.5.3(@tanstack/react-query@5.75.5(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+        version: 1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
     devDependencies:
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
@@ -1015,7 +1018,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   packages/types:
     dependencies:
@@ -1040,7 +1043,7 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^20.11.10
-        version: 20.17.44
+        version: 20.17.42
       tsup:
         specifier: ^8.0.2
         version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.1)
@@ -1055,7 +1058,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
 packages:
 
@@ -2873,8 +2876,8 @@ packages:
     resolution: {integrity: sha512-JBxkERygn7Bv/GbN5Rv8Ul6LVknS+5Bp6RgDC/O8gEBU/yeH5Ui5C/OlWrTb6qct7LjjfT6Re2NxB0ln0yYybA==}
     engines: {node: '>=18.18'}
 
-  '@humanwhocodes/retry@0.4.3':
-    resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
+  '@humanwhocodes/retry@0.4.2':
+    resolution: {integrity: sha512-xeO57FpIu4p1Ri3Jq/EXq4ClRm86dVF2z/+kvFnyqVYRavTZmaFaUBbWCOuuTh0o/g7DSsk6kc2vrS4Vl5oPOQ==}
     engines: {node: '>=18.18'}
 
   '@img/sharp-darwin-arm64@0.34.1':
@@ -3142,53 +3145,53 @@ packages:
   '@module-federation/sdk@0.1.21':
     resolution: {integrity: sha512-r7xPiAm+O4e+8Zvw+8b4ToeD0D0VJD004nHmt+Y8r/l98J2eA6di72Vn1FeyjtQbCrFtiMw3ts/dlqtcmIBipw==}
 
-  '@next/env@15.3.2':
-    resolution: {integrity: sha512-xURk++7P7qR9JG1jJtLzPzf0qEvqCN0A/T3DXf8IPMKo9/6FfjxtEffRJIIew/bIL4T3C2jLLqBor8B/zVlx6g==}
+  '@next/env@15.3.1':
+    resolution: {integrity: sha512-cwK27QdzrMblHSn9DZRV+DQscHXRuJv6MydlJRpFSqJWZrTYMLzKDeyueJNN9MGd8NNiUKzDQADAf+dMLXX7YQ==}
 
-  '@next/swc-darwin-arm64@15.3.2':
-    resolution: {integrity: sha512-2DR6kY/OGcokbnCsjHpNeQblqCZ85/1j6njYSkzRdpLn5At7OkSdmk7WyAmB9G0k25+VgqVZ/u356OSoQZ3z0g==}
+  '@next/swc-darwin-arm64@15.3.1':
+    resolution: {integrity: sha512-hjDw4f4/nla+6wysBL07z52Gs55Gttp5Bsk5/8AncQLJoisvTBP0pRIBK/B16/KqQyH+uN4Ww8KkcAqJODYH3w==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@next/swc-darwin-x64@15.3.2':
-    resolution: {integrity: sha512-ro/fdqaZWL6k1S/5CLv1I0DaZfDVJkWNaUU3un8Lg6m0YENWlDulmIWzV96Iou2wEYyEsZq51mwV8+XQXqMp3w==}
+  '@next/swc-darwin-x64@15.3.1':
+    resolution: {integrity: sha512-q+aw+cJ2ooVYdCEqZVk+T4Ni10jF6Fo5DfpEV51OupMaV5XL6pf3GCzrk6kSSZBsMKZtVC1Zm/xaNBFpA6bJ2g==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-linux-arm64-gnu@15.3.2':
-    resolution: {integrity: sha512-covwwtZYhlbRWK2HlYX9835qXum4xYZ3E2Mra1mdQ+0ICGoMiw1+nVAn4d9Bo7R3JqSmK1grMq/va+0cdh7bJA==}
+  '@next/swc-linux-arm64-gnu@15.3.1':
+    resolution: {integrity: sha512-wBQ+jGUI3N0QZyWmmvRHjXjTWFy8o+zPFLSOyAyGFI94oJi+kK/LIZFJXeykvgXUk1NLDAEFDZw/NVINhdk9FQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-musl@15.3.2':
-    resolution: {integrity: sha512-KQkMEillvlW5Qk5mtGA/3Yz0/tzpNlSw6/3/ttsV1lNtMuOHcGii3zVeXZyi4EJmmLDKYcTcByV2wVsOhDt/zg==}
+  '@next/swc-linux-arm64-musl@15.3.1':
+    resolution: {integrity: sha512-IIxXEXRti/AulO9lWRHiCpUUR8AR/ZYLPALgiIg/9ENzMzLn3l0NSxVdva7R/VDcuSEBo0eGVCe3evSIHNz0Hg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-x64-gnu@15.3.2':
-    resolution: {integrity: sha512-uRBo6THWei0chz+Y5j37qzx+BtoDRFIkDzZjlpCItBRXyMPIg079eIkOCl3aqr2tkxL4HFyJ4GHDes7W8HuAUg==}
+  '@next/swc-linux-x64-gnu@15.3.1':
+    resolution: {integrity: sha512-bfI4AMhySJbyXQIKH5rmLJ5/BP7bPwuxauTvVEiJ/ADoddaA9fgyNNCcsbu9SlqfHDoZmfI6g2EjzLwbsVTr5A==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-linux-x64-musl@15.3.2':
-    resolution: {integrity: sha512-+uxFlPuCNx/T9PdMClOqeE8USKzj8tVz37KflT3Kdbx/LOlZBRI2yxuIcmx1mPNK8DwSOMNCr4ureSet7eyC0w==}
+  '@next/swc-linux-x64-musl@15.3.1':
+    resolution: {integrity: sha512-FeAbR7FYMWR+Z+M5iSGytVryKHiAsc0x3Nc3J+FD5NVbD5Mqz7fTSy8CYliXinn7T26nDMbpExRUI/4ekTvoiA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-win32-arm64-msvc@15.3.2':
-    resolution: {integrity: sha512-LLTKmaI5cfD8dVzh5Vt7+OMo+AIOClEdIU/TSKbXXT2iScUTSxOGoBhfuv+FU8R9MLmrkIL1e2fBMkEEjYAtPQ==}
+  '@next/swc-win32-arm64-msvc@15.3.1':
+    resolution: {integrity: sha512-yP7FueWjphQEPpJQ2oKmshk/ppOt+0/bB8JC8svPUZNy0Pi3KbPx2Llkzv1p8CoQa+D2wknINlJpHf3vtChVBw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-x64-msvc@15.3.2':
-    resolution: {integrity: sha512-aW5B8wOPioJ4mBdMDXkt5f3j8pUr9W8AnlX0Df35uRWNT1Y6RIybxjnSUe+PhM+M1bwgyY8PHLmXZC6zT1o5tA==}
+  '@next/swc-win32-x64-msvc@15.3.1':
+    resolution: {integrity: sha512-3PMvF2zRJAifcRNni9uMk/gulWfWS+qVI/pagd+4yLF5bcXPZPPH2xlYRYOsUjmCJOXSTAC2PjRzbhsRzR2fDQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -4880,24 +4883,24 @@ packages:
     resolution: {integrity: sha512-K7JJNrRVvyjAVnbXOH2XLRhFXDkeP54Kt2P4FR1Kl2KDGlIbkua5VqZQD2rot3qaDrpufyUa63nuLai1kOLTsQ==}
     engines: {node: '>=12'}
 
-  '@tanstack/query-core@5.75.5':
-    resolution: {integrity: sha512-kPDOxtoMn2Ycycb76Givx2fi+2pzo98F9ifHL/NFiahEDpDwSVW6o12PRuQ0lQnBOunhRG5etatAhQij91M3MQ==}
+  '@tanstack/query-core@5.75.4':
+    resolution: {integrity: sha512-pcqOUgWG9oGlzkfRQQMMsEFmtQu0wq81A414CtELZGq+ztVwSTAaoB3AZRAXQJs88LmNMk2YpUKuQbrvzNDyRg==}
 
-  '@tanstack/react-query@5.75.5':
-    resolution: {integrity: sha512-QrLCJe40BgBVlWdAdf2ZEVJ0cISOuEy/HKupId1aTKU6gPJZVhSvZpH+Si7csRflCJphzlQ77Yx6gUxGW9o0XQ==}
+  '@tanstack/react-query@5.75.4':
+    resolution: {integrity: sha512-Vf65pzYRkf8fk9SP1ncIZjvaXszBhtsvpf+h45Y/9kOywOrVZfBGUpCdffdsVzbmBzmz6TCFes9bM0d3pRrIsA==}
     peerDependencies:
       react: ^18 || ^19
 
-  '@tanstack/react-router-devtools@1.120.2':
-    resolution: {integrity: sha512-89qY5pKdIN6r5G0pHP92mLvorzd7rUlHjvCkjNYOyYduxGQ8a703Y7Fp/RqXibwhjvZcet6BR2IrEhIqg9Yjhw==}
+  '@tanstack/react-router-devtools@1.119.1':
+    resolution: {integrity: sha512-pM+80Yu5k2pe2LxW9kqk+r4j2RhJKol4mvH7Tdwr9R6LaR2ZNmnoMVPXikaIYOfCk/B4rmWMfk5M0DTlOm6iBg==}
     engines: {node: '>=12'}
     peerDependencies:
-      '@tanstack/react-router': ^1.120.2
+      '@tanstack/react-router': ^1.119.0
       react: '>=18.0.0 || >=19.0.0'
       react-dom: '>=18.0.0 || >=19.0.0'
 
-  '@tanstack/react-router@1.120.2':
-    resolution: {integrity: sha512-CNduh/O3miW6A/WDMd2cfca8D8x+kVJTYwG5fMaBfcEF/bfjneDnEWXsmKLMdB2iLc6miaRQu66ryPSMdIBUAw==}
+  '@tanstack/react-router@1.119.0':
+    resolution: {integrity: sha512-wjT8zQAXsCfsWXiKhqJcarAsvOIUjnTBIFb2tTtO/2AD7rjD7VPaRpkFhqs8TdvuSEqv+V/9xfN/eTeBLUdr1g==}
     engines: {node: '>=12'}
     peerDependencies:
       react: '>=18.0.0 || >=19.0.0'
@@ -4931,11 +4934,11 @@ packages:
       csstype:
         optional: true
 
-  '@tanstack/router-devtools@1.120.2':
-    resolution: {integrity: sha512-dUO59NPAJI6JIktJ2LpnxVy/U1Hf5hFRyEUFxJ9LX/BxiLZcbUH7bXS489rlDhfyOcHSxrZwDsq5WJbAcBkC3g==}
+  '@tanstack/router-devtools@1.119.1':
+    resolution: {integrity: sha512-y6mRyqVANssoIbsBW4uGn1/glmV6nQP7IfyCz7BFFH0D9AnJFr+r014oRl9zFOS2VWY8bXjb05ZTQpcf9oiXFg==}
     engines: {node: '>=12'}
     peerDependencies:
-      '@tanstack/react-router': ^1.120.2
+      '@tanstack/react-router': ^1.119.0
       csstype: ^3.0.10
       react: '>=18.0.0 || >=19.0.0'
       react-dom: '>=18.0.0 || >=19.0.0'
@@ -4943,21 +4946,21 @@ packages:
       csstype:
         optional: true
 
-  '@tanstack/router-generator@1.120.2':
-    resolution: {integrity: sha512-rI+hQjUtsAZs5K2292zM6OE/fHAVRZxejAkrLlaQlunphqJYtHBizXk15SP9QsP3i+QvS1D8YnioMPvSlVPEOw==}
+  '@tanstack/router-generator@1.119.0':
+    resolution: {integrity: sha512-wvHdDlWgodvlb6RE6j65j7LlH0Ex+CnxpHBkxKkJ0wPPXHow/run4/jeaF9cxUEXrp+wO4DvxZRxtzMmA6YzNA==}
     engines: {node: '>=12'}
     peerDependencies:
-      '@tanstack/react-router': ^1.120.2
+      '@tanstack/react-router': ^1.119.0
     peerDependenciesMeta:
       '@tanstack/react-router':
         optional: true
 
-  '@tanstack/router-plugin@1.120.2':
-    resolution: {integrity: sha512-LVwvd/QKFrxtsKfm1Oiv6+NzAB79hcuhlbu14NwmRfdexPYmfjvJJPK0E3IlLmh/mRlEHmfYajutwuqvBONM9w==}
+  '@tanstack/router-plugin@1.119.0':
+    resolution: {integrity: sha512-c4vzCoWzXLjFfZwnGiVgrAtgM3DqkqiMxodlvlz1etj7C3Ulx44sitJmosF25HL7gwuUPfQCvFKDYFifT0GBAA==}
     engines: {node: '>=12'}
     peerDependencies:
       '@rsbuild/core': '>=1.0.2'
-      '@tanstack/react-router': ^1.120.2
+      '@tanstack/react-router': ^1.119.0
       vite: '>=5.0.0 || >=6.0.0'
       vite-plugin-solid: ^2.11.2
       webpack: '>=5.92.0'
@@ -5137,8 +5140,8 @@ packages:
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
 
-  '@types/node@20.17.44':
-    resolution: {integrity: sha512-50sE4Ibb4BgUMxHrcJQSAU0Fu7fLcTdwcXwRzEF7wnVMWvImFLg2Rxc7SW0vpvaJm4wvhoWEZaQiPpBpocZiUA==}
+  '@types/node@20.17.42':
+    resolution: {integrity: sha512-TJ/YKT1aCDbQcrux/tX/+AiJ3nFw3/4w3LYjWdK7ta2ftUIaEt9QkKVPFkh1hFNMUh6IWmg9jFBkKaL3fjyPSg==}
 
   '@types/node@22.7.5':
     resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
@@ -6293,8 +6296,8 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  crossws@0.3.5:
-    resolution: {integrity: sha512-ojKiDvcmByhwa8YYqbQI/hg7MEU0NC03+pSdEq4ZUnZR9xXpwk7E43SMNGkn+JxJGPFtNvQ48+vV2p+P1ml5PA==}
+  crossws@0.3.4:
+    resolution: {integrity: sha512-uj0O1ETYX1Bh6uSgktfPvwDiPYGQ3aI4qVsaC/LWpkIzGj1nUYm5FK3K+t11oOlpN01lGbprFCH4wBlKdJjVgw==}
 
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
@@ -6618,8 +6621,8 @@ packages:
     engines: {node: '>=0.10.0'}
     hasBin: true
 
-  electron-to-chromium@1.5.151:
-    resolution: {integrity: sha512-Rl6uugut2l9sLojjS4H4SAr3A4IgACMLgpuEMPYCVcKydzfyPrn5absNRju38IhQOf/NwjJY8OGWjlteqYeBCA==}
+  electron-to-chromium@1.5.150:
+    resolution: {integrity: sha512-rOOkP2ZUMx1yL4fCxXQKDHQ8ZXwisb2OycOQVKHgvB3ZI4CvehOd4y2tfnnLDieJ3Zs1RL1Dlp3cMkyIn7nnXA==}
 
   emoji-regex-xs@1.0.0:
     resolution: {integrity: sha512-LRlerrMYoIDrT6jgpeZ2YYl/L8EulRTt5hQcYjy5AInh7HWXKimpqx68aknBFpGL2+/IcogTcaydJEgaTmOpDg==}
@@ -6933,8 +6936,8 @@ packages:
   ethereum-cryptography@2.2.1:
     resolution: {integrity: sha512-r/W8lkHSiTLxUxW8Rf3u4HGB0xQweG2RyETjywylKZSzLWoWAijRz8WCuOtJ6wah+avllXBqZuk29HCCvhEIRg==}
 
-  ethers@6.14.0:
-    resolution: {integrity: sha512-KgHwltNSMdbrGWEyKkM0Rt2s+u1nDH/5BVDQakLinzGEJi4bWindBzZSCC4gKsbZjwDTI6ex/8suR9Ihbmz4IQ==}
+  ethers@6.13.7:
+    resolution: {integrity: sha512-qbaJ0uIrjh+huP1Lad2f2QtzW5dcqSVjIzVH6yWB4dKoMuj2WqYz5aMeeQTCNpAKgTJBM5J9vcc2cYJ23UAimQ==}
     engines: {node: '>=14.0.0'}
 
   eval@0.1.8:
@@ -8327,6 +8330,13 @@ packages:
   meshoptimizer@0.18.1:
     resolution: {integrity: sha512-ZhoIoL7TNV4s5B6+rx5mC//fw8/POGyNxS/DZyCJeiZ12ScLfVwRE/GfsxwiTkMYYD5DmK2/JXnEVXqL4rF+Sw==}
 
+  metagame-sdk@0.0.16:
+    resolution: {integrity: sha512-NW8fj8FTAmnfIEWlfKJ/EYmObVJPFwnI1P7C+VBgMleXogLXMdTDhLwCHrwIXsKCqalicx3E6CQYV1Ut3IP8SQ==}
+    peerDependencies:
+      '@dojoengine/sdk': ^1.5.3
+      typescript: ^5.0.0
+      zustand: ^4.4.7
+
   micro-ftch@0.3.1:
     resolution: {integrity: sha512-/0LLxhzP0tfiR5hcQebtudP56gUurs2CLkGarnCiB/OqEyUFQ6U3paQi/tgLv0hBJYt2rnr9MNpxz4fiiugstg==}
 
@@ -8596,8 +8606,8 @@ packages:
       react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
       react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
-  next@15.3.2:
-    resolution: {integrity: sha512-CA3BatMyHkxZ48sgOCLdVHjFU36N7TF1HhqAHLFOkV6buwZnvMI84Cug8xD56B9mCuKrqXnLn94417GrZ/jjCQ==}
+  next@15.3.1:
+    resolution: {integrity: sha512-8+dDV0xNLOgHlyBxP1GwHGVaNXsmp+2NhZEYrXr24GWLHtt27YrBPbPuHvzlhi7kZNYjeJNR93IF5zfFu5UL0g==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
     peerDependencies:
@@ -11269,7 +11279,7 @@ snapshots:
       '@ark-project/core': 3.0.0-beta.1(encoding@0.1.13)(typescript@5.8.3)(viem@2.29.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4))
       '@starknet-react/chains': 0.1.7
       '@starknet-react/core': 2.9.0(get-starknet-core@3.3.5(starknet@6.23.1(encoding@0.1.13)))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       get-starknet-core: 3.3.5(starknet@6.23.1(encoding@0.1.13))
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -12098,7 +12108,7 @@ snapshots:
       '@turnkey/sdk-browser': 4.2.0(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@walletconnect/ethereum-provider': 2.20.2(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(react@18.3.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       cbor-x: 1.6.0
-      ethers: 6.14.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ethers: 6.13.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       mipd: 0.0.7(typescript@5.8.3)
       open: 10.1.2
       starknet: 6.23.1(encoding@0.1.13)
@@ -12232,10 +12242,10 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       starknet: 6.23.1(encoding@0.1.13)
 
-  '@dojoengine/react@1.5.3(@types/node@20.17.44)(@types/react@18.3.21)(bufferutil@4.0.9)(immer@10.1.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
+  '@dojoengine/react@1.5.3(@types/node@20.17.42)(@types/react@18.3.21)(bufferutil@4.0.9)(immer@10.1.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
-      '@dojoengine/state': 1.5.3(@types/node@20.17.44)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+      '@dojoengine/state': 1.5.3(@types/node@20.17.42)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/torii-client': 1.5.3
       '@dojoengine/utils': 1.5.3(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@latticexyz/utils': 2.2.21
@@ -12332,7 +12342,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/sdk@1.5.3(@tanstack/react-query@5.75.5(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
+  '@dojoengine/sdk@1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
     dependencies:
       '@dojoengine/core': 1.5.3(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@dojoengine/torii-client': 1.5.3
@@ -12340,7 +12350,7 @@ snapshots:
       '@dojoengine/utils': 1.5.3(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@starknet-react/chains': 3.1.3
       '@starknet-react/core': 3.7.4(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       '@types/react': 18.3.21
       '@types/react-dom': 18.3.7(@types/react@18.3.21)
       immer: 10.1.1
@@ -12357,12 +12367,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.5.3(@types/node@20.17.44)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
+  '@dojoengine/state@1.5.3(@types/node@20.17.42)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/torii-client': 1.5.3
       starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+      vitest: 1.6.1(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -12383,12 +12393,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.5.3(@types/node@20.17.44)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
+  '@dojoengine/state@1.5.3(@types/node@20.17.42)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
       '@dojoengine/torii-client': 1.5.3
       starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+      vitest: 1.6.1(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -13475,7 +13485,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.3.1': {}
 
-  '@humanwhocodes/retry@0.4.3': {}
+  '@humanwhocodes/retry@0.4.2': {}
 
   '@img/sharp-darwin-arm64@0.34.1':
     optionalDependencies:
@@ -13864,30 +13874,30 @@ snapshots:
 
   '@module-federation/sdk@0.1.21': {}
 
-  '@next/env@15.3.2': {}
+  '@next/env@15.3.1': {}
 
-  '@next/swc-darwin-arm64@15.3.2':
+  '@next/swc-darwin-arm64@15.3.1':
     optional: true
 
-  '@next/swc-darwin-x64@15.3.2':
+  '@next/swc-darwin-x64@15.3.1':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@15.3.2':
+  '@next/swc-linux-arm64-gnu@15.3.1':
     optional: true
 
-  '@next/swc-linux-arm64-musl@15.3.2':
+  '@next/swc-linux-arm64-musl@15.3.1':
     optional: true
 
-  '@next/swc-linux-x64-gnu@15.3.2':
+  '@next/swc-linux-x64-gnu@15.3.1':
     optional: true
 
-  '@next/swc-linux-x64-musl@15.3.2':
+  '@next/swc-linux-x64-musl@15.3.1':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@15.3.2':
+  '@next/swc-win32-arm64-msvc@15.3.1':
     optional: true
 
-  '@next/swc-win32-x64-msvc@15.3.2':
+  '@next/swc-win32-x64-msvc@15.3.1':
     optional: true
 
   '@noble/ciphers@0.5.3': {}
@@ -15474,7 +15484,7 @@ snapshots:
   '@starknet-react/core@2.9.0(get-starknet-core@3.3.5(starknet@6.23.1(encoding@0.1.13)))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))':
     dependencies:
       '@starknet-react/chains': 0.1.7
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       eventemitter3: 5.0.1
       get-starknet-core: 3.3.5(starknet@6.23.1(encoding@0.1.13))
       immutable: 4.3.7
@@ -15486,7 +15496,7 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.10
       '@starknet-react/chains': 3.1.2
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       abi-wan-kanabi: 2.2.4
       eventemitter3: 5.0.1
       get-starknet-core: 3.3.5(starknet@6.23.1(encoding@0.1.13))
@@ -15503,7 +15513,7 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.10
       '@starknet-react/chains': 3.1.2
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       abi-wan-kanabi: 2.2.4
       eventemitter3: 5.0.1
       get-starknet-core: 4.0.0
@@ -15520,7 +15530,7 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.10
       '@starknet-react/chains': 3.1.2
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       abi-wan-kanabi: 2.2.4
       eventemitter3: 5.0.1
       get-starknet-core: 4.0.0
@@ -15537,7 +15547,7 @@ snapshots:
     dependencies:
       '@starknet-io/types-js': 0.7.10
       '@starknet-react/chains': 3.1.3
-      '@tanstack/react-query': 5.75.5(react@18.3.1)
+      '@tanstack/react-query': 5.75.4(react@18.3.1)
       abi-wan-kanabi: 2.2.4
       eventemitter3: 5.0.1
       get-starknet-core: 4.0.0
@@ -15952,16 +15962,16 @@ snapshots:
 
   '@tanstack/history@1.115.0': {}
 
-  '@tanstack/query-core@5.75.5': {}
+  '@tanstack/query-core@5.75.4': {}
 
-  '@tanstack/react-query@5.75.5(react@18.3.1)':
+  '@tanstack/react-query@5.75.4(react@18.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.75.5
+      '@tanstack/query-core': 5.75.4
       react: 18.3.1
 
-  '@tanstack/react-router-devtools@1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)':
+  '@tanstack/react-router-devtools@1.119.1(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)':
     dependencies:
-      '@tanstack/react-router': 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-router': 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/router-devtools-core': 1.119.0(@tanstack/router-core@1.119.0)(csstype@3.1.3)(solid-js@1.9.6)(tiny-invariant@1.3.3)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -15971,7 +15981,7 @@ snapshots:
       - csstype
       - tiny-invariant
 
-  '@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@tanstack/history': 1.115.0
       '@tanstack/react-store': 0.7.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -16011,10 +16021,10 @@ snapshots:
     optionalDependencies:
       csstype: 3.1.3
 
-  '@tanstack/router-devtools@1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)':
+  '@tanstack/router-devtools@1.119.1(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)':
     dependencies:
-      '@tanstack/react-router': 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@tanstack/react-router-devtools': 1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
+      '@tanstack/react-router': 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-router-devtools': 1.119.1(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@tanstack/router-core@1.119.0)(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tiny-invariant@1.3.3)
       clsx: 2.1.1
       goober: 2.1.16(csstype@3.1.3)
       react: 18.3.1
@@ -16025,16 +16035,16 @@ snapshots:
       - '@tanstack/router-core'
       - tiny-invariant
 
-  '@tanstack/router-generator@1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@tanstack/router-generator@1.119.0(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       '@tanstack/virtual-file-routes': 1.115.0
       prettier: 3.5.3
       tsx: 4.19.4
       zod: 3.24.4
     optionalDependencies:
-      '@tanstack/react-router': 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-router': 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@tanstack/router-plugin@1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))':
+  '@tanstack/router-plugin@1.119.0(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))':
     dependencies:
       '@babel/core': 7.27.1
       '@babel/plugin-syntax-jsx': 7.27.1(@babel/core@7.27.1)
@@ -16043,7 +16053,7 @@ snapshots:
       '@babel/traverse': 7.27.1
       '@babel/types': 7.27.1
       '@tanstack/router-core': 1.119.0
-      '@tanstack/router-generator': 1.120.2(@tanstack/react-router@1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@tanstack/router-generator': 1.119.0(@tanstack/react-router@1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@tanstack/router-utils': 1.115.0
       '@tanstack/virtual-file-routes': 1.115.0
       '@types/babel__core': 7.20.5
@@ -16054,7 +16064,7 @@ snapshots:
       unplugin: 2.3.2
       zod: 3.24.4
     optionalDependencies:
-      '@tanstack/react-router': 1.120.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-router': 1.119.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       vite: 6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
@@ -16232,7 +16242,7 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
 
   '@types/debug@4.1.12':
     dependencies:
@@ -16277,7 +16287,7 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-  '@types/node@20.17.44':
+  '@types/node@20.17.42':
     dependencies:
       undici-types: 6.19.8
 
@@ -16339,11 +16349,11 @@ snapshots:
 
   '@types/ws@7.4.7':
     dependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
 
   '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.32.0(eslint@9.26.0(jiti@2.4.2))(typescript@5.8.3))(eslint@9.26.0(jiti@2.4.2))(typescript@5.8.3)':
     dependencies:
@@ -16647,9 +16657,9 @@ snapshots:
       - terser
       - ts-node
 
-  '@vercel/analytics@1.5.0(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+  '@vercel/analytics@1.5.0(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     optionalDependencies:
-      next: 15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
 
   '@vercel/build-utils@8.8.0': {}
@@ -16690,14 +16700,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@4.4.1(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))':
+  '@vitejs/plugin-react@4.4.1(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))':
     dependencies:
       '@babel/core': 7.27.1
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.27.1)
       '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.27.1)
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -16715,7 +16725,7 @@ snapshots:
       std-env: 3.9.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+      vitest: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -16739,13 +16749,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.19(@types/node@20.17.44)(terser@5.39.0))':
+  '@vitest/mocker@2.1.9(vite@5.4.19(@types/node@20.17.42)(terser@5.39.0))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
+      vite: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
 
   '@vitest/pretty-format@2.0.5':
     dependencies:
@@ -16799,7 +16809,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.13
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0)
+      vitest: 2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0)
 
   '@vitest/utils@1.6.1':
     dependencies:
@@ -17781,7 +17791,7 @@ snapshots:
   browserslist@4.24.5:
     dependencies:
       caniuse-lite: 1.0.30001717
-      electron-to-chromium: 1.5.151
+      electron-to-chromium: 1.5.150
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3(browserslist@4.24.5)
 
@@ -17824,7 +17834,7 @@ snapshots:
 
   bun-types@1.2.12:
     dependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
 
   bundle-name@4.1.0:
     dependencies:
@@ -18210,7 +18220,7 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  crossws@0.3.5:
+  crossws@0.3.4:
     dependencies:
       uncrypto: 0.1.3
 
@@ -18474,7 +18484,7 @@ snapshots:
     dependencies:
       jake: 10.9.2
 
-  electron-to-chromium@1.5.151: {}
+  electron-to-chromium@1.5.150: {}
 
   emoji-regex-xs@1.0.0: {}
 
@@ -18882,7 +18892,7 @@ snapshots:
       '@eslint/plugin-kit': 0.2.8
       '@humanfs/node': 0.16.6
       '@humanwhocodes/module-importer': 1.0.1
-      '@humanwhocodes/retry': 0.4.3
+      '@humanwhocodes/retry': 0.4.2
       '@modelcontextprotocol/sdk': 1.11.0
       '@types/estree': 1.0.7
       '@types/json-schema': 7.0.15
@@ -18988,7 +18998,7 @@ snapshots:
       '@scure/bip32': 1.4.0
       '@scure/bip39': 1.3.0
 
-  ethers@6.14.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
+  ethers@6.13.7(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@adraffy/ens-normalize': 1.10.1
       '@noble/curves': 1.2.0
@@ -19003,7 +19013,7 @@ snapshots:
 
   eval@0.1.8:
     dependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
       require-like: 0.1.2
 
   eventemitter2@6.4.9: {}
@@ -19306,7 +19316,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@formatjs/intl-localematcher': 0.6.1
       '@orama/orama': 3.1.6
@@ -19324,14 +19334,14 @@ snapshots:
       shiki: 3.4.0
       unist-util-visit: 5.0.0
     optionalDependencies:
-      next: 15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - supports-color
 
-  fumadocs-mdx@11.6.2(acorn@8.14.1)(fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
+  fumadocs-mdx@11.6.2(acorn@8.14.1)(fumadocs-core@15.2.15(@types/react@18.3.21)(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
     dependencies:
       '@mdx-js/mdx': 3.1.0(acorn@8.14.1)
       '@standard-schema/spec': 1.0.0
@@ -19340,11 +19350,11 @@ snapshots:
       esbuild: 0.25.4
       estree-util-value-to-estree: 3.3.3
       fast-glob: 3.3.3
-      fumadocs-core: 15.2.15(@types/react@18.3.21)(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      fumadocs-core: 15.2.15(@types/react@18.3.21)(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       gray-matter: 4.0.3
       js-yaml: 4.1.0
       lru-cache: 11.1.0
-      next: 15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       picocolors: 1.1.1
       unist-util-visit: 5.0.0
       zod: 3.24.4
@@ -19546,7 +19556,7 @@ snapshots:
   h3@1.15.3:
     dependencies:
       cookie-es: 1.2.2
-      crossws: 0.3.5
+      crossws: 0.3.4
       defu: 6.1.4
       destr: 2.0.5
       iron-webcrypto: 1.2.1
@@ -20637,6 +20647,12 @@ snapshots:
 
   meshoptimizer@0.18.1: {}
 
+  metagame-sdk@0.0.16(@dojoengine/sdk@1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4))(typescript@5.8.3)(zustand@4.5.6(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)):
+    dependencies:
+      '@dojoengine/sdk': 1.5.3(@tanstack/react-query@5.75.4(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.4)
+      typescript: 5.8.3
+      zustand: 4.5.6(@types/react@18.3.21)(immer@10.1.1)(react@18.3.1)
+
   micro-ftch@0.3.1: {}
 
   micro-starknet@0.2.3:
@@ -21043,9 +21059,9 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@next/env': 15.3.2
+      '@next/env': 15.3.1
       '@swc/counter': 0.1.3
       '@swc/helpers': 0.5.15
       busboy: 1.6.0
@@ -21055,14 +21071,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       styled-jsx: 5.1.6(@babel/core@7.27.1)(react@18.3.1)
     optionalDependencies:
-      '@next/swc-darwin-arm64': 15.3.2
-      '@next/swc-darwin-x64': 15.3.2
-      '@next/swc-linux-arm64-gnu': 15.3.2
-      '@next/swc-linux-arm64-musl': 15.3.2
-      '@next/swc-linux-x64-gnu': 15.3.2
-      '@next/swc-linux-x64-musl': 15.3.2
-      '@next/swc-win32-arm64-msvc': 15.3.2
-      '@next/swc-win32-x64-msvc': 15.3.2
+      '@next/swc-darwin-arm64': 15.3.1
+      '@next/swc-darwin-x64': 15.3.1
+      '@next/swc-linux-arm64-gnu': 15.3.1
+      '@next/swc-linux-arm64-musl': 15.3.1
+      '@next/swc-linux-x64-gnu': 15.3.1
+      '@next/swc-linux-x64-musl': 15.3.1
+      '@next/swc-win32-arm64-msvc': 15.3.1
+      '@next/swc-win32-x64-msvc': 15.3.1
       sharp: 0.34.1
     transitivePeerDependencies:
       - '@babel/core'
@@ -21130,12 +21146,12 @@ snapshots:
 
   nullthrows@1.1.1: {}
 
-  nuqs@2.4.3(next@15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router-dom@6.30.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router@6.30.0(react@18.3.1))(react@18.3.1):
+  nuqs@2.4.3(next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router-dom@6.30.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-router@6.30.0(react@18.3.1))(react@18.3.1):
     dependencies:
       mitt: 3.0.1
       react: 18.3.1
     optionalDependencies:
-      next: 15.3.2(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-router: 6.30.0(react@18.3.1)
       react-router-dom: 6.30.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
@@ -23573,13 +23589,13 @@ snapshots:
       - utf-8-validate
       - zod
 
-  vite-node@1.6.1(@types/node@20.17.44)(terser@5.39.0):
+  vite-node@1.6.1(@types/node@20.17.42)(terser@5.39.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       pathe: 1.1.2
       picocolors: 1.1.1
-      vite: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
+      vite: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -23609,13 +23625,13 @@ snapshots:
       - supports-color
       - terser
 
-  vite-node@2.1.9(@types/node@20.17.44)(terser@5.39.0):
+  vite-node@2.1.9(@types/node@20.17.42)(terser@5.39.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       es-module-lexer: 1.7.0
       pathe: 1.1.2
-      vite: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
+      vite: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -23627,43 +23643,43 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-mkcert@1.17.8(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
+  vite-plugin-mkcert@1.17.8(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
       axios: 1.9.0(debug@4.4.0)
       debug: 4.4.0
       picocolors: 1.1.1
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-pwa@0.20.5(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))(workbox-build@7.3.0(@types/babel__core@7.20.5))(workbox-window@7.3.0):
+  vite-plugin-pwa@0.20.5(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))(workbox-build@7.3.0(@types/babel__core@7.20.5))(workbox-window@7.3.0):
     dependencies:
       debug: 4.4.0
       pretty-bytes: 6.1.1
       tinyglobby: 0.2.13
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
       workbox-build: 7.3.0(@types/babel__core@7.20.5)
       workbox-window: 7.3.0
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-svgr@4.3.0(rollup@4.40.2)(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
+  vite-plugin-svgr@4.3.0(rollup@4.40.2)(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
       '@rollup/pluginutils': 5.1.4(rollup@4.40.2)
       '@svgr/core': 8.1.0(typescript@5.8.3)
       '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(typescript@5.8.3))
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  vite-plugin-top-level-await@1.5.0(@swc/helpers@0.5.17)(rollup@4.40.2)(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
+  vite-plugin-top-level-await@1.5.0(@swc/helpers@0.5.17)(rollup@4.40.2)(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
       '@rollup/plugin-virtual': 3.0.2(rollup@4.40.2)
       '@swc/core': 1.11.24(@swc/helpers@0.5.17)
       uuid: 10.0.0
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
     transitivePeerDependencies:
       - '@swc/helpers'
       - rollup
@@ -23695,21 +23711,21 @@ snapshots:
       - rollup
       - supports-color
 
-  vite-plugin-wasm@3.4.1(vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
+  vite-plugin-wasm@3.4.1(vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
-      vite: 6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
+      vite: 6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
 
   vite-plugin-wasm@3.4.1(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)):
     dependencies:
       vite: 6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1)
 
-  vite@5.4.19(@types/node@20.17.44)(terser@5.39.0):
+  vite@5.4.19(@types/node@20.17.42)(terser@5.39.0):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.3
       rollup: 4.40.2
     optionalDependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
       fsevents: 2.3.3
       terser: 5.39.0
 
@@ -23723,7 +23739,7 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.39.0
 
-  vite@6.3.5(@types/node@20.17.44)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1):
+  vite@6.3.5(@types/node@20.17.42)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1):
     dependencies:
       esbuild: 0.25.4
       fdir: 6.4.4(picomatch@4.0.2)
@@ -23732,7 +23748,7 @@ snapshots:
       rollup: 4.40.2
       tinyglobby: 0.2.13
     optionalDependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
       fsevents: 2.3.3
       jiti: 2.4.2
       terser: 5.39.0
@@ -23755,7 +23771,7 @@ snapshots:
       tsx: 4.19.4
       yaml: 2.7.1
 
-  vitest@1.6.1(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0):
+  vitest@1.6.1(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -23774,11 +23790,11 @@ snapshots:
       strip-literal: 2.1.1
       tinybench: 2.9.0
       tinypool: 0.8.4
-      vite: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
-      vite-node: 1.6.1(@types/node@20.17.44)(terser@5.39.0)
+      vite: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
+      vite-node: 1.6.1(@types/node@20.17.42)(terser@5.39.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
       '@vitest/ui': 2.1.9(vitest@2.1.9)
     transitivePeerDependencies:
       - less
@@ -23824,10 +23840,10 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.9(@types/node@20.17.44)(@vitest/ui@2.1.9)(terser@5.39.0):
+  vitest@2.1.9(@types/node@20.17.42)(@vitest/ui@2.1.9)(terser@5.39.0):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.19(@types/node@20.17.44)(terser@5.39.0))
+      '@vitest/mocker': 2.1.9(vite@5.4.19(@types/node@20.17.42)(terser@5.39.0))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -23843,11 +23859,11 @@ snapshots:
       tinyexec: 0.3.2
       tinypool: 1.0.2
       tinyrainbow: 1.2.0
-      vite: 5.4.19(@types/node@20.17.44)(terser@5.39.0)
-      vite-node: 2.1.9(@types/node@20.17.44)(terser@5.39.0)
+      vite: 5.4.19(@types/node@20.17.42)(terser@5.39.0)
+      vite-node: 2.1.9(@types/node@20.17.42)(terser@5.39.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 20.17.44
+      '@types/node': 20.17.42
       '@vitest/ui': 2.1.9(vitest@2.1.9)
     transitivePeerDependencies:
       - less

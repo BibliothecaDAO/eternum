@@ -454,6 +454,69 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Quest: (() => {
+      return defineComponent(
+        world,
+        {
+          game_token_id: RecsType.BigInt,
+          game_address: RecsType.String,
+          quest_tile_id: RecsType.Number,
+          explorer_id: RecsType.Number,
+          completed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "Quest",
+            types: ["u64", "ContractAddress", "u32", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestLevels: (() => {
+      return defineComponent(
+        world,
+        {
+          game_address: RecsType.String,
+          levels: RecsType.Schema,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "QuestLevels",
+            types: ["ContractAddress", "Span<Level>"],
+            customTypes: ["Level"],
+          },
+        },
+      );
+    })(),
+    QuestTile: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          game_address: RecsType.String,
+          coord: {
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
+          level: RecsType.Number,
+          resource_type: RecsType.Number,
+          amount: RecsType.BigInt,
+          capacity: RecsType.Number,
+          participant_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "QuestTile",
+            types: ["u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
+            customTypes: ["Coord"],
+          },
+        },
+      );
+    })(),
     StructureLevelConfig: (() => {
       return defineComponent(
         world,

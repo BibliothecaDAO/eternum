@@ -334,6 +334,44 @@ export class SystemManager {
     };
   }
 
+  public get Quest() {
+    return {
+      onUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const questTile = getComponentValue(
+                this.setup.components.QuestTile,
+                getEntityIdFromKeys([BigInt(currentState?.occupier_id)]),
+              );
+
+              if (!questTile) return;
+
+              return {
+                entityId: update.entity,
+                id: questTile.id,
+                gameAddress: questTile.game_address,
+                hexCoords: { col: questTile.coord.x, row: questTile.coord.y },
+                capacity: questTile.capacity,
+                level: questTile.level,
+                resourceType: questTile.resource_type,
+                amount: questTile.amount,
+                participantCount: questTile.participant_count,
+              };
+            }
+          },
+          true,
+        );
+      },
+    };
+  }
+
   public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
       const { initialized, percentage } = getHyperstructureProgress(entityId, this.setup.components);

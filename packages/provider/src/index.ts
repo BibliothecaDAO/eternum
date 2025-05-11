@@ -2741,4 +2741,60 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue(call);
   }
+
+  public async set_quest_games(props: SystemProps.SetQuestGamesProps) {
+    const { signer, quest_games } = props;
+    for (const quest_game of quest_games) {
+      return await this.executeAndCheckTransaction(signer, {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+        entrypoint: "add_game",
+        calldata: quest_game,
+      });
+    }
+  }
+
+  public async start_quest(props: SystemProps.StartQuestProps) {
+    const { quest_tile_id, explorer_id, player_name, to_address, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "start_quest",
+      calldata: [quest_tile_id, explorer_id, player_name, to_address],
+    });
+  }
+
+  public async claim_reward(props: SystemProps.ClaimRewardProps) {
+    const { game_token_id, game_address, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "claim_reward",
+      calldata: [game_token_id, game_address],
+    });
+  }
+
+  public async get_game_count(props: SystemProps.GetGameCountProps) {
+    const { game_address } = props;
+    return await this.provider.callContract({
+      contractAddress: game_address,
+      entrypoint: "game_count",
+      calldata: [],
+    });
+  }
+
+  public async disable_quests(props: SystemProps.DisableQuestsProps) {
+    const { signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "disable_quests",
+      calldata: [],
+    });
+  }
+
+  public async enable_quests(props: SystemProps.EnableQuestsProps) {
+    const { signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "enable_quests",
+      calldata: [],
+    });
+  }
 }
