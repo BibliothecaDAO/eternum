@@ -513,9 +513,9 @@ export class ArmyActionManager {
         explore: false,
       });
     } catch (e) {
-      console.log({ e });
-    } finally {
+      // only remove overrides if the move failed
       removeOverrides();
+      console.log({ e });
     }
   };
 
