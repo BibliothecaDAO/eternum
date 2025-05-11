@@ -9,7 +9,7 @@ import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/step
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
+import { Castle, FileText, MessageSquare, Play, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
@@ -273,7 +273,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         )}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            {/* <a className="w-full" target="_blank" rel="noopener noreferrer">
+            <a className="w-full" target="_blank" rel="noopener noreferrer">
               <Button
                 size="lg"
                 onClick={handleVillagePassClick}
@@ -284,7 +284,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
                   <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
                 </div>
               </Button>
-            </a> */}
+            </a>
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}

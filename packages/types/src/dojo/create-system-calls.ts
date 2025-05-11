@@ -328,6 +328,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.get_game_count(props);
   };
 
+  const transfer_structure_ownership = async (props: SystemProps.TransferStructureOwnershipProps) => {
+    return await provider.transfer_structure_ownership(props);
+  };
+
+  const transfer_agent_ownership = async (props: SystemProps.TransferAgentOwnershipProps) => {
+    return await provider.transfer_agent_ownership(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -413,6 +421,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     start_quest: withAuth(start_quest),
     claim_reward: withAuth(claim_reward),
     get_game_count: withAuth(get_game_count),
+
+    transfer_structure_ownership: withAuth(transfer_structure_ownership),
+    transfer_agent_ownership: withAuth(transfer_agent_ownership),
   };
 
   return systemCalls;

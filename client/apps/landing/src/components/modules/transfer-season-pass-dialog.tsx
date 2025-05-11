@@ -10,10 +10,9 @@ import { Input } from "../ui/input";
 
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
-import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
-import useDebounce from "@/hooks/use-debounce";
 import { displayAddress } from "@/lib/utils";
 import { RealmMetadata, SeasonPassMint } from "@/types";
+import { useCartridgeAddress, useDebounce } from "@bibliothecadao/react";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { TypeH3 } from "../typography/type-h3";
 

@@ -23,6 +23,7 @@
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@bibliothecadao/react": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",

@@ -962,3 +962,13 @@ export interface GetGameCountProps extends SystemSigner {
 export interface DisableQuestsProps extends SystemSigner {}
 
 export interface EnableQuestsProps extends SystemSigner {}
+
+export interface TransferStructureOwnershipProps extends SystemSigner {
+  structure_id: num.BigNumberish;
+  new_owner: num.BigNumberish;
+}
+
+export interface TransferAgentOwnershipProps extends SystemSigner {
+  explorer_id: num.BigNumberish;
+  new_owner: num.BigNumberish;
+}
