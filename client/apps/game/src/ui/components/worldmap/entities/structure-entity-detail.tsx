@@ -7,10 +7,12 @@ import {
   getStructureTypeName,
 } from "@bibliothecadao/eternum";
 
+import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
+import { MessageCircle } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 import { InventoryResources } from "../../resources/inventory-resources";
@@ -84,6 +86,21 @@ export const StructureEntityDetail = memo(
       return structure?.owner ? getAddressName(structure?.owner, components) : MERCENARIES;
     }, [structure?.owner, components]);
 
+    const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
+
+    const handleChatClick = () => {
+      if (isMine) {
+        openChat();
+      } else {
+        const userId = getUserIdByUsername(addressName || "");
+
+        console.log("userId", userId);
+        if (userId) {
+          selectDirectMessageRecipient(userId);
+        }
+      }
+    };
+
     if (!structure) return null;
 
     return (
@@ -95,9 +112,7 @@ export const StructureEntityDetail = memo(
             {/* Header with owner and guild info */}
             <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
               <div className="flex flex-col">
-                <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>
-                  {addressName || structure.entity_id}
-                </h4>
+                <h4 className={`${compact ? "text-base" : "text-2xl"}`}>{addressName || structure.entity_id}</h4>
                 {playerGuild && (
                   <div className="text-xs text-gold/80">
                     {"< "}
@@ -106,8 +121,15 @@ export const StructureEntityDetail = memo(
                   </div>
                 )}
               </div>
-              <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
-                {isMine ? "Ally" : "Enemy"}
+              <div className="flex items-center gap-1">
+                <div
+                  className={`px-2 py-1 rounded text-xs h6 ${isMine ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
+                >
+                  {isMine ? "Ally" : "Enemy"}
+                </div>
+                <button onClick={handleChatClick}>
+                  <MessageCircle />
+                </button>
               </div>
             </div>
 
