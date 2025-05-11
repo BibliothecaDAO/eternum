@@ -54,17 +54,19 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         {metadata.attributes
-                          ?.filter((attribute: { trait_type: string; }) => attribute.trait_type === "Resource")
-                          .sort((a: { value: { toString: () => string; }; }, b: { value: { toString: () => string; }; }) => {
-                            const aWithoutSpace = a.value.toString().replace(/\s/g, "");
-                            const bWithoutSpace = b.value.toString().replace(/\s/g, "");
-                            const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
-                            const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
-                            const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
-                            const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
-                            return rarityA - rarityB;
-                          })
-                          .map((attribute: { value: string; trait_type: any; }, index: any) => (
+                          ?.filter((attribute: { trait_type: string }) => attribute.trait_type === "Resource")
+                          .sort(
+                            (a: { value: { toString: () => string } }, b: { value: { toString: () => string } }) => {
+                              const aWithoutSpace = a.value.toString().replace(/\s/g, "");
+                              const bWithoutSpace = b.value.toString().replace(/\s/g, "");
+                              const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
+                              const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
+                              const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
+                              const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
+                              return rarityA - rarityB;
+                            },
+                          )
+                          .map((attribute: { value: string; trait_type: any }, index: any) => (
                             <ResourceIcon
                               resource={attribute.value as string}
                               size="sm"
