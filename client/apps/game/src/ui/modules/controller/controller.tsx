@@ -1,13 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { useConnect } from "@starknet-react/core";
 import { useCallback, useEffect, useState } from "react";
 
-export const Controller = ({ className, iconClassName }: { className?: string; iconClassName?: string }) => {
+export const Controller = () => {
   const [userName, setUserName] = useState<string>();
-  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const { connect, connectors } = useConnect();
   const { connector, account } = useAccountStore((state) => state);
@@ -39,12 +36,6 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
     }
   }, [connector]);
 
-  useEffect(() => {
-    if (!account) {
-      setShowDisconnectConfirm(false);
-    }
-  }, [account]);
-
   const handleInventoryClick = useCallback(() => {
     if (!connector?.controller) {
       console.error("Connector not initialized");
@@ -55,11 +46,9 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   }, [connector]);
 
   return account ? (
-    <>
-      <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
-        {userName}
-      </Button>
-    </>
+    <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
+      {userName}
+    </Button>
   ) : (
     <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>
       Login
