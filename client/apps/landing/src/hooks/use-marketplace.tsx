@@ -1,6 +1,7 @@
 import { lordsAddress, marketplaceAddress, seasonPassAddress } from "@/config";
 import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
 import {
+  AcceptMarketplaceOrdersProps,
   CancelMarketplaceOrderProps,
   CreateMarketplaceOrderProps,
   EditMarketplaceOrderProps,

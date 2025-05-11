@@ -19,7 +19,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
   const handlePurchase = async () => {
     // TODO: Implement purchase logic
     await acceptOrders({
-      order_ids: selectedPasses.map((pass) => BigInt(pass.order_id)),
+      order_ids: selectedPasses.map((pass) => BigInt(pass.order_id ?? 0)),
       totalPrice: BigInt(parseEther(totalPrice.toString())),
     });
     console.log("Purchasing passes:", selectedPasses);
@@ -54,8 +54,8 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         {metadata.attributes
-                          ?.filter((attribute) => attribute.trait_type === "Resource")
-                          .sort((a, b) => {
+                          ?.filter((attribute: { trait_type: string; }) => attribute.trait_type === "Resource")
+                          .sort((a: { value: { toString: () => string; }; }, b: { value: { toString: () => string; }; }) => {
                             const aWithoutSpace = a.value.toString().replace(/\s/g, "");
                             const bWithoutSpace = b.value.toString().replace(/\s/g, "");
                             const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
@@ -64,7 +64,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                             const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
                             return rarityA - rarityB;
                           })
-                          .map((attribute, index) => (
+                          .map((attribute: { value: string; trait_type: any; }, index: any) => (
                             <ResourceIcon
                               resource={attribute.value as string}
                               size="sm"

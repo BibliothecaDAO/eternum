@@ -1,10 +1,10 @@
-import { OpenOrderByPrice } from "@/hooks/services";
+import { MergedNftData } from "@/types";
 import { formatUnits } from "viem";
 import { create } from "zustand";
 
 interface SelectedPassesStore {
-  selectedPasses: OpenOrderByPrice[];
-  togglePass: (pass: OpenOrderByPrice) => void;
+  selectedPasses: MergedNftData[];
+  togglePass: (pass: MergedNftData) => void;
   clearSelection: () => void;
   isSelected: (tokenId: string) => boolean;
   getTotalPrice: () => number;
@@ -13,7 +13,7 @@ interface SelectedPassesStore {
 export const useSelectedPassesStore = create<SelectedPassesStore>((set, get) => ({
   selectedPasses: [],
 
-  togglePass: (pass: OpenOrderByPrice) => {
+  togglePass: (pass: MergedNftData) => {
     set((state) => {
       const isSelected = state.selectedPasses.some((p) => p.token_id === pass.token_id);
       if (isSelected) {
