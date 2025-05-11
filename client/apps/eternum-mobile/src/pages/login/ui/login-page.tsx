@@ -14,7 +14,7 @@ const TOS_ACCEPTED_KEY = "eternum_tos_accepted";
 export function LoginPage() {
   const navigate = useNavigate();
   const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
-  const [hasAcceptedToS, setHasAcceptedToS] = useState(false);
+  const [hasAcceptedTS, setHasAcceptedToS] = useState(false);
   const [showToS, setShowToS] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function LoginPage() {
   };
 
   const handleConnect = async () => {
-    if (!hasAcceptedToS) {
+    if (!hasAcceptedTS) {
       setShowToS(true);
       return;
     }
@@ -58,7 +58,7 @@ export function LoginPage() {
               ? "Connecting..."
               : isConnected
                 ? "Start Game"
-                : hasAcceptedToS
+                : hasAcceptedTS
                   ? "Connect Wallet"
                   : "Accept Terms of Service"}
           </Button>
@@ -78,7 +78,7 @@ export function LoginPage() {
         <button onClick={() => setShowToS(true)} className="underline hover:text-gold transition-colors">
           Terms of Service
         </button>
-        {hasAcceptedToS && " (Accepted)"}
+        {hasAcceptedTS && " (Accepted)"}
       </p>
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
