@@ -47,14 +47,15 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
 
   const { laborAmount, ticks } = useMemo(() => {
     if (!laborConfig.length) return { laborAmount: 0, ticks: 0 };
-    const totalLaborAmount = selectedResources.reduce((acc, resource, index) => {
-      return acc + resource.amount * (laborConfig[index]?.laborProductionPerResource ?? 0);
-    }, 0);
+    const totalLaborAmount =
+      selectedResources.reduce((acc, resource, index) => {
+        return acc + resource.amount * (laborConfig[index]?.laborProductionPerResource ?? 0);
+      }, 0) * 1.2;
 
     const maxTicks = Math.max(
       ...laborConfig.map((config, index) => {
         return Math.ceil(
-          (selectedResources[index].amount * (config?.laborProductionPerResource || 0)) /
+          (selectedResources[index].amount * (config?.laborProductionPerResource || 0) * 1.2) /
             (config?.laborRatePerTick || 0),
         );
       }),
