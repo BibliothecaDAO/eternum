@@ -13,6 +13,7 @@ import { VillageResourceReveal } from "./village-resource-reveal";
 import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
+import { env } from "env";
 import { ArrowRightIcon } from "lucide-react";
 import RealmJson from "../../../../../../public/jsons/realms.json";
 
@@ -353,6 +354,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     }
   };
 
+  const villagePassString =
+    env.VITE_PUBLIC_CHAIN === "mainnet" ? `eternum-village-pass-mainnet` : `eternum-village-pass`;
+
   return (
     <ModalContainer size="full" title={`Villages - Step ${currentStep}/4`}>
       <div className="h-full flex flex-col">
@@ -389,7 +393,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     </ul>
                     <Button
                       variant="gold"
-                      onClick={() => mintStarterPack("eternum-village-pass")}
+                      onClick={() => mintStarterPack(villagePassString)}
                       isLoading={isPurchasingPass}
                       disabled={isPurchasingPass}
                       className="w-full py-8"
