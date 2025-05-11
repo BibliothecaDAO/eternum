@@ -429,13 +429,9 @@ export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
 ): Promise<TokenBalanceWithToken[]> {
-  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress).replace(
-    "{accountAddress}",
-    accountAddress,
-  ).replace(
-    "{trimmedAccountAddress}",
-    trimAddress(accountAddress),
-  );
+  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
+    .replace("{accountAddress}", accountAddress)
+    .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
   console.log(query);
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);

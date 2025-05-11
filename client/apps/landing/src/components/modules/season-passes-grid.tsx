@@ -30,7 +30,7 @@ export const SeasonPassesGrid = ({
   isCompactGrid,
   onToggleSelection,
 }: SeasonPassRowProps) => {
-  const isSelected = useSelectedPassesStore(state => state.isSelected);
+  const isSelected = useSelectedPassesStore((state) => state.isSelected);
 
   if (!seasonPasses?.length) {
     return (

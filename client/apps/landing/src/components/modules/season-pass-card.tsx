@@ -18,7 +18,6 @@ interface SeasonPassCardProps {
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
-
 }
 
 interface ListingDetails {
@@ -30,9 +29,9 @@ interface ListingDetails {
 
 const SEASON_PASS_COLLECTION_ID = 1;
 
-export const SeasonPassCard = ({ 
-  pass, 
-  checkOwner = false, 
+export const SeasonPassCard = ({
+  pass,
+  checkOwner = false,
   isSelected = false,
   onToggleSelection,
   toggleNftSelection,
@@ -112,9 +111,7 @@ export const SeasonPassCard = ({
       <Card
         onClick={onToggleSelection}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected 
-            ? "ring-1  ring-gold scale-[1.01] bg-gold/5" 
-            : "hover:ring-1 hover:ring-gold hover:bg-gold/5"} 
+          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : "hover:ring-1 hover:ring-gold hover:bg-gold/5"} 
           cursor-pointer group`}
       >
         <div className="relative">
@@ -131,17 +128,18 @@ export const SeasonPassCard = ({
             src={image}
             alt={name ?? "Season Pass"}
             className={`w-full object-contain transition-all duration-200
-              ${isSelected ? 'opacity-100' : 'opacity-90 group-hover:opacity-100'}`}
+              ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
           />
-          
+
           {/* Selection Overlay */}
-          <div className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
-            ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          <div
+            className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
+            ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          >
             <div className="bg-gold text-background rounded-full font-bold m-2">
               {isSelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             </div>
           </div>
-
 
           {/* Listing Indicator */}
           {listingDetails.isListed && (
@@ -151,7 +149,7 @@ export const SeasonPassCard = ({
           )}
         </div>
 
-        <CardHeader className={`p-4 pb-2 ${isSelected ? 'bg-gold/5' : ''}`}>
+        <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <CardTitle className="items-center gap-2">
             <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
               Season 1 Pass
@@ -183,7 +181,7 @@ export const SeasonPassCard = ({
           </CardTitle>
         </CardHeader>
 
-        <CardContent className={`px-4 pt-2 ${isSelected ? 'bg-gold/5' : ''}`}>
+        <CardContent className={`px-4 pt-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <div className="flex justify-between">
             <div className="flex flex-col">
               {listingActive ? (
@@ -208,24 +206,17 @@ export const SeasonPassCard = ({
           </div>
         </CardContent>
 
-        <CardFooter className={`border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2
-          ${isSelected ? 'bg-gold/5' : ''}`}>
+        <CardFooter
+          className={`border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2
+          ${isSelected ? "bg-gold/5" : ""}`}
+        >
           <div className="flex w-full gap-4">
-            <Button 
-              variant={isOwner ? "outline" : "default"} 
-              className="w-full" 
-              onClick={handleCardClick}
-            >
+            <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
               {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
             </Button>
 
             {isOwner && (
-              <Button
-                variant="default"
-                size="icon"
-                onClick={handleTransferClick}
-                title="Transfer Pass"
-              >
+              <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
                 <ArrowRightLeft className="h-4 w-4" />
               </Button>
             )}

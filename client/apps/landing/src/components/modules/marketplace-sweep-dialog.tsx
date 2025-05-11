@@ -14,14 +14,7 @@ interface PurchaseDialogProps {
 export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) => {
   const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore();
   const totalPrice = getTotalPrice();
-  const {
-    acceptOrders,
-    isLoading,
-    approveMarketplace,
-    seasonPassApproved,
-    isApprovingMarketplace,
-  } = useMarketplace();
-
+  const { acceptOrders, isLoading, approveMarketplace, seasonPassApproved, isApprovingMarketplace } = useMarketplace();
 
   const handlePurchase = async () => {
     // TODO: Implement purchase logic
@@ -59,28 +52,27 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                   <div className="flex-1">
                     <h4 className="font-medium text-gold">{metadata?.name || `Pass #${pass.token_id}`}</h4>
                     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                      {metadata.attributes
-                        ?.filter((attribute) => attribute.trait_type === "Resource")
-                        .sort((a, b) => {
-                          const aWithoutSpace = a.value.toString().replace(/\s/g, "");
-                          const bWithoutSpace = b.value.toString().replace(/\s/g, "");
-                          const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
-                          const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
-                          const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
-                          const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
-                          return rarityA - rarityB;
-                        })
-                        .map((attribute, index) => (
-                          <ResourceIcon
-                            resource={attribute.value as string}
-                            size="sm"
-                            key={`${attribute.trait_type}-${index}`}
-                          />
-                        ))}
-                        </div>
-                        <span className="text-lg">{price.toLocaleString()}</span>
-
+                      <div className="flex items-center gap-2">
+                        {metadata.attributes
+                          ?.filter((attribute) => attribute.trait_type === "Resource")
+                          .sort((a, b) => {
+                            const aWithoutSpace = a.value.toString().replace(/\s/g, "");
+                            const bWithoutSpace = b.value.toString().replace(/\s/g, "");
+                            const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
+                            const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
+                            const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
+                            const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
+                            return rarityA - rarityB;
+                          })
+                          .map((attribute, index) => (
+                            <ResourceIcon
+                              resource={attribute.value as string}
+                              size="sm"
+                              key={`${attribute.trait_type}-${index}`}
+                            />
+                          ))}
+                      </div>
+                      <span className="text-lg">{price.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

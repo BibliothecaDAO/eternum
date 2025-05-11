@@ -17,7 +17,7 @@ import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
-import { useSelectedPassesStore } from '@/stores/selected-passes';
+import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -47,7 +47,8 @@ function SeasonPasses() {
     queries: [
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
-        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+        queryFn: () =>
+          fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
       },
       {
         queryKey: ["activeMarketOrdersTotal"],
@@ -301,15 +302,11 @@ function SeasonPasses() {
                         const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
                         const image = metadata?.image;
                         return (
-                          <div 
+                          <div
                             key={pass.token_id}
                             className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
                           >
-                            <img 
-                              src={image} 
-                              alt={`Pass #${pass.token_id}`}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={image} alt={`Pass #${pass.token_id}`} className="w-full h-full object-cover" />
                           </div>
                         );
                       })}
@@ -321,18 +318,12 @@ function SeasonPasses() {
                       </span>
                     )}
                   </div>
-                  <Button 
-                    className="mr-4"
-                    onClick={() => setIsPurchaseDialogOpen(true)}
-                  >
+                  <Button className="mr-4" onClick={() => setIsPurchaseDialogOpen(true)}>
                     Buy ({selectedPasses.length}) Passes
                   </Button>
-
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="font-semibold">
-                    {getTotalPrice().toFixed(4)} Lords
-                  </div>
+                  <div className="font-semibold">{getTotalPrice().toFixed(4)} Lords</div>
                   <Button variant="outline" size="sm" onClick={clearSelection}>
                     Clear Selection
                   </Button>
@@ -373,8 +364,6 @@ function SeasonPasses() {
           )}
         </div>
 
-        
-
         {/*isTransferOpen && (
           <TransferSeasonPassDialog
             isOpen={isTransferOpen}
@@ -385,10 +374,7 @@ function SeasonPasses() {
         )*/}
       </>
 
-      <PurchaseDialog 
-        isOpen={isPurchaseDialogOpen}
-        onOpenChange={setIsPurchaseDialogOpen}
-      />
+      <PurchaseDialog isOpen={isPurchaseDialogOpen} onOpenChange={setIsPurchaseDialogOpen} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
 import {
   CancelMarketplaceOrderProps,
   CreateMarketplaceOrderProps,
-  EditMarketplaceOrderProps
+  EditMarketplaceOrderProps,
 } from "@bibliothecadao/types";
 import { useAccount, useContract, useReadContract, useSendTransaction } from "@starknet-react/core";
 import { useState } from "react";

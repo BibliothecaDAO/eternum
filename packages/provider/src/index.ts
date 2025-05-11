@@ -2663,11 +2663,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
     console.log(calls);
 
-    return await this.executeAndCheckTransaction(signer, [
-      approval,
-      ...calls
-    ]);
-
+    return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
   }
 
   /**

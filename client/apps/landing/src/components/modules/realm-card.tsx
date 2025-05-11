@@ -25,11 +25,13 @@ interface ListingDetails {
 }
 
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
-  const { tokenId, contractAddress } = { tokenId: BigInt(realm.tokenId), contractAddress: realm.originalRealm?.contract_address }
-    /*{ tokenId: "", contractAddress: "", metadata: "" };*/
+  const { tokenId, contractAddress } = {
+    tokenId: BigInt(realm.tokenId),
+    contractAddress: realm.originalRealm?.contract_address,
+  };
+  /*{ tokenId: "", contractAddress: "", metadata: "" };*/
 
   const { attributes, name, image: originalImageUrl } = realm.parsedMetadata ?? {};
-
 
   const { address: accountAddress } = useAccount();
 
@@ -61,7 +63,6 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     args: [tokenId.toString()], // Pass tokenId as string if needed by hook
     watch: true,
   });*/
-
 
   const isOwner = realm.originalRealm?.account_address === (accountAddress ?? "");
 
@@ -149,7 +150,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     fetchListingStatus();
   }, [tokenId, contractAddress, components]); // Add components dependency
 
-  const hasSeasonPassMinted = realm.seasonPassMinted
+  const hasSeasonPassMinted = realm.seasonPassMinted;
   //const isLoadingStatus =  isFetchingRealmOwner;
 
   return (
@@ -172,14 +173,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
         {!isSelected && (
           <div
             className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`}
-            title={ hasSeasonPassMinted
-                  ? "Season Pass Minted"
-                  : "Season Pass Available"
-            }
+            title={hasSeasonPassMinted ? "Season Pass Minted" : "Season Pass Available"}
           >
-            {hasSeasonPassMinted ? (
-              <CheckCircle2 className="w-5 h-5 text-lime-500" />
-            ) : null}
+            {hasSeasonPassMinted ? <CheckCircle2 className="w-5 h-5 text-lime-500" /> : null}
           </div>
         )}
 
