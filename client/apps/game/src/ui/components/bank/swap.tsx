@@ -7,6 +7,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { setup } from "@bibliothecadao/dojo";
 import {
   computeTravelTime,
   configManager,
@@ -18,7 +19,7 @@ import {
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { setup } from "@bibliothecadao/dojo";
+import { useDojo } from "@bibliothecadao/react";
 import {
   ContractAddress,
   ID,
@@ -28,7 +29,6 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -235,12 +235,12 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
         onCancel={() => setOpenConfirmation(false)}
       >
         {isVillageAndMilitaryResource && (
-          <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
+          <div className="mb-4 bg-red/20 text-red rounded-md">
             Military resources cannot be traded from village structures.
           </div>
         )}
         <div className="amm-swap-fee-selector">
-          <div className=" flex items-center justify-center space-x-2">
+          <div className=" flex items-center justify-center space-x-2 text-2xl">
             <div className="flex justify-center items-center text-danger">
               -{negativeAmount.toLocaleString()}
               <ResourceIcon resource={negativeResource} size="md" />
@@ -251,16 +251,14 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="amm-swap-donkey-selector p-2 rounded-lg h-auto">
-            <div className="flex flex-col p-2 items-center">
-              <TravelInfo
-                entityId={entityId}
-                resources={resourcesToTransport}
-                travelTime={closestBank.travelTime}
-                setCanCarry={setCanCarry}
-                isAmm={true}
-              />
-            </div>
+          <div className="amm-swap-donkey-selector rounded-lg h-auto">
+            <TravelInfo
+              entityId={entityId}
+              resources={resourcesToTransport}
+              travelTime={closestBank.travelTime}
+              setCanCarry={setCanCarry}
+              isAmm={true}
+            />
           </div>
         </div>
       </ConfirmationPopup>
