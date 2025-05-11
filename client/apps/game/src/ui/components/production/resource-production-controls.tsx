@@ -19,6 +19,7 @@ export const ResourceProductionControls = ({
   realm,
   ticks,
   setTicks,
+  bonus,
 }: {
   selectedResource: number;
   useRawResources: boolean;
@@ -28,6 +29,7 @@ export const ResourceProductionControls = ({
   realm: RealmInfo;
   ticks: number | undefined;
   setTicks: (value: number) => void;
+  bonus: number;
 }) => {
   const {
     setup: {
@@ -111,8 +113,8 @@ export const ResourceProductionControls = ({
   }, [selectedResource, resourceManager]);
 
   useEffect(() => {
-    setTicks(Math.floor(productionAmount / outputResource.amount));
-  }, [productionAmount]);
+    setTicks(Math.floor((productionAmount / outputResource.amount) * bonus));
+  }, [productionAmount, bonus]);
 
   const rawCurrentInputs = useMemo(() => {
     return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
@@ -244,7 +246,7 @@ export const ResourceProductionControls = ({
           {" "}
           <div>
             <h2 className="flex items-center gap-2 mt-4">
-              {productionAmount.toLocaleString()} {ResourcesIds[selectedResource]}
+              {Math.round(productionAmount * bonus).toLocaleString()} {ResourcesIds[selectedResource]}
               <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
             </h2>
           </div>
