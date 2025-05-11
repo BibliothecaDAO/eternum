@@ -713,6 +713,7 @@ export default class WorldmapScene extends HexagonScene {
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
     if (this.isColRowInVisibleChunk(col, row)) {
       await this.updateHexagonGridPromise;
+      // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
@@ -728,6 +729,16 @@ export default class WorldmapScene extends HexagonScene {
         }
       });
 
+      // Update which hexes are visible in the current chunk
+      const chunkWidth = this.renderChunkSize.width;
+      const chunkHeight = this.renderChunkSize.height;
+      this.interactiveHexManager.updateVisibleHexes(
+        renderedChunkCenterRow,
+        renderedChunkCenterCol,
+        chunkWidth,
+        chunkHeight,
+      );
+
       await Promise.all(this.modelLoadPromises);
       const hexMesh = this.biomeModels.get(biome as BiomeType)!;
       const currentCount = hexMesh.getCount();
@@ -738,8 +749,6 @@ export default class WorldmapScene extends HexagonScene {
       // Cache the updated matrices for the chunk
       this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
       this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
-
-      this.interactiveHexManager.renderHexes();
     } else {
       this.removeCachedMatricesAroundColRow(hexChunkCol, hexChunkRow);
     }
@@ -794,49 +803,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
-    this.interactiveHexManager.clearHexes();
-
-    let currentIndex = 0;
-    const batchSize = 50;
-
-    const processBatch = () => {
-      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
-
-      for (let i = currentIndex; i < endIndex; i++) {
-        const row = Math.floor(i / cols) - rows / 2;
-        const col = (i % cols) - cols / 2;
-
-        const globalRow = startRow + row;
-        const globalCol = startCol + col;
-
-        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-
-        if (!isExplored) {
-          const neighborOffsets = getNeighborOffsets(globalRow);
-          const isBorder = neighborOffsets.some(({ i, j }) => {
-            const neighborCol = globalCol + i;
-            const neighborRow = globalRow + j;
-            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-          });
-
-          if (isBorder) {
-            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-          }
-        } else {
-          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-        }
-      }
-
-      currentIndex = endIndex;
-
-      if (currentIndex < rows * cols) {
-        requestAnimationFrame(processBatch);
-      } else {
-        this.interactiveHexManager.renderHexes();
-      }
-    };
-
-    requestAnimationFrame(processBatch);
+    // Instead of clearing and recomputing all hexes, just update which ones are visible
+    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
@@ -848,7 +816,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
-      this.interactiveHexManager.clearHexes();
+      // Don't clear interactive hexes here, just update which ones are visible
       const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
         None: [],
         Ocean: [],
@@ -948,7 +916,8 @@ export default class WorldmapScene extends HexagonScene {
             hexMesh.setCount(matrices.length);
           }
           this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.renderHexes();
+          // After processing, just update visible hexes
+          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
           resolve();
         }
       };
@@ -1048,6 +1017,15 @@ export default class WorldmapScene extends HexagonScene {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+
+      // Update which interactive hexes are visible in the new chunk
+      this.interactiveHexManager.updateVisibleHexes(
+        startRow,
+        startCol,
+        this.renderChunkSize.width,
+        this.renderChunkSize.height,
+      );
+
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
       this.questManager.updateChunk(chunkKey);
@@ -1064,5 +1042,7 @@ export default class WorldmapScene extends HexagonScene {
 
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
+    // Also clear the interactive hexes when clearing the entire cache
+    this.interactiveHexManager.clearHexes();
   }
 }
