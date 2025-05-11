@@ -914,9 +914,9 @@ export interface CreateMarketplaceOrderProps {
   signer: AccountInterface;
 }
 
-export interface AcceptMarketplaceOrderProps {
+export interface AcceptMarketplaceOrdersProps {
   marketplace_address: num.BigNumberish;
-  order_id: num.BigNumberish;
+  order_ids: num.BigNumberish[];
   signer: AccountInterface;
 }
 

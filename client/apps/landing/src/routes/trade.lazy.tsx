@@ -1,4 +1,5 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
+import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
@@ -45,7 +47,8 @@ function SeasonPasses() {
     queries: [
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
-        queryFn: () => fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+        queryFn: () =>
+          fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
       },
       {
         queryKey: ["activeMarketOrdersTotal"],
@@ -201,6 +204,11 @@ function SeasonPasses() {
   const totalEth = totalWei !== null ? formatUnits(totalWei, 18) : "0";
   const [isCompactGrid, setIsCompactGrid] = useState(true);
 
+  // Replace the selection state with the store
+  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore();
+
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <>
@@ -266,6 +274,7 @@ function SeasonPasses() {
                     hideTransferButton={true}
                     checkOwner={true}
                     isCompactGrid={isCompactGrid}
+                    onToggleSelection={togglePass}
                   />
                 )}
 
@@ -280,6 +289,48 @@ function SeasonPasses() {
               </Suspense>
             </div>
           </div>
+
+          {/* Sticky Bottom Bar */}
+          {selectedPasses.length > 0 && (
+            <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
+              <div className="container mx-auto flex items-center justify-start">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {/* Selected Pass Images */}
+                    <div className="flex -space-x-2">
+                      {selectedPasses.slice(0, 3).map((pass) => {
+                        const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
+                        const image = metadata?.image;
+                        return (
+                          <div
+                            key={pass.token_id}
+                            className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
+                          >
+                            <img src={image} alt={`Pass #${pass.token_id}`} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Show count if more than 3 passes */}
+                    {selectedPasses.length > 3 && (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        +{selectedPasses.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                  <Button className="mr-4" onClick={() => setIsPurchaseDialogOpen(true)}>
+                    Buy ({selectedPasses.length}) Passes
+                  </Button>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="font-semibold">{getTotalPrice().toFixed(4)} Lords</div>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -322,6 +373,8 @@ function SeasonPasses() {
           />
         )*/}
       </>
+
+      <PurchaseDialog isOpen={isPurchaseDialogOpen} onOpenChange={setIsPurchaseDialogOpen} />
     </div>
   );
 }

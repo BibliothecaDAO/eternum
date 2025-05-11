@@ -61,13 +61,9 @@ export const RealmsGrid = ({
         items={gridItems}
         renderItem={(item) => {
           const realm = item.data;
-        //  if (!realm?.node) return null;
+          //  if (!realm?.node) return null;
 
-          const isSelected =
-            isNftSelected?.(
-              realm.tokenId,
-              realm.originalRealm?.contract_address,
-            ) ?? false;
+          const isSelected = isNftSelected?.(realm.tokenId, realm.originalRealm?.contract_address) ?? false;
 
           return (
             <RealmCard

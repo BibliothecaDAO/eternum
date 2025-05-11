@@ -157,21 +157,21 @@ function SeasonPasses() {
           <ScrollHeader>
             {/* Filter UI */}
             <div className="flex justify-end my-2 gap-4 px-4">
-            <TraitFilterUI
-              allTraits={allTraits}
-              selectedFilters={selectedFilters}
-              handleFilterChange={handleFilterChange}
-              clearFilter={clearFilter}
-              clearAllFilters={clearAllFilters}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsCompactGrid(!isCompactGrid)}
-              title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
-            >
-              {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
-            </Button>
+              <TraitFilterUI
+                allTraits={allTraits}
+                selectedFilters={selectedFilters}
+                handleFilterChange={handleFilterChange}
+                clearFilter={clearFilter}
+                clearAllFilters={clearAllFilters}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsCompactGrid(!isCompactGrid)}
+                title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
+              >
+                {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
+              </Button>
             </div>
           </ScrollHeader>
 

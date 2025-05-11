@@ -2680,25 +2680,24 @@ export class EternumProvider extends EnhancedDojoProvider {
    * Accept an existing marketplace order
    *
    * @param props - Properties for accepting the order
-   * @param props.order_id - ID of the order to accept (u64)
+   * @param props.order_ids - IDs of the orders to accept (u64)
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async accept_marketplace_order(props: SystemProps.AcceptMarketplaceOrderProps, approval: Call) {
-    const { order_id, signer } = props;
+  public async accept_marketplace_orders(props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) {
+    const { order_ids, signer } = props;
 
     console.log("approval", approval);
-
-    const call = this.createProviderCall(signer, [
-      approval,
-      {
+    const calls = order_ids.map((order_id) => {
+      return {
         contractAddress: props.marketplace_address.toString(),
         entrypoint: "accept",
-        calldata: [order_id],
-      },
-    ]);
+        calldata: [order_id.toString()],
+      };
+    });
+    console.log(calls);
 
-    return await this.promiseQueue.enqueue(call);
+    return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
   }
 
   /**

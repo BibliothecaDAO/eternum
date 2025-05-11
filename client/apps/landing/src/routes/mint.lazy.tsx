@@ -37,7 +37,12 @@ export const Route = createLazyFileRoute("/mint")({
 // Define the structure of the augmented realm used internally
 export interface AugmentedRealm {
   originalRealm: SeasonPassRealm; // Keep the original structure
-  parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[]; image: string, description?: string };
+  parsedMetadata: {
+    name: string;
+    attributes: { trait_type: string; value: string }[];
+    image: string;
+    description?: string;
+  };
   seasonPassMinted: boolean;
   tokenId: string;
 }
@@ -45,8 +50,6 @@ export interface AugmentedRealm {
 function Mint() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
-
-
 
   const trimmedAddress = trimAddress(address);
 
@@ -63,18 +66,19 @@ function Mint() {
     queries: [
       {
         queryKey: ["seasonPassMints", trimmedAddress],
-        queryFn: () => trimmedAddress ? fetchSeasonPassRealmsByAddress(realmsAddress, seasonPassAddress, trimmedAddress) : null,
+        queryFn: () =>
+          trimmedAddress ? fetchSeasonPassRealmsByAddress(realmsAddress, seasonPassAddress, trimmedAddress) : null,
         refetchInterval: 10_000,
       },
-    ]
+    ],
   });
 
   // --- Prepare Realm Data ---
-  const realmsErcBalance = seasonPassMints.data
+  const realmsErcBalance = seasonPassMints.data;
 
   // --- Filtering Hook ---
   const getRealmMetadataString = useCallback((realm: SeasonPassRealm): string | null => {
-      return realm.metadata;
+    return realm.metadata;
   }, []);
 
   const {
@@ -439,7 +443,6 @@ function Mint() {
 
                 // Safely access contractAddress only for ERC721 from the first displayed realm's original data
                 const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
-
 
                 return (
                   <SelectNftActions
