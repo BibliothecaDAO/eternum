@@ -8,8 +8,8 @@ import {
   getBalance,
   getTotalResourceWeightKg,
 } from "@bibliothecadao/eternum";
-import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 export const TravelInfo = ({
@@ -91,39 +91,34 @@ export const TravelInfo = ({
 
 const ResourceWeight = ({ className }: { className?: string }) => {
   return (
-    <div className={`text-xs text-gray-200 p-2 max-w-xs ${className}`}>
-      <p className="font-semibold">Resource Weights</p>
-      <div className="grid grid-cols-2 gap-x-4 my-1">
-        <ul className="list-none">
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-            {`(Food) ${configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit`}
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-            {`(Other) ${configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit`}
-          </li>
-        </ul>
-        <ul className="list-none">
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Knight)} kg/unit`}
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Crossbowman)} kg/unit`}
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Paladin)} kg/unit`}
-          </li>
-        </ul>
-      </div>
+    <div className={`text-xs text-gray-200 mx-auto ${className}`}>
       <p className="italic text-xs">Each resource has a different weight per unit.</p>
+      <div className="grid grid-cols-2 gap-x-4 my-1">
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="md" className="mr-1" />
+          {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}
+        </div>
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="md" className="mr-1" />
+          {`${configManager.getResourceWeightKg(ResourcesIds.Knight)} kg/unit`}
+        </div>
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="md" className="mr-1" />
+          {`(Food) ${configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit`}
+        </div>
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="md" className="mr-1" />
+          {`${configManager.getResourceWeightKg(ResourcesIds.Crossbowman)} kg/unit`}
+        </div>
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="md" className="mr-1" />
+          {`(Other) ${configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit`}
+        </div>
+        <div className="flex items-center justify-center">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="md" className="mr-1" />
+          {`${configManager.getResourceWeightKg(ResourcesIds.Paladin)} kg/unit`}
+        </div>
+      </div>
     </div>
   );
 };

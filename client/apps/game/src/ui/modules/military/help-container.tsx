@@ -69,7 +69,7 @@ export const HelpContainer = ({
     return (
       <div className="flex flex-col space-y-2 mb-4">
         <div className="flex justify-between items-center">
-          <label className="text-gold font-semibold">Transfer Direction:</label>
+          <label className="text-gold font-semibold">Transfer Direction</label>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export const HelpContainer = ({
 
   return (
     <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto">
-      <div className="px-6 h-full border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm w-full flex flex-col">
+      <div className="px-6 h-full backdrop-blur-sm w-full flex flex-col">
         {/* Transfer Type Selection */}
         <div className="flex justify-center mb-6 mx-auto mt-4">
           <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">

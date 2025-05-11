@@ -11,6 +11,7 @@ export * from "./hyperstructure";
 export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
+export * from "./quest";
 export * from "./raid-simulator";
 export * from "./realm";
 export * from "./resources";

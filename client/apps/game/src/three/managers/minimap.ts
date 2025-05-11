@@ -4,7 +4,7 @@ import { fetchAllTiles, type Tile } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { Position } from "@/types/position";
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
@@ -28,6 +28,7 @@ const LABELS = {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   },
+  QUEST: "/images/labels/quest.png",
 };
 
 const MINIMAP_CONFIG = {
@@ -46,6 +47,7 @@ const MINIMAP_CONFIG = {
       [StructureType.Bank]: "#FFFF00",
       [StructureType.FragmentMine]: "#00FFFF",
     },
+    QUEST: "#0000FF",
   },
   SIZES: {
     STRUCTURE: 14,
@@ -100,6 +102,7 @@ class Minimap {
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
   private structureSize!: { width: number; height: number };
   private armySize!: { width: number; height: number };
+  private questSize!: { width: number; height: number };
   private cameraSize!: {
     topSideWidth: number;
     bottomSideWidth: number;
@@ -116,6 +119,7 @@ class Minimap {
   private showHyperstructures: boolean = true;
   private showBanks: boolean = true;
   private showFragmentMines: boolean = true;
+  private showQuests: boolean = true;
 
   // Clustering properties
   private armyClusters: EntityCluster[] = [];
@@ -162,6 +166,7 @@ class Minimap {
     this.scaledCoords = new Map();
     this.structureSize = { width: 0, height: 0 };
     this.armySize = { width: 0, height: 0 };
+    this.questSize = { width: 0, height: 0 };
     this.cameraSize = { topSideWidth: 0, bottomSideWidth: 0, height: 0 };
     this.recomputeScales();
 
@@ -223,6 +228,10 @@ class Minimap {
       width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
       height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
     };
+    this.questSize = {
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
+    };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
       bottomSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -265,6 +274,7 @@ class Minimap {
     this.drawExploredTiles();
     this.drawStructures();
     this.drawArmies();
+    this.drawQuests();
     this.drawCamera();
   }
 
@@ -535,6 +545,39 @@ class Minimap {
     return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2), Math.abs(z1 - z2));
   }
 
+  // draw quests on the minimap
+  private drawQuests() {
+    if (!this.context || !this.showQuests) return;
+
+    const allQuests: HexPosition[] = this.tiles
+      .map((tile) => {
+        const questTile = tile.occupier_type === TileOccupier.Quest;
+        if (!questTile) return null;
+        return {
+          col: tile.col,
+          row: tile.row,
+        };
+      })
+      .filter((quest) => quest !== null);
+
+    allQuests.forEach((quest) => {
+      const cacheKey = `${quest.col},${quest.row}`;
+      if (this.scaledCoords.has(cacheKey)) {
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+        const labelImg = this.labelImages.get("QUEST");
+        if (!labelImg) return;
+
+        this.context.drawImage(
+          labelImg,
+          scaledCol - this.questSize.width * (quest.row % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.questSize.height / 2,
+          this.questSize.width,
+          this.questSize.height,
+        );
+      }
+    });
+  }
+
   drawCamera() {
     if (!this.context) return;
 
@@ -719,7 +762,7 @@ class Minimap {
     this.loadImage("MY_REALM", LABELS.MY_REALM);
     this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
     this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
-
+    this.loadImage("QUEST", LABELS.QUEST);
     // Load structure labels
     Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {
       this.loadImage(`STRUCTURE_${type}`, path);
@@ -774,6 +817,11 @@ class Minimap {
     if (this.context) this.draw();
   }
 
+  toggleQuests(visible: boolean) {
+    this.showQuests = visible;
+    if (this.context) this.draw();
+  }
+
   // Method to get current visibility states for UI
   getVisibilityStates() {
     return {
@@ -782,6 +830,7 @@ class Minimap {
       hyperstructures: this.showHyperstructures,
       banks: this.showBanks,
       fragmentMines: this.showFragmentMines,
+      quests: this.showQuests,
     };
   }
 
@@ -792,12 +841,14 @@ class Minimap {
     hyperstructures?: boolean;
     banks?: boolean;
     fragmentMines?: boolean;
+    quests?: boolean;
   }) {
     if (states.realms !== undefined) this.showRealms = states.realms;
     if (states.armies !== undefined) this.showArmies = states.armies;
     if (states.hyperstructures !== undefined) this.showHyperstructures = states.hyperstructures;
     if (states.banks !== undefined) this.showBanks = states.banks;
     if (states.fragmentMines !== undefined) this.showFragmentMines = states.fragmentMines;
+    if (states.quests !== undefined) this.showQuests = states.quests;
     if (this.context) this.draw();
   }
 
