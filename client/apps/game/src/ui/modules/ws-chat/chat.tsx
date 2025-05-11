@@ -17,7 +17,8 @@ import {
   useRoomMessageEvents,
   useUserEvents,
 } from "./hooks/useSocketEvents";
-import { Message, Room, User } from "./types";
+import { Message, Room } from "./types";
+import { useChatStore } from "./useChatStore";
 import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./utils/filterUtils";
 import { groupMessagesBySender } from "./utils/messageUtils";
 import { generateUserCredentials, initialToken, initialUserId } from "./utils/userCredentials";
@@ -29,15 +30,34 @@ function ChatModule() {
   const [username, setUsername] = useState<string>("");
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
   const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(false);
-  // Add state for showing room creation
+
+  // Room creation state
   const [showRoomCreation, setShowRoomCreation] = useState<boolean>(false);
 
-  // Use a ref to hold the chat client instance to ensure stability across renders
+  // Chat client state
   const chatClientRef = useRef<ChatClient | null>(null);
 
+  // Account store state
   const { connector } = useAccountStore((state) => state);
 
-  // Initialize chat client after username is set
+  // Zustand store integration
+  const {
+    isExpanded,
+    isMinimized,
+    activeView,
+    activeRoomId,
+    directMessageRecipientId,
+    isLoadingMessages: isStoreLoadingMessages,
+    actions: chatActions,
+  } = useChatStore();
+
+  const { onlineUsers, offlineUsers, isLoadingUsers } = useChatStore((state) => ({
+    onlineUsers: state.onlineUsers,
+    offlineUsers: state.offlineUsers,
+    isLoadingUsers: state.isLoadingUsers,
+  }));
+
+  // Chat client instance
   const chatClient = useMemo(() => {
     if (!isUsernameSet) return null;
 
@@ -69,27 +89,21 @@ function ChatModule() {
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
-  const [directMessageRecipient, setDirectMessageRecipient] = useState("");
-  const [activeRoom, setActiveRoom] = useState("");
   const [newRoomId, setNewRoomId] = useState("");
 
   // Online users state
-  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
-  const [offlineUsers, setOfflineUsers] = useState<User[]>([]);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
   const [sidebarVisible, setSidebarVisible] = useState(true);
+
   // Add mobile detection state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
-  // Add expanded state
-  const [isExpanded, setIsExpanded] = useState(false);
-  // Add minimized state
-  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Local loading state to be compatible with hooks expecting React.Dispatch
+  const [_isLoadingMessagesLocal, _setIsLoadingMessagesLocal] = useState<boolean>(true);
 
   // Add loading states
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
   // Unread messages state - track unread messages by user ID
   const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
@@ -147,6 +161,16 @@ function ChatModule() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Synchronize local loading state with Zustand store
+  useEffect(() => {
+    chatActions.setIsLoadingMessages(_isLoadingMessagesLocal);
+  }, [_isLoadingMessagesLocal, chatActions]);
+
+  // Synchronize Zustand store changes back to local state if needed
+  useEffect(() => {
+    _setIsLoadingMessagesLocal(isStoreLoadingMessages);
+  }, [isStoreLoadingMessages]);
+
   // Add a message to the state with optimistic update for better UX
   const addMessage = useCallback(
     (message: Message) => {
@@ -185,8 +209,8 @@ function ChatModule() {
 
   // Filter messages based on active tab
   const filteredMessages = useMemo(() => {
-    return filterMessages(messages, userId, directMessageRecipient, activeRoom);
-  }, [messages, userId, directMessageRecipient, activeRoom]);
+    return filterMessages(messages, userId, directMessageRecipientId || "", activeRoomId || "");
+  }, [messages, userId, directMessageRecipientId, activeRoomId]);
 
   // Sort messages based on active tab
   const sortedMessages = useMemo(() => {
@@ -198,42 +222,40 @@ function ChatModule() {
     return groupMessagesBySender(sortedMessages);
   }, [sortedMessages]);
 
+  useEffect(() => {
+    if (chatClient && directMessageRecipientId) {
+      console.log(`Requesting direct message history with ${directMessageRecipientId}`);
+
+      // Use requestAnimationFrame to ensure UI updates before sending socket request
+      window.requestAnimationFrame(() => {
+        chatClient.getDirectMessageHistory(directMessageRecipientId);
+      });
+
+      // Set a safety timeout to clear loading state if no response
+      const safetyTimeout = setTimeout(() => {
+        chatActions.setIsLoadingMessages(false);
+      }, 5000);
+
+      return () => clearTimeout(safetyTimeout);
+    } else {
+      // No chat client, clear loading state
+      chatActions.setIsLoadingMessages(false);
+    }
+  }, [directMessageRecipientId]);
+
   // Set direct message recipient from online users list
   const selectRecipient = useCallback(
     (recipientId: string) => {
       // Show loading state immediately
-      setIsLoadingMessages(true);
-
-      // Set recipient immediately
-      setDirectMessageRecipient(recipientId);
+      chatActions.selectDirectMessageRecipient(recipientId);
 
       // Clear unread messages for this user
       setUnreadMessages((prev) => ({
         ...prev,
         [recipientId]: 0,
       }));
-
-      // Request message history with this user
-      if (chatClient) {
-        console.log(`Requesting direct message history with ${recipientId}`);
-
-        // Use requestAnimationFrame to ensure UI updates before sending socket request
-        window.requestAnimationFrame(() => {
-          chatClient.getDirectMessageHistory(recipientId);
-        });
-
-        // Set a safety timeout to clear loading state if no response
-        const safetyTimeout = setTimeout(() => {
-          setIsLoadingMessages(false);
-        }, 5000);
-
-        return () => clearTimeout(safetyTimeout);
-      } else {
-        // No chat client, clear loading state
-        setIsLoadingMessages(false);
-      }
     },
-    [chatClient, setDirectMessageRecipient, setUnreadMessages, setIsLoadingMessages],
+    [chatClient, setUnreadMessages, chatActions],
   );
 
   // Send a message based on active tab
@@ -241,20 +263,20 @@ function ChatModule() {
     (message: string) => {
       if (!chatClient) return;
 
-      if (directMessageRecipient) {
-        chatClient.sendDirectMessage(directMessageRecipient, message);
+      if (directMessageRecipientId) {
+        chatClient.sendDirectMessage(directMessageRecipientId, message);
         // Add to our local messages for immediate feedback
         addMessage({
           id: Date.now().toString(),
           senderId: userId,
           senderUsername: username,
-          recipientId: directMessageRecipient,
+          recipientId: directMessageRecipientId,
           message: message,
           timestamp: new Date(),
           type: "direct",
         });
-      } else if (activeRoom) {
-        chatClient.sendRoomMessage(activeRoom, message);
+      } else if (activeRoomId) {
+        chatClient.sendRoomMessage(activeRoomId, message);
         // Add to our local messages for immediate feedback
         addMessage({
           id: Date.now().toString(),
@@ -263,7 +285,7 @@ function ChatModule() {
           message: message,
           timestamp: new Date(),
           type: "room",
-          roomId: activeRoom,
+          roomId: activeRoomId,
         });
       } else {
         chatClient.sendGlobalMessage(message);
@@ -278,7 +300,7 @@ function ChatModule() {
         });
       }
     },
-    [chatClient, directMessageRecipient, activeRoom, userId, username, addMessage],
+    [chatClient, directMessageRecipientId, activeRoomId, userId, username, addMessage],
   );
 
   // Handle username submission
@@ -305,29 +327,33 @@ function ChatModule() {
   useInitialDataEvents(
     chatClient,
     setAvailableRooms,
-    setOnlineUsers,
-    setOfflineUsers,
     setMessages,
     setIsLoadingRooms,
-    setIsLoadingUsers,
-    setIsLoadingMessages,
+    _setIsLoadingMessagesLocal, // Pass local setter to hooks
   );
 
   useDirectMessageEvents(
     chatClient,
     userId,
-    directMessageRecipient,
+    directMessageRecipientId || "",
     addMessage,
     setUnreadMessages,
-    setIsLoadingMessages,
+    _setIsLoadingMessagesLocal, // Pass local setter to hooks
     setMessages,
   );
 
-  useRoomMessageEvents(chatClient, activeRoom, addMessage, setUnreadMessages, setIsLoadingMessages, setMessages);
+  useRoomMessageEvents(
+    chatClient,
+    activeRoomId || "",
+    addMessage,
+    setUnreadMessages,
+    _setIsLoadingMessagesLocal, // Pass local setter to hooks
+    setMessages,
+  );
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
-  useUserEvents(chatClient, setOnlineUsers, setOfflineUsers, setIsLoadingUsers, onlineUsers);
+  useUserEvents(chatClient);
 
   useRoomEvents(chatClient, setAvailableRooms, setIsLoadingRooms);
 
@@ -390,15 +416,7 @@ function ChatModule() {
     if (!newRoomId.trim() || !chatClient) return;
 
     console.log(`Joining room from form: ${newRoomId}`);
-
-    // Show loading state immediately
-    setIsLoadingMessages(true);
-
-    // Clear direct message recipient
-    setDirectMessageRecipient("");
-
-    // First set active room to update UI
-    setActiveRoom(newRoomId);
+    chatActions.selectRoom(newRoomId);
 
     // Clear unread messages for this new room
     setUnreadMessages((prev) => ({
@@ -422,14 +440,7 @@ function ChatModule() {
   const joinRoomFromSidebar = (roomId: string) => {
     if (!chatClient) return;
 
-    // Show loading state immediately
-    setIsLoadingMessages(true);
-
-    // Clear direct message recipient
-    setDirectMessageRecipient("");
-
-    // First set active room to update UI
-    setActiveRoom(roomId);
+    chatActions.selectRoom(roomId);
 
     // Clear unread messages for this room
     setUnreadMessages((prev) => ({
@@ -511,12 +522,10 @@ function ChatModule() {
 
   // Chat Header - add content before return statement
   const switchToGlobalChat = useCallback(() => {
-    setIsLoadingMessages(true);
-    setDirectMessageRecipient("");
-    setActiveRoom("");
+    chatActions.switchToGlobalChat();
     // Global messages should already be loaded, but we'll show the spinner briefly
-    setTimeout(() => setIsLoadingMessages(false), 200);
-  }, [setDirectMessageRecipient, setActiveRoom, setIsLoadingMessages]);
+    setTimeout(() => chatActions.setIsLoadingMessages(false), 200);
+  }, [chatActions]);
 
   // If username is not set, show login form
   if (!isUsernameSet) {
@@ -527,7 +536,7 @@ function ChatModule() {
     return (
       <div className="fixed bottom-2 left-2 pointer-events-auto z-50">
         <CircleButton
-          onClick={() => setIsMinimized(false)}
+          onClick={() => chatActions.setMinimized(false)}
           size="lg"
           // className="fixed bottom-2 left-2 pointer-events-auto" // Moved to parent div
         >
@@ -547,7 +556,9 @@ function ChatModule() {
           </svg>
         </CircleButton>
         {hasUnreadMessages && (
-          <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 border border-white bg-green pointer-events-none animate-pulse"></span>
+          <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-red-500 border border-white bg-green pointer-events-none animate-pulse">
+            {" "}
+          </span>
         )}
       </div>
     );
@@ -647,7 +658,7 @@ function ChatModule() {
                       <li
                         key={room.id}
                         className={`flex items-center px-1 py-1 cursor-pointer transition-colors h6 ${
-                          room.id === activeRoom ? "bg-orange/20 border-l-2 border-orange" : "hover:bg-gray/50"
+                          room.id === activeRoomId ? "bg-orange/20 border-l-2 border-orange" : "hover:bg-gray/50"
                         }`}
                         onClick={() => joinRoomFromSidebar(room.id)}
                       >
@@ -739,43 +750,45 @@ function ChatModule() {
                         </span>
                       </div>
                       <ul className="">
-                        {filteredUsers.map((user) => (
-                          <li
-                            key={user.id}
-                            className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
-                              user.id === userId
-                                ? "bg-orange-600/20 border-l-2 border-orange "
-                                : user.id === directMessageRecipient
-                                  ? "bg-orange/10 border-l-2 border-orange"
-                                  : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
-                            }`}
-                          >
-                            <button
-                              className="flex items-center w-full focus:outline-none"
-                              onClick={() => {
-                                if (user.id !== userId) {
-                                  selectRecipient(user.id);
-                                }
-                              }}
-                              disabled={user.id === userId}
+                        {filteredUsers
+                          .filter((user) => user.id !== userId)
+                          .map((user) => (
+                            <li
+                              key={user.id}
+                              className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
+                                user.id === userId
+                                  ? "bg-orange-600/20 border-l-2 border-orange "
+                                  : user.id === directMessageRecipientId
+                                    ? "bg-orange/10 border-l-2 border-orange"
+                                    : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
+                              }`}
                             >
-                              <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2">
-                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                              </div>
-                              <span className="text-sm truncate font-medium rounded">
-                                {user.username || user.id} {user.id === userId && "(You)"}
-                              </span>
-                              {/* Status indicator */}
-                              <div className="ml-auto w-2 h-2 bg-green-500"></div>
-                              {/* Unread message notification badge */}
-                              {user.id !== userId && unreadMessages[user.id] > 0 && (
-                                <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                                  {unreadMessages[user.id]}
+                              <button
+                                className="flex items-center w-full focus:outline-none"
+                                onClick={() => {
+                                  if (user.id !== userId) {
+                                    selectRecipient(user.id);
+                                  }
+                                }}
+                                disabled={user.id === userId}
+                              >
+                                <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2">
+                                  {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                                </div>
+                                <span className="text-sm truncate font-medium rounded">
+                                  {user.username || user.id} {user.id === userId && "(You)"}
                                 </span>
-                              )}
-                            </button>
-                          </li>
-                        ))}
+                                {/* Status indicator */}
+                                <div className="ml-auto w-2 h-2 bg-green-500"></div>
+                                {/* Unread message notification badge */}
+                                {user.id !== userId && unreadMessages[user.id] > 0 && (
+                                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                                    {unreadMessages[user.id]}
+                                  </span>
+                                )}
+                              </button>
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   )}
@@ -791,7 +804,7 @@ function ChatModule() {
                           <li
                             key={user.id}
                             className={`flex items-center px-2 cursor-pointer transition-colors opacity-60 ${
-                              user.id === directMessageRecipient
+                              user.id === directMessageRecipientId
                                 ? "bg-gray-800/30 border-l-2 border-gray-500"
                                 : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
                             }`}
@@ -836,12 +849,13 @@ function ChatModule() {
         <div className="from-black px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center">
             <div className="truncate h6">
-              {directMessageRecipient ? (
+              {directMessageRecipientId ? (
                 `Chat with ${
-                  onlineUsers.find((user) => user.id === directMessageRecipient)?.username || directMessageRecipient
+                  [...onlineUsers, ...offlineUsers].find((user) => user.id === directMessageRecipientId)?.username ||
+                  directMessageRecipientId
                 }`
-              ) : activeRoom ? (
-                `Room: ${availableRooms.find((room) => room.id === activeRoom)?.name || activeRoom}`
+              ) : activeRoomId ? (
+                `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
               ) : (
                 <span className="cursor-pointer hover:text-orange-300" onClick={switchToGlobalChat}>
                   Game Chat
@@ -851,7 +865,7 @@ function ChatModule() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => chatActions.toggleExpand()}
               className="text-gold/70 hover:text-gold transition-colors p-1"
             >
               <svg
@@ -878,7 +892,10 @@ function ChatModule() {
                 )}
               </svg>
             </button>
-            <button onClick={() => setIsMinimized(true)} className="text-gold/70 hover:text-gold transition-colors p-1">
+            <button
+              onClick={() => chatActions.setMinimized(true)}
+              className="text-gold/70 hover:text-gold transition-colors p-1"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-4 w-4"
@@ -897,7 +914,7 @@ function ChatModule() {
           className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-gradient-to-b from-black to-gray-950`}
           ref={chatContainerRef}
         >
-          {isLoadingMessages ? (
+          {isStoreLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="animate-spin h-8 w-8 border-3 border-orange-500 rounded-full border-t-transparent mb-4"></div>
               <p className="text-gray-400">Loading messages...</p>
@@ -918,9 +935,9 @@ function ChatModule() {
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                 />
               </svg>
-              {directMessageRecipient ? (
+              {directMessageRecipientId ? (
                 <p>No direct messages yet</p>
-              ) : activeRoom ? (
+              ) : activeRoomId ? (
                 <p>No messages yet in this room</p>
               ) : (
                 <p>No messages yet in Global Chat</p>
