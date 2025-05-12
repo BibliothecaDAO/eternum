@@ -2,6 +2,7 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import {
   BiomeType,
   BuildingType,
+  QuestType,
   RealmLevelNames,
   RealmLevels,
   ResourceMiningTypes,
@@ -21,6 +22,7 @@ const BIOMES_FLAT_PATH = "/models/biomes-flat/";
 const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
 const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
+const QUEST_MODELS_PATH = "/models/quests/";
 
 enum BiomeFilenames {
   Bare = "bare.glb",
@@ -70,6 +72,10 @@ enum BuildingFilenames {
   Realm3 = "castle3.glb",
   Village = "village.glb",
   WonderAnimated = "wonder2.glb",
+}
+
+enum QuestFilenames {
+  DarkShuffle = "quest_tile_high.glb",
 }
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
@@ -290,4 +296,8 @@ export const MinesMaterialsParams: Record<
     emissive: new THREE.Color(0.0, 3.25, 0.03),
     emissiveIntensity: 1.2,
   },
+};
+
+export const QuestModelPaths: Record<string, string> = {
+  [QuestType.DarkShuffle]: QUEST_MODELS_PATH + QuestFilenames.DarkShuffle,
 };

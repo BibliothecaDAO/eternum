@@ -36,7 +36,9 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
     return remainingQuestCapacity <= 0;
   }, [remainingQuestCapacity]);
 
-  const miniGameInfo = minigames?.find((game) => game.contract_address === questLevelsEntity?.game_address);
+  const gameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
+
+  const miniGameInfo = minigames?.find((game) => game.contract_address === gameAddress);
 
   return (
     <div className="flex flex-col gap-5 items-center border border-gold/20 rounded-lg p-5 h-full w-3/4 mx-auto">
@@ -71,9 +73,15 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
             const timeLimit = level?.value?.time_limit?.value;
             const targetScore = level?.value?.target_score?.value;
             const settingsId = level?.value?.settings_id?.value;
-            const settingName = settingsMetadata
+            const settingsMetadataForGame = useMemo(
+              () => settingsMetadata?.[gameAddress],
+              [settingsMetadata, gameAddress],
+            );
+
+            const settingName = settingsMetadataForGame
               ?.find((setting) => setting.settings_id === settingsId)
               ?.name.split("Eternum Quest -")[1];
+
             return (
               <div className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
                 <div className="flex flex-row items-center justify-between text-sm w-full px-2">

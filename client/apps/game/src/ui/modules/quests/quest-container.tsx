@@ -152,9 +152,18 @@ export const QuestContainer = ({
     },
   });
 
-  const settingName = settingsMetadata
-    ?.find((setting) => setting.settings_id === questLevel?.value?.settings_id?.value)
-    ?.name.split("Eternum Quest -")[1];
+  const settingsMetadataForGame = useMemo(
+    () => settingsMetadata?.[queryGameAddress],
+    [settingsMetadata, queryGameAddress],
+  );
+
+  const settingName = useMemo(
+    () =>
+      settingsMetadataForGame
+        ?.find((setting) => setting.settings_id === questLevel?.value?.settings_id?.value)
+        ?.name.split("Eternum Quest -")[1],
+    [settingsMetadataForGame, questLevel],
+  );
 
   return (
     <div className="flex flex-col gap-5 text-xl w-3/5 mx-auto h-full overflow-y-auto pt-2 border border-gold/20 rounded-lg">

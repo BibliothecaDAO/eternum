@@ -293,7 +293,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const { data: minigames } = useMiniGames({});
 
-  const { data: settingsMetadata } = useGameSettingsMetadata({ gameAddress: minigames?.[0]?.contract_address });
+  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
+
+  const { data: settingsMetadata } = useGameSettingsMetadata({
+    gameAddresses: minigameAddresses,
+  });
 
   useEffect(() => {
     if (minigames) {
