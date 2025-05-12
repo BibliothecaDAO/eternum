@@ -9,6 +9,7 @@ interface RealmGridItem {
     sm?: number;
     md?: number;
     lg?: number;
+    xl?: number;
   };
   data: MergedNftData;
 }
@@ -59,7 +60,9 @@ export const SeasonPassesGrid = ({
   }
 
   const gridItems: RealmGridItem[] = seasonPasses.map((pass) => ({
-    colSpan: isCompactGrid ? { sm: 3, md: 2, lg: 2 } : { sm: 5, md: 3, lg: 3 },
+    colSpan: isCompactGrid
+      ? { sm: 6, md: 6, lg: 3, xl: 2 } // 2 items on sm, 3 on md, 4 on lg
+      : { sm: 6, md: 6, lg: 4, xl: 3 }, // 2 items on sm, 3 on md, 3 on lg
     data: pass!,
   }));
 

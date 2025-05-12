@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { formatUnits, parseEther } from "viem";
 import { ResourceIcon } from "../ui/elements/resource-icon";
+import { ConnectWalletPrompt } from "./connect-wallet-prompt";
 
 interface PurchaseDialogProps {
   isOpen: boolean;
@@ -15,6 +17,9 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
   const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore();
   const totalPrice = getTotalPrice();
   const { acceptOrders, isLoading, approveMarketplace, seasonPassApproved, isApprovingMarketplace } = useMarketplace();
+
+  const { connectors, connect } = useConnect();
+  const { address } = useAccount();
 
   const handlePurchase = async () => {
     // TODO: Implement purchase logic
@@ -91,9 +96,13 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                 <ResourceIcon resource="Lords" size="sm" />
               </div>
             </div>
-            <Button className="w-full" onClick={handlePurchase} disabled={selectedPasses.length === 0}>
-              Purchase {selectedPasses.length} Pass{selectedPasses.length !== 1 ? "es" : ""}
-            </Button>
+            {!address ? (
+              <ConnectWalletPrompt connectors={connectors} connect={connect} />
+            ) : (
+              <Button className="w-full" onClick={handlePurchase} disabled={selectedPasses.length === 0}>
+                Purchase {selectedPasses.length} Pass{selectedPasses.length !== 1 ? "es" : ""}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

@@ -208,6 +208,7 @@ function SeasonPasses() {
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore();
 
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -224,7 +225,7 @@ function SeasonPasses() {
 
         <div className="flex flex-col h-full overflow-y-auto">
           <div className="text-center border-b py-6">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season Pass Marketplace"}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season 1 Pass Marketplace"}</h2>
             <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
               <span>
                 <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings
@@ -236,9 +237,14 @@ function SeasonPasses() {
               </span>
             </div>
           </div>
-          <ScrollHeader>
+          <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
             {/* Filter UI */}
-            <div className="flex justify-end my-2 gap-4 px-4">
+            {isHeaderScrolled ? (
+              <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{"Season 1 Pass"}</h4>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex justify-end my-2 gap-1 sm:gap-4 px-4 items-center">
               <TraitFilterUI
                 allTraits={allTraits}
                 selectedFilters={selectedFilters}
@@ -249,6 +255,7 @@ function SeasonPasses() {
               <Button
                 variant="outline"
                 size="icon"
+                className="hidden sm:flex"
                 onClick={() => setIsCompactGrid(!isCompactGrid)}
                 title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
               >
@@ -290,7 +297,7 @@ function SeasonPasses() {
             </div>
           </div>
 
-          {/* Sticky Bottom Bar */}
+          {/* Sticky Bottom Sweep Bar */}
           {selectedPasses.length > 0 && (
             <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
               <div className="container mx-auto flex items-center justify-start">

@@ -187,13 +187,13 @@ export const SeasonPassCard = ({
               {listingActive ? (
                 <div className="text-xl flex items-center gap-2 font-mono">
                   {Number(formatUnits(BigInt(pass.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
-                  <ResourceIcon resource="Lords" size="sm" />
+                  <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
                 </div>
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
 
-              {listingActive && (
+              {/*listingActive && (
                 <div className="text-sm text-muted-foreground mt-1">
                   {timeRemaining ? (
                     <span className="text-red-500 font-medium">{timeRemaining}</span>
@@ -201,7 +201,7 @@ export const SeasonPassCard = ({
                     `Expires ${new Date(Number(pass.expiration) * 1000).toLocaleString()}`
                   )}
                 </div>
-              )}
+              )}*/}
             </div>
           </div>
         </CardContent>
@@ -211,7 +211,12 @@ export const SeasonPassCard = ({
           ${isSelected ? "bg-gold/5" : ""}`}
         >
           <div className="flex w-full gap-4">
-            <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
+            <Button
+              disabled={isSelected}
+              variant={isOwner ? "outline" : "default"}
+              className="w-full"
+              onClick={handleCardClick}
+            >
               {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
             </Button>
 

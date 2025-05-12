@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 interface ScrollHeaderProps {
   children: React.ReactNode;
   className?: string;
+  onScrollChange?: (isScrolled: boolean) => void;
 }
 
-export const ScrollHeader = ({ children, className }: ScrollHeaderProps) => {
+export const ScrollHeader = ({ children, className, onScrollChange }: ScrollHeaderProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
 
@@ -18,7 +19,9 @@ export const ScrollHeader = ({ children, className }: ScrollHeaderProps) => {
       if (!parentContainer) return;
 
       const scrollPosition = parentContainer.scrollTop;
-      setIsScrolled(scrollPosition > 50);
+      const newIsScrolled = scrollPosition > 50;
+      setIsScrolled(newIsScrolled);
+      onScrollChange?.(newIsScrolled);
     };
 
     const parentContainer = headerRef.current?.parentElement;
@@ -26,7 +29,7 @@ export const ScrollHeader = ({ children, className }: ScrollHeaderProps) => {
       parentContainer.addEventListener("scroll", handleScroll);
       return () => parentContainer.removeEventListener("scroll", handleScroll);
     }
-  }, []);
+  }, [onScrollChange]);
 
   return (
     <div
