@@ -44,27 +44,6 @@ export const getBalance = (
   };
 };
 
-export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
-  const resourceManager = new ResourceManager(components, entityId);
-  return resourceManager.getProduction(resourceId);
-};
-
-export const getResourcesFromBalance = (
-  entityId: ID,
-  currentDefaultTick: number,
-  components: ClientComponents,
-): Resource[] => {
-  // todo: improve optimisation
-  const resourceIds = resources.map((r) => r.id);
-  return resourceIds
-    .map((id) => {
-      const resourceManager = new ResourceManager(components, entityId);
-      const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentDefaultTick, id);
-      return { resourceId: id, amount: balance, hasReachedMaxCapacity };
-    })
-    .filter((r) => r.amount > 0);
-};
-
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
   const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];

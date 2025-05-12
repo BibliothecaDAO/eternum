@@ -31,7 +31,9 @@ export const ResourceChip = ({
     const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentTick, resourceId);
     setBalance(balance);
     setHasReachedMaxCap(hasReachedMaxCapacity);
-    return resourceManager.getProduction(resourceId);
+    const resource = resourceManager.getResource();
+    if (!resource) return null;
+    return ResourceManager.balanceAndProduction(resource, resourceId).production;
   }, [resourceManager, currentTick]);
 
   const timeUntilValueReached = useMemo(() => {

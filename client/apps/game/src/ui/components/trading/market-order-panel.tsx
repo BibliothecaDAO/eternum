@@ -51,13 +51,9 @@ export const MarketResource = memo(
     const { currentDefaultTick } = useBlockTimestamp();
     const resourceManager = useResourceManager(entityId);
 
-    const production = useMemo(() => {
-      return resourceManager.getProduction(resourceId);
-    }, []);
-
     const balance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, production, currentDefaultTick]);
+    }, [resourceManager, currentDefaultTick]);
 
     const resource = useMemo(() => {
       return findResourceById(resourceId);
@@ -320,13 +316,9 @@ const OrderRow = memo(
       return calculateDonkeysNeeded(orderWeightKg);
     }, [orderWeightKg]);
 
-    const donkeyProduction = useMemo(() => {
-      return resourceManager.getProduction(ResourcesIds.Donkey);
-    }, []);
-
     const donkeyBalance = useMemo(() => {
       return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance);
-    }, [resourceManager, donkeyProduction, currentDefaultTick]);
+    }, [resourceManager, currentDefaultTick]);
 
     const accountName = useMemo(() => {
       return getAddressNameFromEntity(offer.makerId, dojo.setup.components);
@@ -617,30 +609,18 @@ const OrderCreation = memo(
 
     const resourceManager = useResourceManager(entityId);
 
-    const donkeyProduction = useMemo(() => {
-      return resourceManager.getProduction(ResourcesIds.Donkey);
-    }, []);
-
     // divide to get the number of donkeys without precision
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance;
-    }, [resourceManager, donkeyProduction, currentDefaultTick]);
-
-    const resourceProduction = useMemo(() => {
-      return resourceManager.getProduction(resourceId);
-    }, [resourceId]);
+    }, [resourceManager, currentDefaultTick]);
 
     const resourceBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, resourceProduction, currentDefaultTick]);
-
-    const lordsProduction = useMemo(() => {
-      return resourceManager.getProduction(ResourcesIds.Lords);
-    }, []);
+    }, [resourceManager, currentDefaultTick]);
 
     const lordsBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance;
-    }, [resourceManager, lordsProduction, currentDefaultTick]);
+    }, [resourceManager, currentDefaultTick]);
 
     const canBuy = useMemo(() => {
       return isBuy ? lordsBalance > lords : resourceBalance > resource;

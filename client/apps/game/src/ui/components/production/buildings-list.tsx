@@ -1,6 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
@@ -34,8 +35,8 @@ export const BuildingsList = ({
 
   const resourceManager = useResourceManager(realm.entityId);
 
-  const storeCapacityKg = useMemo(() => {
-    return resourceManager.getStoreCapacityKg();
+  const resource = useMemo(() => {
+    return resourceManager.getResource();
   }, [resourceManager]);
 
   const productions = useMemo(() => {
@@ -46,18 +47,19 @@ export const BuildingsList = ({
         );
 
         const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
-        const production = resourceManager.getProduction(resourceId);
+        if (!resource) return null;
+        const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
 
         return {
           resource: resourceId,
-          balance: balance,
+          balance,
           production,
           buildings: buildingsForResource,
           isLabor: resourceId === ResourcesIds.Labor,
         };
       })
       .filter((production) => production !== null);
-  }, [producedResources, productionBuildings, resourceManager]);
+  }, [producedResources, productionBuildings, resourceManager, resource]);
 
   const motionConfig = {
     initial: { opacity: 0, height: 0 },

@@ -16,90 +16,6 @@ export class ResourceManager {
     this.entityId = entityId;
   }
 
-  public getProduction(resourceId: ResourcesIds) {
-    const resource = this._getResource();
-    if (!resource) return undefined;
-
-    switch (resourceId) {
-      case ResourcesIds.Stone:
-        return resource.STONE_PRODUCTION;
-      case ResourcesIds.Coal:
-        return resource.COAL_PRODUCTION;
-      case ResourcesIds.Wood:
-        return resource.WOOD_PRODUCTION;
-      case ResourcesIds.Copper:
-        return resource.COPPER_PRODUCTION;
-      case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_PRODUCTION;
-      case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_PRODUCTION;
-      case ResourcesIds.Gold:
-        return resource.GOLD_PRODUCTION;
-      case ResourcesIds.Silver:
-        return resource.SILVER_PRODUCTION;
-      case ResourcesIds.Mithral:
-        return resource.MITHRAL_PRODUCTION;
-      case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_PRODUCTION;
-      case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_PRODUCTION;
-      case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_PRODUCTION;
-      case ResourcesIds.Ruby:
-        return resource.RUBY_PRODUCTION;
-      case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_PRODUCTION;
-      case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_PRODUCTION;
-      case ResourcesIds.Ignium:
-        return resource.IGNIUM_PRODUCTION;
-      case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_PRODUCTION;
-      case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_PRODUCTION;
-      case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_PRODUCTION;
-      case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_PRODUCTION;
-      case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_PRODUCTION;
-      case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_PRODUCTION;
-      case ResourcesIds.Labor:
-        return resource.LABOR_PRODUCTION;
-      case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_PRODUCTION;
-      case ResourcesIds.Donkey:
-        return resource.DONKEY_PRODUCTION;
-      case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_PRODUCTION;
-      case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_PRODUCTION;
-      case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_PRODUCTION;
-      case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_PRODUCTION;
-      case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_PRODUCTION;
-      case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_PRODUCTION;
-      case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_PRODUCTION;
-      case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_PRODUCTION;
-      case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_PRODUCTION;
-      case ResourcesIds.Wheat:
-        return resource.WHEAT_PRODUCTION;
-      case ResourcesIds.Fish:
-        return resource.FISH_PRODUCTION;
-      case ResourcesIds.Lords:
-        return resource.LORDS_PRODUCTION;
-      default:
-        return undefined;
-    }
-  }
-
   public getResource() {
     return this._getResource();
   }
@@ -109,7 +25,9 @@ export class ResourceManager {
   }
 
   public isActive(resourceId: ResourcesIds): boolean {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return false;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production) return false;
     if (this.isFood(resourceId)) {
       return production.production_rate !== 0n;
@@ -121,7 +39,9 @@ export class ResourceManager {
     currentTick: number,
     resourceId: ResourcesIds,
   ): { balance: number; hasReachedMaxCapacity: boolean } {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return { balance: 0, hasReachedMaxCapacity: false };
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     const balance = this.balance(resourceId);
     if (!production) return { balance: Number(balance), hasReachedMaxCapacity: false };
     const amountProduced = this._amountProduced(production, currentTick, resourceId);
@@ -603,7 +523,9 @@ export class ResourceManager {
   };
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return 0;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production || production.building_count === 0) return 0;
 
     // Get production details
@@ -625,7 +547,9 @@ export class ResourceManager {
   }
 
   public getProductionEndsAt(resourceId: ResourcesIds): number {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return 0;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production || production.building_count === 0) return 0;
 
     // If no production rate or no output left, return current tick
@@ -708,17 +632,6 @@ export class ResourceManager {
       last_updated_at: number;
     };
   } {
-    if (!resource)
-      return {
-        balance: 0n,
-        production: {
-          building_count: 0,
-          production_rate: 0n,
-          output_amount_left: 0n,
-          last_updated_at: 0,
-        },
-      };
-
     switch (resourceId) {
       case ResourcesIds.Stone:
         return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
@@ -866,13 +779,8 @@ export class ResourceManager {
       }));
   }
 
-  public getFood(currentDefaultTick: number): { wheat: number; fish: number } {
-    return {
-      wheat: this.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat).balance,
-      fish: this.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish).balance,
-    };
-  }
-
+  // need static function when we don't have recs synced
+  // in that case, we can query the resource component by other means (sql, grpc) and pass in the resource
   public static balanceWithProduction(
     resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
     currentTick: number,
