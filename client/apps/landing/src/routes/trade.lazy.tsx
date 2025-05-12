@@ -372,7 +372,7 @@ function SeasonPasses() {
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-4 w-52 -mt-3">
+                    <div className="flex items-center gap-4 w-32 sm:w-52 -mt-3">
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium">Sweep Selection</span>
@@ -395,7 +395,7 @@ function SeasonPasses() {
                   </Button>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="font-semibold">
+                  <div className="hidden sm:block font-semibold">
                     {getTotalPrice()} Lords{" "}
                     <span className="text-xs text-muted-foreground">
                       (Max Price:{" "}
