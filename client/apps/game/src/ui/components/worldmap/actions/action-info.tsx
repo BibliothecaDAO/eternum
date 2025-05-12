@@ -185,8 +185,8 @@ const AttackInfo = memo(
 
     useEffect(() => {
       const fetchExplorer = async () => {
-        const { explorer } = await getExplorerFromToriiClient(toriiClient, selectedEntityId);
-        setExplorer(explorer);
+        const explorer = await getExplorerFromToriiClient(toriiClient, selectedEntityId);
+        setExplorer(explorer?.explorer);
       };
       fetchExplorer();
     }, [selectedEntityId, toriiClient]);

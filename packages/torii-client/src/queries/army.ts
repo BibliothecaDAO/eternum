@@ -27,7 +27,10 @@ export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entit
   const response = await toriiClient.getEntities(query); // Updated call, removed second argument
 
   if (!response?.items?.[0]?.models) {
-    return null;
+    return {
+      explorer: undefined,
+      resources: undefined,
+    };
   }
 
   const entityModels = response.items[0].models;
@@ -35,11 +38,14 @@ export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entit
   const resourceModelData = entityModels["s1_eternum-Resource"];
 
   if (!explorerModelData) {
-    return null;
+    return {
+      explorer: undefined,
+      resources: undefined,
+    };
   }
 
   return {
     explorer: getExplorerFromToriiEntity(explorerModelData),
-    resources: resourceModelData ? getResourcesFromToriiEntity(resourceModelData) : null,
+    resources: resourceModelData ? getResourcesFromToriiEntity(resourceModelData) : undefined,
   };
 };

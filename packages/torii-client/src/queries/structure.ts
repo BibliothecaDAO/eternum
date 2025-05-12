@@ -92,7 +92,10 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
   const response = await toriiClient.getEntities(query);
 
   if (!response.items?.[0]?.models) {
-    return null;
+    return {
+      structure: undefined,
+      resources: undefined,
+    };
   }
 
   const entityModels = response.items[0].models;
@@ -100,12 +103,15 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
   const resourceData = entityModels["s1_eternum-Resource"];
 
   if (!structureData) {
-    return null;
+    return {
+      structure: undefined,
+      resources: undefined,
+    };
   }
 
   return {
     structure: getStructureFromToriiEntity(structureData),
-    resources: resourceData ? getResourcesFromToriiEntity(resourceData) : null,
+    resources: resourceData ? getResourcesFromToriiEntity(resourceData) : undefined,
   };
 };
 

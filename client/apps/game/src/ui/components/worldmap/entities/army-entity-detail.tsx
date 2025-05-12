@@ -42,9 +42,9 @@ export const ArmyEntityDetail = memo(
 
     useEffect(() => {
       const fetchExplorer = async () => {
-        const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        setExplorer(explorer);
-        setExplorerResources(resources);
+        const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        setExplorer(explorer?.explorer);
+        setExplorerResources(explorer?.resources);
       };
       fetchExplorer();
     }, [armyEntityId]);
@@ -55,7 +55,7 @@ export const ArmyEntityDetail = memo(
         const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
         if (result) {
           setStructure(result.structure);
-          setStructureResources(result.resources);
+          setStructureResources(result?.resources);
         }
       };
       fetchStructure();

@@ -188,7 +188,7 @@ export const CombatContainer = ({
     const getTarget = async () => {
       if (isStructure) {
         const result = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
-        if (result) {
+        if (result?.structure) {
           setTarget({
             info: getGuardsByStructure(result.structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
             id: targetTile?.occupier_id,
@@ -197,15 +197,19 @@ export const CombatContainer = ({
           });
         }
       } else {
-        const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
-        const resourcesByRarity = orderResourcesByPriority(ResourceManager.getResourceBalances(resources));
-        setTargetArmyResourcesByRarity(resourcesByRarity);
-        setTarget({
-          info: explorer.troops,
-          id: targetTile?.occupier_id,
-          targetType: TargetType.Army,
-          structureCategory: null,
-        });
+        const explorer = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
+        if (explorer?.resources) {
+          const resourcesByRarity = orderResourcesByPriority(ResourceManager.getResourceBalances(explorer?.resources));
+          setTargetArmyResourcesByRarity(resourcesByRarity);
+        }
+        if (explorer?.explorer) {
+          setTarget({
+            info: explorer?.explorer?.troops,
+            id: targetTile?.occupier_id,
+            targetType: TargetType.Army,
+            structureCategory: null,
+          });
+        }
       }
     };
 
