@@ -3,6 +3,24 @@ import type ChatClient from "../client/client";
 import { Message, Room, User } from "../types";
 import { useChatStore } from "../useChatStore";
 
+// Configurable chat logging utility
+export const chatLogger = {
+  isEnabled: false,
+  log: (...args: any[]) => {
+    if (chatLogger.isEnabled) console.log("[Chat]", ...args);
+  },
+  warn: (...args: any[]) => {
+    if (chatLogger.isEnabled) console.warn("[Chat]", ...args);
+  },
+  error: (...args: any[]) => {
+    if (chatLogger.isEnabled) console.error("[Chat]", ...args);
+  },
+  setEnabled: (enabled: boolean) => {
+    chatLogger.isEnabled = enabled;
+    if (enabled) console.log("[Chat] Logging enabled");
+  },
+};
+
 // Hook for handling direct message events
 export const useDirectMessageEvents = (
   chatClient: ChatClient | null,
@@ -14,14 +32,14 @@ export const useDirectMessageEvents = (
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
-    console.log("Setting up directMessage event handlers");
+    chatLogger.log("Setting up directMessage event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
     const handleDirectMessage = ({ senderId, senderUsername, recipientId, message, timestamp }: any) => {
-      console.log(
+      chatLogger.log(
         `Received direct message from ${senderId} (${senderUsername}) to ${recipientId || userId}: ${message}`,
       );
 
@@ -46,7 +64,7 @@ export const useDirectMessageEvents = (
     };
 
     const handleDirectMessageHistory = ({ otherUserId, messages: historyMessages, requestId }: any) => {
-      console.log(
+      chatLogger.log(
         `Received direct message history with ${otherUserId} (requestId: ${requestId || "none"}):`,
         historyMessages?.length || 0,
         "messages",
@@ -104,10 +122,10 @@ export const useDirectMessageEvents = (
     chatClient.socket.on("directMessage", handleDirectMessage);
     chatClient.socket.on("directMessageHistory", handleDirectMessageHistory);
 
-    console.log("directMessage event handlers setup complete");
+    chatLogger.log("directMessage event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up directMessage event handlers");
+      chatLogger.log("Cleaning up directMessage event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("directMessage", handleDirectMessage);
         chatClient.socket.off("directMessageHistory", handleDirectMessageHistory);
@@ -126,14 +144,14 @@ export const useRoomMessageEvents = (
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
-    console.log("Setting up roomMessage event handlers");
+    chatLogger.log("Setting up roomMessage event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
     const handleRoomMessage = ({ senderId, senderUsername, roomId, message, timestamp }: any) => {
-      console.log(`Received room message from ${senderId} (${senderUsername}) in room ${roomId}: ${message}`);
+      chatLogger.log(`Received room message from ${senderId} (${senderUsername}) in room ${roomId}: ${message}`);
 
       if (roomId !== activeRoom) {
         setUnreadMessages((prev) => ({
@@ -154,7 +172,7 @@ export const useRoomMessageEvents = (
     };
 
     const handleRoomHistory = ({ roomId, messages: historyMessages }: any) => {
-      console.log(`Received room history for ${roomId}:`, historyMessages);
+      chatLogger.log(`Received room history for ${roomId}:`, historyMessages);
 
       if (historyMessages && Array.isArray(historyMessages)) {
         const formattedMessages = historyMessages.map((msg: any) => ({
@@ -185,10 +203,10 @@ export const useRoomMessageEvents = (
     chatClient.socket.on("roomMessage", handleRoomMessage);
     chatClient.socket.on("roomHistory", handleRoomHistory);
 
-    console.log("roomMessage event handlers setup complete");
+    chatLogger.log("roomMessage event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up roomMessage event handlers");
+      chatLogger.log("Cleaning up roomMessage event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("roomMessage", handleRoomMessage);
         chatClient.socket.off("roomHistory", handleRoomHistory);
@@ -204,9 +222,9 @@ export const useGlobalMessageEvents = (
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
-    console.log("Setting up globalMessage event handlers");
+    chatLogger.log("Setting up globalMessage event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
@@ -242,10 +260,10 @@ export const useGlobalMessageEvents = (
     chatClient.socket.on("globalMessage", handleGlobalMessage);
     chatClient.socket.on("globalHistory", handleGlobalHistory);
 
-    console.log("globalMessage event handlers setup complete");
+    chatLogger.log("globalMessage event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up globalMessage event handlers");
+      chatLogger.log("Cleaning up globalMessage event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("globalMessage", handleGlobalMessage);
         chatClient.socket.off("globalHistory", handleGlobalHistory);
@@ -264,40 +282,40 @@ export const useUserEvents = (chatClient: ChatClient | null) => {
   }));
 
   useEffect(() => {
-    console.log("Setting up user event handlers");
+    chatLogger.log("Setting up user event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
     const handleOnlineUsers = (users: User[]) => {
-      console.log("Received online users:", users.length);
+      chatLogger.log("Received online users:", users.length);
       if (users.length === onlineUsers.length && onlineUsers.length > 0) {
-        console.log("Skipping online users update (no change)");
+        chatLogger.log("Skipping online users update (no change)");
         return;
       }
       actions.setOnlineUsers(users);
     };
 
     const handleUserJoined = ({ user }: { user: User }) => {
-      console.log(`User ${user.id} (${user.username}) joined`);
+      chatLogger.log(`User ${user?.id} (${user?.username}) joined`);
 
       const currentOnlineUsers = onlineUsers;
-      if (!currentOnlineUsers.some((u) => u.id === user.id)) {
+      if (!currentOnlineUsers.some((u) => u?.id === user?.id)) {
         actions.setOnlineUsers([...currentOnlineUsers, user]);
       }
 
       const currentOfflineUsers = offlineUsers;
-      actions.setOfflineUsers(currentOfflineUsers.filter((u) => u.id !== user.id));
+      actions.setOfflineUsers(currentOfflineUsers.filter((u) => u?.id !== user?.id));
     };
 
     const handleUserOffline = ({ userId }: { userId: string }) => {
-      console.log(`User ${userId} went offline`);
+      chatLogger.log(`User ${userId} went offline`);
 
       const currentOnlineUsers = onlineUsers;
       const offlineUser = currentOnlineUsers.find((u) => u.id === userId);
 
-      actions.setOnlineUsers(currentOnlineUsers.filter((u) => u.id !== userId));
+      actions.setOnlineUsers(currentOnlineUsers.filter((u) => u?.id !== userId));
 
       if (offlineUser) {
         const currentOfflineUsers = offlineUsers;
@@ -308,7 +326,7 @@ export const useUserEvents = (chatClient: ChatClient | null) => {
     };
 
     const handleUserLists = ({ onlineUsers, offlineUsers }: { onlineUsers: User[]; offlineUsers: User[] }) => {
-      console.log(`Received user lists: ${onlineUsers.length} online, ${offlineUsers.length} offline`);
+      chatLogger.log(`Received user lists: ${onlineUsers.length} online, ${offlineUsers.length} offline`);
       actions.setOnlineUsers(onlineUsers);
       actions.setOfflineUsers(offlineUsers);
       setIsLoadingUsers(false);
@@ -326,10 +344,10 @@ export const useUserEvents = (chatClient: ChatClient | null) => {
     chatClient.socket.on("userOffline", handleUserOffline);
     chatClient.socket.on("userLists", handleUserLists);
 
-    console.log("User event handlers setup complete");
+    chatLogger.log("User event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up user event handlers");
+      chatLogger.log("Cleaning up user event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("onlineUsers", handleOnlineUsers);
         chatClient.socket.off("userJoined", handleUserJoined);
@@ -347,9 +365,9 @@ export const useRoomEvents = (
   setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   useEffect(() => {
-    console.log("Setting up room event handlers");
+    chatLogger.log("Setting up room event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
@@ -364,10 +382,10 @@ export const useRoomEvents = (
     // Register new listeners
     chatClient.socket.on("availableRooms", handleAvailableRooms);
 
-    console.log("Room event handlers setup complete");
+    chatLogger.log("Room event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up room event handlers");
+      chatLogger.log("Cleaning up room event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("availableRooms", handleAvailableRooms);
       }
@@ -378,22 +396,22 @@ export const useRoomEvents = (
 // Hook for handling connection events
 export const useConnectionEvents = (chatClient: ChatClient | null) => {
   useEffect(() => {
-    console.log("Setting up connection event handlers");
+    chatLogger.log("Setting up connection event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
     const handleConnect = () => {
-      console.log("Socket connected with ID:", chatClient?.socket.id);
+      chatLogger.log("Socket connected with ID:", chatClient?.socket.id);
     };
 
     const handleDisconnect = (reason: string) => {
-      console.log("Socket disconnected:", reason);
+      chatLogger.log("Socket disconnected:", reason);
     };
 
     const handleConnectError = (error: Error) => {
-      console.error("Connection error:", error);
+      chatLogger.error("Connection error:", error);
     };
 
     // Remove any existing listeners to prevent duplicates
@@ -406,10 +424,10 @@ export const useConnectionEvents = (chatClient: ChatClient | null) => {
     chatClient.socket.on("disconnect", handleDisconnect);
     chatClient.socket.on("connect_error", handleConnectError);
 
-    console.log("Connection event handlers setup complete");
+    chatLogger.log("Connection event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up connection event handlers");
+      chatLogger.log("Cleaning up connection event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("connect", handleConnect);
         chatClient.socket.off("disconnect", handleDisconnect);
@@ -434,9 +452,9 @@ export const useInitialDataEvents = (
   }));
 
   useEffect(() => {
-    console.log("Setting up initialData event handlers");
+    chatLogger.log("Setting up initialData event handlers");
     if (!chatClient || !chatClient.socket) {
-      console.warn("ChatClient or socket is null, skipping event setup");
+      chatLogger.warn("ChatClient or socket is null, skipping event setup");
       return;
     }
 
@@ -451,30 +469,30 @@ export const useInitialDataEvents = (
       onlineUsers: User[];
       offlineUsers: User[];
     }) => {
-      console.log("Received initial data bundle");
+      chatLogger.log("Received initial data bundle");
 
       // Update rooms
       if (availableRooms && Array.isArray(availableRooms)) {
-        console.log(`Received ${availableRooms.length} available rooms`);
+        chatLogger.log(`Received ${availableRooms.length} available rooms`);
         setAvailableRooms(availableRooms);
         setIsLoadingRooms(false);
       }
 
       // Update users
       if (onlineUsers && Array.isArray(onlineUsers)) {
-        console.log(`Received ${onlineUsers.length} online users`);
+        chatLogger.log(`Received ${onlineUsers.length} online users`);
         setOnlineUsers(onlineUsers);
       }
 
       if (offlineUsers && Array.isArray(offlineUsers)) {
-        console.log(`Received ${offlineUsers.length} offline users`);
+        chatLogger.log(`Received ${offlineUsers.length} offline users`);
         setOfflineUsers(offlineUsers);
         setIsLoadingUsers(false);
       }
 
       // Update global messages
       if (globalHistory && Array.isArray(globalHistory)) {
-        console.log(`Received ${globalHistory.length} global messages`);
+        chatLogger.log(`Received ${globalHistory.length} global messages`);
         const formattedMessages = globalHistory.map((msg: any) => ({
           id: msg.id || Date.now() + Math.random().toString(),
           senderId: msg.sender_id,
@@ -495,10 +513,10 @@ export const useInitialDataEvents = (
     // Register new listeners
     chatClient.socket.on("initialData", handleInitialData);
 
-    console.log("initialData event handlers setup complete");
+    chatLogger.log("initialData event handlers setup complete");
 
     return () => {
-      console.log("Cleaning up initialData event handlers");
+      chatLogger.log("Cleaning up initialData event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("initialData", handleInitialData);
       }
