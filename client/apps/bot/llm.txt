@@ -47,631 +47,6 @@ import { HomePage } from "vocs/components";
 
 ---
 
-file: docs/pages/development/client.mdx
-meta: {}
-
-# React Client
-
-## Run the dev server
-
-From the root of the project, run:
-
-Easy method:
-
-```bash
-./scripts/client.sh
-```
-
-Manual method:
-
-```bash
-pnpm i && pnpm dev
-```
-
-The client requires environment variables to be set. See the [Environment Variables](client/.env.sample) page for more
-information.
-
-## Project Structure
-
-### Elements
-
-* Small reusable react UI components
-
-### Components
-
-* Stateful react components composed of Elements. This is where all the onchain state should be stored.
-
-### Modules
-
-* Collection of components composed into Modules
-
-### Containers
-
-* Locations where Modules are composed into a full page
-
-### Layouts
-
-* Collection of containers composed into a full layout
-
-## useDojo Hook
-
-The `useDojo` hook is a core part of the Dojo framework that provides access to essential game functionality, account
-management, and network interactions.
-
-### Usage
-
-```tsx
-import { useDojo } from "@/hooks/context/dojo-context";
-function GameComponent() {
-  const { account, network, masterAccount } = useDojo();
-  // ... your game logic
-}
-```
-
-### Features
-
-#### Account Management
-
-The hook provides comprehensive wallet and account management capabilities:
-
-* **Burner Wallet Creation**: Create temporary wallets for players
-* **Account Selection**: Switch between different burner wallets
-* **Account Listing**: View all available burner wallets
-* **Master Account Access**: Access to the game's master account
-* **Deployment Status**: Track wallet deployment status
-
-#### Network Integration
-
-Access to network configuration and setup results for interacting with the Starknet blockchain.
-
-#### Game Setup
-
-Provides access to all initialized game systems, components, and world configurations.
-
-### Requirements
-
-The hook must be used within a `DojoProvider` component and requires the following environment variables:
-
-* `VITE_PUBLIC_MASTER_ADDRESS`
-* `VITE_PUBLIC_MASTER_PRIVATE_KEY`
-* `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
-
-### Return Value
-
-The hook returns an object containing:
-
-* `setup`: Complete Dojo context including game systems and components
-* `account`: Account management functions and state
-* `network`: Network configuration and setup results
-* `masterAccount`: The master account instance
-
-### Example
-
-```tsx
-function GameUI() {
-  const { account } = useDojo();
-  return (
-    <div>
-      <p>Current Account: {account.account.address}</p>
-    </div>
-  );
-}
-```
-
-## Eternum provider
-
-Wrapper around the DojoProvider, which itself is a wrapper around a generic Starknet provider, an API to easy interact
-with your contract’s API via the RPC. Each layer of abstraction adds its own set of functionalities, with the Eternum
-Provider mainly providing easy access to all the system calls that our systems expose (create\_army, etc…)
-
-## Offchain messages
-
-You can use offchain messages to store information in the indexer, but it is not persisted onchain. Some examples of use
-cases for this are in-game messages. Refer to
-[this code](https://github.com/BibliothecaDAO/eternum/blob/1490dfcf513d72f51e5a84138be743d774338caf/client/src/ui/modules/chat/InputField.tsx#L50)
-for an example of how to use offchain messages
-
-# State Management with Recs
-
-Recs allow you to query the state of the world and subscribe to changes in the world. It is the recommended way to
-manage state in the client.
-
-```tsx
-const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
-```
-
-This line of code will run a query against the local state of the browser and return all the structures that are at the
-position `{ x, y }`. This does not execute any call to Torii as the local state is already synced with the latest
-updates.
-
-This part of the code in `client/src/dojo/setup.ts` is where the local state is initialized and synced.
-
-## Subscribing to changes
-
-To subscribe to changes in the world, you can use the `useEntityQuery` hook. This hook will return the entity that
-matches the query and update it if it changes.
-
-```tsx
-const allRealms = useEntityQuery([Has(Realm)]);
-```
-
-## Getting the value of your components
-
-After you have run a query, you can get the value of your components using the `getComponentValue` function.
-
-```tsx
-const realm = getComponentValue(Realm, entityId);
-```
-
-The entityId is the poseidon hash of all the keys of the component you want to get. This can be an easier way to get
-your component than using a query if you already know all the keys.
-
-### Getting a component from an entity
-
-If you have an entityId, you can get a component from it using the `getComponent` function.
-
-```tsx
-const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
-```
-
-The previous line of code is equivalent to:
-
-```tsx
-const entity = runQuery([Has(Realm), HasValue(Keys, [entityId])]);
-const realm = getComponentValue(Realm, Array.from(entity)[0]);
-```
-
-# Extending the client
-
-## Adding a new component
-
-You will need to add your component to the `contractComponents.ts` file. This will ensure that the component is synced
-with the state of the world and will provide the types for the component.
-
-## Adding a new system
-
-You will need to add your system logic to the `sdk/packages/eternum/src/provider/index.ts` file and then use it in the
-`createSystemCalls.ts` file. This will ensure that the system is called with the correct arguments and will provide the
-types for the system.
-
-## Optimistic updates
-
-You can use optimistic updates to update the local state without waiting for the transaction to be included in a block.
-This is useful to provide a better user experience by updating the UI immediately.
-
-```ts
-private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-	const overrideId = uuid();
-	const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-	const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
-	const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
-	this.setup.components.Building.addOverride(overrideId, {
-		entity,
-		value: {
-		outer_col: outercol,
-		outer_row: outerrow,
-		inner_col: col,
-		inner_row: row,
-		category: "None",
-		produced_resource_type: 0,
-		bonus_percent: 0,
-		entity_id: 0,
-		outer_entity_id: 0,
-		},
-	});
-	return overrideId;
-};
-```
-
-You can use the `uuid` function to generate a unique overrideId. Remember to return the overrideId so you can later
-delete it after the transaction is included in a block. It's good practice to remove the override, however because of a
-delay between the transaction being included in a block and Torii syncing, you might have a split second where the
-override is removed and the Recs being updated. This will cause your component (i.e. a building) to appear then
-disappear for a second before reappearing.
-
-
-
----
-
-file: docs/pages/development/collaborators.mdx
-meta: {}
-
-import Collaborators from "@/components/Collaborators";
-
-# Collaborators
-
-<Collaborators />
-
-
-
----
-
-file: docs/pages/development/contracts.mdx
-meta: {}
-
-# Contracts
-
-## Rules of thumb
-
-* Note that every field you add in a model will raise the storage cost of each transaction that modifies the model.
-* Try to make models as small as possible, and re-use existing models as much as possible, every model and system that
-  you add raises the size of the CASM, and there is a limit to the size of a declared contract on Starknet.
-* Keep systems stateless. Store your game state in models.
-* When implementing a new game logic, you will need to keep in mind that the game already has physics implemented, such
-  as weight, position, movement, speed, etc. If creating something that needs to have any of this logic, re-use
-  components so everything stays logical.
-
-## Models
-
-### Keys
-
-Use the `ID` type alias for keys that require a unique identifier.
-
-### Model design
-
-entity\_id: u32
-
-### Implementations
-
-Where possible make traits for the models so they are stateless for unit testing.
-
-Always use generate trait where possible to minimise code.
-
-```rust
-#[generate_trait]
-```
-
-### Adding a model
-
-```rust
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
-pub struct Structure {
-    #[key]
-    entity_id: ID,
-    category: StructureCategory,
-    created_at: u64
-}
-```
-
-To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
-in the tests.
-
-## Event models
-
-If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
-model.
-
-```rust
-#[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
-pub struct ExampleEvent {
-    #[key]
-    id: ID,
-    #[key]
-    event_id: EventType,
-	my_data_field: u8
-}
-```
-
-## Adding a system
-
-Design systems like this in the directory
-
-* SystemName
-  * system\_name.cairo
-  * tests.cairo
-
-`system.cairo` should include the implementation of the system like this.
-
-Things to note:
-
-* Interface at top of File
-* use of `super::IBuildingContract` to minimise imports and make it clear where the interface is defined.
-
-```rust
-#[dojo::interface]
-trait IBuildingContract<TContractState> {
-    fn create(
-        entity_id: ID,
-        building_coord: s1_eternum::models::position::Coord,
-        building_category: s1_eternum::models::resource::production::building::BuildingCategory,
-        produce_resource_type: Option<u8>
-    );
-}
-
-#[dojo::contract]
-mod production_systems {
-    use s1_eternum::alias::ID;
-    use s1_eternum::models::{
-        resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
-        order::Orders, position::{Coord, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
-    };
-
-    #[abi(embed_v0)]
-    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
-        fn create(
-            world: IWorldDispatcher,
-            entity_id: ID,
-            building_coord: Coord,
-            building_category: BuildingCategory,
-            produce_resource_type: Option<u8>,
-        ) {
-        }
-    }
-}
-```
-
-To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
-in the tests.
-
-
-
----
-
-file: docs/pages/development/getting-started.mdx
-meta: {
-  "layout": "docs"
-}
-
-# Getting Started
-
-<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
-
-## Prerequisites
-
-* [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
-* [Node.js](https://nodejs.org/)
-* [pnpm](https://pnpm.io/) v9.12.3
-* [Bun](https://bun.sh/)
-
-## Setup
-
-Install Dojo via:
-
-```bash
-curl -L https://install.dojoengine.org | bash
-```
-
-Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
-
-```bash
-npm install -g pnpm
-```
-
-Install project dependencies:
-
-```bash
-pnpm install
-```
-
-Build shared packages:
-
-```bash
-pnpm run build:packages
-```
-
-## Development Scripts
-
-### Development
-
-* `pnpm dev` - Start game development server
-* `pnpm dev:docs` - Start documentation development server
-* `pnpm dev:landing` - Start landing page development server
-
-### Building
-
-* `pnpm build` - Build game client
-* `pnpm build:docs` - Build documentation
-* `pnpm build:landing` - Build landing page
-* `pnpm build:packages` - Build shared packages
-
-### Testing & Linting
-
-* `pnpm test` - Run all tests
-* `pnpm lint` - Run linting
-* `pnpm format` - Format code
-* `pnpm format:check` - Check code formatting
-
-## Contract Deployment
-
-Eternum supports multiple deployment environments:
-
-| Environment | Description                 |
-| ----------- | --------------------------- |
-| Local       | For development and testing |
-| Slot        | Staging environment         |
-| Sepolia     | Public testnet              |
-| Mainnet     | Production environment      |
-
-### Deploying to Local
-
-Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
-directory, as well as in the `client/apps/game` directory.
-
-To deploy and run the game locally:
-
-```bash
-# Start local game contracts
-pnpm run contract:start:local
-```
-
-### Deploying to Sepolia
-
-To deploy the contracts to Sepolia testnet, run these commands in order:
-
-1. Deploy game contracts:
-
-```bash
-pnpm run game:migrate:sepolia
-```
-
-2. Deploy season pass contracts:
-
-```bash
-pnpm run seasonpass:deploy:sepolia
-```
-
-3. Deploy season resources contracts:
-
-```bash
-pnpm run seasonresources:deploy:sepolia
-```
-
-4. Update TOML configuration:
-
-```bash
-pnpm run toml:update:sepolia
-```
-
-5. Start the indexer:
-
-```bash
-pnpm run indexer:start:sepolia
-```
-
-6. Deploy game configuration:
-
-```bash
-pnpm run config:deploy:sepolia
-```
-
-## Environment Variables
-
-For local development, create a file called `.env.local` in the client repository and add the following:
-
-```bash
-VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
-VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
-VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-
-VITE_PUBLIC_TORII="http://127.0.0.1:8080"
-VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
-VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
-VITE_PUBLIC_GRAPHICS_DEV=false
-VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
-
-VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
-
-VITE_PUBLIC_CHAIN=local
-VITE_PUBLIC_SLOT="eternum-prod"
-
-VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
-VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
-VITE_PUBLIC_MOBILE_VERSION_URL=https://next-eternum-mobile.realms.world
-
-```
-
-This file is subject to change, please keep an eye on the repository for potential updates.
-
-## Project Structure
-
-* [Client](https://github.com/BibliothecaDAO/eternum/tree/main/client) - React apps built with Vite
-  * [Game](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game) - Main game client with Three.js
-    interface
-  * [Landing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/landing) - Landing page
-  * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game-docs) - Game documentation
-  * [Balancing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/balancing) - Game balancing tools
-* [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
-  * Game contracts
-  * Season Pass contracts
-  * Season Resources contracts
-* [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
-  * [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
-  * [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
-* [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
-
-## Core Dependencies
-
-* [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
-* [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
-* [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
-* [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
-* [Vite](https://vitejs.dev/) - Frontend build tool
-
-## Stack
-
-<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
-
-* [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
-  build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more
-  about this in the Dojo book).
-* [Client](/development/client): our client is built using React with Typescript. We leverage Dojo by using DojoJS
-* [Eternum SDK](/development/sdk): our SDK contains most notably the getter and setter of the configuration of Eternum,
-  the EternumProvider and most of the constants/types of the world that needed to be transcribed to Typescript.
-* [Torii](https://book.dojoengine.org/toolchain/torii): Dojo's indexer, optimized for that particular framework and well
-  integrated into the stack. From our client, we have a gRPC subscription set up through DojoJS and recs to events.
-  Events are fired in the contracts as a way for the indexer to know what's going on in the world. Every time an entity
-  is created, updated, or deleted, an event is fired which updated Torii's record of the world.
-* [DojoJS and recs](https://github.com/dojoengine/dojo.js?tab=readme-ov-file#contributing-to-dojojs): DojoJS is the SDK
-  that allows easy integration of a Dojo app into your client/node backend. Recs are DojoJS's way of exposing the state
-  of the world to the client. This is done via queries to the Recs state using a simple query language, which doesn't
-  support complex queries yet (e.g. joins, gt, lt, etc...).
-
-
-
----
-
-file: docs/pages/development/index.mdx
-meta: {
-  "layout": "docs"
-}
-
-# Development
-
-* [Getting Started](/development/getting-started)
-* [Client](/development/client)
-* [Contracts](/development/contracts)
-* [SDK](/development/sdk)
-* [Collaborators](/development/collaborators)
-
-
-
----
-
-file: docs/pages/development/llm.mdx
-meta: {
-  "title": "LLM"
-}
-
-# LLM
-
-These docs are experted at [https://eternum-docs.realms.world/llm.txt](https://eternum-docs.realms.world/llm.txt) for
-consumption by the LLM.
-
-
-
----
-
-file: docs/pages/development/sdk.mdx
-meta: {}
-
-# SDK
-
-## Compiling
-
-From the root of the project, run:
-
-```bash
-pnpm i && pnpm run build:packages
-```
-
-## Structure
-
-This SDK contains most notably the getter and setter of the configuration of Eternum, the EternumProvider and most of
-the constants/types of the world that needed to be transcribed to Typescript.
-
-Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
-this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
-
-
-
----
-
 file: docs/pages/overview/bridging.mdx
 meta: {}
 
@@ -1666,6 +1041,631 @@ only have one defense slot to support a guard army.
 ## Quest Tiles
 
 *WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/development/client.mdx
+meta: {}
+
+# React Client
+
+## Run the dev server
+
+From the root of the project, run:
+
+Easy method:
+
+```bash
+./scripts/client.sh
+```
+
+Manual method:
+
+```bash
+pnpm i && pnpm dev
+```
+
+The client requires environment variables to be set. See the [Environment Variables](client/.env.sample) page for more
+information.
+
+## Project Structure
+
+### Elements
+
+* Small reusable react UI components
+
+### Components
+
+* Stateful react components composed of Elements. This is where all the onchain state should be stored.
+
+### Modules
+
+* Collection of components composed into Modules
+
+### Containers
+
+* Locations where Modules are composed into a full page
+
+### Layouts
+
+* Collection of containers composed into a full layout
+
+## useDojo Hook
+
+The `useDojo` hook is a core part of the Dojo framework that provides access to essential game functionality, account
+management, and network interactions.
+
+### Usage
+
+```tsx
+import { useDojo } from "@/hooks/context/dojo-context";
+function GameComponent() {
+  const { account, network, masterAccount } = useDojo();
+  // ... your game logic
+}
+```
+
+### Features
+
+#### Account Management
+
+The hook provides comprehensive wallet and account management capabilities:
+
+* **Burner Wallet Creation**: Create temporary wallets for players
+* **Account Selection**: Switch between different burner wallets
+* **Account Listing**: View all available burner wallets
+* **Master Account Access**: Access to the game's master account
+* **Deployment Status**: Track wallet deployment status
+
+#### Network Integration
+
+Access to network configuration and setup results for interacting with the Starknet blockchain.
+
+#### Game Setup
+
+Provides access to all initialized game systems, components, and world configurations.
+
+### Requirements
+
+The hook must be used within a `DojoProvider` component and requires the following environment variables:
+
+* `VITE_PUBLIC_MASTER_ADDRESS`
+* `VITE_PUBLIC_MASTER_PRIVATE_KEY`
+* `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
+
+### Return Value
+
+The hook returns an object containing:
+
+* `setup`: Complete Dojo context including game systems and components
+* `account`: Account management functions and state
+* `network`: Network configuration and setup results
+* `masterAccount`: The master account instance
+
+### Example
+
+```tsx
+function GameUI() {
+  const { account } = useDojo();
+  return (
+    <div>
+      <p>Current Account: {account.account.address}</p>
+    </div>
+  );
+}
+```
+
+## Eternum provider
+
+Wrapper around the DojoProvider, which itself is a wrapper around a generic Starknet provider, an API to easy interact
+with your contract’s API via the RPC. Each layer of abstraction adds its own set of functionalities, with the Eternum
+Provider mainly providing easy access to all the system calls that our systems expose (create\_army, etc…)
+
+## Offchain messages
+
+You can use offchain messages to store information in the indexer, but it is not persisted onchain. Some examples of use
+cases for this are in-game messages. Refer to
+[this code](https://github.com/BibliothecaDAO/eternum/blob/1490dfcf513d72f51e5a84138be743d774338caf/client/src/ui/modules/chat/InputField.tsx#L50)
+for an example of how to use offchain messages
+
+# State Management with Recs
+
+Recs allow you to query the state of the world and subscribe to changes in the world. It is the recommended way to
+manage state in the client.
+
+```tsx
+const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
+```
+
+This line of code will run a query against the local state of the browser and return all the structures that are at the
+position `{ x, y }`. This does not execute any call to Torii as the local state is already synced with the latest
+updates.
+
+This part of the code in `client/src/dojo/setup.ts` is where the local state is initialized and synced.
+
+## Subscribing to changes
+
+To subscribe to changes in the world, you can use the `useEntityQuery` hook. This hook will return the entity that
+matches the query and update it if it changes.
+
+```tsx
+const allRealms = useEntityQuery([Has(Realm)]);
+```
+
+## Getting the value of your components
+
+After you have run a query, you can get the value of your components using the `getComponentValue` function.
+
+```tsx
+const realm = getComponentValue(Realm, entityId);
+```
+
+The entityId is the poseidon hash of all the keys of the component you want to get. This can be an easier way to get
+your component than using a query if you already know all the keys.
+
+### Getting a component from an entity
+
+If you have an entityId, you can get a component from it using the `getComponent` function.
+
+```tsx
+const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
+```
+
+The previous line of code is equivalent to:
+
+```tsx
+const entity = runQuery([Has(Realm), HasValue(Keys, [entityId])]);
+const realm = getComponentValue(Realm, Array.from(entity)[0]);
+```
+
+# Extending the client
+
+## Adding a new component
+
+You will need to add your component to the `contractComponents.ts` file. This will ensure that the component is synced
+with the state of the world and will provide the types for the component.
+
+## Adding a new system
+
+You will need to add your system logic to the `sdk/packages/eternum/src/provider/index.ts` file and then use it in the
+`createSystemCalls.ts` file. This will ensure that the system is called with the correct arguments and will provide the
+types for the system.
+
+## Optimistic updates
+
+You can use optimistic updates to update the local state without waiting for the transaction to be included in a block.
+This is useful to provide a better user experience by updating the UI immediately.
+
+```ts
+private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
+	const overrideId = uuid();
+	const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+	const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+	const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+	this.setup.components.Building.addOverride(overrideId, {
+		entity,
+		value: {
+		outer_col: outercol,
+		outer_row: outerrow,
+		inner_col: col,
+		inner_row: row,
+		category: "None",
+		produced_resource_type: 0,
+		bonus_percent: 0,
+		entity_id: 0,
+		outer_entity_id: 0,
+		},
+	});
+	return overrideId;
+};
+```
+
+You can use the `uuid` function to generate a unique overrideId. Remember to return the overrideId so you can later
+delete it after the transaction is included in a block. It's good practice to remove the override, however because of a
+delay between the transaction being included in a block and Torii syncing, you might have a split second where the
+override is removed and the Recs being updated. This will cause your component (i.e. a building) to appear then
+disappear for a second before reappearing.
+
+
+
+---
+
+file: docs/pages/development/collaborators.mdx
+meta: {}
+
+import Collaborators from "@/components/Collaborators";
+
+# Collaborators
+
+<Collaborators />
+
+
+
+---
+
+file: docs/pages/development/contracts.mdx
+meta: {}
+
+# Contracts
+
+## Rules of thumb
+
+* Note that every field you add in a model will raise the storage cost of each transaction that modifies the model.
+* Try to make models as small as possible, and re-use existing models as much as possible, every model and system that
+  you add raises the size of the CASM, and there is a limit to the size of a declared contract on Starknet.
+* Keep systems stateless. Store your game state in models.
+* When implementing a new game logic, you will need to keep in mind that the game already has physics implemented, such
+  as weight, position, movement, speed, etc. If creating something that needs to have any of this logic, re-use
+  components so everything stays logical.
+
+## Models
+
+### Keys
+
+Use the `ID` type alias for keys that require a unique identifier.
+
+### Model design
+
+entity\_id: u32
+
+### Implementations
+
+Where possible make traits for the models so they are stateless for unit testing.
+
+Always use generate trait where possible to minimise code.
+
+```rust
+#[generate_trait]
+```
+
+### Adding a model
+
+```rust
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Structure {
+    #[key]
+    entity_id: ID,
+    category: StructureCategory,
+    created_at: u64
+}
+```
+
+To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
+## Event models
+
+If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
+model.
+
+```rust
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct ExampleEvent {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
+	my_data_field: u8
+}
+```
+
+## Adding a system
+
+Design systems like this in the directory
+
+* SystemName
+  * system\_name.cairo
+  * tests.cairo
+
+`system.cairo` should include the implementation of the system like this.
+
+Things to note:
+
+* Interface at top of File
+* use of `super::IBuildingContract` to minimise imports and make it clear where the interface is defined.
+
+```rust
+#[dojo::interface]
+trait IBuildingContract<TContractState> {
+    fn create(
+        entity_id: ID,
+        building_coord: s1_eternum::models::position::Coord,
+        building_category: s1_eternum::models::resource::production::building::BuildingCategory,
+        produce_resource_type: Option<u8>
+    );
+}
+
+#[dojo::contract]
+mod production_systems {
+    use s1_eternum::alias::ID;
+    use s1_eternum::models::{
+        resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
+        order::Orders, position::{Coord, Position, PositionTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingImpl},
+        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+    };
+
+    #[abi(embed_v0)]
+    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
+        fn create(
+            world: IWorldDispatcher,
+            entity_id: ID,
+            building_coord: Coord,
+            building_category: BuildingCategory,
+            produce_resource_type: Option<u8>,
+        ) {
+        }
+    }
+}
+```
+
+To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
+
+
+---
+
+file: docs/pages/development/getting-started.mdx
+meta: {
+  "layout": "docs"
+}
+
+# Getting Started
+
+<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
+
+## Prerequisites
+
+* [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
+* [Node.js](https://nodejs.org/)
+* [pnpm](https://pnpm.io/) v9.12.3
+* [Bun](https://bun.sh/)
+
+## Setup
+
+Install Dojo via:
+
+```bash
+curl -L https://install.dojoengine.org | bash
+```
+
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
+
+```bash
+npm install -g pnpm
+```
+
+Install project dependencies:
+
+```bash
+pnpm install
+```
+
+Build shared packages:
+
+```bash
+pnpm run build:packages
+```
+
+## Development Scripts
+
+### Development
+
+* `pnpm dev` - Start game development server
+* `pnpm dev:docs` - Start documentation development server
+* `pnpm dev:landing` - Start landing page development server
+
+### Building
+
+* `pnpm build` - Build game client
+* `pnpm build:docs` - Build documentation
+* `pnpm build:landing` - Build landing page
+* `pnpm build:packages` - Build shared packages
+
+### Testing & Linting
+
+* `pnpm test` - Run all tests
+* `pnpm lint` - Run linting
+* `pnpm format` - Format code
+* `pnpm format:check` - Check code formatting
+
+## Contract Deployment
+
+Eternum supports multiple deployment environments:
+
+| Environment | Description                 |
+| ----------- | --------------------------- |
+| Local       | For development and testing |
+| Slot        | Staging environment         |
+| Sepolia     | Public testnet              |
+| Mainnet     | Production environment      |
+
+### Deploying to Local
+
+Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
+directory, as well as in the `client/apps/game` directory.
+
+To deploy and run the game locally:
+
+```bash
+# Start local game contracts
+pnpm run contract:start:local
+```
+
+### Deploying to Sepolia
+
+To deploy the contracts to Sepolia testnet, run these commands in order:
+
+1. Deploy game contracts:
+
+```bash
+pnpm run game:migrate:sepolia
+```
+
+2. Deploy season pass contracts:
+
+```bash
+pnpm run seasonpass:deploy:sepolia
+```
+
+3. Deploy season resources contracts:
+
+```bash
+pnpm run seasonresources:deploy:sepolia
+```
+
+4. Update TOML configuration:
+
+```bash
+pnpm run toml:update:sepolia
+```
+
+5. Start the indexer:
+
+```bash
+pnpm run indexer:start:sepolia
+```
+
+6. Deploy game configuration:
+
+```bash
+pnpm run config:deploy:sepolia
+```
+
+## Environment Variables
+
+For local development, create a file called `.env.local` in the client repository and add the following:
+
+```bash
+VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
+VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+
+VITE_PUBLIC_TORII="http://127.0.0.1:8080"
+VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
+VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
+VITE_PUBLIC_GRAPHICS_DEV=false
+VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
+
+VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
+
+VITE_PUBLIC_CHAIN=local
+VITE_PUBLIC_SLOT="eternum-prod"
+
+VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
+VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
+VITE_PUBLIC_MOBILE_VERSION_URL=https://next-eternum-mobile.realms.world
+
+```
+
+This file is subject to change, please keep an eye on the repository for potential updates.
+
+## Project Structure
+
+* [Client](https://github.com/BibliothecaDAO/eternum/tree/main/client) - React apps built with Vite
+  * [Game](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game) - Main game client with Three.js
+    interface
+  * [Landing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/landing) - Landing page
+  * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game-docs) - Game documentation
+  * [Balancing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/balancing) - Game balancing tools
+* [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
+  * Game contracts
+  * Season Pass contracts
+  * Season Resources contracts
+* [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
+  * [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
+  * [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
+* [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
+
+## Core Dependencies
+
+* [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
+* [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
+* [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
+* [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+* [Vite](https://vitejs.dev/) - Frontend build tool
+
+## Stack
+
+<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
+
+* [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
+  build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more
+  about this in the Dojo book).
+* [Client](/development/client): our client is built using React with Typescript. We leverage Dojo by using DojoJS
+* [Eternum SDK](/development/sdk): our SDK contains most notably the getter and setter of the configuration of Eternum,
+  the EternumProvider and most of the constants/types of the world that needed to be transcribed to Typescript.
+* [Torii](https://book.dojoengine.org/toolchain/torii): Dojo's indexer, optimized for that particular framework and well
+  integrated into the stack. From our client, we have a gRPC subscription set up through DojoJS and recs to events.
+  Events are fired in the contracts as a way for the indexer to know what's going on in the world. Every time an entity
+  is created, updated, or deleted, an event is fired which updated Torii's record of the world.
+* [DojoJS and recs](https://github.com/dojoengine/dojo.js?tab=readme-ov-file#contributing-to-dojojs): DojoJS is the SDK
+  that allows easy integration of a Dojo app into your client/node backend. Recs are DojoJS's way of exposing the state
+  of the world to the client. This is done via queries to the Recs state using a simple query language, which doesn't
+  support complex queries yet (e.g. joins, gt, lt, etc...).
+
+
+
+---
+
+file: docs/pages/development/index.mdx
+meta: {
+  "layout": "docs"
+}
+
+# Development
+
+* [Getting Started](/development/getting-started)
+* [Client](/development/client)
+* [Contracts](/development/contracts)
+* [SDK](/development/sdk)
+* [Collaborators](/development/collaborators)
+
+
+
+---
+
+file: docs/pages/development/llm.mdx
+meta: {
+  "title": "LLM"
+}
+
+# LLM
+
+These docs are experted at [https://eternum-docs.realms.world/llm.txt](https://eternum-docs.realms.world/llm.txt) for
+consumption by the LLM.
+
+
+
+---
+
+file: docs/pages/development/sdk.mdx
+meta: {}
+
+# SDK
+
+## Compiling
+
+From the root of the project, run:
+
+```bash
+pnpm i && pnpm run build:packages
+```
+
+## Structure
+
+This SDK contains most notably the getter and setter of the configuration of Eternum, the EternumProvider and most of
+the constants/types of the world that needed to be transcribed to Typescript.
+
+Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
+this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
 
 
 
