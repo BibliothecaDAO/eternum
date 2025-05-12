@@ -2,7 +2,7 @@ import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
-import { CoinsIcon, PlayIcon } from "lucide-react";
+import { ArrowDownUp, CoinsIcon, PlayIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
@@ -78,6 +78,18 @@ export const TopNavigationView = ({
         <Button
           variant="outline"
           onClick={() => {
+            const baseUrl = "https://app.ekubo.org/?outputCurrency=LORDS&amount=&inputCurrency=ETH";
+
+            window.open(baseUrl, "_blank");
+          }}
+          className="gap-2 hidden sm:flex uppercase"
+        >
+          <ArrowDownUp className="w-4 h-4" />
+          Swap
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
             const baseUrl =
               "https://app.rhino.fi/bridge?mode=receive&chainIn=ARBITRUM&chainOut=STARKNET&tokenOut=ETH&token=ETH&recipient=";
             const userAddress = address || "";
@@ -86,7 +98,7 @@ export const TopNavigationView = ({
           className="gap-2 hidden lg:flex uppercase"
         >
           <CoinsIcon className="w-4 h-4" />
-          Bridge LORDS
+          Bridge
         </Button>
         {!isConnected ? (
           <>

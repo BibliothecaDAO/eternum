@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { MarketHeader } from "./market-header";
 

@@ -16,10 +16,11 @@ const MessageGroupComponent = React.memo(
       <div className="message-group">
         {group.messages.map((msg) => (
           <div key={msg.id} className="text-sm">
-            <span className="text-white/30 text-xs">
+            <span className="text-white/20 text-xs inline-block w-[34px] text-right">
               {new Date(msg.timestamp).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
+                hour12: false, // enforce 24-hour time
               })}
             </span>{" "}
             <span
@@ -32,7 +33,7 @@ const MessageGroupComponent = React.memo(
             >
               {msg.senderId === userId ? "You" : group.senderUsername || msg.senderId}
             </span>
-            <span className="break-words">{msg.message}</span>
+            <span className="break-words text-white">{msg.message}</span>
           </div>
         ))}
       </div>

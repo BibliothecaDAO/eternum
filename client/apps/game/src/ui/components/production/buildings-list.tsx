@@ -3,6 +3,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
 
@@ -12,9 +13,19 @@ export const BuildingsList = ({
   selectedResource,
 }: {
   realm: RealmInfo;
-  onSelectProduction: (resource: number) => void;
+  onSelectProduction: (resource: number | null) => void;
   selectedResource: number | null;
 }) => {
+  // Guard against invalid realm data to prevent crashes
+  if (!realm || !realm.position || !realm.entityId) {
+    return (
+      <div className="panel-wood p-3 h-[500px] overflow-y-auto">
+        <h3 className="text-3xl border-gold/20">Production Buildings</h3>
+        <p className="text-gold/70 pb-8 text-lg">Realm data is currently unavailable.</p>
+      </div>
+    );
+  }
+
   const buildings = useBuildings(realm.position.x, realm.position.y);
 
   const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
@@ -46,65 +57,155 @@ export const BuildingsList = ({
         };
       })
       .filter((production) => production !== null);
-  }, [producedResources]);
+  }, [producedResources, productionBuildings, resourceManager]);
+
+  const motionConfig = {
+    initial: { opacity: 0, height: 0 },
+    exit: { opacity: 0, height: 0 },
+    transition: { duration: 0.3 },
+    animateBase: { opacity: 1 },
+  };
+
+  console.log(productions);
 
   return (
-    <div className="bg-dark-brown panel-wood p-3 h-[400px] overflow-y-auto">
-      <h3 className="text-3xl border-gold/20">Production Buildings</h3>
-      <p className=" text-gold/70  pb-4 text-lg">Select a building to start production.</p>
-      <div className="space-y-2 min-h-[300px] overflow-y-auto custom-scrollbar">
-        {productions.map((production) => {
+    <AnimatePresence mode="wait">
+      {selectedResource !== null ? (
+        (() => {
+          const selectedProduction = productions.find((p) => p.resource === selectedResource);
+
+          if (!selectedProduction) {
+            // This case should ideally not happen with the realm guard and valid selectedResource
+            // but as a fallback, render a simple message with a clear button
+            return (
+              <motion.div
+                key="error-production"
+                initial={motionConfig.initial}
+                animate={{ ...motionConfig.animateBase, height: "112px" }}
+                exit={motionConfig.exit}
+                transition={motionConfig.transition}
+                className="p-3"
+              >
+                <p>Error: Selected production not found.</p>
+                <button onClick={() => onSelectProduction(null)} className="px-3 py-2 mt-2 text-sm button">
+                  Clear Selection
+                </button>
+              </motion.div>
+            );
+          }
+
           let bgImage = "";
-          if (production.isLabor) {
+          if (selectedProduction.isLabor) {
             bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
           } else {
-            bgImage = production.buildings[0]?.category
-              ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
+            bgImage = selectedProduction.buildings[0]?.category
+              ? BUILDING_IMAGES_PATH[selectedProduction.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
               : "";
           }
 
           return (
-            <div
-              key={production.resource}
-              onClick={() => onSelectProduction(production.resource)}
-              className={`relative group cursor-pointer transition-all duration-200 
-                  ${selectedResource === production.resource ? "button-gold" : "border-transparent"} 
-                   p-4`}
+            <motion.div
+              key="selected-production"
+              initial={motionConfig.initial}
+              animate={{ ...motionConfig.animateBase, height: "112px" }}
+              exit={motionConfig.exit}
+              transition={motionConfig.transition}
+              className="panel-wood p-3 relative min-h-28"
               style={{
                 backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
             >
-              <div className="flex items-start justify-between space-x-2">
-                <div className="flex-1 self-center">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resource={ResourcesIds[production.resource]} size="xl" />
-                    <div>
-                      <h4 className="text-xl font-semibold text-gold tracking-wide">
-                        {ResourcesIds[production.resource]}
-                      </h4>
-                      <span className="text-base text-gold/70 font-medium">
-                        {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
-                      </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={ResourcesIds[selectedProduction.resource]} size="xl" />
+                  <div>
+                    <h4 className="text-xl font-semibold text-gold tracking-wide">
+                      {ResourcesIds[selectedProduction.resource]}
+                    </h4>
+                    <span className="text-base text-gold/70 font-medium">
+                      {selectedProduction.buildings.length} building
+                      {selectedProduction.buildings.length !== 1 ? "s" : ""} producing
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onSelectProduction(null)}
+                  className="px-4 py-2 text-sm button button-ghost hover:button-ghost-hover"
+                >
+                  Change Resource
+                </button>
+              </div>
+            </motion.div>
+          );
+        })()
+      ) : (
+        <motion.div
+          key="full-list"
+          initial={motionConfig.initial}
+          animate={{ ...motionConfig.animateBase, height: "100%", overflow: "scroll" }}
+          exit={motionConfig.exit}
+          transition={motionConfig.transition}
+          className="pt-6 h-[500px] overflow-y-auto"
+        >
+          <h3>Production Buildings</h3>
+          <p className="text-gold/70 pb-2 text-lg">Select a building to start production.</p>
+          <div className="space-y-2 min-h-[300px] overflow-y-auto custom-scrollbar">
+            {productions.map((production) => {
+              let bgImage = "";
+              if (production.isLabor) {
+                bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
+              } else {
+                bgImage = production.buildings[0]?.category
+                  ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
+                  : "";
+              }
+
+              return (
+                <div
+                  key={production.resource}
+                  onClick={() => onSelectProduction(production.resource)}
+                  className={`relative group cursor-pointer transition-all duration-200 
+                  ${selectedResource === production.resource ? "button-gold" : "border-transparent"} 
+                   p-4`}
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="flex items-start justify-between space-x-2">
+                    <div className="flex-1 self-center">
+                      <div className="flex items-center gap-2">
+                        <ResourceIcon resource={ResourcesIds[production.resource]} size="xl" />
+                        <div>
+                          <h4 className="text-xl font-semibold text-gold tracking-wide">
+                            {ResourcesIds[production.resource]}
+                          </h4>
+                          <span className="text-base text-gold/70 font-medium">
+                            {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-[480px] flex-shrink-0 self-center">
+                      <ResourceChip
+                        resourceId={production.resource}
+                        resourceManager={resourceManager}
+                        maxCapacityKg={storeCapacityKg.capacityKg}
+                        size="large"
+                        showTransfer={false}
+                      />
                     </div>
                   </div>
                 </div>
-
-                <div className="w-[480px] flex-shrink-0 self-center">
-                  <ResourceChip
-                    resourceId={production.resource}
-                    resourceManager={resourceManager}
-                    maxCapacityKg={storeCapacityKg.capacityKg}
-                    size="large"
-                    showTransfer={false}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

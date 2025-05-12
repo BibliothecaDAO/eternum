@@ -2,8 +2,8 @@ import { DepositResourceArrival } from "@/ui/components/resources/deposit-resour
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
-import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
+import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
@@ -96,7 +96,7 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
     ) : (
       <div className="flex items-center gap-2 bg-amber-900/40 text-amber-400 rounded-md px-3 py-1.5 font-medium border border-amber-700/50">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-        <span>Arriving in {formatTime(Number(arrival.arrivesAt) - now)}</span>
+        <span> {formatTime(Number(arrival.arrivesAt) - now)}</span>
       </div>
     );
   }, [arrival.arrivesAt, now, isArrived]);
@@ -118,7 +118,7 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   }, [arrival.resources, isArrived]);
 
   return (
-    <div className={clsx("flex flex-col p-3 rounded-md text-gold")}>
+    <div className={clsx("flex flex-col rounded-md text-gold")}>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold/20 border border-gold/30">

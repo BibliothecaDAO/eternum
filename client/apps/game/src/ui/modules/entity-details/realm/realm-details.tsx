@@ -16,6 +16,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
+import { TransferRealm } from "./transfer-realm";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
@@ -52,6 +53,11 @@ export const RealmVillageDetails = () => {
         key: "Buildings",
         label: <div className="buildings-tab-selector"> Buildings</div>,
         component: <Buildings structure={structure} />,
+      },
+      {
+        key: "Transfer",
+        label: <div className="transfer-tab-selector">Transfer</div>,
+        component: <TransferRealm structure={structure} />,
       },
     ],
     [structure],
@@ -93,7 +99,7 @@ export const RealmVillageDetails = () => {
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>
-          <div className="flex justify-between items-center text-xs space-x-4 px-1 py-0.5 bg-black/50 rounded-lg px-3">
+          <div className="flex justify-between items-center text-xs space-x-4 py-0.5 rounded-lg px-3 h6">
             <div className="uppercase font-medium">{structure.ownerName}</div>
             <span
               className="uppercase hover:text-white cursor-pointer transition-colors"

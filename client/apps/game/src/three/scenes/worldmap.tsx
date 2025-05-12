@@ -18,6 +18,7 @@ import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { HelpModal } from "@/ui/modules/military/help-modal";
+import { QuestModal } from "@/ui/modules/quests/quest-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -41,7 +42,8 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
-import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
+import { QuestManager } from "../managers/quest-manager";
+import { ArmySystemUpdate, QuestSystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
@@ -68,6 +70,8 @@ export default class WorldmapScene extends HexagonScene {
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  // normalized positions and if they are allied or not
+  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private selectedHexManager: SelectedHexManager;
@@ -81,12 +85,15 @@ export default class WorldmapScene extends HexagonScene {
   // Label groups
   private armyLabelsGroup: THREE.Group;
   private structureLabelsGroup: THREE.Group;
+  private questLabelsGroup: THREE.Group;
 
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
 
   private fxManager: FXManager;
+
+  private questManager: QuestManager;
 
   constructor(
     dojoContext: SetupResult,
@@ -141,9 +148,14 @@ export default class WorldmapScene extends HexagonScene {
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
     this.structureLabelsGroup = new THREE.Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
+    this.questLabelsGroup = new THREE.Group();
+    this.questLabelsGroup.name = "QuestLabelsGroup";
 
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup, this);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup, this);
+
+    // Initialize the quest manager
+    this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -185,6 +197,12 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Structure.onContribution((value) => {
       this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
       this.structureManager.updateChunk(this.currentChunk);
+    });
+
+    // perform some updates for the quest manager
+    this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
+      this.updateQuestHexes(update);
+      this.questManager.onUpdate(update);
     });
 
     // add particles
@@ -306,6 +324,7 @@ export default class WorldmapScene extends HexagonScene {
         playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
         this.armyManager.removeLabelsFromScene();
         this.structureManager.removeLabelsFromScene();
+        this.questManager.removeLabelsFromScene();
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
@@ -333,6 +352,8 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Quest) {
+          this.onQuestSelection(actionPath, selectedEntityId);
         }
       }
     }
@@ -446,12 +467,28 @@ export default class WorldmapScene extends HexagonScene {
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
+      this.questHexes,
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
     );
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+  }
+
+  // handle quest selection
+  private onQuestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+
+    // Get the target hex (last hex in the path)
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    this.state.toggleModal(
+      <QuestModal
+        explorerEntityId={selectedEntityId}
+        targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
   }
 
   private clearSelection() {
@@ -468,6 +505,7 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionSelectedEntityId(null);
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
+    this.questManager.addLabelsToScene();
   }
 
   setup() {
@@ -490,10 +528,12 @@ export default class WorldmapScene extends HexagonScene {
     // Add label groups to scene
     this.scene.add(this.armyLabelsGroup);
     this.scene.add(this.structureLabelsGroup);
+    this.scene.add(this.questLabelsGroup);
 
     // Update army and structure managers
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
+    this.questManager.addLabelsToScene();
     this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
@@ -503,6 +543,7 @@ export default class WorldmapScene extends HexagonScene {
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
     this.scene.remove(this.structureLabelsGroup);
+    this.scene.remove(this.questLabelsGroup);
 
     // Clean up labels
     this.minimap.hideMinimap();
@@ -510,6 +551,8 @@ export default class WorldmapScene extends HexagonScene {
     console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing structure labels from scene");
+    this.questManager.removeLabelsFromScene();
+    console.debug("[WorldMap] Removing quest labels from scene");
 
     // Clean up wheel event listener
     if (this.wheelHandler) {
@@ -579,6 +622,24 @@ export default class WorldmapScene extends HexagonScene {
     this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
   }
 
+  // update quest hexes on the map
+  public updateQuestHexes(update: QuestSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const newCol = normalized.x;
+    const newRow = normalized.y;
+
+    if (!this.questHexes.has(newCol)) {
+      this.questHexes.set(newCol, new Map());
+    }
+    this.questHexes.get(newCol)?.set(newRow, { id: entityId, owner: 0n });
+  }
+
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
 
@@ -621,8 +682,9 @@ export default class WorldmapScene extends HexagonScene {
     dummy.position.copy(pos);
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+    const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
 
-    if (isStructure) {
+    if (isStructure || isQuest) {
       dummy.scale.set(0, 0, 0);
     } else {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -651,6 +713,7 @@ export default class WorldmapScene extends HexagonScene {
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
     if (this.isColRowInVisibleChunk(col, row)) {
       await this.updateHexagonGridPromise;
+      // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
@@ -666,6 +729,16 @@ export default class WorldmapScene extends HexagonScene {
         }
       });
 
+      // Update which hexes are visible in the current chunk
+      const chunkWidth = this.renderChunkSize.width;
+      const chunkHeight = this.renderChunkSize.height;
+      this.interactiveHexManager.updateVisibleHexes(
+        renderedChunkCenterRow,
+        renderedChunkCenterCol,
+        chunkWidth,
+        chunkHeight,
+      );
+
       await Promise.all(this.modelLoadPromises);
       const hexMesh = this.biomeModels.get(biome as BiomeType)!;
       const currentCount = hexMesh.getCount();
@@ -676,8 +749,6 @@ export default class WorldmapScene extends HexagonScene {
       // Cache the updated matrices for the chunk
       this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
       this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
-
-      this.interactiveHexManager.renderHexes();
     } else {
       this.removeCachedMatricesAroundColRow(hexChunkCol, hexChunkRow);
     }
@@ -732,49 +803,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
-    this.interactiveHexManager.clearHexes();
-
-    let currentIndex = 0;
-    const batchSize = 50;
-
-    const processBatch = () => {
-      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
-
-      for (let i = currentIndex; i < endIndex; i++) {
-        const row = Math.floor(i / cols) - rows / 2;
-        const col = (i % cols) - cols / 2;
-
-        const globalRow = startRow + row;
-        const globalCol = startCol + col;
-
-        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-
-        if (!isExplored) {
-          const neighborOffsets = getNeighborOffsets(globalRow);
-          const isBorder = neighborOffsets.some(({ i, j }) => {
-            const neighborCol = globalCol + i;
-            const neighborRow = globalRow + j;
-            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-          });
-
-          if (isBorder) {
-            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-          }
-        } else {
-          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-        }
-      }
-
-      currentIndex = endIndex;
-
-      if (currentIndex < rows * cols) {
-        requestAnimationFrame(processBatch);
-      } else {
-        this.interactiveHexManager.renderHexes();
-      }
-    };
-
-    requestAnimationFrame(processBatch);
+    // Instead of clearing and recomputing all hexes, just update which ones are visible
+    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
@@ -786,7 +816,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
-      this.interactiveHexManager.clearHexes();
+      // Don't clear interactive hexes here, just update which ones are visible
       const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
         None: [],
         Ocean: [],
@@ -886,7 +916,8 @@ export default class WorldmapScene extends HexagonScene {
             hexMesh.setCount(matrices.length);
           }
           this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.renderHexes();
+          // After processing, just update visible hexes
+          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
           resolve();
         }
       };
@@ -986,8 +1017,18 @@ export default class WorldmapScene extends HexagonScene {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+
+      // Update which interactive hexes are visible in the new chunk
+      this.interactiveHexManager.updateVisibleHexes(
+        startRow,
+        startCol,
+        this.renderChunkSize.width,
+        this.renderChunkSize.height,
+      );
+
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
+      this.questManager.updateChunk(chunkKey);
     }
   }
 
@@ -1001,5 +1042,7 @@ export default class WorldmapScene extends HexagonScene {
 
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
+    // Also clear the interactive hexes when clearing the entire cache
+    this.interactiveHexManager.clearHexes();
   }
 }

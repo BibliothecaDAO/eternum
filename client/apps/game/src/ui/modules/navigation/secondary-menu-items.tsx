@@ -34,6 +34,7 @@ export const SecondaryMenuItems = () => {
   const handleTrophyClick = useCallback(() => {
     if (!connector?.controller) {
       console.error("Connector not initialized");
+
       return;
     }
     connector.controller.openProfile("trophies");

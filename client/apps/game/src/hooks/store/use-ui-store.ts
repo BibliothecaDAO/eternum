@@ -64,7 +64,7 @@ interface UIStore {
   setShowMinimap: (show: boolean) => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
-  hasAcceptedToS: boolean;
+  hasAcceptedTS: boolean;
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
@@ -137,10 +137,10 @@ export const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
-    hasAcceptedToS: localStorage.getItem("hasAcceptedToS") ? localStorage.getItem("hasAcceptedToS") === "true" : false,
+    hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
     setHasAcceptedToS: (accepted: boolean) => {
-      set({ hasAcceptedToS: accepted });
-      localStorage.setItem("hasAcceptedToS", String(accepted));
+      set({ hasAcceptedTS: accepted });
+      localStorage.setItem("hasAcceptedTS", String(accepted));
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
