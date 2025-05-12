@@ -800,7 +800,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "27": [],
@@ -816,7 +816,7 @@
         },
         {
           "resource": 23,
-          "amount": 30
+          "amount": 60
         }
       ],
       "30": [],
@@ -832,7 +832,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "33": [],
@@ -1046,7 +1046,7 @@
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
     "questFindProbability": 1,
-    "questFindFailProbability": 99
+    "questFindFailProbability": 10
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
@@ -2040,7 +2040,7 @@
     "client_fee_on_dpt_percent": 250,
     "client_fee_on_wtdr_percent": 250,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x3efefb1b8f18a9ce3fe21cba2718581fa953fdc6714a1ac4656e6c5a611620b",
+    "season_pool_fee_recipient": "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553",
     "realm_fee_dpt_percent": 500,
     "realm_fee_wtdr_percent": 500
   },
@@ -2214,6 +2214,39 @@
   },
   "realmMaxLevel": 4,
   "villageMaxLevel": 2,
+  "questGames": [
+    {
+      "address": "0x2418e02ae43901d8aa8ab5c4b676740dccdcf1c94f13344a978ebe6077b109",
+      "levels": [
+        {
+          "target_score": 26,
+          "settings_id": 1,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 2,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 3,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 51,
+          "settings_id": 4,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 101,
+          "settings_id": 5,
+          "time_limit": 86400
+        }
+      ],
+      "overwrite": true
+    }
+  ],
   "setup": {
     "chain": "sepolia",
     "addresses": {
