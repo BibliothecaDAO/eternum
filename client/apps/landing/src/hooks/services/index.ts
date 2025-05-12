@@ -133,8 +133,6 @@ WITH limited_active_orders AS (
       AND  mo."order.expiration" > strftime('%s','now')
       AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
-    LIMIT {limit}
-    OFFSET {offset}
     )
 
 
