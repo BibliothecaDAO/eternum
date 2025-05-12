@@ -3,33 +3,27 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 interface LaborResourcesPanelProps {
-  selectedResource: number;
   productionAmount: number;
   setProductionAmount: (value: number) => void;
   resourceBalances: Record<number, number>;
-  isSelected: boolean;
   onSelect: () => void;
   laborInputResources: { resource: number; amount: number }[];
   resourceOutputPerInputResources: number;
-  laborBurnPerResourceOutput: number;
 }
 
 export const LaborResourcesPanel = ({
-  selectedResource,
   productionAmount,
   setProductionAmount,
   resourceBalances,
-  isSelected,
   onSelect,
   laborInputResources,
   resourceOutputPerInputResources,
-  laborBurnPerResourceOutput,
 }: LaborResourcesPanelProps) => {
   const handleInputChange = (value: number, inputResource: number) => {
     if (!laborInputResources) return;
     const resourceConfig = laborInputResources.find((r) => r.resource === inputResource);
     if (!resourceConfig) return;
-    const newAmount = (value / laborBurnPerResourceOutput) * resourceOutputPerInputResources;
+    const newAmount = (value / resourceConfig.amount) * resourceOutputPerInputResources;
     setProductionAmount(newAmount);
   };
 

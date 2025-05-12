@@ -9,7 +9,7 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
-export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
+export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bonus: number }) => {
   const {
     setup: {
       account: { account },
@@ -50,12 +50,12 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     const totalLaborAmount =
       selectedResources.reduce((acc, resource, index) => {
         return acc + resource.amount * (laborConfig[index]?.laborProductionPerResource ?? 0);
-      }, 0) * 1.2;
+      }, 0) * bonus;
 
     const maxTicks = Math.max(
       ...laborConfig.map((config, index) => {
         return Math.ceil(
-          (selectedResources[index].amount * (config?.laborProductionPerResource || 0) * 1.2) /
+          (selectedResources[index].amount * (config?.laborProductionPerResource || 0) * bonus) /
             (config?.laborRatePerTick || 0),
         );
       }),

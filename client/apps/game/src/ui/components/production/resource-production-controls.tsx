@@ -122,7 +122,7 @@ export const ResourceProductionControls = ({
   useEffect(() => {
     // don't take wonder bonus into account because production time is not affected by it
     setTicks(Math.floor(productionAmount / (outputResourceAmountWithBonus / bonus)));
-  }, [productionAmount]);
+  }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
   const rawCurrentInputs = useMemo(() => {
     return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
@@ -189,15 +189,12 @@ export const ResourceProductionControls = ({
         <div>
           {laborCurrentInputs.length > 0 && (
             <LaborResourcesPanel
-              selectedResource={selectedResource}
               productionAmount={productionAmount}
               setProductionAmount={setProductionAmount}
               resourceBalances={resourceBalances}
-              isSelected={!useRawResources}
               onSelect={() => setUseRawResources(false)}
               laborInputResources={laborConfig?.inputResources || []}
               resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
-              laborBurnPerResourceOutput={laborConfig?.laborBurnPerResourceOutput || 0}
             />
           )}
         </div>
