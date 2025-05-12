@@ -20,6 +20,10 @@ export class ResourceManager {
     return this._getResource();
   }
 
+  private _getResource() {
+    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
+  }
+
   public isFood(resourceId: ResourcesIds): boolean {
     return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
@@ -585,6 +589,12 @@ export class ResourceManager {
     };
   }
 
+  public balance(resourceId: ResourcesIds): bigint {
+    const resource = this._getResource();
+    if (!resource) return 0n;
+    return ResourceManager.balanceAndProduction(resource, resourceId).balance;
+  }
+
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
     const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
     const capacityLeft = capacityKg - capacityUsedKg;
@@ -620,6 +630,11 @@ export class ResourceManager {
     return totalAmountProduced;
   }
 
+  /**
+   * STATIC FUNCTIONS
+   * all the static functions are used when we don't have recs synced
+   * in that case, we can query the components by other means (sql, grpc) and pass in the component values
+   */
   public static balanceAndProduction(
     resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
     resourceId: ResourcesIds,
@@ -720,16 +735,6 @@ export class ResourceManager {
     }
   }
 
-  public balance(resourceId: ResourcesIds): bigint {
-    const resource = this._getResource();
-    if (!resource) return 0n;
-    return ResourceManager.balanceAndProduction(resource, resourceId).balance;
-  }
-
-  private _getResource() {
-    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
-  }
-
   static getResourceBalances(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Resource[] {
     const resourceMapping: [keyof typeof resource, ResourcesIds][] = [
       ["STONE_BALANCE", ResourcesIds.Stone],
@@ -779,8 +784,6 @@ export class ResourceManager {
       }));
   }
 
-  // need static function when we don't have recs synced
-  // in that case, we can query the resource component by other means (sql, grpc) and pass in the resource
   public static balanceWithProduction(
     resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
     currentTick: number,
