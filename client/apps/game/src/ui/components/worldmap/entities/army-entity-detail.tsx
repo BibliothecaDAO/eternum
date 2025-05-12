@@ -6,7 +6,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, ID, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
@@ -76,7 +76,7 @@ export const ArmyEntityDetail = memo(
 
     const maxStamina = useMemo(() => {
       if (!explorer) return 0;
-      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType);
+      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType, explorer.troops.tier as TroopTier);
     }, [explorer]);
 
     // Precompute common class strings

@@ -11,7 +11,7 @@ import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ArmyInfo, TroopType } from "@bibliothecadao/types";
+import { ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -90,7 +90,7 @@ export const ArmyChip = ({
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;
-    return StaminaManager.getMaxStamina(army.troops.category as TroopType);
+    return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
   const onTroopSwap = useCallback(() => {

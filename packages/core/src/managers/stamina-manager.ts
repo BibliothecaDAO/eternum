@@ -1,4 +1,4 @@
-import { ClientComponents, ID, Troops, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { configManager } from "./config-manager";
@@ -39,15 +39,15 @@ export class StaminaManager {
     const newStamina = this.refill(
       currentArmiesTick,
       last_refill_tick,
-      this.getMaxStamina(troops.category as TroopType),
+      this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
       Number(troops.stamina.amount),
     );
 
     return newStamina;
   }
 
-  public static getMaxStamina = (troopCategory: TroopType): number => {
-    const staminaConfig = configManager.getTroopStaminaConfig(troopCategory);
+  public static getMaxStamina = (troopCategory: TroopType, troopTier: TroopTier): number => {
+    const staminaConfig = configManager.getTroopStaminaConfig(troopCategory, troopTier);
     return staminaConfig.staminaMax;
   };
 
