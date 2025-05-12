@@ -15,6 +15,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
 import { ArrowRightIcon } from "lucide-react";
 import RealmJson from "../../../../../../public/jsons/realms.json";
+import { env } from "../../../../env";
 
 interface RealmAttribute {
   trait_type: string;
@@ -131,6 +132,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const [selectedResourceFilter, setSelectedResourceFilter] = useState<string | null>(null);
   const [isPurchasingPass, setIsPurchasingPass] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSelectingPass, setIsSelectingPass] = useState(false);
 
   const [availableVillages, setAvailableVillages] = useState<RealmVillageSlot[]>([]);
   const [selectedRealm, setSelectedRealm] = useState<RealmVillageSlot | null>(null);
@@ -325,8 +327,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   }, [availableVillages, realmSearchTerm, selectedResourceFilter, getResources]);
 
   const handlePassSelection = (pass: TokenTransfer) => {
+    setIsSelectingPass(true);
     setSelectedVillagePass(pass);
     setCurrentStep(2);
+    setIsSelectingPass(false);
   };
 
   const handleRealmSelection = (village: RealmVillageSlot | null) => {
@@ -354,7 +358,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   };
 
   const villagePassString =
-    import.meta.env.VITE_PUBLIC_CHAIN === "mainnet" ? `eternum-village-pass-mainnet` : `eternum-village-pass`;
+    env.VITE_PUBLIC_CHAIN === "mainnet" ? `eternum-village-pass-mainnet` : `eternum-village-pass`;
 
   return (
     <ModalContainer size="full" title={`Villages - Step ${currentStep}/4`}>
@@ -394,7 +398,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       variant="gold"
                       onClick={() => mintStarterPack(villagePassString)}
                       isLoading={isPurchasingPass}
-                      disabled={isPurchasingPass}
+                      disabled={isPurchasingPass || isSelectingPass}
                       className="w-full py-8"
                     >
                       {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass ($5)"}
@@ -406,7 +410,12 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       <h4 className="text-xl font-semibold text-gold mb-3">Select an Available Pass</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {purchasedVillagePass.map((pass) => (
-                          <div
+                          <Button
+                            variant="outline"
+                            key={pass.token_id}
+                            onClick={() => handlePassSelection(pass)}
+                            disabled={isSelectingPass || isPurchasingPass}
+                            isLoading={isSelectingPass && selectedVillagePass?.token_id === pass.token_id}
                             className={cn(
                               "p-3 border rounded-lg cursor-pointer transition-all duration-150 ease-in-out",
                               "text-center /30 hover:bg-gold/20 border-gold/30",
@@ -414,13 +423,14 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                                 ? "bg-gold/20 ring-2 ring-gold shadow-lg scale-105"
                                 : "hover:shadow-md",
                             )}
-                            key={pass.token_id}
-                            onClick={() => handlePassSelection(pass)}
                           >
-                            <p className="font-semibold text-gold flex justify-between">
-                              Pass #{pass.token_id} <ArrowRightIcon className="w-4 h-4 ml-2 self-center" />
-                            </p>
-                          </div>
+                            <div className="font-semibold text-gold flex justify-between w-full items-center">
+                              Pass #{pass.token_id}{" "}
+                              {!(isSelectingPass && selectedVillagePass?.token_id === pass.token_id) && (
+                                <ArrowRightIcon className="w-4 h-4 ml-2 self-center" />
+                              )}
+                            </div>
+                          </Button>
                         ))}
                       </div>
                       {isPurchasingPass && (
