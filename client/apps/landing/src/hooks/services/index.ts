@@ -51,9 +51,18 @@ const QUERIES = {
     /* ❶ ----------------------------------------------------------------------- */
     total_active AS (
         SELECT COUNT(*) AS active_order_count
-        FROM   "marketplace-MarketOrderModel"
-        WHERE  "order.active" = 1
-    ),
+        FROM   "marketplace-MarketOrderModel" AS mo
+         JOIN   token_balances tb
+           ON  tb.contract_address = "{contractAddress}"
+           AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
+           /* normalise both addresses before comparing ---------- */
+           AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
+               = ltrim(lower(replace(tb.account_address, "0x","")), "0")
+           AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+   
+        WHERE  mo."order.active" = 1
+        AND    mo."order.expiration" > strftime('%s','now')
+        ),
 
     /* ❷ ----------------------------------------------------------------------- */
     accepted AS (                           -- only "Accepted" events
@@ -124,6 +133,8 @@ WITH limited_active_orders AS (
       AND  mo."order.expiration" > strftime('%s','now')
       AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
+    LIMIT {limit}
+    OFFSET {offset}
     )
 
 
@@ -144,7 +155,8 @@ WITH limited_active_orders AS (
     LEFT JOIN (SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata FROM tokens GROUP BY token_id) t
       ON t.token_id = substr(lao.token_id, instr(lao.token_id, ':') + 1)
         AND t.contract_address = "{contractAddress}"
-    ORDER BY lao.price_hex IS NULL, lao.price_hex;
+    ORDER BY lao.price_hex IS NULL, lao.price_hex 
+
   `,
   SEASON_PASS_REALMS_BY_ADDRESS: `
     SELECT substr(r.token_id, instr(r.token_id, ':') + 1) AS token_id,
@@ -332,8 +344,10 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
 /**
  * Fetch totals for active market orders from the API
  */
-export async function fetchActiveMarketOrdersTotal(): Promise<ActiveMarketOrdersTotal[]> {
-  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.ACTIVE_MARKET_ORDERS_TOTAL)}`;
+export async function fetchActiveMarketOrdersTotal(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(
+    QUERIES.ACTIVE_MARKET_ORDERS_TOTAL.replaceAll("{contractAddress}", contractAddress),
+  )}`;
   const response = await fetch(url);
 
   if (!response.ok) {

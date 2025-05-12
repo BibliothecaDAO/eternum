@@ -51,10 +51,11 @@ function SeasonPasses() {
         queryKey: ["openOrdersByPrice", marketplaceAddress],
         queryFn: () =>
           fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+        refetchInterval: 8_000,
       },
       {
-        queryKey: ["activeMarketOrdersTotal"],
-        queryFn: () => fetchActiveMarketOrdersTotal(),
+        queryKey: ["activeMarketOrdersTotal", seasonPassAddress],
+        queryFn: () => fetchActiveMarketOrdersTotal(seasonPassAddress),
         refetchInterval: 30_000,
       },
     ],
