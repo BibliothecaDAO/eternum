@@ -6,21 +6,17 @@ import { TypeH3 } from "@/components/typography/type-h3";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { realmsAddress } from "@/config";
-import { execute } from "@/hooks/gql/execute";
-import { GET_ACCOUNT_TOKENS } from "@/hooks/query/erc721";
+import { realmsAddress, seasonPassAddress } from "@/config";
 import useNftSelection from "@/hooks/use-nft-selection";
-import { displayAddress } from "@/lib/utils";
+import { displayAddress, trimAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { Bug, Loader2, PartyPopper, Send } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
-import { addAddressPadding } from "starknet";
 
 import {
   Pagination,
@@ -32,18 +28,21 @@ import {
 } from "@/components/ui/pagination";
 
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
+import { fetchSeasonPassRealmsByAddress, SeasonPassRealm } from "@/hooks/services";
 
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
 
-// Define the type for a single realm edge, assuming GetAccountTokensQuery is correctly generated
-type RealmEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-
 // Define the structure of the augmented realm used internally
-interface AugmentedRealm {
-  originalRealm: RealmEdge; // Keep the original structure
-  parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] };
+export interface AugmentedRealm {
+  originalRealm: SeasonPassRealm; // Keep the original structure
+  parsedMetadata: {
+    name: string;
+    attributes: { trait_type: string; value: string }[];
+    image: string;
+    description?: string;
+  };
   seasonPassMinted: boolean;
   tokenId: string;
 }
@@ -51,6 +50,8 @@ interface AugmentedRealm {
 function Mint() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
+
+  const trimmedAddress = trimAddress(address);
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
@@ -61,49 +62,33 @@ function Mint() {
   const ITEMS_PER_PAGE = 24;
 
   // --- Fetch data ---
-  const { data, isLoading: isPending } = useSuspenseQuery<GetAccountTokensQuery | null>({
-    queryKey: ["erc721Balance", address],
-    queryFn: () =>
-      address
-        ? execute(GET_ACCOUNT_TOKENS, {
-            accountAddress: address,
-            offset: (currentPage - 1) * ITEMS_PER_PAGE,
-            limit: 500,
-          })
-        : null,
-    refetchInterval: 10_000,
+  const [seasonPassMints] = useSuspenseQueries({
+    queries: [
+      {
+        queryKey: ["seasonPassMints", trimmedAddress],
+        queryFn: () =>
+          trimmedAddress ? fetchSeasonPassRealmsByAddress(realmsAddress, seasonPassAddress, trimmedAddress) : null,
+        refetchInterval: 10_000,
+      },
+    ],
   });
 
   // --- Prepare Realm Data ---
-  const realmsErcBalance = useMemo<RealmEdge[] | undefined>(
-    () =>
-      data?.tokenBalances?.edges?.filter((token): token is RealmEdge => {
-        // Type assertion
-        if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-        return (
-          addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-          addAddressPadding(realmsAddress ?? "0x0")
-        );
-      }),
-    [data],
-  );
+  const realmsErcBalance = seasonPassMints.data;
 
   // --- Filtering Hook ---
-  const getRealmMetadataString = useCallback((realm: RealmEdge): string | null => {
-    if (realm?.node?.tokenMetadata?.__typename === "ERC721__Token") {
-      return realm.node.tokenMetadata.metadata;
-    }
-    return null;
+  const getRealmMetadataString = useCallback((realm: SeasonPassRealm): string | null => {
+    return realm.metadata;
   }, []);
 
   const {
     selectedFilters,
     allTraits,
-    filteredData: filteredRealms, // Renamed output from hook
-    handleFilterChange: originalHandleFilterChange, // Rename original
-    clearFilter: originalClearFilter, // Rename original
-    clearAllFilters: originalClearAllFilters, // Rename original
-  } = useTraitFiltering<RealmEdge>(realmsErcBalance, getRealmMetadataString);
+    filteredData: filteredRealms,
+    handleFilterChange: originalHandleFilterChange,
+    clearFilter: originalClearFilter,
+    clearAllFilters: originalClearAllFilters,
+  } = useTraitFiltering<SeasonPassRealm>(realmsErcBalance, getRealmMetadataString);
 
   // --- State for Season Pass Mint Status ---
   const [seasonPassStatus, setSeasonPassStatus] = useState<Record<string, boolean>>({});
@@ -117,8 +102,7 @@ function Mint() {
     // 1. Augment the *filtered* data with parsed metadata and mint status
     const augmented = filteredRealms
       .map((realm) => {
-        if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return null;
-        const tokenId = parseInt(realm.node.tokenMetadata.tokenId);
+        const tokenId = parseInt(realm?.token_id);
 
         let parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] } = {
           name: "",
@@ -136,13 +120,13 @@ function Mint() {
         return {
           originalRealm: realm,
           parsedMetadata: parsedMetadata,
-          seasonPassMinted: seasonPassStatus[tokenId] ?? false,
+          seasonPassMinted: realm.season_pass_balance !== null,
           tokenId: tokenId.toString(),
         } as AugmentedRealm;
       })
       .filter((realm): realm is AugmentedRealm => realm !== null);
 
-    // 2. Sort the augmented array
+    // 2. Sort the augmented array - Can probably move to sql ordering
     return augmented.sort((a, b) => {
       // Sort by minted status first (false/unminted comes first)
       if (a.seasonPassMinted !== b.seasonPassMinted) {
@@ -159,7 +143,7 @@ function Mint() {
   const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
     useNftSelection({ userAddress: address as `0x${string}` });
 
-  const loading = isPending;
+  const loading = seasonPassMints.isLoading;
 
   const selectBatchNftsFiltered = (contractAddress: string, tokenIds: string[]) => {
     // Filter based on the currently displayed (and potentially filtered) *augmented* list
@@ -173,14 +157,8 @@ function Mint() {
   const totalRealms = useMemo(() => realmsErcBalance?.length ?? 0, [realmsErcBalance]);
 
   const mintedRealmsCount = useMemo(() => {
-    return (
-      realmsErcBalance?.filter((realm) => {
-        if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return false;
-        const tokenId = parseInt(realm.node.tokenMetadata.tokenId);
-        return seasonPassStatus[tokenId] ?? false;
-      }).length ?? 0
-    );
-  }, [realmsErcBalance, seasonPassStatus]);
+    return seasonPassMints.data?.filter((realm) => realm.season_pass_balance !== null).length ?? 0;
+  }, [seasonPassMints.data]);
 
   const allMinted = totalRealms > 0 && mintedRealmsCount === totalRealms;
 
@@ -300,7 +278,7 @@ function Mint() {
   };
 
   // --- Wallet Connection Check ---
-  if (!address) {
+  if (!trimmedAddress) {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />; // Pass connect here
   }
   // --- End Wallet Connection Check ---
@@ -403,10 +381,7 @@ function Mint() {
 
                       console.log("eligibleTokenIds", eligibleTokenIds);
 
-                      // Safely access contractAddress only for ERC721 from the first displayed realm's original data
-                      const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
-                      const contractAddress =
-                        firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
+                      const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
 
                       return (
                         <SelectNftActions
@@ -447,7 +422,7 @@ function Mint() {
               <RealmsGrid
                 isNftSelected={isNftSelected}
                 toggleNftSelection={toggleNftSelection}
-                realms={paginatedRealms.map((ar) => ar.originalRealm) ?? []} // Use paginated data
+                realms={paginatedRealms ?? []} // Use paginated data
                 onSeasonPassStatusChange={handleSeasonPassStatusChange}
               />
             </Suspense>
@@ -467,9 +442,7 @@ function Mint() {
                   .map((realm) => realm.tokenId);
 
                 // Safely access contractAddress only for ERC721 from the first displayed realm's original data
-                const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
-                const contractAddress =
-                  firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
+                const contractAddress = augmentedAndSortedRealms[0]?.originalRealm?.contract_address;
 
                 return (
                   <SelectNftActions

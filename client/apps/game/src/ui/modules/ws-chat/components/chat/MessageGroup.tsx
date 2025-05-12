@@ -24,7 +24,7 @@ const MessageGroupComponent = React.memo(
               })}
             </span>{" "}
             <span
-              className={`font-bold px-3 ${
+              className={`font-bold px-2 ${
                 msg.senderId === userId
                   ? "text-orange-400"
                   : "text-orange-300 hover:text-orange-200 hover:underline cursor-pointer"

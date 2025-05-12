@@ -26,7 +26,7 @@ contracts = [
 ]
 
 [erc]
-max_metadata_tasks = 2
+max_metadata_tasks = 10
 
 namespaces = ["s1_eternum", "ds_v1_2_0"]
 

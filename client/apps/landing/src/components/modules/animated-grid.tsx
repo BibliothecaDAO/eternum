@@ -7,11 +7,13 @@ interface GridItem<T = DataCardProps | React.ReactElement> {
     sm?: number;
     md?: number;
     lg?: number;
+    xl?: number;
   };
   rowSpan?: {
     sm?: number;
     md?: number;
     lg?: number;
+    xl?: number;
   };
   data: T;
 }
@@ -51,7 +53,7 @@ const getRowSpanClass = (span: number | undefined, breakpoint: string) => {
 export const AnimatedGrid = <T,>({ items, renderItem }: AnimatedGridProps<T>) => {
   return (
     <motion.div
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-8 px-2"
+      className="grid grid-cols-1 sm:grid-cols-12 gap-8 px-2 pb-4"
       initial="hidden"
       animate="visible"
       variants={{
@@ -69,9 +71,11 @@ export const AnimatedGrid = <T,>({ items, renderItem }: AnimatedGridProps<T>) =>
             getColSpanClass(item.colSpan?.sm, "sm"),
             getColSpanClass(item.colSpan?.md, "md"),
             getColSpanClass(item.colSpan?.lg, "lg"),
+            getColSpanClass(item.colSpan?.xl, "xl"),
             getRowSpanClass(item.rowSpan?.sm, "sm"),
             getRowSpanClass(item.rowSpan?.md, "md"),
             getRowSpanClass(item.rowSpan?.lg, "lg"),
+            getRowSpanClass(item.rowSpan?.xl, "xl"),
           )}
           variants={{
             hidden: { opacity: 0, y: 20 },

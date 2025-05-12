@@ -55,4 +55,6 @@ export enum TransactionType {
   START_QUEST = "start_quest",
   CLAIM_REWARD = "claim_reward",
   GET_GAME_COUNT = "get_game_count",
+  TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
+  TRANSFER_AGENT_OWNERSHIP = "transfer_agent_ownership",
 }

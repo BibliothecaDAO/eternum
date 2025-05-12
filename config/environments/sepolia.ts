@@ -34,6 +34,11 @@ export const SepoliaEternumGlobalConfig: Config = {
       mercenariesTroopUpperBound: 1500,
     },
   },
+  exploration: {
+    ...CommonEternumGlobalConfig.exploration,
+    questFindProbability: 1,
+    questFindFailProbability: 10,
+  },
   season: {
     ...CommonEternumGlobalConfig.season,
     pointRegistrationCloseAfterEndSeconds: 60 * 60 * 1, // 1 hour after season end
@@ -50,8 +55,8 @@ export const SepoliaEternumGlobalConfig: Config = {
       address: "0x2418e02ae43901d8aa8ab5c4b676740dccdcf1c94f13344a978ebe6077b109",
       levels: [
         { target_score: 26, settings_id: 1, time_limit: 86400 },
-        { target_score: 51, settings_id: 2, time_limit: 86400 },
-        { target_score: 51, settings_id: 3, time_limit: 86400 },
+        { target_score: 26, settings_id: 2, time_limit: 86400 },
+        { target_score: 26, settings_id: 3, time_limit: 86400 },
         { target_score: 51, settings_id: 4, time_limit: 86400 },
         { target_score: 101, settings_id: 5, time_limit: 86400 },
       ],

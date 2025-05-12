@@ -11,7 +11,7 @@ interface RawResourcesPanelProps {
   resourceBalances: Record<number, number>;
   isSelected: boolean;
   onSelect: () => void;
-  outputResource: any;
+  outputResourceAmount: number;
 }
 
 export const RawResourcesPanel = ({
@@ -21,14 +21,14 @@ export const RawResourcesPanel = ({
   resourceBalances,
   isSelected,
   onSelect,
-  outputResource,
+  outputResourceAmount,
 }: RawResourcesPanelProps) => {
   const rawInputResources = useMemo(() => {
     return configManager.complexSystemResourceInputs[selectedResource].map((resource) => ({
       ...resource,
-      amount: resource.amount / outputResource.amount,
+      amount: resource.amount / outputResourceAmount,
     }));
-  }, [selectedResource, outputResource]);
+  }, [selectedResource, outputResourceAmount]);
 
   const handleInputChange = (value: number, inputResource: number) => {
     const resourceConfig = rawInputResources.find((r) => r.resource === inputResource);

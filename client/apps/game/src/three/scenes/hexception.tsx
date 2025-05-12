@@ -670,7 +670,7 @@ export default class HexceptionScene extends HexagonScene {
       }
       this.pillars!.instanceMatrix.needsUpdate = true;
       this.pillars!.instanceColor!.needsUpdate = true;
-      this.interactiveHexManager.renderHexes();
+      this.interactiveHexManager.renderAllHexes();
     });
   }
 

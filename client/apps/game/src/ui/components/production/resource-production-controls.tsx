@@ -19,6 +19,7 @@ export const ResourceProductionControls = ({
   realm,
   ticks,
   setTicks,
+  bonus,
 }: {
   selectedResource: number;
   useRawResources: boolean;
@@ -28,6 +29,7 @@ export const ResourceProductionControls = ({
   realm: RealmInfo;
   ticks: number | undefined;
   setTicks: (value: number) => void;
+  bonus: number;
 }) => {
   const {
     setup: {
@@ -40,6 +42,17 @@ export const ResourceProductionControls = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
+
+  // take wonder bonus into account
+  const resourceOutputPerInputResourcesWithBonus = useMemo(() => {
+    if (!laborConfig) return 0;
+    return laborConfig.resourceOutputPerInputResources * bonus;
+  }, [laborConfig, bonus]);
+
+  // take wonder bonus into account
+  const outputResourceAmountWithBonus = useMemo(() => {
+    return configManager.complexSystemResourceOutput[selectedResource].amount * bonus;
+  }, [selectedResource, bonus]);
 
   const handleRawResourcesProduce = async () => {
     if (!ticks) return;
@@ -65,7 +78,7 @@ export const ResourceProductionControls = ({
 
     if (productionAmount > 0) {
       setIsLoading(true);
-      const productionCycles = Math.floor(productionAmount / laborConfig?.resourceOutputPerInputResources);
+      const productionCycles = Math.floor(productionAmount / resourceOutputPerInputResourcesWithBonus);
       const calldata = {
         from_entity_id: realm.entityId,
         production_cycles: [productionCycles],
@@ -82,10 +95,6 @@ export const ResourceProductionControls = ({
       }
     }
   };
-
-  const outputResource = useMemo(() => {
-    return configManager.complexSystemResourceOutput[selectedResource];
-  }, [selectedResource]);
 
   const resourceManager = useResourceManager(realm.entityId);
 
@@ -111,24 +120,25 @@ export const ResourceProductionControls = ({
   }, [selectedResource, resourceManager]);
 
   useEffect(() => {
-    setTicks(Math.floor(productionAmount / outputResource.amount));
-  }, [productionAmount]);
+    // don't take wonder bonus into account because production time is not affected by it
+    setTicks(Math.floor(productionAmount / (outputResourceAmountWithBonus / bonus)));
+  }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
   const rawCurrentInputs = useMemo(() => {
     return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
       resource,
-      amount: amount / outputResource.amount,
+      amount: amount / outputResourceAmountWithBonus,
     }));
-  }, [selectedResource, outputResource]);
+  }, [selectedResource, outputResourceAmountWithBonus]);
 
   const laborCurrentInputs = useMemo(() => {
     return (
       laborConfig?.inputResources.map(({ resource, amount }) => ({
         resource,
-        amount: amount / laborConfig.resourceOutputPerInputResources,
+        amount: amount / resourceOutputPerInputResourcesWithBonus,
       })) || []
     );
-  }, [laborConfig]);
+  }, [laborConfig, resourceOutputPerInputResourcesWithBonus]);
 
   const currentInputs = useMemo(() => {
     return useRawResources ? rawCurrentInputs : laborCurrentInputs;
@@ -169,7 +179,7 @@ export const ResourceProductionControls = ({
           resourceBalances={resourceBalances}
           isSelected={useRawResources}
           onSelect={() => setUseRawResources(true)}
-          outputResource={outputResource}
+          outputResourceAmount={outputResourceAmountWithBonus}
         />
       ),
     },
@@ -177,15 +187,14 @@ export const ResourceProductionControls = ({
       label: "Simple Production",
       component: (
         <div>
-          {" "}
           {laborCurrentInputs.length > 0 && (
             <LaborResourcesPanel
-              selectedResource={selectedResource}
               productionAmount={productionAmount}
               setProductionAmount={setProductionAmount}
               resourceBalances={resourceBalances}
-              isSelected={!useRawResources}
               onSelect={() => setUseRawResources(false)}
+              laborInputResources={laborConfig?.inputResources || []}
+              resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
             />
           )}
         </div>
@@ -244,7 +253,7 @@ export const ResourceProductionControls = ({
           {" "}
           <div>
             <h2 className="flex items-center gap-2 mt-4">
-              {productionAmount.toLocaleString()} {ResourcesIds[selectedResource]}
+              {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
               <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
             </h2>
           </div>

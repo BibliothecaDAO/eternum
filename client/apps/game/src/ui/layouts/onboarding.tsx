@@ -9,7 +9,7 @@ import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/step
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
+import { Castle, FileText, MessageSquare, Play, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
@@ -43,6 +43,8 @@ interface SeasonPassButtonProps {
 
 export const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://next-empire.realms.world/";
+
+const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
 
 export const StepContainer = ({
   children,
@@ -219,6 +221,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
 
   const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
+  const [showVillagePassButton, setShowVillagePassButton] = useState<boolean>(true);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -242,6 +245,19 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     updateTimer();
 
     const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const checkVillagePassVisibility = () => {
+      const now = Math.floor(Date.now() / 1000);
+      console.log("Current time:", now, "End timestamp:", VILLAGE_PASS_END_TIMESTAMP);
+      setShowVillagePassButton(now > VILLAGE_PASS_END_TIMESTAMP);
+    };
+
+    checkVillagePassVisibility();
+    const interval = setInterval(checkVillagePassVisibility, 1000); // Check every second
 
     return () => clearInterval(interval);
   }, []);
@@ -273,18 +289,20 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         )}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            {/* <a className="w-full" target="_blank" rel="noopener noreferrer">
-              <Button
-                size="lg"
-                onClick={handleVillagePassClick}
-                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
-              >
-                <div className="flex items-center justify-start w-full gap-2">
-                  <Play className="!w-5 !h-5 fill-gold" />
-                  <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
-                </div>
-              </Button>
-            </a> */}
+            {showVillagePassButton && (
+              <a className="w-full" target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  onClick={handleVillagePassClick}
+                  className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
+                >
+                  <div className="flex items-center justify-start w-full gap-2">
+                    <Play className="!w-5 !h-5 fill-gold" />
+                    <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
+                  </div>
+                </Button>
+              </a>
+            )}
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}
