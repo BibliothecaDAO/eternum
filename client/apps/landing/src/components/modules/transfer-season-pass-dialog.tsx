@@ -11,7 +11,7 @@ import { Input } from "../ui/input";
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
 import { displayAddress } from "@/lib/utils";
-import { RealmMetadata, SeasonPassMint } from "@/types";
+import { MergedNftData, RealmMetadata } from "@/types";
 import { useCartridgeAddress, useDebounce } from "@bibliothecadao/react";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { TypeH3 } from "../typography/type-h3";
