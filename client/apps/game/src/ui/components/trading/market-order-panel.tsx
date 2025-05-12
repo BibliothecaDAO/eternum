@@ -56,7 +56,7 @@ export const MarketResource = memo(
     }, []);
 
     const balance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
     }, [resourceManager, production, currentDefaultTick]);
 
     const resource = useMemo(() => {
