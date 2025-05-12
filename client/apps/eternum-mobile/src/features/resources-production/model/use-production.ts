@@ -1,7 +1,6 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { configManager } from "@bibliothecadao/eternum";
-import { getProducedResource, ResourcesIds } from "@bibliothecadao/types";
+import { configManager, ResourceManager } from "@bibliothecadao/eternum";
 import {
   useBuildings,
   useDojo,
@@ -9,6 +8,7 @@ import {
   usePlayerOwnedVillagesInfo,
   useResourceManager,
 } from "@bibliothecadao/react";
+import { getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { LaborProductionCalldata, ResourceProductionCalldata } from "./types";
 
@@ -45,16 +45,21 @@ export const useProduction = () => {
     return Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
   }, [productionBuildings]);
 
+  const resource = useMemo(() => {
+    return resourceManager.getResource();
+  }, [resourceManager]);
+
   const productions = useMemo(() => {
     if (!selectedRealm) return [];
     return producedResources
       .map((resourceId) => {
+        if (!resource) return null;
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
         );
 
         const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
-        const production = resourceManager.getProduction(resourceId);
+        const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
 
         return {
           resource: resourceId,

@@ -4,7 +4,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { configManager, divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, ResourceManager } from "@bibliothecadao/eternum";
 import { ID, resources, TickIds } from "@bibliothecadao/types";
 import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,8 +18,6 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
   const resource = resources.find((r) => r.id === building.produced.resource);
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
-  if (!resource) return null;
-
   const getBalance = useCallback(() => {
     return resourceManager.balanceWithProduction(currentTick, building.produced.resource).balance;
   }, [resourceManager, currentTick, building.produced.resource]);
@@ -27,7 +25,9 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
   const production = useMemo(() => {
     const balance = getBalance();
     setBalance(balance);
-    return resourceManager.getProduction(building.produced.resource);
+    const resource = resourceManager.getResource();
+    if (!resource) return null;
+    return ResourceManager.balanceAndProduction(resource, building.produced.resource).production;
   }, [getBalance, resourceManager, building.produced.resource]);
 
   const maxAmountStorable = useMemo(() => {
@@ -71,6 +71,8 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
   const productionRate = Number(divideByPrecision(Number(production?.production_rate || 0), false));
   const productionPerHour = currencyIntlFormat(productionRate * 60 * 60);
   const productionPerSec = currencyIntlFormat(productionRate);
+
+  if (!resource) return null;
 
   return (
     <>
