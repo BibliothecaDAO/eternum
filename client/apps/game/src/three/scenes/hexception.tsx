@@ -540,7 +540,13 @@ export default class HexceptionScene extends HexagonScene {
           }
 
           // If the realm has a wonder and it's not a hyperstructure, we'll add both models
-          if (hasWonder && building.structureType !== StructureType.Hyperstructure) {
+          // But only for the central building (castle) at BUILDINGS_CENTER coordinates
+          if (
+            hasWonder &&
+            building.structureType !== StructureType.Hyperstructure &&
+            building.col === BUILDINGS_CENTER[0] &&
+            building.row === BUILDINGS_CENTER[1]
+          ) {
             // First, create the wonder model
             const wonderGroup = BUILDINGS_GROUPS.WONDER;
             const wonderType = WONDER_REALM;
