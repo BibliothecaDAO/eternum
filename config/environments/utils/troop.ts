@@ -18,9 +18,9 @@ export const TROOP_STAMINA_GAIN_PER_TICK = 20;
 export const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // give 1 tick worth of stamina
 
 export const TROOP_STAMINA_MAX = {
-  [ResourcesIds.Knight]: 140,
-  [ResourcesIds.Crossbowman]: 140,
-  [ResourcesIds.Paladin]: 160,
+  [ResourcesIds.Knight]: 120,
+  [ResourcesIds.Crossbowman]: 120,
+  [ResourcesIds.Paladin]: 140,
 };
 
 // Combat stamina requirements
