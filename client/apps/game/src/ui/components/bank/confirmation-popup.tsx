@@ -23,17 +23,17 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
 }) => {
   return (
     <div className="fixed bottom-100 inset-0 bg-brown bg-opacity-60 z-50 flex justify-center items-center">
-      <div className="border border-gold/10 bg-brown/90 bg-hex-bg rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
+      <div className="border border-gold/10 bg-brown/90  panel-wood rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
         <div className="absolute top-3 right-3">
           <Button className="amm-swap-confirm-close-selector !p-4" size="xs" variant="default" onClick={onCancel}>
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-2xl text-center w-full">{title}</div>
+        <h5>{title}</h5>
         {children && <div className="text-center mt-4 w-full">{children}</div>}
         <div className="flex justify-center mt-4 w-full">
           <div className="flex justify-center space-x-4">
-            <Button disabled={disabled} isLoading={isLoading} variant="primary" className={""} onClick={onConfirm}>
+            <Button disabled={disabled} isLoading={isLoading} variant="gold" className={""} onClick={onConfirm}>
               Confirm
             </Button>
           </div>

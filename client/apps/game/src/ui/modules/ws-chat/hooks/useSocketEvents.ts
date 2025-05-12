@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type ChatClient from "../client/client";
 import { Message, Room, User } from "../types";
+import { useChatStore } from "../useChatStore";
 
 // Hook for handling direct message events
 export const useDirectMessageEvents = (
@@ -254,13 +255,14 @@ export const useGlobalMessageEvents = (
 };
 
 // Hook for handling user-related events
-export const useUserEvents = (
-  chatClient: ChatClient | null,
-  setOnlineUsers: React.Dispatch<React.SetStateAction<User[]>>,
-  setOfflineUsers: React.Dispatch<React.SetStateAction<User[]>>,
-  setIsLoadingUsers: React.Dispatch<React.SetStateAction<boolean>>,
-  onlineUsers: User[],
-) => {
+export const useUserEvents = (chatClient: ChatClient | null) => {
+  const { onlineUsers, offlineUsers, actions, setIsLoadingUsers } = useChatStore((state) => ({
+    onlineUsers: state.onlineUsers,
+    offlineUsers: state.offlineUsers,
+    actions: state.actions,
+    setIsLoadingUsers: state.actions.setIsLoadingUsers,
+  }));
+
   useEffect(() => {
     console.log("Setting up user event handlers");
     if (!chatClient || !chatClient.socket) {
@@ -274,43 +276,41 @@ export const useUserEvents = (
         console.log("Skipping online users update (no change)");
         return;
       }
-      setOnlineUsers(users);
+      actions.setOnlineUsers(users);
     };
 
     const handleUserJoined = ({ user }: { user: User }) => {
       console.log(`User ${user.id} (${user.username}) joined`);
 
-      setOnlineUsers((prevUsers) => {
-        if (prevUsers.some((u) => u.id === user.id)) {
-          return prevUsers;
-        }
-        return [...prevUsers, user];
-      });
+      const currentOnlineUsers = onlineUsers;
+      if (!currentOnlineUsers.some((u) => u.id === user.id)) {
+        actions.setOnlineUsers([...currentOnlineUsers, user]);
+      }
 
-      setOfflineUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
+      const currentOfflineUsers = offlineUsers;
+      actions.setOfflineUsers(currentOfflineUsers.filter((u) => u.id !== user.id));
     };
 
     const handleUserOffline = ({ userId }: { userId: string }) => {
       console.log(`User ${userId} went offline`);
 
-      const offlineUser = onlineUsers.find((u) => u.id === userId);
+      const currentOnlineUsers = onlineUsers;
+      const offlineUser = currentOnlineUsers.find((u) => u.id === userId);
 
-      setOnlineUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+      actions.setOnlineUsers(currentOnlineUsers.filter((u) => u.id !== userId));
 
       if (offlineUser) {
-        setOfflineUsers((prevUsers) => {
-          if (prevUsers.some((u) => u.id === userId)) {
-            return prevUsers;
-          }
-          return [...prevUsers, offlineUser];
-        });
+        const currentOfflineUsers = offlineUsers;
+        if (!currentOfflineUsers.some((u) => u.id === userId)) {
+          actions.setOfflineUsers([...currentOfflineUsers, offlineUser]);
+        }
       }
     };
 
     const handleUserLists = ({ onlineUsers, offlineUsers }: { onlineUsers: User[]; offlineUsers: User[] }) => {
       console.log(`Received user lists: ${onlineUsers.length} online, ${offlineUsers.length} offline`);
-      setOnlineUsers(onlineUsers);
-      setOfflineUsers(offlineUsers);
+      actions.setOnlineUsers(onlineUsers);
+      actions.setOfflineUsers(offlineUsers);
       setIsLoadingUsers(false);
     };
 
@@ -337,7 +337,7 @@ export const useUserEvents = (
         chatClient.socket.off("userLists", handleUserLists);
       }
     };
-  }, [chatClient, setOnlineUsers, setOfflineUsers, setIsLoadingUsers, onlineUsers]);
+  }, [chatClient, actions.setOnlineUsers, actions.setOfflineUsers, setIsLoadingUsers, onlineUsers, offlineUsers]);
 };
 
 // Hook for handling room-related events
@@ -423,13 +423,16 @@ export const useConnectionEvents = (chatClient: ChatClient | null) => {
 export const useInitialDataEvents = (
   chatClient: ChatClient | null,
   setAvailableRooms: React.Dispatch<React.SetStateAction<Room[]>>,
-  setOnlineUsers: React.Dispatch<React.SetStateAction<User[]>>,
-  setOfflineUsers: React.Dispatch<React.SetStateAction<User[]>>,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>,
-  setIsLoadingUsers: React.Dispatch<React.SetStateAction<boolean>>,
   setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
+  const { setIsLoadingUsers, setOnlineUsers, setOfflineUsers } = useChatStore((state) => ({
+    setIsLoadingUsers: state.actions.setIsLoadingUsers,
+    setOnlineUsers: state.actions.setOnlineUsers,
+    setOfflineUsers: state.actions.setOfflineUsers,
+  }));
+
   useEffect(() => {
     console.log("Setting up initialData event handlers");
     if (!chatClient || !chatClient.socket) {

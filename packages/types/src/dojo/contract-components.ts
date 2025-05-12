@@ -1331,6 +1331,14 @@ export function defineContractComponents(world: World) {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
           },
+          wonder_production_bonus_config: {
+            within_tile_distance: RecsType.Number,
+            bonus_percent_num: RecsType.BigInt,
+          },
+          quest_config: {
+            quest_discovery_prob: RecsType.Number,
+            quest_discovery_fail_prob: RecsType.Number,
+          },
           structure_capacity_config: {
             realm_capacity: RecsType.BigInt,
             village_capacity: RecsType.BigInt,
@@ -1442,6 +1450,10 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
+              "u8", // WonderProductionBonusConfig within_tile_distance
+              "u128", // WonderProductionBonusConfig bonus_percent_num
+              "u16", // QuestConfig quest_discovery_prob
+              "u16", // QuestConfig quest_discovery_fail_prob
               "u64", // StructureCapacityConfig realm_structure_capacity
               "u64", // StructureCapacityConfig village_structure_capacity
               "u64", // StructureCapacityConfig hyperstructure_structure_capacity

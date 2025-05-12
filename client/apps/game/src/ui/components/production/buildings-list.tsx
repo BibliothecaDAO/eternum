@@ -60,11 +60,13 @@ export const BuildingsList = ({
   }, [producedResources, productionBuildings, resourceManager]);
 
   const motionConfig = {
-    initial: { opacity: 0, height: 0, overflow: "hidden" },
-    exit: { opacity: 0, height: 0, overflow: "hidden" },
+    initial: { opacity: 0, height: 0 },
+    exit: { opacity: 0, height: 0 },
     transition: { duration: 0.3 },
-    animateBase: { opacity: 1, overflow: "hidden" },
+    animateBase: { opacity: 1 },
   };
+
+  console.log(productions);
 
   return (
     <AnimatePresence mode="wait">
@@ -142,7 +144,7 @@ export const BuildingsList = ({
         <motion.div
           key="full-list"
           initial={motionConfig.initial}
-          animate={{ ...motionConfig.animateBase, height: "500px" }}
+          animate={{ ...motionConfig.animateBase, height: "100%", overflow: "scroll" }}
           exit={motionConfig.exit}
           transition={motionConfig.transition}
           className="pt-6 h-[500px] overflow-y-auto"

@@ -1,10 +1,9 @@
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { ResourceManager, configManager, divideByPrecision, getArmy } from "@bibliothecadao/eternum";
-import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 import { TransferDirection } from "./transfer-troops-container";
 
@@ -248,35 +247,105 @@ export const TransferResourcesContainer = ({
       return null;
     }
 
-    const capacityPercentage = Math.min(
-      100,
-      Math.max(0, (explorerCapacity.currentLoad / explorerCapacity.maxCapacity) * 100),
-    );
-    const selectedPercentage = Math.min(
-      100 - capacityPercentage,
-      Math.max(0, (explorerCapacity.selectedResourcesWeight / explorerCapacity.maxCapacity) * 100),
-    );
+    const currentLoadKg = explorerCapacity.currentLoad;
+    const maxCapacityKg = explorerCapacity.maxCapacity;
+    const selectedWeightKg = explorerCapacity.selectedResourcesWeight;
+    const availableCapacityKg = explorerCapacity.availableCapacity;
+
+    let capacityPercentageForBar = 0;
+    if (maxCapacityKg > 0) {
+      capacityPercentageForBar = (currentLoadKg / maxCapacityKg) * 100;
+    } else if (currentLoadKg > 0) {
+      // Max capacity is 0, but there's a load
+      capacityPercentageForBar = 100; // Show as full/overloaded due to current load
+    }
+    // Clamp for bar width, current load could theoretically exceed max capacity
+    capacityPercentageForBar = Math.min(100, Math.max(0, capacityPercentageForBar));
+
+    let selectedPercentageForBar = 0;
+    if (maxCapacityKg > 0) {
+      const rawSelectedRatio = (selectedWeightKg / maxCapacityKg) * 100;
+      // Selected part is capped by the remaining space in the bar after current load
+      selectedPercentageForBar = Math.max(0, Math.min(rawSelectedRatio, 100 - capacityPercentageForBar));
+    }
+    // If maxCapacityKg is 0, selectedPercentageForBar remains 0.
+    // This is intentional: selected items cannot visually fill a zero-capacity container's bar.
+    // The text fields (Selected, Remaining) will convey the amounts and zero capacity state.
+
+    const totalAfterSelectionPercentage = capacityPercentageForBar + selectedPercentageForBar;
+
+    // Prevent available capacity from being negative in display
+    const displayAvailableCapacityKg = Math.max(0, availableCapacityKg);
 
     return (
-      <div className="mb-4 p-3 border border-gold/30 rounded-md bg-dark-brown/50">
-        <h4 className="text-gold font-semibold mb-2">Explorer Capacity</h4>
+      <div className="p-3 border border-gold/30 rounded-md bg-dark-brown/50">
+        <h4 className="text-lg text-gold font-bold mb-3 text-center">Explorer Capacity</h4>
 
-        <div className="flex justify-between text-sm text-gold/80 mb-1">
-          <span>Current Load: {explorerCapacity.currentLoad} kg</span>
-          <span>Max Capacity: {explorerCapacity.maxCapacity} kg</span>
-        </div>
+        <div className="space-y-2">
+          {/* Max Capacity Info */}
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gold/80">Max Capacity:</span>
+            <span className="font-semibold text-gold">{maxCapacityKg.toLocaleString()} kg</span>
+          </div>
 
-        <div className="w-full h-4 bg-dark-brown border border-gold/30 rounded-full overflow-hidden">
-          <div className="h-full bg-gold/60" style={{ width: `${capacityPercentage}%` }} />
-          <div
-            className="h-full bg-gold/30 -mt-4"
-            style={{ width: `${selectedPercentage}%`, marginLeft: `${capacityPercentage}%` }}
-          />
-        </div>
+          {/* Capacity Bar */}
+          <div className="relative w-full h-6 bg-dark-brown border border-gold/20 rounded-md overflow-hidden my-1">
+            {/* Current load */}
+            <div
+              className="absolute top-0 left-0 h-full bg-blue-500/70 flex items-center justify-center"
+              style={{ width: `${capacityPercentageForBar}%` }}
+              title={`Current Load: ${currentLoadKg.toLocaleString()} kg`}
+            >
+              {capacityPercentageForBar > 15 && (
+                <span className="text-xs text-white/90 truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
+              )}
+            </div>
+            {/* Weight that will be added with the current selection */}
+            <div
+              className="absolute top-0 h-full bg-orange-500/70 flex items-center justify-center bg-green/30"
+              style={{ width: `${selectedPercentageForBar}%`, left: `${capacityPercentageForBar}%` }}
+              title={`Selected: ${selectedWeightKg.toLocaleString()} kg`}
+            >
+              {selectedPercentageForBar > 15 && (
+                <span className="text-xs text-white/90 truncate px-1">{selectedWeightKg.toLocaleString()} kg</span>
+              )}
+            </div>
+            {/* Empty space indicator if not full */}
+            {100 - totalAfterSelectionPercentage > 5 && (
+              <div
+                className="absolute top-0 right-0 h-full flex items-center justify-end px-2 "
+                style={{ width: `${100 - totalAfterSelectionPercentage}%`, left: `${totalAfterSelectionPercentage}%` }}
+              >
+                <span className="text-xs text-gold/70">Empty</span>
+              </div>
+            )}
+          </div>
 
-        <div className="flex justify-between text-sm text-gold/80 mt-1">
-          <span>Selected: {explorerCapacity.selectedResourcesWeight} kg</span>
-          <span>Remaining: {explorerCapacity.availableCapacity} kg</span>
+          {/* Detailed Breakdown */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <div>
+              <span className="text-blue-400/90">Current Load:</span>
+              <span className="font-medium float-right text-white/90">{currentLoadKg.toLocaleString()} kg</span>
+            </div>
+            <div>
+              <span className="text-orange-400/90">Selected:</span>
+              <span className="font-medium float-right text-white/90">{selectedWeightKg.toLocaleString()} kg</span>
+            </div>
+            <div>
+              <span className="text-gold/80">After Transfer:</span>
+              <span
+                className={`font-medium float-right ${currentLoadKg + selectedWeightKg > maxCapacityKg ? "text-red-500" : "text-white/90"}`}
+              >
+                {(currentLoadKg + selectedWeightKg).toLocaleString()} kg
+              </span>
+            </div>
+            <div>
+              <span className="text-green-400/90">Remaining:</span>
+              <span className="font-medium float-right text-white/90">
+                {displayAvailableCapacityKg.toLocaleString()} kg
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -287,27 +356,16 @@ export const TransferResourcesContainer = ({
   }
 
   return (
-    <div className="flex flex-col h-full relative pb-16">
+    <div className="flex flex-col h-full relative pb-32">
       {/* Top section with capacity info */}
-      <div className="bg-dark-brown/95 pt-2 pb-3">
-        {transferDirection === TransferDirection.StructureToExplorer && renderExplorerCapacity()}
-      </div>
-
-      <div className="flex justify-between items-center mb-4">
-        <label className="text-gold font-semibold">Select Resources to Transfer:</label>
-        <div className="flex space-x-2">
-          <Button onClick={handleUnselectAllResources} variant="secondary" className="text-sm px-3 py-1">
-            Unselect All
-          </Button>
-          <Button onClick={handleSelectAllResources} variant="secondary" className="text-sm px-3 py-1">
-            Select All Resources
-          </Button>
-        </div>
-      </div>
 
       {/* Scrollable resources section */}
-      <div className="overflow-y-auto h-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className=" h-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sticky top-0 z-10">
+          {transferDirection === TransferDirection.StructureToExplorer && renderExplorerCapacity()}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 overflow-y-auto">
           {availableResources.map((resource) => {
             const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
             const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
@@ -325,11 +383,11 @@ export const TransferResourcesContainer = ({
                     <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
                     <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
                   </div>
-                  <div className="text-sm text-gold/70">Weight: {resourceWeight} kg per unit</div>
+                  <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
                 </div>
 
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gold/80">Available: {formatNumber(displayAmount, 0)}</span>
+                  <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
                   <button
                     className={`px-3 py-1 rounded-md text-sm ${
                       isSelected
@@ -347,7 +405,7 @@ export const TransferResourcesContainer = ({
                     <div className="flex justify-between text-sm text-gold/80 mb-1">
                       <label>Amount to Transfer:</label>
                       <span>
-                        {formatNumber(resourceAmounts[resource.resourceId] || 0, 0)} /{formatNumber(displayAmount, 0)}
+                        {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -406,22 +464,20 @@ export const TransferResourcesContainer = ({
       </div>
 
       {/* Fixed position transfer button at the bottom */}
-      <div className="fixed-bottom-button">
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-dark-brown border-t border-gold/30 flex justify-center">
-          <Button
-            onClick={handleTransfer}
-            variant="primary"
-            disabled={
-              loading ||
-              selectedResources.length === 0 ||
-              selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
-            }
-            isLoading={loading}
-            className="w-full sm:w-auto"
-          >
-            {loading ? "Processing..." : "Transfer Resources"}
-          </Button>
-        </div>
+      <div className="mt-10 mx-auto">
+        <Button
+          onClick={handleTransfer}
+          variant="gold"
+          disabled={
+            loading ||
+            selectedResources.length === 0 ||
+            selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
+          }
+          isLoading={loading}
+          className="w-full sm:w-auto"
+        >
+          {loading ? "Processing..." : "Transfer Resources"}
+        </Button>
       </div>
     </div>
   );
