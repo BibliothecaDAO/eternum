@@ -121,7 +121,13 @@ export const ArmyEntityDetail = memo(
             )}
 
             {/* Army warnings */}
-            {structureResources && <ArmyWarning army={explorer} resource={structureResources} />}
+            {structureResources && explorerResources && (
+              <ArmyWarning
+                army={explorer}
+                explorerResources={explorerResources}
+                structureResources={structureResources}
+              />
+            )}
 
             {/* Stamina and capacity - more prominent */}
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
