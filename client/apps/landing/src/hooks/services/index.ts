@@ -198,6 +198,7 @@ WITH limited_active_orders AS (
   LEFT JOIN active_orders ao
     ON ao.token_id_hex = substr(tb.token_id, instr(tb.token_id, ':') + 1)
   WHERE tb.contract_address = '{contractAddress}'
+  AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
 };

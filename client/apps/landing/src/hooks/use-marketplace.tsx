@@ -36,7 +36,7 @@ export const useMarketplace = () => {
     },
   } = useDojo();
 
-  const { account } = useAccount();
+  const { account, address } = useAccount();
 
   const { contract } = useContract({
     abi: SeasonPassAbi,
@@ -49,11 +49,11 @@ export const useMarketplace = () => {
   });
 
   // improve
-  const seasonPassApproved = useReadContract({
-    abi: SeasonPassAbi,
+  const { data: seasonPassApproved } = useReadContract({
+    abi: SeasonPassAbi as const,
     address: seasonPassAddress as `0x${string}`,
     functionName: "is_approved_for_all",
-    args: [account?.address as `0x${string}`, marketplaceAddress],
+    args: [address as `0x${string}`, marketplaceAddress],
     watch: true,
   });
 
@@ -173,7 +173,7 @@ export const useMarketplace = () => {
     cancelOrder,
     editOrder,
     approveMarketplace,
-    seasonPassApproved: seasonPassApproved.data,
+    seasonPassApproved: seasonPassApproved,
     isLoading: isCreatingOrder || isAcceptingOrder || isCancellingOrder || isEditingOrder,
     isCreatingOrder,
     isAcceptingOrder,
