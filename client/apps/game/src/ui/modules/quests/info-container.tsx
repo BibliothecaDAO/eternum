@@ -73,10 +73,7 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
             const timeLimit = level?.value?.time_limit?.value;
             const targetScore = level?.value?.target_score?.value;
             const settingsId = level?.value?.settings_id?.value;
-            const settingsMetadataForGame = useMemo(
-              () => settingsMetadata?.[gameAddress],
-              [settingsMetadata, gameAddress],
-            );
+            const settingsMetadataForGame = settingsMetadata?.[gameAddress];
 
             const settingName = settingsMetadataForGame
               ?.find((setting) => setting.settings_id === settingsId)
