@@ -105,6 +105,7 @@ export default class HexceptionScene extends HexagonScene {
     Map<BUILDINGS_CATEGORIES_TYPES, { model: THREE.Group; animations: THREE.AnimationClip[] }>
   > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
+  private wonderInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
@@ -266,6 +267,15 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
     });
     this.buildingInstances.clear();
+
+    // remove all previous wonder instances
+    this.wonderInstances.forEach((instance) => {
+      this.scene.remove(instance);
+    });
+    this.wonderInstances.clear();
+
+    // clear all animation mixers
+    this.buildingMixers.clear();
 
     // subscribe to buiding updates (create and destroy)
     this.systemManager.Buildings.onUpdate(
@@ -564,6 +574,8 @@ export default class HexceptionScene extends HexagonScene {
 
               // Add wonder instance to scene
               this.scene.add(wonderInstance);
+              // Store the wonder instance for later removal
+              this.wonderInstances.set(`${key}_wonder`, wonderInstance);
 
               // Animate scale using gsap
               gsap.to(wonderInstance.scale, {
@@ -704,6 +716,18 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
       this.buildingInstances.delete(key);
     }
+
+    // Also remove any associated wonder instance
+    const wonderKey = `${key}_wonder`;
+    const wonderInstance = this.wonderInstances.get(wonderKey);
+    if (wonderInstance) {
+      this.scene.remove(wonderInstance);
+      this.wonderInstances.delete(wonderKey);
+    }
+
+    // Remove any mixers
+    this.buildingMixers.delete(key);
+    this.buildingMixers.delete(wonderKey);
   }
 
   computeHexMatrices = (
@@ -834,6 +858,18 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
       this.buildingInstances.delete(key);
     }
+
+    // Also remove any associated wonder instance
+    const wonderKey = `${key}_wonder`;
+    const wonderInstance = this.wonderInstances.get(wonderKey);
+    if (wonderInstance) {
+      this.scene.remove(wonderInstance);
+      this.wonderInstances.delete(wonderKey);
+    }
+
+    // Remove any mixers
+    this.buildingMixers.delete(key);
+    this.buildingMixers.delete(wonderKey);
   }
 
   update(deltaTime: number) {
