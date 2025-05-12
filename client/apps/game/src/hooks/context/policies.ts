@@ -22,14 +22,6 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    [getContractByName(dojoConfig.manifest, "s1_eternum", "village_systems").address]: {
-      methods: [
-        {
-          name: "create",
-          entrypoint: "create",
-        },
-      ],
-    },
     [getVillagePassAddress()]: {
       methods: [
         {
