@@ -50,7 +50,7 @@ export const useMarketplace = () => {
 
   // improve
   const { data: seasonPassApproved } = useReadContract({
-    abi: SeasonPassAbi as const,
+    abi: SeasonPassAbi,
     address: seasonPassAddress as `0x${string}`,
     functionName: "is_approved_for_all",
     args: [address as `0x${string}`, marketplaceAddress],
