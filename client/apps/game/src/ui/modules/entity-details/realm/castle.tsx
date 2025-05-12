@@ -63,7 +63,7 @@ export const Castle = () => {
   };
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
-    [structureEntityId, dojo.setup.components],
+    [structureEntityId, dojo.setup.components, isLevelUpLoading, isWonderBonusLoading],
   );
 
   const structure = useMemo(
