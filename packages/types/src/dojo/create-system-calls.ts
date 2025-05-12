@@ -296,8 +296,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.create_marketplace_order(props);
   };
 
-  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrderProps, approval: Call) => {
-    await provider.accept_marketplace_order(props, approval);
+  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) => {
+    await provider.accept_marketplace_orders(props, approval);
   };
 
   const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps) => {
@@ -326,6 +326,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const get_game_count = async (props: SystemProps.GetGameCountProps) => {
     return await provider.get_game_count(props);
+  };
+
+  const transfer_structure_ownership = async (props: SystemProps.TransferStructureOwnershipProps) => {
+    return await provider.transfer_structure_ownership(props);
+  };
+
+  const transfer_agent_ownership = async (props: SystemProps.TransferAgentOwnershipProps) => {
+    return await provider.transfer_agent_ownership(props);
   };
 
   const systemCalls = {
@@ -404,7 +412,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
 
     create_marketplace_order: withAuth(create_marketplace_order),
-    accept_marketplace_order: withAuth(accept_marketplace_order),
+    accept_marketplace_orders: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),
     edit_marketplace_order: withAuth(edit_marketplace_order),
 
@@ -413,6 +421,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     start_quest: withAuth(start_quest),
     claim_reward: withAuth(claim_reward),
     get_game_count: withAuth(get_game_count),
+
+    transfer_structure_ownership: withAuth(transfer_structure_ownership),
+    transfer_agent_ownership: withAuth(transfer_agent_ownership),
   };
 
   return systemCalls;

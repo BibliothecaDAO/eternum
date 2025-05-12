@@ -60,7 +60,7 @@ export const RealmDetailModal = ({
     listItem,
     cancelOrder,
     editOrder,
-    acceptOrder,
+    acceptOrders,
     isLoading,
     approveMarketplace,
     seasonPassApproved,
@@ -185,9 +185,9 @@ export const RealmDetailModal = ({
   const handleAcceptOrder = async () => {
     if (!orderId || price === undefined) return; // Validate both orderId and price exist
     try {
-      await acceptOrder({
-        order_id: BigInt(orderId),
-        price: price,
+      await acceptOrders({
+        order_ids: [BigInt(orderId)],
+        totalPrice: price,
       });
 
       setIsSyncing(true);
@@ -204,7 +204,7 @@ export const RealmDetailModal = ({
         <DialogHeader>
           <DialogTitle> {name || "N/A"}</DialogTitle>
           <div className="flex  justify-between gap-2 text-muted-foreground">
-            <p>{parseInt(tokenId.toString())}</p>
+            <p>{parseInt(tokenId?.toString())}</p>
             <p>
               {contractAddress?.slice(0, 4)}...{contractAddress?.slice(-4)}
             </p>

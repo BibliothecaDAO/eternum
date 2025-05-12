@@ -1,7 +1,7 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import {
@@ -14,202 +14,55 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
-import { execute } from "@/hooks/gql/execute";
-import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
-import { GET_ACCOUNT_TOKENS, GET_ALL_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
-import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
-import { useTransferState } from "@/hooks/use-transfer-state";
+import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
-import { SeasonPassMint } from "@/types";
+import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
-import { addAddressPadding } from "starknet";
+import { Suspense, useCallback, useState } from "react";
 import { formatUnits } from "viem";
-import { MarketOrder, MergedNftData } from "./season-passes.lazy";
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
   pendingComponent: FullPageLoader,
 });
-export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-export type TokenBalanceEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
-export type AllTokenEdge = NonNullable<NonNullable<GetAllTokensQuery["tokens"]>["edges"]>[number];
-
-// Filter for season pass NFTs from account tokens query
-const getSeasonPassNfts = (data: GetAccountTokensQuery | null): TokenBalanceEdge[] => {
-  return (
-    data?.tokenBalances?.edges?.filter((token): token is TokenBalanceEdge => {
-      if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-      return (
-        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-        addAddressPadding(seasonPassAddress ?? "0x0")
-      );
-    }) ?? []
-  );
-};
-
-// Filter for season pass NFTs from all tokens query
-const getAllSeasonPassNfts = (data: GetAllTokensQuery | null): AllTokenEdge[] => {
-  return (
-    data?.tokens?.edges?.filter((token): token is AllTokenEdge => {
-      if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-
-      return (
-        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-        addAddressPadding(seasonPassAddress ?? "0x0")
-      );
-    }) ?? []
-  );
-};
-
-type ViewMode = "all";
 
 function SeasonPasses() {
-  const { connectors, connect } = useConnect();
+  const { connectors } = useConnect();
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [controllerAddress] = useState<string>();
-  const [viewMode, setViewMode] = useState<ViewMode>("all");
+
   const [tokenIdToTransfer, setTokenIdToTransfer] = useState<string | null>(null);
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const { transferableTokenIds } = useTransferState();
-
-  const [totals, myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
+  const [openOrdersByPrice, totals] = useSuspenseQueries({
     queries: [
+      {
+        queryKey: ["openOrdersByPrice", marketplaceAddress],
+        queryFn: () =>
+          fetchOpenOrdersByPrice(seasonPassAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+      },
       {
         queryKey: ["activeMarketOrdersTotal"],
         queryFn: () => fetchActiveMarketOrdersTotal(),
-        refetchInterval: 60_000,
-      },
-      {
-        queryKey: ["erc721Balance", address, "seasonPasses"],
-        queryFn: () =>
-          execute(GET_ACCOUNT_TOKENS, {
-            accountAddress: address ?? "",
-            offset: 0,
-            limit: 1000,
-          }),
-      },
-      {
-        queryKey: ["allTokens", "seasonPasses"],
-        queryFn: () =>
-          execute(GET_ALL_TOKENS, {
-            offset: 0,
-            limit: 8000,
-            contractAddress: seasonPassAddress,
-          }),
-      },
-      {
-        queryKey: ["marketplaceOrders", marketplaceAddress],
-        queryFn: () => execute(GET_MARKETPLACE_ORDERS, { limit: 8000 }),
-        refetchInterval: 15_000,
+        refetchInterval: 30_000,
       },
     ],
   });
 
-  const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
+  //const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
 
-  const allSeasonPassNfts: AllTokenEdge[] = useMemo(
-    () => (viewMode === "all" ? getAllSeasonPassNfts(allNftsQuery.data) : []),
-    [allNftsQuery.data, viewMode],
-  );
-
-  const marketplaceOrdersData = ordersQuery.data as any;
-
-  const processedAndSortedNfts = useMemo((): MergedNftData[] => {
-    // Use the appropriate NFT edges based on view mode
-    const nftEdges = allSeasonPassNfts;
-    // Adjust access based on actual response structure from GET_MARKETPLACE_ORDERS
-    const orderEdges = marketplaceOrdersData?.marketplaceMarketOrderModelModels?.edges;
-
-    if (!nftEdges || !orderEdges) return [];
-
-    // 1. Process marketplace orders to find min price per token ID
-    const orderInfoMap = new Map<string, { minPrice: bigint; owner: string; orderId: string; expiration: string }>();
-
-    orderEdges.forEach((edge: { node: { order: MarketOrder; order_id: string } } | null) => {
-      const order = edge?.node?.order;
-      const orderId = edge?.node?.order_id;
-      const expiration = order?.expiration;
-
-      // Ensure order exists, is active, and has necessary fields
-      // No need to check active here if filtered in query, but good practice
-      if (order && order.active && order.token_id && order.price && order.owner && orderId && expiration) {
-        const tokenId = order.token_id.toString(); // Ensure consistent format (e.g., string)
-        const price = BigInt(order.price);
-        const owner = order.owner;
-
-        const existingOrderInfo = orderInfoMap.get(tokenId);
-
-        if (!existingOrderInfo || price < existingOrderInfo.minPrice) {
-          orderInfoMap.set(tokenId, { minPrice: price, owner, orderId, expiration });
-        }
-      }
-    });
-
-    // 2. Merge order info with NFT data
-    const mergedNftsWithNulls = nftEdges.map((nftEdge: TokenBalanceEdge | AllTokenEdge | null) => {
-      const nftNode = nftEdge?.node;
-      // Ensure node exists and metadata is of type ERC721__Token
-      if (!nftNode || nftNode.tokenMetadata.__typename !== "ERC721__Token") return null;
-
-      const tokenId = nftNode.tokenMetadata.tokenId.toString(); // Access tokenId correctly
-      const orderInfo = orderInfoMap.get(parseInt(tokenId).toString());
-
-      return {
-        node: nftNode, // Keep the original NFT node structure
-        minPrice: orderInfo ? orderInfo.minPrice : null,
-        marketplaceOwner: orderInfo ? orderInfo.owner : null,
-        expiration: orderInfo ? orderInfo.expiration : null,
-        orderId: orderInfo ? orderInfo.orderId : null,
-        owner: orderInfo ? orderInfo.owner : null,
-      };
-    });
-
-    // Type guard for filtering out nulls and ensuring correct type
-    const mergedNfts = mergedNftsWithNulls.filter(
-      (nft): nft is any => nft !== null && nft.node?.tokenMetadata?.__typename === "ERC721__Token",
-    );
-
-    // 3. Sort the merged NFTs: transferable last, then by price (lowest first, unlisted last)
-    mergedNfts.sort((a, b) => {
-      const aTokenId = a.node.tokenMetadata.tokenId.toString();
-      const bTokenId = b.node.tokenMetadata.tokenId.toString();
-
-      const isATransferable = transferableTokenIds.has(parseInt(aTokenId).toString());
-      const isBTransferable = transferableTokenIds.has(parseInt(bTokenId).toString());
-
-      // Prioritize non-transferable items first
-      if (isATransferable && !isBTransferable) return 1; // a comes after b
-      if (!isATransferable && isBTransferable) return -1; // a comes before b
-
-      // If both are transferable or both are not, sort by price
-      const priceA = a.minPrice;
-      const priceB = b.minPrice;
-
-      if (priceA === null && priceB === null) return 0;
-      if (priceA === null) return 1; // Unlisted (null price) come last among non-transferable/transferable groups
-      if (priceB === null) return -1;
-      if (priceA < priceB) return -1;
-      if (priceA > priceB) return 1;
-      return 0;
-    });
-
-    return mergedNfts;
-  }, [viewMode, mySeasonPassNfts, allSeasonPassNfts, marketplaceOrdersData, transferableTokenIds]);
-
-  const getSeasonPassMetadataString = useCallback((pass: TokenBalanceEdge | AllTokenEdge): string | null => {
-    if (pass?.node?.tokenMetadata?.__typename === "ERC721__Token") {
-      return pass.node.tokenMetadata.metadata;
+  const getSeasonPassMetadataString = useCallback((pass: OpenOrderByPrice): string | null => {
+    if (pass?.metadata) {
+      return pass.metadata;
     }
     return null;
   }, []);
@@ -221,7 +74,7 @@ function SeasonPasses() {
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<MergedNftData>(processedAndSortedNfts, getSeasonPassMetadataString);
+  } = useTraitFiltering<OpenOrderByPrice>(openOrdersByPrice.data, getSeasonPassMetadataString);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredSeasonPasses.length / ITEMS_PER_PAGE);
@@ -337,22 +190,25 @@ function SeasonPasses() {
   };
 
   // Only allow transfer for user's own tokens
-  const handleTransferClick = useCallback(
-    (tokenId?: string) => {
-      if (tokenId) {
-        setTokenIdToTransfer(tokenId);
-      }
-      setIsTransferOpen(true);
-    },
-    [viewMode],
-  );
-
-  const totalPasses = allSeasonPassNfts.length;
-
-  const activeOrders = totals.data?.[0]?.total_active ?? 0;
-  const totalWei = totals.data?.[0]?.total_volume ?? null;
-  const totalEth = totalWei !== null ? formatUnits(totalWei, 18) : "0";
+  const handleTransferClick = useCallback((tokenId?: string) => {
+    if (tokenId) {
+      setTokenIdToTransfer(tokenId);
+    }
+    setIsTransferOpen(true);
+  }, []);
+  console.log(totals.data?.[0]);
+  const totalPasses = filteredSeasonPasses.length;
+  const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
+  const totalWeiStr = BigInt(totals.data?.[0]?.open_orders_total_wei ?? 0);
+  const totalWei = formatUnits(totalWeiStr, 18);
+  const totalEth = totalWei ?? "0";
   const [isCompactGrid, setIsCompactGrid] = useState(true);
+
+  // Replace the selection state with the store
+  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore();
+
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -369,7 +225,7 @@ function SeasonPasses() {
 
         <div className="flex flex-col h-full overflow-y-auto">
           <div className="text-center border-b py-6">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season Pass Marketplace"}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season 1 Pass Marketplace"}</h2>
             <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
               <span>
                 <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings
@@ -381,9 +237,14 @@ function SeasonPasses() {
               </span>
             </div>
           </div>
-          <ScrollHeader>
+          <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
             {/* Filter UI */}
-            <div className="flex justify-end my-2 gap-4 px-4">
+            {isHeaderScrolled ? (
+              <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{"Season 1 Pass"}</h4>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex justify-end my-2 gap-1 sm:gap-4 px-4 items-center">
               <TraitFilterUI
                 allTraits={allTraits}
                 selectedFilters={selectedFilters}
@@ -394,6 +255,7 @@ function SeasonPasses() {
               <Button
                 variant="outline"
                 size="icon"
+                className="hidden sm:flex"
                 onClick={() => setIsCompactGrid(!isCompactGrid)}
                 title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
               >
@@ -417,7 +279,9 @@ function SeasonPasses() {
                     seasonPasses={paginatedPasses}
                     setIsTransferOpen={handleTransferClick}
                     hideTransferButton={true}
+                    checkOwner={true}
                     isCompactGrid={isCompactGrid}
+                    onToggleSelection={togglePass}
                   />
                 )}
 
@@ -432,6 +296,48 @@ function SeasonPasses() {
               </Suspense>
             </div>
           </div>
+
+          {/* Sticky Bottom Sweep Bar */}
+          {selectedPasses.length > 0 && (
+            <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
+              <div className="container mx-auto flex items-center justify-start">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {/* Selected Pass Images */}
+                    <div className="flex -space-x-2">
+                      {selectedPasses.slice(0, 3).map((pass) => {
+                        const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
+                        const image = metadata?.image;
+                        return (
+                          <div
+                            key={pass.token_id}
+                            className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
+                          >
+                            <img src={image} alt={`Pass #${pass.token_id}`} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Show count if more than 3 passes */}
+                    {selectedPasses.length > 3 && (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        +{selectedPasses.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                  <Button className="mr-4" onClick={() => setIsPurchaseDialogOpen(true)}>
+                    Buy ({selectedPasses.length}) Passes
+                  </Button>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="font-semibold">{getTotalPrice().toFixed(4)} Lords</div>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -465,15 +371,17 @@ function SeasonPasses() {
           )}
         </div>
 
-        {isTransferOpen && (
+        {/*isTransferOpen && (
           <TransferSeasonPassDialog
             isOpen={isTransferOpen}
             setIsOpen={setIsTransferOpen}
             seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
             initialSelectedTokenId={tokenIdToTransfer}
           />
-        )}
+        )*/}
       </>
+
+      <PurchaseDialog isOpen={isPurchaseDialogOpen} onOpenChange={setIsPurchaseDialogOpen} />
     </div>
   );
 }

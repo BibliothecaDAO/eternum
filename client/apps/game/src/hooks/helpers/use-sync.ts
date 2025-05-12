@@ -15,14 +15,13 @@ export const useSyncLeaderboard = () => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
   const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
-      setIsSyncing(true);
       setLoading(LoadingStateKey.Leaderboard, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
@@ -52,14 +51,13 @@ export const useSyncHyperstructure = () => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
   const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
-      setIsSyncing(true);
       setLoading(LoadingStateKey.Hyperstructure, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
@@ -85,14 +83,13 @@ export const useSyncMarket = () => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
   const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
-      setIsSyncing(true);
       setLoading(LoadingStateKey.Market, true);
       const marketPromise = subscriptions[Subscription.Market]
         ? Promise.resolve()
@@ -118,14 +115,13 @@ export const useSyncMarketHistory = () => {
     network: { toriiClient, contractComponents },
   } = useDojo();
 
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
   const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
-      setIsSyncing(true);
       setLoading(LoadingStateKey.MarketHistory, true);
       const marketHistoryPromise = subscriptions[Subscription.MarketHistory]
         ? Promise.resolve()
