@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { useAccount, useNetwork } from "@starknet-react/core";
 import { env } from "env";
+import { Chain } from "starknet"
 
 const useIsWrongNetwork = () => {
   const { chain } = useNetwork();

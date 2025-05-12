@@ -1,12 +1,13 @@
 //import type { AccountTokensApiResponse } from "@/types/ark";
 import { graphql } from "@/gql/eternum";
+import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { executeTorii } from "../queries/torii";
-import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { CollectionAddresses } from "@realms-world/constants";
+
+import { executeTorii } from "../queries/torii";
 
 export const GET_ACCOUNT_TOKENS = graphql(`
   query getAccountTokens($address: String!) {
@@ -58,8 +59,9 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       .join("&");*/
 
     const response = await executeTorii(GET_ACCOUNT_TOKENS, {
-      address: address,
+      address: formatAddress(address),
     });
+    console.log(response?.tokenBalances?.edges.length);
     return (
       response.tokenBalances?.edges.filter((edge) => {
         return (

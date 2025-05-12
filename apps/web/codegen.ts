@@ -5,7 +5,7 @@ const config: CodegenConfig = {
     "./src/gql/eternum/": {
       documents: ["src/lib/eternum/*.ts", "!src/gql/**/*"],
       preset: "client",
-      schema: "https://api.cartridge.gg/x/eternum-prod/torii/graphql",
+      schema: "https://api.cartridge.gg/x/seasonpass-mainnet-2/torii/graphql",
       config: {
         documentMode: "string",
       },
