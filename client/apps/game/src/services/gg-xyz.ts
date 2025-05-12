@@ -41,13 +41,209 @@ export enum CartridgeAchievement {
   VICTORY_POINTS = "VICTORY_POINTS",
 }
 
+interface QuestThreshold {
+  achievement: CartridgeAchievement;
+  threshold: number;
+  action: string;
+}
+
+const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
+  [CartridgeAchievement.REALM_SETTLEMENT]: [
+    { achievement: CartridgeAchievement.REALM_SETTLEMENT, threshold: 1, action: "Settle a Realm" },
+  ],
+  [CartridgeAchievement.VILLAGE_SETTLEMENT]: [
+    { achievement: CartridgeAchievement.VILLAGE_SETTLEMENT, threshold: 1, action: "Settle a Village" },
+  ],
+  [CartridgeAchievement.EXPLORE]: [
+    { achievement: CartridgeAchievement.EXPLORE, threshold: 50, action: "Explore 50 hexes on the World Map" },
+    { achievement: CartridgeAchievement.EXPLORE, threshold: 250, action: "Explore 250 hexes on the World Map" },
+    { achievement: CartridgeAchievement.EXPLORE, threshold: 1000, action: "Explore 1000 hexes on the World Map" },
+  ],
+  [CartridgeAchievement.BIOME_DISCOVER]: [
+    { achievement: CartridgeAchievement.BIOME_DISCOVER, threshold: 16, action: "Discover all 16 biome types" },
+  ],
+  [CartridgeAchievement.AGENT_DISCOVER]: [
+    { achievement: CartridgeAchievement.AGENT_DISCOVER, threshold: 1, action: "Discover an Agent" },
+  ],
+  [CartridgeAchievement.QUEST_DISCOVER]: [
+    { achievement: CartridgeAchievement.QUEST_DISCOVER, threshold: 1, action: "Discover a Quest Tile" },
+  ],
+  [CartridgeAchievement.MINE_DISCOVER]: [
+    { achievement: CartridgeAchievement.MINE_DISCOVER, threshold: 1, action: "Discover a Fragment Mine" },
+  ],
+  [CartridgeAchievement.HYPERSTRUCTURE_DISCOVER]: [
+    {
+      achievement: CartridgeAchievement.HYPERSTRUCTURE_DISCOVER,
+      threshold: 1,
+      action: "Discover a Hyperstructure Foundation",
+    },
+  ],
+  [CartridgeAchievement.RESOURCE_PRODUCE]: [
+    {
+      achievement: CartridgeAchievement.RESOURCE_PRODUCE,
+      threshold: 10_000_000,
+      action: "Produce 10,000,000 resources",
+    },
+    {
+      achievement: CartridgeAchievement.RESOURCE_PRODUCE,
+      threshold: 100_000_000,
+      action: "Produce 100,000,000 resources",
+    },
+    {
+      achievement: CartridgeAchievement.RESOURCE_PRODUCE,
+      threshold: 1_000_000_000,
+      action: "Produce 1,000,000,000 resources",
+    },
+  ],
+  [CartridgeAchievement.BUILD_STANDARD]: [
+    {
+      achievement: CartridgeAchievement.BUILD_STANDARD,
+      threshold: 10,
+      action: "Construct 10 buildings using the Standard construction mode",
+    },
+    {
+      achievement: CartridgeAchievement.BUILD_STANDARD,
+      threshold: 25,
+      action: "Construct 25 buildings using the Standard construction mode",
+    },
+    {
+      achievement: CartridgeAchievement.BUILD_STANDARD,
+      threshold: 50,
+      action: "Construct 50 buildings using the Standard construction mode",
+    },
+  ],
+  [CartridgeAchievement.BUILD_SIMPLE]: [
+    {
+      achievement: CartridgeAchievement.BUILD_SIMPLE,
+      threshold: 10,
+      action: "Construct 10 buildings using the Simple construction mode",
+    },
+    {
+      achievement: CartridgeAchievement.BUILD_SIMPLE,
+      threshold: 25,
+      action: "Construct 25 buildings using the Simple construction mode",
+    },
+    {
+      achievement: CartridgeAchievement.BUILD_SIMPLE,
+      threshold: 50,
+      action: "Construct 50 buildings using the Simple construction mode",
+    },
+  ],
+  [CartridgeAchievement.LABOR_PRODUCE]: [
+    { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 1_000_000, action: "Produce 1,000,000 Labor" },
+    { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 10_000_000, action: "Produce 10,000,000 Labor" },
+    { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 100_000_000, action: "Produce 100,000,000 Labor" },
+  ],
+  [CartridgeAchievement.KILL_AGENT]: [
+    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 1, action: "Kill an Agent" },
+    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 10, action: "Kill 10 Agents" },
+  ],
+  [CartridgeAchievement.WIN_BATTLE]: [
+    { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 1, action: "Win your first battle" },
+    { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 10, action: "Win 10 battles" },
+    { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 25, action: "Win 25 battles" },
+  ],
+  [CartridgeAchievement.PRODUCE_T3]: [
+    {
+      achievement: CartridgeAchievement.PRODUCE_T3,
+      threshold: 1,
+      action: "Produce a T3 troop (Knight, Crossbowman, or Paladin)",
+    },
+  ],
+  [CartridgeAchievement.WIN_BIOME_BATTLE]: [
+    {
+      achievement: CartridgeAchievement.WIN_BIOME_BATTLE,
+      threshold: 5,
+      action: "Win a battle in 5 different biome types, utilizing biome advantages",
+    },
+  ],
+  [CartridgeAchievement.SUCCESSFUL_RAID]: [
+    {
+      achievement: CartridgeAchievement.SUCCESSFUL_RAID,
+      threshold: 10,
+      action: "Successfully raid resources from an enemy structure 10 times",
+    },
+  ],
+  [CartridgeAchievement.DEFEND_STRUCTURE]: [
+    {
+      achievement: CartridgeAchievement.DEFEND_STRUCTURE,
+      threshold: 1,
+      action: "Successfully defend your Realm or Village from an attack",
+    },
+  ],
+  [CartridgeAchievement.UPGRADE_REALM]: [
+    { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 1, action: "Upgrade a Realm to a City" },
+    { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 2, action: "Upgrade a Realm to a Kingdom" },
+    { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 3, action: "Upgrade a Realm to an Empire" },
+  ],
+  [CartridgeAchievement.UPGRADE_VILLAGE]: [
+    { achievement: CartridgeAchievement.UPGRADE_VILLAGE, threshold: 1, action: "Upgrade a Village to a City" },
+  ],
+  [CartridgeAchievement.JOIN_TRIBE]: [
+    { achievement: CartridgeAchievement.JOIN_TRIBE, threshold: 1, action: "Create or join a Tribe" },
+  ],
+  [CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE]: [
+    {
+      achievement: CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE,
+      threshold: 500_000,
+      action: "Contribute 500,000 resources to a Hyperstructure",
+    },
+    {
+      achievement: CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE,
+      threshold: 5_000_000,
+      action: "Contribute 5,000,000 resources to a Hyperstructure",
+    },
+    {
+      achievement: CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE,
+      threshold: 50_000_000,
+      action: "Contribute 50,000,000 resources to a Hyperstructure",
+    },
+  ],
+  [CartridgeAchievement.WIN_GAME]: [
+    { achievement: CartridgeAchievement.WIN_GAME, threshold: 1, action: "Win the Game" },
+  ],
+  [CartridgeAchievement.VICTORY_POINTS]: [
+    { achievement: CartridgeAchievement.VICTORY_POINTS, threshold: 1, action: "Earn Victory Points" },
+  ],
+  [CartridgeAchievement.BRIDGE_LORDS]: [
+    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 10, action: "Complete 10 Orders" },
+    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 50, action: "Complete 50 Orders" },
+    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 200, action: "Complete 200 Orders" },
+  ],
+  [CartridgeAchievement.PRODUCE_T2]: [
+    { achievement: CartridgeAchievement.PRODUCE_T2, threshold: 1, action: "Produce a T2 troop" },
+  ],
+};
+
 /**
  * Converts a CartridgeAchievement enum value to its corresponding felt252 value
+ * and pads it to 66 characters (including 0x prefix)
  * @param achievement The CartridgeAchievement enum value
- * @returns The felt252 value as a string
+ * @returns The padded felt252 value as a string
  */
 export function getTaskId(achievement: CartridgeAchievement): string {
-  return cairoShortStringToFelt(achievement);
+  const felt = cairoShortStringToFelt(achievement);
+  // Remove 0x prefix if present
+  const withoutPrefix = felt.startsWith("0x") ? felt.slice(2) : felt;
+  // Pad with zeros to 64 characters (66 with 0x prefix)
+  return "0x" + withoutPrefix.padStart(64, "0");
+}
+
+/**
+ * Normalizes a player address to ensure it starts with '0x0'
+ * @param address The player address to normalize
+ * @returns The normalized address
+ */
+function normalizePlayerAddress(address: string): string {
+  if (address.startsWith("0x")) {
+    // If it starts with 0x but not 0x0, add the 0
+    if (!address.startsWith("0x0")) {
+      return "0x0" + address.slice(2);
+    }
+    return address;
+  }
+  // If it doesn't start with 0x at all, add 0x0
+  return "0x0" + address;
 }
 
 /**
@@ -60,14 +256,16 @@ export async function fetchTrophyProgression(
   playerAddress: string,
   achievement: CartridgeAchievement,
 ): Promise<number> {
+  const normalizedAddress = normalizePlayerAddress(playerAddress);
   const taskId = getTaskId(achievement);
+  console.log({ taskId });
   const query = `
     SELECT
       SUM(count) as total_count
     FROM
       "s1_eternum-TrophyProgression"
     WHERE
-      player_id = '${playerAddress}'
+      player_id = '${normalizedAddress}'
       AND task_id = '${taskId}'
   `;
 
@@ -83,7 +281,7 @@ export async function fetchTrophyProgression(
 }
 
 /**
- * Dispatch actions to the GG.xyz API endpoint
+ * Dispatch actions to the GG.xyz API endpoint through our secure backend
  * @param actions Array of action strings to dispatch
  * @param playerAddress The player's address
  * @returns Promise with the API response
@@ -100,7 +298,7 @@ export async function dispatchActions(actions: string[], playerAddress: string):
     },
     body: JSON.stringify({
       actions,
-      playerAddress,
+      playerAddress: playerAddress,
     }),
   });
 
@@ -109,4 +307,35 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   }
 
   return await response.json();
+}
+
+/**
+ * Checks quest progression and dispatches actions when thresholds are met
+ * @param playerAddress The player's address
+ * @param achievement The CartridgeAchievement enum value
+ * @param newCount The new count to be added
+ * @returns Promise with the dispatched actions
+ */
+export async function checkAndDispatchGgXyzQuestProgress(
+  playerAddress: string,
+  achievement: CartridgeAchievement,
+): Promise<string[]> {
+  const currentCount = await fetchTrophyProgression(playerAddress, achievement);
+  console.log({ currentCount });
+
+  const thresholds = QUEST_THRESHOLDS[achievement];
+  const completedActions: string[] = [];
+
+  for (const threshold of thresholds) {
+    // Check if we've just reached or exceeded this threshold
+    if (currentCount >= threshold.threshold) {
+      completedActions.push(threshold.action);
+    }
+  }
+
+  if (completedActions.length > 0) {
+    await dispatchActions(completedActions, playerAddress);
+  }
+
+  return completedActions;
 }

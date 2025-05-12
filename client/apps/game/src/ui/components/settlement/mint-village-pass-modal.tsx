@@ -10,6 +10,7 @@ import { ModalContainer } from "../modal-container";
 import { SettlementMinimap } from "./settlement-minimap";
 import { VillageResourceReveal } from "./village-resource-reveal";
 
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
@@ -252,6 +253,12 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         console.error("Error settling village:", error);
       } finally {
         setIsLoading(false);
+      }
+
+      try {
+        await checkAndDispatchGgXyzQuestProgress(account?.address, CartridgeAchievement.VILLAGE_SETTLEMENT);
+      } catch (error) {
+        console.error("Error dispatching quest progress:", error);
       }
     } else {
       console.warn("Attempted to settle village without required selections.");
