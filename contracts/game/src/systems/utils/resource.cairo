@@ -3,7 +3,6 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::ResourceTypes;
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
@@ -123,7 +122,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::ensure_no_troop_or_lords_or_donkey_resource(resources);
         Self::_instant_transfer_storable(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
         );
@@ -485,22 +483,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             }
         }
     }
-
-    fn ensure_no_troop_or_lords_or_donkey_resource(mut resources: Span<(u8, u128)>) {
-        for i in 0..resources.len() {
-            let (resource_type, _) = resources.at(i);
-            if TroopResourceImpl::is_troop(*resource_type) {
-                panic!("troop resource can't be received");
-            }
-            if *resource_type == ResourceTypes::LORDS {
-                panic!("lords resource can't be received");
-            }
-            if *resource_type == ResourceTypes::DONKEY {
-                panic!("donkey resource can't be received");
-            }
-        }
-    }
-
 
     fn _emit_event(
         ref world: WorldStorage, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,

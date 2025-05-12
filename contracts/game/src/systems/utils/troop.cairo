@@ -590,7 +590,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
         let troop_tier: TroopTier = *random::choices(
             array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
-            array![80, 15, 5].span(),
+            array![70, 20, 10].span(),
             array![].span(),
             1,
             true,
