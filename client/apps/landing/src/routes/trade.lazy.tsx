@@ -13,16 +13,18 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
+import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
+import { useDebounce } from "@bibliothecadao/react";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/season-passes")({
@@ -196,7 +198,6 @@ function SeasonPasses() {
     }
     setIsTransferOpen(true);
   }, []);
-  console.log(totals.data?.[0]);
   const totalPasses = filteredSeasonPasses.length;
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const totalWeiStr = BigInt(totals.data?.[0]?.open_orders_total_wei ?? 0);
@@ -209,6 +210,49 @@ function SeasonPasses() {
 
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const [sweepCount, setSweepCount] = useState(0);
+  const debouncedSweepCount = useDebounce(sweepCount, 200); // 300ms debounce
+
+  // Update effect to use debounced value
+  useEffect(() => {
+    // Only run sweep selection if sweepCount > 0
+    if (sweepCount > 0) {
+      // Get the passes we want to select
+      const passesToSelect = paginatedPasses.slice(0, sweepCount);
+
+      // Get current selected pass IDs
+      const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
+
+      // Toggle passes that need to be selected
+      passesToSelect.forEach((pass) => {
+        if (!currentSelectedIds.has(pass.token_id)) {
+          togglePass(pass);
+        }
+      });
+
+      // Toggle passes that need to be deselected
+      selectedPasses.forEach((pass) => {
+        if (!passesToSelect.some((p) => p.token_id === pass.token_id)) {
+          togglePass(pass);
+        }
+      });
+    }
+  }, [sweepCount, paginatedPasses, selectedPasses, togglePass]);
+
+  // Reset sweep count only when manually selecting passes
+  useEffect(() => {
+    // Only reset if we have selected passes and sweep count is > 0
+    // AND the selection count doesn't match the sweep count (indicating manual selection)
+    // AND we're not in the middle of a sweep operation (debouncedSweepCount matches sweepCount)
+    if (
+      selectedPasses.length > 0 &&
+      sweepCount > 0 &&
+      selectedPasses.length !== sweepCount &&
+      debouncedSweepCount === sweepCount
+    ) {
+      setSweepCount(0);
+    }
+  }, [selectedPasses.length, sweepCount, debouncedSweepCount]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -298,46 +342,85 @@ function SeasonPasses() {
           </div>
 
           {/* Sticky Bottom Sweep Bar */}
-          {selectedPasses.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
-              <div className="container mx-auto flex items-center justify-start">
+          <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
+            <div className="container mx-auto flex gap-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {/* Selected Pass Images */}
-                    <div className="flex -space-x-2">
-                      {selectedPasses.slice(0, 3).map((pass) => {
-                        const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
-                        const image = metadata?.image;
-                        return (
-                          <div
-                            key={pass.token_id}
-                            className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
-                          >
-                            <img src={image} alt={`Pass #${pass.token_id}`} className="w-full h-full object-cover" />
-                          </div>
-                        );
-                      })}
+                  {selectedPasses.length > 0 && sweepCount === 0 && !debouncedSweepCount ? (
+                    <div className="flex items-center gap-2">
+                      {/* Selected Pass Images */}
+                      <div className="flex -space-x-2">
+                        {selectedPasses.slice(0, 3).map((pass) => {
+                          const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
+                          const image = metadata?.image;
+                          return (
+                            <div
+                              key={pass.token_id}
+                              className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
+                            >
+                              <img src={image} alt={`Pass #${pass.token_id}`} className="w-full h-full object-cover" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Show count if more than 3 passes */}
+                      {selectedPasses.length > 3 && (
+                        <span className="text-sm font-medium text-muted-foreground">
+                          +{selectedPasses.length - 3} more
+                        </span>
+                      )}
                     </div>
-                    {/* Show count if more than 3 passes */}
-                    {selectedPasses.length > 3 && (
-                      <span className="text-sm font-medium text-muted-foreground">
-                        +{selectedPasses.length - 3} more
-                      </span>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-4 w-52 -mt-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium">Sweep Selection</span>
+                          <span className="text-xs text-muted-foreground">
+                            {sweepCount} / {Math.min(activeOrders, 24)}
+                          </span>
+                        </div>
+                        <Slider
+                          value={[sweepCount]}
+                          onValueChange={([value]: number[]) => setSweepCount(value)}
+                          max={Math.min(activeOrders, 24)}
+                          step={1}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                   <Button className="mr-4" onClick={() => setIsPurchaseDialogOpen(true)}>
                     Buy ({selectedPasses.length}) Passes
                   </Button>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="font-semibold">{getTotalPrice().toFixed(4)} Lords</div>
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                  <div className="font-semibold">
+                    {getTotalPrice()} Lords{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (Max Price:{" "}
+                      {selectedPasses.length > 0
+                        ? formatUnits(
+                            BigInt(Math.max(...selectedPasses.map((pass) => Number(pass.best_price_hex)))),
+                            18,
+                          )
+                        : 0}
+                      )
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSweepCount(0);
+                      clearSelection();
+                    }}
+                  >
                     Clear Selection
                   </Button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (

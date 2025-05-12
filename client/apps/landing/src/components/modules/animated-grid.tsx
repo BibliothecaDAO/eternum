@@ -53,7 +53,7 @@ const getRowSpanClass = (span: number | undefined, breakpoint: string) => {
 export const AnimatedGrid = <T,>({ items, renderItem }: AnimatedGridProps<T>) => {
   return (
     <motion.div
-      className="grid grid-cols-1 sm:grid-cols-12 gap-8 px-2"
+      className="grid grid-cols-1 sm:grid-cols-12 gap-8 px-2 pb-4"
       initial="hidden"
       animate="visible"
       variants={{
