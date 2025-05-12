@@ -15,6 +15,17 @@ const envSchema = z.object({
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
 
+  // Action Dispatcher
+  VITE_PUBLIC_ACTION_DISPATCHER_URL: z
+    .string()
+    .url()
+    .optional()
+    .default("https://api-staging.gg.xyz/api/v2/action-dispatcher/dispatch/public"),
+  VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z
+    .string()
+    .optional()
+    .default("7c8e1578b71bd84183b44b4f38f3d6bf0689dbc1e4be305ae43be8899d5ba5cd"),
+
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
     .transform((v) => v === "true")
