@@ -1,7 +1,7 @@
 import { lordsAddress, marketplaceAddress, seasonPassAddress } from "@/config";
 import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
 import {
-  AcceptMarketplaceOrderProps,
+  AcceptMarketplaceOrdersProps,
   CancelMarketplaceOrderProps,
   CreateMarketplaceOrderProps,
   EditMarketplaceOrderProps,
@@ -14,7 +14,7 @@ import { useDojo } from "./context/dojo-context";
 
 // Define the parameters needed for each function, excluding the signer which is handled internally.
 type ListItemParams = Omit<CreateMarketplaceOrderProps, "signer" | "marketplace_address">;
-type AcceptOrderParams = Omit<AcceptMarketplaceOrderProps, "signer" | "marketplace_address">;
+type AcceptOrdersParams = Omit<AcceptMarketplaceOrdersProps, "signer" | "marketplace_address">;
 type CancelOrderParams = Omit<CancelMarketplaceOrderProps, "signer" | "marketplace_address">;
 type EditOrderParams = Omit<EditMarketplaceOrderProps, "signer" | "marketplace_address">;
 
@@ -29,7 +29,7 @@ export const useMarketplace = () => {
     setup: {
       systemCalls: {
         create_marketplace_order,
-        accept_marketplace_order,
+        accept_marketplace_orders,
         cancel_marketplace_order,
         edit_marketplace_order,
       },
@@ -99,17 +99,17 @@ export const useMarketplace = () => {
     }
   };
 
-  const acceptOrder = async (params: AcceptOrderParams & { price: bigint }) => {
+  const acceptOrders = async (params: AcceptOrdersParams & { totalPrice: bigint }) => {
     if (!account) throw new Error("Account not connected");
     setIsAcceptingOrder(true);
 
-    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.price]);
+    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice]);
 
     try {
       // accept order
-      await accept_marketplace_order(
+      await accept_marketplace_orders(
         {
-          order_id: params.order_id.toString(),
+          order_ids: params.order_ids,
           signer: account as AccountInterface,
           marketplace_address: marketplaceAddress,
         },
@@ -169,7 +169,7 @@ export const useMarketplace = () => {
 
   return {
     listItem,
-    acceptOrder,
+    acceptOrders,
     cancelOrder,
     editOrder,
     approveMarketplace,
