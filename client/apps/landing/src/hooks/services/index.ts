@@ -232,8 +232,8 @@ export interface TokenTransfer {
 }
 
 export interface ActiveMarketOrdersTotal {
-  total_active: number;
-  total_volume: bigint | null; // SUM can return null if there are no rows
+  active_order_count: number;
+  open_orders_total_wei: bigint | null; // SUM can return null if there are no rows
 }
 
 // Define the response type for the new query

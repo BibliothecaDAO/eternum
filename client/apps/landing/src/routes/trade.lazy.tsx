@@ -196,12 +196,12 @@ function SeasonPasses() {
     }
     setIsTransferOpen(true);
   }, []);
-
+  console.log(totals.data?.[0]);
   const totalPasses = filteredSeasonPasses.length;
-
-  const activeOrders = totals.data?.[0]?.total_active ?? 0;
-  const totalWei = totals.data?.[0]?.total_volume ?? null;
-  const totalEth = totalWei !== null ? formatUnits(totalWei, 18) : "0";
+  const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
+  const totalWeiStr = BigInt(totals.data?.[0]?.open_orders_total_wei ?? 0);
+  const totalWei = formatUnits(totalWeiStr, 18);
+  const totalEth = totalWei ?? "0";
   const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   // Replace the selection state with the store
