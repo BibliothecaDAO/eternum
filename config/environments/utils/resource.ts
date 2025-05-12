@@ -383,7 +383,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ruby]: [
-    { resource: ResourcesIds.Labor, amount: 249.20 },
+    { resource: ResourcesIds.Labor, amount: 249.2 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.DeepCrystal]: [
@@ -411,7 +411,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Adamantine]: [
-    { resource: ResourcesIds.Labor, amount: 877.80 },
+    { resource: ResourcesIds.Labor, amount: 877.8 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Mithral]: [
