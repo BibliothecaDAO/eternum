@@ -40,7 +40,7 @@ export function TraitFilterUI({
       </div> */}
       {/* Display Active Filters */}
       {hasActiveFilters && (
-        <div className="border-r pr-4 border-border/50 flex flex-wrap gap-2 items-center">
+        <div className="border-r pr-4 border-border/50 flex flex-wrap gap-0.5 sm:gap-2 items-center">
           {Object.entries(selectedFilters).map(([traitType, values]) =>
             values.map((value) => {
               // Handle Wonder badge display
@@ -60,7 +60,6 @@ export function TraitFilterUI({
               // Handle other trait badges
               return (
                 <Badge key={`${traitType}-${value}`} variant="default" className="">
-                  {traitType.replace(/_/g, " ")}:{" "}
                   {traitType === "Resource" && (
                     <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />
                   )}

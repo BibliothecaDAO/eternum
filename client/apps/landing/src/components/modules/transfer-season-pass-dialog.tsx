@@ -11,7 +11,7 @@ import { Input } from "../ui/input";
 import { abi } from "@/abi/SeasonPass";
 import { seasonPassAddress } from "@/config";
 import { displayAddress } from "@/lib/utils";
-import { RealmMetadata, SeasonPassMint } from "@/types";
+import { MergedNftData, RealmMetadata } from "@/types";
 import { useCartridgeAddress, useDebounce } from "@bibliothecadao/react";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { TypeH3 } from "../typography/type-h3";
@@ -19,7 +19,7 @@ import { TypeH3 } from "../typography/type-h3";
 interface TransferSeasonPassProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  seasonPassMints: SeasonPassMint[];
+  seasonPassMints: MergedNftData[];
   initialSelectedTokenId?: string | null;
 }
 
@@ -117,7 +117,7 @@ export default function TransferSeasonPassDialog({
       setSelectedRealms([]);
     } else {
       // Select all realms
-      setSelectedRealms(seasonPassMints.map((mint) => mint?.node?.tokenMetadata?.tokenId || ""));
+      setSelectedRealms(seasonPassMints.map((mint) => mint?.token_id.toString() || ""));
     }
   };
 
@@ -144,11 +144,11 @@ export default function TransferSeasonPassDialog({
             </TableHeader>
             <TableBody>
               {seasonPassMints?.map((seasonPassMint) => {
-                const parsedMetadata: RealmMetadata | null = seasonPassMint?.node.tokenMetadata.metadata
-                  ? JSON.parse(seasonPassMint?.node.tokenMetadata.metadata)
+                const parsedMetadata: RealmMetadata | null = seasonPassMint?.metadata
+                  ? JSON.parse(seasonPassMint?.metadata)
                   : null;
                 const { attributes, name } = parsedMetadata ?? {};
-                const tokenId = seasonPassMint?.node.tokenMetadata.tokenId;
+                const tokenId = seasonPassMint?.token_id.toString();
 
                 return (
                   <TableRow key={tokenId}>

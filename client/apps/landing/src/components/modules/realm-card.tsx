@@ -1,10 +1,9 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { seasonPassAddress } from "@/config";
 import { useDojo } from "@/hooks/context/dojo-context";
-import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
+import { AugmentedRealm } from "@/routes/mint.lazy";
 import { RealmMetadata } from "@/types";
-import { useAccount, useReadContract } from "@starknet-react/core";
-import { CheckCircle2, Loader } from "lucide-react";
+import { useAccount } from "@starknet-react/core";
+import { CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
@@ -12,9 +11,7 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 const IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="; // Transparent 1x1 gif
 
 interface RealmCardProps {
-  realm: NonNullable<NonNullable<NonNullable<GetAccountTokensQuery>["tokenBalances"]>["edges"]>[0] & {
-    seasonPassMinted?: boolean;
-  };
+  realm: AugmentedRealm;
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
@@ -28,13 +25,13 @@ interface ListingDetails {
 }
 
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
-  const { tokenId, contractAddress, metadata } =
-    realm.node?.tokenMetadata.__typename === "ERC721__Token"
-      ? { ...realm.node.tokenMetadata, tokenId: BigInt(realm.node.tokenMetadata.tokenId) }
-      : { tokenId: "", contractAddress: "", metadata: "" };
+  const { tokenId, contractAddress } = {
+    tokenId: BigInt(realm.tokenId),
+    contractAddress: realm.originalRealm?.contract_address,
+  };
+  /*{ tokenId: "", contractAddress: "", metadata: "" };*/
 
-  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
-  const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
+  const { attributes, name, image: originalImageUrl } = realm.parsedMetadata ?? {};
 
   const { address: accountAddress } = useAccount();
 
@@ -45,7 +42,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
 
-  const {
+  /*const {
     data: seasonPassOwnerData,
     error: seasonPassError,
     isSuccess: isSeasonPassMintedSuccess,
@@ -65,30 +62,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     address: seasonPassAddress as `0x${string}`,
     args: [tokenId.toString()], // Pass tokenId as string if needed by hook
     watch: true,
-  });
+  });*/
 
-  const {
-    data: realmOwnerData,
-    isSuccess: isRealmOwnerSuccess,
-    isFetching: isFetchingRealmOwner,
-  } = useReadContract({
-    abi: [
-      {
-        type: "function",
-        name: "owner_of",
-        inputs: [{ name: "token_id", type: "core::integer::u256" }],
-        outputs: [{ type: "core::starknet::contract_address::ContractAddress" }],
-        state_mutability: "view",
-      },
-    ] as const,
-    functionName: "owner_of",
-    address: contractAddress as `0x${string}`,
-    args: [tokenId.toString()], // Pass tokenId as string if needed by hook
-    enabled: !!contractAddress && !!tokenId,
-    watch: true,
-  });
-
-  const isOwner = isRealmOwnerSuccess && realmOwnerData === BigInt(accountAddress ?? "");
+  const isOwner = realm.originalRealm?.account_address === (accountAddress ?? "");
 
   // --- Image Loading State & Logic ---
   const cardRef = useRef<HTMLDivElement>(null);
@@ -144,11 +120,11 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     setIsModalOpen(true);
   };
 
-  useEffect(() => {
+  /**useEffect(() => {
     if (isSeasonPassMintedSuccess && onSeasonPassStatusChange && tokenId) {
       onSeasonPassStatusChange(tokenId.toString(), !!seasonPassOwnerData);
     }
-  }, [isSeasonPassMintedSuccess, seasonPassOwnerData, tokenId]);
+  }, [isSeasonPassMintedSuccess, seasonPassOwnerData, tokenId]);*/
 
   // --- Fetch Marketplace Listing Status ---
   // Placeholder: Replace with actual logic to query Dojo state for MarketOrderModel
@@ -174,8 +150,8 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     fetchListingStatus();
   }, [tokenId, contractAddress, components]); // Add components dependency
 
-  const hasSeasonPassMinted = isSeasonPassMintedSuccess && !!seasonPassOwnerData;
-  const isLoadingStatus = isFetchingSeasonPass || isFetchingRealmOwner;
+  const hasSeasonPassMinted = realm.seasonPassMinted;
+  //const isLoadingStatus =  isFetchingRealmOwner;
 
   return (
     <>
@@ -189,7 +165,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       >
         <div
           className={`absolute inset-0 opacity-5 
-          ${isLoadingStatus ? "bg-gray-500" : hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : "bg-gray-700"} 
+          ${hasSeasonPassMinted ? "bg-dark-green" : isOwner ? "bg-blue-900" : "bg-gray-700"} 
           pointer-events-none`}
         />
 
@@ -197,19 +173,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
         {!isSelected && (
           <div
             className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`}
-            title={
-              isLoadingStatus
-                ? "Checking Status..."
-                : hasSeasonPassMinted
-                  ? "Season Pass Minted"
-                  : "Season Pass Available"
-            }
+            title={hasSeasonPassMinted ? "Season Pass Minted" : "Season Pass Available"}
           >
-            {isLoadingStatus ? (
-              <Loader className="w-5 h-5 text-gray-400 animate-spin" />
-            ) : hasSeasonPassMinted ? (
-              <CheckCircle2 className="w-5 h-5 text-lime-500" />
-            ) : null}
+            {hasSeasonPassMinted ? <CheckCircle2 className="w-5 h-5 text-lime-500" /> : null}
           </div>
         )}
 

@@ -66,7 +66,7 @@ export const TopNavigationView = ({
           onClick={() => {
             window.open("https://discord.gg/realmsworld", "_blank");
           }}
-          className="gap-2 hidden sm:flex"
+          className="gap-2 hidden lg:flex"
         >
           <img src="/images/buildings/thumb/discord.png" alt="Discord" className="w-4 h-4" />
           Discord
@@ -95,7 +95,7 @@ export const TopNavigationView = ({
             const userAddress = address || "";
             window.open(baseUrl + userAddress, "_blank");
           }}
-          className="gap-2 hidden sm:flex uppercase"
+          className="gap-2 hidden lg:flex uppercase"
         >
           <CoinsIcon className="w-4 h-4" />
           Bridge
