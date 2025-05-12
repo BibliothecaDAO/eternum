@@ -11,7 +11,7 @@ import {
   StructureType,
   resources,
 } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourceManager } from "../managers";
 import { unpackValue } from "./packed-data";
@@ -39,7 +39,7 @@ export const getBalance = (
 ) => {
   const resourceManager = new ResourceManager(components, entityId);
   return {
-    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId),
+    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance,
     resourceId,
   };
 };
@@ -59,8 +59,8 @@ export const getResourcesFromBalance = (
   return resourceIds
     .map((id) => {
       const resourceManager = new ResourceManager(components, entityId);
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, id);
-      return { resourceId: id, amount: balance };
+      const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentDefaultTick, id);
+      return { resourceId: id, amount: balance, hasReachedMaxCapacity };
     })
     .filter((r) => r.amount > 0);
 };
@@ -204,16 +204,4 @@ export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, c
 
   // Otherwise, transfer is allowed
   return true;
-};
-
-export const getFood = (
-  resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
-  currentDefaultTick: number,
-) => {
-  const wheat = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Wheat);
-  const fish = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Fish);
-  return {
-    wheat,
-    fish,
-  };
 };
