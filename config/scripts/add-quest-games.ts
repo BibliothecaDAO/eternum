@@ -4,6 +4,8 @@ import { getGameManifest } from "@contracts";
 import chalk from "chalk";
 import { nodeReadConfig } from "deployer/config";
 import { Account } from "starknet";
+import { confirmNonLocalDeployment } from "utils/confirmation";
+import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "utils/environment";
 import { type Chain } from "../utils/utils";
 const {
   VITE_PUBLIC_MASTER_ADDRESS,
@@ -12,6 +14,11 @@ const {
   VITE_PUBLIC_CHAIN,
   VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
 } = process.env;
+
+// prompt user to confirm non-local deployment
+confirmNonLocalDeployment(VITE_PUBLIC_CHAIN!);
+await saveConfigJsonFromConfigTsFile(VITE_PUBLIC_CHAIN! as NetworkType);
+logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
 
 const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
@@ -44,3 +51,4 @@ if (txQuestGames) {
 } else {
   console.log(chalk.red(`    ✘ Quest Games failed `));
 }
+logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
