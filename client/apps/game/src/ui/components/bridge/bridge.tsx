@@ -251,7 +251,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
     if (bridgeDirection === "out") {
       return resourcesToBridge.some((r) => {
         if (r.resourceId && r.amount && parseFloat(r.amount) > 0) {
-          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId);
+          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId).balance;
           const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
           return parseFloat(r.amount) > displayBalance;
         }
@@ -371,7 +371,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           {resourcesToBridge.map((resource) => {
             const balance =
               bridgeDirection === "out" && resource.resourceId && selectedStructureId
-                ? resourceManager.balanceWithProduction(currentTick, resource.resourceId)
+                ? resourceManager.balanceWithProduction(currentTick, resource.resourceId).balance
                 : null;
 
             const displayBalance = balance !== null ? divideByPrecision(balance) : 0;

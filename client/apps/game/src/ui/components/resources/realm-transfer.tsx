@@ -11,6 +11,7 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import {
   findResourceById,
   ID,
@@ -19,7 +20,6 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
@@ -49,7 +49,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceManager = useResourceManager(selectedStructureEntityId);
 
   const balance = useMemo(() => {
-    return resourceManager.balanceWithProduction(tick, resource);
+    return resourceManager.balanceWithProduction(tick, resource).balance;
   }, [resourceManager, tick]);
 
   const playerStructures = usePlayerStructures();
@@ -226,11 +226,11 @@ const RealmTransferBalance = memo(
     );
 
     const getBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, resource);
+      return resourceManager.balanceWithProduction(tick, resource).balance;
     }, [resourceManager, tick]);
 
     const getDonkeyBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey);
+      return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
     }, [resourceManager, tick]);
 
     const [resourceWeightKg, setResourceWeightKg] = useState(0);

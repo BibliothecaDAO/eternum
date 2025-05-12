@@ -174,10 +174,34 @@ export const getGuildsFromTorii = async <S extends Schema>(
 };
 
 export const getHyperstructureFromTorii = async <S extends Schema>(
+  hyperstructureIds: ID[],
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const query = {
+  const structureQuery = {
+    Composite: {
+      operator: "Or" as LogicalOperator,
+      clauses: hyperstructureIds.map((id) => ({
+        Keys: {
+          keys: [id.toString()],
+          pattern_matching: "FixedLen" as PatternMatching,
+          models: ["s1_eternum-Structure"],
+        },
+      })),
+    },
+  };
+
+  const structurePromise = getEntities(
+    client,
+    structureQuery,
+    components as any,
+    [],
+    ["s1_eternum-Structure"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+
+  const hyperstructureQuery = {
     Composite: {
       operator: "Or" as LogicalOperator,
       clauses: [
@@ -214,7 +238,17 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     "s1_eternum-PlayerRegisteredPoints",
   ];
 
-  return getEntities(client, query, components as any, [], hyperstructureModels, EVENT_QUERY_LIMIT, false);
+  const hyperstructurePromise = getEntities(
+    client,
+    hyperstructureQuery,
+    components as any,
+    [],
+    hyperstructureModels,
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+
+  return Promise.all([hyperstructurePromise, structurePromise]);
 };
 
 export const getEntitiesFromTorii = async <S extends Schema>(

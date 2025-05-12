@@ -4,6 +4,7 @@ import {
   getMarketEventsFromTorii,
   getMarketFromTorii,
 } from "@/dojo/queries";
+import { fetchHyperstructures } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
@@ -23,9 +24,16 @@ export const useSyncLeaderboard = () => {
   useEffect(() => {
     const syncState = async () => {
       setLoading(LoadingStateKey.Leaderboard, true);
+
+      const hyperstructureIds = await fetchHyperstructures();
+
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
-        : getHyperstructureFromTorii(toriiClient, contractComponents as any);
+        : getHyperstructureFromTorii(
+            hyperstructureIds.map((h) => h.hyperstructure_id),
+            toriiClient,
+            contractComponents as any,
+          );
       const guildPromise = subscriptions[Subscription.Guild]
         ? Promise.resolve()
         : getGuildsFromTorii(toriiClient, contractComponents as any);
@@ -59,9 +67,14 @@ export const useSyncHyperstructure = () => {
   useEffect(() => {
     const syncState = async () => {
       setLoading(LoadingStateKey.Hyperstructure, true);
+      const hyperstructureIds = await fetchHyperstructures();
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
-        : getHyperstructureFromTorii(toriiClient, contractComponents as any);
+        : getHyperstructureFromTorii(
+            hyperstructureIds.map((h) => h.hyperstructure_id),
+            toriiClient,
+            contractComponents as any,
+          );
 
       const start = performance.now();
       await Promise.all([hyperstructurePromise]);

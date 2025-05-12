@@ -50,7 +50,7 @@ export const TransferResourcesContainer = ({
     return resources
       .map(({ id }) => ({
         resourceId: id,
-        amount: resourceManager.balanceWithProduction(currentDefaultTick, id),
+        amount: resourceManager.balanceWithProduction(currentDefaultTick, id).balance,
       }))
       .filter(({ amount }) => amount > 0);
   })();

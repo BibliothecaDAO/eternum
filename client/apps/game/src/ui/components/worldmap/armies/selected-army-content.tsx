@@ -11,6 +11,7 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
     setup: { components },
   } = useDojo();
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.owner)]));
+  const explorerResources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.entityId)]));
 
   return (
     <div
@@ -23,7 +24,13 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
       `}
     >
       <div className="flex flex-col w-[27rem]">
-        {resources && <ArmyWarning army={playerArmy.explorer} resource={resources} />}
+        {resources && explorerResources && (
+          <ArmyWarning
+            army={playerArmy.explorer}
+            explorerResources={explorerResources}
+            structureResources={resources}
+          />
+        )}
         <ArmyChip className="bg-black/90" army={playerArmy} showButtons={false} />
         {resources && (
           <InventoryResources

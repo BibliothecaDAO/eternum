@@ -115,8 +115,8 @@ export class ArmyActionManager {
     const fishBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
 
     return {
-      wheat: divideByPrecision(wheatBalance),
-      fish: divideByPrecision(fishBalance),
+      wheat: divideByPrecision(wheatBalance.balance),
+      fish: divideByPrecision(fishBalance.balance),
     };
   }
 

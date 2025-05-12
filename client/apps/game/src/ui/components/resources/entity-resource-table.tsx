@@ -81,7 +81,6 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                     size="large"
                     resourceId={resourceId}
                     resourceManager={resourceManager}
-                    maxCapacityKg={maxStorehouseCapacityKg}
                     hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
                   />
                 ))}

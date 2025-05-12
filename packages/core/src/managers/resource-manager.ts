@@ -16,92 +16,12 @@ export class ResourceManager {
     this.entityId = entityId;
   }
 
-  public getProduction(resourceId: ResourcesIds) {
-    const resource = this._getResource();
-    if (!resource) return undefined;
-
-    switch (resourceId) {
-      case ResourcesIds.Stone:
-        return resource.STONE_PRODUCTION;
-      case ResourcesIds.Coal:
-        return resource.COAL_PRODUCTION;
-      case ResourcesIds.Wood:
-        return resource.WOOD_PRODUCTION;
-      case ResourcesIds.Copper:
-        return resource.COPPER_PRODUCTION;
-      case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_PRODUCTION;
-      case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_PRODUCTION;
-      case ResourcesIds.Gold:
-        return resource.GOLD_PRODUCTION;
-      case ResourcesIds.Silver:
-        return resource.SILVER_PRODUCTION;
-      case ResourcesIds.Mithral:
-        return resource.MITHRAL_PRODUCTION;
-      case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_PRODUCTION;
-      case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_PRODUCTION;
-      case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_PRODUCTION;
-      case ResourcesIds.Ruby:
-        return resource.RUBY_PRODUCTION;
-      case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_PRODUCTION;
-      case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_PRODUCTION;
-      case ResourcesIds.Ignium:
-        return resource.IGNIUM_PRODUCTION;
-      case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_PRODUCTION;
-      case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_PRODUCTION;
-      case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_PRODUCTION;
-      case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_PRODUCTION;
-      case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_PRODUCTION;
-      case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_PRODUCTION;
-      case ResourcesIds.Labor:
-        return resource.LABOR_PRODUCTION;
-      case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_PRODUCTION;
-      case ResourcesIds.Donkey:
-        return resource.DONKEY_PRODUCTION;
-      case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_PRODUCTION;
-      case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_PRODUCTION;
-      case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_PRODUCTION;
-      case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_PRODUCTION;
-      case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_PRODUCTION;
-      case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_PRODUCTION;
-      case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_PRODUCTION;
-      case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_PRODUCTION;
-      case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_PRODUCTION;
-      case ResourcesIds.Wheat:
-        return resource.WHEAT_PRODUCTION;
-      case ResourcesIds.Fish:
-        return resource.FISH_PRODUCTION;
-      case ResourcesIds.Lords:
-        return resource.LORDS_PRODUCTION;
-      default:
-        return undefined;
-    }
-  }
-
   public getResource() {
     return this._getResource();
+  }
+
+  private _getResource() {
+    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
   }
 
   public isFood(resourceId: ResourcesIds): boolean {
@@ -109,7 +29,9 @@ export class ResourceManager {
   }
 
   public isActive(resourceId: ResourcesIds): boolean {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return false;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production) return false;
     if (this.isFood(resourceId)) {
       return production.production_rate !== 0n;
@@ -117,16 +39,21 @@ export class ResourceManager {
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
-  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
-    const production = this.getProduction(resourceId);
+  public balanceWithProduction(
+    currentTick: number,
+    resourceId: ResourcesIds,
+  ): { balance: number; hasReachedMaxCapacity: boolean } {
+    const resource = this._getResource();
+    if (!resource) return { balance: 0, hasReachedMaxCapacity: false };
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     const balance = this.balance(resourceId);
-    if (!production) return Number(balance);
+    if (!production) return { balance: Number(balance), hasReachedMaxCapacity: false };
     const amountProduced = this._amountProduced(production, currentTick, resourceId);
-    if (hasMaxCapacity) {
-      const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
-      return Number(finalBalance);
-    }
-    return Number(balance + amountProduced);
+    const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    return {
+      balance: Number(balance + amountProducedLimited),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced,
+    };
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -600,7 +527,9 @@ export class ResourceManager {
   };
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return 0;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production || production.building_count === 0) return 0;
 
     // Get production details
@@ -622,7 +551,9 @@ export class ResourceManager {
   }
 
   public getProductionEndsAt(resourceId: ResourcesIds): number {
-    const production = this.getProduction(resourceId);
+    const resource = this._getResource();
+    if (!resource) return 0;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production || production.building_count === 0) return 0;
 
     // If no production rate or no output left, return current tick
@@ -649,7 +580,7 @@ export class ResourceManager {
       structureBuildings?.packed_counts_2 || 0n,
       structureBuildings?.packed_counts_3 || 0n,
     ];
-    const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
+    const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
       capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
@@ -658,17 +589,22 @@ export class ResourceManager {
     };
   }
 
-  private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
-    const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
+  public balance(resourceId: ResourcesIds): bigint {
+    const resource = this._getResource();
+    if (!resource) return 0n;
+    return ResourceManager.balanceAndProduction(resource, resourceId).balance;
+  }
 
-    const maxAmountStorable = multiplyByPrecision(
-      storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),
-    );
+  private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
+    const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
+    const capacityLeft = capacityKg - capacityUsedKg;
 
-    if (balance > maxAmountStorable) {
+    const maxAmountStorable = multiplyByPrecision(capacityLeft / (configManager.getResourceWeightKg(resourceId) || 1));
+
+    if (amountProduced > maxAmountStorable) {
       return BigInt(maxAmountStorable);
     }
-    return balance;
+    return amountProduced;
   }
 
   private _amountProduced(
@@ -694,238 +630,109 @@ export class ResourceManager {
     return totalAmountProduced;
   }
 
-  public static balance(
+  /**
+   * STATIC FUNCTIONS
+   * all the static functions are used when we don't have recs synced
+   * in that case, we can query the components by other means (sql, grpc) and pass in the component values
+   */
+  public static balanceAndProduction(
     resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
     resourceId: ResourcesIds,
-  ): bigint {
-    if (!resource) return 0n;
-
+  ): {
+    balance: bigint;
+    production: {
+      building_count: number;
+      production_rate: bigint;
+      output_amount_left: bigint;
+      last_updated_at: number;
+    };
+  } {
     switch (resourceId) {
       case ResourcesIds.Stone:
-        return resource.STONE_BALANCE;
+        return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
       case ResourcesIds.Coal:
-        return resource.COAL_BALANCE;
+        return { balance: resource.COAL_BALANCE, production: resource.COAL_PRODUCTION };
       case ResourcesIds.Wood:
-        return resource.WOOD_BALANCE;
+        return { balance: resource.WOOD_BALANCE, production: resource.WOOD_PRODUCTION };
       case ResourcesIds.Copper:
-        return resource.COPPER_BALANCE;
+        return { balance: resource.COPPER_BALANCE, production: resource.COPPER_PRODUCTION };
       case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_BALANCE;
+        return { balance: resource.IRONWOOD_BALANCE, production: resource.IRONWOOD_PRODUCTION };
       case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_BALANCE;
+        return { balance: resource.OBSIDIAN_BALANCE, production: resource.OBSIDIAN_PRODUCTION };
       case ResourcesIds.Gold:
-        return resource.GOLD_BALANCE;
+        return { balance: resource.GOLD_BALANCE, production: resource.GOLD_PRODUCTION };
       case ResourcesIds.Silver:
-        return resource.SILVER_BALANCE;
+        return { balance: resource.SILVER_BALANCE, production: resource.SILVER_PRODUCTION };
       case ResourcesIds.Mithral:
-        return resource.MITHRAL_BALANCE;
+        return { balance: resource.MITHRAL_BALANCE, production: resource.MITHRAL_PRODUCTION };
       case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_BALANCE;
+        return { balance: resource.ALCHEMICAL_SILVER_BALANCE, production: resource.ALCHEMICAL_SILVER_PRODUCTION };
       case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_BALANCE;
+        return { balance: resource.COLD_IRON_BALANCE, production: resource.COLD_IRON_PRODUCTION };
       case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_BALANCE;
+        return { balance: resource.DEEP_CRYSTAL_BALANCE, production: resource.DEEP_CRYSTAL_PRODUCTION };
       case ResourcesIds.Ruby:
-        return resource.RUBY_BALANCE;
+        return { balance: resource.RUBY_BALANCE, production: resource.RUBY_PRODUCTION };
       case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_BALANCE;
+        return { balance: resource.DIAMONDS_BALANCE, production: resource.DIAMONDS_PRODUCTION };
       case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_BALANCE;
+        return { balance: resource.HARTWOOD_BALANCE, production: resource.HARTWOOD_PRODUCTION };
       case ResourcesIds.Ignium:
-        return resource.IGNIUM_BALANCE;
+        return { balance: resource.IGNIUM_BALANCE, production: resource.IGNIUM_PRODUCTION };
       case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_BALANCE;
+        return { balance: resource.TWILIGHT_QUARTZ_BALANCE, production: resource.TWILIGHT_QUARTZ_PRODUCTION };
       case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_BALANCE;
+        return { balance: resource.TRUE_ICE_BALANCE, production: resource.TRUE_ICE_PRODUCTION };
       case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_BALANCE;
+        return { balance: resource.ADAMANTINE_BALANCE, production: resource.ADAMANTINE_PRODUCTION };
       case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_BALANCE;
+        return { balance: resource.SAPPHIRE_BALANCE, production: resource.SAPPHIRE_PRODUCTION };
       case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_BALANCE;
+        return { balance: resource.ETHEREAL_SILICA_BALANCE, production: resource.ETHEREAL_SILICA_PRODUCTION };
       case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_BALANCE;
+        return { balance: resource.DRAGONHIDE_BALANCE, production: resource.DRAGONHIDE_PRODUCTION };
       case ResourcesIds.Labor:
-        return resource.LABOR_BALANCE;
+        return { balance: resource.LABOR_BALANCE, production: resource.LABOR_PRODUCTION };
       case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_BALANCE;
+        return { balance: resource.EARTHEN_SHARD_BALANCE, production: resource.EARTHEN_SHARD_PRODUCTION };
       case ResourcesIds.Donkey:
-        return resource.DONKEY_BALANCE;
+        return { balance: resource.DONKEY_BALANCE, production: resource.DONKEY_PRODUCTION };
       case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_BALANCE;
+        return { balance: resource.KNIGHT_T1_BALANCE, production: resource.KNIGHT_T1_PRODUCTION };
       case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_BALANCE;
+        return { balance: resource.KNIGHT_T2_BALANCE, production: resource.KNIGHT_T2_PRODUCTION };
       case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_BALANCE;
+        return { balance: resource.KNIGHT_T3_BALANCE, production: resource.KNIGHT_T3_PRODUCTION };
       case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_BALANCE;
+        return { balance: resource.CROSSBOWMAN_T1_BALANCE, production: resource.CROSSBOWMAN_T1_PRODUCTION };
       case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_BALANCE;
+        return { balance: resource.CROSSBOWMAN_T2_BALANCE, production: resource.CROSSBOWMAN_T2_PRODUCTION };
       case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_BALANCE;
+        return { balance: resource.CROSSBOWMAN_T3_BALANCE, production: resource.CROSSBOWMAN_T3_PRODUCTION };
       case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_BALANCE;
+        return { balance: resource.PALADIN_T1_BALANCE, production: resource.PALADIN_T1_PRODUCTION };
       case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_BALANCE;
+        return { balance: resource.PALADIN_T2_BALANCE, production: resource.PALADIN_T2_PRODUCTION };
       case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_BALANCE;
+        return { balance: resource.PALADIN_T3_BALANCE, production: resource.PALADIN_T3_PRODUCTION };
       case ResourcesIds.Wheat:
-        return resource.WHEAT_BALANCE;
+        return { balance: resource.WHEAT_BALANCE, production: resource.WHEAT_PRODUCTION };
       case ResourcesIds.Fish:
-        return resource.FISH_BALANCE;
+        return { balance: resource.FISH_BALANCE, production: resource.FISH_PRODUCTION };
       case ResourcesIds.Lords:
-        return resource.LORDS_BALANCE;
+        return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
       default:
-        return 0n;
+        return {
+          balance: 0n,
+          production: {
+            building_count: 0,
+            production_rate: 0n,
+            output_amount_left: 0n,
+            last_updated_at: 0,
+          },
+        };
     }
-  }
-
-  public balance(resourceId: ResourcesIds): bigint {
-    const resource = this._getResource();
-
-    if (!resource) return 0n;
-
-    switch (resourceId) {
-      case ResourcesIds.Stone:
-        return resource.STONE_BALANCE;
-      case ResourcesIds.Coal:
-        return resource.COAL_BALANCE;
-      case ResourcesIds.Wood:
-        return resource.WOOD_BALANCE;
-      case ResourcesIds.Copper:
-        return resource.COPPER_BALANCE;
-      case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_BALANCE;
-      case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_BALANCE;
-      case ResourcesIds.Gold:
-        return resource.GOLD_BALANCE;
-      case ResourcesIds.Silver:
-        return resource.SILVER_BALANCE;
-      case ResourcesIds.Mithral:
-        return resource.MITHRAL_BALANCE;
-      case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_BALANCE;
-      case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_BALANCE;
-      case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_BALANCE;
-      case ResourcesIds.Ruby:
-        return resource.RUBY_BALANCE;
-      case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_BALANCE;
-      case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_BALANCE;
-      case ResourcesIds.Ignium:
-        return resource.IGNIUM_BALANCE;
-      case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_BALANCE;
-      case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_BALANCE;
-      case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_BALANCE;
-      case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_BALANCE;
-      case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_BALANCE;
-      case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_BALANCE;
-      case ResourcesIds.Labor:
-        return resource.LABOR_BALANCE;
-      case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_BALANCE;
-      case ResourcesIds.Donkey:
-        return resource.DONKEY_BALANCE;
-      case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_BALANCE;
-      case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_BALANCE;
-      case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_BALANCE;
-      case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_BALANCE;
-      case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_BALANCE;
-      case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_BALANCE;
-      case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_BALANCE;
-      case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_BALANCE;
-      case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_BALANCE;
-      case ResourcesIds.Wheat:
-        return resource.WHEAT_BALANCE;
-      case ResourcesIds.Fish:
-        return resource.FISH_BALANCE;
-      case ResourcesIds.Lords:
-        return resource.LORDS_BALANCE;
-      default:
-        return 0n;
-    }
-  }
-
-  private _getResource() {
-    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
-  }
-
-  /**
-   * Returns a list of all resources with their current balances
-   * @param nonZeroOnly If true, only returns resources with balances > 0
-   * @returns Array of Resource objects containing resourceId and amount
-   */
-  public getResourceBalances(): Resource[] {
-    const resource = this._getResource();
-    if (!resource) return [];
-
-    // Define mapping of resource properties to ResourcesIds
-    const resourceMapping: [keyof typeof resource, ResourcesIds][] = [
-      ["STONE_BALANCE", ResourcesIds.Stone],
-      ["COAL_BALANCE", ResourcesIds.Coal],
-      ["WOOD_BALANCE", ResourcesIds.Wood],
-      ["COPPER_BALANCE", ResourcesIds.Copper],
-      ["IRONWOOD_BALANCE", ResourcesIds.Ironwood],
-      ["OBSIDIAN_BALANCE", ResourcesIds.Obsidian],
-      ["GOLD_BALANCE", ResourcesIds.Gold],
-      ["SILVER_BALANCE", ResourcesIds.Silver],
-      ["MITHRAL_BALANCE", ResourcesIds.Mithral],
-      ["ALCHEMICAL_SILVER_BALANCE", ResourcesIds.AlchemicalSilver],
-      ["COLD_IRON_BALANCE", ResourcesIds.ColdIron],
-      ["DEEP_CRYSTAL_BALANCE", ResourcesIds.DeepCrystal],
-      ["RUBY_BALANCE", ResourcesIds.Ruby],
-      ["DIAMONDS_BALANCE", ResourcesIds.Diamonds],
-      ["HARTWOOD_BALANCE", ResourcesIds.Hartwood],
-      ["IGNIUM_BALANCE", ResourcesIds.Ignium],
-      ["TWILIGHT_QUARTZ_BALANCE", ResourcesIds.TwilightQuartz],
-      ["TRUE_ICE_BALANCE", ResourcesIds.TrueIce],
-      ["ADAMANTINE_BALANCE", ResourcesIds.Adamantine],
-      ["SAPPHIRE_BALANCE", ResourcesIds.Sapphire],
-      ["ETHEREAL_SILICA_BALANCE", ResourcesIds.EtherealSilica],
-      ["DRAGONHIDE_BALANCE", ResourcesIds.Dragonhide],
-      ["LABOR_BALANCE", ResourcesIds.Labor],
-      ["EARTHEN_SHARD_BALANCE", ResourcesIds.AncientFragment],
-      ["DONKEY_BALANCE", ResourcesIds.Donkey],
-      ["KNIGHT_T1_BALANCE", ResourcesIds.Knight],
-      ["KNIGHT_T2_BALANCE", ResourcesIds.KnightT2],
-      ["KNIGHT_T3_BALANCE", ResourcesIds.KnightT3],
-      ["CROSSBOWMAN_T1_BALANCE", ResourcesIds.Crossbowman],
-      ["CROSSBOWMAN_T2_BALANCE", ResourcesIds.CrossbowmanT2],
-      ["CROSSBOWMAN_T3_BALANCE", ResourcesIds.CrossbowmanT3],
-      ["PALADIN_T1_BALANCE", ResourcesIds.Paladin],
-      ["PALADIN_T2_BALANCE", ResourcesIds.PaladinT2],
-      ["PALADIN_T3_BALANCE", ResourcesIds.PaladinT3],
-      ["WHEAT_BALANCE", ResourcesIds.Wheat],
-      ["FISH_BALANCE", ResourcesIds.Fish],
-      ["LORDS_BALANCE", ResourcesIds.Lords],
-    ];
-
-    // Use filter and map for a more functional approach
-    return resourceMapping
-      .filter(([key]) => (resource[key] as bigint) > 0n)
-      .map(([key, resourceId]) => ({
-        resourceId,
-        amount: Number(resource[key]),
-      }));
   }
 
   static getResourceBalances(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Resource[] {
@@ -977,7 +784,30 @@ export class ResourceManager {
       }));
   }
 
-  private static _amountProduced(
+  public static balanceWithProduction(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+    currentTick: number,
+    resourceId: ResourcesIds,
+  ): { balance: number; hasReachedMaxCapacity: boolean } {
+    const resourceWeightKg = configManager.getResourceWeightKg(resourceId);
+    const { balance, production } = this.balanceAndProduction(resource, resourceId);
+    if (!production) return { balance: Number(balance), hasReachedMaxCapacity: false };
+
+    const amountProduced = this._amountProducedStatic(production, currentTick, resourceId);
+    const amountProducedLimited = this._limitProductionByStoreCapacityStatic(
+      amountProduced,
+      resourceWeightKg,
+      Number(resource?.weight.capacity || 0),
+      Number(resource?.weight.weight || 0),
+    );
+
+    return {
+      balance: Number(balance + amountProducedLimited),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced,
+    };
+  }
+
+  private static _amountProducedStatic(
     production: {
       building_count: number;
       production_rate: bigint;
@@ -985,7 +815,7 @@ export class ResourceManager {
       last_updated_at: number;
     },
     currentTick: number,
-    isFood: boolean,
+    resourceId: ResourcesIds,
   ): bigint {
     if (!production || production.building_count === 0) return 0n;
     if (production.production_rate === 0n) return 0n;
@@ -993,6 +823,7 @@ export class ResourceManager {
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
+    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
     if (!isFood && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
@@ -1000,219 +831,18 @@ export class ResourceManager {
     return totalAmountProduced;
   }
 
-  private static _getBalance(
-    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
-    resourceId: ResourcesIds,
+  private static _limitProductionByStoreCapacityStatic(
+    amountProduced: bigint,
+    resourceWeightKg: number,
+    storeCapacityKg: number,
+    storeUsedKg: number,
   ): bigint {
-    switch (resourceId) {
-      case ResourcesIds.Stone:
-        return resource.STONE_BALANCE;
-      case ResourcesIds.Coal:
-        return resource.COAL_BALANCE;
-      case ResourcesIds.Wood:
-        return resource.WOOD_BALANCE;
-      case ResourcesIds.Copper:
-        return resource.COPPER_BALANCE;
-      case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_BALANCE;
-      case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_BALANCE;
-      case ResourcesIds.Gold:
-        return resource.GOLD_BALANCE;
-      case ResourcesIds.Silver:
-        return resource.SILVER_BALANCE;
-      case ResourcesIds.Mithral:
-        return resource.MITHRAL_BALANCE;
-      case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_BALANCE;
-      case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_BALANCE;
-      case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_BALANCE;
-      case ResourcesIds.Ruby:
-        return resource.RUBY_BALANCE;
-      case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_BALANCE;
-      case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_BALANCE;
-      case ResourcesIds.Ignium:
-        return resource.IGNIUM_BALANCE;
-      case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_BALANCE;
-      case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_BALANCE;
-      case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_BALANCE;
-      case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_BALANCE;
-      case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_BALANCE;
-      case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_BALANCE;
-      case ResourcesIds.Labor:
-        return resource.LABOR_BALANCE;
-      case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_BALANCE;
-      case ResourcesIds.Donkey:
-        return resource.DONKEY_BALANCE;
-      case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_BALANCE;
-      case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_BALANCE;
-      case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_BALANCE;
-      case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_BALANCE;
-      case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_BALANCE;
-      case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_BALANCE;
-      case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_BALANCE;
-      case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_BALANCE;
-      case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_BALANCE;
-      case ResourcesIds.Wheat:
-        return resource.WHEAT_BALANCE;
-      case ResourcesIds.Fish:
-        return resource.FISH_BALANCE;
-      case ResourcesIds.Lords:
-        return resource.LORDS_BALANCE;
-      default:
-        return 0n;
+    const capacityLeft = storeCapacityKg - storeUsedKg;
+    const maxAmountStorable = multiplyByPrecision(capacityLeft / (resourceWeightKg || 1));
+
+    if (amountProduced > maxAmountStorable) {
+      return BigInt(maxAmountStorable);
     }
-  }
-
-  public static balanceWithProduction(
-    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
-    currentTick: number,
-    resourceId: ResourcesIds,
-  ): number {
-    if (!resource) return 0;
-
-    const balance = ResourceManager._getBalance(resource, resourceId);
-    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
-
-    let production;
-    switch (resourceId) {
-      case ResourcesIds.Stone:
-        production = resource.STONE_PRODUCTION;
-        break;
-      case ResourcesIds.Coal:
-        production = resource.COAL_PRODUCTION;
-        break;
-      case ResourcesIds.Wood:
-        production = resource.WOOD_PRODUCTION;
-        break;
-      case ResourcesIds.Copper:
-        production = resource.COPPER_PRODUCTION;
-        break;
-      case ResourcesIds.Ironwood:
-        production = resource.IRONWOOD_PRODUCTION;
-        break;
-      case ResourcesIds.Obsidian:
-        production = resource.OBSIDIAN_PRODUCTION;
-        break;
-      case ResourcesIds.Gold:
-        production = resource.GOLD_PRODUCTION;
-        break;
-      case ResourcesIds.Silver:
-        production = resource.SILVER_PRODUCTION;
-        break;
-      case ResourcesIds.Mithral:
-        production = resource.MITHRAL_PRODUCTION;
-        break;
-      case ResourcesIds.AlchemicalSilver:
-        production = resource.ALCHEMICAL_SILVER_PRODUCTION;
-        break;
-      case ResourcesIds.ColdIron:
-        production = resource.COLD_IRON_PRODUCTION;
-        break;
-      case ResourcesIds.DeepCrystal:
-        production = resource.DEEP_CRYSTAL_PRODUCTION;
-        break;
-      case ResourcesIds.Ruby:
-        production = resource.RUBY_PRODUCTION;
-        break;
-      case ResourcesIds.Diamonds:
-        production = resource.DIAMONDS_PRODUCTION;
-        break;
-      case ResourcesIds.Hartwood:
-        production = resource.HARTWOOD_PRODUCTION;
-        break;
-      case ResourcesIds.Ignium:
-        production = resource.IGNIUM_PRODUCTION;
-        break;
-      case ResourcesIds.TwilightQuartz:
-        production = resource.TWILIGHT_QUARTZ_PRODUCTION;
-        break;
-      case ResourcesIds.TrueIce:
-        production = resource.TRUE_ICE_PRODUCTION;
-        break;
-      case ResourcesIds.Adamantine:
-        production = resource.ADAMANTINE_PRODUCTION;
-        break;
-      case ResourcesIds.Sapphire:
-        production = resource.SAPPHIRE_PRODUCTION;
-        break;
-      case ResourcesIds.EtherealSilica:
-        production = resource.ETHEREAL_SILICA_PRODUCTION;
-        break;
-      case ResourcesIds.Dragonhide:
-        production = resource.DRAGONHIDE_PRODUCTION;
-        break;
-      case ResourcesIds.Labor:
-        production = resource.LABOR_PRODUCTION;
-        break;
-      case ResourcesIds.AncientFragment:
-        production = resource.EARTHEN_SHARD_PRODUCTION;
-        break;
-      case ResourcesIds.Donkey:
-        production = resource.DONKEY_PRODUCTION;
-        break;
-      case ResourcesIds.Knight:
-        production = resource.KNIGHT_T1_PRODUCTION;
-        break;
-      case ResourcesIds.KnightT2:
-        production = resource.KNIGHT_T2_PRODUCTION;
-        break;
-      case ResourcesIds.KnightT3:
-        production = resource.KNIGHT_T3_PRODUCTION;
-        break;
-      case ResourcesIds.Crossbowman:
-        production = resource.CROSSBOWMAN_T1_PRODUCTION;
-        break;
-      case ResourcesIds.CrossbowmanT2:
-        production = resource.CROSSBOWMAN_T2_PRODUCTION;
-        break;
-      case ResourcesIds.CrossbowmanT3:
-        production = resource.CROSSBOWMAN_T3_PRODUCTION;
-        break;
-      case ResourcesIds.Paladin:
-        production = resource.PALADIN_T1_PRODUCTION;
-        break;
-      case ResourcesIds.PaladinT2:
-        production = resource.PALADIN_T2_PRODUCTION;
-        break;
-      case ResourcesIds.PaladinT3:
-        production = resource.PALADIN_T3_PRODUCTION;
-        break;
-      case ResourcesIds.Wheat:
-        production = resource.WHEAT_PRODUCTION;
-        break;
-      case ResourcesIds.Fish:
-        production = resource.FISH_PRODUCTION;
-        break;
-      case ResourcesIds.Lords:
-        production = resource.LORDS_PRODUCTION;
-        break;
-      default:
-        return Number(balance);
-    }
-
-    if (!production) return Number(balance);
-    const amountProduced = ResourceManager._amountProduced(production, currentTick, isFood);
-    return Number(balance + amountProduced);
+    return amountProduced;
   }
 }

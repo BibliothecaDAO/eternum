@@ -4,7 +4,7 @@ import {
   getHyperstructureProgress,
   toInteger,
 } from "@bibliothecadao/eternum";
-import { type HyperstructureInfo, ContractAddress, type ID, type ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, type HyperstructureInfo, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
