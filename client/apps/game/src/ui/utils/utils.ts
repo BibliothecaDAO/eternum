@@ -219,7 +219,7 @@ export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
   const travelTimeMs = travelTimeMinutes * 60 * 1000;
   const arrivalTimeMs = currentBlockTimestampMs + travelTimeMs;
 
-  // Calculate the next hour boundary after arrival
+  // Round up to the next hour boundary
   const arrivalDate = new Date(arrivalTimeMs);
   const nextHourDate = new Date(arrivalDate);
   nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
