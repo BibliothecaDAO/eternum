@@ -74,7 +74,7 @@ export const QuestContainer = ({
         signer: account,
         quest_tile_id: questTileEntity?.id ?? 0,
         explorer_id: explorerEntityId,
-        player_name: addressName.replace(/\0/g, ""),
+        player_name: addressName.replace(/\0/g, "").slice(0, 31),
         to_address: account?.address,
       });
 

@@ -42,20 +42,20 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
 
   return (
     <div className="flex flex-col gap-5 items-center border border-gold/20 rounded-lg p-5 h-full w-3/4 mx-auto">
-      <div className="flex flex-col gap-2 items-center w-full pt-5">
-        <div className="flex flex-col items-center gap-2 border panel-wood p-5">
+      <div className="flex flex-col gap-2 items-center w-full pt-2">
+        <div className="flex flex-col items-center gap-2 border panel-wood py-2 px-5">
           <div className="flex flex-col items-center">
             <span className="font-bold">Game</span>
             <span className="text-sm">{miniGameInfo?.name}</span>
           </div>
           <div className="border-t border-gold/40 w-32" />
           <div className="flex flex-col items-center">
-            <span className="font-bold">Publisher</span>
-            <span className="text-sm">{miniGameInfo?.publisher}</span>
+            <span className="font-bold">Developer</span>
+            <span className="text-sm">{miniGameInfo?.developer}</span>
           </div>
           <div className="border-t border-gold/40 w-32" />
           <div className="flex flex-col items-center">
-            <span className="font-bold">Description</span>{" "}
+            <span className="font-bold">Description</span>
             <span className="text-sm text-center">{miniGameInfo?.description}</span>
           </div>
         </div>
