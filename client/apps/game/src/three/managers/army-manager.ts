@@ -318,7 +318,7 @@ export class ArmyManager {
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
-    const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin);
+    const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
     const maxHex = Math.floor(Number(maxTroopStamina) / configManager.getMinTravelStaminaCost());
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
