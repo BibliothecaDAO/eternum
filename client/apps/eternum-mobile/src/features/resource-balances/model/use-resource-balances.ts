@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { ID, resources } from "@bibliothecadao/types";
 import { useResourceManager } from "@bibliothecadao/react";
+import { ID, resources } from "@bibliothecadao/types";
 import { useCallback, useEffect, useState } from "react";
 
 interface ResourceAmount {
@@ -18,7 +18,7 @@ export function useResourceBalances(entityId: ID) {
 
     const amounts = resources.map((resource) => ({
       id: resource.id,
-      amount: resourceManager.balanceWithProduction(tick, resource.id),
+      amount: resourceManager.balanceWithProduction(tick, resource.id).balance,
     }));
 
     setResourceAmounts(amounts);

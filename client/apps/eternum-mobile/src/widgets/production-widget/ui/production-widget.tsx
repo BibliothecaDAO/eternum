@@ -21,7 +21,7 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
   if (!resource) return null;
 
   const getBalance = useCallback(() => {
-    return resourceManager.balanceWithProduction(currentTick, building.produced.resource);
+    return resourceManager.balanceWithProduction(currentTick, building.produced.resource).balance;
   }, [resourceManager, currentTick, building.produced.resource]);
 
   const production = useMemo(() => {
@@ -55,13 +55,13 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balanceWithProduction(realTick, building.produced.resource);
+    const newBalance = resourceManager.balanceWithProduction(realTick, building.produced.resource).balance;
     setBalance(newBalance);
 
     if (isActive) {
       const interval = setInterval(() => {
         realTick += 1;
-        const newBalance = resourceManager.balanceWithProduction(realTick, building.produced.resource);
+        const newBalance = resourceManager.balanceWithProduction(realTick, building.produced.resource).balance;
         setBalance(newBalance);
       }, tickTime);
       return () => clearInterval(interval);
