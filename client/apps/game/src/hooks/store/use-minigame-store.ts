@@ -6,8 +6,8 @@ type MinigameStore = {
   setLoading: (loading: boolean) => void;
   minigames: GameData[] | undefined;
   setMinigames: (minigames: GameData[] | undefined) => void;
-  settingsMetadata: GameSettingsMetadata[] | undefined;
-  setSettingsMetadata: (settingsMetadata: GameSettingsMetadata[] | undefined) => void;
+  settingsMetadata: Record<string, GameSettingsMetadata[]> | undefined;
+  setSettingsMetadata: (settingsMetadata: Record<string, GameSettingsMetadata[]>) => void;
   scores: undefined | Record<string, GameScore>;
   setScores: (scores: Record<string, GameScore>) => void;
   updateScore: (score: GameScore) => void;
@@ -19,7 +19,7 @@ export const useMinigameStore = create<MinigameStore>((set) => ({
   minigames: undefined,
   setMinigames: (minigames: GameData[] | undefined) => set({ minigames }),
   settingsMetadata: undefined,
-  setSettingsMetadata: (settingsMetadata: GameSettingsMetadata[] | undefined) => set({ settingsMetadata }),
+  setSettingsMetadata: (settingsMetadata: Record<string, GameSettingsMetadata[]>) => set({ settingsMetadata }),
   scores: {},
   setScores: (scores: Record<string, GameScore>) => set({ scores }),
   updateScore: (score: GameScore) =>

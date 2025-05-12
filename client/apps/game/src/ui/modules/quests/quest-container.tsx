@@ -74,7 +74,7 @@ export const QuestContainer = ({
         signer: account,
         quest_tile_id: questTileEntity?.id ?? 0,
         explorer_id: explorerEntityId,
-        player_name: addressName.replace(/\0/g, ""),
+        player_name: addressName.replace(/\0/g, "").slice(0, 31),
         to_address: account?.address,
       });
 
@@ -152,14 +152,26 @@ export const QuestContainer = ({
     },
   });
 
-  const settingName = settingsMetadata
-    ?.find((setting) => setting.settings_id === questLevel?.value?.settings_id?.value)
-    ?.name.split("Eternum Quest -")[1];
+  const settingsMetadataForGame = useMemo(
+    () => settingsMetadata?.[queryGameAddress],
+    [settingsMetadata, queryGameAddress],
+  );
+
+  const settingName = useMemo(
+    () =>
+      settingsMetadataForGame
+        ?.find((setting) => setting.settings_id === questLevel?.value?.settings_id?.value)
+        ?.name.split("Eternum Quest -")[1],
+    [settingsMetadataForGame, questLevel],
+  );
 
   return (
-    <div className="flex flex-col gap-5 text-xl w-3/5 mx-auto h-full overflow-hidden pt-2 border border-gold/20 rounded-lg">
+    <div className="flex flex-col gap-5 text-xl w-3/5 mx-auto h-full overflow-y-auto pt-2 border border-gold/20 rounded-lg">
       <div className="flex flex-col justify-center mx-auto h-[200px] w-full">
         <img src={gameImage} alt="Dark Shuffle" className="object-cover w-full h-full object-center" />
+      </div>
+      <div className="flex flex-col justify-center px-5 w-full text-center">
+        Quests provide rewards from completing challenges in other games.
       </div>
       <div className="flex flex-row justify-between items-center w-3/4 p-5 mx-auto border border-gold/20 bg-gold/10 rounded-lg">
         <div className="flex flex-col items-center gap-2 w-1/3">
@@ -178,28 +190,26 @@ export const QuestContainer = ({
           <span className="text-2xl font-bold text-gold">Free</span>
         </div>
       </div>
-      <div className="flex p-5">
-        {currentRealm && (
-          <div className="w-3/4 h-full mx-auto">
-            <CurrentQuest
-              handleStartQuest={handleStartQuest}
-              loading={loading}
-              setLoading={setLoading}
-              questLevelInfo={questLevel}
-              structureInfo={currentRealm}
-              armyInfo={armyInfo!}
-              quest={currentQuest!}
-              game={game!}
-              fullCapacity={fullCapacity}
-              loadingQuests={loadingQuests}
-              explorerHasEnoughCapacity={explorerHasEnoughCapacity}
-              realmExplorerStartedQuest={realmExplorerStartedQuest}
-              gameAddress={questTileEntity?.game_address!}
-              questTile={questTileEntity}
-            />
-          </div>
-        )}
-      </div>
+      {currentRealm && (
+        <div className="w-3/4 h-full mx-auto">
+          <CurrentQuest
+            handleStartQuest={handleStartQuest}
+            loading={loading}
+            setLoading={setLoading}
+            questLevelInfo={questLevel}
+            structureInfo={currentRealm}
+            armyInfo={armyInfo!}
+            quest={currentQuest!}
+            game={game!}
+            fullCapacity={fullCapacity}
+            loadingQuests={loadingQuests}
+            explorerHasEnoughCapacity={explorerHasEnoughCapacity}
+            realmExplorerStartedQuest={realmExplorerStartedQuest}
+            gameAddress={questTileEntity?.game_address!}
+            questTile={questTileEntity}
+          />
+        </div>
+      )}
     </div>
   );
 };

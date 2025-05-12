@@ -4,11 +4,11 @@ import { ContractAddress, FELT_CENTER, ID, QuestType } from "@bibliothecadao/typ
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { gltfLoader } from "../helpers/utils";
+import { QuestModelPaths } from "../scenes/constants";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-
 const MAX_INSTANCES = 1000;
 
 const ICONS = {
@@ -42,8 +42,7 @@ export class QuestManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.loadModel().then(() => {
-      // SPAG Render initial quests with default chunk
+    this.loadModels().then(() => {
       if (this.currentChunkKey) {
         this.renderVisibleQuests(this.currentChunkKey);
       }
@@ -71,22 +70,39 @@ export class QuestManager {
     }
   }
 
-  private async loadModel(): Promise<void> {
-    const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
-      gltfLoader.load(
-        `models/buildings/quest_tile_high.glb`,
-        (gltf) => {
-          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest");
-          this.questModels.set(QuestType.DarkShuffle, [instancedModel]);
-          this.scene.add(instancedModel.group);
-          resolve(instancedModel);
-        },
-        undefined,
-        reject,
-      );
-    });
+  private async loadModels(): Promise<void> {
+    const loader = gltfLoader;
+    for (const [key, modelPath] of Object.entries(QuestModelPaths)) {
+      const questType = parseInt(key) as QuestType;
 
-    await loadPromise;
+      if (questType === undefined) continue;
+      if (!modelPath) continue;
+
+      const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
+        loader.load(
+          modelPath,
+          (gltf) => {
+            const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, QuestType[questType]);
+            resolve(instancedModel);
+          },
+          undefined,
+          (error) => {
+            console.error(modelPath);
+            console.error(`An error occurred while loading the ${questType} model:`, error);
+            reject(error);
+          },
+        );
+      });
+
+      await loadPromise
+        .then((instancedModel) => {
+          this.questModels.set(questType, [instancedModel]);
+          this.scene.add(instancedModel.group);
+        })
+        .catch((error) => {
+          console.error(`Failed to load models for ${QuestType[questType]}:`, error);
+        });
+    }
   }
 
   async onUpdate(update: QuestSystemUpdate) {
