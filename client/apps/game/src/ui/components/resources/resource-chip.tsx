@@ -2,27 +2,19 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
-import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  multiplyByPrecision,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, ResourceManager } from "@bibliothecadao/eternum";
 import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
   resourceId,
   resourceManager,
-  maxCapacityKg,
   size = "default",
   hideZeroBalance = false,
   showTransfer = true,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
-  maxCapacityKg: number;
   size?: "default" | "large";
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
@@ -30,22 +22,17 @@ export const ResourceChip = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
+  const [hasReachedMaxCap, setHasReachedMaxCap] = useState(false);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
-  const getBalance = useCallback(() => {
-    return resourceManager.balanceWithProduction(currentTick, resourceId, false);
-  }, [resourceManager, currentTick]);
-
   const production = useMemo(() => {
-    const balance = getBalance();
+    if (currentTick === 0) return null;
+    const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentTick, resourceId);
     setBalance(balance);
+    setHasReachedMaxCap(hasReachedMaxCapacity);
     return resourceManager.getProduction(resourceId);
-  }, [getBalance, resourceManager]);
-
-  const maxAmountStorable = useMemo(() => {
-    return multiplyByPrecision(maxCapacityKg / configManager.getResourceWeightKg(resourceId));
-  }, [maxCapacityKg, resourceId]);
+  }, [resourceManager, currentTick]);
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
@@ -67,18 +54,19 @@ export const ResourceChip = ({
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balanceWithProduction(realTick, resourceId);
+    const newBalance = resourceManager.balanceWithProduction(realTick, resourceId).balance;
     setBalance(newBalance);
 
-    if (isActive) {
+    if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
-        const newBalance = resourceManager.balanceWithProduction(realTick, resourceId);
-        setBalance(newBalance);
+        const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
+        setBalance(balance);
+        setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [resourceManager, currentTick, isActive]);
+  }, [resourceManager, currentTick, isActive, hasReachedMaxCap]);
 
   const icon = useMemo(() => {
     return (
@@ -90,10 +78,6 @@ export const ResourceChip = ({
       />
     );
   }, [resourceId, size]);
-
-  const reachedMaxCap = useMemo(() => {
-    return maxAmountStorable <= balance;
-  }, [maxAmountStorable, balance]);
 
   const handleMouseEnter = useCallback(() => {
     setTooltip({
@@ -129,7 +113,7 @@ export const ResourceChip = ({
           {currencyFormat(balance ? Number(balance) : 0, 2)}
         </div>
 
-        {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
+        {isActive && !hasReachedMaxCap && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
           <div
             className={`${
               productionRate < 0 ? "text-light-red" : "text-green/60"
@@ -149,7 +133,7 @@ export const ResourceChip = ({
                 position: "top",
                 content: (
                   <>
-                    {reachedMaxCap
+                    {hasReachedMaxCap
                       ? "Production has stopped because the max balance has been reached"
                       : "Production has stopped because labor has been depleted"}
                   </>
@@ -163,7 +147,7 @@ export const ResourceChip = ({
               size === "large" ? "text-base" : "text-xs"
             } font-medium`}
           >
-            {reachedMaxCap ? "MaxCap" : ""}
+            {hasReachedMaxCap ? "MaxCap" : ""}
           </div>
         )}
 

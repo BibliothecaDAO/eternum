@@ -325,7 +325,7 @@ const OrderRow = memo(
     }, []);
 
     const donkeyBalance = useMemo(() => {
-      return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey));
+      return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
@@ -623,7 +623,7 @@ const OrderCreation = memo(
 
     // divide to get the number of donkeys without precision
     const donkeyBalance = useMemo(() => {
-      return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey));
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance;
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const resourceProduction = useMemo(() => {
@@ -631,7 +631,7 @@ const OrderCreation = memo(
     }, [resourceId]);
 
     const resourceBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
     }, [resourceManager, resourceProduction, currentDefaultTick]);
 
     const lordsProduction = useMemo(() => {
@@ -639,7 +639,7 @@ const OrderCreation = memo(
     }, []);
 
     const lordsBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords);
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance;
     }, [resourceManager, lordsProduction, currentDefaultTick]);
 
     const canBuy = useMemo(() => {

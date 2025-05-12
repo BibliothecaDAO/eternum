@@ -4,8 +4,9 @@ import {
   Biome,
   computeExploreFoodCosts,
   configManager,
-  getFood,
+  divideByPrecision,
   getRemainingCapacityInKg,
+  ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -21,7 +22,14 @@ interface ArmyWarningProps {
 export const ArmyWarning = ({ army, resource }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
-  const food = getFood(resource, getBlockTimestamp().currentDefaultTick);
+  const food = useMemo(() => {
+    const resourceManager = new ResourceManager(dojo.setup.components, army.owner);
+    const { wheat, fish } = resourceManager.getFood(getBlockTimestamp().currentDefaultTick);
+    return {
+      wheat: divideByPrecision(wheat),
+      fish: divideByPrecision(fish),
+    };
+  }, [dojo.setup.components, army.owner]);
 
   const exploreFoodCosts = useMemo(
     () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),

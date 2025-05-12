@@ -106,7 +106,7 @@ export const RaidContainer = ({
     RAIDABLE_RESOURCES.sort((a, b) => b - a).forEach((resourceId) => {
       // Use a resource manager to get the balance
       const resourceManager = new ResourceManager(components, structureId as ID);
-      const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
 
       if (amount > 0) {
         availableResources.push({

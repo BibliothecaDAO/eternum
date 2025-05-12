@@ -66,8 +66,6 @@ export const BuildingsList = ({
     animateBase: { opacity: 1 },
   };
 
-  console.log(productions);
-
   return (
     <AnimatePresence mode="wait">
       {selectedResource !== null ? (
@@ -194,7 +192,6 @@ export const BuildingsList = ({
                       <ResourceChip
                         resourceId={production.resource}
                         resourceManager={resourceManager}
-                        maxCapacityKg={storeCapacityKg.capacityKg}
                         size="large"
                         showTransfer={false}
                       />
