@@ -457,7 +457,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateCastleLevel() {
     const structureType = this.tileManager.structureType();
-    if (structureType === StructureType.Realm) {
+    if (structureType === StructureType.Realm || structureType === StructureType.Village) {
       this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
       this.structureStage = this.systemManager.getStructureStage(
@@ -469,6 +469,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
+    const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
     const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
       None: [],
@@ -536,18 +537,23 @@ export default class HexceptionScene extends HexagonScene {
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
 
-          // Store original building group and type for potential wonder addition
-          const originalBuildingGroup = buildingGroup;
-          const originalBuildingType = buildingType;
-
-          // Check if the realm has a wonder
-          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
+          if (mainStructureType === StructureType.Village) {
+            buildingGroup = BUILDINGS_GROUPS.VILLAGE;
+            buildingType = StructureType.Village;
+          }
 
           // Handle hyperstructure type
           if (building.structureType === StructureType.Hyperstructure) {
             buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
             buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
+
+          // Store original building group and type for potential wonder addition
+          const originalBuildingGroup = buildingGroup;
+          const originalBuildingType = buildingType;
+
+          // Check if the realm has a wonder
+          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
 
           // If the realm has a wonder and it's not a hyperstructure, we'll add both models
           // But only for the central building (castle) at BUILDINGS_CENTER coordinates
