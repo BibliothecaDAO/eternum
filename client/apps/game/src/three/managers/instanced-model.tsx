@@ -44,6 +44,15 @@ export default class InstancedModel {
           return;
         }
         let material = child.material;
+        if (name.includes("Quest")) {
+          if (!material.depthWrite) {
+            material.depthWrite = true;
+            material.alphaTest = 0.075;
+          }
+          if (material.emissiveIntensity > 1) {
+            material.emissiveIntensity = 1.5;
+          }
+        }
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
