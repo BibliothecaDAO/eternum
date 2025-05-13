@@ -411,7 +411,7 @@ export class ArmyActionManager {
       return Promise.reject(new Error("Invalid direction"));
     }
 
-    const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
+    // const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
 
     try {
       await this.systemCalls.explorer_move({
@@ -424,7 +424,7 @@ export class ArmyActionManager {
     } catch (e) {
       return Promise.reject(e);
     } finally {
-      removeOverrides();
+      // removeOverrides();
     }
   };
 
