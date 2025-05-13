@@ -872,9 +872,9 @@ export default class WorldmapScene extends HexagonScene {
           dummyObject.position.copy(pos);
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-
+          const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
           const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-          if (isStructure) {
+          if (isStructure || isQuest) {
             dummyObject.scale.set(0, 0, 0);
           } else {
             dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
