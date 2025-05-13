@@ -40,8 +40,16 @@ model_indices = [
 	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.has_wonder", "metadata.villages_count", "metadata.realm_id", "owner"]},
 	{ model_tag = "s1_eternum-Tile", fields = ["col", "row"] },
 	{ model_tag = "s1_eternum-StructureVillageSlots", fields = ["connected_realm_id"] },
-	{ model_tag = "tokens", fields = ["contract_address"] },
-	{ model_tag = "token_transfers", fields = ["to_address", "from_address", "token_id"] },
+]
+hooks = [
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_tokens_contract_address] ON tokens (contract_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_to_address] ON token_transfers (to_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_from_address] ON token_transfers (from_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_token_id] ON token_transfers (token_id)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_contract_address_to_address] ON token_transfers (contract_address, to_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_contract_address_token_id_from_address] ON token_transfers (contract_address, token_id, from_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-Tile" } }, statement = "CREATE INDEX [idx_col_row_s1_eternum-Tile] ON [s1_eternum-Tile] (col, row)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-Structure" } }, statement = "CREATE INDEX [idx_x_y_s1_eternum-Structure] ON [s1_eternum-Structure] ([base.coord_x], [base.coord_y])" },
 ]
 historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
 cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
