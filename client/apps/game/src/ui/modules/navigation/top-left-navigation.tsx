@@ -170,7 +170,18 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             <TickProgress />
           </div>
           <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 panel-wood-small px-4">
-            <span className={cn("text-xs", !isMapView && "text-gold font-bold")}>Local</span>
+            <span
+              onClick={() =>
+                goToStructure(
+                  structureEntityId,
+                  new Position({ x: structurePosition.x, y: structurePosition.y }),
+                  false,
+                )
+              }
+              className={cn("text-xs", !isMapView && "text-gold font-bold")}
+            >
+              Local
+            </span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -187,7 +198,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               />
               <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
             </label>
-            <span className={cn("text-xs", isMapView && "text-gold font-bold")}>World</span>
+            <span
+              onClick={() =>
+                goToStructure(structureEntityId, new Position({ x: structurePosition.x, y: structurePosition.y }), true)
+              }
+              className={cn("text-xs", isMapView && "text-gold font-bold")}
+            >
+              World
+            </span>
           </div>
         </div>
         <SecondaryMenuItems />

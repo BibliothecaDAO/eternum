@@ -404,6 +404,10 @@ export const policies = toSessionPolicies({
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
         },
+        {
+          name: "structure_burn",
+          entrypoint: "structure_burn",
+        },
       ],
     },
     [getContractByName(dojoConfig.manifest, "s1_eternum", "season_systems").address]: {
