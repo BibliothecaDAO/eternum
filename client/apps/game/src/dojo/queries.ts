@@ -509,14 +509,10 @@ export const getQuestTilesFromToriiQuery = async <S extends Schema>(
   );
 };
 
-export const getQuestsFromTorii = async (
-  client: ToriiClient,
-  components: Component<Schema, Metadata, undefined>[],
-  gameAddress: string,
-) => {
+export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
     Keys: {
-      keys: [gameAddress, undefined],
+      keys: [undefined, undefined],
       pattern_matching: "VariableLen" as PatternMatching,
       models: ["s1_eternum-Quest"],
     },

@@ -5,7 +5,6 @@ import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient } from "@dojoengine/torii-client";
-import { debouncedGetQuestsFromTorii } from "./debounced-queries";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -204,11 +203,4 @@ export const initialSync = async (
   end = performance.now();
   console.log("[sync] guilds query", end - start);
   setInitialSyncProgress(100);
-};
-
-export const syncQuests = async (setup: SetupResult, gameAddress: string) => {
-  const start = performance.now();
-  await debouncedGetQuestsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, gameAddress);
-  const end = performance.now();
-  console.log("[sync] quests query", end - start);
 };

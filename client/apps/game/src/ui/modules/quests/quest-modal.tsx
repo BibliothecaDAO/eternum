@@ -1,4 +1,4 @@
-import { syncQuests } from "@/dojo/sync";
+import { useSyncQuest } from "@/hooks/helpers/use-sync";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
@@ -82,16 +82,7 @@ export const QuestModal = ({
     return questGames.join(",");
   }, [questGames]);
 
-  useEffect(() => {
-    const fetchQuests = async () => {
-      try {
-        await syncQuests(setup, questTileEntity?.game_address as string);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchQuests();
-  }, [questGamesKey, questTileEntity?.game_address]);
+  const { isSyncing } = useSyncQuest();
 
   useEffect(() => {
     if (questGames?.length > 0) {
@@ -138,7 +129,7 @@ export const QuestModal = ({
           </div>
         </div>
         {/* Content */}
-        {loadingQuestTile ? (
+        {loadingQuestTile || isSyncing ? (
           <LoadingAnimation />
         ) : (
           <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
