@@ -33,11 +33,15 @@ max_metadata_tasks = 5
 
 [sql]
 all_model_indices = false
+# TODO(tedison): do another pass through the queries when composite indices are supported
 model_indices = [
 	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
 	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner", "coord.x", "coord.y"]},
-	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.villages_count", "metadata.realm_id", "owner"]},
+	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.has_wonder", "metadata.villages_count", "metadata.realm_id", "owner"]},
 	{ model_tag = "s1_eternum-Tile", fields = ["col", "row"] },
+	{ model_tag = "s1_eternum-StructureVillageSlots", fields = ["connected_realm_id"] },
+	{ model_tag = "tokens", fields = ["contract_address"] },
+	{ model_tag = "token_transfers", fields = ["to_address", "from_address", "token_id"] },
 ]
 historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
 cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
