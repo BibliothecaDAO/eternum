@@ -5,6 +5,7 @@ import { TroopChip } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
+import CircleButton from "@/ui/elements/circle-button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { HelpModal } from "@/ui/modules/military/help-modal";
@@ -32,9 +33,10 @@ export const NavigateToPositionIcon = ({
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
-    <img
-      src="/image-icons/compass.png"
-      className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
+    <CircleButton
+      image="/image-icons/compass.png"
+      size="md"
+      className={` fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
         setNavigationTarget({

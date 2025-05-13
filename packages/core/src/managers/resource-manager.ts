@@ -42,17 +42,20 @@ export class ResourceManager {
   public balanceWithProduction(
     currentTick: number,
     resourceId: ResourcesIds,
-  ): { balance: number; hasReachedMaxCapacity: boolean } {
+  ): { balance: number; hasReachedMaxCapacity: boolean; amountProduced: bigint; amountProducedLimited: bigint } {
     const resource = this._getResource();
-    if (!resource) return { balance: 0, hasReachedMaxCapacity: false };
+    if (!resource) return { balance: 0, hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
     const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     const balance = this.balance(resourceId);
-    if (!production) return { balance: Number(balance), hasReachedMaxCapacity: false };
+    if (!production)
+      return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
     const amountProduced = this._amountProduced(production, currentTick, resourceId);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
       balance: Number(balance + amountProducedLimited),
       hasReachedMaxCapacity: amountProducedLimited < amountProduced,
+      amountProduced,
+      amountProducedLimited,
     };
   }
 

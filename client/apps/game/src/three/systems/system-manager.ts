@@ -224,7 +224,7 @@ export class SystemManager {
                   this.setup.components.ExplorerTroops,
                   getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
                 );
-                console.log({ explorerTroops, retries });
+
                 if (explorerTroops) break;
                 await new Promise((resolve) => setTimeout(resolve, 100)); // Wait 100ms between retries
                 retries--;

@@ -22,15 +22,24 @@ export const ResourceChip = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
+  const [amountProduced, setAmountProduced] = useState(0n);
+  const [amountProducedLimited, setAmountProducedLimited] = useState(0n);
   const [hasReachedMaxCap, setHasReachedMaxCap] = useState(false);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
+  const actualBalance = useMemo(() => {
+    return resourceManager.balance(resourceId);
+  }, [resourceManager, currentTick]);
+
   const production = useMemo(() => {
     if (currentTick === 0) return null;
-    const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentTick, resourceId);
+    const { balance, hasReachedMaxCapacity, amountProduced, amountProducedLimited } =
+      resourceManager.balanceWithProduction(currentTick, resourceId);
     setBalance(balance);
     setHasReachedMaxCap(hasReachedMaxCapacity);
+    setAmountProduced(amountProduced);
+    setAmountProducedLimited(amountProducedLimited);
     const resource = resourceManager.getResource();
     if (!resource) return null;
     return ResourceManager.balanceAndProduction(resource, resourceId).production;
@@ -57,13 +66,13 @@ export const ResourceChip = ({
     let realTick = currentTick;
 
     const newBalance = resourceManager.balanceWithProduction(realTick, resourceId).balance;
-    setBalance(newBalance);
+    // setBalance(newBalance);
 
     if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
         const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
-        setBalance(balance);
+        // setBalance(balance);
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
@@ -112,7 +121,7 @@ export const ResourceChip = ({
       {icon}
       <div className="grid grid-cols-10 w-full items-center">
         <div className={`self-center font-bold col-span-5 ${size === "large" ? "text-lg" : ""}`}>
-          {currencyFormat(balance ? Number(balance) : 0, 2)}
+          {currencyFormat(actualBalance ? Number(actualBalance) : 0, 2)}
         </div>
 
         {isActive && !hasReachedMaxCap && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
@@ -150,6 +159,31 @@ export const ResourceChip = ({
             } font-medium`}
           >
             {hasReachedMaxCap ? "MaxCap" : ""}
+          </div>
+        )}
+
+        {amountProduced > 0n && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "top",
+                content: (
+                  <div>
+                    You have produced {currencyFormat(Number(amountProduced || 0n), 2)}{" "}
+                    {findResourceById(resourceId)?.trait} . Upon using {findResourceById(resourceId)?.trait} anywhere
+                    else, any amount that exceeds your storage cap will be lost (burned) once the cap is reached.
+                    <br />
+                    <br />
+                  </div>
+                ),
+              });
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className={`col-span-10 self-start text-xs text-gold/50`}
+          >
+            {currencyFormat(Number(amountProduced || 0n), 2)} producing
           </div>
         )}
 

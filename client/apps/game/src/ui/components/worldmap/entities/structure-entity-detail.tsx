@@ -50,7 +50,7 @@ export const StructureEntityDetail = memo(
       const fetchStructure = async () => {
         setIsLoading(true);
         const result = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        if (result) {
+        if (result?.structure && result?.resources) {
           setStructure(result.structure);
           setResources(result.resources);
         }

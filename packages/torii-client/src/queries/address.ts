@@ -1,13 +1,4 @@
 import { Query, ToriiClient } from "@dojoengine/torii-wasm";
-// import { shortString } from "starknet";
-
-// export interface Query {
-//   pagination: Pagination;
-//   clause: Clause | undefined;
-//   no_hashed_keys: boolean;
-//   models: string[];
-//   historical: boolean;
-// }
 
 export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, address: string) => {
   const query: Query = {
@@ -29,7 +20,7 @@ export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, ad
     },
   };
   const addressName = await toriiClient.getEntities(query);
-  if (addressName.items.length > 0) {
+  if (addressName?.items?.length > 0) {
     return addressName.items[0].models["s1_eternum-AddressName"]["name"]["value"] as string;
   } else {
     return null;
