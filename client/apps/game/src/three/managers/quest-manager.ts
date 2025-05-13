@@ -1,6 +1,6 @@
 import InstancedModel from "@/three/managers/instanced-model";
 import { Position } from "@/types/position";
-import { ContractAddress, FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
+import { FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { gltfLoader } from "../helpers/utils";
@@ -106,11 +106,11 @@ export class QuestManager {
   }
 
   async onUpdate(update: QuestSystemUpdate) {
-    const { entityId, id, game_address, hexCoords, level, resource_type, amount, capacity, participant_count } = update;
+    const { entityId, occupierId, hexCoords } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const structureType = QuestType.DarkShuffle;
+    const questType = QuestType.DarkShuffle;
 
     if (!this.questHexCoords.has(normalizedCoord.col)) {
       this.questHexCoords.set(normalizedCoord.col, new Set());
@@ -119,18 +119,7 @@ export class QuestManager {
       this.questHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
     }
 
-    this.quests.addQuest(
-      entityId,
-      structureType,
-      id,
-      game_address,
-      position,
-      level,
-      resource_type,
-      amount,
-      capacity,
-      participant_count,
-    );
+    this.quests.addQuest(entityId, questType, occupierId, position);
 
     // SPAG Re-render if we have a current chunk
     if (this.currentChunkKey) {
@@ -171,14 +160,9 @@ export class QuestManager {
       })
       .map((quest) => ({
         entityId: quest.entityId,
-        id: quest.id,
-        game_address: quest.game_address,
+        questType: quest.questType,
+        occupierId: quest.occupierId,
         hexCoords: quest.hexCoords,
-        level: quest.level,
-        resource_type: quest.resource_type,
-        amount: quest.amount,
-        capacity: quest.capacity,
-        participant_count: quest.participant_count,
       }));
 
     return visibleQuests;
@@ -296,11 +280,8 @@ export class QuestManager {
     const line1 = document.createElement("span");
     line1.textContent = `Quest`;
     line1.style.color = "inherit";
-    const line2 = document.createElement("strong");
-    line2.textContent = `Level: ${quest.level + 1}`;
 
     textContainer.appendChild(line1);
-    textContainer.appendChild(line2);
     labelDiv.appendChild(textContainer);
 
     const label = new CSS2DObject(labelDiv);
@@ -358,31 +339,15 @@ export class QuestManager {
 class Quests {
   private quests: Map<QuestType, Map<ID, QuestData>> = new Map();
 
-  addQuest(
-    entityId: ID,
-    questType: QuestType,
-    id: ID,
-    game_address: ContractAddress,
-    hexCoords: Position,
-    level: number,
-    resource_type: number,
-    amount: bigint,
-    capacity: number,
-    participant_count: number,
-  ) {
+  addQuest(entityId: ID, questType: QuestType, occupierId: ID, hexCoords: Position) {
     if (!this.quests.has(questType)) {
       this.quests.set(questType, new Map());
     }
     this.quests.get(questType)!.set(entityId, {
       entityId,
-      id,
-      game_address,
+      questType,
+      occupierId,
       hexCoords,
-      level,
-      resource_type,
-      amount,
-      capacity,
-      participant_count,
     });
   }
 
