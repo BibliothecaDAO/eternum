@@ -2814,4 +2814,26 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id, new_owner],
     });
   }
+
+  public async structure_burn(props: SystemProps.StructureBurnProps) {
+    const { signer, structure_id, resources } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "structure_burn",
+      calldata: [
+        structure_id,
+        resources.length,
+        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+      ],
+    });
+  }
+
+  public async troop_burn(props: SystemProps.TroopBurnProps) {
+    const { signer, explorer_id, resources } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "troop_burn",
+      calldata: [explorer_id, resources.length, ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount])],
+    });
+  }
 }

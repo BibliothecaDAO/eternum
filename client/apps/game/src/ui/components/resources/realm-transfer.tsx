@@ -21,7 +21,6 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
@@ -37,7 +36,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const {
     setup: {
       components,
-      systemCalls: { send_resources_multiple },
+      systemCalls: { send_resources_multiple, structure_burn },
     },
     account: { account },
   } = useDojo();
@@ -80,10 +79,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [components.Structure, playerStructures, selectedStructureEntityId, resource]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [resourceAmount, setResourceAmount] = useState(0);
   const [calls, setCalls] = useState<transferCall[]>([]);
-
   const [type, setType] = useState<"send" | "receive">("send");
-
   const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
@@ -99,6 +97,22 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     setResourceWeightKg(totalWeightKg);
   }, [calls]);
+
+  const handleBurn = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      await structure_burn({
+        signer: account,
+        structure_id: selectedStructureEntityId,
+        resources: [{ resourceId: resource, amount: resourceAmount }],
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const handleTransfer = useCallback(async () => {
     setIsLoading(true);
@@ -122,27 +136,47 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     setCalls([]);
   }, [calls]);
 
+  const handleResourceAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setResourceAmount(Number(event.target.value));
+  };
+
   return (
     <>
       <div className="p-1">
         <Button
+          size="xs"
           variant={type === "receive" ? "outline" : "secondary"}
           onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
         >
-          {type === "send" && <ArrowLeftIcon className="w-4 h-4" />}
-          {type === "receive" ? "Send Resources" : "Receive Resources"}
-          {type === "receive" && <ArrowRightIcon className="w-4 h-4" />}
+          Switch Direction
         </Button>
       </div>
+
       <div className="p-4">
-        <div>
+        <div className="flex flex-row gap-2">
           <ResourceIcon
             withTooltip={false}
             resource={findResourceById(resource)?.trait as string}
             size="xxl"
             className="mr-3 self-center"
           />
-          <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+          <div className="py-3 text-center text-3xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        </div>
+
+        <div className="flex flex-col gap-2 py-2">
+          <Button size="xs" variant="secondary" onClick={handleBurn}>
+            Burn {findResourceById(resource)?.trait as string}{" "}
+            {currencyFormat(resourceAmount ? Number(resourceAmount) : 0, 2)}
+          </Button>
+          <input
+            id="troopAmountInput"
+            type="range"
+            min="0"
+            max={balance}
+            value={resourceAmount}
+            onChange={handleResourceAmountChange}
+            className="w-full accent-gold"
+          />
         </div>
 
         {playerStructuresFiltered.map((structure) => (
@@ -157,8 +191,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           />
         ))}
 
-        <div className="pt-2 border-t border-gold/20">
-          <div className="uppercase font-bold text-sm flex gap-3">
+        <div className="py-4 border-t border-gold/20">
+          <div className="uppercase font-bold text h6 flex gap-3">
             Transfers {calls.length} |
             <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
             {neededDonkeys.toString()}
@@ -181,7 +215,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             ))}
           </div>
         </div>
-
+        <div>
+          You will be{" "}
+          {type === "send"
+            ? "sending these resources to their locations"
+            : "receiving all these resources into this location."}{" "}
+        </div>
         <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
           <Button
             disabled={calls.length === 0}
@@ -227,11 +266,21 @@ const RealmTransferBalance = memo(
 
     const getBalance = useCallback(() => {
       return resourceManager.balanceWithProduction(tick, resource).balance;
-    }, [resourceManager, tick]);
+    }, [resourceManager, tick, resource]);
 
     const getDonkeyBalance = useCallback(() => {
       return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
     }, [resourceManager, tick]);
+
+    const currentResourceBalanceBigInt = getBalance();
+
+    const maxInputAmount = useMemo(() => {
+      if (currentResourceBalanceBigInt === undefined || currentResourceBalanceBigInt === null) {
+        return 0;
+      }
+      // Convert bigint balance to human-readable units for the input field's max value
+      return Number(currentResourceBalanceBigInt.toString()) / RESOURCE_PRECISION;
+    }, [currentResourceBalanceBigInt]);
 
     const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
@@ -252,29 +301,44 @@ const RealmTransferBalance = memo(
       return;
     }
 
-    const balance = useMemo(() => getBalance(), [getBalance]);
-
     return (
       <div className="flex flex-col gap-2 border-b-2 mt-2 border-gold/20">
         <div className="flex flex-row gap-4">
-          <div className="self-center w-1/2">
-            <div className="uppercase font-bold text-sm">{structure.name}</div>
-            <div className="self-center">{currencyFormat(getBalance() ? Number(getBalance()) : 0, 0)}</div>
+          <div className="self-center w-full">
+            <div className="uppercase font-bold h4">{structure.name}</div>
+
+            <div className="self-end gap-2 py-1 flex flex-row justify-between">
+              <div className="self-center ">{currencyFormat(getBalance() ? Number(getBalance()) : 0, 0)}</div>
+
+              <div
+                className={`whitespace-nowrap text-left ${
+                  neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
+                }`}
+              >
+                {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
+              </div>
+            </div>
           </div>
 
           <NumberInput
-            max={getBalance()}
+            max={maxInputAmount}
             min={0}
-            step={100}
+            step={0.01}
             value={input}
             allowDecimals
             disabled={!canCarry || (type === "receive" && getDonkeyBalance() === 0)}
             onChange={(amount) => {
-              setInput(amount);
+              // Clamp the amount to be within [0, maxInputAmount]
+              let clampedValue = Math.max(0, amount); // Ensure non-negative
+              if (clampedValue > maxInputAmount) {
+                clampedValue = maxInputAmount; // Ensure not exceeding max
+              }
+
+              setInput(clampedValue);
               add((prev) => {
                 const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
 
-                if (amount === 0) {
+                if (clampedValue === 0) {
                   return prev.filter((_, i) => i !== existingIndex);
                 }
 
@@ -282,7 +346,7 @@ const RealmTransferBalance = memo(
                   structureId: structure.structure.entity_id,
                   sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
                   recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
-                  resources: [resource, amount],
+                  resources: [resource, clampedValue], // Use the clamped human-readable value
                   realmName: structure.name,
                 };
 
@@ -292,17 +356,6 @@ const RealmTransferBalance = memo(
               });
             }}
           />
-        </div>
-        <div className="self-end gap-2">
-          <div className="hover:bg-gold/5 transition-colors">
-            <div
-              className={`px-4 py-1 whitespace-nowrap text-left ${
-                neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
-              }`}
-            >
-              {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
-            </div>
-          </div>
         </div>
       </div>
     );
