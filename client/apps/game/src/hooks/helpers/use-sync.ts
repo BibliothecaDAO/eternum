@@ -138,7 +138,7 @@ export const useSyncMarketHistory = () => {
       setLoading(LoadingStateKey.MarketHistory, true);
       const marketHistoryPromise = subscriptions[Subscription.MarketHistory]
         ? Promise.resolve()
-        : getMarketEventsFromTorii(toriiClient, contractComponents as any);
+        : getMarketEventsFromTorii(toriiClient, contractComponents.events as any);
 
       const start = performance.now();
       await Promise.all([marketHistoryPromise]);
