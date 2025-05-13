@@ -289,7 +289,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     if (quests.length > 0) {
       syncQuestTiles({ questTiles: quests });
     }
-  }, [quests, syncQuestTiles]);
+  }, [quests?.length, syncQuestTiles]);
 
   const { data: minigames } = useMiniGames({});
 
