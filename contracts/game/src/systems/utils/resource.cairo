@@ -86,6 +86,16 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     }
 
     #[inline(always)]
+    fn structure_burn_instant(
+        ref world: WorldStorage,
+        from_structure_id: ID,
+        ref from_structure_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        Self::_instant_burn(ref world, from_structure_id, ref from_structure_weight, resources);
+    }
+
+    #[inline(always)]
     fn troop_to_structure_instant(
         ref world: WorldStorage,
         from_troop_id: ID,
@@ -398,8 +408,10 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     // spend from from entity resource balance
                     let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+
+                    // false means dont check production for either troops or structures
                     let mut from_resource = SingleResourceStoreImpl::retrieve(
-                        ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
+                        ref world, from_id, resource_type, ref from_weight, resource_weight_grams, false,
                     );
                     from_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
                     from_resource.store(ref world);

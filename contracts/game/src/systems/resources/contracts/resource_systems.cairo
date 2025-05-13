@@ -16,6 +16,7 @@ pub trait IResourceSystems<T> {
         ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
     );
     fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
+    fn structure_burn(ref self: T, structure_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -360,6 +361,19 @@ pub mod resource_systems {
             iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
         }
 
+        fn structure_burn(ref self: ContractState, structure_id: ID, resources: Span<(u8, u128)>) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            // ensure structure is owned by caller
+            assert!(structure_id.is_non_zero(), "structure_id does not exist");
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            structure_owner.assert_caller_owner();
+
+            // burn resources
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            iResourceTransferImpl::structure_burn_instant(ref world, structure_id, ref structure_weight, resources);
+        }
 
         fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
             let mut world = self.world(DEFAULT_NS());
