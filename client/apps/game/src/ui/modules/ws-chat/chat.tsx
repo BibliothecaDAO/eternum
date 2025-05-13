@@ -747,7 +747,7 @@ function ChatModule() {
                       </div>
                       <ul className="">
                         {filteredUsers
-                          .filter((user) => user.id !== userId)
+                          .filter((user) => user && user.id !== userId)
                           .map((user) => (
                             <li
                               key={user.id}
