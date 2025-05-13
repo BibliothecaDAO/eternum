@@ -1,19 +1,18 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { Map, Zap } from "lucide-react";
 
-export const getStaminaDisplay = (
-  currentStamina: number,
-  newStamina: number,
-  isWinner: boolean,
-  staminaBonus: number,
-) => {
+export const getStaminaDisplay = (currentStamina: number, newStamina: number, staminaBonus: number) => {
   return (
     <div className="text-gold/80">
       <div className="text-sm font-medium mb-1">Stamina</div>
       <div className="text-xl font-bold flex items-baseline">
+        {currentStamina}
+        <span className="mx-2 text-gold/50">→</span>
         {Math.max(0, newStamina)}
-        <span className="text-xs ml-2 text-gold/50">/ {currentStamina}</span>
-        {isWinner && <span className="text-xs ml-2 text-green-400">(+{staminaBonus})</span>}
+        <span className="text-xs ml-2 text-green-400">
+          ({staminaBonus > 0 ? "+" : ""}
+          {staminaBonus})
+        </span>
       </div>
     </div>
   );
