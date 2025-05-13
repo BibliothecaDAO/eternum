@@ -82,7 +82,7 @@ export class QuestManager {
         loader.load(
           modelPath,
           (gltf) => {
-            const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, QuestType[questType]);
+            const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
             resolve(instancedModel);
           },
           undefined,
