@@ -7,6 +7,7 @@ import {
   getOwnedArmiesFromTorii,
   getQuestTilesFromToriiQuery,
   getQuestsFromTorii,
+  getTilesForPositionsFromTorii,
 } from "./queries";
 
 // Queue class to manage requests
@@ -124,6 +125,24 @@ export const debouncedGetQuestsFromTorii = async <S extends Schema>(
     await subscriptionQueue.add(() => getQuestsFromTorii(client, components, gameAddress, questGames), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetQuestsFromTorii:", error);
+    // Make sure onComplete is called even if there's an error
+    onComplete?.();
+  }
+};
+
+export const debouncedGetTilesForPositionsFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  positions: HexPosition[],
+  onComplete?: () => void,
+) => {
+  try {
+    await subscriptionQueue.add(async () => {
+      await getTilesForPositionsFromTorii(client, components, positions);
+      return;
+    }, onComplete);
+  } catch (error) {
+    console.error("Error in debouncedGetTilesForPositionsFromTorii:", error);
     // Make sure onComplete is called even if there's an error
     onComplete?.();
   }
