@@ -25,7 +25,7 @@ export class Navigator {
     this.scene.add(this.label);
     this.distanceDiv = document.createElement("div");
     this.distanceDiv.className = "label";
-    this.distanceDiv.style.backgroundColor = "rgba(0, 0, 0, 0.6)";
+    this.distanceDiv.style.backgroundColor = "transparent";
     this.distanceDiv.style.color = "white";
     this.distanceDiv.style.padding = "5px 10px";
     this.distanceDiv.style.borderRadius = "4px";
@@ -62,6 +62,7 @@ export class Navigator {
     this.target = { col, row };
     if (this.arrowModel) {
       this.arrowModel.visible = true;
+      this.distanceDiv!.style.backgroundColor = "rgba(0, 0, 0, 0.6)";
       this.updateArrowRotation();
     }
   }
