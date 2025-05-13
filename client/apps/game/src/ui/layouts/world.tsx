@@ -5,7 +5,7 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures, useQuests } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Leva } from "leva";
@@ -133,7 +133,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const minigameStore = useMinigameStore.getState();
   const { setup, account } = useDojo();
   const playerStructures = usePlayerStructures();
-  const quests = useQuests();
   const setLoading = useUIStore((state) => state.setLoading);
 
   // Consolidated subscription logic into a single function
