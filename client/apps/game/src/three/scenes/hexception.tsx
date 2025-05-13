@@ -447,7 +447,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateCastleLevel() {
     const structureType = this.tileManager.structureType();
-    if (structureType === StructureType.Realm) {
+    if (structureType === StructureType.Realm || structureType === StructureType.Village) {
       this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
       this.structureStage = this.systemManager.getStructureStage(
