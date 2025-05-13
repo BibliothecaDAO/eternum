@@ -93,8 +93,6 @@ const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: 
     return arrival.resources.reduce((total, resource) => {
       const weightPerUnit = configManager.resourceWeightsKg[resource.resourceId] || 0;
 
-      console.log(weightPerUnit);
-
       const resourceAmount = divideByPrecision(resource.amount);
       return total + resourceAmount * weightPerUnit;
     }, 0);

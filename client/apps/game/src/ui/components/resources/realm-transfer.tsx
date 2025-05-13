@@ -49,7 +49,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const balance = useMemo(() => {
     return resourceManager.balanceWithProduction(tick, resource).balance;
-  }, [resourceManager, tick]);
+  }, [resourceManager, tick, resource]);
+
+  console.log(balance);
 
   const playerStructures = usePlayerStructures();
 
@@ -79,23 +81,26 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [components.Structure, playerStructures, selectedStructureEntityId, resource]);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [resourceAmount, setResourceAmount] = useState(0);
+  const [burnAmount, setBurnAmount] = useState(0);
   const [calls, setCalls] = useState<transferCall[]>([]);
   const [type, setType] = useState<"send" | "receive">("send");
-  const [resourceWeightKg, setResourceWeightKg] = useState(0);
+  const [totalTransferResourceWeightKg, setTotalTransferResourceWeightKg] = useState(0);
 
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
+  const totalNeededDonkeys = useMemo(
+    () => calculateDonkeysNeeded(totalTransferResourceWeightKg),
+    [totalTransferResourceWeightKg],
+  );
 
   useEffect(() => {
-    const resources = calls.map((call) => {
+    const resourcesForWeightCalc = calls.map((call) => {
       return {
         resourceId: Number(call.resources[0]),
         amount: Number(call.resources[1]),
       };
     });
-    const totalWeightKg = getTotalResourceWeightKg(resources);
+    const totalWeightKg = getTotalResourceWeightKg(resourcesForWeightCalc);
 
-    setResourceWeightKg(totalWeightKg);
+    setTotalTransferResourceWeightKg(totalWeightKg);
   }, [calls]);
 
   const handleBurn = useCallback(async () => {
@@ -105,14 +110,14 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       await structure_burn({
         signer: account,
         structure_id: selectedStructureEntityId,
-        resources: [{ resourceId: resource, amount: resourceAmount }],
+        resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
       });
     } catch (error) {
       console.error(error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [burnAmount, account, structure_burn, selectedStructureEntityId, resource]);
 
   const handleTransfer = useCallback(async () => {
     setIsLoading(true);
@@ -136,9 +141,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     setCalls([]);
   }, [calls]);
 
-  const handleResourceAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setResourceAmount(Number(event.target.value));
+  const handleBurnAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setBurnAmount(Number(event.target.value));
   };
+
+  // Calculate summary data
+  const totalResourceTransferred = useMemo(() => {
+    return calls.reduce((acc, call) => acc + Number(call.resources[1]), 0);
+  }, [calls]);
+
+  const uniqueStructuresInvolved = useMemo(() => {
+    const structureIds = new Set(calls.map((call) => call.structureId));
+    return structureIds.size;
+  }, [calls]);
 
   return (
     <>
@@ -163,21 +178,33 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           <div className="py-3 text-center text-3xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
         </div>
 
-        <div className="flex flex-col gap-2 py-2">
-          <Button size="xs" variant="secondary" onClick={handleBurn}>
-            Burn {findResourceById(resource)?.trait as string}{" "}
-            {currencyFormat(resourceAmount ? Number(resourceAmount) : 0, 2)}
-          </Button>
-          <input
-            id="troopAmountInput"
-            type="range"
-            min="0"
-            max={balance}
-            value={resourceAmount}
-            onChange={handleResourceAmountChange}
-            className="w-full accent-gold"
-          />
+        {/* Dedicated Burn Section */}
+        <div className="p-3 my-4 border border-red-500/30 rounded-md bg-red-500/10">
+          <div className="font-bold text-lg mb-2 text-red-300">Burn Resources</div>
+          <div className="text-sm mb-2">
+            Permanently destroy {findResourceById(resource)?.trait as string} from this location. This action is
+            irreversible.
+          </div>
+          <div className="flex flex-col gap-2 py-2">
+            <input
+              id="burnAmountInput"
+              type="range"
+              min="0"
+              max={balance ? Number(balance) / RESOURCE_PRECISION : 0}
+              step="0.01"
+              value={burnAmount}
+              onChange={handleBurnAmountChange}
+              className="w-full accent-red-500"
+            />
+            <div className="text-xs text-center">
+              Selected to burn: {burnAmount.toLocaleString()} {findResourceById(resource)?.trait}
+            </div>
+            <Button size="xs" variant="danger" onClick={handleBurn} disabled={burnAmount === 0 || isLoading}>
+              Burn {findResourceById(resource)?.trait as string}{" "}
+            </Button>
+          </div>
         </div>
+        {/* End Dedicated Burn Section */}
 
         {playerStructuresFiltered.map((structure) => (
           <RealmTransferBalance
@@ -192,10 +219,10 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         ))}
 
         <div className="py-4 border-t border-gold/20">
-          <div className="uppercase font-bold text h6 flex gap-3">
-            Transfers {calls.length} |
+          <div className="uppercase font-bold text h6 flex gap-3 items-center">
+            Transfers Queue ({calls.length}) |
             <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
-            {neededDonkeys.toString()}
+            {totalNeededDonkeys.toString()}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -215,12 +242,31 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             ))}
           </div>
         </div>
-        <div>
-          You will be{" "}
-          {type === "send"
-            ? "sending these resources to their locations"
-            : "receiving all these resources into this location."}{" "}
-        </div>
+
+        {/* Enhanced Pre-Transfer Summary */}
+        {calls.length > 0 && (
+          <div className="py-3 my-3 border-t border-b border-gold/20 bg-black/20 p-3 rounded-md">
+            <div className="font-bold text-lg mb-2">Transfer Summary</div>
+            <div className="text-sm grid grid-cols-2 gap-1">
+              <div>Resource:</div>
+              <div>{findResourceById(resource)?.trait}</div>
+              <div>Total to {type === "send" ? "Send" : "Receive"}:</div>
+              <div>{currencyFormat(totalResourceTransferred, 2)}</div>
+              <div>Locations Involved:</div>
+              <div>{uniqueStructuresInvolved}</div>
+              <div>Total Donkeys Needed:</div>
+              <div>{totalNeededDonkeys}</div>
+            </div>
+            <div className="mt-2 text-xs">
+              You will be{" "}
+              {type === "send"
+                ? "sending these resources to their locations."
+                : "receiving all these resources into this location."}{" "}
+            </div>
+          </div>
+        )}
+        {/* End Enhanced Pre-Transfer Summary */}
+
         <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
           <Button
             disabled={calls.length === 0}
@@ -258,27 +304,36 @@ const RealmTransferBalance = memo(
       setup: { components },
     } = useDojo();
 
-    const resourceManager = useMemo(
+    const sourceResourceManager = useMemo(
       () =>
-        new ResourceManager(components, type === "receive" ? structure.structure.entity_id : selectedStructureEntityId),
+        new ResourceManager(components, type === "send" ? selectedStructureEntityId : structure.structure.entity_id),
       [components, structure.structure.entity_id, selectedStructureEntityId, type],
     );
 
-    const getBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, resource).balance;
-    }, [resourceManager, tick, resource]);
+    const destinationResourceManager = useMemo(
+      () =>
+        new ResourceManager(components, type === "receive" ? selectedStructureEntityId : structure.structure.entity_id),
+      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    );
 
-    const getDonkeyBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
-    }, [resourceManager, tick]);
+    const getSourceBalance = useCallback(() => {
+      return sourceResourceManager.balanceWithProduction(tick, resource).balance;
+    }, [sourceResourceManager, tick, resource]);
 
-    const currentResourceBalanceBigInt = getBalance();
+    const getSourceDonkeyBalance = useCallback(() => {
+      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
+    }, [sourceResourceManager, tick]);
+
+    const getDestinationDonkeyBalance = useCallback(() => {
+      return destinationResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
+    }, [destinationResourceManager, tick]);
+
+    const currentResourceBalanceBigInt = getSourceBalance();
 
     const maxInputAmount = useMemo(() => {
       if (currentResourceBalanceBigInt === undefined || currentResourceBalanceBigInt === null) {
         return 0;
       }
-      // Convert bigint balance to human-readable units for the input field's max value
       return Number(currentResourceBalanceBigInt.toString()) / RESOURCE_PRECISION;
     }, [currentResourceBalanceBigInt]);
 
@@ -287,75 +342,124 @@ const RealmTransferBalance = memo(
     useEffect(() => {
       const totalWeight = getTotalResourceWeightKg([{ resourceId: resource, amount: input }]);
       setResourceWeightKg(totalWeight);
-    }, [input]);
+    }, [input, resource]);
 
-    const neededDonkeys = useMemo(() => {
+    const neededDonkeysForThisTransfer = useMemo(() => {
       return calculateDonkeysNeeded(resourceWeightKg);
     }, [resourceWeightKg]);
 
+    const relevantDonkeyBalance = useMemo(() => {
+      return type === "send" ? getSourceDonkeyBalance() : getDestinationDonkeyBalance();
+    }, [type, getSourceDonkeyBalance, getDestinationDonkeyBalance]);
+
     const canCarry = useMemo(() => {
-      return getDonkeyBalance() >= neededDonkeys;
-    }, [getDonkeyBalance, neededDonkeys]);
+      return relevantDonkeyBalance >= neededDonkeysForThisTransfer;
+    }, [relevantDonkeyBalance, neededDonkeysForThisTransfer]);
+
+    const handleSetMax = () => {
+      let maxAmount = maxInputAmount;
+      const currentDonkeys = relevantDonkeyBalance;
+      if (currentDonkeys > 0) {
+        // Estimate max carriable amount. This is a simplification.
+        // A more accurate way would be to iterate or use a formula for max resources per donkey.
+        // For now, if donkeys are available, allow full balance. User will be warned by color.
+      } else if (currentDonkeys === 0 && type === "send") {
+        maxAmount = 0; // Cannot send if no donkeys at source
+      }
+
+      setInput(maxAmount);
+      add((prev) => {
+        const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
+        if (maxAmount === 0) {
+          return prev.filter((_, i) => i !== existingIndex);
+        }
+        const newCall = {
+          structureId: structure.structure.entity_id,
+          sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
+          recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
+          resources: [resource, maxAmount],
+          realmName: structure.name,
+        };
+        return existingIndex === -1
+          ? [...prev, newCall]
+          : [...prev.slice(0, existingIndex), newCall, ...prev.slice(existingIndex + 1)];
+      });
+    };
 
     if (structure.structure.entity_id === selectedStructureEntityId) {
-      return;
+      return null;
     }
 
     return (
-      <div className="flex flex-col gap-2 border-b-2 mt-2 border-gold/20">
-        <div className="flex flex-row gap-4">
+      <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
+        <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4">{structure.name}</div>
-
-            <div className="self-end gap-2 py-1 flex flex-row justify-between">
-              <div className="self-center ">{currencyFormat(getBalance() ? Number(getBalance()) : 0, 0)}</div>
-
-              <div
-                className={`whitespace-nowrap text-left ${
-                  neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
-                }`}
-              >
-                {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
-              </div>
+            <div className="uppercase font-bold h4 truncate">{structure.name}</div>
+          </div>
+        </div>
+        <div className="w-full">
+          <div className="py-1 flex flex-row justify-between items-center">
+            <div className="text-sm min-w-0 mr-2">
+              {type === "send" ? "Avail. here:" : "Avail. there:"}{" "}
+              {currencyFormat(getSourceBalance() ? Number(getSourceBalance()) : 0, 0)}
+            </div>
+            <div
+              className={`whitespace-nowrap text-right text-xs flex-shrink-0 ${
+                !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
+              }`}
+            >
+              {type === "send" ? "Your Donkeys:" : `${structure.name}'s Donkeys:`}{" "}
+              {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
+              {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>
           </div>
-
-          <NumberInput
-            max={maxInputAmount}
-            min={0}
-            step={0.01}
-            value={input}
-            allowDecimals
-            disabled={!canCarry || (type === "receive" && getDonkeyBalance() === 0)}
-            onChange={(amount) => {
-              // Clamp the amount to be within [0, maxInputAmount]
-              let clampedValue = Math.max(0, amount); // Ensure non-negative
-              if (clampedValue > maxInputAmount) {
-                clampedValue = maxInputAmount; // Ensure not exceeding max
-              }
-
-              setInput(clampedValue);
-              add((prev) => {
-                const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
-
-                if (clampedValue === 0) {
-                  return prev.filter((_, i) => i !== existingIndex);
+          <div className="flex items-center gap-1 mt-1">
+            <NumberInput
+              max={maxInputAmount}
+              min={0}
+              step={0.01}
+              value={input}
+              allowDecimals
+              disabled={!canCarry || (relevantDonkeyBalance === 0 && type === "send")}
+              onChange={(amount) => {
+                let clampedValue = Math.max(0, amount);
+                if (clampedValue > maxInputAmount) {
+                  clampedValue = maxInputAmount;
                 }
 
-                const newCall = {
-                  structureId: structure.structure.entity_id,
-                  sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
-                  recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
-                  resources: [resource, clampedValue], // Use the clamped human-readable value
-                  realmName: structure.name,
-                };
+                setInput(clampedValue);
+                add((prev) => {
+                  const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
 
-                return existingIndex === -1
-                  ? [...prev, newCall]
-                  : [...prev.slice(0, existingIndex), newCall, ...prev.slice(existingIndex + 1)];
-              });
-            }}
-          />
+                  if (clampedValue === 0 && existingIndex !== -1) {
+                    return prev.filter((_, i) => i !== existingIndex);
+                  }
+                  if (clampedValue > 0) {
+                    const newCall = {
+                      structureId: structure.structure.entity_id,
+                      sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
+                      recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
+                      resources: [resource, clampedValue],
+                      realmName: structure.name,
+                    };
+
+                    return existingIndex === -1
+                      ? [...prev, newCall]
+                      : [...prev.slice(0, existingIndex), newCall, ...prev.slice(existingIndex + 1)];
+                  }
+                  return prev;
+                });
+              }}
+            />
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleSetMax}
+              disabled={relevantDonkeyBalance === 0 && type === "send"}
+            >
+              Max
+            </Button>
+          </div>
         </div>
       </div>
     );
