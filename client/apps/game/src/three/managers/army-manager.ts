@@ -8,10 +8,8 @@ import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
-import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FXManager } from "./fx-manager";
 
@@ -169,16 +167,6 @@ export class ArmyManager {
     this.renderVisibleArmies(chunkKey);
   }
 
-  private getModelTypeForBiome(biome: BiomeType, troopType: TroopType, troopTier: TroopTier): ModelType {
-    // For water biomes, always return boat model regardless of troop type
-    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      return ModelType.Boat;
-    }
-
-    // For land biomes, return the appropriate model based on troop type and tier
-    return TROOP_TO_MODEL[troopType][troopTier];
-  }
-
   private renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
@@ -191,7 +179,7 @@ export class ArmyManager {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      const modelType = this.getModelTypeForBiome(biome, army.category, army.tier);
+      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
       const rotationSeed = hashCoordinates(x, y);
@@ -283,7 +271,7 @@ export class ArmyManager {
 
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.getModelTypeForBiome(biome, category, tier);
+    const modelType = this.armyModel.getModelTypeForEntity(entityId, category, tier, biome);
     this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);

@@ -78,7 +78,7 @@ export class ArmyModel {
   private async loadSingleModel(modelType: ModelType, fileName: string): Promise<void> {
     return new Promise((resolve, reject) => {
       gltfLoader.load(
-        `models/units/${fileName}.glb`,
+        `models/${fileName}`,
         (gltf) => {
           // if (modelType === ModelType.Paladin2) {
           //   console.log("Paladin", gltf.scene);
@@ -535,12 +535,36 @@ export class ArmyModel {
     const { col, row } = getHexForWorldPosition(position);
     const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
 
-    const modelType =
-      biome === BiomeType.Ocean || biome === BiomeType.DeepOcean ? ModelType.Boat : TROOP_TO_MODEL[category][tier];
-
+    const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (this.entityModelMap.get(entityId) !== modelType) {
       this.assignModelToEntity(entityId, modelType);
     }
+  }
+
+  /**
+   * Determines the appropriate model type based on troop type, tier and biome
+   * @param entityId - The entity ID
+   * @param troopType - Type of the troop
+   * @param troopTier - Tier of the troop
+   * @param biome - The biome type
+   * @returns The appropriate ModelType to use
+   */
+  public getModelTypeForEntity(
+    entityId: number,
+    troopType: TroopType,
+    troopTier: TroopTier,
+    biome: BiomeType,
+  ): ModelType {
+    // For water biomes, always return boat model regardless of troop type
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      return ModelType.Boat;
+    }
+
+    if (entityId === 275) {
+      return ModelType.AgentIstarai;
+    }
+    // For land biomes, return the appropriate model based on troop type and tier
+    return TROOP_TO_MODEL[troopType][troopTier];
   }
 
   private stopMovement(entityId: number): void {
