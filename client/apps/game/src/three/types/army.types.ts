@@ -36,6 +36,10 @@ export enum ModelType {
   Paladin1 = "paladin1",
   Paladin2 = "paladin2",
   Paladin3 = "paladin3",
+  AgentApix = "apix",
+  AgentElisa = "elisa",
+  AgentIstarai = "istarai",
+  AgentYP = "ypanther",
 }
 
 export interface AnimatedInstancedMesh extends THREE.InstancedMesh {
