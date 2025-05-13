@@ -5,6 +5,7 @@ export enum Subscription {
   MarketHistory = "marketHistory",
   Hyperstructure = "hyperstructure",
   Guild = "guild",
+  Quest = "quest",
 }
 
 export interface SyncStore {
