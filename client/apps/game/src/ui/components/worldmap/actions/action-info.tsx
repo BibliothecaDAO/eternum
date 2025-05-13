@@ -18,7 +18,11 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import {
+  getExplorerFromToriiClient,
+  getQuestFromToriiClient,
+  getStructureFromToriiClient,
+} from "@bibliothecadao/torii-client";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
@@ -341,17 +345,30 @@ const QuestInfo = memo(
     path: ActionPath[];
     components: ClientComponents;
   }) => {
+    const {
+      setup: {
+        components: { Tile },
+      },
+      network: { toriiClient },
+    } = useDojo();
+    const [questTileEntity, setQuestTileEntity] = useState<
+      ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
+    >(undefined);
     const questCoords = path[path.length - 1].hex;
 
-    const tileEntity = getComponentValue(
-      components.Tile,
-      getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
-    );
-
-    const questTileEntity = getComponentValue(
-      components.QuestTile,
-      getEntityIdFromKeys([BigInt(tileEntity?.occupier_id || 0)]),
-    );
+    useEffect(() => {
+      const fetchQuest = async () => {
+        const targetEntity = getComponentValue(
+          Tile,
+          getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
+        );
+        const result = await getQuestFromToriiClient(toriiClient, targetEntity?.occupier_id || 0);
+        if (result) {
+          setQuestTileEntity(result);
+        }
+      };
+      fetchQuest();
+    }, [questCoords, toriiClient]);
 
     const rewardAmount = questTileEntity?.amount ?? 0;
 
@@ -362,6 +379,8 @@ const QuestInfo = memo(
     const hasEnoughCapacity = useMemo(() => {
       return remainingCapacity >= Number(rewardAmount) / 10 ** 9;
     }, [remainingCapacity, rewardAmount]);
+
+    if (!questTileEntity) return null;
 
     return (
       <div className="flex flex-col p-1 text-xs">

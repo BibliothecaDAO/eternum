@@ -38,6 +38,7 @@ export const QuestModal = ({
   const [questTileEntity, setQuestTileEntity] = useState<
     ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
   >(undefined);
+  const [loadingQuestTile, setLoadingQuestTile] = useState(true);
   const { setScores } = useMinigameStore();
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
@@ -51,7 +52,7 @@ export const QuestModal = ({
       }
     };
     fetchQuest();
-  }, [targetHex]);
+  }, [targetHex, toriiClient]);
 
   const queryGameAddress = useMemo(() => {
     const questLevelsEntity = getComponentValue(
@@ -84,7 +85,7 @@ export const QuestModal = ({
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        await syncQuests(setup, questTileEntity?.game_address as string, questGames);
+        await syncQuests(setup, questTileEntity?.game_address as string);
       } catch (error) {
         console.log(error);
       }
@@ -112,7 +113,11 @@ export const QuestModal = ({
     };
   }, [questGamesKey, setScores]);
 
-  if (!questTileEntity) return null;
+  useEffect(() => {
+    if (questTileEntity) {
+      setLoadingQuestTile(false);
+    }
+  }, [questTileEntity]);
 
   return (
     <ModalContainer size="large">
@@ -133,25 +138,29 @@ export const QuestModal = ({
           </div>
         </div>
         {/* Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
-          <Suspense fallback={<LoadingAnimation />}>
-            {activeTab === ModalTab.Quest ? (
-              <QuestContainer
-                explorerEntityId={explorerEntityId}
-                loadingQuests={loadingQuests}
-                questTileEntity={questTileEntity}
-              />
-            ) : activeTab === ModalTab.Info ? (
-              <InfoContainer questTileEntity={questTileEntity} />
-            ) : (
-              <RealmsContainer
-                explorerEntityId={explorerEntityId}
-                loadingQuests={loadingQuests}
-                questTileEntity={questTileEntity}
-              />
-            )}
-          </Suspense>
-        </div>
+        {loadingQuestTile ? (
+          <LoadingAnimation />
+        ) : (
+          <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
+            <Suspense fallback={<LoadingAnimation />}>
+              {activeTab === ModalTab.Quest ? (
+                <QuestContainer
+                  explorerEntityId={explorerEntityId}
+                  loadingQuests={loadingQuests}
+                  questTileEntity={questTileEntity}
+                />
+              ) : activeTab === ModalTab.Info ? (
+                <InfoContainer questTileEntity={questTileEntity} />
+              ) : (
+                <RealmsContainer
+                  explorerEntityId={explorerEntityId}
+                  loadingQuests={loadingQuests}
+                  questTileEntity={questTileEntity}
+                />
+              )}
+            </Suspense>
+          </div>
+        )}
       </div>
     </ModalContainer>
   );
