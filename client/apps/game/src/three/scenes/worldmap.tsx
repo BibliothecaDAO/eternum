@@ -80,7 +80,7 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
-  private compassEffects: Map<string, () => void> = new Map();
+  private travelEffects: Map<string, () => void> = new Map();
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -366,31 +366,33 @@ export default class WorldmapScene extends HexagonScene {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
 
-      // Get the target position for the compass effect
+      // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
       const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
 
-      // Play compass effect if the hex is not explored
+      // Play effect based on action type: compass for exploring, travel for moving
       const key = `${targetHex.col},${targetHex.row}`;
-      if (!isExplored) {
-        const { promise, end } = this.fxManager.playFxAtCoords(
-          "compass",
-          position.x,
-          position.y + 2.5,
-          position.z,
-          0.95,
-          "Exploring...",
-          true,
-        );
-        // Store the end function with the hex coordinates as key
-        this.compassEffects.set(key, end);
-      }
+      const effectType = isExplored ? "travel" : "compass";
+      const effectLabel = isExplored ? "Traveling" : "Exploring";
+
+      const { promise, end } = this.fxManager.playFxAtCoords(
+        effectType,
+        position.x,
+        position.y + 2.5,
+        position.z,
+        0.95,
+        effectLabel,
+        true,
+      );
+
+      // Store the end function with the hex coordinates as key
+      this.travelEffects.set(key, end);
 
       const cleanup = () => {
-        const endEffect = this.compassEffects.get(key);
+        const endEffect = this.travelEffects.get(key);
         if (endEffect) {
           endEffect();
-          this.compassEffects.delete(key);
+          this.travelEffects.delete(key);
         }
       };
 
@@ -663,10 +665,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if there's a compass effect for this hex and end it
     const key = `${hexCoords.col},${hexCoords.row}`;
-    const endCompass = this.compassEffects.get(key);
+    const endCompass = this.travelEffects.get(key);
     if (endCompass) {
       endCompass();
-      this.compassEffects.delete(key);
+      this.travelEffects.delete(key);
     }
 
     if (removeExplored) {
@@ -851,7 +853,7 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      const batchSize = 25; // Adjust batch size as needed
+      const batchSize = 600; // Adjust batch size as needed
       let currentIndex = 0;
 
       this.computeTileEntities(this.currentChunk);
@@ -870,9 +872,9 @@ export default class WorldmapScene extends HexagonScene {
           dummyObject.position.copy(pos);
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-
+          const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
           const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-          if (isStructure) {
+          if (isStructure || isQuest) {
             dummyObject.scale.set(0, 0, 0);
           } else {
             dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);

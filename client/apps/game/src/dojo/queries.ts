@@ -5,12 +5,11 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-import { Clause, ComparisonOperator, LogicalOperator } from "@dojoengine/torii-wasm";
+import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
-  debouncedGetQuestTilesFromTorii,
   debouncedGetTilesForPositionsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
@@ -473,79 +472,12 @@ export const getMapFromTorii = async <S extends Schema>(
   );
 };
 
-export const getQuestTilesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  questTileIds: ID[],
-) => {
-  return await debouncedGetQuestTilesFromTorii(client, components as any, questTileIds, () => {});
-};
-
-export const getQuestTilesFromToriiQuery = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  questTileIds: number[],
-) => {
-  await getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: questTileIds.map((id) => ({
-          Member: {
-            model: "s1_eternum-QuestTile",
-            member: "id",
-            operator: "Eq",
-            value: { Primitive: { U32: id } },
-          },
-        })),
-      },
-    },
-    components,
-    [],
-    ["s1_eternum-QuestTile"],
-    1000,
-    false,
-  );
-};
-
-export const getQuestsFromTorii = async (
-  client: ToriiClient,
-  components: Component<Schema, Metadata, undefined>[],
-  gameAddress: string,
-  questGames: any[],
-) => {
+export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
-    Composite: {
-      operator: "And" as LogicalOperator,
-      clauses: [
-        {
-          Member: {
-            model: "s1_eternum-Quest",
-            member: "game_address",
-            operator: "Eq" as ComparisonOperator,
-            value: {
-              String: gameAddress,
-            },
-          },
-        },
-        {
-          Member: {
-            model: "s1_eternum-Quest",
-            member: "game_token_id",
-            operator: "In" as ComparisonOperator,
-            value: {
-              List: questGames.map((game: any) => {
-                return {
-                  Primitive: {
-                    U64: Number(game.token_id),
-                  },
-                };
-              }),
-            },
-          },
-        },
-      ],
+    Keys: {
+      keys: [undefined, undefined],
+      pattern_matching: "VariableLen" as PatternMatching,
+      models: ["s1_eternum-Quest"],
     },
   };
 

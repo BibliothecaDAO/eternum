@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -50,9 +51,11 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
+  const { currentArmiesTick } = useBlockTimestamp();
+
   const stamina = useMemo(() => {
-    return StaminaManager.getStamina(army.troops, getBlockTimestamp().currentArmiesTick);
-  }, [army]);
+    return StaminaManager.getStamina(army.troops, currentArmiesTick);
+  }, [army, currentArmiesTick]);
 
   const minStaminaNeeded = useMemo(() => {
     const neighbors = getNeighborHexes(army.coord.x, army.coord.y);

@@ -4,6 +4,7 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
+import { COLORS } from "@/ui/components/settlement/settlement-constants";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -275,19 +276,25 @@ export class ArmyManager {
     this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);
+    const isMine = isAddressEqualToAccount(owner.address);
     this.armies.set(entityId, {
       entityId,
       matrixIndex: this.armies.size - 1,
       hexCoords,
-      isMine: isAddressEqualToAccount(owner.address),
+      isMine,
       owner,
-      color: orderData?.color || "#000000",
+      color: this.getColorForArmy({ isMine, isDaydreamsAgent }),
       order: orderData?.orderName || "",
       category,
       tier,
       isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
+  }
+
+  public getColorForArmy(army: { isMine: boolean; isDaydreamsAgent: boolean }) {
+    if (army.isDaydreamsAgent) return COLORS.SELECTED;
+    return army.isMine ? COLORS.MINE : COLORS.SETTLED;
   }
 
   public moveArmy(

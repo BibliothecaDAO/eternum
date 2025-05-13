@@ -1,4 +1,7 @@
 import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
 
 # 🪓 Buildings
 
@@ -340,7 +343,7 @@ increase (Storehouse)]
   image="/images/buildings/construction/storehouse.png"
   buildingType={2}
   description={[
-    "Increases storage capacity by 300,000 kg for each material",
+    "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
     "Requires 2 population to be constructed",
     "Available in both simple and standard building modes",
   ]}

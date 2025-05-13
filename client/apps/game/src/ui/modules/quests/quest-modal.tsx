@@ -1,4 +1,4 @@
-import { syncQuests } from "@/dojo/sync";
+import { useSyncQuest } from "@/hooks/helpers/use-sync";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
@@ -38,6 +38,7 @@ export const QuestModal = ({
   const [questTileEntity, setQuestTileEntity] = useState<
     ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
   >(undefined);
+  const [loadingQuestTile, setLoadingQuestTile] = useState(true);
   const { setScores } = useMinigameStore();
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
@@ -51,7 +52,7 @@ export const QuestModal = ({
       }
     };
     fetchQuest();
-  }, [targetHex]);
+  }, [targetHex, toriiClient]);
 
   const queryGameAddress = useMemo(() => {
     const questLevelsEntity = getComponentValue(
@@ -81,16 +82,7 @@ export const QuestModal = ({
     return questGames.join(",");
   }, [questGames]);
 
-  useEffect(() => {
-    const fetchQuests = async () => {
-      try {
-        await syncQuests(setup, questTileEntity?.game_address as string, questGames);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchQuests();
-  }, [questGamesKey, questTileEntity?.game_address]);
+  const { isSyncing } = useSyncQuest();
 
   useEffect(() => {
     if (questGames?.length > 0) {
@@ -112,7 +104,11 @@ export const QuestModal = ({
     };
   }, [questGamesKey, setScores]);
 
-  if (!questTileEntity) return null;
+  useEffect(() => {
+    if (questTileEntity) {
+      setLoadingQuestTile(false);
+    }
+  }, [questTileEntity]);
 
   return (
     <ModalContainer size="large">
@@ -133,25 +129,29 @@ export const QuestModal = ({
           </div>
         </div>
         {/* Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
-          <Suspense fallback={<LoadingAnimation />}>
-            {activeTab === ModalTab.Quest ? (
-              <QuestContainer
-                explorerEntityId={explorerEntityId}
-                loadingQuests={loadingQuests}
-                questTileEntity={questTileEntity}
-              />
-            ) : activeTab === ModalTab.Info ? (
-              <InfoContainer questTileEntity={questTileEntity} />
-            ) : (
-              <RealmsContainer
-                explorerEntityId={explorerEntityId}
-                loadingQuests={loadingQuests}
-                questTileEntity={questTileEntity}
-              />
-            )}
-          </Suspense>
-        </div>
+        {loadingQuestTile || isSyncing ? (
+          <LoadingAnimation />
+        ) : (
+          <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
+            <Suspense fallback={<LoadingAnimation />}>
+              {activeTab === ModalTab.Quest ? (
+                <QuestContainer
+                  explorerEntityId={explorerEntityId}
+                  loadingQuests={loadingQuests}
+                  questTileEntity={questTileEntity}
+                />
+              ) : activeTab === ModalTab.Info ? (
+                <InfoContainer questTileEntity={questTileEntity} />
+              ) : (
+                <RealmsContainer
+                  explorerEntityId={explorerEntityId}
+                  loadingQuests={loadingQuests}
+                  questTileEntity={questTileEntity}
+                />
+              )}
+            </Suspense>
+          </div>
+        )}
       </div>
     </ModalContainer>
   );

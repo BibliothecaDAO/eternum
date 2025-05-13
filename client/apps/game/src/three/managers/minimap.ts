@@ -112,6 +112,7 @@ class Minimap {
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
   private tiles: Tile[] = []; // SQL-fetched tiles
+  private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -176,6 +177,7 @@ class Minimap {
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
     this.canvas.addEventListener("wheel", this.handleWheel);
+    this.canvas.addEventListener("mouseleave", this.handleMouseLeave); // Add listener for mouse leave
   }
 
   private recomputeScales() {
@@ -276,6 +278,7 @@ class Minimap {
     this.drawArmies();
     this.drawQuests();
     this.drawCamera();
+    this.drawHoveredCoordinates(); // Add this new method call
   }
 
   private drawExploredTiles() {
@@ -672,6 +675,10 @@ class Minimap {
   };
 
   private handleMouseMove = (event: MouseEvent) => {
+    // Update hovered coordinates
+    const { col, row } = this.getMousePosition(event);
+    this.hoveredHexCoords = { col, row };
+
     if (this.isDragging && this.lastMousePosition) {
       const colShift = Math.round(event.clientX - this.lastMousePosition.x);
       const rowShift = Math.round(event.clientY - this.lastMousePosition.y);
@@ -684,6 +691,9 @@ class Minimap {
       };
 
       this.recomputeScales();
+      this.draw();
+    } else {
+      // Redraw only when not dragging to show updated hover coordinates
       this.draw();
     }
   };
@@ -871,6 +881,41 @@ class Minimap {
       console.error("Failed to fetch tiles:", error);
     }
   }
+
+  // New method to draw the hovered coordinates
+  private drawHoveredCoordinates() {
+    if (!this.context || !this.hoveredHexCoords) return;
+
+    const { col, row } = this.hoveredHexCoords;
+    const text = `(${col}, ${row})`;
+
+    // Save current context state
+    this.context.save();
+
+    // Set text style
+    this.context.font = "14px Arial";
+    this.context.fillStyle = "#FFFFFF";
+    this.context.textBaseline = "bottom";
+
+    // Add background for better readability
+    const textMetrics = this.context.measureText(text);
+    const padding = 5;
+    this.context.fillStyle = "rgba(0, 0, 0, 0.7)";
+    this.context.fillRect(padding, this.canvas.height - padding - 16, textMetrics.width + padding * 2, 16 + padding);
+
+    // Draw text
+    this.context.fillStyle = "#FFFFFF";
+    this.context.fillText(text, padding * 2, this.canvas.height - padding);
+
+    // Restore context state
+    this.context.restore();
+  }
+
+  // New method to handle mouse leaving the canvas
+  private handleMouseLeave = () => {
+    this.hoveredHexCoords = null;
+    this.draw();
+  };
 }
 
 export default Minimap;

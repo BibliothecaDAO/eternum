@@ -539,6 +539,7 @@ export class ClientConfigManager {
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
+          stamina_attack_max: troopStaminaConfig?.stamina_attack_max ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
           damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
@@ -554,6 +555,7 @@ export class ClientConfigManager {
       {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
+        stamina_attack_max: 0,
         damage_biome_bonus_num: 0,
         damage_raid_percent_num: 0,
         damage_beta_small: 0n,

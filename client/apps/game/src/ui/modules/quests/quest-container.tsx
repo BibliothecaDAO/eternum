@@ -163,6 +163,8 @@ export const QuestContainer = ({
     [settingsMetadataForGame, questLevel],
   );
 
+  if (!questTileEntity) return null;
+
   return (
     <div className="flex flex-col gap-5 text-xl w-3/5 mx-auto h-full overflow-y-auto pt-2 border border-gold/20 rounded-lg">
       <div className="flex flex-col justify-center mx-auto h-[200px] w-full">
