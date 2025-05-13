@@ -54,6 +54,7 @@ export class Navigator {
     if (this.arrowModel) {
       this.arrowModel.visible = false;
       this.distanceDiv!.textContent = "";
+      this.distanceDiv!.style.backgroundColor = "transparent";
     }
   }
 
