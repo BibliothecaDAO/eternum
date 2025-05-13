@@ -1,4 +1,4 @@
-import { getQuestTilesFromTorii, getStructuresDataFromTorii } from "@/dojo/queries";
+import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -7,7 +7,7 @@ import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useQuests } from "@bibliothecadao/react";
 import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
-import { ContractAddress, Tile } from "@bibliothecadao/types";
+import { ContractAddress } from "@bibliothecadao/types";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -258,38 +258,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     syncUnsyncedStructures();
   }, [account.account, playerStructures, fetchedStructures, syncStructures, setSyncedStructures]);
-
-  const syncQuestTiles = useCallback(
-    async ({ questTiles }: { questTiles: Tile[] }) => {
-      if (!questTiles.length) return;
-
-      try {
-        const start = performance.now();
-        setLoading(LoadingStateKey.Quests, true);
-        await getQuestTilesFromTorii(
-          setup.network.toriiClient,
-          setup.network.contractComponents as any,
-          questTiles.map((q) => q.occupier_id),
-        );
-        const end = performance.now();
-        console.log(
-          `[sync] quest tiles query questTiles ${questTiles.map((q) => `${q.occupier_id}(${q.col},${q.row})`)}`,
-          end - start,
-        );
-      } catch (error) {
-        console.error("Failed to sync quest tiles:", error);
-      } finally {
-        setLoading(LoadingStateKey.Quests, false);
-      }
-    },
-    [setup.network.toriiClient, setup.network.contractComponents],
-  );
-
-  useEffect(() => {
-    if (quests.length > 0) {
-      syncQuestTiles({ questTiles: quests });
-    }
-  }, [quests?.length, syncQuestTiles]);
 
   const { data: minigames } = useMiniGames({});
 

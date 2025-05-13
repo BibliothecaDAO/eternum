@@ -4,8 +4,9 @@ import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
+import { ClientComponents, ID } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useOwnedGamesWithScores } from "metagame-sdk";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { InfoContainer } from "./info-container";
@@ -29,17 +30,27 @@ export const QuestModal = ({
     account: { account },
     setup,
     setup: {
-      components: { Tile, QuestTile, QuestLevels },
+      components: { Tile, QuestLevels },
     },
+    network: { toriiClient },
   } = useDojo();
   const [activeTab, setActiveTab] = useState<ModalTab>(ModalTab.Quest);
+  const [questTileEntity, setQuestTileEntity] = useState<
+    ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
+  >(undefined);
   const { setScores } = useMinigameStore();
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
 
-  const questTileEntity = useMemo(() => {
-    const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-    return getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
+  useEffect(() => {
+    const fetchQuest = async () => {
+      const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+      const result = await getQuestFromToriiClient(toriiClient, targetEntity?.occupier_id || 0);
+      if (result) {
+        setQuestTileEntity(result);
+      }
+    };
+    fetchQuest();
   }, [targetHex]);
 
   const queryGameAddress = useMemo(() => {
@@ -101,6 +112,8 @@ export const QuestModal = ({
     };
   }, [questGamesKey, setScores]);
 
+  if (!questTileEntity) return null;
+
   return (
     <ModalContainer size="large">
       <div className="container mx-auto h-full rounded-2xl relative flex flex-col">
@@ -123,14 +136,18 @@ export const QuestModal = ({
         <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
             {activeTab === ModalTab.Quest ? (
-              <QuestContainer explorerEntityId={explorerEntityId} targetHex={targetHex} loadingQuests={loadingQuests} />
+              <QuestContainer
+                explorerEntityId={explorerEntityId}
+                loadingQuests={loadingQuests}
+                questTileEntity={questTileEntity}
+              />
             ) : activeTab === ModalTab.Info ? (
-              <InfoContainer targetHex={targetHex} />
+              <InfoContainer questTileEntity={questTileEntity} />
             ) : (
               <RealmsContainer
                 explorerEntityId={explorerEntityId}
-                targetHex={targetHex}
                 loadingQuests={loadingQuests}
+                questTileEntity={questTileEntity}
               />
             )}
           </Suspense>
