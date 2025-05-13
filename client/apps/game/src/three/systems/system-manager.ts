@@ -397,23 +397,14 @@ export class SystemManager {
 
               if (!currentState) return;
 
-              const questTile = getComponentValue(
-                this.setup.components.QuestTile,
-                getEntityIdFromKeys([BigInt(currentState?.occupier_id)]),
-              );
+              const quest = currentState.occupier_type === TileOccupier.Quest;
 
-              if (!questTile) return;
+              if (!quest) return;
 
               return {
                 entityId: update.entity,
-                id: questTile.id,
-                gameAddress: questTile.game_address,
-                hexCoords: { col: questTile.coord.x, row: questTile.coord.y },
-                capacity: questTile.capacity,
-                level: questTile.level,
-                resourceType: questTile.resource_type,
-                amount: questTile.amount,
-                participantCount: questTile.participant_count,
+                occupierId: currentState?.occupier_id,
+                hexCoords: { col: currentState.col, row: currentState.row },
               };
             }
           },
