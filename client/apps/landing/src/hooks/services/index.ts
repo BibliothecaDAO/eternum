@@ -1,4 +1,5 @@
 import { trimAddress } from "@/lib/utils";
+import { RealmMetadata } from "@/types";
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
 import { env } from "../../../env";
 
@@ -253,7 +254,7 @@ export interface OpenOrderByPrice {
   order_id: number;
   name: string | null;
   symbol: string | null;
-  metadata: string | null;
+  metadata: RealmMetadata | null;
   best_price_hex: bigint | null;
   expiration: number | null;
   token_owner: string | null;
@@ -401,6 +402,7 @@ export async function fetchOpenOrdersByPrice(
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     token_owner: item.token_owner?.toString() ?? null,
     order_owner: item.order_owner?.toString() ?? null,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
   }));
 }
 
@@ -435,7 +437,7 @@ export interface TokenBalanceWithToken {
   symbol: string | null;
   expiration: number | null;
   best_price_hex: bigint | null;
-  metadata: string | null;
+  metadata: RealmMetadata | null;
 }
 
 export async function fetchTokenBalancesWithMetadata(
@@ -445,16 +447,19 @@ export async function fetchTokenBalancesWithMetadata(
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
     .replace("{accountAddress}", accountAddress)
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
-  console.log(query);
+
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch token balances with tokens: ${response.statusText}`);
   }
   const rawData = await response.json();
-  return rawData.map((item: TokenBalanceWithToken) => ({
-    ...item,
-    token_id: parseInt(item.token_id?.split(":")[1] ?? "0", 16),
-    best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
-  }));
+  return rawData.map(
+    (item: { token_id: string; best_price_hex: string | number | bigint | boolean; metadata: string }) => ({
+      ...item,
+      token_id: parseInt(item.token_id?.split(":")[1] ?? "0", 16),
+      best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
+      metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    }),
+  );
 }

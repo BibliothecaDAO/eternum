@@ -77,8 +77,9 @@ function Mint() {
   const realmsErcBalance = seasonPassMints.data;
 
   // --- Filtering Hook ---
-  const getRealmMetadataString = useCallback((realm: SeasonPassRealm): string | null => {
-    return realm.metadata;
+  const getRealmMetadataString = useCallback((realm: SeasonPassRealm) => {
+    if (!realm.metadata) return null;
+    return JSON.parse(realm.metadata);
   }, []);
 
   const {
