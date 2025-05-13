@@ -265,9 +265,7 @@ export const CombatSimulationPanel = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {getStaminaDisplay(data.army.stamina, data.newStamina, data.isWinner, 30)}
-                  </div>
+                  <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
                 </div>
               </div>
             </div>
