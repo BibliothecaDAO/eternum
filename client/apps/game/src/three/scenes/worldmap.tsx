@@ -853,7 +853,7 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      const batchSize = 25; // Adjust batch size as needed
+      const batchSize = 600; // Adjust batch size as needed
       let currentIndex = 0;
 
       this.computeTileEntities(this.currentChunk);
