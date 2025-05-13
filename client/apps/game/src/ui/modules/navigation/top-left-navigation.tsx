@@ -71,7 +71,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         isFavorite: favorites.includes(structure.entityId),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }, [favorites, structures.length]);
+  }, [favorites, structures]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
