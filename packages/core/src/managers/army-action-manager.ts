@@ -1,6 +1,5 @@
 import {
   type BiomeType,
-  BiomeTypeToId,
   type ClientComponents,
   type ContractAddress,
   type DojoAccount,
@@ -12,15 +11,12 @@ import {
   type ID,
   ResourcesIds,
   type SystemCalls,
-  TileOccupier,
-  TravelTypes,
   type TroopType,
 } from "@bibliothecadao/types";
 import { type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { uuid } from "@latticexyz/utils";
 import type { Account, AccountInterface } from "starknet";
-import { Biome, divideByPrecision, getRemainingCapacityInKg, kgToNanogram } from "..";
+import { divideByPrecision, getRemainingCapacityInKg } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -266,137 +262,6 @@ export class ArmyActionManager {
     return actionPaths;
   }
 
-  private readonly _optimisticExplorerUpdate = (
-    staminaAmount: bigint,
-    staminaCost: number,
-    currentArmiesTick: number,
-    newPosition: HexPosition,
-  ) => {
-    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
-    const stamina = explorerTroops?.troops.stamina;
-    const overrideId = uuid();
-
-    if (!stamina) return;
-
-    // substract the costs
-    this.components.ExplorerTroops.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        ...explorerTroops,
-        coord: {
-          x: newPosition.col,
-          y: newPosition.row,
-        },
-        troops: {
-          ...explorerTroops.troops,
-          stamina: {
-            ...explorerTroops.troops.stamina,
-            amount: staminaAmount - BigInt(staminaCost),
-            updated_tick: BigInt(currentArmiesTick),
-          },
-        },
-      },
-    });
-
-    return () => {
-      this.components.ExplorerTroops.removeOverride(overrideId);
-    };
-  };
-
-  private readonly _optimisticCapacityUpdate = (additionalWeightKg: number) => {
-    const overrideId = uuid();
-
-    const resource = getComponentValue(this.components.Resource, this.entity);
-    const weight = resource?.weight || { capacity: 0n, weight: 0n };
-    const additionalWeight = kgToNanogram(additionalWeightKg);
-
-    this.components.Resource.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        entity_id: this.entityId,
-        ...resource,
-        weight: {
-          ...weight,
-          weight: BigInt((weight?.weight || 0).toString()) + BigInt(additionalWeight),
-        },
-      },
-    });
-
-    return () => {
-      this.components.Resource.removeOverride(overrideId);
-    };
-  };
-
-  private readonly _optimisticTileUpdate = (newPosition: HexPosition, previousPosition: HexPosition) => {
-    const overrideId1 = uuid();
-
-    const previousEntity = getEntityIdFromKeys([BigInt(previousPosition.col), BigInt(previousPosition.row)]);
-
-    const previousTile = getComponentValue(this.components.Tile, previousEntity);
-
-    this.components.Tile.addOverride(overrideId1, {
-      entity: previousEntity,
-      value: {
-        ...previousTile,
-        col: previousPosition.col,
-        row: previousPosition.row,
-        occupier_id: 0,
-        occupier_type: TileOccupier.None,
-      },
-    });
-
-    const overrideId2 = uuid();
-
-    this.components.Tile.addOverride(overrideId2, {
-      entity: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
-      value: {
-        col: newPosition.col,
-        row: newPosition.row,
-        occupier_id: this.entityId,
-        occupier_type: previousTile?.occupier_type,
-        biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
-        occupier_is_structure: false,
-      },
-    });
-
-    return () => {
-      this.components.Tile.removeOverride(overrideId1);
-      this.components.Tile.removeOverride(overrideId2);
-    };
-  };
-
-  // @ts-ignore
-  private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
-    const previousPosition = this._getCurrentPosition();
-    const newPosition = { col, row };
-
-    const staminaManager = new StaminaManager(this.components, this.entityId);
-    const staminaCost = configManager.getExploreStaminaCost();
-    const currentStamina = staminaManager.getStamina(currentArmiesTick).amount;
-
-    const removeExplorerOverride = this._optimisticExplorerUpdate(
-      currentStamina,
-      staminaCost,
-      currentArmiesTick,
-      newPosition,
-    );
-    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
-    const removeCapacityOverride = this._optimisticCapacityUpdate(
-      // all resources you can find have the same weight as wood
-      configManager.getExploreReward() * configManager.getResourceWeightKg(ResourcesIds.Wood),
-    );
-    const removeFoodCostsOverride = this._optimisticFoodCosts(TravelTypes.Explore);
-
-    return {
-      removeOverrides: () => {
-        removeExplorerOverride?.();
-        removeTileOverride();
-        removeCapacityOverride();
-        removeFoodCostsOverride?.();
-      },
-    };
-  };
-
   private readonly _findDirection = (path: HexPosition[]) => {
     if (path.length !== 2) return undefined;
 
@@ -411,8 +276,6 @@ export class ArmyActionManager {
       return Promise.reject(new Error("Invalid direction"));
     }
 
-    // const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
-
     try {
       await this.systemCalls.explorer_move({
         explorer_id: this.entityId,
@@ -423,67 +286,7 @@ export class ArmyActionManager {
       return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);
-    } finally {
-      // removeOverrides();
     }
-  };
-
-  // @ts-ignore
-  private readonly _optimisticTravelHex = (col: number, row: number, path: ActionPath[], currentArmiesTick: number) => {
-    const previousPosition = this._getCurrentPosition();
-    const newPosition = { col, row };
-    let staminaCost = 0;
-
-    for (const { biomeType } of path) {
-      if (!biomeType) continue;
-      staminaCost += configManager.getTravelStaminaCost(biomeType, this._getTroopType());
-    }
-
-    const staminaManager = new StaminaManager(this.components, this.entityId);
-    const currentStamina = staminaManager.getStamina(currentArmiesTick).amount;
-
-    const removeExplorerOverride = this._optimisticExplorerUpdate(
-      currentStamina,
-      staminaCost,
-      currentArmiesTick,
-      newPosition,
-    );
-    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
-    const removeFoodCostsOverride = this._optimisticFoodCosts(TravelTypes.Travel);
-
-    return {
-      removeOverrides: () => {
-        removeExplorerOverride?.();
-        removeTileOverride();
-        removeFoodCostsOverride?.();
-      },
-    };
-  };
-
-  private readonly _optimisticFoodCosts = (travelType: TravelTypes) => {
-    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
-    if (!entityArmy) return;
-    let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
-    if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(entityArmy.troops);
-    } else {
-      costs = computeTravelFoodCosts(entityArmy.troops);
-    }
-
-    // need to add back precision for optimistic resource update
-    const removeWheatResourceOverride = this.resourceManager.optimisticResourceUpdate(
-      ResourcesIds.Wheat,
-      -costs.wheatPayAmount,
-    );
-    const removeFishResourceOverride = this.resourceManager.optimisticResourceUpdate(
-      ResourcesIds.Fish,
-      -costs.fishPayAmount,
-    );
-
-    return () => {
-      removeWheatResourceOverride();
-      removeFishResourceOverride();
-    };
   };
 
   private readonly _travelToHex = async (
@@ -491,13 +294,6 @@ export class ArmyActionManager {
     path: ActionPath[],
     currentArmiesTick: number,
   ) => {
-    // const { removeOverrides } = this._optimisticTravelHex(
-    //   path[path.length - 1].hex.col,
-    //   path[path.length - 1].hex.row,
-    //   path,
-    //   currentArmiesTick,
-    // );
-
     const directions = path
       .map((_, i) => {
         if (path[i + 1] === undefined) return undefined;
@@ -517,9 +313,7 @@ export class ArmyActionManager {
       });
       return Promise.resolve();
     } catch (e) {
-      // only remove overrides if the move failed
       console.log({ e });
-      // removeOverrides();
       return Promise.reject(e);
     }
   };
