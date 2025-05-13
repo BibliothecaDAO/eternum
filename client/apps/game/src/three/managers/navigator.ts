@@ -26,6 +26,10 @@ export class Navigator {
     this.distanceDiv = document.createElement("div");
     this.distanceDiv.className = "label";
     this.distanceDiv.style.backgroundColor = "transparent";
+    this.distanceDiv.style.color = "white";
+    this.distanceDiv.style.padding = "5px 10px";
+    this.distanceDiv.style.borderRadius = "4px";
+    this.distanceDiv.style.fontWeight = "bold";
 
     const posLabel = new CSS2DObject(this.distanceDiv);
     posLabel.position.set(0, 7.5, 0);
@@ -50,6 +54,7 @@ export class Navigator {
     if (this.arrowModel) {
       this.arrowModel.visible = false;
       this.distanceDiv!.textContent = "";
+      this.distanceDiv!.style.backgroundColor = "transparent";
     }
   }
 
@@ -57,6 +62,7 @@ export class Navigator {
     this.target = { col, row };
     if (this.arrowModel) {
       this.arrowModel.visible = true;
+      this.distanceDiv!.style.backgroundColor = "rgba(0, 0, 0, 0.6)";
       this.updateArrowRotation();
     }
   }
@@ -95,7 +101,7 @@ export class Navigator {
     if (distance) {
       this.distanceDiv!.textContent = `You are ${distance} hex away`;
     } else {
-      this.distanceDiv!.textContent = "";
+      this.distanceDiv!.textContent = "You are at the target!";
     }
   }, 100);
 
