@@ -407,9 +407,11 @@ export class ArmyActionManager {
 
   private readonly _exploreHex = async (signer: DojoAccount, path: ActionPath[], currentArmiesTick: number) => {
     const direction = this._findDirection(path.map((p) => p.hex));
-    if (direction === undefined || direction === null) return;
+    if (direction === undefined || direction === null) {
+      return Promise.reject(new Error("Invalid direction"));
+    }
 
-    // const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
+    const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
 
     try {
       await this.systemCalls.explorer_move({
@@ -418,11 +420,11 @@ export class ArmyActionManager {
         explore: true,
         signer,
       });
+      return Promise.resolve();
     } catch (e) {
-      console.log({ e });
+      return Promise.reject(e);
     } finally {
-      // remove all non visual overrides
-      // removeOverrides();
+      removeOverrides();
     }
   };
 
@@ -526,9 +528,9 @@ export class ArmyActionManager {
     currentArmiesTick: number,
   ) => {
     if (!isExplored) {
-      this._exploreHex(signer, path, currentArmiesTick);
+      return this._exploreHex(signer, path, currentArmiesTick);
     } else {
-      this._travelToHex(signer, path, currentArmiesTick);
+      return this._travelToHex(signer, path, currentArmiesTick);
     }
   };
 }

@@ -369,7 +369,9 @@ export default class WorldmapScene extends HexagonScene {
       // Get the target position for the compass effect
       const targetHex = actionPath[actionPath.length - 1].hex;
       const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
+
       // Play compass effect if the hex is not explored
+      const key = `${targetHex.col},${targetHex.row}`;
       if (!isExplored) {
         const { promise, end } = this.fxManager.playFxAtCoords(
           "compass",
@@ -381,11 +383,22 @@ export default class WorldmapScene extends HexagonScene {
           true,
         );
         // Store the end function with the hex coordinates as key
-        const key = `${targetHex.col},${targetHex.row}`;
         this.compassEffects.set(key, end);
       }
 
-      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
+      const cleanup = () => {
+        const endEffect = this.compassEffects.get(key);
+        if (endEffect) {
+          endEffect();
+          this.compassEffects.delete(key);
+        }
+      };
+
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick).catch((e) => {
+        cleanup();
+        console.error("Army movement failed:", e);
+      });
+
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
