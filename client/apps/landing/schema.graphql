@@ -46,7 +46,13 @@ union ERC__Token = ERC20__Token | ERC721__Token | ERC1155__Token
 
 scalar Enum
 
-union ModelUnion = marketplace_MarketFeeModel | marketplace_MarketGlobalModel | marketplace_MarketOrderEvent | marketplace_MarketOrderModel | marketplace_MarketTokenOrderModel | marketplace_MarketWhitelistModel
+union ModelUnion =
+  | marketplace_MarketFeeModel
+  | marketplace_MarketGlobalModel
+  | marketplace_MarketOrderEvent
+  | marketplace_MarketOrderModel
+  | marketplace_MarketTokenOrderModel
+  | marketplace_MarketWhitelistModel
 
 enum OrderDirection {
   ASC
@@ -264,27 +270,151 @@ type World__PageInfo {
 
 type World__Query {
   controller(id: ID!): World__Controller!
-  controllers(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__ControllerConnection
-  entities(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EntityConnection
+  controllers(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__ControllerConnection
+  entities(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EntityConnection
   entity(id: ID!): World__Entity!
   eventMessage(id: ID!): World__EventMessage!
-  eventMessages(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventMessageConnection
-  events(after: Cursor, before: Cursor, first: Int, keys: [String], last: Int, limit: Int, offset: Int): World__EventConnection
-  marketplaceMarketFeeModelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketFeeModelOrder, where: marketplace_MarketFeeModelWhereInput): marketplace_MarketFeeModelConnection
-  marketplaceMarketGlobalModelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketGlobalModelOrder, where: marketplace_MarketGlobalModelWhereInput): marketplace_MarketGlobalModelConnection
-  marketplaceMarketOrderEventModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketOrderEventOrder, where: marketplace_MarketOrderEventWhereInput): marketplace_MarketOrderEventConnection
-  marketplaceMarketOrderModelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketOrderModelOrder, where: marketplace_MarketOrderModelWhereInput): marketplace_MarketOrderModelConnection
-  marketplaceMarketTokenOrderModelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketTokenOrderModelOrder, where: marketplace_MarketTokenOrderModelWhereInput): marketplace_MarketTokenOrderModelConnection
-  marketplaceMarketWhitelistModelModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: marketplace_MarketWhitelistModelOrder, where: marketplace_MarketWhitelistModelWhereInput): marketplace_MarketWhitelistModelConnection
+  eventMessages(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EventMessageConnection
+  events(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EventConnection
+  marketplaceMarketFeeModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketFeeModelOrder
+    where: marketplace_MarketFeeModelWhereInput
+  ): marketplace_MarketFeeModelConnection
+  marketplaceMarketGlobalModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketGlobalModelOrder
+    where: marketplace_MarketGlobalModelWhereInput
+  ): marketplace_MarketGlobalModelConnection
+  marketplaceMarketOrderEventModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketOrderEventOrder
+    where: marketplace_MarketOrderEventWhereInput
+  ): marketplace_MarketOrderEventConnection
+  marketplaceMarketOrderModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketOrderModelOrder
+    where: marketplace_MarketOrderModelWhereInput
+  ): marketplace_MarketOrderModelConnection
+  marketplaceMarketTokenOrderModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketTokenOrderModelOrder
+    where: marketplace_MarketTokenOrderModelWhereInput
+  ): marketplace_MarketTokenOrderModelConnection
+  marketplaceMarketWhitelistModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketWhitelistModelOrder
+    where: marketplace_MarketWhitelistModelWhereInput
+  ): marketplace_MarketWhitelistModelConnection
   metadatas(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__MetadataConnection
   model(id: ID!): World__Model!
-  models(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: World__ModelOrder): World__ModelConnection
+  models(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: World__ModelOrder
+  ): World__ModelConnection
   token(id: String!): Token!
-  tokenBalances(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__BalanceConnection
-  tokenTransfers(accountAddress: String!, after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): Token__TransferConnection
-  tokens(after: Cursor, before: Cursor, contractAddress: String, first: Int, last: Int, limit: Int, offset: Int): TokenConnection!
+  tokenBalances(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__BalanceConnection
+  tokenTransfers(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__TransferConnection
+  tokens(
+    after: Cursor
+    before: Cursor
+    contractAddress: String
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): TokenConnection!
   transaction(transactionHash: ID!): World__Transaction!
-  transactions(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__TransactionConnection
+  transactions(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__TransactionConnection
 }
 
 type World__Social {
