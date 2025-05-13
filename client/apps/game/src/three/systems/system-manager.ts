@@ -5,6 +5,7 @@ import {
   BiomeType,
   type HexPosition,
   type ID,
+  RealmLevels,
   StructureType,
   TileOccupier,
   type TroopTier,
@@ -80,31 +81,76 @@ export const getStructureInfoFromTileOccupier = (
 ): { type: StructureType; stage: StructureProgress; level: number; hasWonder: boolean } | undefined => {
   switch (occupierType) {
     case TileOccupier.RealmRegularLevel1:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Settlement,
+        hasWonder: false,
+      };
     case TileOccupier.RealmRegularLevel2:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 2, hasWonder: false };
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: RealmLevels.City, hasWonder: false };
     case TileOccupier.RealmRegularLevel3:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 3, hasWonder: false };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Kingdom,
+        hasWonder: false,
+      };
     case TileOccupier.RealmRegularLevel4:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 4, hasWonder: false };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Empire,
+        hasWonder: false,
+      };
 
     case TileOccupier.RealmRegularLevel1WonderBonus:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Settlement,
+        hasWonder: true,
+      };
     case TileOccupier.RealmRegularLevel2WonderBonus:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 2, hasWonder: true };
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: RealmLevels.City, hasWonder: true };
     case TileOccupier.RealmRegularLevel3WonderBonus:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 3, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Kingdom,
+        hasWonder: true,
+      };
     case TileOccupier.RealmRegularLevel4WonderBonus:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 4, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Empire,
+        hasWonder: true,
+      };
 
     case TileOccupier.RealmWonderLevel1:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Settlement,
+        hasWonder: true,
+      };
     case TileOccupier.RealmWonderLevel2:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 2, hasWonder: true };
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: RealmLevels.City, hasWonder: true };
     case TileOccupier.RealmWonderLevel3:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 3, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Kingdom,
+        hasWonder: true,
+      };
     case TileOccupier.RealmWonderLevel4:
-      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 4, hasWonder: true };
+      return {
+        type: StructureType.Realm,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Empire,
+        hasWonder: true,
+      };
 
     case TileOccupier.HyperstructureLevel1:
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
@@ -117,7 +163,12 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.FragmentMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     case TileOccupier.Village:
-      return { type: StructureType.Village, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+      return {
+        type: StructureType.Village,
+        stage: StructureProgress.STAGE_1,
+        level: RealmLevels.Settlement,
+        hasWonder: false,
+      };
 
     case TileOccupier.VillageWonderBonus:
       return { type: StructureType.Village, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
