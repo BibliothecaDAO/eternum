@@ -5,7 +5,7 @@ import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-import { Clause, ComparisonOperator, LogicalOperator } from "@dojoengine/torii-wasm";
+import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
@@ -509,43 +509,12 @@ export const getQuestTilesFromToriiQuery = async <S extends Schema>(
   );
 };
 
-export const getQuestsFromTorii = async (
-  client: ToriiClient,
-  components: Component<Schema, Metadata, undefined>[],
-  gameAddress: string,
-  questGames: any[],
-) => {
+export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
-    Composite: {
-      operator: "And" as LogicalOperator,
-      clauses: [
-        {
-          Member: {
-            model: "s1_eternum-Quest",
-            member: "game_address",
-            operator: "Eq" as ComparisonOperator,
-            value: {
-              String: gameAddress,
-            },
-          },
-        },
-        {
-          Member: {
-            model: "s1_eternum-Quest",
-            member: "game_token_id",
-            operator: "In" as ComparisonOperator,
-            value: {
-              List: questGames.map((game: any) => {
-                return {
-                  Primitive: {
-                    U64: Number(game.token_id),
-                  },
-                };
-              }),
-            },
-          },
-        },
-      ],
+    Keys: {
+      keys: [undefined, undefined],
+      pattern_matching: "VariableLen" as PatternMatching,
+      models: ["s1_eternum-Quest"],
     },
   };
 
