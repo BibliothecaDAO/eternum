@@ -107,6 +107,7 @@ export enum BUILDINGS_GROUPS {
   HYPERSTRUCTURE = "hyperstructure",
   REALMS = "realms",
   WONDER = "wonder",
+  VILLAGE = "village",
 }
 
 export type BUILDINGS_CATEGORIES_TYPES =
@@ -114,7 +115,8 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | ResourceMiningTypes
   | RealmLevelNames
   | HyperstructureTypesNames
-  | typeof WONDER_REALM;
+  | typeof WONDER_REALM
+  | StructureType.Village;
 
 export const buildingModelPaths = {
   [BUILDINGS_GROUPS.BUILDINGS]: {
@@ -148,6 +150,9 @@ export const buildingModelPaths = {
     [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
     [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
     [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+  },
+  [BUILDINGS_GROUPS.VILLAGE]: {
+    [StructureType.Village]: BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
   },
   [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
     [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
