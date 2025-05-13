@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
@@ -22,12 +23,12 @@ import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { formatUnits } from "viem";
 
-export const Route = createLazyFileRoute("/season-passes")({
+export const Route = createLazyFileRoute("/trade/")({
   component: SeasonPasses,
   pendingComponent: FullPageLoader,
 });
@@ -40,6 +41,7 @@ function SeasonPasses() {
   const [controllerAddress] = useState<string>();
 
   const [tokenIdToTransfer, setTokenIdToTransfer] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("items");
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -282,6 +284,27 @@ function SeasonPasses() {
               </span>
             </div>
           </div>
+
+          {/* Tabs Navigation */}
+          <div className="border-b">
+            <div className="container mx-auto py-2">
+              <Tabs defaultValue="items" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="items" asChild>
+                    <Link to="/season-passes" className="cursor-pointer">
+                      Items
+                    </Link>
+                  </TabsTrigger>
+                  <TabsTrigger value="activity" asChild>
+                    <Link to="/trade/activity" className="cursor-pointer">
+                      Activity
+                    </Link>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
           <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
             {/* Filter UI */}
             {isHeaderScrolled ? (

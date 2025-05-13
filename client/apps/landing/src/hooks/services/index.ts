@@ -151,7 +151,6 @@ WITH limited_active_orders AS (
     )
 
 
-
     SELECT
         lao.token_id_hex AS token_id_hex,
         lao.token_id,
@@ -187,6 +186,26 @@ WITH limited_active_orders AS (
       ON t.token_id = substr(r.token_id, instr(r.token_id, ':') + 1)
     WHERE r.contract_address = '{realmsAddress}'
       AND r.account_address = '{accountAddress}'
+  `,
+  MARKET_ORDER_EVENTS: `
+    SELECT 
+      moe.internal_event_id,
+      moe.internal_executed_at AS executed_at,
+      moe.state,
+      moe."market_order.token_id" AS token_id,
+      moe."market_order.price" AS price,
+      moe."market_order.owner" AS owner,
+      moe."market_order.expiration" AS expiration,
+      t.name,
+      t.symbol,
+      t.metadata
+    FROM "marketplace-MarketOrderEvent" AS moe
+    JOIN tokens t
+      ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
+      AND t.contract_address = '{contractAddress}'
+    WHERE moe."market_order.collection_id" = 1
+    ORDER BY moe."internal_executed_at" DESC
+    LIMIT {limit} OFFSET {offset}
   `,
 
   TOKEN_BALANCES_WITH_METADATA: `
@@ -501,4 +520,40 @@ export async function fetchTokenBalancesWithMetadata(
       metadata: item.metadata ? JSON.parse(item.metadata) : null,
     }),
   );
+}
+
+export interface MarketOrderEvent {
+  event_id: string;
+  state: string;
+  token_id: string;
+  price: string;
+  owner: string;
+  expiration: number;
+  name: string | null;
+  symbol: string | null;
+  metadata: RealmMetadata | null;
+  executed_at: string | null;
+}
+
+export async function fetchMarketOrderEvents(
+  contractAddress: string,
+  limit?: number,
+  offset?: number,
+): Promise<MarketOrderEvent[]> {
+  const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{limit}", limit?.toString() ?? "50")
+    .replace("{offset}", offset?.toString() ?? "0");
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch market order events: ${response.statusText}`);
+  }
+
+  const rawData = await response.json();
+  return rawData.map((item: { metadata: string }) => ({
+    ...item,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+  }));
 }
