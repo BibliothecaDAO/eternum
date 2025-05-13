@@ -114,6 +114,10 @@ class FXInstance {
         // Optional: Add some upward movement during fade out
         const moveUp = fadeProgress * 0.5;
         this.group.position.y = this.initialY + moveUp;
+
+        // Skip regular animation when ending to prevent conflicts with travel effect
+        this.animationFrameId = requestAnimationFrame(this.animate);
+        return;
       } else {
         // End animation complete, destroy the instance
         this.resolvePromise?.();
