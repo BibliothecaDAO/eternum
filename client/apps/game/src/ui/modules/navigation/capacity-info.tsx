@@ -148,7 +148,10 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           className="storehouse-selector text-lg px-3 py-1 flex gap-2 justify-start items-center   transition-colors duration-200 cursor-help"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-          <div className="self-center font-medium">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
+          <div className="self-center text-xs">
+            {realmInfo.storehouses.capacityUsedKg.toLocaleString()} /{" "}
+            {realmInfo.storehouses.capacityKg.toLocaleString()} kg
+          </div>
         </div>
       )}
 

@@ -92,12 +92,18 @@ export const TransferResourcesContainer = ({
       // Add resource to selection with default amount
       let defaultAmount = divideByPrecision(resource.amount);
 
-      // If transferring to explorer, limit by remaining capacity
+      // If transferring to explorer, limit by available capacity
       if (transferDirection === TransferDirection.StructureToExplorer) {
         const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-        const maxPossibleAmount = Math.floor(explorerCapacity.remainingCapacity / resourceWeight);
-        defaultAmount = Math.min(defaultAmount, maxPossibleAmount);
+        if (resourceWeight > 0) {
+          // Only limit if resource has weight
+          // Use explorerCapacity.availableCapacity which accounts for other selected resources
+          const maxPossibleAmountBasedOnCapacity = Math.floor(explorerCapacity.availableCapacity / resourceWeight);
+          defaultAmount = Math.min(defaultAmount, maxPossibleAmountBasedOnCapacity);
+        }
       }
+      // Ensure default amount is not negative (e.g. if already over capacity)
+      defaultAmount = Math.max(0, defaultAmount);
 
       setSelectedResources([...selectedResources, { ...resource, amount: defaultAmount }]);
       setResourceAmounts({ ...resourceAmounts, [resource.resourceId]: defaultAmount });
@@ -359,6 +365,28 @@ export const TransferResourcesContainer = ({
     <div className="flex flex-col h-full relative pb-32">
       {/* Top section with capacity info */}
 
+      {/* Add Select All / Unselect All buttons here */}
+      <div className="flex justify-end space-x-2 mb-3">
+        {transferDirection === TransferDirection.ExplorerToStructure && (
+          <Button
+            onClick={handleSelectAllResources}
+            variant="outline"
+            size="xs"
+            disabled={availableResources.length === 0}
+          >
+            Select All Available
+          </Button>
+        )}
+        <Button
+          onClick={handleUnselectAllResources}
+          variant="outline"
+          size="xs"
+          disabled={selectedResources.length === 0}
+        >
+          Unselect All
+        </Button>
+      </div>
+
       {/* Scrollable resources section */}
       <div className=" h-full grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sticky top-0 z-10">
@@ -384,20 +412,18 @@ export const TransferResourcesContainer = ({
                     <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
                   </div>
                   <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
-                </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
                   <button
                     className={`px-3 py-1 rounded-md text-sm ${
-                      isSelected
-                        ? "bg-red-900/30 hover:bg-red-900/50 text-red-300"
-                        : "bg-gold/10 hover:bg-gold/20 text-gold"
+                      isSelected ? "bg-red/50 hover:bg-red/70 text-red-300" : "bg-gold/10 hover:bg-gold/20 text-gold"
                     }`}
                     onClick={() => toggleResourceSelection(resource)}
                   >
                     {isSelected ? "Remove" : "Select"}
                   </button>
+                </div>
+
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
                 </div>
 
                 {isSelected && (
@@ -434,22 +460,12 @@ export const TransferResourcesContainer = ({
                       >
                         None
                       </button>
-                      <button
-                        className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                        onClick={() => handleResourceAmountChange(resource.resourceId, Math.floor(displayAmount / 2))}
-                      >
-                        Half
-                      </button>
+
                       <button
                         className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
                         onClick={() => {
-                          if (transferDirection === TransferDirection.StructureToExplorer) {
-                            // Calculate max possible amount based on remaining capacity
-                            const maxPossibleAmount = Math.floor(explorerCapacity.availableCapacity / resourceWeight);
-                            handleResourceAmountChange(resource.resourceId, Math.min(displayAmount, maxPossibleAmount));
-                          } else {
-                            handleResourceAmountChange(resource.resourceId, displayAmount);
-                          }
+                          // Let handleResourceAmountChange handle capacity limits
+                          handleResourceAmountChange(resource.resourceId, displayAmount);
                         }}
                       >
                         Max
