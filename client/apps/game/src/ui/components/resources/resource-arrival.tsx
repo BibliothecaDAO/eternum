@@ -1,21 +1,21 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DepositResourceArrival } from "@/ui/components/resources/deposit-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
-import { useArrivalsByStructure } from "@bibliothecadao/react";
+import { configManager, divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";
 import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 export const StructureArrivals = memo(({ structure }: { structure: any }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const arrivals = useArrivalsByStructure(structure.entityId);
-
   const { currentBlockTimestamp } = getBlockTimestamp();
 
-  if (arrivals.length === 0) return null;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [now, setNow] = useState(currentBlockTimestamp);
+
+  const arrivals = useArrivalsByStructure(structure.entityId);
 
   // Calculate summary information
   const readyArrivals = arrivals.filter((arrival) => arrival.arrivesAt <= currentBlockTimestamp).length;
@@ -28,14 +28,27 @@ export const StructureArrivals = memo(({ structure }: { structure: any }) => {
     setIsExpanded((prev) => !prev);
   };
 
+  useEffect(() => {
+    if (!currentBlockTimestamp) return;
+    setNow(currentBlockTimestamp);
+
+    const interval = setInterval(() => {
+      setNow((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentBlockTimestamp]);
+
+  if (arrivals.length === 0) return null;
+
   return (
-    <div className="border border-gold/20 rounded-md">
+    <div className="border border-gold/5">
       <button
-        className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
+        className="flex w-full justify-between items-center px-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
         onClick={toggleStructure}
       >
         <div className="flex items-center">
-          <h4 className="text-gold font-medium">{structure.name}</h4>
+          <h6 className="">{structure.name}</h6>
         </div>
         <div className="flex items-center gap-2">
           {readyArrivals > 0 && (
@@ -56,9 +69,13 @@ export const StructureArrivals = memo(({ structure }: { structure: any }) => {
       </button>
 
       {isExpanded && (
-        <div className="flex flex-col gap-2 p-2">
+        <div className="flex flex-col gap-2 p-1">
           {arrivals.map((arrival) => (
-            <ResourceArrival arrival={arrival} key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`} />
+            <ResourceArrival
+              now={now}
+              arrival={arrival}
+              key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`}
+            />
           ))}
         </div>
       )}
@@ -66,20 +83,24 @@ export const StructureArrivals = memo(({ structure }: { structure: any }) => {
   );
 });
 
-const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
-  const [now, setNow] = useState(currentBlockTimestamp);
+const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: number }) => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const resourceManager = useResourceManager(arrival.structureEntityId);
 
-  useEffect(() => {
-    if (!currentBlockTimestamp) return;
-    setNow(currentBlockTimestamp);
+  const storeCapacityKg = resourceManager.getStoreCapacityKg();
 
-    const interval = setInterval(() => {
-      setNow((prev) => prev + 1);
-    }, 1000);
+  const totalWeight = useMemo(() => {
+    return arrival.resources.reduce((total, resource) => {
+      const weightPerUnit = configManager.resourceWeightsKg[resource.resourceId] || 0;
 
-    return () => clearInterval(interval);
-  }, [currentBlockTimestamp]);
+      const resourceAmount = divideByPrecision(resource.amount);
+      return total + resourceAmount * weightPerUnit;
+    }, 0);
+  }, [arrival.resources]);
+
+  const isOverCapacity = useMemo(() => {
+    return totalWeight + storeCapacityKg.capacityUsedKg > storeCapacityKg.capacityKg;
+  }, [totalWeight, storeCapacityKg]);
 
   const isArrived = useMemo(() => {
     return now ? arrival.arrivesAt <= now : false;
@@ -89,12 +110,12 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
     if (!now) return null;
 
     return isArrived ? (
-      <div className="flex items-center gap-2 bg-emerald-900/40 text-emerald-400 rounded-md px-3 py-1.5 font-medium border border-emerald-700/50">
+      <div className="flex flex-wrap items-center  bg-emerald-900/40 text-emerald-400 rounded-md px-2 font-medium border border-emerald-700/50 uppercase text-xs">
         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-        <span>Ready to offload</span>
+        <span className="ml-2">Ready to offload</span>
       </div>
     ) : (
-      <div className="flex items-center gap-2 bg-amber-900/40 text-amber-400 rounded-md px-3 py-1.5 font-medium border border-amber-700/50">
+      <div className="flex items-center gap-2 bg-amber-900/40 text-amber-400 rounded-md px-2 font-medium border border-amber-700/50">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
         <span> {formatTime(Number(arrival.arrivesAt) - now)}</span>
       </div>
@@ -118,22 +139,48 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   }, [arrival.resources, isArrived]);
 
   return (
-    <div className={clsx("flex flex-col rounded-md text-gold")}>
+    <div className={clsx("flex flex-col text-gold")}>
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold/20 border border-gold/30">
-            {isArrived ? "🏰" : "🫏"}
-          </div>
+        <div className="flex items-center gap-1">
+          <div>{isArrived ? "🏰" : "🫏"}</div>
           {renderEntityStatus}
         </div>
         <div className="flex justify-between items-center">
           <DepositResourceArrival arrival={arrival} />
         </div>
       </div>
-      {renderedResources && renderedResources.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap mt-4 p-2 bg-black/20 rounded-md border border-gold/10">
-          {renderedResources}
+      {isOverCapacity && (
+        <div
+          onMouseEnter={() => {
+            setTooltip({
+              position: "top",
+              content: (
+                <>
+                  {isOverCapacity
+                    ? "This arrival is over capacity - if you accept the order some resources will be lost. Use some of your realms resources in order to fully offload this order"
+                    : "This arrival is under storage capacity and will be fully offloaded"}
+                </>
+              ),
+            });
+          }}
+          onMouseLeave={() => {
+            setTooltip(null);
+          }}
+          className={clsx(
+            "w-full border border-gold/10 p-1 rounded-md mt-1 justify-between flex text-xs uppercase",
+            isOverCapacity ? "bg-red/30 border-red-700/50 text-red/90 animate-pulse" : "text-gold/70 bg-gold/10",
+          )}
+        >
+          <span className={clsx(isOverCapacity && "font-bold")}>
+            Cap: {storeCapacityKg.capacityUsedKg.toLocaleString()}kg / {storeCapacityKg.capacityKg.toLocaleString()}
+            kg
+          </span>
+          <span className={clsx(isOverCapacity && "font-bold")}>Total: {totalWeight.toLocaleString()}kg</span>
         </div>
+      )}
+
+      {renderedResources && renderedResources.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap py-2">{renderedResources}</div>
       )}
     </div>
   );

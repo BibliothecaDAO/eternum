@@ -154,7 +154,7 @@ export const canAcceptOffer = (
   let canAccept = true;
   Object.values(resourcesGive).forEach((resource) => {
     const resourceManager = new ResourceManager(components, realmEntityId);
-    if (resourceManager.balanceWithProduction(currentTick, resource.resourceId) < resource.amount) {
+    if (resourceManager.balanceWithProduction(currentTick, resource.resourceId).balance < resource.amount) {
       canAccept = false;
     }
   });

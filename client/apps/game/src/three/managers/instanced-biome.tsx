@@ -41,6 +41,9 @@ export default class InstancedModel {
         } else {
           renderOrder = 2;
         }
+        if (child?.material?.emissiveIntensity > 1) {
+          child.material.emissiveIntensity = 3;
+        }
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
         const biomeMesh = child;
         if (gltf.animations.length > 0) {

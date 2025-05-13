@@ -26,12 +26,26 @@ export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entit
 
   const response = await toriiClient.getEntities(query); // Updated call, removed second argument
 
+  if (!response?.items?.[0]?.models) {
+    return {
+      explorer: undefined,
+      resources: undefined,
+    };
+  }
+
   const entityModels = response.items[0].models;
   const explorerModelData = entityModels["s1_eternum-ExplorerTroops"];
   const resourceModelData = entityModels["s1_eternum-Resource"];
 
+  if (!explorerModelData) {
+    return {
+      explorer: undefined,
+      resources: undefined,
+    };
+  }
+
   return {
     explorer: getExplorerFromToriiEntity(explorerModelData),
-    resources: getResourcesFromToriiEntity(resourceModelData),
+    resources: resourceModelData ? getResourcesFromToriiEntity(resourceModelData) : undefined,
   };
 };

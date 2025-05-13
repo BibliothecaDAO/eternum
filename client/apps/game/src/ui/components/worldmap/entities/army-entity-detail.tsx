@@ -6,7 +6,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, ID, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
@@ -42,9 +42,9 @@ export const ArmyEntityDetail = memo(
 
     useEffect(() => {
       const fetchExplorer = async () => {
-        const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        setExplorer(explorer);
-        setExplorerResources(resources);
+        const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        setExplorer(explorer?.explorer);
+        setExplorerResources(explorer?.resources);
       };
       fetchExplorer();
     }, [armyEntityId]);
@@ -55,7 +55,7 @@ export const ArmyEntityDetail = memo(
         const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
         if (result) {
           setStructure(result.structure);
-          setStructureResources(result.resources);
+          setStructureResources(result?.resources);
         }
       };
       fetchStructure();
@@ -76,7 +76,7 @@ export const ArmyEntityDetail = memo(
 
     const maxStamina = useMemo(() => {
       if (!explorer) return 0;
-      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType);
+      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType, explorer.troops.tier as TroopTier);
     }, [explorer]);
 
     // Precompute common class strings
@@ -121,7 +121,13 @@ export const ArmyEntityDetail = memo(
             )}
 
             {/* Army warnings */}
-            {structureResources && <ArmyWarning army={explorer} resource={structureResources} />}
+            {structureResources && explorerResources && (
+              <ArmyWarning
+                army={explorer}
+                explorerResources={explorerResources}
+                structureResources={structureResources}
+              />
+            )}
 
             {/* Stamina and capacity - more prominent */}
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">

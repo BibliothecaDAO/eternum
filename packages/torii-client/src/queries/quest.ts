@@ -28,10 +28,16 @@ export const getQuestFromToriiClient = async (toriiClient: ToriiClient, entityId
 
   const response = await toriiClient.getEntities(query);
 
+  if (!response?.items?.[0]?.models) {
+    return null;
+  }
+
   const entityModels = response.items[0].models;
   const questModelData = entityModels["s1_eternum-QuestTile"];
 
-  if (!questModelData) return;
+  if (!questModelData) {
+    return null;
+  }
 
   return getQuestFromToriiEntity(questModelData);
 };

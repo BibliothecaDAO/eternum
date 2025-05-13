@@ -57,4 +57,6 @@ export enum TransactionType {
   GET_GAME_COUNT = "get_game_count",
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
   TRANSFER_AGENT_OWNERSHIP = "transfer_agent_ownership",
+  STRUCTURE_BURN = "structure_burn",
+  TROOP_BURN = "troop_burn",
 }

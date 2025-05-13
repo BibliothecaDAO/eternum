@@ -6,7 +6,7 @@ import { usePrizePool } from "@/hooks/use-rewards";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import React from "react";
 
-export const Route = createLazyFileRoute("/")({
+export const Route = createLazyFileRoute("/data")({
   component: Index,
 });
 

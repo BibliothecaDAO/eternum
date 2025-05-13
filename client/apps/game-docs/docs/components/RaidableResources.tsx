@@ -1,5 +1,5 @@
 import { table } from "@/components/styles";
-import { RAIDABLE_RESOURCES, resources } from "@bibliothecadao/types";
+import { STEALABLE_RESOURCES, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 
 export const RaidableResources = () => {
@@ -14,7 +14,7 @@ export const RaidableResources = () => {
             </tr>
           </thead>
           <tbody>
-            {[...RAIDABLE_RESOURCES].reverse().map((resourceId, index) => {
+            {[...STEALABLE_RESOURCES].map((resourceId, index) => {
               const resource = resources.find((r) => r.id === resourceId);
               if (!resource) return null;
 

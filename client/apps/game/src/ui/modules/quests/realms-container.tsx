@@ -3,32 +3,27 @@ import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
 import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { getArmy, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { ContractAddress, ID, StructureType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ClientComponents, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 export const RealmsContainer = ({
   explorerEntityId,
-  targetHex,
   loadingQuests,
+  questTileEntity,
 }: {
   explorerEntityId: ID;
-  targetHex: { x: number; y: number };
   loadingQuests: boolean;
+  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
 }) => {
   const {
     account: { account },
     setup: {
       components,
-      components: { Tile, QuestTile, QuestLevels },
+      components: { QuestLevels },
     },
   } = useDojo();
   const playerStructures = usePlayerStructures();
-
-  const questTileEntity = useMemo(() => {
-    const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-    return getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
-  }, [targetHex]);
 
   const questLevelsEntity = useMemo(() => {
     return getComponentValue(QuestLevels, getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]));

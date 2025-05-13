@@ -3,14 +3,7 @@ import { ProductionModal } from "@/ui/components/production/production-modal";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  getRealmInfo,
-  getStructure,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
   ContractAddress,
@@ -61,14 +54,10 @@ export const Castle = () => {
     }
     setIsWonderBonusLoading(false);
   };
-  const realmInfo = useMemo(
-    () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), dojo.setup.components),
-    [structureEntityId, dojo.setup.components, isLevelUpLoading, isWonderBonusLoading],
-  );
 
-  const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
-    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  const structure = useComponentValue(
+    dojo.setup.components.Structure,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
   );
 
   useEffect(() => {
@@ -78,8 +67,8 @@ export const Castle = () => {
         dojo.network.toriiClient,
         WONDER_BONUS_DISTANCE,
         {
-          col: structure.position.x,
-          row: structure.position.y,
+          col: structure.base.coord_x,
+          row: structure.base.coord_y,
         },
       );
       setWonderStructureId(wonderStructureId);
@@ -88,11 +77,11 @@ export const Castle = () => {
   }, [structure]);
 
   const getNextRealmLevel = useMemo(() => {
-    if (!realmInfo) return null;
-    const nextLevel = realmInfo.level + 1;
-    const res = nextLevel <= configManager.getMaxLevel(realmInfo.category) ? nextLevel : null;
+    if (!structure) return null;
+    const nextLevel = structure.base.level + 1;
+    const res = nextLevel <= configManager.getMaxLevel(structure.base.category) ? nextLevel : null;
     return res;
-  }, [realmInfo]);
+  }, [structure]);
 
   const checkBalance = useMemo(() => {
     if (!getNextRealmLevel) return false;
@@ -108,12 +97,12 @@ export const Castle = () => {
 
   const levelUpRealm = async () => {
     setIsLevelUpLoading(true);
-    if (!realmInfo) return;
+    if (!structure) return;
 
     try {
       await dojo.setup.systemCalls.upgrade_realm({
         signer: dojo.account.account,
-        realm_entity_id: realmInfo.entityId,
+        realm_entity_id: structure?.entity_id,
       });
       setIsLevelUpLoading(false);
     } catch (error) {
@@ -123,8 +112,8 @@ export const Castle = () => {
     setIsLevelUpLoading(false);
   };
 
-  if (!realmInfo) return null;
-  const isOwner = realmInfo.owner === ContractAddress(dojo.account.account.address);
+  if (!structure) return null;
+  const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
 
   return (
     structure && (
@@ -171,7 +160,7 @@ export const Castle = () => {
                 <div className="bg-gold/10 p-2 rounded-lg">
                   <CrownIcon className="w-6 h-6 text-gold" />
                 </div>
-                <h5 className="text-2xl font-bold text-gold">{RealmLevels[realmInfo.level]}</h5>
+                <h5 className="text-2xl font-bold text-gold">{RealmLevels[structure.base.level]}</h5>
               </div>
 
               {getNextRealmLevel && isOwner && (
@@ -193,10 +182,10 @@ export const Castle = () => {
               <div className="bg-gold/5 border border-gold/10 rounded-lg px-4 py-4 space-y-3">
                 <div>
                   <h6 className="text-gold font-semibold mb-2">
-                    Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}
+                    Upgrade Requirements for {RealmLevels[getNextRealmLevel]}
                   </h6>
                   <p className="text-gold/90 mb-4 text-sm">
-                    {LEVEL_DESCRIPTIONS[(realmInfo.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
+                    {LEVEL_DESCRIPTIONS[getNextRealmLevel as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
@@ -216,11 +205,11 @@ export const Castle = () => {
 
           {/* Resources Section */}
           <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
-            {structure && structure.structure.base.category === StructureType.Realm && (
+            {structure && structure.base.category === StructureType.Realm && (
               <RealmResourcesIO
                 size="md"
                 titleClassName="uppercase font-semibold text-gold"
-                realmEntityId={structure.entityId}
+                realmEntityId={structure.entity_id}
               />
             )}
           </div>

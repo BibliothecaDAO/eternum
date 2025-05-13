@@ -10,6 +10,7 @@ import {
   ResourcesIds,
   StructureType,
   TickIds,
+  TroopTier,
   TroopType,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
@@ -538,6 +539,7 @@ export class ClientConfigManager {
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
+          stamina_attack_max: troopStaminaConfig?.stamina_attack_max ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
           damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
@@ -553,6 +555,7 @@ export class ClientConfigManager {
       {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
+        stamina_attack_max: 0,
         damage_biome_bonus_num: 0,
         damage_raid_percent_num: 0,
         damage_beta_small: 0n,
@@ -844,7 +847,7 @@ export class ClientConfigManager {
     };
   }
 
-  getTroopStaminaConfig(troopType: TroopType) {
+  getTroopStaminaConfig(troopType: TroopType, troopTier: TroopTier) {
     return this.getValueOrDefault(
       () => {
         const staminaConfig = getComponentValue(
@@ -852,21 +855,28 @@ export class ClientConfigManager {
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
         )?.troop_stamina_config;
 
+        let tierBonus = 0;
+        if (troopTier === TroopTier.T2) {
+          tierBonus = 20;
+        } else if (troopTier === TroopTier.T3) {
+          tierBonus = 40;
+        }
+
         switch (troopType) {
           case TroopType.Knight:
             return {
               staminaInitial: staminaConfig?.stamina_initial ?? 0,
-              staminaMax: staminaConfig?.stamina_knight_max ?? 0,
+              staminaMax: (staminaConfig?.stamina_knight_max ?? 0) + tierBonus,
             };
           case TroopType.Crossbowman:
             return {
               staminaInitial: staminaConfig?.stamina_initial ?? 0,
-              staminaMax: staminaConfig?.stamina_crossbowman_max ?? 0,
+              staminaMax: (staminaConfig?.stamina_crossbowman_max ?? 0) + tierBonus,
             };
           case TroopType.Paladin:
             return {
               staminaInitial: staminaConfig?.stamina_initial ?? 0,
-              staminaMax: staminaConfig?.stamina_paladin_max ?? 0,
+              staminaMax: (staminaConfig?.stamina_paladin_max ?? 0) + tierBonus,
             };
           default:
             return {

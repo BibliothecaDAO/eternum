@@ -83,16 +83,24 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 1; // 1/150 = 0.666%
-export const SHARDS_MINES_FAIL_PROBABILITY = 149; // 149/150 = 99.33%
+export const SHARDS_MINES_WIN_PROBABILITY = 1; // 1/200 = 0.5%
+export const SHARDS_MINES_FAIL_PROBABILITY = 199; // 199/200 = 99.5%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
 export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 
-export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
-export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
+export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
+export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
+// Without considering the hex distance, this is a linear multiplier for every
+// hyperstructure found. e.g if there have been y hyperstructures found, the probability
+// of finding a hyperstructure is max(2% - (0.001% * y), 0%)
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 1; // 1 / 100_000 = 0.001%
+
+// This means that for every x hexes away from the center, the win probability gets
+// multiplied by 0.982. so the formula is 2% * (0.982 ^ x)
+export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_820; // 9_820 / 10_000 = 98.2%
 
 export const QUEST_FIND_PROBABILITY = 1; // 1/100 = 1%
 export const QUEST_FIND_FAIL_PROBABILITY = 99; // 99/100 = 99%
@@ -109,15 +117,6 @@ export const QUEST_GAME_LEVELS = [
     overwrite: true,
   },
 ];
-
-// This means that for every x hexes away from the center, the win probability gets
-// multiplied by 0.975. so the formula is 4% * (0.975 ^ x)
-export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_750; // 9_750 / 10_000 = 97.5%
-
-// Without considering the hex distance, this is a linear multiplier for every
-// hyperstructure found. e.g if there have been y hyperstructures found, the probability
-// of finding a hyperstructure is max(4% - (0.001% * y), 0%)
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 1; // 1 / 100_000 = 0.001%
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;

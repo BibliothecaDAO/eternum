@@ -11,7 +11,7 @@ import {
   StructureType,
   resources,
 } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourceManager } from "../managers";
 import { unpackValue } from "./packed-data";
@@ -39,30 +39,9 @@ export const getBalance = (
 ) => {
   const resourceManager = new ResourceManager(components, entityId);
   return {
-    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId),
+    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance,
     resourceId,
   };
-};
-
-export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
-  const resourceManager = new ResourceManager(components, entityId);
-  return resourceManager.getProduction(resourceId);
-};
-
-export const getResourcesFromBalance = (
-  entityId: ID,
-  currentDefaultTick: number,
-  components: ClientComponents,
-): Resource[] => {
-  // todo: improve optimisation
-  const resourceIds = resources.map((r) => r.id);
-  return resourceIds
-    .map((id) => {
-      const resourceManager = new ResourceManager(components, entityId);
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, id);
-      return { resourceId: id, amount: balance };
-    })
-    .filter((r) => r.amount > 0);
 };
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
@@ -204,16 +183,4 @@ export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, c
 
   // Otherwise, transfer is allowed
   return true;
-};
-
-export const getFood = (
-  resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
-  currentDefaultTick: number,
-) => {
-  const wheat = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Wheat);
-  const fish = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Fish);
-  return {
-    wheat,
-    fish,
-  };
 };

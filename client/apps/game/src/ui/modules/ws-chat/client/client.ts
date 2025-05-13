@@ -71,7 +71,7 @@ class ChatClient {
     });
 
     this.socket.on("userJoined", ({ user }) => {
-      console.log(`User joined: ${user.id} (${user.username})`);
+      console.log(`User joined: ${user?.id} (${user?.username})`);
       // The App component will handle updating the UI
     });
 

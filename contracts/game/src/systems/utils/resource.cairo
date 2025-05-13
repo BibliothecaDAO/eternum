@@ -3,7 +3,6 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::ResourceTypes;
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
@@ -87,6 +86,16 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     }
 
     #[inline(always)]
+    fn structure_burn_instant(
+        ref world: WorldStorage,
+        from_structure_id: ID,
+        ref from_structure_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        Self::_instant_burn(ref world, from_structure_id, ref from_structure_weight, resources);
+    }
+
+    #[inline(always)]
     fn troop_to_structure_instant(
         ref world: WorldStorage,
         from_troop_id: ID,
@@ -123,7 +132,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::ensure_no_troop_or_lords_or_donkey_resource(resources);
         Self::_instant_transfer_storable(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
         );
@@ -400,8 +408,10 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     // spend from from entity resource balance
                     let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+
+                    // false means dont check production for either troops or structures
                     let mut from_resource = SingleResourceStoreImpl::retrieve(
-                        ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
+                        ref world, from_id, resource_type, ref from_weight, resource_weight_grams, false,
                     );
                     from_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
                     from_resource.store(ref world);
@@ -485,22 +495,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             }
         }
     }
-
-    fn ensure_no_troop_or_lords_or_donkey_resource(mut resources: Span<(u8, u128)>) {
-        for i in 0..resources.len() {
-            let (resource_type, _) = resources.at(i);
-            if TroopResourceImpl::is_troop(*resource_type) {
-                panic!("troop resource can't be received");
-            }
-            if *resource_type == ResourceTypes::LORDS {
-                panic!("lords resource can't be received");
-            }
-            if *resource_type == ResourceTypes::DONKEY {
-                panic!("donkey resource can't be received");
-            }
-        }
-    }
-
 
     fn _emit_event(
         ref world: WorldStorage, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,

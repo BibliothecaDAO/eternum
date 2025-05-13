@@ -1,3 +1,4 @@
+import { RealmMetadata } from "@/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface Trait {
@@ -28,7 +29,7 @@ interface UseTraitFilteringReturn<T> {
  */
 export function useTraitFiltering<T>(
   data: T[] | undefined | null,
-  getMetadataString: (item: T) => string | undefined | null,
+  getMetadataString: (item: T) => RealmMetadata | null,
 ): UseTraitFilteringReturn<T> {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
@@ -39,7 +40,7 @@ export function useTraitFiltering<T>(
       const metadataString = getMetadataString(item);
       if (metadataString) {
         try {
-          const metadata: Metadata = JSON.parse(metadataString);
+          const metadata: Metadata = metadataString;
           if (metadata.attributes && Array.isArray(metadata.attributes)) {
             metadata.attributes.forEach((attr) => {
               if (attr.trait_type && attr.value !== undefined && attr.value !== null) {
@@ -89,7 +90,7 @@ export function useTraitFiltering<T>(
       let attributes: Trait[] = [];
       if (metadataString) {
         try {
-          const metadata: Metadata = JSON.parse(metadataString);
+          const metadata = metadataString;
           if (metadata.attributes && Array.isArray(metadata.attributes)) {
             attributes = metadata.attributes;
           }

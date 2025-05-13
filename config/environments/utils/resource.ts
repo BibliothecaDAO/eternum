@@ -335,112 +335,112 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs =
 
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs = {
   [ResourcesIds.Wood]: [
-    { resource: ResourcesIds.Labor, amount: 10.4 },
+    { resource: ResourcesIds.Labor, amount: 14 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Stone]: [
-    { resource: ResourcesIds.Labor, amount: 10.4 },
+    { resource: ResourcesIds.Labor, amount: 14 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Coal]: [
-    { resource: ResourcesIds.Labor, amount: 13.1 },
+    { resource: ResourcesIds.Labor, amount: 17.9 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Copper]: [
-    { resource: ResourcesIds.Labor, amount: 16.35 },
+    { resource: ResourcesIds.Labor, amount: 21.7 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Obsidian]: [
-    { resource: ResourcesIds.Labor, amount: 25.61 },
+    { resource: ResourcesIds.Labor, amount: 34.48 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Silver]: [
-    { resource: ResourcesIds.Labor, amount: 29.12 },
+    { resource: ResourcesIds.Labor, amount: 39.2 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ironwood]: [
-    { resource: ResourcesIds.Labor, amount: 39.91 },
+    { resource: ResourcesIds.Labor, amount: 53.73 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.ColdIron]: [
-    { resource: ResourcesIds.Labor, amount: 48.49 },
+    { resource: ResourcesIds.Labor, amount: 65.28 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Gold]: [
-    { resource: ResourcesIds.Labor, amount: 62.92 },
+    { resource: ResourcesIds.Labor, amount: 84.7 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Hartwood]: [
-    { resource: ResourcesIds.Labor, amount: 79.82 },
+    { resource: ResourcesIds.Labor, amount: 107.45 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Diamonds]: [
-    { resource: ResourcesIds.Labor, amount: 121.18 },
+    { resource: ResourcesIds.Labor, amount: 156.28 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Sapphire]: [
-    { resource: ResourcesIds.Labor, amount: 172.12 },
+    { resource: ResourcesIds.Labor, amount: 231.7 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ruby]: [
-    { resource: ResourcesIds.Labor, amount: 185.12 },
+    { resource: ResourcesIds.Labor, amount: 249.2 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.DeepCrystal]: [
-    { resource: ResourcesIds.Labor, amount: 213.98 },
+    { resource: ResourcesIds.Labor, amount: 288.05 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Ignium]: [
-    { resource: ResourcesIds.Labor, amount: 222.95 },
+    { resource: ResourcesIds.Labor, amount: 300.13 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.EtherealSilica]: [
-    { resource: ResourcesIds.Labor, amount: 281.58 },
+    { resource: ResourcesIds.Labor, amount: 379.05 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.TrueIce]: [
-    { resource: ResourcesIds.Labor, amount: 319.54 },
+    { resource: ResourcesIds.Labor, amount: 430.15 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.TwilightQuartz]: [
-    { resource: ResourcesIds.Labor, amount: 367.25 },
+    { resource: ResourcesIds.Labor, amount: 494.38 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.AlchemicalSilver]: [
-    { resource: ResourcesIds.Labor, amount: 504.01 },
+    { resource: ResourcesIds.Labor, amount: 678.48 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Adamantine]: [
-    { resource: ResourcesIds.Labor, amount: 652.08 },
+    { resource: ResourcesIds.Labor, amount: 877.8 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Mithral]: [
-    { resource: ResourcesIds.Labor, amount: 1075.75 },
+    { resource: ResourcesIds.Labor, amount: 1448.13 },
     { resource: ResourcesIds.Fish, amount: 5 },
   ],
   [ResourcesIds.Dragonhide]: [
-    { resource: ResourcesIds.Labor, amount: 1199.0 },
+    { resource: ResourcesIds.Labor, amount: 1569.15 },
     { resource: ResourcesIds.Wheat, amount: 5 },
   ],
   [ResourcesIds.Donkey]: [],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
     { resource: ResourcesIds.Fish, amount: 50 },
-    { resource: ResourcesIds.Labor, amount: 26 },
+    { resource: ResourcesIds.Labor, amount: 60 },
   ],
   [ResourcesIds.KnightT2]: [],
   [ResourcesIds.KnightT3]: [],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
     { resource: ResourcesIds.Fish, amount: 50 },
-    { resource: ResourcesIds.Labor, amount: 30 },
+    { resource: ResourcesIds.Labor, amount: 60 },
   ],
   [ResourcesIds.CrossbowmanT2]: [],
   [ResourcesIds.CrossbowmanT3]: [],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
     { resource: ResourcesIds.Fish, amount: 50 },
-    { resource: ResourcesIds.Labor, amount: 26 },
+    { resource: ResourcesIds.Labor, amount: 60 },
   ],
   [ResourcesIds.PaladinT2]: [],
   [ResourcesIds.PaladinT3]: [],

@@ -44,7 +44,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
           {/* Selected Passes List */}
           <div className="max-h-[400px] overflow-y-auto space-y-3">
             {selectedPasses.map((pass) => {
-              const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
+              const metadata = pass.metadata;
               const price = pass.best_price_hex ? Number(formatUnits(BigInt(pass.best_price_hex), 18)) : 0;
 
               return (
@@ -58,7 +58,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                     <h4 className="font-medium text-gold">{metadata?.name || `Pass #${pass.token_id}`}</h4>
                     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        {metadata.attributes
+                        {metadata?.attributes
                           ?.filter((attribute: { trait_type: string }) => attribute.trait_type === "Resource")
                           .sort(
                             (a: { value: { toString: () => string } }, b: { value: { toString: () => string } }) => {
@@ -71,7 +71,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
                               return rarityA - rarityB;
                             },
                           )
-                          .map((attribute: { value: string; trait_type: any }, index: any) => (
+                          .map((attribute, index: any) => (
                             <ResourceIcon
                               resource={attribute.value as string}
                               size="sm"

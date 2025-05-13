@@ -19,6 +19,11 @@ const QUERIES = {
     FROM \`s1_eternum-Tile\`
     ORDER BY col, row;
   `,
+  HYPERSTRUCTURES: `
+    SELECT 
+        hyperstructure_id
+    FROM \`s1_eternum-Hyperstructure\`;
+  `,
   TOKEN_TRANSFERS: `
     WITH token_meta AS ( 
         SELECT contract_address,
@@ -129,6 +134,11 @@ export interface StructureDetails {
   occupier_id: ContractAddress; // Added owner field aliased as occupier_id
 }
 
+export interface Hyperstructure {
+  entity_id: number;
+  hyperstructure_id: number;
+}
+
 /**
  * Fetch settlement structures from the API
  */
@@ -221,6 +231,20 @@ export async function fetchAllTiles(): Promise<Tile[]> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch tiles: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch all hyperstructures from the API
+ */
+export async function fetchHyperstructures(): Promise<Hyperstructure[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.HYPERSTRUCTURES)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch hyperstructures: ${response.statusText}`);
   }
 
   return await response.json();

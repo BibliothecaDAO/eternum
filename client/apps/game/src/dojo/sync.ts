@@ -5,8 +5,6 @@ import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient } from "@dojoengine/torii-client";
-import { GameScore } from "metagame-sdk";
-import { debouncedGetQuestsFromTorii } from "./debounced-queries";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -64,7 +62,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
         for (const entityId in batch) {
           const value = batch[entityId];
           // this is an entity that has been deleted
-          if (Object.keys(value).length === 0) {
+          if (Object.keys(value.models).length === 0) {
             world.deleteEntity(entityId as Entity);
           }
         }
@@ -205,16 +203,4 @@ export const initialSync = async (
   end = performance.now();
   console.log("[sync] guilds query", end - start);
   setInitialSyncProgress(100);
-};
-
-export const syncQuests = async (setup: SetupResult, gameAddress: string, questGames: GameScore[]) => {
-  let start = performance.now();
-  await debouncedGetQuestsFromTorii(
-    setup.network.toriiClient,
-    setup.network.contractComponents as any,
-    gameAddress,
-    questGames,
-  );
-  let end = performance.now();
-  console.log("[sync] quests query", end - start);
 };
