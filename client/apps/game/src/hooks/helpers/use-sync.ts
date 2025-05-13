@@ -3,6 +3,7 @@ import {
   getHyperstructureFromTorii,
   getMarketEventsFromTorii,
   getMarketFromTorii,
+  getQuestsFromTorii,
 } from "@/dojo/queries";
 import { fetchHyperstructures } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
@@ -147,6 +148,38 @@ export const useSyncMarketHistory = () => {
 
       setSubscription(Subscription.MarketHistory, true);
       setLoading(LoadingStateKey.MarketHistory, false);
+      setIsSyncing(false);
+    };
+    syncState();
+  }, [contractComponents]);
+
+  return { isSyncing };
+};
+
+export const useSyncQuest = () => {
+  const {
+    network: { toriiClient, contractComponents },
+  } = useDojo();
+
+  const [isSyncing, setIsSyncing] = useState(true);
+  const subscriptions = useSyncStore((state) => state.subscriptions);
+  const setSubscription = useSyncStore((state) => state.setSubscription);
+  const setLoading = useUIStore((state) => state.setLoading);
+
+  useEffect(() => {
+    const syncState = async () => {
+      setLoading(LoadingStateKey.Quest, true);
+      const questPromise = subscriptions[Subscription.Quest]
+        ? Promise.resolve()
+        : getQuestsFromTorii(toriiClient, contractComponents as any);
+
+      const start = performance.now();
+      await Promise.all([questPromise]);
+      const end = performance.now();
+      console.log("[sync] quest query", end - start);
+
+      setSubscription(Subscription.Quest, true);
+      setLoading(LoadingStateKey.Quest, false);
       setIsSyncing(false);
     };
     syncState();

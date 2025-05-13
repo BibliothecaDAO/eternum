@@ -83,7 +83,10 @@ export const InfoContainer = ({
               ?.name.split("Eternum Quest -")[1];
 
             return (
-              <div className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
+              <div
+                className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0"
+                key={i}
+              >
                 <div className="flex flex-row items-center justify-between text-sm w-full px-2">
                   <span className="font-bold">{settingName}</span>
                   <div

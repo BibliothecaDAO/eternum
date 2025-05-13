@@ -42,6 +42,7 @@ export const QuestRealm = ({
   const game = questGames?.[Number(quest?.game_token_id)];
   const gameOver = useMemo(() => game?.health !== undefined && game?.health <= 0, [game]);
   const endTimestamp = game?.end;
+  const score = useMemo(() => game?.score ?? 0, [game]);
 
   const timeRemaining = useMemo(() => {
     if (!endTimestamp) return 0;
@@ -49,26 +50,30 @@ export const QuestRealm = ({
   }, [endTimestamp]);
 
   const expired = timeRemaining < 0;
-  const reachedTargetScore = (game?.score ?? 0) >= questLevelInfo?.value?.target_score?.value;
+  const reachedTargetScore = score >= questLevelInfo?.value?.target_score?.value;
   const startedQuest = !!quest;
 
   const getBadgeClass = () => {
     if (isCompleted) return "bg-green/20";
     if (reachedTargetScore) return "bg-green/20";
-    if (gameOver) return "bg-red/20";
+    if (gameOver && score !== 0) return "bg-red/20";
     if (startedQuest) return expired ? "bg-red/20" : "bg-green/20";
     if (fullCapacity) return "bg-red/20";
+    if (questExplorerUsed) return "bg-green/20";
     return "bg-red/20";
   };
 
   const questStatus = useMemo(() => {
     if (isCompleted) return "Claimed";
     if (reachedTargetScore) return "Completed";
-    if (gameOver) return "Failed";
+    if (gameOver && score !== 0) return "Failed";
     if (startedQuest) return expired ? "Expired" : <QuestCountdown endTimestamp={endTimestamp ?? 0} />;
     if (fullCapacity) return "Full Capacity";
+    if (questExplorerUsed) return "Not Started";
     return "Explorer Not Found";
   }, [isCompleted, reachedTargetScore, gameOver, startedQuest, expired, fullCapacity]);
+
+  console.log(questExplorerUsed);
 
   return (
     <div
@@ -86,7 +91,7 @@ export const QuestRealm = ({
             {startedQuest ? (
               <div className="flex flex-row items-center justify-center gap-2 w-full">
                 <div className={`text-sm font-bold text-gold/50 uppercase`}>Score</div>
-                <span>{game?.score}XP</span>
+                <span>{score}XP</span>
               </div>
             ) : (
               <div className="flex flex-col items-center w-full">
@@ -151,6 +156,7 @@ export const CurrentQuest = ({
 
   const endTimestamp = game?.end;
   const gameOver = useMemo(() => game?.health !== undefined && game?.health <= 0, [game]);
+  const score = useMemo(() => game?.score ?? 0, [game]);
 
   const timeRemaining = useMemo(() => {
     if (!endTimestamp) return 0;
@@ -159,18 +165,18 @@ export const CurrentQuest = ({
 
   const questStates = useMemo(() => {
     const expired = timeRemaining < 0;
-    const reachedTargetScore = game?.score && game?.score >= targetScore;
+    const reachedTargetScore = score >= targetScore;
     const startedQuest = !!quest;
 
     return { expired, reachedTargetScore, startedQuest };
-  }, [timeRemaining, game?.score, targetScore, quest]);
+  }, [timeRemaining, score, targetScore, quest]);
 
   const { expired, reachedTargetScore, startedQuest } = questStates;
 
   const questStatus = useMemo(() => {
     if (isCompleted) return "Reward Claimed";
     if (reachedTargetScore) return "Completed";
-    if (gameOver) return "Failed";
+    if (gameOver && score !== 0) return "Failed";
     if (startedQuest) return expired ? "Expired" : "Active";
     if (questExplorerUsed) {
       if (!fullCapacity) {
@@ -184,7 +190,7 @@ export const CurrentQuest = ({
   const getBadgeClass = () => {
     if (isCompleted) return "bg-green/20";
     if (reachedTargetScore) return "bg-green/20";
-    if (gameOver) return "bg-red/20";
+    if (gameOver && score !== 0) return "bg-red/20";
     if (startedQuest) return expired ? "bg-red/20" : "bg-green/20";
     if (questExplorerUsed) {
       if (!fullCapacity) {
@@ -233,7 +239,7 @@ export const CurrentQuest = ({
               <div className="flex flex-row items-center justify-between w-full pb-5 h-12">
                 <div className="flex flex-row items-center gap-2">
                   <div className={`text-sm font-bold text-gold/50 uppercase`}>Score</div>
-                  <span>{game?.score}XP</span>
+                  <span>{score}XP</span>
                 </div>
 
                 <div className="flex flex-row items-center gap-2">
@@ -285,7 +291,7 @@ export const CurrentQuest = ({
               {startQuestButtonMessage}
             </Button>
           ) : (
-            !gameOver && (
+            (!gameOver || score === 0) && (
               <div className="flex flex-col items-center w-full h-full border-t border-gold/20 pt-5">
                 <Button
                   variant="primary"
