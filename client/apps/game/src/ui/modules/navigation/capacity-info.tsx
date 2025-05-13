@@ -3,10 +3,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
-import { useMemo } from "react";
 
 const StorehouseInfo = ({
   storehouseCapacity,
@@ -107,15 +105,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  // get update when structureBuildings changes
-  const structureBuildings = useComponentValue(
-    setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(structureEntityId)]),
-  );
-
-  const realmInfo = useMemo(() => {
-    return getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components);
-  }, [structureEntityId, setup.components, structureBuildings]);
+  const realmInfo = getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components);
 
   const populationPercentage = realmInfo?.capacity
     ? Math.min(

@@ -1,6 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
+import { cn } from "@/ui/elements/lib/utils";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -21,6 +22,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
@@ -85,6 +87,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const [calls, setCalls] = useState<transferCall[]>([]);
   const [type, setType] = useState<"send" | "receive">("send");
   const [totalTransferResourceWeightKg, setTotalTransferResourceWeightKg] = useState(0);
+  const [showBurnSection, setShowBurnSection] = useState(false);
 
   const totalNeededDonkeys = useMemo(
     () => calculateDonkeysNeeded(totalTransferResourceWeightKg),
@@ -158,13 +161,29 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   return (
     <>
       <div className="p-1">
-        <Button
-          size="xs"
-          variant={type === "receive" ? "outline" : "secondary"}
-          onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
-        >
-          Switch Direction
-        </Button>
+        <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-2">
+          <span onClick={() => setType("send")} className={cn("text-xs", type === "send" && "text-gold font-bold")}>
+            Send
+          </span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={type === "receive"}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setType(checked ? "receive" : "send");
+              }}
+            />
+            <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
+          </label>
+          <span
+            onClick={() => setType("receive")}
+            className={cn("text-xs", type === "receive" && "text-gold font-bold")}
+          >
+            Receive
+          </span>
+        </div>
       </div>
 
       <div className="p-4">
@@ -179,44 +198,84 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         </div>
 
         {/* Dedicated Burn Section */}
-        <div className="p-3 my-4 border border-red-500/30 rounded-md bg-red-500/10">
-          <div className="font-bold text-lg mb-2 text-red-300">Burn Resources</div>
-          <div className="text-sm mb-2">
-            Permanently destroy {findResourceById(resource)?.trait as string} from this location. This action is
-            irreversible.
+        <div className=" px-2 my-4 border border-gold/40 rounded-md bg-red-500/10">
+          <div
+            className="font-bold text-lg text-red-300 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowBurnSection(!showBurnSection)}
+          >
+            <span>Burn Resources</span>
+            <span>{showBurnSection ? <ArrowBigUp /> : <ArrowBigDown />}</span>
           </div>
-          <div className="flex flex-col gap-2 py-2">
-            <input
-              id="burnAmountInput"
-              type="range"
-              min="0"
-              max={balance ? Number(balance) / RESOURCE_PRECISION : 0}
-              step="0.01"
-              value={burnAmount}
-              onChange={handleBurnAmountChange}
-              className="w-full accent-red-500"
-            />
-            <div className="text-xs text-center">
-              Selected to burn: {burnAmount.toLocaleString()} {findResourceById(resource)?.trait}
-            </div>
-            <Button size="xs" variant="danger" onClick={handleBurn} disabled={burnAmount === 0 || isLoading}>
-              Burn {findResourceById(resource)?.trait as string}{" "}
-            </Button>
-          </div>
+          {showBurnSection && (
+            <>
+              <div className="text-sm mb-2">
+                Permanently destroy {findResourceById(resource)?.trait as string} from this location. This action is
+                irreversible.
+              </div>
+              <div className="flex flex-col gap-2 py-2">
+                <input
+                  id="burnAmountInput"
+                  type="range"
+                  min="0"
+                  max={balance ? Number(balance) / RESOURCE_PRECISION : 0}
+                  step="0.01"
+                  value={burnAmount}
+                  onChange={handleBurnAmountChange}
+                  className="w-full accent-gold"
+                />
+                <div className="text-xs text-center font-bold uppercase">
+                  burn: {burnAmount.toLocaleString()} {findResourceById(resource)?.trait}
+                </div>
+                <Button size="xs" variant="danger" onClick={handleBurn} disabled={burnAmount === 0 || isLoading}>
+                  Burn {findResourceById(resource)?.trait as string}{" "}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         {/* End Dedicated Burn Section */}
 
-        {playerStructuresFiltered.map((structure) => (
-          <RealmTransferBalance
-            key={structure.structure.entity_id}
-            structure={structure}
-            selectedStructureEntityId={selectedStructureEntityId}
-            resource={resource}
-            tick={tick}
-            add={setCalls}
-            type={type}
-          />
-        ))}
+        {playerStructuresFiltered
+          .filter((structure) => {
+            // First, skip if it's the structure itself, as no transfer row should be rendered.
+            if (structure.structure.entity_id === selectedStructureEntityId) {
+              return false;
+            }
+
+            let relevantBalanceValue: number | undefined = undefined;
+
+            if (type === "send") {
+              // Assuming 'balance' (from component scope) is number | undefined based on linter error context
+              relevantBalanceValue = balance as number | undefined; // Explicit cast if needed, or direct assignment if type matches
+            } else {
+              // type === "receive"
+              const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
+              // Assuming this .balance is number | undefined based on linter error context
+              const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
+              relevantBalanceValue = receivedBalance as number | undefined; // Explicit cast if needed
+            }
+
+            if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
+              return false; // If balance is not available, filter out.
+            }
+
+            // relevantBalanceValue is now confirmed to be 'number'
+            const calculatedMaxAmountForFilter = relevantBalanceValue / RESOURCE_PRECISION;
+
+            // Only include the structure if there's a positive amount of resource that can be transferred.
+            return calculatedMaxAmountForFilter > 0;
+          })
+          .map((structure) => (
+            <RealmTransferBalance
+              key={structure.structure.entity_id}
+              structure={structure}
+              selectedStructureEntityId={selectedStructureEntityId}
+              resource={resource}
+              tick={tick}
+              add={setCalls}
+              type={type}
+            />
+          ))}
 
         <div className="py-4 border-t border-gold/20">
           <div className="uppercase font-bold text h6 flex gap-3 items-center">
