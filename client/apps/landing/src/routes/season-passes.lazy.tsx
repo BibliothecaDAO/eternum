@@ -60,7 +60,7 @@ function SeasonPasses() {
     ],
   });
 
-  const getSeasonPassMetadataString = useCallback((pass: MergedNftData): string | null => {
+  const getSeasonPassMetadataString = useCallback((pass: MergedNftData) => {
     if (pass?.metadata) {
       return pass.metadata;
     }

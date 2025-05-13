@@ -63,7 +63,7 @@ function SeasonPasses() {
 
   //const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
 
-  const getSeasonPassMetadataString = useCallback((pass: OpenOrderByPrice): string | null => {
+  const getSeasonPassMetadataString = useCallback((pass: OpenOrderByPrice) => {
     if (pass?.metadata) {
       return pass.metadata;
     }
@@ -352,7 +352,7 @@ function SeasonPasses() {
                       {/* Selected Pass Images */}
                       <div className="flex -space-x-2">
                         {selectedPasses.slice(0, 3).map((pass) => {
-                          const metadata = pass.metadata ? JSON.parse(pass.metadata) : null;
+                          const metadata = pass.metadata;
                           const image = metadata?.image;
                           return (
                             <div

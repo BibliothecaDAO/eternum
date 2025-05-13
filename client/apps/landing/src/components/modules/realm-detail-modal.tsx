@@ -3,10 +3,14 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { seasonPassAddress } from "@/config";
+import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { RealmMetadata } from "@/types";
+import { MergedNftData } from "@/types";
+import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -16,21 +20,11 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
 
-// Define the structure for realm data passed to the modal
-interface RealmModalData {
-  tokenId: string; // Pass as string
-  contractAddress?: string;
-  name?: string | null;
-  imageSrc: string;
-  attributes?: RealmMetadata["attributes"];
-  // Add any other details needed in the modal
-}
-
 // Define the props for the modal component
 interface RealmDetailModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  realmData: RealmModalData;
+  realmData: MergedNftData;
   isOwner: boolean;
   hasSeasonPassMinted: boolean;
   marketplaceActions: ReturnType<typeof useMarketplace>;
@@ -55,7 +49,7 @@ export const RealmDetailModal = ({
   collection_id,
   expiration, // Added
 }: RealmDetailModalProps) => {
-  const { name, tokenId, contractAddress, imageSrc, attributes } = realmData;
+  const { name, image, attributes } = realmData.metadata ?? {};
   const {
     listItem,
     cancelOrder,
@@ -66,6 +60,12 @@ export const RealmDetailModal = ({
     seasonPassApproved,
     isApprovingMarketplace,
   } = marketplaceActions;
+
+  const { data: activeMarketOrder } = useQuery({
+    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, realmData.token_id.toString()],
+    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, realmData.token_id.toString()),
+    refetchInterval: 30_000,
+  });
 
   // Get wallet state
   const { address } = useAccount();
@@ -98,6 +98,36 @@ export const RealmDetailModal = ({
   const [showEditInputs, setShowEditInputs] = useState(false);
   const [editPrice, setEditPrice] = useState(price ? formatUnits(price, 18) : ""); // Assuming price is u128, format from wei
   const [isSyncing, setIsSyncing] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+
+  // Calculate time remaining for auctions about to expire
+  useEffect(() => {
+    if (!expiration) return;
+
+    const expirationTime = Number(expiration) * 1000;
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = expirationTime - now;
+
+      if (diff <= 0) {
+        setTimeRemaining("Expired");
+        return;
+      }
+
+      // Only show countdown if less than an hour remains
+      if (diff < 60 * 60 * 1000) {
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
+      } else {
+        setTimeRemaining(null);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [expiration]);
 
   // Reset inputs AND syncing state when modal closes or relevant props change
   useEffect(() => {
@@ -128,12 +158,17 @@ export const RealmDetailModal = ({
 
   // --- Action Handlers ---
   const handleListItem = async () => {
-    if (!contractAddress || !listPrice) return; // Basic validation
+    if (/*!contractAddress || */ !listPrice) return; // Basic validation
     const priceInWei = BigInt(parseFloat(listPrice) * 1e18); // Convert price to wei (assuming 18 decimals for LORDS)
+
+    if (activeMarketOrder?.[0]?.owner != address) {
+      await handleCancelOrder();
+      toast.success("Inactive order cancelled, now listing...");
+    }
 
     try {
       await listItem({
-        token_id: parseInt(tokenId), // Ensure tokenId is number if required by hook
+        token_id: parseInt(realmData.token_id.toString()), // Convert to string to match expected type
         collection_id, // Placeholder: Use actual collection ID if available/needed
         price: priceInWei,
         expiration: listExpiration,
@@ -166,12 +201,11 @@ export const RealmDetailModal = ({
       setIsSyncing(false);
     }
   };
-
   const handleCancelOrder = async () => {
-    if (!orderId) return; // Basic validation
+    if (!orderId && !activeMarketOrder?.[0]?.order_id) return; // Basic validation
     try {
       await cancelOrder({
-        order_id: BigInt(orderId),
+        order_id: BigInt(orderId ?? activeMarketOrder?.[0]?.order_id ?? 0),
       });
       toast.success("Transaction confirmed! Syncing cancellation...");
       setIsSyncing(true);
@@ -202,32 +236,71 @@ export const RealmDetailModal = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl bg-card border-border text-foreground">
         <DialogHeader>
-          <DialogTitle> {name || "N/A"}</DialogTitle>
-          <div className="flex  justify-between gap-2 text-muted-foreground">
-            <p>{parseInt(tokenId?.toString())}</p>
-            <p>
-              {contractAddress?.slice(0, 4)}...{contractAddress?.slice(-4)}
-            </p>
-          </div>
+          <DialogTitle>Season 1 Pass</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <img src={imageSrc} alt={name ?? "Realm"} className="rounded-md w-72 mb-4 object-contain mx-auto" />
-
+          <div className="grid grid-cols-2 gap-4 pb-2">
+            <img src={image} alt={name ?? "Realm"} className="rounded-md w-72 object-contain mx-auto" />
+            <div className="flex flex-col gap-5">
+              <div className=" leading-none tracking-tight items-center gap-2">
+                <h3 className="text-gold font-semibold text-2xl">{name || "N/A"}</h3>
+                <p className="text-muted-foreground">#{parseInt(realmData.token_id?.toString())}</p>
+              </div>
+              {/* Display Resources */}
+              <div>
+                <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
+                  Resources
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {attributes
+                    ?.filter((attribute) => attribute.trait_type === "Resource")
+                    .map((attribute, index) => (
+                      <ResourceIcon
+                        resource={attribute.value as string}
+                        size="lg"
+                        key={`${attribute.trait_type}-${index}`}
+                      />
+                    ))}
+                </div>
+              </div>
+              {/* Display Wonder */}
+              {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+                <div className="border-t items-center flex uppercase flex-wrap w-full py-2 justify-center text-center text-sm bg-crimson/50 rounded-lg">
+                  Wonder:{" "}
+                  <span className="text-gold font-bold tracking-wide">
+                    {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+                  </span>
+                </div>
+              )}
+              <div>
+                <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
+                  Owned By
+                </Label>
+                <span>{shortenHex(realmData.token_owner ?? "", 10)}</span>
+              </div>
+            </div>
+          </div>
           {/* Display Price if Listed */}
           {isListed && price !== undefined ? (
-            <div className="text-center border-t border-b py-3 my-3">
+            <div className="border-t pt-6 px-4">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <div className="text-4xl font-bold text-gold gap-2 mx-auto text-center flex items-center justify-center">
-                <div>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl font-bold text-gold -mt-2">
                   {isSyncing
                     ? "Syncing..."
                     : parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      })}{" "}
+                      })}
                 </div>
-
                 <ResourceIcon resource="Lords" size="sm" />
+                <div className="text-sm text-muted-foreground">
+                  {timeRemaining ? (
+                    <span className="text-red-500 font-medium">{timeRemaining}</span>
+                  ) : (
+                    `Expires ${new Date(Number(expiration) * 1000).toLocaleString()}`
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
             </div>
@@ -235,23 +308,6 @@ export const RealmDetailModal = ({
             <div className="text-center border-t border-b py-3 my-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
               <p className="text-2xl font-bold text-gold">Not for sale</p>
-            </div>
-          )}
-          {/* Display Resources */}
-          <div className="flex flex-wrap gap-2 mb-2 justify-center">
-            {attributes
-              ?.filter((attribute) => attribute.trait_type === "Resource")
-              .map((attribute, index) => (
-                <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
-              ))}
-          </div>
-          {/* Display Wonder */}
-          {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
-            <div className="border-t pt-2 mt-2 text-center text-sm uppercase">
-              Wonder:{" "}
-              <span className="text-gold font-bold tracking-wide">
-                {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
-              </span>
             </div>
           )}
         </div>
