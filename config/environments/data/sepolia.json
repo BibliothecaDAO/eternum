@@ -3,7 +3,7 @@
       "message": "This file was generated from the .ts file and should not be edited manually",
       "configuration": {
   "agent": {
-    "controller_address": "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
+    "controller_address": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
     "max_lifetime_count": 10000,
     "max_current_count": 1000,
     "min_spawn_lords_amount": 10,
@@ -569,7 +569,7 @@
       "1": [
         {
           "resource": 23,
-          "amount": 10.4
+          "amount": 14
         },
         {
           "resource": 35,
@@ -579,7 +579,7 @@
       "2": [
         {
           "resource": 23,
-          "amount": 13.1
+          "amount": 17.9
         },
         {
           "resource": 36,
@@ -589,7 +589,7 @@
       "3": [
         {
           "resource": 23,
-          "amount": 10.4
+          "amount": 14
         },
         {
           "resource": 36,
@@ -599,7 +599,7 @@
       "4": [
         {
           "resource": 23,
-          "amount": 16.35
+          "amount": 21.7
         },
         {
           "resource": 35,
@@ -609,7 +609,7 @@
       "5": [
         {
           "resource": 23,
-          "amount": 39.91
+          "amount": 53.73
         },
         {
           "resource": 36,
@@ -619,7 +619,7 @@
       "6": [
         {
           "resource": 23,
-          "amount": 25.61
+          "amount": 34.48
         },
         {
           "resource": 36,
@@ -629,7 +629,7 @@
       "7": [
         {
           "resource": 23,
-          "amount": 62.92
+          "amount": 84.7
         },
         {
           "resource": 36,
@@ -639,7 +639,7 @@
       "8": [
         {
           "resource": 23,
-          "amount": 29.12
+          "amount": 39.2
         },
         {
           "resource": 35,
@@ -649,7 +649,7 @@
       "9": [
         {
           "resource": 23,
-          "amount": 1075.75
+          "amount": 1448.13
         },
         {
           "resource": 36,
@@ -659,7 +659,7 @@
       "10": [
         {
           "resource": 23,
-          "amount": 504.01
+          "amount": 678.48
         },
         {
           "resource": 36,
@@ -669,7 +669,7 @@
       "11": [
         {
           "resource": 23,
-          "amount": 48.49
+          "amount": 65.28
         },
         {
           "resource": 35,
@@ -679,7 +679,7 @@
       "12": [
         {
           "resource": 23,
-          "amount": 213.98
+          "amount": 288.05
         },
         {
           "resource": 35,
@@ -689,7 +689,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 185.12
+          "amount": 249.2
         },
         {
           "resource": 36,
@@ -699,7 +699,7 @@
       "14": [
         {
           "resource": 23,
-          "amount": 121.18
+          "amount": 156.28
         },
         {
           "resource": 36,
@@ -709,7 +709,7 @@
       "15": [
         {
           "resource": 23,
-          "amount": 79.82
+          "amount": 107.45
         },
         {
           "resource": 35,
@@ -719,7 +719,7 @@
       "16": [
         {
           "resource": 23,
-          "amount": 222.95
+          "amount": 300.13
         },
         {
           "resource": 36,
@@ -729,7 +729,7 @@
       "17": [
         {
           "resource": 23,
-          "amount": 367.25
+          "amount": 494.38
         },
         {
           "resource": 35,
@@ -739,7 +739,7 @@
       "18": [
         {
           "resource": 23,
-          "amount": 319.54
+          "amount": 430.15
         },
         {
           "resource": 36,
@@ -749,7 +749,7 @@
       "19": [
         {
           "resource": 23,
-          "amount": 652.08
+          "amount": 877.8
         },
         {
           "resource": 35,
@@ -759,7 +759,7 @@
       "20": [
         {
           "resource": 23,
-          "amount": 172.12
+          "amount": 231.7
         },
         {
           "resource": 35,
@@ -769,7 +769,7 @@
       "21": [
         {
           "resource": 23,
-          "amount": 281.58
+          "amount": 379.05
         },
         {
           "resource": 35,
@@ -779,7 +779,7 @@
       "22": [
         {
           "resource": 23,
-          "amount": 1199
+          "amount": 1569.15
         },
         {
           "resource": 35,
@@ -1035,13 +1035,13 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 149,
+    "shardsMinesFailProbability": 199,
     "shardsMinesWinProbability": 1,
     "agentFindProbability": 5,
     "agentFindFailProbability": 95,
-    "hyperstructureWinProbAtCenter": 4000,
-    "hyperstructureFailProbAtCenter": 96000,
-    "hyperstructureFailProbIncreasePerHexDistance": 9750,
+    "hyperstructureWinProbAtCenter": 2000,
+    "hyperstructureFailProbAtCenter": 98000,
+    "hyperstructureFailProbIncreasePerHexDistance": 9820,
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
@@ -3693,7 +3693,7 @@
       "contracts": [
         {
           "address": "0x56862c119cca2c85d93c37582032a26eac4ebddedaefd1bfee943fe521f2a71",
-          "class_hash": "0x72375d059bae3095ca46ad9803000a8c6334e37d418767e5eace56497c2dfc7",
+          "class_hash": "0x51a22d180dc6517216ce112c965fe2c01f6cbbc8cacfc72630ced3e66c627fe",
           "abi": [
             {
               "type": "impl",
@@ -4150,7 +4150,7 @@
         },
         {
           "address": "0x1a886fdf22e5da5335384677e6c45fa8d4f0cc045542b7ab27f5a26afb87ebb",
-          "class_hash": "0xcbc96428fcdad3e21e9d54c281de9114581c8e9932f8d4c5dbc9b82b936c55",
+          "class_hash": "0x469a2b7f3d3b560bb7604aecf3a540d7eeeff90e5685a2926dfc66aa36edc19",
           "abi": [
             {
               "type": "impl",
@@ -7511,7 +7511,7 @@
         },
         {
           "address": "0x73dfbb912ebbcd5634beebef86775c6ed66795e3bf6b68a035a8d3109aa6922",
-          "class_hash": "0x6fbb38cef6cfc49c485fe06957c7f3eda52c6f0a7fa5a4bd787b985d484c83",
+          "class_hash": "0x11a2c872fc18b1f4e60d2341649b337e570c6aa60d45b726c52d895b6c38bf4",
           "abi": [
             {
               "type": "impl",
@@ -8525,7 +8525,7 @@
         },
         {
           "address": "0x5c9e123546195734708f69d9a70abde8596bd3730d4a4c215fcb069b14d1aee",
-          "class_hash": "0x2f055b324533e041a05bb1b53c7feca489147a72fb0f94e1fc441b1211bfec",
+          "class_hash": "0x66b7e706ebad94c4b19f6b1fdae7bb281f631885698b3329c6682dcdfdc6965",
           "abi": [
             {
               "type": "impl",
@@ -10577,7 +10577,7 @@
         },
         {
           "address": "0x1c83d00a25ead744886a577512bceddfddcdaa0a9e573ece2a74c6adfbb9aa6",
-          "class_hash": "0x119e6f503cd3b4967400da0360e39e7cb185cb863f8934e0f303a4b2b7b9ea6",
+          "class_hash": "0x539e0b16f91429f4f4062337b138df4d680486da8f87f3f88f101fcfadb81e3",
           "abi": [
             {
               "type": "impl",
@@ -14154,7 +14154,7 @@
         },
         {
           "address": "0x59cb89f05e7baad61b68c46ec73c9c73e91855933bc5d6b932f75faf49fc20",
-          "class_hash": "0x2f7833b975a6b7b7fb52a77ff87c26d1c926ba817d65820ca3a20e79c4b0e4",
+          "class_hash": "0x12975edb6cc989c08f14cb4e145f3e2ef5de92a8eb6d10d4f687c4b09c9bed3",
           "abi": [
             {
               "type": "impl",
@@ -14406,7 +14406,7 @@
         },
         {
           "address": "0x2961c87e5b85c15a7f09b7c981af1fdfe92d6b6cea377abb29f8c3f0c18b3",
-          "class_hash": "0x1bb8518122e5d1633ccba4a61ca57f0fab92265b45dac7015faf91e7c8609b3",
+          "class_hash": "0x4c5e18ea3aa122f99f444c4ba24baa8d5101ac12b86b79e78c69b2e1fd66895",
           "abi": [
             {
               "type": "impl",
