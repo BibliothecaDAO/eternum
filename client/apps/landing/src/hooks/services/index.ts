@@ -10,6 +10,20 @@ const QUERIES = {
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
+  ACTIVE_MARKET_ORDERS: `
+    SELECT 
+      mo.order_id AS order_id,
+      mo."order.token_id" AS token_id, 
+      mo."order.price" AS price,
+      mo."order.owner" AS owner,
+      mo."order.expiration" AS expiration,
+      mo."order.collection_id" AS collection_id
+    FROM "marketplace-MarketOrderModel" AS mo
+    WHERE mo."active" = 1
+      AND mo."collection_id" = 1  
+      AND mo."token_id" = '{tokenId}'
+    ORDER BY mo."price" ASC
+  `,
   TOKEN_TRANSFERS: `
     WITH token_meta AS ( 
         SELECT contract_address,
@@ -438,6 +452,31 @@ export interface TokenBalanceWithToken {
   expiration: number | null;
   best_price_hex: bigint | null;
   metadata: RealmMetadata | null;
+}
+
+export interface ActiveMarketOrder {
+  order_id: string;
+  token_id: string;
+  price: string;
+  owner: string;
+  expiration: number;
+  collection_id: number;
+}
+
+export async function fetchActiveMarketOrders(contractAddress: string, tokenId: string): Promise<ActiveMarketOrder[]> {
+  const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{contractAddress}", contractAddress).replace(
+    "{tokenId}",
+    tokenId,
+  );
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch active market orders: ${response.statusText}`);
+  }
+
+  return await response.json();
 }
 
 export async function fetchTokenBalancesWithMetadata(

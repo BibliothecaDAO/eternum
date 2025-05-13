@@ -3,11 +3,14 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { seasonPassAddress } from "@/config";
+import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { MergedNftData, RealmMetadata } from "@/types";
+import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -16,16 +19,6 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
-
-// Define the structure for realm data passed to the modal
-interface RealmModalData {
-  tokenId: string; // Pass as string
-  contractAddress?: string;
-  name?: string | null;
-  imageSrc: string;
-  attributes?: RealmMetadata["attributes"];
-  // Add any other details needed in the modal
-}
 
 // Define the props for the modal component
 interface RealmDetailModalProps {
@@ -67,6 +60,12 @@ export const RealmDetailModal = ({
     seasonPassApproved,
     isApprovingMarketplace,
   } = marketplaceActions;
+
+  const { data: activeMarketOrder } = useQuery({
+    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, realmData.token_id.toString()],
+    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, realmData.token_id.toString()),
+    refetchInterval: 30_000,
+  });
 
   // Get wallet state
   const { address } = useAccount();
@@ -162,6 +161,11 @@ export const RealmDetailModal = ({
     if (/*!contractAddress || */ !listPrice) return; // Basic validation
     const priceInWei = BigInt(parseFloat(listPrice) * 1e18); // Convert price to wei (assuming 18 decimals for LORDS)
 
+    if (activeMarketOrder?.[0]?.owner != address) {
+      await handleCancelOrder();
+      toast.success("Inactive order cancelled, now listing...");
+    }
+
     try {
       await listItem({
         token_id: parseInt(realmData.token_id.toString()), // Convert to string to match expected type
@@ -197,12 +201,11 @@ export const RealmDetailModal = ({
       setIsSyncing(false);
     }
   };
-
   const handleCancelOrder = async () => {
-    if (!orderId) return; // Basic validation
+    if (!orderId && !activeMarketOrder?.[0]?.order_id) return; // Basic validation
     try {
       await cancelOrder({
-        order_id: BigInt(orderId),
+        order_id: BigInt(orderId ?? activeMarketOrder?.[0]?.order_id ?? 0),
       });
       toast.success("Transaction confirmed! Syncing cancellation...");
       setIsSyncing(true);
