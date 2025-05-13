@@ -48,6 +48,7 @@ export class ArmyModel {
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
   private readonly boatScale = new THREE.Vector3(1, 1, 1);
+  private readonly agentScale = new THREE.Vector3(2, 2, 2);
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
@@ -204,11 +205,17 @@ export class ArmyModel {
   ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      const targetScale = isActiveModel
-        ? modelType === ModelType.Boat
-          ? this.boatScale
-          : this.normalScale
-        : this.zeroScale;
+      let targetScale = this.zeroScale;
+
+      if (isActiveModel) {
+        if (modelType === ModelType.Boat) {
+          targetScale = this.boatScale;
+        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+          targetScale = this.agentScale;
+        } else {
+          targetScale = this.normalScale;
+        }
+      }
 
       this.updateInstanceTransform(position, targetScale, rotation);
       this.updateInstanceMeshes(modelData, index, color);
@@ -561,7 +568,7 @@ export class ArmyModel {
     }
 
     if (entityId === 275) {
-      return ModelType.AgentIstarai;
+      return ModelType.AgentApix;
     }
     // For land biomes, return the appropriate model based on troop type and tier
     return TROOP_TO_MODEL[troopType][troopTier];
