@@ -428,6 +428,7 @@ export class ArmyActionManager {
     }
   };
 
+  // @ts-ignore
   private readonly _optimisticTravelHex = (col: number, row: number, path: ActionPath[], currentArmiesTick: number) => {
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
@@ -490,12 +491,12 @@ export class ArmyActionManager {
     path: ActionPath[],
     currentArmiesTick: number,
   ) => {
-    const { removeOverrides } = this._optimisticTravelHex(
-      path[path.length - 1].hex.col,
-      path[path.length - 1].hex.row,
-      path,
-      currentArmiesTick,
-    );
+    // const { removeOverrides } = this._optimisticTravelHex(
+    //   path[path.length - 1].hex.col,
+    //   path[path.length - 1].hex.row,
+    //   path,
+    //   currentArmiesTick,
+    // );
 
     const directions = path
       .map((_, i) => {
@@ -514,10 +515,12 @@ export class ArmyActionManager {
         directions,
         explore: false,
       });
+      return Promise.resolve();
     } catch (e) {
       // only remove overrides if the move failed
-      removeOverrides();
       console.log({ e });
+      // removeOverrides();
+      return Promise.reject(e);
     }
   };
 

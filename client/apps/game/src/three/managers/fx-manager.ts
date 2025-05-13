@@ -216,6 +216,31 @@ export class FXManager {
         return true; // Always return true to keep it running
       },
     });
+
+    this.registerFX("travel", {
+      textureUrl: "textures/travel.png",
+      animate: (fx, t) => {
+        // Fade in animation
+        if (t < 0.3) {
+          fx.material.opacity = t / 0.3;
+        } else {
+          fx.material.opacity = 1;
+        }
+
+        // Pulsing and hover animation
+        const cycle = t % 3.0; // Repeat every 3 seconds
+        if (cycle < 2.0) {
+          const bob = Math.sin(cycle * Math.PI * 2) * 0.05;
+          const sway = Math.sin(cycle * Math.PI) * 0.05;
+          fx.group.position.y = fx.initialY + bob;
+          fx.group.position.x += sway * 0.01; // small side sway
+          fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+        }
+
+        return true; // Always return true to keep it running
+      },
+      isInfinite: true, // Mark as infinite by default
+    });
   }
 
   private registerFX(type: FXType, config: FXConfig) {
