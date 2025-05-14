@@ -5,6 +5,7 @@ import { getMapFromTorii } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { ArmyManager } from "@/three/managers/army-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
@@ -423,10 +424,17 @@ export default class WorldmapScene extends HexagonScene {
         }
       };
 
-      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick).catch((e) => {
-        cleanup();
-        console.error("Army movement failed:", e);
-      });
+      armyActionManager
+        .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
+        .catch((e) => {
+          cleanup();
+          console.error("Army movement failed:", e);
+        })
+        .finally(() => {
+          if (!isExplored) {
+            checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.EXPLORE);
+          }
+        });
 
       this.state.updateEntityActionHoveredHex(null);
     }

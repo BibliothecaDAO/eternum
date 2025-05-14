@@ -1,3 +1,4 @@
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
@@ -149,6 +150,7 @@ export const Guilds = ({
       // On error, form remains open, isLoading will become false.
     } finally {
       setIsLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.JOIN_TRIBE);
     }
   };
 

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
 import Button from "@/ui/elements/button";
@@ -139,6 +140,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
       setIsLoading(Loading.None);
       setNewContributions({});
       setResetContributions(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE);
     }
   };
 

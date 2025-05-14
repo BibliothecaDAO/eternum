@@ -16,29 +16,15 @@ export enum CartridgeAchievement {
   REALM_SETTLEMENT = "REALM_SETTLEMENT",
   VILLAGE_SETTLEMENT = "VILLAGE_SETTLEMENT",
   EXPLORE = "EXPLORE",
-  BIOME_DISCOVER = "BIOME_DISCOVER",
-  AGENT_DISCOVER = "AGENT_DISCOVER",
-  QUEST_DISCOVER = "QUEST_DISCOVER",
-  MINE_DISCOVER = "MINE_DISCOVER",
-  HYPERSTRUCTURE_DISCOVER = "HYPERSTRUCTURE_DISCOVER",
   RESOURCE_PRODUCE = "RESOURCE_PRODUCE",
   BUILD_STANDARD = "BUILD_STANDARD",
   BUILD_SIMPLE = "BUILD_SIMPLE",
   LABOR_PRODUCE = "LABOR_PRODUCE",
-  KILL_AGENT = "KILL_AGENT",
-  BRIDGE_LORDS = "BRIDGE_LORDS",
   WIN_BATTLE = "WIN_BATTLE",
-  PRODUCE_T2 = "PRODUCE_T2",
-  PRODUCE_T3 = "PRODUCE_T3",
-  WIN_BIOME_BATTLE = "WIN_BIOME_BATTLE",
-  SUCCESSFUL_RAID = "SUCCESSFUL_RAID",
-  DEFEND_STRUCTURE = "DEFEND_STRUCTURE",
   UPGRADE_REALM = "UPGRADE_REALM",
   UPGRADE_VILLAGE = "UPGRADE_VILLAGE",
   JOIN_TRIBE = "JOIN_TRIBE",
   CONTRIBUTE_HYPERSTRUCTURE = "CONTRIBUTE_HYPERSTRUCTURE",
-  WIN_GAME = "WIN_GAME",
-  VICTORY_POINTS = "VICTORY_POINTS",
 }
 
 interface QuestThreshold {
@@ -58,25 +44,6 @@ const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
     { achievement: CartridgeAchievement.EXPLORE, threshold: 50, action: "Explore 50 hexes on the World Map" },
     { achievement: CartridgeAchievement.EXPLORE, threshold: 250, action: "Explore 250 hexes on the World Map" },
     { achievement: CartridgeAchievement.EXPLORE, threshold: 1000, action: "Explore 1000 hexes on the World Map" },
-  ],
-  [CartridgeAchievement.BIOME_DISCOVER]: [
-    { achievement: CartridgeAchievement.BIOME_DISCOVER, threshold: 16, action: "Discover all 16 biome types" },
-  ],
-  [CartridgeAchievement.AGENT_DISCOVER]: [
-    { achievement: CartridgeAchievement.AGENT_DISCOVER, threshold: 1, action: "Discover an Agent" },
-  ],
-  [CartridgeAchievement.QUEST_DISCOVER]: [
-    { achievement: CartridgeAchievement.QUEST_DISCOVER, threshold: 1, action: "Discover a Quest Tile" },
-  ],
-  [CartridgeAchievement.MINE_DISCOVER]: [
-    { achievement: CartridgeAchievement.MINE_DISCOVER, threshold: 1, action: "Discover a Fragment Mine" },
-  ],
-  [CartridgeAchievement.HYPERSTRUCTURE_DISCOVER]: [
-    {
-      achievement: CartridgeAchievement.HYPERSTRUCTURE_DISCOVER,
-      threshold: 1,
-      action: "Discover a Hyperstructure Foundation",
-    },
   ],
   [CartridgeAchievement.RESOURCE_PRODUCE]: [
     {
@@ -134,42 +101,10 @@ const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
     { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 10_000_000, action: "Produce 10,000,000 Labor" },
     { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 100_000_000, action: "Produce 100,000,000 Labor" },
   ],
-  [CartridgeAchievement.KILL_AGENT]: [
-    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 1, action: "Kill an Agent" },
-    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 10, action: "Kill 10 Agents" },
-  ],
   [CartridgeAchievement.WIN_BATTLE]: [
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 1, action: "Win your first battle" },
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 10, action: "Win 10 battles" },
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 25, action: "Win 25 battles" },
-  ],
-  [CartridgeAchievement.PRODUCE_T3]: [
-    {
-      achievement: CartridgeAchievement.PRODUCE_T3,
-      threshold: 1,
-      action: "Produce a T3 troop (Knight, Crossbowman, or Paladin)",
-    },
-  ],
-  [CartridgeAchievement.WIN_BIOME_BATTLE]: [
-    {
-      achievement: CartridgeAchievement.WIN_BIOME_BATTLE,
-      threshold: 5,
-      action: "Win a battle in 5 different biome types, utilizing biome advantages",
-    },
-  ],
-  [CartridgeAchievement.SUCCESSFUL_RAID]: [
-    {
-      achievement: CartridgeAchievement.SUCCESSFUL_RAID,
-      threshold: 10,
-      action: "Successfully raid resources from an enemy structure 10 times",
-    },
-  ],
-  [CartridgeAchievement.DEFEND_STRUCTURE]: [
-    {
-      achievement: CartridgeAchievement.DEFEND_STRUCTURE,
-      threshold: 1,
-      action: "Successfully defend your Realm or Village from an attack",
-    },
   ],
   [CartridgeAchievement.UPGRADE_REALM]: [
     { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 1, action: "Upgrade a Realm to a City" },
@@ -198,20 +133,6 @@ const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
       threshold: 50_000_000,
       action: "Contribute 50,000,000 resources to a Hyperstructure",
     },
-  ],
-  [CartridgeAchievement.WIN_GAME]: [
-    { achievement: CartridgeAchievement.WIN_GAME, threshold: 1, action: "Win the Game" },
-  ],
-  [CartridgeAchievement.VICTORY_POINTS]: [
-    { achievement: CartridgeAchievement.VICTORY_POINTS, threshold: 1, action: "Earn Victory Points" },
-  ],
-  [CartridgeAchievement.BRIDGE_LORDS]: [
-    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 10, action: "Complete 10 Orders" },
-    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 50, action: "Complete 50 Orders" },
-    { achievement: CartridgeAchievement.BRIDGE_LORDS, threshold: 200, action: "Complete 200 Orders" },
-  ],
-  [CartridgeAchievement.PRODUCE_T2]: [
-    { achievement: CartridgeAchievement.PRODUCE_T2, threshold: 1, action: "Produce a T2 troop" },
   ],
 };
 
@@ -321,7 +242,6 @@ export async function checkAndDispatchGgXyzQuestProgress(
   achievement: CartridgeAchievement,
 ): Promise<string[]> {
   const currentCount = await fetchTrophyProgression(playerAddress, achievement);
-  console.log({ currentCount });
 
   const thresholds = QUEST_THRESHOLDS[achievement];
   const completedActions: string[] = [];

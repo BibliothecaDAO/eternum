@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -265,6 +266,7 @@ export const CombatContainer = ({
       console.error(error);
     } finally {
       setLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
     }
   };
 
@@ -332,6 +334,7 @@ export const CombatContainer = ({
       console.error(error);
     } finally {
       setLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
     }
   };
 
@@ -353,6 +356,7 @@ export const CombatContainer = ({
       console.error(error);
     } finally {
       setLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
     }
   };
 

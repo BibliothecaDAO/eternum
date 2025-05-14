@@ -1,5 +1,6 @@
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import { Position } from "@/types/position";
 import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
@@ -176,6 +177,7 @@ export const SeasonPassRealm = ({
       console.error("Error settling realms:", error);
     } finally {
       setIsLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account?.address, CartridgeAchievement.REALM_SETTLEMENT);
     }
   };
 

@@ -253,12 +253,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         console.error("Error settling village:", error);
       } finally {
         setIsLoading(false);
-      }
-
-      try {
-        await checkAndDispatchGgXyzQuestProgress(account?.address, CartridgeAchievement.VILLAGE_SETTLEMENT);
-      } catch (error) {
-        console.error("Error dispatching quest progress:", error);
+        checkAndDispatchGgXyzQuestProgress(account?.address, CartridgeAchievement.VILLAGE_SETTLEMENT);
       }
     } else {
       console.warn("Attempted to settle village without required selections.");

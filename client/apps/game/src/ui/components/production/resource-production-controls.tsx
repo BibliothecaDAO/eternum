@@ -1,3 +1,4 @@
+import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -70,6 +71,7 @@ export const ResourceProductionControls = ({
       console.error(error);
     } finally {
       setIsLoading(false);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.RESOURCE_PRODUCE);
     }
   };
 
@@ -92,6 +94,7 @@ export const ResourceProductionControls = ({
         console.error(error);
       } finally {
         setIsLoading(false);
+        checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.RESOURCE_PRODUCE);
       }
     }
   };
