@@ -12,7 +12,7 @@ import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { playSound } from "@/three/sound/utils";
+import { playResourceSound, playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -32,6 +32,7 @@ import {
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  findResourceById,
   getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
@@ -43,7 +44,15 @@ import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
-import { ArmySystemUpdate, QuestSystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
+import { ResourceFXManager } from "../managers/resource-fx-manager";
+import {
+  ArmySystemUpdate,
+  ExplorerRewardSystemUpdate,
+  QuestSystemUpdate,
+  SceneName,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
@@ -92,7 +101,7 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
 
   private fxManager: FXManager;
-
+  private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
 
   constructor(
@@ -106,6 +115,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -203,6 +213,21 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
+    });
+
+    this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
+      const { explorerId, resourceId, amount } = update;
+      // Find the army position using explorerId
+      const armyPosition = this.armiesPositions.get(explorerId);
+      if (armyPosition) {
+        const resource = findResourceById(resourceId);
+        // Play the sound for the resource gain
+        playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+        // Display the resource gain at the army's position
+        this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
+      } else {
+        console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
+      }
     });
 
     // add particles
@@ -1059,5 +1084,41 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
+  }
+
+  destroy() {
+    this.resourceFXManager.destroy();
+  }
+
+  /**
+   * Display a resource gain/loss effect at a hex position
+   * @param resourceId The resource ID from ResourcesIds
+   * @param amount Amount of resource (positive for gain, negative for loss)
+   * @param col Hex column
+   * @param row Hex row
+   * @param text Optional text to display below the resource
+   */
+  public displayResourceGain(
+    resourceId: number,
+    amount: number,
+    col: number,
+    row: number,
+    text?: string,
+  ): Promise<void> {
+    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text, { duration: 3.0 });
+  }
+
+  /**
+   * Display multiple resource changes in sequence
+   * @param resources Array of resource changes to display
+   * @param col Hex column
+   * @param row Hex row
+   */
+  public displayMultipleResources(
+    resources: Array<{ resourceId: number; amount: number; text?: string }>,
+    col: number,
+    row: number,
+  ): Promise<void> {
+    return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
   }
 }
