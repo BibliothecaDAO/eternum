@@ -1,15 +1,23 @@
-import { InventoryResources } from "@/ui/components/resources/inventory-resources";
-import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
+import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  DAYDREAMS_AGENTS,
+  GuildInfo,
+  ID,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
+import { InventoryResources } from "../../resources/inventory-resources";
+import { ArmyWarning } from "../armies/army-warning";
 
 export interface ArmyEntityDetailProps {
   armyEntityId: ID;
@@ -29,7 +37,6 @@ export const ArmyEntityDetail = memo(
     const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
       undefined,
     );
-
     const [explorerResources, setExplorerResources] = useState<
       ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
     >(undefined);
@@ -40,6 +47,7 @@ export const ArmyEntityDetail = memo(
       undefined,
     );
     const userAddress = ContractAddress(account.account.address);
+    const [addressName, setAddressName] = useState<string | undefined>(undefined);
     const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
     const [stamina, setStamina] = useState<{ amount: bigint; updated_tick: bigint } | undefined>(undefined);
     const [maxStamina, setMaxStamina] = useState<number | undefined>(undefined);
@@ -68,6 +76,7 @@ export const ArmyEntityDetail = memo(
         );
 
         const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
+        setAddressName(structure?.owner ? getAddressName(structure?.owner, components) : DAYDREAMS_AGENTS);
         setStamina(stamina);
         setMaxStamina(maxStamina);
         setPlayerGuild(guild);
@@ -92,7 +101,7 @@ export const ArmyEntityDetail = memo(
         {/* Header with owner and guild info */}
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
           <div className="flex flex-col">
-            <h4 className={`${headerTextClass} font-bold`}>{explorer.explorer_id}</h4>
+            <h4 className={`${headerTextClass} font-bold`}>{addressName}</h4>
             {playerGuild && (
               <div className="text-xs text-gold/80">
                 {"< "}
@@ -112,7 +121,9 @@ export const ArmyEntityDetail = memo(
             {explorer && (
               <div className="flex flex-col gap-0.5">
                 <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{explorer.explorer_id}</h6>
+                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>
+                    {explorer.troops.category} {explorer.troops.tier} {explorer.explorer_id}
+                  </h6>
                 </div>
                 <div
                   className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}

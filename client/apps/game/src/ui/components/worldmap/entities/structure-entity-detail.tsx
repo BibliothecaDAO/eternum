@@ -58,6 +58,7 @@ export const StructureEntityDetail = memo(
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
         const guards = structure ? getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n) : [];
 
+        // explorer troops that are roaming the world are always daydreams agents if they are not owned by a player
         setAddressName(structure?.owner ? getAddressName(structure?.owner, components) : MERCENARIES);
         setStructure(structure);
         setResources(resources);
