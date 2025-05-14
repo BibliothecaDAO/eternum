@@ -204,6 +204,9 @@ WITH limited_active_orders AS (
       ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
       AND t.contract_address = '{contractAddress}'
     WHERE moe."market_order.collection_id" = 1
+      AND (( '{type}' = 'all' OR '{type}' = '')
+           OR ('{type}' = 'listings' AND moe.state <> 'Accepted')
+           OR ('{type}' <> 'listings' AND moe.state = '{type}'))
     ORDER BY moe."internal_executed_at" DESC
     LIMIT {limit} OFFSET {offset}
   `,
@@ -537,13 +540,15 @@ export interface MarketOrderEvent {
 
 export async function fetchMarketOrderEvents(
   contractAddress: string,
+  type: "sales" | "listings" | "all",
   limit?: number,
   offset?: number,
 ): Promise<MarketOrderEvent[]> {
+  const finalType = type === "sales" ? "Accepted" : type;
   const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
     .replace("{limit}", limit?.toString() ?? "50")
-    .replace("{offset}", offset?.toString() ?? "0");
-
+    .replace("{offset}", offset?.toString() ?? "0")
+    .replaceAll("{type}", finalType);
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
 
