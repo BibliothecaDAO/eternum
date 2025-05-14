@@ -93,7 +93,7 @@ export const InfoContainer = ({
                     className="flex flex-row items-center gap-2 text-[12px] relative group"
                     onClick={() =>
                       window.open(
-                        `https://darkshuffle.dev/settings/${Number(level?.value?.settings_id?.value)}`,
+                        `https://darkshuffle.io/settings/${Number(level?.value?.settings_id?.value)}`,
                         "_blank",
                       )
                     }
