@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::all_resource_ids;
+use s1_eternum::constants::{all_resource_ids, is_bank};
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
@@ -374,7 +374,10 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // if the recipient is a village, and troops are being transferred,
             //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
-                if TroopResourceImpl::is_troop(resource_type) {
+                // hack to check if it is from lp position.
+                // todo: fix this
+                let is_lp_position = is_bank(from_id) && mint == true && pickup == true && resources.len() == 2;
+                if TroopResourceImpl::is_troop(resource_type) && !is_lp_position {
                     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, to_id,
                     );
