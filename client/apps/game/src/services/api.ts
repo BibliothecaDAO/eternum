@@ -1,10 +1,13 @@
-import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
+import { ContractAddress, HexPosition, ID, StructureType } from "@bibliothecadao/types";
 import { env } from "../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
+  OTHER_STRUCTURES: `
+    SELECT entity_id AS entityId, \`metadata.realm_id\` AS realmId, owner, category FROM [s1_eternum-Structure] WHERE owner != '{owner}';
+  `,
   STRUCTURES_BY_OWNER:
     "SELECT `base.coord_x`, `base.coord_y`, entity_id, owner FROM [s1_eternum-Structure] WHERE owner == '{owner}';",
   REALM_SETTLEMENTS:
@@ -265,6 +268,23 @@ export async function fetchHyperstructures(): Promise<Hyperstructure[]> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch hyperstructures: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+export async function fetchOtherStructures(
+  owner: string,
+): Promise<{ entityId: ID; owner: ContractAddress; category: StructureType; realmId: number }[]> {
+  // Ensure owner address is properly padded
+  const paddedOwner =
+    owner.startsWith("0x") && owner.length === 66 ? owner : owner.startsWith("0x") ? "0x0" + owner.substring(2) : owner;
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.OTHER_STRUCTURES.replace("{owner}", paddedOwner))}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch other structures: ${response.statusText}`);
   }
 
   return await response.json();
