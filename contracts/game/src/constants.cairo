@@ -29,6 +29,15 @@ pub const WONDER_STARTING_RESOURCES_BOOST: u128 = 3;
 // TODO: Move to Onchain config
 pub const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
+pub fn is_bank(entity_id: ID) -> bool {
+    return entity_id == REGIONAL_BANK_ONE_ID
+        || entity_id == REGIONAL_BANK_TWO_ID
+        || entity_id == REGIONAL_BANK_THREE_ID
+        || entity_id == REGIONAL_BANK_FOUR_ID
+        || entity_id == REGIONAL_BANK_FIVE_ID
+        || entity_id == REGIONAL_BANK_SIX_ID;
+}
+
 // Note: Please update this list whenever ResourceTypes are updated
 pub fn all_resource_ids() -> Array<u8> {
     array![

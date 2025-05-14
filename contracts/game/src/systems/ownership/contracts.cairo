@@ -9,6 +9,7 @@ trait IOwnershipSystems<T> {
 
 #[dojo::contract]
 mod ownership_systems {
+    use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
@@ -28,6 +29,9 @@ mod ownership_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, structure_id).assert_caller_owner();
+
+            // ensure new_owner is non zero
+            assert!(new_owner.is_non_zero(), "new owner is zero");
 
             // ensure structure is not a village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);

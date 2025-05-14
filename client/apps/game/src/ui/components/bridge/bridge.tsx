@@ -292,7 +292,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               Transfer resources into the game from your{" "}
               <span className="inline-flex item-center">
                 <Controller className="h-5 w-5 mr-1 ml-2" />
-                Cartridge Wallet
+                Cartridge Controller
               </span>{" "}
             </>
           ) : (
@@ -301,7 +301,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               Transfer resources out of the game to your{" "}
               <span className="inline-flex item-center">
                 <Controller className="h-5 w-5 mr-1 ml-2" />
-                Cartridge Wallet
+                Cartridge Controller
               </span>{" "}
             </>
           )}
