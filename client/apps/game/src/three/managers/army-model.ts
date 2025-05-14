@@ -1,5 +1,6 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
 import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -48,6 +49,10 @@ export class ArmyModel {
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
   private readonly boatScale = new THREE.Vector3(1, 1, 1);
+  private readonly agentScale = new THREE.Vector3(2, 2, 2);
+
+  // agent
+  private isAgent: boolean = false;
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
@@ -78,7 +83,7 @@ export class ArmyModel {
   private async loadSingleModel(modelType: ModelType, fileName: string): Promise<void> {
     return new Promise((resolve, reject) => {
       gltfLoader.load(
-        `models/units/${fileName}.glb`,
+        `models/${fileName}`,
         (gltf) => {
           // if (modelType === ModelType.Paladin2) {
           //   console.log("Paladin", gltf.scene);
@@ -204,11 +209,17 @@ export class ArmyModel {
   ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      const targetScale = isActiveModel
-        ? modelType === ModelType.Boat
-          ? this.boatScale
-          : this.normalScale
-        : this.zeroScale;
+      let targetScale = this.zeroScale;
+
+      if (isActiveModel) {
+        if (modelType === ModelType.Boat) {
+          targetScale = this.boatScale;
+        } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
+          targetScale = this.agentScale;
+        } else {
+          targetScale = this.normalScale;
+        }
+      }
 
       this.updateInstanceTransform(position, targetScale, rotation);
       this.updateInstanceMeshes(modelData, index, color);
@@ -535,12 +546,39 @@ export class ArmyModel {
     const { col, row } = getHexForWorldPosition(position);
     const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
 
-    const modelType =
-      biome === BiomeType.Ocean || biome === BiomeType.DeepOcean ? ModelType.Boat : TROOP_TO_MODEL[category][tier];
-
+    const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (this.entityModelMap.get(entityId) !== modelType) {
       this.assignModelToEntity(entityId, modelType);
     }
+  }
+
+  /**
+   * Determines the appropriate model type based on troop type, tier and biome
+   * @param entityId - The entity ID
+   * @param troopType - Type of the troop
+   * @param troopTier - Tier of the troop
+   * @param biome - The biome type
+   * @returns The appropriate ModelType to use
+   */
+  public getModelTypeForEntity(
+    entityId: number,
+    troopType: TroopType,
+    troopTier: TroopTier,
+    biome: BiomeType,
+  ): ModelType {
+    // For water biomes, always return boat model regardless of troop type
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      return ModelType.Boat;
+    }
+
+    if (this.isAgent) {
+      if (getCharacterModel(troopTier, troopType, entityId) !== undefined) {
+        return getCharacterModel(troopTier, troopType, entityId)!;
+      }
+    }
+
+    // For land biomes, return the appropriate model based on troop type and tier
+    return TROOP_TO_MODEL[troopType][troopTier];
   }
 
   private stopMovement(entityId: number): void {
@@ -579,6 +617,14 @@ export class ArmyModel {
       currentRotation: movement.currentRotation,
       targetRotation: movement.currentRotation,
     });
+  }
+
+  /**
+   * Sets the isAgent flag
+   * @param isAgent - Whether the entity is an agent
+   */
+  public setIsAgent(isAgent: boolean): void {
+    this.isAgent = isAgent;
   }
 
   // Label Management Methods

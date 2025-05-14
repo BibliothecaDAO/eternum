@@ -2,8 +2,9 @@ import { InventoryResources } from "@/ui/components/resources/inventory-resource
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
+import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -35,9 +36,9 @@ export const ArmyEntityDetail = memo(
     const [structureResources, setStructureResources] = useState<
       ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
     >(undefined);
-    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | undefined>(
-      undefined,
-    );
+    const [structure, setStructure] = useState<
+      ComponentValue<ClientComponents["Structure"]["schema"]> | null | undefined
+    >(undefined);
     const userAddress = ContractAddress(account.account.address);
 
     useEffect(() => {
@@ -53,9 +54,20 @@ export const ArmyEntityDetail = memo(
       const fetchStructure = async () => {
         if (!explorer) return;
         const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
-        if (result) {
-          setStructure(result.structure);
-          setStructureResources(result?.resources);
+
+        // If a structure object is returned, use it; otherwise explicitly mark as null (fetched, but none found)
+        if (result.structure !== undefined) {
+          // Found (may still be undefined if Torii entity did not include Structure model)
+          if (result.structure) {
+            setStructure(result.structure);
+          } else {
+            setStructure(null);
+          }
+          // Always set resources even if undefined to stop further fetching attempts
+          setStructureResources(result.resources);
+        } else {
+          // In unexpected scenario (shouldn't happen), mark as null to avoid indefinite loading
+          setStructure(null);
         }
       };
       fetchStructure();
@@ -79,6 +91,23 @@ export const ArmyEntityDetail = memo(
       return StaminaManager.getMaxStamina(explorer.troops.category as TroopType, explorer.troops.tier as TroopTier);
     }, [explorer]);
 
+    // @dev OK YUK BUT IT WORKS
+    const playerName = useMemo(() => {
+      // Ensure explorer is loaded before attempting to derive any name
+      if (!explorer) return "";
+
+      // If the structure is still loading, avoid showing interim name to prevent UI flash
+      if (structure === undefined) return "";
+
+      // Try to fetch an address name if we already know the owning structure
+      const addressName = structure ? getAddressName(ContractAddress(structure.owner || 0n), components) : undefined;
+
+      // If an address name exists, use it; otherwise fall back to the generated character name
+      if (addressName) return addressName;
+
+      return getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
+    }, [explorer, structure, armyEntityId, components]);
+
     // Precompute common class strings
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
@@ -90,7 +119,7 @@ export const ArmyEntityDetail = memo(
         {/* Header with owner and guild info */}
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
           <div className="flex flex-col">
-            <h4 className={`${headerTextClass} font-bold`}>{explorer.explorer_id}</h4>
+            <h4 className={`${headerTextClass} font-bold`}>{playerName}</h4>
             {playerGuild && (
               <div className="text-xs text-gold/80">
                 {"< "}
@@ -107,10 +136,16 @@ export const ArmyEntityDetail = memo(
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col w-full gap-2">
             {/* Army name - made more prominent */}
-            {explorer && (
+            {/* {explorer && (
               <div className="flex flex-col gap-0.5">
                 <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{explorer.explorer_id}</h6>
+                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>
+                    {getCharacterName(
+                      explorer.troops.tier as TroopTier,
+                      explorer.troops.category as TroopType,
+                      armyEntityId,
+                    )}
+                  </h6>
                 </div>
                 <div
                   className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}
@@ -118,7 +153,7 @@ export const ArmyEntityDetail = memo(
                   Army
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Army warnings */}
             {structureResources && explorerResources && (
@@ -167,5 +202,3 @@ export const ArmyEntityDetail = memo(
     );
   },
 );
-
-ArmyEntityDetail.displayName = "ArmyEntityDetail";
