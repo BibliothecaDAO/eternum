@@ -41,7 +41,7 @@ export const QuestModal = ({
   const [loadingQuestTile, setLoadingQuestTile] = useState(true);
   const { setScores } = useMinigameStore();
 
-  const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
+  const queryAddress = useMemo(() => account?.address, [account]);
 
   useEffect(() => {
     const fetchQuest = async () => {
@@ -59,7 +59,7 @@ export const QuestModal = ({
       QuestLevels,
       getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
     );
-    return questLevelsEntity?.game_address ?? "0x0";
+    return questLevelsEntity?.game_address ? toHexString(BigInt(questLevelsEntity?.game_address)) : undefined;
   }, [questTileEntity]);
 
   const attributeFilters = useMemo(() => {
@@ -68,7 +68,7 @@ export const QuestModal = ({
 
   const { data: questGames, loading: loadingQuests } = useOwnedGamesWithScores({
     address: queryAddress,
-    gameAddress: toHexString(BigInt(queryGameAddress)),
+    gameAddress: queryGameAddress,
     metagame: {
       namespace: "s1_eternum",
       model: "Quest",
