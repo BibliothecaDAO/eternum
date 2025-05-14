@@ -304,6 +304,12 @@ pub mod troop_management_systems {
                 ref world, explorer.owner,
             )
                 .into();
+
+            // ensure explorer is not dead
+            assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
+
+            // set explorer count to 0
+            explorer.troops.count = 0;
             iExplorerImpl::explorer_from_structure_delete(
                 ref world,
                 ref explorer,
@@ -371,6 +377,9 @@ pub mod troop_management_systems {
             // update troop capacity
             iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
             iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
+
+            // ensure from_explorer is not overweight
+            iExplorerImpl::ensure_not_overweight(ref world, from_explorer_id);
 
             // ensure to_explorer count does not exceed max count
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
