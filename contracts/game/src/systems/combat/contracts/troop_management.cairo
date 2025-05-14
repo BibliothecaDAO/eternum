@@ -2134,7 +2134,6 @@ mod tests {
         assert(initial_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupier wrong');
 
         // Act 2: Delete the explorer
-        initial_explorer.troops.count = 0;
         world.write_model_test(@initial_explorer);
         troop_management_systems.explorer_delete(explorer_id);
 
