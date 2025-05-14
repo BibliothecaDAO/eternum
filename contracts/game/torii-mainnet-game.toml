@@ -1,0 +1,62 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/starknet/mainnet"
+
+world_address = "0x5c6d0020a9927edca9ddc984b97305439c0b32a1ec8d3f0eaf6291074cc9799"
+
+db_dir = "torii-mainnet"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = [
+	"erc721:0x60e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",
+	"erc721:0x7ad410c472c1d61ce318dd617a479c977c85275afbf7991a1e1461ffe626a3d",
+	"erc721:0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7", # DARK_SHUFFLE
+]
+
+namespaces = ["s1_eternum", "ds_v1_2_0"]
+
+world_block = 0
+
+[erc]
+max_metadata_tasks = 10
+
+[sql]
+all_model_indices = false
+# TODO(tedison): do another pass through the queries when composite indices are supported
+model_indices = [
+	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
+	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner", "coord.x", "coord.y"]},
+	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.has_wonder", "metadata.villages_count", "metadata.realm_id", "owner"]},
+	{ model_tag = "s1_eternum-Tile", fields = ["col", "row"] },
+	{ model_tag = "s1_eternum-StructureVillageSlots", fields = ["connected_realm_id"] },
+]
+hooks = [
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_tokens_contract_address] ON tokens (contract_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_to_address] ON token_transfers (to_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_from_address] ON token_transfers (from_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_token_id] ON token_transfers (token_id)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_contract_address_to_address] ON token_transfers (contract_address, to_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-WorldConfig" } }, statement = "CREATE INDEX [idx_token_transfers_contract_address_token_id_from_address] ON token_transfers (contract_address, token_id, from_address)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-Tile" } }, statement = "CREATE INDEX [idx_col_row_s1_eternum-Tile] ON [s1_eternum-Tile] (col, row)" },
+	{ event = { ModelRegistered = { model_tag = "s1_eternum-Structure" } }, statement = "CREATE INDEX [idx_x_y_s1_eternum-Structure] ON [s1_eternum-Structure] ([base.coord_x], [base.coord_y])" },
+]
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

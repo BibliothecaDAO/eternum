@@ -1,9 +1,9 @@
 import {
   BiomeType,
   BuildingType,
-  ContractAddress,
   HexPosition,
   ID,
+  ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
@@ -44,6 +44,11 @@ export type BuildingSystemUpdate = {
   paused: boolean;
 };
 
+export type ExplorerRewardSystemUpdate = {
+  explorerId: ID;
+  resourceId: ResourcesIds;
+  amount: number;
+};
 export type RealmSystemUpdate = {
   level: number;
   hexCoords: HexPosition;
@@ -51,12 +56,6 @@ export type RealmSystemUpdate = {
 
 export type QuestSystemUpdate = {
   entityId: ID;
-  id: ID;
-  game_address: ContractAddress;
+  occupierId: ID;
   hexCoords: HexPosition;
-  level: number;
-  resource_type: number;
-  amount: bigint;
-  capacity: number;
-  participant_count: number;
 };

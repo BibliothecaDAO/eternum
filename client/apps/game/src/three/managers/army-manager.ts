@@ -4,14 +4,14 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
+import { COLORS } from "@/ui/components/settlement/settlement-constants";
+import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
-import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { FXManager } from "./fx-manager";
 
@@ -169,16 +169,6 @@ export class ArmyManager {
     this.renderVisibleArmies(chunkKey);
   }
 
-  private getModelTypeForBiome(biome: BiomeType, troopType: TroopType, troopTier: TroopTier): ModelType {
-    // For water biomes, always return boat model regardless of troop type
-    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      return ModelType.Boat;
-    }
-
-    // For land biomes, return the appropriate model based on troop type and tier
-    return TROOP_TO_MODEL[troopType][troopTier];
-  }
-
   private renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
@@ -191,8 +181,12 @@ export class ArmyManager {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      const modelType = this.getModelTypeForBiome(biome, army.category, army.tier);
+      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
       this.armyModel.assignModelToEntity(army.entityId, modelType);
+
+      if (army.isDaydreamsAgent) {
+        this.armyModel.setIsAgent(true);
+      }
 
       const rotationSeed = hashCoordinates(x, y);
       const rotationIndex = Math.floor(rotationSeed * 6);
@@ -283,23 +277,29 @@ export class ArmyManager {
 
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.getModelTypeForBiome(biome, category, tier);
+    const modelType = this.armyModel.getModelTypeForEntity(entityId, category, tier, biome);
     this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);
+    const isMine = isAddressEqualToAccount(owner.address);
     this.armies.set(entityId, {
       entityId,
       matrixIndex: this.armies.size - 1,
       hexCoords,
-      isMine: isAddressEqualToAccount(owner.address),
+      isMine,
       owner,
-      color: orderData?.color || "#000000",
+      color: this.getColorForArmy({ isMine, isDaydreamsAgent }),
       order: orderData?.orderName || "",
       category,
       tier,
       isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
+  }
+
+  public getColorForArmy(army: { isMine: boolean; isDaydreamsAgent: boolean }) {
+    if (army.isDaydreamsAgent) return COLORS.SELECTED;
+    return army.isMine ? COLORS.MINE : COLORS.SETTLED;
   }
 
   public moveArmy(
@@ -318,7 +318,7 @@ export class ArmyManager {
     if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
-    const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin);
+    const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
     const maxHex = Math.floor(Number(maxTroopStamina) / configManager.getMinTravelStaminaCost());
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
@@ -438,7 +438,12 @@ export class ArmyManager {
     line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
     line1.style.color = army.isDaydreamsAgent ? "inherit" : army.color;
     const line2 = document.createElement("strong");
-    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+
+    if (army.isDaydreamsAgent) {
+      line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
+    } else {
+      line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+    }
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);

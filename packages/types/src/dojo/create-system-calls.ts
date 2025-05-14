@@ -336,6 +336,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.transfer_agent_ownership(props);
   };
 
+  const structure_burn = async (props: SystemProps.StructureBurnProps) => {
+    return await provider.structure_burn(props);
+  };
+
+  const troop_burn = async (props: SystemProps.TroopBurnProps) => {
+    return await provider.troop_burn(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -424,6 +432,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
     transfer_agent_ownership: withAuth(transfer_agent_ownership),
+    structure_burn: withAuth(structure_burn),
+    troop_burn: withAuth(troop_burn),
   };
 
   return systemCalls;

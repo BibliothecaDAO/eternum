@@ -29,14 +29,17 @@ export const getTilesFromToriiClient = async (
   };
 
   const response = await toriiClient.getEntities(tileQuery);
-  return response && response.items
-    ? (response.items
-        .map((item) => {
-          if (item.models && item.models["s1_eternum-Tile"]) {
-            return getTileFromToriiEntity(item.models["s1_eternum-Tile"]);
-          }
-          return null;
-        })
-        .filter((tile) => tile !== null) as ComponentValue<ClientComponents["Tile"]["schema"]>[])
-    : [];
+
+  if (!response?.items) {
+    return [];
+  }
+
+  return response.items
+    .map((item) => {
+      if (!item?.models || !item.models["s1_eternum-Tile"]) {
+        return null;
+      }
+      return getTileFromToriiEntity(item.models["s1_eternum-Tile"]);
+    })
+    .filter((tile): tile is NonNullable<typeof tile> => tile !== null);
 };

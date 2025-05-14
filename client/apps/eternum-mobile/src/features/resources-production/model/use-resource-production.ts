@@ -1,6 +1,6 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { divideByPrecision, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { divideByPrecision, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useMemo } from "react";
 import { useProduction } from "./use-production";
@@ -17,7 +17,9 @@ export const useResourceProduction = (resourceId: number) => {
   }, [resourceManager, resourceId]);
 
   const productionStatus = useMemo(() => {
-    const production = resourceManager.getProduction(resourceId);
+    const resource = resourceManager.getResource();
+    if (!resource) return null;
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     return {
       isActive: production?.building_count! > 0,
       amount: production?.output_amount_left ? divideByPrecision(Number(production.output_amount_left)) : 0,

@@ -69,9 +69,8 @@ export const MarketContent = () => {
 
   const structureLordsBalance = useMemo(
     () =>
-      Number(
-        structureResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords),
-      ),
+      structureResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)
+        .balance,
     [structureResourceManager],
   );
 

@@ -1,5 +1,5 @@
 import { dir, soundSelector } from "@/hooks/helpers/use-ui-sound";
-import { BuildingType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
 export const playSound = (sound: string, hasSound: boolean, volume: number) => {
   const audio = new Audio(dir + sound);
@@ -57,6 +57,41 @@ export const playBuildingSound = (buildingType: BuildingType | undefined, hasSou
     buildingType === undefined
       ? soundSelector.buildCastle
       : (buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine);
+
+  playSound(soundFile, hasSound, volume);
+};
+
+export const playResourceSound = (resourceId: ResourcesIds | undefined, hasSound: boolean, volume: number) => {
+  const resourceSounds: Partial<Record<ResourcesIds, string>> = {
+    [ResourcesIds.Wheat]: soundSelector.addWheat,
+    [ResourcesIds.Fish]: soundSelector.addFish,
+    [ResourcesIds.Wood]: soundSelector.addWood,
+    [ResourcesIds.Stone]: soundSelector.addStone,
+    [ResourcesIds.Coal]: soundSelector.addCoal,
+    [ResourcesIds.Copper]: soundSelector.addCopper,
+    [ResourcesIds.Obsidian]: soundSelector.addObsidian,
+    [ResourcesIds.Silver]: soundSelector.addSilver,
+    [ResourcesIds.Ironwood]: soundSelector.addIronwood,
+    [ResourcesIds.ColdIron]: soundSelector.addColdIron,
+    [ResourcesIds.Gold]: soundSelector.addGold,
+    [ResourcesIds.Hartwood]: soundSelector.addHartwood,
+    [ResourcesIds.Diamonds]: soundSelector.addDiamonds,
+    [ResourcesIds.Sapphire]: soundSelector.addSapphire,
+    [ResourcesIds.Ruby]: soundSelector.addRuby,
+    [ResourcesIds.DeepCrystal]: soundSelector.addDeepCrystal,
+    [ResourcesIds.Ignium]: soundSelector.addIgnium,
+    [ResourcesIds.EtherealSilica]: soundSelector.addEtherealSilica,
+    [ResourcesIds.TrueIce]: soundSelector.addTrueIce,
+    [ResourcesIds.TwilightQuartz]: soundSelector.addTwilightQuartz,
+    [ResourcesIds.AlchemicalSilver]: soundSelector.addAlchemicalSilver,
+    [ResourcesIds.Adamantine]: soundSelector.addAdamantine,
+    [ResourcesIds.Mithral]: soundSelector.addMithral,
+    [ResourcesIds.Dragonhide]: soundSelector.addDragonhide,
+    [ResourcesIds.Lords]: soundSelector.addLords,
+  };
+
+  const soundFile =
+    resourceId === undefined ? soundSelector.click : (resourceSounds[resourceId] ?? soundSelector.click);
 
   playSound(soundFile, hasSound, volume);
 };

@@ -1,27 +1,41 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   Biome,
   computeExploreFoodCosts,
   configManager,
-  getFood,
+  divideByPrecision,
   getRemainingCapacityInKg,
+  ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, getNeighborHexes, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-  resource: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  explorerResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  structureResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
 }
 
-export const ArmyWarning = ({ army, resource }: ArmyWarningProps) => {
-  const dojo = useDojo();
-  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
-  const food = getFood(resource, getBlockTimestamp().currentDefaultTick);
+export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
+  const food = useMemo(() => {
+    // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
+    const { balance: wheat } = ResourceManager.balanceWithProduction(
+      structureResources,
+      getBlockTimestamp().currentDefaultTick,
+      ResourcesIds.Wheat,
+    );
+    const { balance: fish } = ResourceManager.balanceWithProduction(
+      structureResources,
+      getBlockTimestamp().currentDefaultTick,
+      ResourcesIds.Fish,
+    );
+    return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
+  }, [structureResources, army.owner]);
 
   const exploreFoodCosts = useMemo(
     () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),
@@ -35,10 +49,11 @@ export const ArmyWarning = ({ army, resource }: ArmyWarningProps) => {
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
+  const { currentArmiesTick } = useBlockTimestamp();
+
   const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(dojo.setup.components, army.explorer_id);
-    return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
-  }, [army]);
+    return StaminaManager.getStamina(army.troops, currentArmiesTick);
+  }, [army, currentArmiesTick]);
 
   const minStaminaNeeded = useMemo(() => {
     const neighbors = getNeighborHexes(army.coord.x, army.coord.y);

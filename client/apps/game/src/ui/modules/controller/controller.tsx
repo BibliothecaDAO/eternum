@@ -47,7 +47,7 @@ export const Controller = () => {
 
   return account ? (
     <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
-      {userName}
+      {userName && userName.length > 8 ? `${userName.substring(0, 8)}...` : userName}
     </Button>
   ) : (
     <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>

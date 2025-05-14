@@ -105,6 +105,7 @@ export default class HexceptionScene extends HexagonScene {
     Map<BUILDINGS_CATEGORIES_TYPES, { model: THREE.Group; animations: THREE.AnimationClip[] }>
   > = new Map();
   private buildingInstances: Map<string, THREE.Group> = new Map();
+  private wonderInstances: Map<string, THREE.Group> = new Map();
   private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
@@ -266,6 +267,15 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
     });
     this.buildingInstances.clear();
+
+    // remove all previous wonder instances
+    this.wonderInstances.forEach((instance) => {
+      this.scene.remove(instance);
+    });
+    this.wonderInstances.clear();
+
+    // clear all animation mixers
+    this.buildingMixers.clear();
 
     // subscribe to buiding updates (create and destroy)
     this.systemManager.Buildings.onUpdate(
@@ -447,7 +457,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateCastleLevel() {
     const structureType = this.tileManager.structureType();
-    if (structureType === StructureType.Realm) {
+    if (structureType === StructureType.Realm || structureType === StructureType.Village) {
       this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
       this.structureStage = this.systemManager.getStructureStage(
@@ -459,6 +469,7 @@ export default class HexceptionScene extends HexagonScene {
 
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
+    const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
     const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
       None: [],
@@ -526,12 +537,13 @@ export default class HexceptionScene extends HexagonScene {
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
 
-          // Store original building group and type for potential wonder addition
-          const originalBuildingGroup = buildingGroup;
-          const originalBuildingType = buildingType;
-
-          // Check if the realm has a wonder
-          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
+          if (mainStructureType === StructureType.Village) {
+            // Only apply Village model to the central building (castle position)
+            if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
+              buildingGroup = BUILDINGS_GROUPS.VILLAGE;
+              buildingType = StructureType.Village;
+            }
+          }
 
           // Handle hyperstructure type
           if (building.structureType === StructureType.Hyperstructure) {
@@ -539,8 +551,21 @@ export default class HexceptionScene extends HexagonScene {
             buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
 
+          // Store original building group and type for potential wonder addition
+          const originalBuildingGroup = buildingGroup;
+          const originalBuildingType = buildingType;
+
+          // Check if the realm has a wonder
+          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
+
           // If the realm has a wonder and it's not a hyperstructure, we'll add both models
-          if (hasWonder && building.structureType !== StructureType.Hyperstructure) {
+          // But only for the central building (castle) at BUILDINGS_CENTER coordinates
+          if (
+            hasWonder &&
+            building.structureType !== StructureType.Hyperstructure &&
+            building.col === BUILDINGS_CENTER[0] &&
+            building.row === BUILDINGS_CENTER[1]
+          ) {
             // First, create the wonder model
             const wonderGroup = BUILDINGS_GROUPS.WONDER;
             const wonderType = WONDER_REALM;
@@ -558,6 +583,8 @@ export default class HexceptionScene extends HexagonScene {
 
               // Add wonder instance to scene
               this.scene.add(wonderInstance);
+              // Store the wonder instance for later removal
+              this.wonderInstances.set(`${key}_wonder`, wonderInstance);
 
               // Animate scale using gsap
               gsap.to(wonderInstance.scale, {
@@ -670,7 +697,7 @@ export default class HexceptionScene extends HexagonScene {
       }
       this.pillars!.instanceMatrix.needsUpdate = true;
       this.pillars!.instanceColor!.needsUpdate = true;
-      this.interactiveHexManager.renderHexes();
+      this.interactiveHexManager.renderAllHexes();
     });
   }
 
@@ -698,6 +725,18 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
       this.buildingInstances.delete(key);
     }
+
+    // Also remove any associated wonder instance
+    const wonderKey = `${key}_wonder`;
+    const wonderInstance = this.wonderInstances.get(wonderKey);
+    if (wonderInstance) {
+      this.scene.remove(wonderInstance);
+      this.wonderInstances.delete(wonderKey);
+    }
+
+    // Remove any mixers
+    this.buildingMixers.delete(key);
+    this.buildingMixers.delete(wonderKey);
   }
 
   computeHexMatrices = (
@@ -828,6 +867,18 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(instance);
       this.buildingInstances.delete(key);
     }
+
+    // Also remove any associated wonder instance
+    const wonderKey = `${key}_wonder`;
+    const wonderInstance = this.wonderInstances.get(wonderKey);
+    if (wonderInstance) {
+      this.scene.remove(wonderInstance);
+      this.wonderInstances.delete(wonderKey);
+    }
+
+    // Remove any mixers
+    this.buildingMixers.delete(key);
+    this.buildingMixers.delete(wonderKey);
   }
 
   update(deltaTime: number) {

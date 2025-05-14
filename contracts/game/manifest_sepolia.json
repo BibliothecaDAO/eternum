@@ -1313,7 +1313,7 @@
   "contracts": [
     {
       "address": "0x56862c119cca2c85d93c37582032a26eac4ebddedaefd1bfee943fe521f2a71",
-      "class_hash": "0x72375d059bae3095ca46ad9803000a8c6334e37d418767e5eace56497c2dfc7",
+      "class_hash": "0x51a22d180dc6517216ce112c965fe2c01f6cbbc8cacfc72630ced3e66c627fe",
       "abi": [
         {
           "type": "impl",
@@ -1770,7 +1770,7 @@
     },
     {
       "address": "0x1a886fdf22e5da5335384677e6c45fa8d4f0cc045542b7ab27f5a26afb87ebb",
-      "class_hash": "0xcbc96428fcdad3e21e9d54c281de9114581c8e9932f8d4c5dbc9b82b936c55",
+      "class_hash": "0x469a2b7f3d3b560bb7604aecf3a540d7eeeff90e5685a2926dfc66aa36edc19",
       "abi": [
         {
           "type": "impl",
@@ -5131,7 +5131,7 @@
     },
     {
       "address": "0x73dfbb912ebbcd5634beebef86775c6ed66795e3bf6b68a035a8d3109aa6922",
-      "class_hash": "0x6fbb38cef6cfc49c485fe06957c7f3eda52c6f0a7fa5a4bd787b985d484c83",
+      "class_hash": "0x11a2c872fc18b1f4e60d2341649b337e570c6aa60d45b726c52d895b6c38bf4",
       "abi": [
         {
           "type": "impl",
@@ -6145,7 +6145,7 @@
     },
     {
       "address": "0x5c9e123546195734708f69d9a70abde8596bd3730d4a4c215fcb069b14d1aee",
-      "class_hash": "0x2f055b324533e041a05bb1b53c7feca489147a72fb0f94e1fc441b1211bfec",
+      "class_hash": "0x66b7e706ebad94c4b19f6b1fdae7bb281f631885698b3329c6682dcdfdc6965",
       "abi": [
         {
           "type": "impl",
@@ -8197,7 +8197,7 @@
     },
     {
       "address": "0x1c83d00a25ead744886a577512bceddfddcdaa0a9e573ece2a74c6adfbb9aa6",
-      "class_hash": "0x119e6f503cd3b4967400da0360e39e7cb185cb863f8934e0f303a4b2b7b9ea6",
+      "class_hash": "0x539e0b16f91429f4f4062337b138df4d680486da8f87f3f88f101fcfadb81e3",
       "abi": [
         {
           "type": "impl",
@@ -8957,7 +8957,7 @@
     },
     {
       "address": "0xebc386d5a2b76188512987b037eba74053e646da9dcec72a27d296daf17b99",
-      "class_hash": "0x39550ae29bb7a2d432f3ead56e683fb4dc039802d66260c9c17dcbee06a39b7",
+      "class_hash": "0x3629dd6b4df1fb13a15b56d298b906e88995ed3899a2d342f37e6fe7cd8479a",
       "abi": [
         {
           "type": "impl",
@@ -9187,6 +9187,22 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "structure_burn",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
             }
           ]
         },
@@ -9317,6 +9333,7 @@
         "troop_structure_adjacent_transfer",
         "structure_troop_adjacent_transfer",
         "troop_burn",
+        "structure_burn",
         "upgrade"
       ]
     },
@@ -11774,7 +11791,7 @@
     },
     {
       "address": "0x59cb89f05e7baad61b68c46ec73c9c73e91855933bc5d6b932f75faf49fc20",
-      "class_hash": "0x2f7833b975a6b7b7fb52a77ff87c26d1c926ba817d65820ca3a20e79c4b0e4",
+      "class_hash": "0x12975edb6cc989c08f14cb4e145f3e2ef5de92a8eb6d10d4f687c4b09c9bed3",
       "abi": [
         {
           "type": "impl",
@@ -12026,7 +12043,7 @@
     },
     {
       "address": "0x2961c87e5b85c15a7f09b7c981af1fdfe92d6b6cea377abb29f8c3f0c18b3",
-      "class_hash": "0x1bb8518122e5d1633ccba4a61ca57f0fab92265b45dac7015faf91e7c8609b3",
+      "class_hash": "0x4c5e18ea3aa122f99f444c4ba24baa8d5101ac12b86b79e78c69b2e1fd66895",
       "abi": [
         {
           "type": "impl",

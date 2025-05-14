@@ -44,6 +44,8 @@ interface SeasonPassButtonProps {
 export const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://next-empire.realms.world/";
 
+const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
+
 export const StepContainer = ({
   children,
   bottomChildren,
@@ -219,6 +221,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
 
   const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
+  const [showVillagePassButton, setShowVillagePassButton] = useState<boolean>(true);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -285,6 +288,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
                 </div>
               </Button>
             </a>
+
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}

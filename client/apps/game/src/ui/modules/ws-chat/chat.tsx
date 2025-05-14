@@ -9,6 +9,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
 import {
+  chatLogger,
   useConnectionEvents,
   useDirectMessageEvents,
   useGlobalMessageEvents,
@@ -70,18 +71,18 @@ function ChatModule() {
       };
 
       if (socketAuth.token === userToken && socketAuth.username === username) {
-        console.log("Reusing existing chat client");
+        chatLogger.log("Reusing existing chat client");
         return chatClientRef.current;
       }
     }
 
     // Cleanup any existing socket connection
     if (chatClientRef.current) {
-      console.log("Disconnecting previous chat client");
+      chatLogger.log("Disconnecting previous chat client");
       chatClientRef.current.socket.disconnect();
     }
 
-    console.log("Initializing new chat client for", username);
+    chatLogger.log("Initializing new chat client for", username);
     const newClient = new ChatClient(userToken, username);
     chatClientRef.current = newClient;
     return newClient;
@@ -122,8 +123,6 @@ function ChatModule() {
 
   // Scroll helper function for consistency
   const scrollToBottom = useCallback(() => {
-    console.log("Scrolling to bottom");
-
     // First attempt at immediate scroll
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -174,11 +173,8 @@ function ChatModule() {
   // Add a message to the state with optimistic update for better UX
   const addMessage = useCallback(
     (message: Message) => {
-      console.log("Adding message:", message);
       // Force a new array reference to ensure React detects the change
       setMessages((prevMessages) => {
-        console.log("Previous message count:", prevMessages.length);
-
         // Check for duplicates based on content, sender, type and timestamp proximity
         const isDuplicate = prevMessages.some(
           (existing) =>
@@ -192,12 +188,12 @@ function ChatModule() {
         );
 
         if (isDuplicate) {
-          console.log("Duplicate message detected, not adding:", message);
+          chatLogger.log("Duplicate message detected, not adding:", message);
           return prevMessages; // Return unchanged array
         }
 
         const newMessages = [...prevMessages, message];
-        console.log("New message count:", newMessages.length);
+        chatLogger.log("New message count:", newMessages.length);
         return newMessages;
       });
 
@@ -224,7 +220,7 @@ function ChatModule() {
 
   useEffect(() => {
     if (chatClient && directMessageRecipientId) {
-      console.log(`Requesting direct message history with ${directMessageRecipientId}`);
+      chatLogger.log(`Requesting direct message history with ${directMessageRecipientId}`);
 
       // Use requestAnimationFrame to ensure UI updates before sending socket request
       window.requestAnimationFrame(() => {
@@ -363,7 +359,7 @@ function ChatModule() {
   useEffect(() => {
     const initTimer = setTimeout(() => {
       if (chatClient?.socket.connected) {
-        console.log("Requesting initial data");
+        chatLogger.log("Requesting initial data");
         // No need to request data separately - server will send everything on connection
       }
     }, 500);
@@ -371,14 +367,14 @@ function ChatModule() {
     // Set up an interval to periodically request online users and rooms
     const updateInterval = setInterval(() => {
       if (chatClient?.socket.connected) {
-        console.log("Refreshing user and room data");
+        chatLogger.log("Refreshing user and room data");
         chatClient.getAllUsers();
         chatClient.getRooms();
       }
     }, 30000);
 
     return () => {
-      console.log("Cleaning up chat client");
+      chatLogger.log("Cleaning up chat client");
       // Clear timers first
       clearTimeout(initTimer);
       clearInterval(updateInterval);
@@ -397,7 +393,7 @@ function ChatModule() {
     if (chatClient && chatClient.socket && chatClient.socket.connected && availableRooms.length > 0) {
       availableRooms.forEach((room) => {
         if (!joinedRoomsRef.current.has(room.id)) {
-          console.log(`Auto-joining room for notifications: ${room.id}`);
+          chatLogger.log(`Auto-joining room for notifications: ${room.id}`);
           chatClient.joinRoom(room.id);
           joinedRoomsRef.current.add(room.id);
         }
@@ -415,7 +411,7 @@ function ChatModule() {
     e.preventDefault();
     if (!newRoomId.trim() || !chatClient) return;
 
-    console.log(`Joining room from form: ${newRoomId}`);
+    chatLogger.log(`Joining room from form: ${newRoomId}`);
     chatActions.selectRoom(newRoomId);
 
     // Clear unread messages for this new room
@@ -429,7 +425,7 @@ function ChatModule() {
 
     // Request room history after joining
     setTimeout(() => {
-      console.log(`Requesting room history for ${newRoomId} after join`);
+      chatLogger.log(`Requesting room history for ${newRoomId} after join`);
       chatClient.getRoomHistory(newRoomId);
     }, 100);
 
@@ -453,7 +449,7 @@ function ChatModule() {
 
     // Request room history after joining
     setTimeout(() => {
-      console.log(`Requesting room history for ${roomId} after join`);
+      chatLogger.log(`Requesting room history for ${roomId} after join`);
       chatClient.getRoomHistory(roomId);
     }, 100);
   };
@@ -751,7 +747,7 @@ function ChatModule() {
                       </div>
                       <ul className="">
                         {filteredUsers
-                          .filter((user) => user.id !== userId)
+                          .filter((user) => user && user.id !== userId)
                           .map((user) => (
                             <li
                               key={user.id}

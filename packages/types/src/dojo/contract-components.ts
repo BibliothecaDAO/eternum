@@ -1331,6 +1331,14 @@ export function defineContractComponents(world: World) {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
           },
+          wonder_production_bonus_config: {
+            within_tile_distance: RecsType.Number,
+            bonus_percent_num: RecsType.BigInt,
+          },
+          quest_config: {
+            quest_discovery_prob: RecsType.Number,
+            quest_discovery_fail_prob: RecsType.Number,
+          },
           structure_capacity_config: {
             realm_capacity: RecsType.BigInt,
             village_capacity: RecsType.BigInt,
@@ -1442,6 +1450,10 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
+              "u8", // WonderProductionBonusConfig within_tile_distance
+              "u128", // WonderProductionBonusConfig bonus_percent_num
+              "u16", // QuestConfig quest_discovery_prob
+              "u16", // QuestConfig quest_discovery_fail_prob
               "u64", // StructureCapacityConfig realm_structure_capacity
               "u64", // StructureCapacityConfig village_structure_capacity
               "u64", // StructureCapacityConfig hyperstructure_structure_capacity
@@ -1512,45 +1524,6 @@ const eventsComponents = (world: World) => {
               namespace: "s1_eternum",
               name: "BurnDonkey",
               types: ["ContractAddress", "u32", "u128", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      CreateGuild: (() => {
-        return defineComponent(
-          world,
-          {
-            guild_entity_id: RecsType.Number,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "CreateGuild",
-              types: ["u32", "felt252", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      JoinGuild: (() => {
-        return defineComponent(
-          world,
-          {
-            guild_entity_id: RecsType.Number,
-            address: RecsType.BigInt,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "JoinGuild",
-              types: ["u32", "ContractAddress", "felt252", "u64"],
               customTypes: [],
             },
           },
@@ -1656,6 +1629,7 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
       ExplorerRaidEvent: (() => {
         return defineComponent(
           world,
@@ -1670,6 +1644,29 @@ const eventsComponents = (world: World) => {
               namespace: "s1_eternum",
               name: "ExplorerRaidEvent",
               types: ["u32", "u32", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      ExplorerMoveEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            explorer_structure_id: RecsType.Number,
+            explorer_owner_address: RecsType.String,
+            explore_find: RecsType.Number,
+            reward_resource_type: RecsType.Number,
+            reward_resource_amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "ExplorerMoveEvent",
+              types: ["u32", "u32", "ContractAddress", "ExploreFind", "u8", "u128", "u64"],
               customTypes: [],
             },
           },

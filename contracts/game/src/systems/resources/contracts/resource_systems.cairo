@@ -16,6 +16,8 @@ pub trait IResourceSystems<T> {
         ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
     );
     fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
+    fn structure_burn(ref self: T, structure_id: ID, resources: Span<(u8, u128)>);
+    fn structure_regularize_weight(ref self: T, structure_ids: Array<ID>);
 }
 
 #[dojo::contract]
@@ -23,6 +25,7 @@ pub mod resource_systems {
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
 
@@ -59,6 +62,16 @@ pub mod resource_systems {
         timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplicitResourceBurn {
+        #[key]
+        pub entity_id: ID,
+        #[key]
+        pub entity_owner_id: ID,
+        pub resources: Span<(u8, u128)>,
+        pub timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
@@ -358,8 +371,50 @@ pub mod resource_systems {
             // burn resources
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
             iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
+
+            world
+                .emit_event(
+                    @ExplicitResourceBurn {
+                        entity_id: explorer_id,
+                        entity_owner_id: explorer.owner,
+                        resources: resources,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
+        fn structure_burn(ref self: ContractState, structure_id: ID, resources: Span<(u8, u128)>) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            // ensure structure is owned by caller
+            assert!(structure_id.is_non_zero(), "structure_id does not exist");
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            structure_owner.assert_caller_owner();
+
+            // burn resources
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            iResourceTransferImpl::structure_burn_instant(ref world, structure_id, ref structure_weight, resources);
+
+            world
+                .emit_event(
+                    @ExplicitResourceBurn {
+                        entity_id: structure_id,
+                        entity_owner_id: 0,
+                        resources: resources,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+        }
+
+        fn structure_regularize_weight(ref self: ContractState, structure_ids: Array<ID>) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
+
+            assert!(structure_ids.len() != 0, "structure_ids is empty");
+            // regularize weight
+            iResourceTransferImpl::structure_weight_regularize(ref world, structure_ids);
+        }
 
         fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
             let mut world = self.world(DEFAULT_NS());

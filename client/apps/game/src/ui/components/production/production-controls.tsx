@@ -3,7 +3,15 @@ import { useState } from "react";
 import { LaborProductionControls } from "./labor-production-controls";
 import { ResourceProductionControls } from "./resource-production-controls";
 
-export const ProductionControls = ({ selectedResource, realm }: { selectedResource: number; realm: RealmInfo }) => {
+export const ProductionControls = ({
+  selectedResource,
+  realm,
+  bonus,
+}: {
+  selectedResource: number;
+  realm: RealmInfo;
+  bonus: number;
+}) => {
   const isLaborMode = selectedResource === ResourcesIds.Labor;
 
   const [useRawResources, setUseRawResources] = useState(true);
@@ -11,7 +19,7 @@ export const ProductionControls = ({ selectedResource, realm }: { selectedResour
   const [ticks, setTicks] = useState<number | undefined>();
 
   if (isLaborMode) {
-    return <LaborProductionControls realm={realm} />;
+    return <LaborProductionControls realm={realm} bonus={bonus} />;
   }
 
   return (
@@ -24,6 +32,7 @@ export const ProductionControls = ({ selectedResource, realm }: { selectedResour
       realm={realm}
       ticks={ticks}
       setTicks={setTicks}
+      bonus={bonus}
     />
   );
 };

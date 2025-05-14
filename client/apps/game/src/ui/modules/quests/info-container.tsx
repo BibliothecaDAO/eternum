@@ -2,7 +2,8 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { BuildingThumbs } from "@/ui/config";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { ClientComponents } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 const formatAmount = (amount: number) => {
@@ -12,16 +13,18 @@ const formatAmount = (amount: number) => {
   }).format(amount);
 };
 
-export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number } }) => {
+export const InfoContainer = ({
+  questTileEntity,
+}: {
+  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
+}) => {
   const {
     setup: {
-      components: { QuestTile, QuestLevels, Tile },
+      components: { QuestLevels },
     },
   } = useDojo();
   const { minigames, settingsMetadata } = useMinigameStore();
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
   const questLevelsEntity = getComponentValue(
     QuestLevels,
     getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
@@ -36,41 +39,54 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
     return remainingQuestCapacity <= 0;
   }, [remainingQuestCapacity]);
 
-  const miniGameInfo = minigames?.find((game) => game.contract_address === questLevelsEntity?.game_address);
+  const gameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
+
+  const miniGameInfo = minigames?.find((game) => game.contract_address === gameAddress);
 
   return (
     <div className="flex flex-col gap-5 items-center border border-gold/20 rounded-lg p-5 h-full w-3/4 mx-auto">
-      <div className="flex flex-row items-center justify-center gap-2 relative">
+      <div className="flex flex-col gap-2 items-center w-full pt-2">
+        <div className="flex flex-col items-center gap-2 border panel-wood py-2 px-5">
+          <div className="flex flex-col items-center">
+            <span className="font-bold">Game</span>
+            <span className="text-sm">{miniGameInfo?.name}</span>
+          </div>
+          <div className="border-t border-gold/40 w-32" />
+          <div className="flex flex-col items-center">
+            <span className="font-bold">Developer</span>
+            <span className="text-sm">{miniGameInfo?.developer}</span>
+          </div>
+          <div className="border-t border-gold/40 w-32" />
+          <div className="flex flex-col items-center">
+            <span className="font-bold">Description</span>
+            <span className="text-sm text-center">{miniGameInfo?.description}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-row items-center justify-center gap-2 relative border-t border-gold/20 pt-5 w-full">
         <span className="font-bold uppercase">Remaining Quests ON TILE:</span>
         <span className={`text-2xl font-bold ${remainingQuestCapacity < 100 ? "text-red" : "text-green"}`}>
           {fullCapacity ? "AT CAPACITY" : remainingQuestCapacity}
         </span>
       </div>
-      <div className="flex flex-col gap-2 items-center w-4/5 border-t border-gold/20 pt-5">
-        <div className="flex flex-col items-center">
-          <span className="font-bold">Game</span>
-          <span className="text-sm">{miniGameInfo?.name}</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="font-bold">Publisher</span>
-          <span className="text-sm">{miniGameInfo?.publisher}</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="font-bold">Description</span> <span className="text-sm">{miniGameInfo?.description}</span>
-        </div>
-      </div>
-      <div className="flex flex-col items-center w-4/5 border-t border-gold/20 pt-5">
-        <div className="font-bold">Available Levels</div>
-        <div className="flex flex-row gap-5 p-2 w-full overflow-x-auto">
+      <div className="flex flex-col gap-2 items-center w-full border-t border-gold/20 pt-5">
+        <div className="font-bold uppercase">Available Levels</div>
+        <div className="flex flex-row gap-5 p-5 w-full overflow-x-auto border border-gold/50 rounded-lg">
           {questLevels.map((level: any, i: number) => {
             const timeLimit = level?.value?.time_limit?.value;
             const targetScore = level?.value?.target_score?.value;
             const settingsId = level?.value?.settings_id?.value;
-            const settingName = settingsMetadata
+            const settingsMetadataForGame = settingsMetadata?.[gameAddress];
+
+            const settingName = settingsMetadataForGame
               ?.find((setting) => setting.settings_id === settingsId)
               ?.name.split("Eternum Quest -")[1];
+
             return (
-              <div className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
+              <div
+                className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0"
+                key={i}
+              >
                 <div className="flex flex-row items-center justify-between text-sm w-full px-2">
                   <span className="font-bold">{settingName}</span>
                   <div

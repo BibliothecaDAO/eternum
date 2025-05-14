@@ -35,20 +35,7 @@ export default defineConfig({
         orientation: "landscape",
         scope: "/",
         start_url: "/",
-        icons: [
-          {
-            src: "/images/pwa-64x64.png",
-            sizes: "64x64",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/images/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-        ],
+        icons: [],
       },
     }),
   ],

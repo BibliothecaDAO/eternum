@@ -672,6 +672,465 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
+file: docs/pages/mechanics/achievements.mdx
+meta: {}
+
+# Achievements & Quests
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/agents.mdx
+meta: {}
+
+# Agents
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Eternum"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
+
+This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
+
+## Realms
+
+* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
+  freely mint a Season Pass.
+* **Settling**: Players must burn a Season Pass to settle their Realm in the game world.
+* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
+* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
+  buildable hexes and defensive army slots.
+* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
+* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
+  tile radius.
+* **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
+  to the conqueror.
+
+## Villages
+
+* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
+  players
+* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
+* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
+* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
+  game
+* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
+  troops from any other source
+* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
+* **Casual Gameplay**: Villages can be raided, but can’t be claimed by other players.
+
+## Materials
+
+* **Materials Categories**:
+  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
+  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
+  * **Troops**: Units with unique properties that can be assigned to armies.
+  * **Donkeys**: Required for moving materials around the world, essential for logistics.
+  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
+    resources.
+  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
+* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
+  Realms.
+
+## Buildings
+
+* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
+  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
+  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  and Villages are upgraded.
+
+## Production
+
+* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
+  labor) mode.
+* **Production Types**:
+  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
+  * **Resources**: Require combinations of other resources (standard) or labor (simple).
+  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
+  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+
+## World Map
+
+* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
+  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
+* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
+  movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
+  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
+  exploring armies may discover resources or encounter world structures and agent armies.
+
+## Military
+
+<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
+
+* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
+* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
+* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Deployed to defense slots to protect structures.
+* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
+  * Success depends on the raiding army's damage relative to the combined guard armies.
+  * Undefended structures can be raided without casualties.
+
+## Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Victory Conditions
+
+Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
+construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
+recognition and rewards for various actions within the Season.
+
+
+
+---
+
+file: docs/pages/mechanics/prize-pool.mdx
+meta: {}
+
+import { table } from "@/components/styles";
+
+# 💰 Prize Pool
+
+## Overview
+
+In Season 1 of Eternum, there are four prize categories with a total of:
+
+* 1,000,000 $LORDS tokens
+* 100,000 $STRK tokens
+
+> **Note:** All Season 1 prizes will be distributed manually by the development team (except for the agent rewards which
+> are collected directly in-game). Future seasons will implement automated distribution through game contracts, aligning
+> with decentralized gaming principles.
+
+## Prize Categories
+
+### 1. Victory Prizes
+
+**Total: 300,000 $LORDS + 50,000 $STRK**
+
+These prizes are awarded to top-performing tribes based on victory points. Additionally, 2.5% of all $LORDS bridging
+volume is collected as a fee and added to the prize pool, further increasing the total rewards available.
+
+#### How to Earn Victory Points
+
+Players can earn victory points by:
+
+* Contributing resources and labor to hyperstructure construction
+* Holding shares in completed hyperstructures to accumulate emitted victory points
+
+#### Distribution
+
+Once a player triggers the end of the game (or the game contract breaks), a snapshot of tribes, their members, and the
+victory point leaderboard is taken. Tribes will then be ranked by the cumulative number of victory points of their
+players. The top 10 tribes receive prizes based on this allocation:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Rank</th>
+          <th style={table.headerCell}>Allocation</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>1st Place</td>
+          <td style={table.cell}>30%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>2nd Place</td>
+          <td style={table.cell}>18%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>3rd Place</td>
+          <td style={table.cell}>12%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>4th Place</td>
+          <td style={table.cell}>9%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>5th Place</td>
+          <td style={table.cell}>7%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>6th Place</td>
+          <td style={table.cell}>6%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>7th & 8th Place</td>
+          <td style={table.cell}>5% each</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>9th & 10th Place</td>
+          <td style={table.cell}>4% each</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+#### Individual Distribution
+
+Within each tribe:
+
+* Tribe Leader: 30% of tribal allocation (regardless of their victory points)
+* Other Members: 70% split proportionally based on victory points contribution to the tribal total
+
+### 2. Achievement Prizes
+
+**Total: 300,000 $LORDS**
+
+Players earn achievement points by completing quests—tracked inside your Cartridge profile, and accessible via your
+Cartridge wallet in-game. At the end of the season, this prize pool will be split proportionally amongst all players
+based on the number of achievement points they have accumulated.
+
+> **Note:** Achievement details, requirements, and point allocations will be withheld until the game begins to prevent
+> planned farming and extractive behaviors. Check the [Achievements section](/mechanics/achievements) for updates when
+> this information becomes available.
+
+### 3. Daydreams Agent Prizes
+
+**Total: 250,000 $LORDS + 25,000 $STRK**
+
+#### Agent Rewards
+
+Each agent on the world map carries 10-35 $LORDS, obtainable through:
+
+* Collaboration (persuasion via chat)
+* Combat victory
+
+#### Special Achievement
+
+25,000 $STRK will be distributed to the first 100 players who complete the 'Nexus-6' achievement by defeating 10 agent
+armies.
+
+### 4. Eternum Arts & Emissaries Prizes
+
+**Total: 150,000 $LORDS + 25,000 $STRK**
+
+Awarded to players or groups making exceptional cultural, artistic, or creative contributions to Eternum. These awards
+can be given during or after the game at the developers' discretion.
+
+> **Note:** For more information, join our [Discord community](https://discord.gg/KJff5Ecp).
+
+## Unused Prize Distribution
+
+If any prizes remain unallocated at the end of the game and prize distribution phase:
+
+* Unused $LORDS will be distributed through the veLORDS protocol
+* Unused $STRK will be retained by developers for future use
+
+
+
+---
+
+file: docs/pages/mechanics/tribes.mdx
+meta: {}
+
+# 👥 Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Formation & Membership
+
+* Any player can create a tribe
+* Set tribe name
+* Set to public or private
+* If private, send invites to player
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guild.gif" alt="Create Guild" />
+
+  <em>Flow to create tribe</em>
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/victory.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
+import {
+  HyperstructureInitializationShardsTable,
+  HyperstructureConstructionCostTable,
+  HyperstructurePointsTable,
+  getTotalHyperstructureCompletionPoints,
+  HYPERSTRUCTURE_POINT_MULTIPLIER,
+} from "@/components/HyperstructureTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
+
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Victory Points
+
+Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
+single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
+halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
+Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
+
+## Activating Foundations
+
+Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
+a Hyperstructure Foundation, all **{
+  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
+foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
+within predefined minimum and maximum ranges shown below:
+
+<HyperstructureInitializationShardsTable />
+
+<HyperstructureConstructionCostTable />
+
+*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
+complete construction.*
+
+## Construction Victory Points
+
+The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
+or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
+requiring donkeys for transport. As Lords contribute to the Hyperstructure, they are awarded with a proportional
+allocation of Victory Points. A total of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())}** are
+available to claim throughout the construction process.
+
+## Accumulation Victory Points
+
+Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
+accumulate
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+victory points** for every second the structure remains under their control. These accumulating victory points can be
+shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
+cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
+owner, who may similarly decide on sharing arrangements.
+
+## Total Victory
+
+Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
+to reach
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+
+<HyperstructurePointsTable />
+
+
+
+---
+
+file: docs/pages/mechanics/world-structures.mdx
+meta: {}
+
+# 💠 World Structures
+
+## Hyperstructures
+
+Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
+monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
+Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
+fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
+path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+### Hyperstructure Foundations
+
+These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the centre of the
+map. There is a chance of discovering a Hyperstructure Foundation each time an army explores an unrevealed hex,
+calculated using the following formula:
+
+```
+Discovery Chance = (0.975^x × y) - (z × 0.001)
+```
+
+Where:
+
+* **x** = the number of hexes from the centre of the map
+* **y** = the base chance of finding a Hyperstructure Foundation on the central hex (4%)
+* **z** = the number of Hyperstructure Foundations already discovered
+
+For example, if you're exploring a hex 100 tiles from the center and 5 foundations have already been discovered:
+
+```
+Discovery Chance = (0.975^100 × 4) - (5 × 0.001)
+                 = (0.079 × 4) - 0.005
+                 = 0.316 - 0.005
+                 = 0.311 or 31.1%
+```
+
+The result of this function means that Hyperstructure Foundations are generally only able to be found within 300 tiles
+of the centre of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
+find one further from the centre. Lords are therefore incentivised to explore early in the season to discover these key
+components for victory.
+
+Hyperstructure Foundations and Hyperstructures both have four defense slots to deter attacks from rival Lords. However,
+like other world structures they are not able to maintain any field armies.
+
+## Fragment Mines
+
+Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
+ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
+a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
+mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
+production when depleted.
+
+<img src="/images/buildings/construction/fragment-mine.png" width="800" />
+
+The chance of discovering a Fragment Mine when exploring an unrevealed hex is static at 1 in 150, or 0.67%. Mines can
+contain between 300,000 and 3 million ancient fragments in incremental amounts (i.e. 300k, 600k, 900k…). It will take
+some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
+the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
+only have one defense slot to support a guard army.
+
+## Quest Tiles
+
+*WIP, update next week !*
+
+
+
+---
+
 file: docs/pages/overview/bridging.mdx
 meta: {}
 
@@ -1212,465 +1671,6 @@ Initial scouting reports have revealed some key details about the world:
 
 ---
 
-file: docs/pages/mechanics/achievements.mdx
-meta: {}
-
-# Achievements & Quests
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/mechanics/agents.mdx
-meta: {}
-
-# Agents
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/mechanics/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
-  freely mint a Season Pass.
-* **Settling**: Players must burn a Season Pass to settle their Realm in the game world.
-* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
-* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
-  buildable hexes and defensive army slots.
-* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
-* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
-  tile radius.
-* **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
-  to the conqueror.
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
-  players
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
-* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
-  game
-* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
-  troops from any other source
-* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
-* **Casual Gameplay**: Villages can be raided, but can’t be claimed by other players.
-
-## Materials
-
-* **Materials Categories**:
-  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
-  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
-  * **Troops**: Units with unique properties that can be assigned to armies.
-  * **Donkeys**: Required for moving materials around the world, essential for logistics.
-  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
-    resources.
-  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
-* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
-  Realms.
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
-  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  and Villages are upgraded.
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode.
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies.
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
-  * Success depends on the raiding army's damage relative to the combined guard armies.
-  * Undefended structures can be raided without casualties.
-
-## Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
-construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
-recognition and rewards for various actions within the Season.
-
-
-
----
-
-file: docs/pages/mechanics/prize-pool.mdx
-meta: {}
-
-import { table } from "@/components/styles";
-
-# 💰 Prize Pool
-
-## Overview
-
-In Season 1 of Eternum, there are four prize categories with a total of:
-
-* 1,000,000 $LORDS tokens
-* 100,000 $STRK tokens
-
-> **Note:** All Season 1 prizes will be distributed manually by the development team (except for the agent rewards which
-> are collected directly in-game). Future seasons will implement automated distribution through game contracts, aligning
-> with decentralized gaming principles.
-
-## Prize Categories
-
-### 1. Victory Prizes
-
-**Total: 300,000 $LORDS + 50,000 $STRK**
-
-These prizes are awarded to top-performing tribes based on victory points. Additionally, 2.5% of all $LORDS bridging
-volume is collected as a fee and added to the prize pool, further increasing the total rewards available.
-
-#### How to Earn Victory Points
-
-Players can earn victory points by:
-
-* Contributing resources and labor to hyperstructure construction
-* Holding shares in completed hyperstructures to accumulate emitted victory points
-
-#### Distribution
-
-Once a player triggers the end of the game (or the game contract breaks), a snapshot of tribes, their members, and the
-victory point leaderboard is taken. Tribes will then be ranked by the cumulative number of victory points of their
-players. The top 10 tribes receive prizes based on this allocation:
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={table.headerCell}>Rank</th>
-          <th style={table.headerCell}>Allocation</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>1st Place</td>
-          <td style={table.cell}>30%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>2nd Place</td>
-          <td style={table.cell}>18%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>3rd Place</td>
-          <td style={table.cell}>12%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>4th Place</td>
-          <td style={table.cell}>9%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>5th Place</td>
-          <td style={table.cell}>7%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>6th Place</td>
-          <td style={table.cell}>6%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>7th & 8th Place</td>
-          <td style={table.cell}>5% each</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>9th & 10th Place</td>
-          <td style={table.cell}>4% each</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-#### Individual Distribution
-
-Within each tribe:
-
-* Tribe Leader: 30% of tribal allocation (regardless of their victory points)
-* Other Members: 70% split proportionally based on victory points contribution to the tribal total
-
-### 2. Achievement Prizes
-
-**Total: 300,000 $LORDS**
-
-Players earn achievement points by completing quests—tracked inside your Cartridge profile, and accessible via your
-Cartridge wallet in-game. At the end of the season, this prize pool will be split proportionally amongst all players
-based on the number of achievement points they have accumulated.
-
-> **Note:** Achievement details, requirements, and point allocations will be withheld until the game begins to prevent
-> planned farming and extractive behaviors. Check the [Achievements section](/mechanics/achievements) for updates when
-> this information becomes available.
-
-### 3. Daydreams Agent Prizes
-
-**Total: 250,000 $LORDS + 25,000 $STRK**
-
-#### Agent Rewards
-
-Each agent on the world map carries 10-35 $LORDS, obtainable through:
-
-* Collaboration (persuasion via chat)
-* Combat victory
-
-#### Special Achievement
-
-25,000 $STRK will be distributed to the first 100 players who complete the 'Nexus-6' achievement by defeating 10 agent
-armies.
-
-### 4. Eternum Arts & Emissaries Prizes
-
-**Total: 150,000 $LORDS + 25,000 $STRK**
-
-Awarded to players or groups making exceptional cultural, artistic, or creative contributions to Eternum. These awards
-can be given during or after the game at the developers' discretion.
-
-> **Note:** For more information, join our [Discord community](https://discord.gg/KJff5Ecp).
-
-## Unused Prize Distribution
-
-If any prizes remain unallocated at the end of the game and prize distribution phase:
-
-* Unused $LORDS will be distributed through the veLORDS protocol
-* Unused $STRK will be retained by developers for future use
-
-
-
----
-
-file: docs/pages/mechanics/tribes.mdx
-meta: {}
-
-# 👥 Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Formation & Membership
-
-* Any player can create a tribe
-* Set tribe name
-* Set to public or private
-* If private, send invites to player
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-guild.gif" alt="Create Guild" />
-
-  <em>Flow to create tribe</em>
-</div>
-
-
-
----
-
-file: docs/pages/mechanics/victory.mdx
-meta: {}
-
-import { ETERNUM_CONFIG } from "@/utils/config";
-import {
-  HyperstructureInitializationShardsTable,
-  HyperstructureConstructionCostTable,
-  HyperstructurePointsTable,
-  getTotalHyperstructureCompletionPoints,
-  HYPERSTRUCTURE_POINT_MULTIPLIER,
-} from "@/components/HyperstructureTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-
-# 👑 Victory
-
-<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-## Victory Points
-
-Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
-single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
-halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
-Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
-
-## Activating Foundations
-
-Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
-a Hyperstructure Foundation, all **{
-  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
-Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
-foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
-within predefined minimum and maximum ranges shown below:
-
-<HyperstructureInitializationShardsTable />
-
-<HyperstructureConstructionCostTable />
-
-*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
-complete construction.*
-
-## Construction Victory Points
-
-The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
-or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
-requiring donkeys for transport. As Lords contribute to the Hyperstructure, they are awarded with a proportional
-allocation of Victory Points. A total of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())}** are
-available to claim throughout the construction process.
-
-## Accumulation Victory Points
-
-Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
-accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-victory points** for every second the structure remains under their control. These accumulating victory points can be
-shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
-cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
-owner, who may similarly decide on sharing arrangements.
-
-## Total Victory
-
-Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
-to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
-
-<HyperstructurePointsTable />
-
-
-
----
-
-file: docs/pages/mechanics/world-structures.mdx
-meta: {}
-
-# 💠 World Structures
-
-## Hyperstructures
-
-Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
-monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
-Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
-fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
-path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
-
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
-
-### Hyperstructure Foundations
-
-These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the centre of the
-map. There is a chance of discovering a Hyperstructure Foundation each time an army explores an unrevealed hex,
-calculated using the following formula:
-
-```
-Discovery Chance = (0.975^x × y) - (z × 0.001)
-```
-
-Where:
-
-* **x** = the number of hexes from the centre of the map
-* **y** = the base chance of finding a Hyperstructure Foundation on the central hex (4%)
-* **z** = the number of Hyperstructure Foundations already discovered
-
-For example, if you're exploring a hex 100 tiles from the center and 5 foundations have already been discovered:
-
-```
-Discovery Chance = (0.975^100 × 4) - (5 × 0.001)
-                 = (0.079 × 4) - 0.005
-                 = 0.316 - 0.005
-                 = 0.311 or 31.1%
-```
-
-The result of this function means that Hyperstructure Foundations are generally only able to be found within 300 tiles
-of the centre of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
-find one further from the centre. Lords are therefore incentivised to explore early in the season to discover these key
-components for victory.
-
-Hyperstructure Foundations and Hyperstructures both have four defense slots to deter attacks from rival Lords. However,
-like other world structures they are not able to maintain any field armies.
-
-## Fragment Mines
-
-Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
-ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
-a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
-mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
-production when depleted.
-
-<img src="/images/buildings/construction/fragment-mine.png" width="800" />
-
-The chance of discovering a Fragment Mine when exploring an unrevealed hex is static at 1 in 150, or 0.67%. Mines can
-contain between 300,000 and 3 million ancient fragments in incremental amounts (i.e. 300k, 600k, 900k…). It will take
-some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
-the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
-only have one defense slot to support a guard army.
-
-## Quest Tiles
-
-*WIP, update next week !*
-
-
-
----
-
 file: docs/pages/mechanics/military/armies.mdx
 meta: {}
 
@@ -1772,6 +1772,7 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { RAIDABLE_RESOURCES } from "@bibliothecadao/types";
 import { resource } from "@/components/styles";
 import { RaidableResources } from "@/components/RaidableResources";
+import { importantNote } from "@/components/styles";
 
 # 💰 Raiding
 
@@ -1789,14 +1790,17 @@ Before attempting a raid, your army must meet the following requirements:
 * Be adjacent to the target structure
 * Structure must contain raidable resources
 
-## Raidable Resources
+## Raidable Materials
 
-Raidable resources are stolen based on rarity, with the most valuable taken first. Rarer resources are prioritized
+Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
 during raids:
 
 <RaidableResources />
 
-<div style={resource.noteStyle}>Note: Tokens such as $LORDS and $STRK cannot be stolen through raiding.</div>
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
+</div>
 
 ## Raid Success
 
@@ -1961,6 +1965,9 @@ file: docs/pages/mechanics/realm-and-villages/buildings.mdx
 meta: {}
 
 import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
 
 # 🪓 Buildings
 
@@ -2302,7 +2309,7 @@ increase (Storehouse)]
     image="/images/buildings/construction/storehouse.png"
     buildingType={2}
     description={[
-  "Increases storage capacity by 300,000 kg for each material",
+  "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
   "Requires 2 population to be constructed",
   "Available in both simple and standard building modes",
 ]}

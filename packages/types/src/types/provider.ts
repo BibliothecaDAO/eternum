@@ -973,3 +973,13 @@ export interface TransferAgentOwnershipProps extends SystemSigner {
   explorer_id: num.BigNumberish;
   new_owner: num.BigNumberish;
 }
+
+export interface StructureBurnProps extends SystemSigner {
+  structure_id: num.BigNumberish;
+  resources: Resource[];
+}
+
+export interface TroopBurnProps extends SystemSigner {
+  explorer_id: num.BigNumberish;
+  resources: Resource[];
+}

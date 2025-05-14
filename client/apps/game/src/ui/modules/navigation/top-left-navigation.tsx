@@ -3,8 +3,8 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import Button from "@/ui/elements/button";
+import CircleButton from "@/ui/elements/circle-button";
 import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
@@ -17,7 +17,7 @@ import { ContractAddress, ID, PlayerStructure, TickIds } from "@bibliothecadao/t
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
+import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -72,7 +72,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         isFavorite: favorites.includes(structure.entityId),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }, [favorites, structures.length]);
+  }, [favorites, structures]);
 
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
@@ -151,49 +151,62 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             )}
           </div>
         </div>
+        <div className="flex storage-selector  py-1 flex-col md:flex-row gap-1  ">
+          <ViewOnMapIcon
+            className={`self-center ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
+            position={new Position(structurePosition)}
+          />
+          <CoordinateNavigationInput
+            position={new Position(structurePosition)}
+            className={!isMapView ? "opacity-50 pointer-events-none" : ""}
+          />
+        </div>
+
         <CapacityInfo
           structureEntityId={structureEntityId}
-          className="storage-selector  py-1 flex flex-col md:flex-row gap-1  "
+          className="storage-selector flex flex-col md:flex-row gap-1  self-center"
         />
-        <div className="world-navigation-selector  bg-hex-bg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative ">
+        <div className="world-navigation-selector text-xs md:text-base flex md:flex-row gap-2 md:gap-2 justify-between p-1 md:px-4 relative ">
           <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
           </div>
-          <div className="map-button-selector flex justify-center md:justify-start">
-            <Button
-              variant="outline"
-              size="xs"
-              className="self-center"
-              onClick={() => {
-                if (!isMapView) {
-                  goToStructure(
-                    structureEntityId,
-                    new Position({ x: structurePosition.x, y: structurePosition.y }),
-                    true,
-                  );
-                } else {
-                  goToStructure(
-                    structureEntityId,
-                    new Position({ x: structurePosition.x, y: structurePosition.y }),
-                    false,
-                  );
-                }
-              }}
+          <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 panel-wood-small px-4">
+            <span
+              onClick={() =>
+                goToStructure(
+                  structureEntityId,
+                  new Position({ x: structurePosition.x, y: structurePosition.y }),
+                  false,
+                )
+              }
+              className={cn("text-xs", !isMapView && "text-gold font-bold")}
             >
-              {isMapView ? "Local" : "World"}
-            </Button>
-          </div>
-          <div className="flex flex-row">
-            <div className="flex justify-center md:justify-start items-center gap-1">
-              <NavigateToPositionIcon
-                className={`h-6 w-6 md:h-8 md:w-8 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-                position={new Position(structurePosition)}
+              Local
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isMapView}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  goToStructure(
+                    structureEntityId,
+                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    checked,
+                  );
+                }}
               />
-              <ViewOnMapIcon
-                className={`h-5 w-5 md:h-7 md:w-7 ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-                position={new Position(structurePosition)}
-              />
-            </div>
+              <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+            </label>
+            <span
+              onClick={() =>
+                goToStructure(structureEntityId, new Position({ x: structurePosition.x, y: structurePosition.y }), true)
+              }
+              className={cn("text-xs", isMapView && "text-gold font-bold")}
+            >
+              World
+            </span>
           </div>
         </div>
         <SecondaryMenuItems />
@@ -333,3 +346,76 @@ const TickProgress = memo(() => {
     </div>
   );
 });
+
+const CoordinateNavigationInput = memo(({ position, className = "" }: { position: Position; className?: string }) => {
+  const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
+  const [showCoordInput, setShowCoordInput] = useState(false);
+  const normalizedPosition = position.getNormalized();
+  const [coords, setCoords] = useState({
+    x: normalizedPosition.x,
+    y: normalizedPosition.y,
+  });
+
+  const handleInputChange = (field: "x" | "y", value: string) => {
+    // Handle empty input, minus sign, and valid numbers
+    if (value === "" || value === "-" || !isNaN(Number(value))) {
+      setCoords((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
+
+  const handleSubmit = () => {
+    setNavigationTarget({
+      col: Number(coords.x) || 0,
+      row: Number(coords.y) || 0,
+    });
+    setShowCoordInput(false);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <CircleButton
+        image="/image-icons/compass.png"
+        size="md"
+        className={`${!showCoordInput ? "fill-gold hover:fill-gold/50" : "fill-gold/50"} transition-all duration-300`}
+        onClick={() => setShowCoordInput(!showCoordInput)}
+      />
+
+      {showCoordInput && (
+        <div className="absolute z-50 panel-wood bg-dark-wood p-3 right-0 mt-1 w-40 rounded shadow-lg">
+          <div className="flex justify-between mb-2">
+            <span className="text-gold text-xs">Enter coordinates</span>
+            <X className="w-4 h-4 cursor-pointer hover:text-gold" onClick={() => setShowCoordInput(false)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1">
+              <label className="text-gold text-xs">Col:</label>
+              <input
+                type="text"
+                value={coords.x}
+                onChange={(e) => handleInputChange("x", e.target.value)}
+                className="bg-brown/20 border border-gold/30 rounded w-full px-1 py-0.5 text-xs text-gold"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <label className="text-gold text-xs">Row:</label>
+              <input
+                type="text"
+                value={coords.y}
+                onChange={(e) => handleInputChange("y", e.target.value)}
+                className="bg-brown/20 border border-gold/30 rounded w-full px-1 py-0.5 text-xs text-gold"
+              />
+            </div>
+            <Button size="xs" variant="gold" onClick={handleSubmit} className="mt-1 w-full">
+              Navigate
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+CoordinateNavigationInput.displayName = "CoordinateNavigationInput";

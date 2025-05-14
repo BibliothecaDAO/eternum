@@ -46,6 +46,8 @@ pub impl iStructureImpl of IStructureTrait {
             if tile.occupied() {
                 // ensure occupier is not a structure
                 assert!(tile.occupier_is_structure == false, "Tile is occupied by structure");
+                // ensure occupier is not a quest
+                assert!(tile.occupier_type != TileOccupier::Quest.into(), "Tile is occupied by quest");
 
                 // double check that the tile is occupied by an explorer
                 let mut explorer: ExplorerTroops = world.read_model(tile.occupier_id);
@@ -254,6 +256,9 @@ pub impl iStructureImpl of IStructureTrait {
                             start_troop_tier,
                             start_guard_troop_amount,
                         );
+
+                    // refetch structure weight
+                    structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 }
             } else {
                 realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);

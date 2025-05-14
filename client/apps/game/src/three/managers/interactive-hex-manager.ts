@@ -120,6 +120,36 @@ export class InteractiveHexManager {
     this.visibleHexes.clear();
   }
 
+  // For backward compatibility with Hexception scene
+  // Renders all hexes in the allHexes collection
+  renderAllHexes() {
+    if (this.instanceMesh) {
+      this.scene.remove(this.instanceMesh);
+      this.instanceMesh.dispose();
+    }
+
+    const bigHexagonShape = createHexagonShape(HEX_SIZE);
+    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+    const instanceCount = this.allHexes.size;
+
+    if (instanceCount === 0) return;
+
+    this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, instanceCount);
+
+    let index = 0;
+    this.allHexes.forEach((hexString) => {
+      const [col, row] = hexString.split(",").map(Number);
+      const position = getWorldPositionForHex({ col, row });
+      this.dummy.position.set(position.x, 0.1, position.z);
+      this.dummy.rotation.x = -Math.PI / 2;
+      this.dummy.updateMatrix();
+      this.instanceMesh!.setMatrixAt(index, this.dummy.matrix);
+      index++;
+    });
+
+    this.scene.add(this.instanceMesh);
+  }
+
   renderHexes() {
     if (this.instanceMesh) {
       this.scene.remove(this.instanceMesh);

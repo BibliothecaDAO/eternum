@@ -331,6 +331,11 @@ pub impl iExplorerImpl of iExplorerTrait {
         troop_weight.store(ref world, explorer_id);
     }
 
+    fn ensure_not_overweight(ref world: WorldStorage, explorer_id: ID) {
+        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        assert!(troop_weight.capacity >= troop_weight.weight, "Eternum: army will be overweight after troop transfer");
+    }
+
 
     fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
         // decrease agent count
@@ -590,7 +595,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
         let troop_tier: TroopTier = *random::choices(
             array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
-            array![80, 15, 5].span(),
+            array![70, 20, 10].span(),
             array![].span(),
             1,
             true,
