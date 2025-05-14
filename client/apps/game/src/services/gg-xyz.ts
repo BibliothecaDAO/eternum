@@ -21,6 +21,7 @@ export enum CartridgeAchievement {
   BUILD_SIMPLE = "BUILD_SIMPLE",
   LABOR_PRODUCE = "LABOR_PRODUCE",
   WIN_BATTLE = "WIN_BATTLE",
+  KILL_AGENT = "KILL_AGENT",
   UPGRADE_REALM = "UPGRADE_REALM",
   UPGRADE_VILLAGE = "UPGRADE_VILLAGE",
   JOIN_TRIBE = "JOIN_TRIBE",
@@ -105,6 +106,10 @@ const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 1, action: "Win your first battle" },
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 10, action: "Win 10 battles" },
     { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 25, action: "Win 25 battles" },
+  ],
+  [CartridgeAchievement.KILL_AGENT]: [
+    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 1, action: "Kill an Agent" },
+    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 10, action: "Kill 10 Agents" },
   ],
   [CartridgeAchievement.UPGRADE_REALM]: [
     { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 1, action: "Upgrade a Realm to a City" },

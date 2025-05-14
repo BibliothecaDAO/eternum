@@ -335,6 +335,7 @@ export const CombatContainer = ({
     } finally {
       setLoading(false);
       checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
+      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.KILL_AGENT);
     }
   };
 
