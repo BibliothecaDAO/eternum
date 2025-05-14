@@ -26,7 +26,6 @@ interface RealmDetailModalProps {
   onOpenChange: (isOpen: boolean) => void;
   realmData: MergedNftData;
   isOwner: boolean;
-  hasSeasonPassMinted: boolean;
   marketplaceActions: ReturnType<typeof useMarketplace>;
   // Listing details passed from RealmCard
   isListed: boolean;
