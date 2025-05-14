@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyManagementCard } from "@/ui/components/military/army-management-card";
@@ -5,10 +6,10 @@ import { TroopChip } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
+import CircleButton from "@/ui/elements/circle-button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { HelpModal } from "@/ui/modules/military/help-modal";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -32,9 +33,10 @@ export const NavigateToPositionIcon = ({
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
-    <img
-      src="/image-icons/compass.png"
-      className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
+    <CircleButton
+      image="/image-icons/compass.png"
+      size="md"
+      className={` fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
         setNavigationTarget({
@@ -82,11 +84,12 @@ export const ArmyChip = ({
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
+  const { currentArmiesTick } = useBlockTimestamp();
+
   const stamina = useMemo(() => {
     if (!army.troops) return { amount: 0n, updated_tick: 0n };
-    const { currentArmiesTick } = getBlockTimestamp();
     return StaminaManager.getStamina(army.troops, currentArmiesTick);
-  }, [army.troops]);
+  }, [army.troops, currentArmiesTick]);
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;

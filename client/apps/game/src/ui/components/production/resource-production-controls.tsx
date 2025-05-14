@@ -113,7 +113,7 @@ export const ResourceProductionControls = ({
     const { currentDefaultTick } = getBlockTimestamp();
 
     allResources.forEach((resource) => {
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource).balance;
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;

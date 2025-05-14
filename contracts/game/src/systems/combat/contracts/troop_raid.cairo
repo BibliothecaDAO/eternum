@@ -44,8 +44,20 @@ pub mod troop_raid_systems {
     use s1_eternum::utils::math::{PercentageValueImpl};
     use s1_eternum::utils::random::{VRFImpl};
     use super::super::super::super::super::models::structure::StructureBaseTrait;
-
     use super::super::super::super::super::models::troop::GuardTrait;
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerNewRaidEvent {
+        #[key]
+        pub explorer_id: ID,
+        #[key]
+        pub structure_id: ID,
+        #[key]
+        pub explorer_owner_id: ID,
+        pub success: bool,
+        pub timestamp: u64,
+    }
 
 
     #[derive(Copy, Drop, Serde)]
@@ -321,7 +333,18 @@ pub mod troop_raid_systems {
                     @ExplorerRaidEvent {
                         explorer_id, structure_id, success: raid_success, timestamp: starknet::get_block_timestamp(),
                     },
-                )
+                );
+
+            world
+                .emit_event(
+                    @ExplorerNewRaidEvent {
+                        explorer_id,
+                        structure_id,
+                        explorer_owner_id: explorer_aggressor.owner,
+                        success: raid_success,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }

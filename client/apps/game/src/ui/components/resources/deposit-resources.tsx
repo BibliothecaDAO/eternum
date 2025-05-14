@@ -2,8 +2,8 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { ResourceArrivalManager } from "@bibliothecadao/eternum";
-import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useState } from "react";
 
 export const DepositResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
@@ -36,7 +36,7 @@ export const DepositResourceArrival = ({ arrival }: { arrival: ResourceArrivalIn
   return (
     <div className="w-full">
       <Button
-        size="md"
+        size="xs"
         className="w-full"
         isLoading={isLoading}
         disabled={arrival.arrivesAt > currentBlockTimestamp}

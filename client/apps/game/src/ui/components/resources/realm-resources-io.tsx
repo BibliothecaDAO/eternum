@@ -1,25 +1,20 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager, getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ID, ResourcesIds } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 export const RealmResourcesIO = ({
-  realmEntityId,
+  resourcesProduced,
   className,
   titleClassName,
   size = "xs",
   compact = false,
 }: {
-  realmEntityId: ID;
+  resourcesProduced: number[];
   className?: string;
   titleClassName?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
   compact?: boolean;
 }) => {
-  const dojo = useDojo();
-  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components);
-
-  const resourcesProduced = realm ? realm.resources : [];
   const resourcesInputs = configManager.complexSystemResourceInputs;
 
   const resourcesConsumed = [
@@ -31,8 +26,6 @@ export const RealmResourcesIO = ({
       }),
     ),
   ];
-
-  if (!realm) return null;
 
   return (
     <div className={`${className}`}>

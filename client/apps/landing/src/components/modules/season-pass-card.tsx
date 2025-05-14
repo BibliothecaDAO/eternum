@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { seasonPassAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
-import { MergedNftData, RealmMetadata } from "@/types";
+import { MergedNftData } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react"; // Import the icon
@@ -84,8 +84,7 @@ export const SeasonPassCard = ({
     }
   };
 
-  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
-  const { attributes, name, image } = parsedMetadata ?? {};
+  const { attributes, name, image } = metadata ?? {};
 
   // Prepare data for the modal (useMemo)
   const modalData = useMemo(
@@ -100,11 +99,11 @@ export const SeasonPassCard = ({
   );
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && timeRemaining !== "Expired" && pass.best_price_hex !== null) {
+    if (pass.expiration !== null && pass.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, timeRemaining, pass.best_price_hex]);
+  }, [pass.expiration, pass.best_price_hex]);
 
   return (
     <>
@@ -232,7 +231,7 @@ export const SeasonPassCard = ({
       <RealmDetailModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
-        realmData={modalData}
+        realmData={pass}
         isOwner={isOwner}
         hasSeasonPassMinted={false}
         marketplaceActions={marketplaceActions}

@@ -42,15 +42,30 @@ export const TransferTroopsContainer = ({
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<number>(0); // Default to first guard slot
 
-  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
+  const selected = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+  const target = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
 
-  console.log(structure);
+  console.log(selected, target);
 
   const availableGuards = useMemo<number[]>(() => {
-    if (!structure) return [];
-
-    return Array.from({ length: structure.base.level + 1 }, (_, i) => i);
-  }, [structure]);
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      // Guards are on the target structure
+      if (!target) return [];
+      return Array.from({ length: target.base.level + 1 }, (_, i) => i);
+    } else if (transferDirection === TransferDirection.StructureToExplorer) {
+      // Guards are on the selected structure
+      if (!selected) return [];
+      return Array.from({ length: selected.base.level + 1 }, (_, i) => i);
+    } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      // Guards aren't directly involved in the same way for transfer amount calculation,
+      // but the UI might use this for displaying guard slots (though it seems hidden).
+      // Using selected structure's level as a fallback like the original code, with check.
+      if (!selected) return [];
+      return Array.from({ length: selected.base.level + 1 }, (_, i) => i);
+    }
+    // Default case or unknown direction
+    return [];
+  }, [selected, target, transferDirection]);
 
   // list of guards
   const targetGuards = (() => {

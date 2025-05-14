@@ -7,9 +7,9 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getArmy, getRemainingCapacityInKg, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGetQuestForExplorer, usePlayerStructures } from "@bibliothecadao/react";
-import { ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useSubscribeScores } from "metagame-sdk";
 import { useMemo, useState } from "react";
@@ -17,19 +17,19 @@ import gameImage from "../../../assets/games/dark-shuffle.png";
 
 export const QuestContainer = ({
   explorerEntityId,
-  targetHex,
   loadingQuests,
+  questTileEntity,
 }: {
   explorerEntityId: ID;
-  targetHex: { x: number; y: number };
   loadingQuests: boolean;
+  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
 }) => {
   const {
     account: { account },
     setup: {
       systemCalls: { start_quest, get_game_count },
       components,
-      components: { QuestTile, Tile, QuestLevels },
+      components: { QuestLevels },
     },
   } = useDojo();
   const playerStructures = usePlayerStructures();
@@ -40,8 +40,6 @@ export const QuestContainer = ({
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
   const questLevelsEntity = getComponentValue(
     QuestLevels,
     getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
@@ -78,7 +76,7 @@ export const QuestContainer = ({
         to_address: account?.address,
       });
 
-      window.open(`https://darkshuffle.dev/play/${Number(currentGameCount + 1)}`, "_blank");
+      return currentGameCount;
     } catch (error) {
       console.error(error);
     } finally {
@@ -165,6 +163,8 @@ export const QuestContainer = ({
     [settingsMetadataForGame, questLevel],
   );
 
+  if (!questTileEntity) return null;
+
   return (
     <div className="flex flex-col gap-5 text-xl w-3/5 mx-auto h-full overflow-y-auto pt-2 border border-gold/20 rounded-lg">
       <div className="flex flex-col justify-center mx-auto h-[200px] w-full">
@@ -177,7 +177,7 @@ export const QuestContainer = ({
         <div className="flex flex-col items-center gap-2 w-1/3">
           <span className="text-gold/80">Reward</span>
           <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
-            <ResourceIcon resource={ResourcesIds[questTileEntity?.resource_type ?? 0]} size="lg" />
+            <ResourceIcon resource={ResourcesIds[questTileEntity?.resource_type ?? 1]} size="lg" />
             <span>{currencyFormat(Number(rewardAmount), 0)}</span>
           </span>
         </div>

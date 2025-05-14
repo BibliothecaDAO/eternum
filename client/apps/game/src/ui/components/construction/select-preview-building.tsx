@@ -19,6 +19,7 @@ import {
   hasEnoughPopulationForBuilding,
   ResourceIdToMiningType,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import {
   BuildingType,
   BuildingTypeToString,
@@ -30,7 +31,6 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
 } from "@bibliothecadao/types";
-import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -543,7 +543,7 @@ export const ResourceInfo = ({
       <div className="grid grid-cols-2 gap-4">
         {resourceById && (
           <div>
-            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
             <div className="flex items-center gap-2 mt-1">
               <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
               <ResourceIcon className="self-center" resource={resourceById || ""} size="xl" />
@@ -570,9 +570,7 @@ export const ResourceInfo = ({
 
       {Object.keys(cost).length > 0 && (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
-            Consumed per Second
-          </h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(cost).map((resourceId) => {
               const balance = getBalance(
@@ -740,7 +738,7 @@ export const BuildingInfo = ({
           )}
           {resourceProducedName && perTick !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produced</h6>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-semibold text-green-400">+{perTick}</span>
                 <ResourceIcon className="self-center" resource={resourceProducedName} size="sm" />
@@ -753,9 +751,7 @@ export const BuildingInfo = ({
 
       {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
-            Consumed per Second
-          </h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined

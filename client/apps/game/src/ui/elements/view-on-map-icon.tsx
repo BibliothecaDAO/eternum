@@ -2,7 +2,7 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import clsx from "clsx";
-
+import CircleButton from "./circle-button";
 export const ViewOnMapIcon = ({
   position,
   hideTooltip = false,
@@ -16,12 +16,10 @@ export const ViewOnMapIcon = ({
   const navigateToMapView = useNavigateToMapView();
 
   return (
-    <img
-      src="/image-icons/world.png"
-      className={clsx(
-        "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
-        className,
-      )}
+    <CircleButton
+      image="/image-icons/world.png"
+      size="md"
+      className={clsx(" fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all", className)}
       onClick={() => {
         setTooltip(null);
         navigateToMapView(position);

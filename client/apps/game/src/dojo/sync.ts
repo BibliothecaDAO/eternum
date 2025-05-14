@@ -4,9 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
-import type { Clause, ToriiClient } from "@dojoengine/torii-client";
-import { GameScore } from "metagame-sdk";
-import { debouncedGetQuestsFromTorii } from "./debounced-queries";
+import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -17,6 +15,10 @@ import {
 } from "./queries";
 
 export const EVENT_QUERY_LIMIT = 40_000;
+
+function isToriiDeleteNotification(entity: ToriiEntity): boolean {
+  return Object.keys(entity.models).length === 0;
+}
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
@@ -49,8 +51,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
     // Prepare the batch
     itemsToProcess.forEach(({ entityId, data }) => {
+      const isEntityDelete = isToriiDeleteNotification(data);
+      if (isEntityDelete) {
+        batch[entityId] = data
+      }
       // Deep merge logic for each entity
       if (batch[entityId]) {
+        const entityHasBeenDeleted = isToriiDeleteNotification(batch[entityId]);
+        if (entityHasBeenDeleted) return;
+
         batch[entityId] = mergeDeep(batch[entityId], data);
       } else {
         batch[entityId] = data;
@@ -205,16 +214,4 @@ export const initialSync = async (
   end = performance.now();
   console.log("[sync] guilds query", end - start);
   setInitialSyncProgress(100);
-};
-
-export const syncQuests = async (setup: SetupResult, gameAddress: string, questGames: GameScore[]) => {
-  const start = performance.now();
-  await debouncedGetQuestsFromTorii(
-    setup.network.toriiClient,
-    setup.network.contractComponents as any,
-    gameAddress,
-    questGames,
-  );
-  const end = performance.now();
-  console.log("[sync] quests query", end - start);
 };

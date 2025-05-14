@@ -2,7 +2,8 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { BuildingThumbs } from "@/ui/config";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { ClientComponents } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 const formatAmount = (amount: number) => {
@@ -12,16 +13,18 @@ const formatAmount = (amount: number) => {
   }).format(amount);
 };
 
-export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number } }) => {
+export const InfoContainer = ({
+  questTileEntity,
+}: {
+  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
+}) => {
   const {
     setup: {
-      components: { QuestTile, QuestLevels, Tile },
+      components: { QuestLevels },
     },
   } = useDojo();
   const { minigames, settingsMetadata } = useMinigameStore();
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
   const questLevelsEntity = getComponentValue(
     QuestLevels,
     getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
@@ -80,14 +83,17 @@ export const InfoContainer = ({ targetHex }: { targetHex: { x: number; y: number
               ?.name.split("Eternum Quest -")[1];
 
             return (
-              <div className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
+              <div
+                className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0"
+                key={i}
+              >
                 <div className="flex flex-row items-center justify-between text-sm w-full px-2">
                   <span className="font-bold">{settingName}</span>
                   <div
                     className="flex flex-row items-center gap-2 text-[12px] relative group"
                     onClick={() =>
                       window.open(
-                        `https://darkshuffle.dev/settings/${Number(level?.value?.settings_id?.value)}`,
+                        `https://darkshuffle.io/settings/${Number(level?.value?.settings_id?.value)}`,
                         "_blank",
                       )
                     }

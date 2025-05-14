@@ -12,7 +12,7 @@ import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { playSound } from "@/three/sound/utils";
+import { playResourceSound, playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -32,6 +32,7 @@ import {
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  findResourceById,
   getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
@@ -43,7 +44,15 @@ import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
-import { ArmySystemUpdate, QuestSystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
+import { ResourceFXManager } from "../managers/resource-fx-manager";
+import {
+  ArmySystemUpdate,
+  ExplorerRewardSystemUpdate,
+  QuestSystemUpdate,
+  SceneName,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
@@ -80,7 +89,7 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
-  private compassEffects: Map<string, () => void> = new Map();
+  private travelEffects: Map<string, () => void> = new Map();
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -92,7 +101,7 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
 
   private fxManager: FXManager;
-
+  private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
 
   constructor(
@@ -106,6 +115,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -203,6 +213,23 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
+    });
+
+    this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
+      const { explorerId, resourceId, amount } = update;
+      // Find the army position using explorerId
+      setTimeout(() => {
+        const armyPosition = this.armiesPositions.get(explorerId);
+        if (armyPosition) {
+          const resource = findResourceById(resourceId);
+          // Play the sound for the resource gain
+          playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+          // Display the resource gain at the army's position
+          this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
+        } else {
+          console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
+        }
+      }, 500);
     });
 
     // add particles
@@ -366,26 +393,41 @@ export default class WorldmapScene extends HexagonScene {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
 
-      // Get the target position for the compass effect
+      // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
       const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
-      // Play compass effect if the hex is not explored
-      if (!isExplored) {
-        const { promise, end } = this.fxManager.playFxAtCoords(
-          "compass",
-          position.x,
-          position.y + 2.5,
-          position.z,
-          0.95,
-          "Exploring...",
-          true,
-        );
-        // Store the end function with the hex coordinates as key
-        const key = `${targetHex.col},${targetHex.row}`;
-        this.compassEffects.set(key, end);
-      }
 
-      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
+      // Play effect based on action type: compass for exploring, travel for moving
+      const key = `${targetHex.col},${targetHex.row}`;
+      const effectType = isExplored ? "travel" : "compass";
+      const effectLabel = isExplored ? "Traveling" : "Exploring";
+
+      const { promise, end } = this.fxManager.playFxAtCoords(
+        effectType,
+        position.x,
+        position.y + 2.5,
+        position.z,
+        0.95,
+        effectLabel,
+        true,
+      );
+
+      // Store the end function with the hex coordinates as key
+      this.travelEffects.set(key, end);
+
+      const cleanup = () => {
+        const endEffect = this.travelEffects.get(key);
+        if (endEffect) {
+          endEffect();
+          this.travelEffects.delete(key);
+        }
+      };
+
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick).catch((e) => {
+        cleanup();
+        console.error("Army movement failed:", e);
+      });
+
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
@@ -650,10 +692,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if there's a compass effect for this hex and end it
     const key = `${hexCoords.col},${hexCoords.row}`;
-    const endCompass = this.compassEffects.get(key);
+    const endCompass = this.travelEffects.get(key);
     if (endCompass) {
       endCompass();
-      this.compassEffects.delete(key);
+      this.travelEffects.delete(key);
     }
 
     if (removeExplored) {
@@ -838,7 +880,7 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      const batchSize = 25; // Adjust batch size as needed
+      const batchSize = 600; // Adjust batch size as needed
       let currentIndex = 0;
 
       this.computeTileEntities(this.currentChunk);
@@ -857,9 +899,9 @@ export default class WorldmapScene extends HexagonScene {
           dummyObject.position.copy(pos);
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-
+          const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
           const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-          if (isStructure) {
+          if (isStructure || isQuest) {
             dummyObject.scale.set(0, 0, 0);
           } else {
             dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -1044,5 +1086,41 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
+  }
+
+  destroy() {
+    this.resourceFXManager.destroy();
+  }
+
+  /**
+   * Display a resource gain/loss effect at a hex position
+   * @param resourceId The resource ID from ResourcesIds
+   * @param amount Amount of resource (positive for gain, negative for loss)
+   * @param col Hex column
+   * @param row Hex row
+   * @param text Optional text to display below the resource
+   */
+  public displayResourceGain(
+    resourceId: number,
+    amount: number,
+    col: number,
+    row: number,
+    text?: string,
+  ): Promise<void> {
+    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text, { duration: 3.0 });
+  }
+
+  /**
+   * Display multiple resource changes in sequence
+   * @param resources Array of resource changes to display
+   * @param col Hex column
+   * @param row Hex row
+   */
+  public displayMultipleResources(
+    resources: Array<{ resourceId: number; amount: number; text?: string }>,
+    col: number,
+    row: number,
+  ): Promise<void> {
+    return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
   }
 }

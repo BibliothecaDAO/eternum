@@ -249,19 +249,6 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const checkVillagePassVisibility = () => {
-      const now = Math.floor(Date.now() / 1000);
-      console.log("Current time:", now, "End timestamp:", VILLAGE_PASS_END_TIMESTAMP);
-      setShowVillagePassButton(now > VILLAGE_PASS_END_TIMESTAMP);
-    };
-
-    checkVillagePassVisibility();
-    const interval = setInterval(checkVillagePassVisibility, 1000); // Check every second
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     hasAcceptedTS && (
       <div className="space-y-4">
@@ -289,20 +276,19 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         )}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            {showVillagePassButton && (
-              <a className="w-full" target="_blank" rel="noopener noreferrer">
-                <Button
-                  size="lg"
-                  onClick={handleVillagePassClick}
-                  className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
-                >
-                  <div className="flex items-center justify-start w-full gap-2">
-                    <Play className="!w-5 !h-5 fill-gold" />
-                    <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
-                  </div>
-                </Button>
-              </a>
-            )}
+            <a className="w-full" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                onClick={handleVillagePassClick}
+                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
+              >
+                <div className="flex items-center justify-start w-full gap-2">
+                  <Play className="!w-5 !h-5 fill-gold" />
+                  <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
+                </div>
+              </Button>
+            </a>
+
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}

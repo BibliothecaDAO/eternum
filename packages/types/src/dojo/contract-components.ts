@@ -1530,45 +1530,6 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
-      CreateGuild: (() => {
-        return defineComponent(
-          world,
-          {
-            guild_entity_id: RecsType.Number,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "CreateGuild",
-              types: ["u32", "felt252", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
-      JoinGuild: (() => {
-        return defineComponent(
-          world,
-          {
-            guild_entity_id: RecsType.Number,
-            address: RecsType.BigInt,
-            guild_name: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace: "s1_eternum",
-              name: "JoinGuild",
-              types: ["u32", "ContractAddress", "felt252", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-
       LiquidityEvent: (() => {
         return defineComponent(
           world,
@@ -1668,6 +1629,7 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+
       ExplorerRaidEvent: (() => {
         return defineComponent(
           world,
@@ -1682,6 +1644,29 @@ const eventsComponents = (world: World) => {
               namespace: "s1_eternum",
               name: "ExplorerRaidEvent",
               types: ["u32", "u32", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      ExplorerMoveEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            explorer_structure_id: RecsType.Number,
+            explorer_owner_address: RecsType.String,
+            explore_find: RecsType.Number,
+            reward_resource_type: RecsType.Number,
+            reward_resource_amount: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "ExplorerMoveEvent",
+              types: ["u32", "u32", "ContractAddress", "ExploreFind", "u8", "u128", "u64"],
               customTypes: [],
             },
           },

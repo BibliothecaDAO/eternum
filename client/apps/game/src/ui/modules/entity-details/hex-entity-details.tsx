@@ -6,6 +6,7 @@ import { QuestEntityDetail } from "@/ui/components/worldmap/entities/quest-entit
 import { StructureEntityDetail } from "@/ui/components/worldmap/entities/structure-entity-detail";
 import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { FELT_CENTER } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
@@ -43,6 +44,13 @@ export const HexEntityDetails = () => {
   return (
     <div className="h-full overflow-auto p-2">
       <div className={`${hasOccupier ? "h-50" : "h-full"}`}>
+        {selectedHex && (
+          <div className="mb-2 text-sm font-medium text-center">
+            <span className="px-2 py-1 bg-gray-800 rounded-md">
+              Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
+            </span>
+          </div>
+        )}
         <BiomeInfoPanel biome={biome} compact={hasOccupier} />
       </div>
       {hasOccupier && tile && (

@@ -51,8 +51,15 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
 
   const response = await toriiClient.getEntities(query);
 
-  const entityModels = response.items[0].models;
+  const entityModels = response.items?.[0]?.models;
+  if (!entityModels) {
+    return null;
+  }
+
   const structureData = entityModels["s1_eternum-Structure"];
+  if (!structureData) {
+    return null;
+  }
 
   const structure = getStructureFromToriiEntity(structureData);
   return {
@@ -84,13 +91,27 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
 
   const response = await toriiClient.getEntities(query);
 
+  if (!response.items?.[0]?.models) {
+    return {
+      structure: undefined,
+      resources: undefined,
+    };
+  }
+
   const entityModels = response.items[0].models;
   const structureData = entityModels["s1_eternum-Structure"];
   const resourceData = entityModels["s1_eternum-Resource"];
 
+  if (!structureData) {
+    return {
+      structure: undefined,
+      resources: undefined,
+    };
+  }
+
   return {
     structure: getStructureFromToriiEntity(structureData),
-    resources: getResourcesFromToriiEntity(resourceData),
+    resources: resourceData ? getResourcesFromToriiEntity(resourceData) : undefined,
   };
 };
 
@@ -127,22 +148,24 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
 
   const response = await toriiClient.getEntities(query);
 
-  const result =
-    response && response.items
-      ? response.items
-          .map((item) => {
-            if (item.models && item.models["s1_eternum-Structure"]) {
-              const structure = getStructureFromToriiEntity(item.models["s1_eternum-Structure"]);
-              return {
-                entityId: structure.entity_id,
-                owner: structure.owner,
-                position: { col: structure.base.coord_x, row: structure.base.coord_y },
-              };
-            }
-            return null; // Or handle as needed if a structure model is missing
-          })
-          .filter((item) => item !== null)
-      : []; // Filter out nulls if any item didn't have the structure model
+  if (!response?.items) {
+    return [];
+  }
+
+  const result = response.items
+    .map((item) => {
+      if (!item?.models || !item.models["s1_eternum-Structure"]) {
+        return null;
+      }
+
+      const structure = getStructureFromToriiEntity(item.models["s1_eternum-Structure"]);
+      return {
+        entityId: structure.entity_id,
+        owner: structure.owner,
+        position: { col: structure.base.coord_x, row: structure.base.coord_y },
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return result;
 };
@@ -216,25 +239,31 @@ const createStructureVillageSlotsQuery = (clause?: Clause): Query => ({
 export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient) => {
   const response = await toriiClient.getEntities(createStructureVillageSlotsQuery());
 
+  if (!response?.items?.[0]?.models) {
+    return null;
+  }
+
   const entityModels = response.items[0].models;
   const villageSlotsData = entityModels["s1_eternum-StructureVillageSlots"] as any; // Keep as any for now due to complex structure
 
-  if (!villageSlotsData) return null;
+  if (!villageSlotsData || !villageSlotsData.directions_left?.value || !villageSlotsData.connected_realm_coord?.value) {
+    return null;
+  }
 
-  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
+  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v?.value?.option).filter(Boolean);
 
   return {
     realmId: villageSlotsData.connected_realm_id?.value,
-    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value || 0),
     hasSlots: true,
     availableSlots: formatVillageSlots(
       availableSlots,
-      villageSlotsData.connected_realm_coord?.value.x.value,
-      villageSlotsData.connected_realm_coord?.value.y.value,
+      villageSlotsData.connected_realm_coord.value.x?.value || 0,
+      villageSlotsData.connected_realm_coord.value.y?.value || 0,
     ),
     position: {
-      col: villageSlotsData.connected_realm_coord?.value.x.value,
-      row: villageSlotsData.connected_realm_coord?.value.y.value,
+      col: villageSlotsData.connected_realm_coord.value.x?.value || 0,
+      row: villageSlotsData.connected_realm_coord.value.y?.value || 0,
     },
   };
 };
@@ -254,25 +283,31 @@ export const checkOpenVillageSlotFromToriiClient = async (
 
   const response = await toriiClient.getEntities(villageSlotQuery);
 
+  if (!response?.items?.[0]?.models) {
+    return null;
+  }
+
   const entityModels = response.items[0].models;
   const villageSlotsData = entityModels["s1_eternum-StructureVillageSlots"] as any; // Keep as any
 
-  if (!villageSlotsData) return null;
+  if (!villageSlotsData || !villageSlotsData.directions_left?.value || !villageSlotsData.connected_realm_coord?.value) {
+    return null;
+  }
 
-  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
+  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v?.value?.option).filter(Boolean);
 
   return {
-    realmId: villageSlotsData.connected_realm_id?.value,
-    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
+    realmId: villageSlotsData.connected_realm_id?.value || 0,
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value || 0),
     hasSlots: true,
     availableSlots: formatVillageSlots(
       availableSlots,
-      villageSlotsData.connected_realm_coord?.value.x.value,
-      villageSlotsData.connected_realm_coord?.value.y.value,
+      villageSlotsData.connected_realm_coord.value.x?.value || 0,
+      villageSlotsData.connected_realm_coord.value.y?.value || 0,
     ),
     position: {
-      col: villageSlotsData.connected_realm_coord?.value.x.value,
-      row: villageSlotsData.connected_realm_coord?.value.y.value,
+      col: villageSlotsData.connected_realm_coord.value.x?.value || 0,
+      row: villageSlotsData.connected_realm_coord.value.y?.value || 0,
     },
   };
 };
@@ -302,12 +337,14 @@ export const getSurroundingWonderBonusFromToriiClient = async (
   };
   const res = await toriiClient.getEntities(query);
 
-  if (res.items && res.items.length > 0) {
-    const structure = res.items[0].models["s1_eternum-Structure"];
-    if (structure && structure.entity_id) {
-      return Number(structure.entity_id.value);
-    }
+  if (!res?.items || res.items.length === 0) {
+    return null;
   }
 
-  return null;
+  const structure = res.items[0]?.models?.["s1_eternum-Structure"];
+  if (!structure || !structure.entity_id?.value) {
+    return null;
+  }
+
+  return Number(structure.entity_id.value);
 };

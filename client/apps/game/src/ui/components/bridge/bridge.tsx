@@ -8,11 +8,19 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
-import { ID, PlayerStructure, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
+import {
+  ID,
+  PlayerStructure,
+  RESOURCE_PRECISION,
+  resources,
+  StructureType,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { useSendTransaction } from "@starknet-react/core";
-import { ArrowDown, ArrowLeftRight, Star, X } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, Info, Star, X } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 
@@ -28,6 +36,179 @@ interface ResourceToBridge {
 }
 
 type BridgeDirection = "in" | "out";
+
+// Efficiency data based on hyperstructures completed
+const efficiencyData = [
+  { hyperstructures: 0, resourceEfficiency: 25, troopEfficiency: 0 },
+  { hyperstructures: 1, resourceEfficiency: 50, troopEfficiency: 25 },
+  { hyperstructures: 2, resourceEfficiency: 70, troopEfficiency: 50 },
+  { hyperstructures: 3, resourceEfficiency: 85, troopEfficiency: 70 },
+  { hyperstructures: 5, resourceEfficiency: 95, troopEfficiency: 85 },
+  { hyperstructures: 7, resourceEfficiency: 95, troopEfficiency: 95 },
+];
+
+// Platform fee constants
+const PLATFORM_FEE_PERCENTAGE = 7.5;
+const VILLAGE_PARENT_FEE_PERCENTAGE = 5;
+
+// Component to display efficiency information
+const EfficiencyInfo = ({
+  hyperstructuresCompleted,
+  isVillage,
+}: {
+  hyperstructuresCompleted: number;
+  isVillage: boolean;
+}) => {
+  // Find the applicable efficiency rates based on hyperstructures completed
+  const currentEfficiency = useMemo(() => {
+    // Sort in descending order to find the highest tier that applies
+    const sortedData = [...efficiencyData].sort((a, b) => b.hyperstructures - a.hyperstructures);
+    return sortedData.find((data) => hyperstructuresCompleted >= data.hyperstructures) || efficiencyData[0];
+  }, [hyperstructuresCompleted]);
+
+  // Calculate actual amount after all deductions for 100 units
+  const calculateActualAmount = (initialAmount: number) => {
+    // Step 1: Remove inefficiency loss
+    let amount = initialAmount * (currentEfficiency.resourceEfficiency / 100);
+
+    // Step 2: Remove platform fees (7.5%)
+    amount = amount * (1 - PLATFORM_FEE_PERCENTAGE / 100);
+
+    // Step 3: If village, parent realm gets 5%
+    if (isVillage) {
+      amount = amount * (1 - VILLAGE_PARENT_FEE_PERCENTAGE / 100);
+    }
+
+    return amount.toFixed(2);
+  };
+
+  // Calculate actual troops amount after all deductions for 100 units
+  const calculateTroopsAmount = (initialAmount: number) => {
+    // Step 1: Remove inefficiency loss
+    let amount = initialAmount * (currentEfficiency.troopEfficiency / 100);
+
+    // Step 2: Remove platform fees (7.5%)
+    amount = amount * (1 - PLATFORM_FEE_PERCENTAGE / 100);
+
+    // Step 3: If village, parent realm gets 5%
+    if (isVillage) {
+      amount = amount * (1 - VILLAGE_PARENT_FEE_PERCENTAGE / 100);
+    }
+
+    return amount.toFixed(2);
+  };
+
+  // Calculate Lords amount after deductions (Lords exempt from efficiency losses)
+  const calculateLordsAmount = (initialAmount: number) => {
+    // Lords are exempt from efficiency losses, only platform fees apply
+    let amount = initialAmount * (1 - PLATFORM_FEE_PERCENTAGE / 100);
+
+    // If village, parent realm gets 5%
+    if (isVillage) {
+      amount = amount * (1 - VILLAGE_PARENT_FEE_PERCENTAGE / 100);
+    }
+
+    return amount.toFixed(2);
+  };
+
+  // Find next efficiency tier
+  const getNextEfficiencyTier = () => {
+    const sortedTiers = [...efficiencyData].sort((a, b) => a.hyperstructures - b.hyperstructures);
+    const nextTier = sortedTiers.find((tier) => tier.hyperstructures > hyperstructuresCompleted);
+    return nextTier;
+  };
+
+  const nextTier = getNextEfficiencyTier();
+
+  // Mock function for "More Info" link
+  const handleMoreInfoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.open("https://eternum-docs.realms.world/mechanics/resources/bridging", "_blank");
+  };
+
+  return (
+    <div className="mt-1 p-2 border border-gray-700 rounded-lg bg-gray-800/40 text-xs">
+      {/* Header with info icon and title */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Info className="h-3 w-3 text-blue-400" />
+          <h6 className="font-medium text-blue-400">Efficiency Rates</h6>
+        </div>
+        <div className="flex items-center gap-1 bg-blue-900/30 px-1.5 py-0.5 rounded-sm">
+          <span className="text-[10px] text-blue-300">{hyperstructuresCompleted} Hyperstructures</span>
+        </div>
+      </div>
+
+      {/* Hyperstructure explanation */}
+      <div className="text-[10px] text-gray-400 mb-2 flex items-center justify-between">
+        <span>More hyperstructures = higher bridge efficiency</span>
+        <button
+          onClick={handleMoreInfoClick}
+          className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-0.5"
+        >
+          <span className="text-[9px]">More Info</span>
+          <Info className="h-2.5 w-2.5" />
+        </button>
+      </div>
+
+      {/* Efficiency rates table */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
+        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+          <span className="text-[10px]">Resource Loss:</span>
+          <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.resourceEfficiency}%</span>
+        </div>
+        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+          <span className="text-[10px]">Troop Loss:</span>
+          <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.troopEfficiency}%</span>
+        </div>
+      </div>
+
+      {/* Fees section */}
+      <div className="flex flex-col gap-1 mb-2">
+        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+          <span className="text-[10px]">Platform Fees:</span>
+          <span className="font-medium text-[10px] text-red-400">-{PLATFORM_FEE_PERCENTAGE}%</span>
+        </div>
+        {isVillage && (
+          <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+            <span className="text-[10px]">Parent Realm Tax:</span>
+            <span className="font-medium text-[10px] text-red-400">-{VILLAGE_PARENT_FEE_PERCENTAGE}%</span>
+          </div>
+        )}
+      </div>
+
+      {/* Final calculations */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between bg-green-900/20 border border-green-900/40 px-2 py-1 rounded">
+          <span className="text-[10px]">100 resources →</span>
+          <span className="font-medium text-[10px] text-green-400">{calculateActualAmount(100)} remaining</span>
+        </div>
+        <div className="flex items-center justify-between bg-green-900/20 border border-green-900/40 px-2 py-1 rounded">
+          <span className="text-[10px]">100 troops →</span>
+          <span className="font-medium text-[10px] text-green-400">{calculateTroopsAmount(100)} remaining</span>
+        </div>
+        <div className="flex items-center justify-between bg-yellow-900/20 border border-yellow-900/40 px-2 py-1 rounded">
+          <span className="text-[10px]">100 $LORDS →</span>
+          <span className="font-medium text-[10px] text-yellow-400">{calculateLordsAmount(100)} remaining</span>
+        </div>
+      </div>
+
+      {/* Lords exemption note */}
+      <div className="mt-1 text-[9px] text-yellow-400/80 flex items-center gap-1">
+        <span>*</span>
+        <span>$LORDS are exempt from efficiency losses, only plateform and parent realm fees apply</span>
+      </div>
+
+      {/* Next tier information if available */}
+      {nextTier && (
+        <div className="mt-2 pt-1 border-t border-gray-700 text-[10px] text-amber-400 flex items-center justify-center">
+          Next tier: {nextTier.hyperstructures} hyperstructures completed (-
+          {100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Component to display a resource balance as a compact badge
 const ResourceBalance = ({
@@ -70,9 +251,14 @@ const RealmBalance = ({ resourceId, balance }: { resourceId: number | null; bala
 export const Bridge = ({ structures }: BridgeProps) => {
   const {
     account: { account },
+    setup: { components },
   } = useDojo();
 
   const resourceAddresses = getResourceAddresses();
+
+  const hyperstructuresCompleted =
+    useComponentValue(components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
+      ?.completed_count || 0;
 
   const [bridgeDirection, setBridgeDirection] = useState<BridgeDirection>("in");
 
@@ -251,7 +437,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
     if (bridgeDirection === "out") {
       return resourcesToBridge.some((r) => {
         if (r.resourceId && r.amount && parseFloat(r.amount) > 0) {
-          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId);
+          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId).balance;
           const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
           return parseFloat(r.amount) > displayBalance;
         }
@@ -292,7 +478,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               Transfer resources into the game from your{" "}
               <span className="inline-flex item-center">
                 <Controller className="h-5 w-5 mr-1 ml-2" />
-                Cartridge Wallet
+                Cartridge Controller
               </span>{" "}
             </>
           ) : (
@@ -301,7 +487,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               Transfer resources out of the game to your{" "}
               <span className="inline-flex item-center">
                 <Controller className="h-5 w-5 mr-1 ml-2" />
-                Cartridge Wallet
+                Cartridge Controller
               </span>{" "}
             </>
           )}
@@ -320,6 +506,15 @@ export const Bridge = ({ structures }: BridgeProps) => {
           <span>{bridgeDirection === "in" ? "WITHDRAW INSTEAD" : "DEPOSIT INSTEAD"}</span>
         </Button>
       </div>
+
+      {/* Always show Efficiency Info */}
+      <EfficiencyInfo
+        hyperstructuresCompleted={hyperstructuresCompleted}
+        isVillage={
+          structuresWithFavorites.find((s) => s.entityId === selectedStructureId)?.structure.category ===
+          StructureType.Village
+        }
+      />
 
       {/* Structure Selection */}
       <div>
@@ -371,7 +566,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           {resourcesToBridge.map((resource) => {
             const balance =
               bridgeDirection === "out" && resource.resourceId && selectedStructureId
-                ? resourceManager.balanceWithProduction(currentTick, resource.resourceId)
+                ? resourceManager.balanceWithProduction(currentTick, resource.resourceId).balance
                 : null;
 
             const displayBalance = balance !== null ? divideByPrecision(balance) : 0;

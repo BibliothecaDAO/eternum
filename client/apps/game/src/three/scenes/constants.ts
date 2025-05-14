@@ -65,7 +65,7 @@ enum BuildingFilenames {
   Wonder = "wonder2.glb",
   HyperstructureInit = "hyperstructure_init.glb",
   HyperstructureHalf = "hyperstructure_half.glb",
-  Hyperstructure = "hyperstructure.glb",
+  Hyperstructure = "hyperstructure_finish.glb",
   Realm0 = "castle0.glb",
   Realm1 = "castle1.glb",
   Realm2 = "castle2.glb",
@@ -107,6 +107,7 @@ export enum BUILDINGS_GROUPS {
   HYPERSTRUCTURE = "hyperstructure",
   REALMS = "realms",
   WONDER = "wonder",
+  VILLAGE = "village",
 }
 
 export type BUILDINGS_CATEGORIES_TYPES =
@@ -114,7 +115,8 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | ResourceMiningTypes
   | RealmLevelNames
   | HyperstructureTypesNames
-  | typeof WONDER_REALM;
+  | typeof WONDER_REALM
+  | StructureType.Village;
 
 export const buildingModelPaths = {
   [BUILDINGS_GROUPS.BUILDINGS]: {
@@ -149,9 +151,12 @@ export const buildingModelPaths = {
     [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
     [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
   },
+  [BUILDINGS_GROUPS.VILLAGE]: {
+    [StructureType.Village]: BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
+  },
   [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
     [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   },
   [BUILDINGS_GROUPS.WONDER]: {
@@ -193,8 +198,8 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
   ],
   [StructureType.Hyperstructure]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
     BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
@@ -292,9 +297,9 @@ export const MinesMaterialsParams: Record<
     emissiveIntensity: 4,
   },
   [ResourcesIds.AncientFragment]: {
-    color: new THREE.Color(0.43, 0.85, 0.16),
-    emissive: new THREE.Color(0.0, 3.25, 0.03),
-    emissiveIntensity: 1.2,
+    color: new THREE.Color(0.25, 0.45, 0.15),
+    emissive: new THREE.Color(0.0, 0.5, 0.03),
+    emissiveIntensity: 0.8,
   },
 };
 

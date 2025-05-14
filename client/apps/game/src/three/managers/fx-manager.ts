@@ -114,6 +114,10 @@ class FXInstance {
         // Optional: Add some upward movement during fade out
         const moveUp = fadeProgress * 0.5;
         this.group.position.y = this.initialY + moveUp;
+
+        // Skip regular animation when ending to prevent conflicts with travel effect
+        this.animationFrameId = requestAnimationFrame(this.animate);
+        return;
       } else {
         // End animation complete, destroy the instance
         this.resolvePromise?.();
@@ -215,6 +219,29 @@ export class FXManager {
 
         return true; // Always return true to keep it running
       },
+    });
+
+    this.registerFX("travel", {
+      textureUrl: "textures/travel.png",
+      animate: (fx, t) => {
+        // Fade in animation
+        if (t < 0.3) {
+          fx.material.opacity = t / 0.3;
+        } else {
+          fx.material.opacity = 1;
+        }
+
+        const cycle = t % 3.0;
+
+        const bob = Math.sin(cycle * Math.PI * 2) * 0.05;
+        const sway = Math.sin(cycle * Math.PI) * 0.05;
+        fx.group.position.y = fx.initialY + bob;
+        fx.group.position.x += sway * 0.01;
+        fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+
+        return true;
+      },
+      isInfinite: true,
     });
   }
 

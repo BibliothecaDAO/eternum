@@ -1,4 +1,5 @@
 import { trimAddress } from "@/lib/utils";
+import { RealmMetadata } from "@/types";
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
 import { env } from "../../../env";
 
@@ -9,6 +10,20 @@ const QUERIES = {
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
+  ACTIVE_MARKET_ORDERS: `
+    SELECT 
+      mo.order_id AS order_id,
+      mo."order.token_id" AS token_id, 
+      mo."order.price" AS price,
+      mo."order.owner" AS owner,
+      mo."order.expiration" AS expiration,
+      mo."order.collection_id" AS collection_id
+    FROM "marketplace-MarketOrderModel" AS mo
+    WHERE mo."active" = 1
+      AND mo."collection_id" = 1  
+      AND mo."token_id" = '{tokenId}'
+    ORDER BY mo."price" ASC
+  `,
   TOKEN_TRANSFERS: `
     WITH token_meta AS ( 
         SELECT contract_address,
@@ -136,7 +151,6 @@ WITH limited_active_orders AS (
     )
 
 
-
     SELECT
         lao.token_id_hex AS token_id_hex,
         lao.token_id,
@@ -172,6 +186,26 @@ WITH limited_active_orders AS (
       ON t.token_id = substr(r.token_id, instr(r.token_id, ':') + 1)
     WHERE r.contract_address = '{realmsAddress}'
       AND r.account_address = '{accountAddress}'
+  `,
+  MARKET_ORDER_EVENTS: `
+    SELECT 
+      moe.internal_event_id,
+      moe.internal_executed_at AS executed_at,
+      moe.state,
+      moe."market_order.token_id" AS token_id,
+      moe."market_order.price" AS price,
+      moe."market_order.owner" AS owner,
+      moe."market_order.expiration" AS expiration,
+      t.name,
+      t.symbol,
+      t.metadata
+    FROM "marketplace-MarketOrderEvent" AS moe
+    JOIN tokens t
+      ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
+      AND t.contract_address = '{contractAddress}'
+    WHERE moe."market_order.collection_id" = 1
+    ORDER BY moe."internal_executed_at" DESC
+    LIMIT {limit} OFFSET {offset}
   `,
 
   TOKEN_BALANCES_WITH_METADATA: `
@@ -253,7 +287,7 @@ export interface OpenOrderByPrice {
   order_id: number;
   name: string | null;
   symbol: string | null;
-  metadata: string | null;
+  metadata: RealmMetadata | null;
   best_price_hex: bigint | null;
   expiration: number | null;
   token_owner: string | null;
@@ -401,6 +435,7 @@ export async function fetchOpenOrdersByPrice(
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     token_owner: item.token_owner?.toString() ?? null,
     order_owner: item.order_owner?.toString() ?? null,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
   }));
 }
 
@@ -435,7 +470,32 @@ export interface TokenBalanceWithToken {
   symbol: string | null;
   expiration: number | null;
   best_price_hex: bigint | null;
-  metadata: string | null;
+  metadata: RealmMetadata | null;
+}
+
+export interface ActiveMarketOrder {
+  order_id: string;
+  token_id: string;
+  price: string;
+  owner: string;
+  expiration: number;
+  collection_id: number;
+}
+
+export async function fetchActiveMarketOrders(contractAddress: string, tokenId: string): Promise<ActiveMarketOrder[]> {
+  const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{contractAddress}", contractAddress).replace(
+    "{tokenId}",
+    tokenId,
+  );
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch active market orders: ${response.statusText}`);
+  }
+
+  return await response.json();
 }
 
 export async function fetchTokenBalancesWithMetadata(
@@ -445,16 +505,55 @@ export async function fetchTokenBalancesWithMetadata(
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
     .replace("{accountAddress}", accountAddress)
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
-  console.log(query);
+
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch token balances with tokens: ${response.statusText}`);
   }
   const rawData = await response.json();
-  return rawData.map((item: TokenBalanceWithToken) => ({
+  return rawData.map(
+    (item: { token_id: string; best_price_hex: string | number | bigint | boolean; metadata: string }) => ({
+      ...item,
+      token_id: parseInt(item.token_id?.split(":")[1] ?? "0", 16),
+      best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
+      metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    }),
+  );
+}
+
+export interface MarketOrderEvent {
+  event_id: string;
+  state: string;
+  token_id: string;
+  price: string;
+  owner: string;
+  expiration: number;
+  name: string | null;
+  symbol: string | null;
+  metadata: RealmMetadata | null;
+  executed_at: string | null;
+}
+
+export async function fetchMarketOrderEvents(
+  contractAddress: string,
+  limit?: number,
+  offset?: number,
+): Promise<MarketOrderEvent[]> {
+  const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{limit}", limit?.toString() ?? "50")
+    .replace("{offset}", offset?.toString() ?? "0");
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch market order events: ${response.statusText}`);
+  }
+
+  const rawData = await response.json();
+  return rawData.map((item: { metadata: string }) => ({
     ...item,
-    token_id: parseInt(item.token_id?.split(":")[1] ?? "0", 16),
-    best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
   }));
 }

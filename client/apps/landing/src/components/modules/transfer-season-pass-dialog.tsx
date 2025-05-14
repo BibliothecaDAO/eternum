@@ -144,9 +144,7 @@ export default function TransferSeasonPassDialog({
             </TableHeader>
             <TableBody>
               {seasonPassMints?.map((seasonPassMint) => {
-                const parsedMetadata: RealmMetadata | null = seasonPassMint?.metadata
-                  ? JSON.parse(seasonPassMint?.metadata)
-                  : null;
+                const parsedMetadata: RealmMetadata | null = seasonPassMint?.metadata;
                 const { attributes, name } = parsedMetadata ?? {};
                 const tokenId = seasonPassMint?.token_id.toString();
 

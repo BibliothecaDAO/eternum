@@ -7,6 +7,7 @@ import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -17,10 +18,9 @@ import {
   StructureType,
   getProducedResource,
 } from "@bibliothecadao/types";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { PlusIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
@@ -95,6 +95,7 @@ export const BuildingEntityDetails = () => {
       col: selectedBuildingHex.outerCol,
       row: selectedBuildingHex.outerRow,
     });
+
     const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
     action(dojo.account.account, structureEntityId, selectedBuildingHex.innerCol, selectedBuildingHex.innerRow).then(
       () => {
@@ -177,30 +178,35 @@ export const BuildingEntityDetails = () => {
             )}
           </div>
           {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-between space-x-3 px-4">
+              {buildingState.buildingType !== BuildingType.ResourceFish &&
+                buildingState.buildingType !== BuildingType.ResourceWheat && (
+                  <Button
+                    className="mb-4"
+                    onClick={() => {
+                      toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
+                    }}
+                    isLoading={isLoading}
+                    variant="gold"
+                    withoutSound
+                  >
+                    <div className="flex items-center gap-2">
+                      <PlusIcon className="w-4 h-4" />
+                      Produce
+                    </div>
+                  </Button>
+                )}
+
               <Button
-                className="mb-4"
-                onClick={() => {
-                  toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
-                }}
-                isLoading={isLoading}
-                variant="gold"
-                withoutSound
-              >
-                <div className="flex items-center gap-2">
-                  <PlusIcon className="w-4 h-4" />
-                  Produce
-                </div>
-              </Button>
-              {/* <Button
                 className="mb-4"
                 onClick={handlePauseResumeProduction}
                 isLoading={isLoading}
                 variant="secondary"
                 withoutSound
               >
+                {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
                 {isPaused ? "Resume" : "Pause"}
-              </Button> */}
+              </Button>
               <Button
                 disabled={!canDestroyBuilding}
                 className="mb-4"

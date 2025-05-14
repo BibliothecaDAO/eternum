@@ -32,7 +32,7 @@ export interface MarketOrder {
 }
 
 export interface MergedNftData {
-  metadata: string | null;
+  metadata: RealmMetadata | null;
   minPrice?: bigint | null;
   marketplaceOwner?: string | null;
   order_id?: number | null;

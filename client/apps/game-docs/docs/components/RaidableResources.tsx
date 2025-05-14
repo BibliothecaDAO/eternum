@@ -1,5 +1,5 @@
 import { table } from "@/components/styles";
-import { RAIDABLE_RESOURCES, resources } from "@bibliothecadao/types";
+import { ResourcesIds, STEALABLE_RESOURCES, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 
 export const RaidableResources = () => {
@@ -14,7 +14,7 @@ export const RaidableResources = () => {
             </tr>
           </thead>
           <tbody>
-            {[...RAIDABLE_RESOURCES].reverse().map((resourceId, index) => {
+            {[...STEALABLE_RESOURCES].map((resourceId, index) => {
               const resource = resources.find((r) => r.id === resourceId);
               if (!resource) return null;
 
@@ -24,6 +24,12 @@ export const RaidableResources = () => {
                   <td style={table.resourceCell}>
                     <ResourceIcon name={resource.trait} id={resource.id} size="md" />
                     {resource.trait}
+                    {resourceId === ResourcesIds.Lords && (
+                      <span style={{ marginLeft: "8px", color: "#ff9800" }}>
+                        ⚠️{" "}
+                        <span style={{ fontSize: "0.85em" }}>No materials are safe, even $LORDS can be pillaged</span>
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
