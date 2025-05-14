@@ -1,18 +1,11 @@
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import {
-  ClientComponents,
-  ContractAddress,
-  DAYDREAMS_AGENTS,
-  GuildInfo,
-  ID,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
@@ -43,9 +36,9 @@ export const ArmyEntityDetail = memo(
     const [structureResources, setStructureResources] = useState<
       ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
     >(undefined);
-    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | undefined>(
-      undefined,
-    );
+    const [structure, setStructure] = useState<
+      ComponentValue<ClientComponents["Structure"]["schema"]> | null | undefined
+    >(undefined);
     const userAddress = ContractAddress(account.account.address);
     const [addressName, setAddressName] = useState<string | undefined>(undefined);
     const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
@@ -76,7 +69,11 @@ export const ArmyEntityDetail = memo(
         );
 
         const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-        setAddressName(structure?.owner ? getAddressName(structure?.owner, components) : DAYDREAMS_AGENTS);
+        setAddressName(
+          structure?.owner
+            ? getAddressName(structure?.owner, components)
+            : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId),
+        );
         setStamina(stamina);
         setMaxStamina(maxStamina);
         setPlayerGuild(guild);
@@ -87,6 +84,29 @@ export const ArmyEntityDetail = memo(
       };
       fetch();
     }, [armyEntityId]);
+
+    useEffect(() => {
+      const fetchStructure = async () => {
+        if (!explorer) return;
+        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
+
+        // If a structure object is returned, use it; otherwise explicitly mark as null (fetched, but none found)
+        if (result.structure !== undefined) {
+          // Found (may still be undefined if Torii entity did not include Structure model)
+          if (result.structure) {
+            setStructure(result.structure);
+          } else {
+            setStructure(null);
+          }
+          // Always set resources even if undefined to stop further fetching attempts
+          setStructureResources(result.resources);
+        } else {
+          // In unexpected scenario (shouldn't happen), mark as null to avoid indefinite loading
+          setStructure(null);
+        }
+      };
+      fetchStructure();
+    }, [explorer]);
 
     const isMine = structure?.owner === userAddress;
 
@@ -118,11 +138,15 @@ export const ArmyEntityDetail = memo(
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col w-full gap-2">
             {/* Army name - made more prominent */}
-            {explorer && (
+            {/* {explorer && (
               <div className="flex flex-col gap-0.5">
                 <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                   <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>
-                    {explorer.troops.category} {explorer.troops.tier} {explorer.explorer_id}
+                    {getCharacterName(
+                      explorer.troops.tier as TroopTier,
+                      explorer.troops.category as TroopType,
+                      armyEntityId,
+                    )}
                   </h6>
                 </div>
                 <div
@@ -131,7 +155,7 @@ export const ArmyEntityDetail = memo(
                   Army
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Army warnings */}
             {structureResources && explorerResources && (
@@ -187,5 +211,3 @@ export const ArmyEntityDetail = memo(
     );
   },
 );
-
-ArmyEntityDetail.displayName = "ArmyEntityDetail";

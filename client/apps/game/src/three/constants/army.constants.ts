@@ -24,14 +24,18 @@ export const TROOP_TO_MODEL: Record<TroopType, Record<TroopTier, ModelType>> = {
 };
 
 export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
-  [ModelType.Boat]: "boat",
-  [ModelType.Knight1]: "knight1",
-  [ModelType.Knight2]: "knight2",
-  [ModelType.Knight3]: "knight3",
-  [ModelType.Crossbowman1]: "archer1",
-  [ModelType.Crossbowman2]: "archer2",
-  [ModelType.Crossbowman3]: "archer3",
-  [ModelType.Paladin1]: "paladin1",
-  [ModelType.Paladin2]: "paladin2",
-  [ModelType.Paladin3]: "paladin3",
+  [ModelType.Boat]: "units/boat.glb",
+  [ModelType.Knight1]: "units/knight1.glb",
+  [ModelType.Knight2]: "units/knight2.glb",
+  [ModelType.Knight3]: "units/knight3.glb",
+  [ModelType.Crossbowman1]: "units/archer1.glb",
+  [ModelType.Crossbowman2]: "units/archer2.glb",
+  [ModelType.Crossbowman3]: "units/archer3.glb",
+  [ModelType.Paladin1]: "units/paladin1.glb",
+  [ModelType.Paladin2]: "units/paladin2.glb",
+  [ModelType.Paladin3]: "units/paladin3.glb",
+  [ModelType.AgentApix]: "agents/apix.glb",
+  [ModelType.AgentElisa]: "agents/elisa.glb",
+  [ModelType.AgentIstarai]: "agents/istarai.glb",
+  [ModelType.AgentYP]: "agents/ypanther.glb",
 };
