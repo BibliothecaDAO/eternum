@@ -5,6 +5,7 @@ import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
 import { COLORS } from "@/ui/components/settlement/settlement-constants";
+import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -182,6 +183,10 @@ export class ArmyManager {
       const biome = Biome.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
       this.armyModel.assignModelToEntity(army.entityId, modelType);
+
+      if (army.isDaydreamsAgent) {
+        this.armyModel.setIsAgent(true);
+      }
 
       const rotationSeed = hashCoordinates(x, y);
       const rotationIndex = Math.floor(rotationSeed * 6);
@@ -433,7 +438,12 @@ export class ArmyManager {
     line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
     line1.style.color = army.isDaydreamsAgent ? "inherit" : army.color;
     const line2 = document.createElement("strong");
-    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+
+    if (army.isDaydreamsAgent) {
+      line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
+    } else {
+      line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+    }
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);

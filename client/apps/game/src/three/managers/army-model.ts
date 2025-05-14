@@ -1,5 +1,6 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
 import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -49,6 +50,9 @@ export class ArmyModel {
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
   private readonly boatScale = new THREE.Vector3(1, 1, 1);
   private readonly agentScale = new THREE.Vector3(2, 2, 2);
+
+  // agent
+  private isAgent: boolean = false;
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
@@ -567,9 +571,12 @@ export class ArmyModel {
       return ModelType.Boat;
     }
 
-    if (entityId === 275) {
-      return ModelType.AgentApix;
+    if (this.isAgent) {
+      if (getCharacterModel(troopTier, troopType, entityId) !== undefined) {
+        return getCharacterModel(troopTier, troopType, entityId)!;
+      }
     }
+
     // For land biomes, return the appropriate model based on troop type and tier
     return TROOP_TO_MODEL[troopType][troopTier];
   }
@@ -610,6 +617,14 @@ export class ArmyModel {
       currentRotation: movement.currentRotation,
       targetRotation: movement.currentRotation,
     });
+  }
+
+  /**
+   * Sets the isAgent flag
+   * @param isAgent - Whether the entity is an agent
+   */
+  public setIsAgent(isAgent: boolean): void {
+    this.isAgent = isAgent;
   }
 
   // Label Management Methods
