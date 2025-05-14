@@ -76,7 +76,7 @@ export const QuestContainer = ({
         to_address: account?.address,
       });
 
-      window.open(`https://darkshuffle.dev/play/${Number(currentGameCount + 1)}`, "_blank");
+      window.open(`https://darkshuffle.io/play/${Number(currentGameCount + 1)}`, "_blank");
     } catch (error) {
       console.error(error);
     } finally {
