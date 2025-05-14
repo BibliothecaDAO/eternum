@@ -43,6 +43,7 @@ import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
+import { ResourceFXManager } from "../managers/resource-fx-manager";
 import {
   ArmySystemUpdate,
   ExplorerRewardSystemUpdate,
@@ -99,7 +100,7 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
 
   private fxManager: FXManager;
-
+  private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
 
   constructor(
@@ -113,6 +114,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -563,6 +565,7 @@ export default class WorldmapScene extends HexagonScene {
     this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
+    this.resourceFXManager.preloadCommonResources();
   }
 
   onSwitchOff() {
@@ -1070,5 +1073,41 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
+  }
+
+  destroy() {
+    this.resourceFXManager.destroy();
+  }
+
+  /**
+   * Display a resource gain/loss effect at a hex position
+   * @param resourceId The resource ID from ResourcesIds
+   * @param amount Amount of resource (positive for gain, negative for loss)
+   * @param col Hex column
+   * @param row Hex row
+   * @param text Optional text to display below the resource
+   */
+  public displayResourceGain(
+    resourceId: number,
+    amount: number,
+    col: number,
+    row: number,
+    text?: string,
+  ): Promise<void> {
+    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text);
+  }
+
+  /**
+   * Display multiple resource changes in sequence
+   * @param resources Array of resource changes to display
+   * @param col Hex column
+   * @param row Hex row
+   */
+  public displayMultipleResources(
+    resources: Array<{ resourceId: number; amount: number; text?: string }>,
+    col: number,
+    row: number,
+  ): Promise<void> {
+    return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
   }
 }
