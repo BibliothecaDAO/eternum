@@ -10,7 +10,6 @@ import {
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -22,7 +21,6 @@ interface ArmyWarningProps {
 }
 
 export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
-  const dojo = useDojo();
   const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
@@ -37,7 +35,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
       ResourcesIds.Fish,
     );
     return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
-  }, [dojo.setup.components, army.owner]);
+  }, [structureResources, army.owner]);
 
   const exploreFoodCosts = useMemo(
     () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),

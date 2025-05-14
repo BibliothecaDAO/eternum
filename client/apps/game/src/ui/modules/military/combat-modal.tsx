@@ -3,7 +3,6 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ID } from "@bibliothecadao/types";
 import { Suspense, useState } from "react";
 import { AttackContainer } from "./attack-container";
-import { HelpContainer } from "./help-container";
 
 enum ModalTab {
   Attack = "Attack",
@@ -33,28 +32,26 @@ export const CombatModal = ({
         {/* Tab Selection */}
         <div className="flex justify-center border-b border-gold/30">
           <div className="flex">
-            {Object.values(ModalTab).map((tab) => (
-              <button
-                key={tab}
-                className={`px-6 py-3 text-lg font-semibold ${
-                  activeTab === tab ? "text-gold border-b-2 border-gold" : "text-gold/50 hover:text-gold/70"
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
+            <button
+              className={`px-6 py-3 text-lg font-semibold text-gold border-b-2 border-gold`}
+              onClick={() => setActiveTab(ModalTab.Attack)}
+            >
+              {ModalTab.Attack}
+            </button>
+            <button
+              className={`px-6 py-3 text-lg font-semibold text-gold/30 cursor-not-allowed flex items-center`}
+              disabled
+            >
+              {ModalTab.Transfer}{" "}
+              <span className="ml-2 text-xs bg-gold/20 text-gold px-2 py-0.5 rounded">COMING SOON</span>
+            </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
-            {activeTab === ModalTab.Attack ? (
-              <AttackContainer attackerEntityId={selected.id} targetHex={target.hex} />
-            ) : (
-              <HelpContainer selected={selected} target={target} />
-            )}
+            <AttackContainer attackerEntityId={selected.id} targetHex={target.hex} />
           </Suspense>
         </div>
       </div>

@@ -1772,6 +1772,7 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { RAIDABLE_RESOURCES } from "@bibliothecadao/types";
 import { resource } from "@/components/styles";
 import { RaidableResources } from "@/components/RaidableResources";
+import { importantNote } from "@/components/styles";
 
 # 💰 Raiding
 
@@ -1789,14 +1790,17 @@ Before attempting a raid, your army must meet the following requirements:
 * Be adjacent to the target structure
 * Structure must contain raidable resources
 
-## Raidable Resources
+## Raidable Materials
 
-Raidable resources are stolen based on rarity, with the most valuable taken first. Rarer resources are prioritized
+Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
 during raids:
 
 <RaidableResources />
 
-<div style={resource.noteStyle}>Note: Tokens such as $LORDS and $STRK cannot be stolen through raiding.</div>
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
+</div>
 
 ## Raid Success
 

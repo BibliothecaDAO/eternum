@@ -3,40 +3,52 @@ import { ResourcesIds } from "./index";
 
 export const STEALABLE_RESOURCES = [
   ResourcesIds.Lords,
+  ResourcesIds.Donkey,
+  ResourcesIds.AncientFragment,
+  // T3 Troops
   ResourcesIds.PaladinT3,
   ResourcesIds.CrossbowmanT3,
   ResourcesIds.KnightT3,
+
+  ResourcesIds.Dragonhide,
+  ResourcesIds.Mithral,
+  ResourcesIds.Adamantine,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.TrueIce,
+
+  // T2 Troops
   ResourcesIds.PaladinT2,
   ResourcesIds.CrossbowmanT2,
   ResourcesIds.KnightT2,
+
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.Ignium,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ruby,
+  ResourcesIds.Sapphire,
+  ResourcesIds.Diamonds,
+
+  // T1 Troops
   ResourcesIds.Paladin,
   ResourcesIds.Crossbowman,
   ResourcesIds.Knight,
-  ResourcesIds.Donkey,
-  ResourcesIds.Labor,
-  ResourcesIds.AncientFragment,
-  ResourcesIds.Dragonhide,
-  ResourcesIds.EtherealSilica,
-  ResourcesIds.Sapphire,
-  ResourcesIds.Adamantine,
-  ResourcesIds.TrueIce,
-  ResourcesIds.TwilightQuartz,
-  ResourcesIds.Ignium,
+
   ResourcesIds.Hartwood,
-  ResourcesIds.Diamonds,
-  ResourcesIds.Ruby,
-  ResourcesIds.DeepCrystal,
-  ResourcesIds.ColdIron,
-  ResourcesIds.AlchemicalSilver,
-  ResourcesIds.Mithral,
-  ResourcesIds.Silver,
   ResourcesIds.Gold,
-  ResourcesIds.Obsidian,
+  ResourcesIds.ColdIron,
   ResourcesIds.Ironwood,
+  ResourcesIds.Silver,
+  ResourcesIds.Obsidian,
   ResourcesIds.Copper,
-  ResourcesIds.Wood,
+  // labor
+  ResourcesIds.Labor,
+
   ResourcesIds.Coal,
   ResourcesIds.Stone,
+  ResourcesIds.Wood,
+
+  // food
   ResourcesIds.Fish,
   ResourcesIds.Wheat,
 ];
