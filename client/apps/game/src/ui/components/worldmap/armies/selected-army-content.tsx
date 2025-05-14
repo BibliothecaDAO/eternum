@@ -3,14 +3,13 @@ import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArmyChip } from "../../military/army-chip";
-import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) => {
   const {
     setup: { components },
   } = useDojo();
-  const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.owner)]));
+  const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.explorer.owner)]));
   const explorerResources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.entityId)]));
 
   return (
@@ -32,13 +31,6 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
           />
         )}
         <ArmyChip className="bg-black/90" army={playerArmy} showButtons={false} />
-        {resources && (
-          <InventoryResources
-            resources={resources}
-            className="flex gap-1 mt-2 overflow-x-auto no-scrollbar"
-            resourcesIconSize="xs"
-          />
-        )}
       </div>
     </div>
   );

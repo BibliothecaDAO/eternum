@@ -3,7 +3,13 @@ import { ProductionModal } from "@/ui/components/production/production-modal";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  getBalance,
+  getEntityIdFromKeys,
+  unpackValue,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
   ContractAddress,
@@ -112,6 +118,10 @@ export const Castle = () => {
     setIsLevelUpLoading(false);
   };
 
+  const resourcesProduced = useMemo(() => {
+    return unpackValue(structure?.resources_packed || 0n);
+  }, [structure]);
+
   if (!structure) return null;
   const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
 
@@ -205,13 +215,14 @@ export const Castle = () => {
 
           {/* Resources Section */}
           <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
-            {structure && structure.base.category === StructureType.Realm && (
-              <RealmResourcesIO
-                size="md"
-                titleClassName="uppercase font-semibold text-gold"
-                realmEntityId={structure.entity_id}
-              />
-            )}
+            {structure &&
+              (structure.base.category === StructureType.Realm || structure.base.category === StructureType.Castle) && (
+                <RealmResourcesIO
+                  size="md"
+                  titleClassName="uppercase font-semibold text-gold"
+                  resourcesProduced={resourcesProduced}
+                />
+              )}
           </div>
 
           {/* Labor Production Button */}

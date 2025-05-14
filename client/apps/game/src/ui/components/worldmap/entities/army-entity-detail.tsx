@@ -6,9 +6,9 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 
 export interface ArmyEntityDetailProps {
@@ -29,6 +29,7 @@ export const ArmyEntityDetail = memo(
     const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
       undefined,
     );
+
     const [explorerResources, setExplorerResources] = useState<
       ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
     >(undefined);
@@ -39,45 +40,46 @@ export const ArmyEntityDetail = memo(
       undefined,
     );
     const userAddress = ContractAddress(account.account.address);
+    const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
+    const [stamina, setStamina] = useState<{ amount: bigint; updated_tick: bigint } | undefined>(undefined);
+    const [maxStamina, setMaxStamina] = useState<number | undefined>(undefined);
 
     useEffect(() => {
-      const fetchExplorer = async () => {
-        const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        setExplorer(explorer?.explorer);
-        setExplorerResources(explorer?.resources);
+      const fetch = async () => {
+        const { explorer, resources: explorerResources } = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        if (!explorer) {
+          return {
+            explorer: undefined,
+            explorerResources: undefined,
+            structure: undefined,
+            structureResources: undefined,
+          };
+        }
+        const { structure, resources: structureResources } = await getStructureFromToriiClient(
+          toriiClient,
+          explorer.owner,
+        );
+
+        const { currentArmiesTick } = getBlockTimestamp();
+        const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+        const maxStamina = StaminaManager.getMaxStamina(
+          explorer.troops.category as TroopType,
+          explorer.troops.tier as TroopTier,
+        );
+
+        const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
+        setStamina(stamina);
+        setMaxStamina(maxStamina);
+        setPlayerGuild(guild);
+        setExplorer(explorer);
+        setExplorerResources(explorerResources);
+        setStructure(structure);
+        setStructureResources(structureResources);
       };
-      fetchExplorer();
+      fetch();
     }, [armyEntityId]);
 
-    useEffect(() => {
-      const fetchStructure = async () => {
-        if (!explorer) return;
-        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
-        if (result) {
-          setStructure(result.structure);
-          setStructureResources(result?.resources);
-        }
-      };
-      fetchStructure();
-    }, [explorer]);
-
-    const playerGuild = useMemo(() => {
-      if (!structure) return null;
-      return getGuildFromPlayerAddress(ContractAddress(structure.owner || 0n), components);
-    }, [structure, components]);
-
     const isMine = structure?.owner === userAddress;
-
-    const stamina = useMemo(() => {
-      if (!explorer) return { amount: 0n, updated_tick: 0n };
-      const { currentArmiesTick } = getBlockTimestamp();
-      return StaminaManager.getStamina(explorer.troops, currentArmiesTick);
-    }, [explorer]);
-
-    const maxStamina = useMemo(() => {
-      if (!explorer) return 0;
-      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType, explorer.troops.tier as TroopTier);
-    }, [explorer]);
 
     // Precompute common class strings
     const headerTextClass = compact ? "text-base" : "text-lg";
@@ -133,7 +135,14 @@ export const ArmyEntityDetail = memo(
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
-                <StaminaResource entityId={armyEntityId} stamina={stamina} maxStamina={maxStamina} className="flex-1" />
+                {stamina && maxStamina && (
+                  <StaminaResource
+                    entityId={armyEntityId}
+                    stamina={stamina}
+                    maxStamina={maxStamina}
+                    className="flex-1"
+                  />
+                )}
               </div>
 
               <div className="flex items-center justify-between gap-2">
