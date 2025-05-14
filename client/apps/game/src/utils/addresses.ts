@@ -22,7 +22,7 @@ export const getLordsAddress = () => {
 };
 
 export const getClientFeeRecipient = () => {
-  return env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+  return env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT;
 };
 
 export const getVillagePassAddress = () => {
