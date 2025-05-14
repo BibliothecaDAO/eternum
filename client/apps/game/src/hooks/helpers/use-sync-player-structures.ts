@@ -17,8 +17,6 @@ export const useSyncPlayerStructures = () => {
   >([]);
   const setLoading = useUIStore((state) => state.setLoading);
 
-  console.log({ fetchedStructures, syncedStructures: syncedStructures.current });
-
   useEffect(() => {
     const fetchStructures = () => {
       fetchStructuresByOwner(account.account.address).then((structures) => {

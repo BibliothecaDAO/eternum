@@ -11,13 +11,15 @@ import { calculateArrivalTime, formatArrivalTime, normalizeDiacriticalMarks } fr
 import {
   computeTravelTime,
   configManager,
-  getAddressNameFromEntity,
+  getAddressName,
+  getRealmNameById,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { EntityType, ID } from "@bibliothecadao/types";
+import { ContractAddress, EntityType, ID, StructureType } from "@bibliothecadao/types";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import { EntityIdFormat } from "./transfer-view";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -65,7 +67,10 @@ const SelectEntitiesStep = memo(
     setSelectedEntityIdFrom: (entity: SelectedEntity | null) => void;
     setSelectedEntityIdTo: (entity: SelectedEntity | null) => void;
     travelTime: number | undefined;
-    entitiesListWithAccountNames: { entities: any[]; name: string }[];
+    entitiesListWithAccountNames: {
+      entities: { entityId: ID; accountName: string | undefined; name: string }[];
+      name: string;
+    }[];
     fromSearchTerm: string;
     setFromSearchTerm: (term: string) => void;
     toSearchTerm: string;
@@ -78,7 +83,11 @@ const SelectEntitiesStep = memo(
       return entities.some((entity) => entity.entityId === selectedEntityId);
     };
 
-    const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
+    const filterEntities = (
+      entities: { entityId: ID; accountName: string | undefined; name: string }[],
+      searchTerm: string,
+      selectedEntityId: ID | undefined,
+    ) => {
       const normalizedSearchTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
       return entities.filter(
         (entity) =>
@@ -175,7 +184,7 @@ export const TransferBetweenEntities = ({
   filtered,
   filterBy,
 }: {
-  entitiesList: { entities: { entityId: ID }[]; name: string }[];
+  entitiesList: { entities: EntityIdFormat[]; name: string }[];
   filtered: boolean;
   filterBy: (filtered: boolean) => void;
 }) => {
@@ -247,7 +256,10 @@ export const TransferBetweenEntities = ({
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,
-        accountName: getAddressNameFromEntity(entity.entityId, components),
+        accountName: getAddressName(ContractAddress(entity.owner), components),
+        name: entity.realmId
+          ? getRealmNameById(entity.realmId)
+          : `${StructureType[entity.category]} ${entity.entityId}`,
       })),
       name,
     }));
