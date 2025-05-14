@@ -1,4 +1,5 @@
 import { ContractAddress, HexPosition, ID, StructureType } from "@bibliothecadao/types";
+import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
@@ -165,7 +166,7 @@ export async function fetchRealmSettlements(): Promise<StructureLocation[]> {
  */
 export async function fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
   const url = `${API_BASE_URL}?query=${encodeURIComponent(
-    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", "0x0" + owner.slice(2)),
+    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", getChecksumAddress(owner).toLowerCase()),
   )}`;
   const response = await fetch(url);
 
