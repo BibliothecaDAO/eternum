@@ -43,7 +43,14 @@ import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
-import { ArmySystemUpdate, QuestSystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
+import {
+  ArmySystemUpdate,
+  ExplorerRewardSystemUpdate,
+  QuestSystemUpdate,
+  SceneName,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+} from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
@@ -203,6 +210,10 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
+    });
+
+    this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
+      console.log({ update });
     });
 
     // add particles
