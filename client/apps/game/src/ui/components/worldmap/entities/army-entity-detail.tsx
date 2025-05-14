@@ -137,7 +137,9 @@ export const ArmyEntityDetail = memo(
         {/* Header with owner and guild info */}
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
           <div className="flex flex-col">
-            <h4 className={`${headerTextClass} font-bold`}>{addressName}</h4>
+            <h4 className={`${headerTextClass} font-bold`}>
+              {addressName} <span className="text-xs text-gold/80">({armyEntityId})</span>
+            </h4>
             {playerGuild && (
               <div className="text-xs text-gold/80">
                 {"< "}
