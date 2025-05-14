@@ -1,4 +1,13 @@
-import { BiomeType, BuildingType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BuildingType,
+  HexPosition,
+  ID,
+  ResourcesIds,
+  StructureType,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { StructureProgress } from "./common";
 
 export type ArmySystemUpdate = {
@@ -35,6 +44,11 @@ export type BuildingSystemUpdate = {
   paused: boolean;
 };
 
+export type ExplorerRewardSystemUpdate = {
+  explorerId: ID;
+  resourceId: ResourcesIds;
+  amount: number;
+};
 export type RealmSystemUpdate = {
   level: number;
   hexCoords: HexPosition;

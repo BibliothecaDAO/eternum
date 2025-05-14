@@ -1,5 +1,5 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
-import { getAddressName, getHyperstructureProgress } from "@bibliothecadao/eternum";
+import { divideByPrecision, getAddressName, getHyperstructureProgress } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
   BiomeType,
@@ -17,6 +17,7 @@ import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/con
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
+  ExplorerRewardSystemUpdate,
   StructureProgress,
   type StructureSystemUpdate,
   type TileSystemUpdate,
@@ -406,6 +407,31 @@ export class SystemManager {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
+            }
+          },
+          true,
+        );
+      },
+    };
+  }
+
+  public get ExplorerReward() {
+    return {
+      onUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.events.ExplorerMoveEvent,
+          callback,
+          async (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.events.ExplorerMoveEvent)) {
+              const [currentState, _prevState] = update.value;
+              if (!currentState) return undefined;
+
+              const result: ExplorerRewardSystemUpdate = {
+                explorerId: currentState.explorer_id,
+                resourceId: currentState.reward_resource_type,
+                amount: divideByPrecision(Number(currentState.reward_resource_amount)),
+              };
+              return result;
             }
           },
           true,

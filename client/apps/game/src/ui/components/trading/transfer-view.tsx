@@ -1,17 +1,40 @@
+import { fetchOtherStructures } from "@/services/api";
 import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
-import { getEntityName, getGuildMembersFromPlayerAddress, getRealmNameById } from "@bibliothecadao/eternum";
-import { ContractAddress, PlayerStructure, RealmWithPosition, StructureType } from "@bibliothecadao/types";
+import { getGuildMembersFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { ContractAddress, ID, Structure, StructureType } from "@bibliothecadao/types";
+import { useEffect, useMemo, useState } from "react";
+
+export type EntityIdFormat = {
+  entityId: ID;
+  realmId: ID;
+  category: StructureType;
+  owner: ContractAddress;
+};
 
 export const TransferView = () => {
   const {
     account: { account },
     setup: { components },
   } = useDojo();
-  const { Structure } = components;
+
+  const [otherVillages, setOtherVillages] = useState<EntityIdFormat[]>([]);
+  const [otherRealms, setOtherRealms] = useState<EntityIdFormat[]>([]);
+  const [otherHyperstructures, setOtherHyperstructures] = useState<EntityIdFormat[]>([]);
+  const [otherFragmentMines, setOtherFragmentMines] = useState<EntityIdFormat[]>([]);
+  const [otherBanks, setOtherBanks] = useState<EntityIdFormat[]>([]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const otherStructures = await fetchOtherStructures(account.address);
+      setOtherVillages(otherStructures.filter((a) => a.category === StructureType.Village));
+      setOtherRealms(otherStructures.filter((a) => a.category === StructureType.Realm));
+      setOtherHyperstructures(otherStructures.filter((a) => a.category === StructureType.Hyperstructure));
+      setOtherFragmentMines(otherStructures.filter((a) => a.category === StructureType.FragmentMine));
+      setOtherBanks(otherStructures.filter((a) => a.category === StructureType.Bank));
+    };
+    fetch();
+  }, [account.address]);
 
   const playerStructures = usePlayerStructures();
 
@@ -24,97 +47,93 @@ export const TransferView = () => {
     );
   }, [account.address]);
 
-  const otherStructuresQuery = useEntityQuery([
-    Has(Structure),
-    NotValue(Structure, { owner: ContractAddress(account.address) }),
-  ]);
+  const mapToEntityIdFormat = (structure: Structure): EntityIdFormat => {
+    return {
+      entityId: structure.entityId,
+      realmId: structure.structure.metadata.realm_id,
+      category: structure.structure.base.category,
+      owner: structure.structure.owner,
+    };
+  };
 
-  const otherStructures = useMemo(() => {
-    return otherStructuresQuery
-      .map((id) => {
-        const structure = getComponentValue(Structure, id);
-        if (!structure || structure.base.category === StructureType.Realm) return;
-
-        const structureName = getEntityName(structure.entity_id, components);
-
-        const name = structureName ? `${structure.base.category} ${structureName}` : structure.base.category || "";
-        return {
-          structure,
-          entityId: structure.entity_id,
-          position: { x: structure.base.coord_x, y: structure.base.coord_y },
-          name,
-          owner: structure.owner,
-        };
-      })
-      .filter((structure): structure is PlayerStructure => structure !== undefined)
-      .sort((a, b) => Number(a.structure.base.category) - Number(b.structure.base.category));
-  }, [otherStructuresQuery]);
-
-  const otherRealmsQuery = useEntityQuery([
-    Has(Structure),
-    HasValue(Structure, { category: StructureType.Realm }),
-    NotValue(Structure, { owner: ContractAddress(account.address) }),
-  ]);
-
-  const otherRealms = useMemo(() => {
-    return otherRealmsQuery.map((id) => {
-      const structure = getComponentValue(Structure, id);
-      return {
-        ...structure?.metadata,
-        entityId: structure?.entity_id,
-        position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
-        name: structure ? getRealmNameById(structure.metadata.realm_id) : "",
-        owner: structure?.owner,
-      } as RealmWithPosition;
-    });
-  }, [otherRealmsQuery]);
-
-  return (
-    <TransferBetweenEntities
-      filterBy={setGuildOnly}
-      filtered={guildOnly}
-      entitiesList={[
-        {
-          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Realm),
-          name: "Your Realms",
-        },
-        {
-          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Village),
-          name: "Your Villages",
-        },
-        {
-          entities: playerStructures.filter(
-            (structure) => structure.structure.base.category === StructureType.Hyperstructure,
-          ),
-          name: "Your Hyperstructures",
-        },
-        {
-          entities: playerStructures.filter(
-            (structure) => structure.structure.base.category === StructureType.FragmentMine,
-          ),
-          name: "Your Fragment Mines",
-        },
-        {
-          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Bank),
-          name: "Your Banks",
-        },
-        {
-          entities: otherRealms.filter((a) =>
-            guildOnly
-              ? playersInPlayersGuildAddress.includes(a.owner)
-              : !playersInPlayersGuildAddress.includes(a.owner),
-          ),
-          name: "Other Realms",
-        },
-        {
-          entities: otherStructures.filter((a) =>
-            guildOnly
-              ? playersInPlayersGuildAddress.includes(a?.owner)
-              : !playersInPlayersGuildAddress.includes(a?.owner),
-          ),
-          name: "Other Structures",
-        },
-      ]}
-    />
+  // Create entity lists and filter out empty categories
+  const entitiesList = useMemo(
+    () => [
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Realm)
+          .map(mapToEntityIdFormat),
+        name: "Your Realms",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Village)
+          .map(mapToEntityIdFormat),
+        name: "Your Villages",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Hyperstructure)
+          .map(mapToEntityIdFormat),
+        name: "Your Hyperstructures",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.FragmentMine)
+          .map(mapToEntityIdFormat),
+        name: "Your Fragment Mines",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Bank)
+          .map(mapToEntityIdFormat),
+        name: "Your Banks",
+      },
+      {
+        entities: otherRealms.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Realms",
+      },
+      {
+        entities: otherVillages.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Villages",
+      },
+      {
+        entities: otherHyperstructures.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Hyperstructures",
+      },
+      {
+        entities: otherFragmentMines.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Fragment Mines",
+      },
+      {
+        entities: otherBanks.filter((a) =>
+          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+        ),
+        name: "Other Banks",
+      },
+    ],
+    [
+      playerStructures,
+      otherRealms,
+      otherVillages,
+      otherHyperstructures,
+      otherFragmentMines,
+      otherBanks,
+      guildOnly,
+      playersInPlayersGuildAddress,
+    ],
   );
+
+  // Filter out categories with no entities
+  const entitiesListFiltered = entitiesList.filter((item) => item.entities.length > 0);
+
+  return <TransferBetweenEntities filterBy={setGuildOnly} filtered={guildOnly} entitiesList={entitiesListFiltered} />;
 };
