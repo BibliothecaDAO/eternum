@@ -3,6 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
+use s1_eternum::constants::{all_resource_ids, is_bank};
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
@@ -10,7 +11,7 @@ use s1_eternum::models::resource::resource::{
 };
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
-    StructureMetadataStoreImpl,
+    StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight, WeightImpl};
@@ -93,6 +94,37 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         mut resources: Span<(u8, u128)>,
     ) {
         Self::_instant_burn(ref world, from_structure_id, ref from_structure_weight, resources);
+    }
+
+    #[inline(always)]
+    fn structure_weight_regularize(ref world: WorldStorage, from_structure_ids: Array<ID>) {
+        let all_resources: Array<u8> = all_resource_ids();
+        for structure_id in from_structure_ids {
+            // ensure structure has an owner
+            let structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            assert!(structure_owner.is_non_zero(), "structure has no owner");
+
+            // ensure structure weight capacity is not zero
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            assert!(structure_weight.capacity.is_non_zero(), "structure weight capacity is zero");
+
+            let mut new_total_weight: u128 = 0;
+            for i in 0..all_resources.len() {
+                let resource_type: u8 = *all_resources.at(i);
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+
+                // we use false here so that production is excluded
+                let mut structure_resource = SingleResourceStoreImpl::retrieve(
+                    ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, false,
+                );
+                new_total_weight += structure_resource.balance * resource_weight_grams;
+            };
+
+            if new_total_weight <= structure_weight.capacity {
+                structure_weight.weight = new_total_weight;
+                structure_weight.store(ref world, structure_id);
+            }
+        }
     }
 
     #[inline(always)]
@@ -342,7 +374,10 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // if the recipient is a village, and troops are being transferred,
             //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
-                if TroopResourceImpl::is_troop(resource_type) {
+                // hack to check if it is from lp position.
+                // todo: fix this
+                let is_lp_position = is_bank(from_id) && mint == true && pickup == true && resources.len() == 2;
+                if TroopResourceImpl::is_troop(resource_type) && !is_lp_position {
                     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                         ref world, to_id,
                     );

@@ -22,6 +22,7 @@ pub trait ITroopBattleSystems<T> {
 #[dojo::contract]
 pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
@@ -46,6 +47,23 @@ pub mod troop_battle_systems {
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::utils::random::{VRFImpl};
     use super::super::super::super::super::models::troop::GuardTrait;
+
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    struct BattleEvent {
+        #[key]
+        attacker_id: ID,
+        #[key]
+        defender_id: ID,
+        #[key]
+        attacker_owner: ID,
+        #[key]
+        defender_owner: ID,
+        winner_id: ID,
+        max_reward: Span<(u8, u128)>,
+        timestamp: u64,
+    }
 
 
     #[abi(embed_v0)]
@@ -251,6 +269,20 @@ pub mod troop_battle_systems {
                     world, winner_owner_structure_address.into(), Tasks::WIN_BATTLE, 1, starknet::get_block_timestamp(),
                 );
             }
+
+            // emit event
+            world
+                .emit_event(
+                    @BattleEvent {
+                        attacker_id: explorer_aggressor.explorer_id,
+                        defender_id: explorer_defender.explorer_id,
+                        attacker_owner: explorer_aggressor.owner,
+                        defender_owner: explorer_defender.owner,
+                        winner_id: winner_owner_structure_id,
+                        max_reward: steal_resources,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -432,6 +464,20 @@ pub mod troop_battle_systems {
                     world, guarded_structure_owner.into(), Tasks::DEFEND_STRUCTURE, 1, starknet::get_block_timestamp(),
                 );
             }
+
+            // emit event
+            world
+                .emit_event(
+                    @BattleEvent {
+                        attacker_id: explorer_id,
+                        defender_id: structure_id,
+                        attacker_owner: explorer_aggressor.owner,
+                        defender_owner: 0,
+                        winner_id: winner_owner_structure_id,
+                        max_reward: array![].span(),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -612,6 +658,20 @@ pub mod troop_battle_systems {
                     world, winner_owner_structure_address.into(), Tasks::WIN_BATTLE, 1, starknet::get_block_timestamp(),
                 );
             }
+
+            // emit event
+            world
+                .emit_event(
+                    @BattleEvent {
+                        attacker_id: structure_id,
+                        defender_id: explorer_id,
+                        attacker_owner: 0,
+                        defender_owner: explorer_defender.owner,
+                        winner_id: winner_owner_structure_id,
+                        max_reward: array![].span(),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }

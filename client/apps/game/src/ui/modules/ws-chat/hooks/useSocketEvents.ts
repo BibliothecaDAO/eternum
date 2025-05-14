@@ -313,13 +313,13 @@ export const useUserEvents = (chatClient: ChatClient | null) => {
       chatLogger.log(`User ${userId} went offline`);
 
       const currentOnlineUsers = onlineUsers;
-      const offlineUser = currentOnlineUsers.find((u) => u.id === userId);
+      const offlineUser = currentOnlineUsers.find((u) => u?.id === userId);
 
       actions.setOnlineUsers(currentOnlineUsers.filter((u) => u?.id !== userId));
 
       if (offlineUser) {
         const currentOfflineUsers = offlineUsers;
-        if (!currentOfflineUsers.some((u) => u.id === userId)) {
+        if (!currentOfflineUsers.some((u) => u?.id === userId)) {
           actions.setOfflineUsers([...currentOfflineUsers, offlineUser]);
         }
       }

@@ -538,8 +538,11 @@ export default class HexceptionScene extends HexagonScene {
           }
 
           if (mainStructureType === StructureType.Village) {
-            buildingGroup = BUILDINGS_GROUPS.VILLAGE;
-            buildingType = StructureType.Village;
+            // Only apply Village model to the central building (castle position)
+            if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
+              buildingGroup = BUILDINGS_GROUPS.VILLAGE;
+              buildingType = StructureType.Village;
+            }
           }
 
           // Handle hyperstructure type
