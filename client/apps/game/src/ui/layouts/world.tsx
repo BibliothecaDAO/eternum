@@ -72,7 +72,12 @@ const RealmTransferManager = lazy(() =>
   import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
 );
 
-const CustomHooks = () => {
+const StructureSynchronizer = () => {
+  useSyncPlayerStructures();
+  return null;
+};
+
+const ButtonStateManager = () => {
   const {
     account: { account },
     setup: { components },
@@ -129,7 +134,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const minigameStore = useMinigameStore.getState();
 
-  useSyncPlayerStructures();
   // uses recs so needs to be synced first
   const playerStructures = usePlayerStructures();
 
@@ -153,7 +157,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   return (
     <>
-      <CustomHooks />
+      <StructureSynchronizer />
+      <ButtonStateManager />
       <NotLoggedInMessage />
 
       {/* Main world layer */}
