@@ -19,10 +19,10 @@ const QUERIES = {
       mo."order.expiration" AS expiration,
       mo."order.collection_id" AS collection_id
     FROM "marketplace-MarketOrderModel" AS mo
-    WHERE mo."active" = 1
-      AND mo."collection_id" = 1  
-      AND mo."token_id" = '{tokenId}'
-    ORDER BY mo."price" ASC
+    WHERE mo."order.active" = 1
+      AND mo."order.collection_id" = 1  
+      AND mo."order.token_id" = '{tokenId}'
+    ORDER BY mo."order.price" ASC
   `,
   TOKEN_TRANSFERS: `
     WITH token_meta AS ( 

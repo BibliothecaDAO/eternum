@@ -2665,15 +2665,27 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   public async create_marketplace_order(props: SystemProps.CreateMarketplaceOrderProps) {
-    const { token_id, collection_id, price, expiration, signer } = props;
+    const { token_id, collection_id, price, expiration, signer, cancel_order_id } = props;
 
-    const call = this.createProviderCall(signer, {
-      contractAddress: props.marketplace_address.toString(),
-      entrypoint: "create",
-      calldata: [token_id, collection_id, price, expiration],
-    });
+    let calls = [
+      {
+        contractAddress: props.marketplace_address.toString(),
+        entrypoint: "create",
+        calldata: [token_id, collection_id, price, expiration],
+      },
+    ];
 
-    return await this.promiseQueue.enqueue(call);
+    if (cancel_order_id) {
+      calls = [
+        {
+          contractAddress: props.marketplace_address.toString(),
+          entrypoint: "cancel",
+          calldata: [cancel_order_id],
+        },
+        ...calls,
+      ];
+    }
+    return await this.executeAndCheckTransaction(signer, calls);
   }
 
   /**

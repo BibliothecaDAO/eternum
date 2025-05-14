@@ -65,6 +65,7 @@ export const RealmDetailModal = ({
     queryKey: ["activeMarketOrdersTotal", seasonPassAddress, realmData.token_id.toString()],
     queryFn: () => fetchActiveMarketOrders(seasonPassAddress, realmData.token_id.toString()),
     refetchInterval: 30_000,
+    enabled: isOpen,
   });
 
   // Get wallet state
@@ -161,17 +162,13 @@ export const RealmDetailModal = ({
     if (/*!contractAddress || */ !listPrice) return; // Basic validation
     const priceInWei = BigInt(parseFloat(listPrice) * 1e18); // Convert price to wei (assuming 18 decimals for LORDS)
 
-    if (activeMarketOrder?.[0]?.owner != address) {
-      await handleCancelOrder();
-      toast.success("Inactive order cancelled, now listing...");
-    }
-
     try {
       await listItem({
         token_id: parseInt(realmData.token_id.toString()), // Convert to string to match expected type
         collection_id, // Placeholder: Use actual collection ID if available/needed
         price: priceInWei,
         expiration: listExpiration,
+        cancel_order_id: activeMarketOrder?.[0]?.order_id,
       });
 
       setIsSyncing(true);
