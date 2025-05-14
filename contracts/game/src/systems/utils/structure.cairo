@@ -256,6 +256,9 @@ pub impl iStructureImpl of IStructureTrait {
                             start_troop_tier,
                             start_guard_troop_amount,
                         );
+
+                    // refetch structure weight
+                    structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 }
             } else {
                 realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
