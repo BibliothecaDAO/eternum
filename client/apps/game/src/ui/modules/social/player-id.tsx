@@ -5,7 +5,7 @@ import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { getAddressName, getEntityName, toHexString } from "@bibliothecadao/eternum";
+import { getAddressName, getEntityName, toHexString, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -116,6 +116,15 @@ export const PlayerId = ({
     );
   }, [playerStructures]);
 
+  const resourcesProduced = useMemo(() => {
+    return unpackValue(
+      playerStructures?.find(
+        (structure) =>
+          structure.base.category === StructureType.Realm || structure.base.category === StructureType.Village,
+      )?.resources_packed || 0n,
+    );
+  }, [playerStructures]);
+
   return (
     <div className="pointer-events-auto h-full flex flex-col">
       {!!selectedGuild && (
@@ -165,7 +174,7 @@ export const PlayerId = ({
                       <RealmResourcesIO
                         className="w-full font-normal"
                         titleClassName="font-normal text-sm"
-                        realmEntityId={structure.entity_id}
+                        resourcesProduced={resourcesProduced}
                       />
                     </div>
                   );
