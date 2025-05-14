@@ -25,6 +25,7 @@ pub mod resource_systems {
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
 
@@ -61,6 +62,16 @@ pub mod resource_systems {
         timestamp: u64,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplicitResourceBurn {
+        #[key]
+        pub entity_id: ID,
+        #[key]
+        pub entity_owner_id: ID,
+        pub resources: Span<(u8, u128)>,
+        pub timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
@@ -360,6 +371,16 @@ pub mod resource_systems {
             // burn resources
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
             iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
+
+            world
+                .emit_event(
+                    @ExplicitResourceBurn {
+                        entity_id: explorer_id,
+                        entity_owner_id: explorer.owner,
+                        resources: resources,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
         fn structure_burn(ref self: ContractState, structure_id: ID, resources: Span<(u8, u128)>) {
@@ -374,6 +395,16 @@ pub mod resource_systems {
             // burn resources
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
             iResourceTransferImpl::structure_burn_instant(ref world, structure_id, ref structure_weight, resources);
+
+            world
+                .emit_event(
+                    @ExplicitResourceBurn {
+                        entity_id: structure_id,
+                        entity_owner_id: 0,
+                        resources: resources,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
         fn structure_regularize_weight(ref self: ContractState, structure_ids: Array<ID>) {
