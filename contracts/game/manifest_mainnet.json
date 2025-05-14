@@ -1313,7 +1313,7 @@
   "contracts": [
     {
       "address": "0x4ea2da3f3f29a1c776c98b0c397ca31e717e972f626f1c184b77c371eb215cd",
-      "class_hash": "0x72375d059bae3095ca46ad9803000a8c6334e37d418767e5eace56497c2dfc7",
+      "class_hash": "0x51a22d180dc6517216ce112c965fe2c01f6cbbc8cacfc72630ced3e66c627fe",
       "abi": [
         {
           "type": "impl",
@@ -1770,7 +1770,7 @@
     },
     {
       "address": "0x787a18ab98c12ed0336f79037a92ed18807d8716529722196ecb8c91238806b",
-      "class_hash": "0xcbc96428fcdad3e21e9d54c281de9114581c8e9932f8d4c5dbc9b82b936c55",
+      "class_hash": "0x469a2b7f3d3b560bb7604aecf3a540d7eeeff90e5685a2926dfc66aa36edc19",
       "abi": [
         {
           "type": "impl",
@@ -5131,7 +5131,7 @@
     },
     {
       "address": "0x38aa1b7172ea9a15c1c6e15d2f32641a2b98abb634ef7075663412c0780b2f0",
-      "class_hash": "0x6fbb38cef6cfc49c485fe06957c7f3eda52c6f0a7fa5a4bd787b985d484c83",
+      "class_hash": "0x11a2c872fc18b1f4e60d2341649b337e570c6aa60d45b726c52d895b6c38bf4",
       "abi": [
         {
           "type": "impl",
@@ -5904,7 +5904,7 @@
     },
     {
       "address": "0x49c9f205f61e9b908e7eb656ec8b346d48084e65d2c3da77daa3ea943e6de46",
-      "class_hash": "0x4845e36db56e4c64ce89cc8450958c5b790490a99940a1cc3e3cd2b6769faf3",
+      "class_hash": "0x18967eb21d039abb4811141c0e847bf2e6e4ff0a9ab9a4cbc556e084dabfae0",
       "abi": [
         {
           "type": "impl",
@@ -6145,7 +6145,7 @@
     },
     {
       "address": "0x7b4db4a0e8a7aa50760e400c76fea967945c490f88e548004181fb2bec4d979",
-      "class_hash": "0x2f055b324533e041a05bb1b53c7feca489147a72fb0f94e1fc441b1211bfec",
+      "class_hash": "0x66b7e706ebad94c4b19f6b1fdae7bb281f631885698b3329c6682dcdfdc6965",
       "abi": [
         {
           "type": "impl",
@@ -6802,7 +6802,7 @@
     },
     {
       "address": "0x7a541dcbffaa4a2d503f40e0f839f4558d7022e7c2cfed483e6304846f8612f",
-      "class_hash": "0x63ee5e6d9d28a5d332670d543f4d5b5f786041bf2084b9a92e548ea3de4cd35",
+      "class_hash": "0x7a448e4e7247e0eec8e19dddb81124562618d35edc2dd412bdfbcc8e7c6a336",
       "abi": [
         {
           "type": "impl",
@@ -8197,7 +8197,7 @@
     },
     {
       "address": "0x7ae60a6bcc31ef06c08e60c09cf16e410a72805ec3270842362c8affb48ddec",
-      "class_hash": "0x119e6f503cd3b4967400da0360e39e7cb185cb863f8934e0f303a4b2b7b9ea6",
+      "class_hash": "0x38f2b845287f2e18aed2b10287411a58e2ac8c73e8e3cfd6cc09e3e2fe7e4c4",
       "abi": [
         {
           "type": "impl",
@@ -8669,7 +8669,7 @@
     },
     {
       "address": "0x1d490c9345ae1fc0c10c8fd69f6a9f31f893ba7486eae489b020eea1f8a8ef7",
-      "class_hash": "0x4f4be137c592c4ec9cf4031c748a8512c7feb9302b465ce9ec439f4ed64cdee",
+      "class_hash": "0x64626f16e087ecd08b5368229eb090a3e216e88663d84e6403ba10487b0db9c",
       "abi": [
         {
           "type": "impl",
@@ -8957,7 +8957,7 @@
     },
     {
       "address": "0x4525466d50e8c007d1fe2b0c916b8a8e3b5f05e2f562eb08033e1dba0ba721b",
-      "class_hash": "0x39550ae29bb7a2d432f3ead56e683fb4dc039802d66260c9c17dcbee06a39b7",
+      "class_hash": "0xf1812d90cdccebac22683fa4e9c5e426fdb6099cfb2d172386d215cff88376",
       "abi": [
         {
           "type": "impl",
@@ -9187,6 +9187,34 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "structure_burn",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "structure_regularize_weight",
+              "inputs": [
+                {
+                  "name": "structure_ids",
+                  "type": "core::array::Array::<core::integer::u32>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
             }
           ]
         },
@@ -9317,6 +9345,8 @@
         "troop_structure_adjacent_transfer",
         "structure_troop_adjacent_transfer",
         "troop_burn",
+        "structure_burn",
+        "structure_regularize_weight",
         "upgrade"
       ]
     },
@@ -9717,7 +9747,7 @@
     },
     {
       "address": "0x489701e7d386b42de3b20a598c96090b9cbfbbc54397f44819789da19b99532",
-      "class_hash": "0x6586482012efbfef18ee4385a7a1c8401f113621cc53e4a233ec85671260c78",
+      "class_hash": "0x3429815454dab6489cf5c1b63d5bdd3327a796504b51f930d29c1ec88a8bb71",
       "abi": [
         {
           "type": "impl",
@@ -10220,7 +10250,7 @@
     },
     {
       "address": "0x1ea013a75ea125643e745e71dd800e4b08dfc26263c9f4731f05e01f067ff9e",
-      "class_hash": "0x5f0e67b1597033be9b35edc5b14e31f1f5581b0656c8512b9f778324bba78f9",
+      "class_hash": "0x391d87a1507077938cf3fdd36e75d2babfbea06ed6c54c18832d1d3b5289375",
       "abi": [
         {
           "type": "impl",
@@ -10540,7 +10570,7 @@
     },
     {
       "address": "0x765e7a70d3dd78829d643dea6d3524b16115f3c1510ca04f3133c0092d9adb8",
-      "class_hash": "0x38175b3028f7c9480ebdf6a40f931437a143bb6f9084fd821a272f2e57ab0f0",
+      "class_hash": "0x84f309934dd8c02b6a03ae2608d95f6282e82e8838df993f39963687f670c1",
       "abi": [
         {
           "type": "impl",
@@ -11774,7 +11804,7 @@
     },
     {
       "address": "0xb695bc2b53c60be0db549b8c4faf42a8df3f440d321dc38eb7d1bca58c71ed",
-      "class_hash": "0x2f7833b975a6b7b7fb52a77ff87c26d1c926ba817d65820ca3a20e79c4b0e4",
+      "class_hash": "0x435854885f5208313bca1e649201a88fd85d28ae6ce1563aacde8ee4e388306",
       "abi": [
         {
           "type": "impl",
@@ -12026,7 +12056,7 @@
     },
     {
       "address": "0x4eda0975e3b6eaf78bac5626c5bf06ee51297365134dc5f70d0074ece0f63dd",
-      "class_hash": "0x1bb8518122e5d1633ccba4a61ca57f0fab92265b45dac7015faf91e7c8609b3",
+      "class_hash": "0x4dab1d6b0b0f9ebcf07c8c5a34091c42461f86bfdf319a4fd8ac3717b20ff5d",
       "abi": [
         {
           "type": "impl",
@@ -12639,6 +12669,12 @@
     },
     {
       "members": [],
+      "class_hash": "0xeaa6456b4e65743c07a67d0e52e3b9cd0457194700f45d66dc5d14ef5cf214",
+      "tag": "s1_eternum-BattleEvent",
+      "selector": "0x5b576ae0561754ac01a5f26e47e72dc3ff073142585dcb5094445cb5532d2f5"
+    },
+    {
+      "members": [],
       "class_hash": "0xd693a28fe8a8a417c1c98a0370d7cdf37443e0675ec3645c3233163ea35706",
       "tag": "s1_eternum-BurnDonkey",
       "selector": "0x4a1aac57c8cb6ec732bd40283fd1a892987d708a6b8a7d3a4dd65da6f0e7700"
@@ -12663,9 +12699,21 @@
     },
     {
       "members": [],
+      "class_hash": "0x18bbc3ba86ec9e1c0508e58ff036e1bf59621295dde521d81b52ccc5dfd5578",
+      "tag": "s1_eternum-ExplicitResourceBurn",
+      "selector": "0x7d2a21953851db68ba009a2ffcd952dbb586bc2c50780b99264d238a3a3943f"
+    },
+    {
+      "members": [],
       "class_hash": "0x2cfb4665ae327d6d0109989cd298a4091e6ab6753e70d2f6aabff9d3739650a",
       "tag": "s1_eternum-ExplorerMoveEvent",
       "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
+    },
+    {
+      "members": [],
+      "class_hash": "0x4871bc20c2b3dd83623ef4857e486bfacba7b67f857a0ca2a1d9ba94029e487",
+      "tag": "s1_eternum-ExplorerNewRaidEvent",
+      "selector": "0x46d3b67bf9064e701e812b922f1bb4598603be7765b91d93ae562a2cd2f1afb"
     },
     {
       "members": [],
