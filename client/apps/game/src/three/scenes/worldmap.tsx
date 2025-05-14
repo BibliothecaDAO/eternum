@@ -32,6 +32,7 @@ import {
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  findResourceById,
   getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
@@ -215,7 +216,16 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
-      console.log({ update });
+      const { explorerId, resourceId, amount } = update;
+      // Find the army position using explorerId
+      const armyPosition = this.armiesPositions.get(explorerId);
+      if (armyPosition) {
+        const resource = findResourceById(resourceId);
+        // Display the resource gain at the army's position
+        this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
+      } else {
+        console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
+      }
     });
 
     // add particles
@@ -565,7 +575,6 @@ export default class WorldmapScene extends HexagonScene {
     this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
-    this.resourceFXManager.preloadCommonResources();
   }
 
   onSwitchOff() {
@@ -1094,7 +1103,7 @@ export default class WorldmapScene extends HexagonScene {
     row: number,
     text?: string,
   ): Promise<void> {
-    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text);
+    return this.resourceFXManager.playResourceFx(resourceId, amount, col, row, text, { duration: 3.0 });
   }
 
   /**

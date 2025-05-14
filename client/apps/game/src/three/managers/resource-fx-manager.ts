@@ -95,7 +95,7 @@ class ResourceFXInstance {
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, -0.8, 0);
+      this.label.position.set(0, -1, 0);
       this.group.add(this.label);
     }
 
@@ -211,24 +211,57 @@ export class ResourceFXManager {
     this.defaultSize = defaultSize;
     this.textureLoader = new THREE.TextureLoader();
     this.baseFXManager = new FXManager(scene, defaultSize);
+
+    // Automatically preload all resource textures on initialization
+    this.preloadResourceTextures();
   }
 
   /**
-   * Preloads resource textures for common resources
+   * Preloads textures for all resources
+   * @private
    */
-  public preloadCommonResources() {
-    const commonResources = [
+  private preloadResourceTextures() {
+    // Build an array with all resource IDs
+    const resourceIds = [
+      // Basic resources
       ResourcesIds.Wood,
       ResourcesIds.Stone,
       ResourcesIds.Coal,
+      ResourcesIds.Copper,
+      ResourcesIds.Obsidian,
+      ResourcesIds.Silver,
+      ResourcesIds.Ironwood,
+      ResourcesIds.ColdIron,
+      ResourcesIds.Gold,
+      ResourcesIds.Hartwood,
+      ResourcesIds.Diamonds,
+      ResourcesIds.Sapphire,
+      ResourcesIds.Ruby,
+      ResourcesIds.DeepCrystal,
+      ResourcesIds.Ignium,
+      ResourcesIds.EtherealSilica,
+      ResourcesIds.TrueIce,
+      ResourcesIds.TwilightQuartz,
+      ResourcesIds.AlchemicalSilver,
+      ResourcesIds.Adamantine,
+      ResourcesIds.Mithral,
+      ResourcesIds.Dragonhide,
       ResourcesIds.Labor,
+      ResourcesIds.AncientFragment,
+
+      ResourcesIds.Lords,
+
+      // Food resources
       ResourcesIds.Wheat,
       ResourcesIds.Fish,
     ];
 
-    for (const resourceId of commonResources) {
+    // Preload all resources
+    for (const resourceId of resourceIds) {
       this.getOrLoadTexture(resourceId);
     }
+
+    console.log(`[ResourceFXManager] Preloaded ${resourceIds.length} resource textures`);
   }
 
   private getOrLoadTexture(resourceId: number): THREE.Texture {
