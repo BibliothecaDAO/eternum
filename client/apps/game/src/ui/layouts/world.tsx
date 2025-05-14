@@ -1,16 +1,14 @@
-import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -128,135 +126,12 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 };
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const syncedStructures = useRef<Set<string>>(new Set());
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const minigameStore = useMinigameStore.getState();
-  const { setup, account } = useDojo();
+
+  useSyncPlayerStructures();
+  // uses recs so needs to be synced first
   const playerStructures = usePlayerStructures();
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  // Consolidated subscription logic into a single function
-  const syncStructures = useCallback(
-    async ({ structures }: { structures: { entityId: number; position: { col: number; row: number } }[] }) => {
-      if (!structures.length) return;
-
-      try {
-        const start = performance.now();
-        setLoading(LoadingStateKey.AllPlayerStructures, true);
-        await getStructuresDataFromTorii(
-          setup.network.toriiClient,
-          setup.network.contractComponents as any,
-          structures,
-        );
-        const end = performance.now();
-
-        console.log(
-          `[sync] structures query structures ${structures.map((s) => `${s.entityId}(${s.position.col},${s.position.row})`)}`,
-          end - start,
-        );
-      } catch (error) {
-        console.error("Failed to sync structures:", error);
-      } finally {
-        setLoading(LoadingStateKey.AllPlayerStructures, false);
-      }
-    },
-    [setup.network.toriiClient, setup.network.contractComponents],
-  );
-
-  // Function to update the synced structures ref
-  const setSyncedStructures = useCallback((updater: (prev: Set<string>) => Set<string>) => {
-    syncedStructures.current = updater(syncedStructures.current);
-  }, []);
-
-  const [fetchedStructures, setFetchedStructures] = useState<
-    { entityId: number; position: { col: number; row: number } }[]
-  >([]);
-
-  // Fetch all structures from Torii client
-  useEffect(() => {
-    const fetchAllStructures = async () => {
-      if (!account.account) return;
-
-      try {
-        const structures = await getAllStructuresFromToriiClient(setup.network.toriiClient, account.account.address);
-        setFetchedStructures(structures);
-      } catch (error) {
-        console.error("Failed to fetch structures:", error);
-      }
-    };
-
-    fetchAllStructures();
-  }, [account.account, setup]);
-
-  // Handle structure synchronization
-  useEffect(() => {
-    if (!account.account) return;
-
-    const syncUnsyncedStructures = async () => {
-      try {
-        // Combine structures from both sources
-        const allStructureIds = new Set([
-          ...fetchedStructures.map((structure) => structure.entityId.toString()),
-          ...playerStructures.map((structure) => structure.structure.entity_id.toString()),
-        ]);
-
-        // Find structures that haven't been synced yet
-        const unsyncedIds = Array.from(allStructureIds)
-          .filter((id) => !syncedStructures.current.has(id))
-          .map(Number);
-
-        if (unsyncedIds.length === 0) return;
-
-        // Prepare structures with positions for syncing
-        const structuresToSync = unsyncedIds.reduce(
-          (acc, entityId) => {
-            // Try to find position from fetched structures
-            const fetchedStructure = fetchedStructures.find((s) => s.entityId === entityId);
-
-            if (fetchedStructure) {
-              acc.push({
-                entityId,
-                position: fetchedStructure.position,
-              });
-              return acc;
-            }
-
-            // Otherwise try to find in player structures
-            const playerStructure = playerStructures.find((s) => Number(s.structure.entity_id) === entityId);
-
-            if (playerStructure?.structure.base) {
-              acc.push({
-                entityId,
-                position: {
-                  col: playerStructure.structure.base.coord_x,
-                  row: playerStructure.structure.base.coord_y,
-                },
-              });
-            }
-
-            return acc;
-          },
-          [] as { entityId: number; position: { col: number; row: number } }[],
-        );
-
-        // Mark all these structures as synced
-        if (structuresToSync.length > 0) {
-          setSyncedStructures((prev) => {
-            const newSet = new Set(prev);
-            structuresToSync.forEach((s) => newSet.add(s.entityId.toString()));
-            return newSet;
-          });
-
-          // Sync the structures with the network
-          await syncStructures({ structures: structuresToSync });
-        }
-      } catch (error) {
-        console.error("Failed to sync structures:", error);
-      }
-    };
-
-    syncUnsyncedStructures();
-  }, [account.account, playerStructures, fetchedStructures, syncStructures, setSyncedStructures]);
 
   const { data: minigames } = useMiniGames({});
 

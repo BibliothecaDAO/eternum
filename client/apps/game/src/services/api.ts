@@ -5,7 +5,10 @@ const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
-  REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
+  STRUCTURES_BY_OWNER:
+    "SELECT `base.coord_x`, `base.coord_y`, entity_id, owner FROM [s1_eternum-Structure] WHERE owner == '{owner}';",
+  REALM_SETTLEMENTS:
+    "SELECT `base.coord_x`, `base.coord_y`, entity_id,  owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
   ALL_TILES: `
@@ -84,6 +87,7 @@ const QUERIES = {
 export interface StructureLocation {
   "base.coord_x": number;
   "base.coord_y": number;
+  entity_id: number;
   owner: ContractAddress;
 }
 
@@ -148,6 +152,22 @@ export async function fetchRealmSettlements(): Promise<StructureLocation[]> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch settlements: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch structures by owner from the API
+ */
+export async function fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(
+    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", "0x0" + owner.slice(2)),
+  )}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch structures by owner: ${response.statusText}`);
   }
 
   return await response.json();
