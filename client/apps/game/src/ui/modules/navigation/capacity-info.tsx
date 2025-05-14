@@ -107,11 +107,16 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
+  // use this to trigger new realm info computation
   const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  const structureBuildings = useComponentValue(
+    setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
+  );
 
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components),
-    [structureEntityId, resources],
+    [structureEntityId, resources, structureBuildings],
   );
 
   const populationPercentage = realmInfo?.capacity
