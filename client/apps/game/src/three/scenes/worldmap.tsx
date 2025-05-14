@@ -12,7 +12,7 @@ import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { playSound } from "@/three/sound/utils";
+import { playResourceSound, playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -221,6 +221,8 @@ export default class WorldmapScene extends HexagonScene {
       const armyPosition = this.armiesPositions.get(explorerId);
       if (armyPosition) {
         const resource = findResourceById(resourceId);
+        // Play the sound for the resource gain
+        playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
         // Display the resource gain at the army's position
         this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
       } else {
