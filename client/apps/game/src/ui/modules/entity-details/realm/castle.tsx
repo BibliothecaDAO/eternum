@@ -216,7 +216,8 @@ export const Castle = () => {
           {/* Resources Section */}
           <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
             {structure &&
-              (structure.base.category === StructureType.Realm || structure.base.category === StructureType.Castle) && (
+              (structure.base.category === StructureType.Realm ||
+                structure.base.category === StructureType.Village) && (
                 <RealmResourcesIO
                   size="md"
                   titleClassName="uppercase font-semibold text-gold"
