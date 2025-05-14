@@ -73,8 +73,6 @@ export const QuestRealm = ({
     return "Explorer Not Found";
   }, [isCompleted, reachedTargetScore, gameOver, startedQuest, expired, fullCapacity]);
 
-  console.log(questExplorerUsed);
-
   return (
     <div
       className={`h-full flex flex-col items-center gap-2 border panel-wood rounded-lg p-4 ${!questExplorerUsed ? "opacity-70 pointer-events-none grayscale-[50%]" : ""}`}
@@ -110,7 +108,7 @@ export const QuestRealm = ({
 };
 
 interface CurrentQuestProps {
-  handleStartQuest: () => void;
+  handleStartQuest: () => Promise<number | undefined>;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   questLevelInfo: any;
@@ -286,7 +284,12 @@ export const CurrentQuest = ({
               className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2`}
               isLoading={loading}
               disabled={!questExplorerUsed || fullCapacity || realmExplorerStartedQuest}
-              onClick={handleStartQuest}
+              onClick={async () => {
+                const gameId = await handleStartQuest();
+                if (gameId) {
+                  window.open(`https://darkshuffle.io/play/${Number(gameId)}`, "_blank");
+                }
+              }}
             >
               {startQuestButtonMessage}
             </Button>
@@ -297,7 +300,7 @@ export const CurrentQuest = ({
                   variant="primary"
                   className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2`}
                   isLoading={loading}
-                  onClick={() => window.open(`https://darkshuffle.dev/play/${Number(game?.token_id ?? 0)}`, "_blank")}
+                  onClick={() => window.open(`https://darkshuffle.io/play/${Number(game?.token_id ?? 0)}`, "_blank")}
                 >
                   Play
                 </Button>
