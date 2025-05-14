@@ -48,76 +48,80 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await setWorldConfig(config);
-    await this.sleepNonLocal();
 
-    await setWonderBonusConfig(config);
-    await this.sleepNonLocal();
-
-    await setAgentConfig(config);
-    await this.sleepNonLocal();
-
-    await setVillageControllersConfig(config);
+    await setupProbabilities(config);
     await this.sleepNonLocal();
 
     await SetResourceFactoryConfig(config);
     await this.sleepNonLocal();
 
-    await setResourceBridgeWhitelistConfig(config);
-    await this.sleepNonLocal();
+    // await setWorldConfig(config);
+    // await this.sleepNonLocal();
 
-    await setTradeConfig(config);
-    await this.sleepNonLocal();
+    // await setWonderBonusConfig(config);
+    // await this.sleepNonLocal();
 
-    await setStartingResourcesConfig(config);
-    await this.sleepNonLocal();
+    // await setAgentConfig(config);
+    // await this.sleepNonLocal();
 
-    await setSeasonConfig(config);
-    await this.sleepNonLocal();
+    // await setVillageControllersConfig(config);
+    // await this.sleepNonLocal();
 
-    await setVRFConfig(config);
-    await this.sleepNonLocal();
 
-    await setResourceBridgeFeesConfig(config);
-    await this.sleepNonLocal();
+    // await setResourceBridgeWhitelistConfig(config);
+    // await this.sleepNonLocal();
 
-    await setBuildingConfig(config);
-    await this.sleepNonLocal();
+    // await setTradeConfig(config);
+    // await this.sleepNonLocal();
 
-    await setWeightConfig(config);
-    await this.sleepNonLocal();
+    // await setStartingResourcesConfig(config);
+    // await this.sleepNonLocal();
 
-    await setBattleConfig(config);
-    await this.sleepNonLocal();
+    // await setSeasonConfig(config);
+    // await this.sleepNonLocal();
 
-    await setTroopConfig(config);
-    await this.sleepNonLocal();
+    // await setVRFConfig(config);
+    // await this.sleepNonLocal();
 
-    await setRealmUpgradeConfig(config);
-    await this.sleepNonLocal();
+    // await setResourceBridgeFeesConfig(config);
+    // await this.sleepNonLocal();
 
-    await setStructureMaxLevelConfig(config);
-    await this.sleepNonLocal();
+    // await setBuildingConfig(config);
+    // await this.sleepNonLocal();
 
-    await setupGlobals(config);
-    await this.sleepNonLocal();
+    // await setWeightConfig(config);
+    // await this.sleepNonLocal();
 
-    await setCapacityConfig(config);
-    await this.sleepNonLocal();
+    // await setBattleConfig(config);
+    // await this.sleepNonLocal();
 
-    await setSpeedConfig(config);
-    await this.sleepNonLocal();
+    // await setTroopConfig(config);
+    // await this.sleepNonLocal();
 
-    await setHyperstructureConfig(config);
-    await this.sleepNonLocal();
+    // await setRealmUpgradeConfig(config);
+    // await this.sleepNonLocal();
 
-    await setSettlementConfig(config);
-    await this.sleepNonLocal();
+    // await setStructureMaxLevelConfig(config);
+    // await this.sleepNonLocal();
+
+
+
+    // await setCapacityConfig(config);
+    // await this.sleepNonLocal();
+
+    // await setSpeedConfig(config);
+    // await this.sleepNonLocal();
+
+    // await setHyperstructureConfig(config);
+    // await this.sleepNonLocal();
+
+    // await setSettlementConfig(config);
+    // await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
@@ -799,48 +803,48 @@ export const setTroopConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setupGlobals = async (config: Config) => {
-  const bankCalldata = {
-    signer: config.account,
-    owner_fee_num: config.config.banks.ownerFeesNumerator,
-    owner_fee_denom: config.config.banks.ownerFeesDenominator,
-    lp_fee_num: config.config.banks.lpFeesNumerator,
-    lp_fee_denom: config.config.banks.lpFeesDenominator,
-  };
-  console.log(
-    chalk.cyan(`
-  🌍 Global Configuration
-  ═══════════════════════`),
-  );
+export const setupProbabilities = async (config: Config) => {
+  // const bankCalldata = {
+  //   signer: config.account,
+  //   owner_fee_num: config.config.banks.ownerFeesNumerator,
+  //   owner_fee_denom: config.config.banks.ownerFeesDenominator,
+  //   lp_fee_num: config.config.banks.lpFeesNumerator,
+  //   lp_fee_denom: config.config.banks.lpFeesDenominator,
+  // };
+  // console.log(
+  //   chalk.cyan(`
+  // 🌍 Global Configuration
+  // ═══════════════════════`),
+  // );
 
-  // Bank Config
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Bank Parameters")}
-    │  ${chalk.gray("LP Fee Rate:")}       ${chalk.white(`${bankCalldata.lp_fee_num}/${bankCalldata.lp_fee_denom}`)}
-    │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${bankCalldata.owner_fee_num}/${bankCalldata.owner_fee_denom}`)}
-    └────────────────────────────────`),
-  );
+  // // Bank Config
+  // console.log(
+  //   chalk.cyan(`
+  //   ┌─ ${chalk.yellow("Bank Parameters")}
+  //   │  ${chalk.gray("LP Fee Rate:")}       ${chalk.white(`${bankCalldata.lp_fee_num}/${bankCalldata.lp_fee_denom}`)}
+  //   │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${bankCalldata.owner_fee_num}/${bankCalldata.owner_fee_denom}`)}
+  //   └────────────────────────────────`),
+  // );
 
-  const txBank = await config.provider.set_bank_config(bankCalldata);
-  console.log(chalk.green(`    ✔ Bank configured `) + chalk.gray(txBank.statusReceipt));
+  // const txBank = await config.provider.set_bank_config(bankCalldata);
+  // console.log(chalk.green(`    ✔ Bank configured `) + chalk.gray(txBank.statusReceipt));
 
-  // Tick Configs
+  // // Tick Configs
 
-  const armiesTickCalldata = {
-    signer: config.account,
-    tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
-  };
+  // const armiesTickCalldata = {
+  //   signer: config.account,
+  //   tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
+  // };
 
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Tick Intervals")}
-    │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
-    └────────────────────────────────`),
-  );
+  // console.log(
+  //   chalk.cyan(`
+  //   ┌─ ${chalk.yellow("Tick Intervals")}
+  //   │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
+  //   └────────────────────────────────`),
+  // );
 
-  const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
-  console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
+  // const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
+  // console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
 
   // Map Config
   const mapCalldata = {
@@ -878,6 +882,8 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
     │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
     │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
+    │  ${chalk.gray("Agent Find Probability:")} ${chalk.white(mapCalldata.agent_find_probability)}
+    │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(mapCalldata.agent_find_fail_probability)}
     └────────────────────────────────`),
   );
 
