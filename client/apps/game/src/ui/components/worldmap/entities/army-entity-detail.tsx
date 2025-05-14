@@ -1,5 +1,6 @@
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
@@ -7,6 +8,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
+import { MessageCircle } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
@@ -85,6 +87,20 @@ export const ArmyEntityDetail = memo(
       fetch();
     }, [armyEntityId]);
 
+    const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
+
+    const handleChatClick = () => {
+      if (isMine) {
+        openChat();
+      } else {
+        const userId = getUserIdByUsername(addressName || "");
+
+        if (userId) {
+          selectDirectMessageRecipient(userId);
+        }
+      }
+    };
+
     useEffect(() => {
       const fetchStructure = async () => {
         if (!explorer) return;
@@ -133,6 +149,9 @@ export const ArmyEntityDetail = memo(
           <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
             {isMine ? "Ally" : "Enemy"}
           </div>
+          <button onClick={handleChatClick}>
+            <MessageCircle />
+          </button>
         </div>
 
         <div className="flex flex-col gap-2 w-full">
