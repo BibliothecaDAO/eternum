@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
@@ -11,11 +10,12 @@ import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
 import { ResourceIcon } from "../ui/elements/resource-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
@@ -41,7 +41,6 @@ export const RealmDetailModal = ({
   onOpenChange,
   realmData,
   isOwner,
-  hasSeasonPassMinted,
   marketplaceActions,
   isListed,
   price,
@@ -80,7 +79,9 @@ export const RealmDetailModal = ({
 
   // State for inputs
   const durationOptions = {
-    "24hr": 60 * 60 * 24 + 60 * 2, // 24hours + 2 minutes
+    "12hr": 60 * 60 * 12, // 12 hours
+    "24hr": 60 * 60 * 24 + 60 * 2, // 24 hours + 2 minutes
+    "3days": 60 * 60 * 24 * 3, // 3 days
     "7days": 60 * 60 * 24 * 7,
     "30days": 60 * 60 * 24 * 30,
   };
@@ -235,8 +236,8 @@ export const RealmDetailModal = ({
         <DialogHeader>
           <DialogTitle>Season 1 Pass</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4 pb-2">
+        <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <img src={image} alt={name ?? "Realm"} className="rounded-md w-72 object-contain mx-auto" />
             <div className="flex flex-col gap-5">
               <div className=" leading-none tracking-tight items-center gap-2">
@@ -302,9 +303,9 @@ export const RealmDetailModal = ({
               <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
             </div>
           ) : (
-            <div className="text-center border-t border-b py-3 my-3">
+            <div className="text-center border-t pt-3 mt-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <p className="text-2xl font-bold text-gold">Not for sale</p>
+              <p className="text-2xl font-bold text-gold">Not Listed</p>
             </div>
           )}
         </div>
@@ -400,7 +401,7 @@ export const RealmDetailModal = ({
                                 size="sm"
                                 disabled={isLoading || isSyncing}
                               >
-                                Cancel
+                                Back
                               </Button>
                               <Button
                                 onClick={handleEditOrder}
@@ -427,76 +428,106 @@ export const RealmDetailModal = ({
                             List Item
                           </Button>
                         ) : (
-                          <div className="flex flex-col gap-2 border p-3 rounded-md bg-background/50">
-                            <Label htmlFor="list-price" className="flex items-center gap-2">
-                              Price (LORDS) <ResourceIcon resource="Lords" size="sm" />
-                            </Label>
-                            {listPrice && parseFloat(listPrice) > 0 && (
-                              <div className="text-sm text-muted-foreground mb-1 flex justify-between">
-                                <span>
-                                  You receive:{" "}
-                                  {((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
-                                    "en-US",
-                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                                  )}{" "}
-                                  LORDS
-                                </span>
-                                <span>
-                                  Fee:{" "}
-                                  {((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })}{" "}
-                                  LORDS ({MARKETPLACE_FEE_PERCENT}%)
+                          <div className="flex flex-col gap-2 p-3 bg-background/50">
+                            <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs font-semibold text-muted-foreground">
+                              <div className="col-span-2">Item</div>
+                              <div>Floor</div>
+                              <div>Fee</div>
+                              <div className="justify-self-end col-span-2">List Price</div>
+                            </div>
+                            <div className="grid grid-cols-6 gap-2 items-center py-2 ">
+                              <div className="flex items-center gap-2 col-span-2">
+                                <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
+                                <span className="truncate max-w-[80px]">{name}</span>
+                              </div>
+                              <div className="text-sm">{/* Floor price here, e.g. */}-</div>
+                              <div className="text-xs">
+                                {listPrice && parseFloat(listPrice) > 0
+                                  ? ((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : "--"}
+                                <span className="ml-1">LORDS</span>
+                              </div>
+                              <div className="justify-self-end relative col-span-2">
+                                <Input
+                                  id="list-price"
+                                  value={listPrice}
+                                  onChange={(e) => setListPrice(e.target.value)}
+                                  placeholder="0"
+                                  disabled={isLoading || isSyncing}
+                                  className="w-full max-w-36"
+                                />
+                                <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                              </div>
+                            </div>
+                            {/* Proceeds below the table */}
+                            <div className=" mb-1 flex justify-between border-t py-3 font-semibold">
+                              <span>You receive: </span>
+                              <div>
+                                {listPrice
+                                  ? parseFloat(listPrice) > 0 &&
+                                    ((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
+                                      "en-US",
+                                      {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 2,
+                                      },
+                                    )
+                                  : 0}
+                                <span className="ml-3">LORDS</span>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div>
+                              {" "}
+                              <div className="flex items-center gap-2 w-full justify-end">
+                                <span className="text-sm font-medium text-muted-foreground ml-2">
+                                  Expires: {new Date(listExpiration * 1000).toLocaleString()}
                                 </span>
                               </div>
-                            )}
-                            <Input
-                              id="list-price"
-                              type="number"
-                              value={listPrice}
-                              onChange={(e) => setListPrice(e.target.value)}
-                              placeholder="e.g., 1000"
-                              disabled={isLoading || isSyncing}
-                            />
-                            <Label htmlFor="list-expiration" className="mt-2">
-                              Expiration
-                            </Label>
-                            <RadioGroup
-                              id="list-expiration"
-                              value={selectedDuration}
-                              onValueChange={handleDurationChange}
-                              className="flex flex-wrap gap-x-4 gap-y-2"
-                              disabled={isLoading || isSyncing}
-                            >
-                              {Object.keys(durationOptions).map((key) => (
-                                <div key={key} className="flex items-center space-x-2">
-                                  <RadioGroupItem value={key} id={`duration-${key}`} />
-                                  <Label htmlFor={`duration-${key}`} className="font-normal cursor-pointer">
-                                    {key}
-                                  </Label>
+                              <div className="flex justify-between mt-1">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setShowListInputs(false)}
+                                  size="sm"
+                                  disabled={isLoading || isSyncing}
+                                >
+                                  <ArrowLeft /> Back
+                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={selectedDuration}
+                                    disabled={isLoading || isSyncing}
+                                    onValueChange={handleDurationChange}
+                                  >
+                                    <SelectTrigger className="w-[140px]">
+                                      <SelectValue placeholder={"Expiration"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="12hr">12 hours</SelectItem>
+                                      <SelectItem value="24hr">24 hours</SelectItem>
+                                      <SelectItem value="3days">3 days</SelectItem>
+                                      <SelectItem value="7days">7 days</SelectItem>
+                                      <SelectItem value="30days">30 days</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    onClick={handleListItem}
+                                    disabled={
+                                      isLoading || isSyncing || !listPrice || marketplaceActions.isCreatingOrder
+                                    }
+                                  >
+                                    {marketplaceActions.isCreatingOrder
+                                      ? "Listing..."
+                                      : !listPrice
+                                        ? "Set price"
+                                        : "Confirm Listing"}
+                                  </Button>
                                 </div>
-                              ))}
-                            </RadioGroup>
-                            <div className="text-sm font-medium text-muted-foreground mt-1">
-                              Expires: {new Date(listExpiration * 1000).toLocaleString()}
-                            </div>
-                            <div className="flex justify-end gap-2 mt-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setShowListInputs(false)}
-                                size="sm"
-                                disabled={isLoading || isSyncing}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                onClick={handleListItem}
-                                size="sm"
-                                disabled={isLoading || isSyncing || !listPrice || marketplaceActions.isCreatingOrder}
-                              >
-                                {marketplaceActions.isCreatingOrder ? "Listing..." : "Confirm Listing"}
-                              </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -536,7 +567,6 @@ export const RealmDetailModal = ({
                           disabled={
                             isLoading ||
                             isSyncing ||
-                            hasSeasonPassMinted ||
                             marketplaceActions.isAcceptingOrder ||
                             (expiration !== undefined && expiration * 1000 < Date.now())
                           }
@@ -581,26 +611,6 @@ export const RealmDetailModal = ({
                   <>{/* Optionally add a message like "Not available for purchase" */}</>
                 )}
               </>
-            )}
-          </div>
-          <div className="order-1 sm:order-2 flex flex-col items-end">
-            {/* Status Text */}
-            {hasSeasonPassMinted && (
-              <p className="text-muted-foreground text-center sm:text-right mb-2 text-xs">
-                Season Pass already minted.
-              </p>
-            )}
-            {/* Close Button - Conditionally render */}
-            {address && ( // Only show Close button if connected or owner
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                size="sm"
-                className="self-end"
-                disabled={isLoading}
-              >
-                Close
-              </Button>
             )}
           </div>
         </DialogFooter>
