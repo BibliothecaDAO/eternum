@@ -218,16 +218,18 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
       const { explorerId, resourceId, amount } = update;
       // Find the army position using explorerId
-      const armyPosition = this.armiesPositions.get(explorerId);
-      if (armyPosition) {
-        const resource = findResourceById(resourceId);
-        // Play the sound for the resource gain
-        playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
-        // Display the resource gain at the army's position
-        this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
-      } else {
-        console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
-      }
+      setTimeout(() => {
+        const armyPosition = this.armiesPositions.get(explorerId);
+        if (armyPosition) {
+          const resource = findResourceById(resourceId);
+          // Play the sound for the resource gain
+          playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+          // Display the resource gain at the army's position
+          this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
+        } else {
+          console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
+        }
+      }, 500);
     });
 
     // add particles
