@@ -569,7 +569,7 @@
       "1": [
         {
           "resource": 23,
-          "amount": 10.4
+          "amount": 14
         },
         {
           "resource": 35,
@@ -579,7 +579,7 @@
       "2": [
         {
           "resource": 23,
-          "amount": 13.1
+          "amount": 17.9
         },
         {
           "resource": 36,
@@ -589,7 +589,7 @@
       "3": [
         {
           "resource": 23,
-          "amount": 10.4
+          "amount": 14
         },
         {
           "resource": 36,
@@ -599,7 +599,7 @@
       "4": [
         {
           "resource": 23,
-          "amount": 16.35
+          "amount": 21.7
         },
         {
           "resource": 35,
@@ -609,7 +609,7 @@
       "5": [
         {
           "resource": 23,
-          "amount": 39.91
+          "amount": 53.73
         },
         {
           "resource": 36,
@@ -619,7 +619,7 @@
       "6": [
         {
           "resource": 23,
-          "amount": 25.61
+          "amount": 34.48
         },
         {
           "resource": 36,
@@ -629,7 +629,7 @@
       "7": [
         {
           "resource": 23,
-          "amount": 62.92
+          "amount": 84.7
         },
         {
           "resource": 36,
@@ -639,7 +639,7 @@
       "8": [
         {
           "resource": 23,
-          "amount": 29.12
+          "amount": 39.2
         },
         {
           "resource": 35,
@@ -649,7 +649,7 @@
       "9": [
         {
           "resource": 23,
-          "amount": 1075.75
+          "amount": 1448.13
         },
         {
           "resource": 36,
@@ -659,7 +659,7 @@
       "10": [
         {
           "resource": 23,
-          "amount": 504.01
+          "amount": 678.48
         },
         {
           "resource": 36,
@@ -669,7 +669,7 @@
       "11": [
         {
           "resource": 23,
-          "amount": 48.49
+          "amount": 65.28
         },
         {
           "resource": 35,
@@ -679,7 +679,7 @@
       "12": [
         {
           "resource": 23,
-          "amount": 213.98
+          "amount": 288.05
         },
         {
           "resource": 35,
@@ -689,7 +689,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 185.12
+          "amount": 249.2
         },
         {
           "resource": 36,
@@ -699,7 +699,7 @@
       "14": [
         {
           "resource": 23,
-          "amount": 121.18
+          "amount": 156.28
         },
         {
           "resource": 36,
@@ -709,7 +709,7 @@
       "15": [
         {
           "resource": 23,
-          "amount": 79.82
+          "amount": 107.45
         },
         {
           "resource": 35,
@@ -719,7 +719,7 @@
       "16": [
         {
           "resource": 23,
-          "amount": 222.95
+          "amount": 300.13
         },
         {
           "resource": 36,
@@ -729,7 +729,7 @@
       "17": [
         {
           "resource": 23,
-          "amount": 367.25
+          "amount": 494.38
         },
         {
           "resource": 35,
@@ -739,7 +739,7 @@
       "18": [
         {
           "resource": 23,
-          "amount": 319.54
+          "amount": 430.15
         },
         {
           "resource": 36,
@@ -749,7 +749,7 @@
       "19": [
         {
           "resource": 23,
-          "amount": 652.08
+          "amount": 877.8
         },
         {
           "resource": 35,
@@ -759,7 +759,7 @@
       "20": [
         {
           "resource": 23,
-          "amount": 172.12
+          "amount": 231.7
         },
         {
           "resource": 35,
@@ -769,7 +769,7 @@
       "21": [
         {
           "resource": 23,
-          "amount": 281.58
+          "amount": 379.05
         },
         {
           "resource": 35,
@@ -779,7 +779,7 @@
       "22": [
         {
           "resource": 23,
-          "amount": 1199
+          "amount": 1569.15
         },
         {
           "resource": 35,
@@ -800,7 +800,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "27": [],
@@ -816,7 +816,7 @@
         },
         {
           "resource": 23,
-          "amount": 30
+          "amount": 60
         }
       ],
       "30": [],
@@ -832,7 +832,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "33": [],
@@ -1035,13 +1035,13 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 149,
+    "shardsMinesFailProbability": 199,
     "shardsMinesWinProbability": 1,
     "agentFindProbability": 5,
     "agentFindFailProbability": 95,
-    "hyperstructureWinProbAtCenter": 4000,
-    "hyperstructureFailProbAtCenter": 96000,
-    "hyperstructureFailProbIncreasePerHexDistance": 9750,
+    "hyperstructureWinProbAtCenter": 2000,
+    "hyperstructureFailProbAtCenter": 98000,
+    "hyperstructureFailProbIncreasePerHexDistance": 9820,
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
@@ -2214,6 +2214,39 @@
   },
   "realmMaxLevel": 4,
   "villageMaxLevel": 2,
+  "questGames": [
+    {
+      "address": "0x01e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
+      "levels": [
+        {
+          "target_score": 26,
+          "settings_id": 3,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 6,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 4,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 51,
+          "settings_id": 1,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 101,
+          "settings_id": 5,
+          "time_limit": 86400
+        }
+      ],
+      "overwrite": true
+    }
+  ],
   "setup": {
     "chain": "mainnet",
     "addresses": {
