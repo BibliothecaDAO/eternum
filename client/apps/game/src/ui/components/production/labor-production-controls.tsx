@@ -103,7 +103,7 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
   const handleMaxClick = (index: number) => {
     const resource = selectedResources[index];
     const balance = divideByPrecision(
-      Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+      Number(availableResources.find((r) => r.resourceId === resource.id)?.amount.balance || 0),
     );
     const newResources = [...selectedResources];
     newResources[index].amount = balance;
@@ -113,7 +113,7 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
   const hasInsufficientResources = useMemo(() => {
     return selectedResources.some((resource) => {
       const availableAmount = divideByPrecision(
-        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount.balance || 0),
       );
       return resource.amount > availableAmount;
     });
@@ -161,7 +161,7 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
                       MAX
                       <span>
                         {divideByPrecision(
-                          Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+                          availableResources.find((r) => r.resourceId === resource.id)?.amount.balance || 0,
                         )
                           .toString()
                           .toLocaleString()}
