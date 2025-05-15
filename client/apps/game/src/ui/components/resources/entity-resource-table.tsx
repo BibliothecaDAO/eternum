@@ -1,7 +1,10 @@
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
-import { useResourceManager } from "@bibliothecadao/react";
+
+import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ID, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
-import React, { useState } from "react";
+import { useComponentValue } from "@dojoengine/react";
+import React, { useMemo, useState } from "react";
 
 const TIER_DISPLAY_NAMES: Record<string, string> = {
   lords: "Lords & Fragments",
@@ -25,24 +28,25 @@ const alwaysShowResources = [
 ];
 
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
-  // const dojo = useDojo();
   const [showAllResources, setShowAllResources] = useState(false);
 
-  // const quantity = entityId ? getBuildingQuantity(entityId, BuildingType.Storehouse, dojo.setup.components) : 0;
-
-  // const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
-
-  // const maxStorehouseCapacityKg = useMemo(() => {
-  //   if (structure?.base.category !== StructureType.Realm) return Infinity;
-  //   if (!entityId) return 0;
-  //   const capacity = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components)?.storehouses
-  //     .capacityKg;
-  //   return capacity || 0;
-  // }, [quantity, entityId]);
+  const { setup } = useDojo();
 
   if (!entityId || entityId === 0) {
     return <div>No Entity Selected</div>;
   }
+
+  const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+
+  const structureBuildings = useComponentValue(
+    setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(entityId)]),
+  );
+
+  const realmInfo = useMemo(
+    () => getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components),
+    [entityId, structureBuildings, resources],
+  );
 
   const resourceManager = useResourceManager(entityId);
 
@@ -79,6 +83,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                     resourceId={resourceId}
                     resourceManager={resourceManager}
                     hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
+                    storageCapacity={realmInfo?.storehouses.capacityKg}
+                    storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
                   />
                 ))}
               </div>
