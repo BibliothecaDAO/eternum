@@ -121,7 +121,7 @@ export const TransferTroopsContainer = ({
 
   const maxTroops = (() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return Number(selectedExplorerTroops?.count || 0);
+      return Math.max(0, Number(selectedExplorerTroops?.count || 0) - 1);
     } else if (transferDirection === TransferDirection.StructureToExplorer) {
       return Number(selectedGuards[guardSlot].troops.count);
     } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
