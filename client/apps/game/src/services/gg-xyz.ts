@@ -1,7 +1,9 @@
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
+import { Provider } from "starknet";
 import { env } from "../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+const starknetProvider = new Provider({ nodeUrl: env.VITE_PUBLIC_NODE_URL });
 
 export interface ActionDispatcherResponse {
   success: boolean;
@@ -169,7 +171,6 @@ export async function fetchTrophyProgression(
       player_id = '${normalizedAddress}'
       AND task_id = '${taskId}'
   `;
-  console.log({ query });
 
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
@@ -236,8 +237,6 @@ export async function fetchMultipleTrophyProgressions(
     }
   });
 
-  console.log({ result });
-
   return result;
 }
 
@@ -251,23 +250,25 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   const API_URL = env.VITE_PUBLIC_ACTION_DISPATCHER_URL;
   const API_SECRET = env.VITE_PUBLIC_ACTION_DISPATCHER_SECRET;
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      secret: API_SECRET,
-    },
-    body: JSON.stringify({
-      actions,
-      playerAddress: playerAddress,
-    }),
-  });
+  // const response = await fetch(API_URL, {
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     secret: API_SECRET,
+  //   },
+  //   body: JSON.stringify({
+  //     actions,
+  //     playerAddress: playerAddress,
+  //   }),
+  // });
 
-  if (!response.ok) {
-    console.error(`Failed to dispatch actions: ${response.statusText}`);
-  }
+  // if (!response.ok) {
+  //   console.error(`Failed to dispatch actions: ${response.statusText}`);
+  // } else {
+  //   console.log(`Actions dispatched: ${actions.join(", ")}`);
+  // }
 
-  return await response.json();
+  // return await response.json();
 }
 
 /**
@@ -308,8 +309,17 @@ export async function checkAndDispatchGgXyzQuestProgress(
  */
 export async function checkAndDispatchMultipleGgXyzQuestProgress(
   playerAddress: string,
+  txHash: string,
   achievements: CartridgeAchievement[],
 ): Promise<Record<CartridgeAchievement, string[]>> {
+  console.log("txHash", txHash);
+  const receipt = await starknetProvider.getTransactionReceipt(txHash);
+  console.log("receipt", receipt);
+  const blockNumber = receipt.block_number;
+  console.log("blockNumber", blockNumber);
+  // const blockNumber = receipt.blockNumber;
+  // console.log("blockNumber", blockNumber);
+
   const progressions = await fetchMultipleTrophyProgressions(playerAddress, achievements);
   const completedActionsByAchievement: Record<CartridgeAchievement, string[]> = {} as Record<
     CartridgeAchievement,

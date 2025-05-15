@@ -1,5 +1,4 @@
-// import type { EternumProvider } from "../types/provider";
-import { Call } from "starknet";
+import { Call, Result } from "starknet";
 import * as SystemProps from "../types";
 
 export type SystemCallAuthHandler = {
@@ -33,20 +32,20 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const create_order = async (props: SystemProps.CreateOrderProps) => {
-    await provider.create_order(props);
+  const create_order = async (props: SystemProps.CreateOrderProps): Promise<Result> => {
+    return await provider.create_order(props);
   };
 
-  const accept_order = async (props: SystemProps.AcceptOrderProps) => {
-    await provider.accept_order(props);
+  const accept_order = async (props: SystemProps.AcceptOrderProps): Promise<Result> => {
+    return await provider.accept_order(props);
   };
 
-  const cancel_order = async (props: SystemProps.CancelOrderProps) => {
-    await provider.cancel_order(props);
+  const cancel_order = async (props: SystemProps.CancelOrderProps): Promise<Result> => {
+    return await provider.cancel_order(props);
   };
 
-  const mint_and_settle_test_realm = async (props: SystemProps.MintAndSettleTestRealmProps) => {
-    await provider.mint_and_settle_test_realm(props);
+  const mint_and_settle_test_realm = async (props: SystemProps.MintAndSettleTestRealmProps): Promise<Result> => {
+    return await provider.mint_and_settle_test_realm(props);
   };
 
   const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
@@ -256,8 +255,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.guard_explorer_swap(props);
   };
 
-  const explorer_move = async (props: SystemProps.ExplorerMoveProps) => {
-    await provider.explorer_move(props);
+  const explorer_move = async (props: SystemProps.ExplorerMoveProps): Promise<Result> => {
+    return await provider.explorer_move(props);
   };
 
   const attack_explorer_vs_explorer = async (props: SystemProps.AttackExplorerVsExplorerProps) => {

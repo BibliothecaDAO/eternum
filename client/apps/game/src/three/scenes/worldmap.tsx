@@ -426,13 +426,10 @@ export default class WorldmapScene extends HexagonScene {
 
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
-        .catch((e) => {
-          cleanup();
-          console.error("Army movement failed:", e);
-        })
-        .finally(() => {
+        .then((res: any) => {
+          console.log("res", res);
           if (!isExplored) {
-            checkAndDispatchMultipleGgXyzQuestProgress(account.address, [
+            checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
               CartridgeAchievement.EXPLORE,
               CartridgeAchievement.AGENT_DISCOVER,
               CartridgeAchievement.QUEST_DISCOVER,
@@ -441,6 +438,10 @@ export default class WorldmapScene extends HexagonScene {
               CartridgeAchievement.BIOME_DISCOVER,
             ]);
           }
+        })
+        .catch((e) => {
+          cleanup();
+          console.error("Army movement failed:", e);
         });
 
       this.state.updateEntityActionHoveredHex(null);
