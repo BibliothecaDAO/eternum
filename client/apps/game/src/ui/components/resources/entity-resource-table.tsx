@@ -50,9 +50,31 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
   const resourceManager = useResourceManager(entityId);
 
+  const storageCapacityUsedPercentage = useMemo(() => {
+    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
+      return 0;
+    }
+    return (
+      ((realmInfo?.storehouses?.capacityUsedKg - realmInfo?.storehouses?.capacityKg) /
+        realmInfo?.storehouses?.capacityKg) *
+      100
+    );
+  }, [realmInfo?.storehouses.capacityUsedKg, realmInfo?.storehouses.capacityKg]);
+
+  const storageRemaining = useMemo(() => {
+    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
+      return 0;
+    }
+    return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
+  }, [realmInfo?.storehouses.capacityUsedKg, realmInfo?.storehouses.capacityKg]);
+
+  const isStorageFull = useMemo(() => {
+    return storageRemaining <= 0;
+  }, [storageRemaining]);
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-4 pb-2 border-b border-gold/20 p-1">
+      <div className="flex justify-between items-center pb-2 border-b border-gold/20 p-1">
         <h4>Resources</h4>
         <label className="inline-flex items-center cursor-pointer">
           <span className={`mr-2 text-xxs ${showAllResources ? "text-gold/50" : ""}`}>Hide Empty</span>
@@ -66,6 +88,21 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
             <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
           </div>
         </label>
+      </div>
+
+      <div className=" text-gold font-medium border-b pt-2 border-gold/10 pb-3 sticky -top-2 left-0 w-full bg-dark-wood z-10 flex justify-between">
+        <div className="flex items-center gap-2">
+          <div className="text-gold h6">Remaining Storage:</div>
+          <div className="text-gold/80">
+            {isStorageFull ? (
+              <div className="text-red/80">Out of Storage!</div>
+            ) : (
+              <div className="text-green/80 text-xl">
+                {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">

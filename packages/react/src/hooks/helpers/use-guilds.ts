@@ -63,5 +63,15 @@ export const usePlayerWhitelist = (playerAddress: ContractAddress) => {
     }),
   ]);
 
-  return formatGuilds(whitelist, playerAddress, components);
+  return whitelist
+    .map((entity) => {
+      const whitelist = getComponentValue(components.GuildWhitelist, entity);
+      if (!whitelist) return;
+      return {
+        address: whitelist.address,
+        guildEntityId: Number(whitelist.guild_id),
+        name: getAddressName(whitelist.address, components),
+      };
+    })
+    .filter(Boolean) as GuildMemberInfo[];
 };

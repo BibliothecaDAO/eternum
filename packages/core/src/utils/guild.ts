@@ -15,7 +15,10 @@ export const formatGuilds = (
   return guilds
     .map((guild_entity_id) => {
       const guild = getComponentValue(components.Guild, guild_entity_id);
-      if (!guild) return;
+      if (!guild) {
+        console.log("no guild", guild_entity_id);
+        return;
+      }
 
       return {
         // guild id is address of the owner

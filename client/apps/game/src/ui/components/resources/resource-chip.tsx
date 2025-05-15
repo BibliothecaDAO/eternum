@@ -10,7 +10,6 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
-import { AlertCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -109,42 +108,6 @@ export const ResourceChip = ({
     return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
   }, [amountProduced, resourceId]);
 
-  const handleMouseEnter = useCallback(() => {
-    setTooltip({
-      position: "top",
-      content: (
-        <div className="space-y-1 text-lg">
-          <p>
-            You have{" "}
-            <span className={!isStorageFull ? "text-green" : "text-red"}>
-              {currencyFormat(Number(amountProduced || 0n), 2)}
-            </span>{" "}
-            {findResourceById(resourceId)?.trait} waiting to be stored.
-          </p>
-          <p>
-            Whenever you use this resource (building, trading, etc.) the produced amount is first moved into storage.
-            Only the portion that fits within your remaining capacity&nbsp;(
-            <span className="text-green">
-              {storageCapacity.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-            </span>
-            ) will be saved; any excess&nbsp;(
-            <span className="text-red">
-              of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-            </span>
-            ) will be permanently burned.
-          </p>
-        </div>
-      ),
-    });
-  }, [resourceId, setTooltip]);
-
-  const handleMouseLeave = useCallback(() => {
-    setTooltip(null);
-    setShowPerHour(true);
-  }, [setTooltip]);
-
-  const togglePopup = useUIStore((state) => state.togglePopup);
-
   const storageCapacityUsedPercentage = useMemo(() => {
     return ((storageCapacity - storageCapacityUsed) / storageCapacity) * 100;
   }, [storageCapacityUsed, storageCapacity]);
@@ -156,6 +119,48 @@ export const ResourceChip = ({
   const isStorageFull = useMemo(() => {
     return storageRemaining <= 0;
   }, [storageRemaining]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (Number(amountProduced || 0n) > 0) {
+      setTooltip({
+        position: "top",
+        content: (
+          <div className="space-y-1 text-lg">
+            <p>
+              You have{" "}
+              <span className={!isStorageFull ? "text-green" : "text-red"}>
+                {currencyFormat(Number(amountProduced || 0n), 2)}
+              </span>{" "}
+              {findResourceById(resourceId)?.trait} waiting to be stored.
+            </p>
+            <p>
+              Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
+              moved into storage.
+              <br />
+              Only the portion that fits within your remaining capacity&nbsp;(
+              <span className="text-green">
+                {storageCapacity.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+              </span>
+              ) will be saved; any excess&nbsp;(
+              <span className="text-red">
+                MAX of{" "}
+                {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                kg
+              </span>
+              ) will be permanently burned. If you need to store more build a Store house.
+            </p>
+          </div>
+        ),
+      });
+    }
+  }, [resourceId, setTooltip, isStorageFull, amountProduced]);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+    setShowPerHour(true);
+  }, [setTooltip]);
+
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {
@@ -179,44 +184,43 @@ export const ResourceChip = ({
 
           {amountProduced > 0n && (
             <div className={` flex  gap-2 self-start text-xs text-gold/50`}>
+              [
               <span className={!isStorageFull ? "text-green" : "text-red"}>
                 {currencyFormat(Number(amountProduced || 0n), 2)}
               </span>
+              <div className="flex  gap-4 w-full col-span-12">
+                {isActive &&
+                !hasReachedMaxCap &&
+                (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
+                  <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
+                    <div className={!isStorageFull ? "text-green" : "text-red"}>
+                      +
+                      {showPerHour
+                        ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
+                        : `${currencyIntlFormat(productionRate, 4)}/s`}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`self-center col-span-5 text-right ${size === "large" ? "text-base" : "text-xs"} font-medium`}
+                  >
+                    {hasReachedMaxCap ? "Max" : ""}
+                  </div>
+                )}
+              </div>
+              ]
             </div>
           )}
-          <div className="flex  gap-4 w-full col-span-12">
-            {isActive && !hasReachedMaxCap && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
-              <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
-                <div className={!isStorageFull ? "text-green" : "text-red"}>
-                  +
-                  {showPerHour
-                    ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
-                    : `${currencyIntlFormat(productionRate, 4)}/s`}
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`self-center col-span-5 text-right ${size === "large" ? "text-base" : "text-xs"} font-medium`}
-              >
-                {hasReachedMaxCap ? "Max" : ""}
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="text-xs text-gold/40 col-span-12 flex items-center">
-          {/* {divideByPrecision(balanceWeight, false).toLocaleString()} */}
-          {!isStorageFull ? (
-            <div className="flex items-center text-xs">
-              {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg storage remaining |{" "}
-              {storageCapacityUsedPercentage.toFixed(2)}%
-            </div>
-          ) : (
-            <div className="flex items-center text-red/80 gap-2 text-xs">
-              <AlertCircle className="w-4 h-4 ml-1 " /> Out of Storage!
-            </div>
-          )}
-        </div>
+        {producedWeight > 0 && (
+          <div className="text-xs text-gold/40 col-span-12 flex items-center">
+            {divideByPrecision(Number(producedWeight || 0n), false).toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })}{" "}
+            kg produced
+          </div>
+        )}
 
         <div className={`col-span-10 text-xs ${size === "large" ? "" : ""}`}>
           {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
