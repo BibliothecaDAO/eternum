@@ -1,4 +1,6 @@
+import { useAutomationStore } from "@/stores/automation-store";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
+import Button from "@/ui/elements/button";
 
 import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
@@ -32,6 +34,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
   const { setup } = useDojo();
 
+  const automationStore = useAutomationStore((state) => state);
+
   if (!entityId || entityId === 0) {
     return <div>No Entity Selected</div>;
   }
@@ -64,6 +68,19 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   return (
     <div>
       <div className="flex justify-between items-center pb-2 border-b border-gold/20 p-1">
+        <Button
+          onClick={() => {
+            automationStore.addOrder({
+              resourceToProduce: ResourcesIds.Wheat,
+              maxAmount: 100,
+              productionType: "resource",
+              priority: 1,
+              realmEntityId: entityId.toString(),
+            });
+          }}
+        >
+          Add Order
+        </Button>
         <h4>Resources</h4>
         <label className="inline-flex items-center cursor-pointer">
           <span className={`mr-2 text-xxs ${showAllResources ? "text-gold/50" : ""}`}>Hide Empty</span>
