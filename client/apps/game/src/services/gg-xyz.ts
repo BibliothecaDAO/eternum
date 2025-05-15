@@ -4,6 +4,7 @@ import { env } from "../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 const starknetProvider = new Provider({ nodeUrl: env.VITE_PUBLIC_NODE_URL });
+// const starknetProvider = new Provider({ nodeUrl:  });
 
 export interface ActionDispatcherResponse {
   success: boolean;
@@ -151,36 +152,15 @@ function normalizePlayerAddress(address: string): string {
 }
 
 /**
- * Fetches the total count of trophy progression for a specific task and player
- * @param playerAddress The player's address
- * @param achievement The CartridgeAchievement enum value
- * @returns Promise with the total count
+ * Normalizes a timestamp number to a 32-byte hex string with 0x prefix
+ * @param timestamp The timestamp number to normalize
+ * @returns The normalized timestamp as a hex string
  */
-export async function fetchTrophyProgression(
-  playerAddress: string,
-  achievement: CartridgeAchievement,
-): Promise<number> {
-  const normalizedAddress = normalizePlayerAddress(playerAddress);
-  const taskId = getTaskId(achievement);
-  const query = `
-    SELECT
-      SUM(count) as total_count
-    FROM
-      "s1_eternum-TrophyProgression"
-    WHERE
-      player_id = '${normalizedAddress}'
-      AND task_id = '${taskId}'
-  `;
-
-  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch trophy progression: ${response.statusText}`);
-  }
-
-  const data: { total_count: number }[] = await response.json();
-  return data[0]?.total_count || 0;
+export function normalizeTimestamp(timestamp: number): string {
+  // Convert to hex and remove '0x' prefix
+  const hex = timestamp.toString(16);
+  // Pad with zeros to 64 characters (32 bytes)
+  return "0x" + hex.padStart(64, "0");
 }
 
 /**
@@ -191,23 +171,30 @@ export async function fetchTrophyProgression(
  */
 export async function fetchMultipleTrophyProgressions(
   playerAddress: string,
+  blockTimestamp: number,
   achievements: CartridgeAchievement[],
 ): Promise<Record<CartridgeAchievement, number>> {
   const normalizedAddress = normalizePlayerAddress(playerAddress);
+  const normalizedTimestamp = normalizeTimestamp(blockTimestamp);
   const taskIds = achievements.map((achievement) => `'${getTaskId(achievement)}'`).join(", ");
 
   const query = `
     SELECT
       task_id,
+      time,
       SUM(count) as total_count
     FROM
       "s1_eternum-TrophyProgression"
     WHERE
       player_id = '${normalizedAddress}'
       AND task_id IN (${taskIds})
+      AND time = '${normalizedTimestamp}'
     GROUP BY
-      task_id
+      task_id,
+      time
   `;
+
+  console.log({ normalizedAddress, normalizedTimestamp, taskIds, achievements, query });
 
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
@@ -216,7 +203,7 @@ export async function fetchMultipleTrophyProgressions(
     console.error(`Failed to fetch trophy progressions: ${response.statusText}`);
   }
 
-  const data: { task_id: string; total_count: number }[] = await response.json();
+  const data: { task_id: string; total_count: number; time: number }[] = await response.json();
 
   // Create a map to store the results
   const result: Record<CartridgeAchievement, number> = {} as Record<CartridgeAchievement, number>;
@@ -237,6 +224,8 @@ export async function fetchMultipleTrophyProgressions(
     }
   });
 
+  console.log({ blockTimestamp, result });
+
   return result;
 }
 
@@ -250,55 +239,75 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   const API_URL = env.VITE_PUBLIC_ACTION_DISPATCHER_URL;
   const API_SECRET = env.VITE_PUBLIC_ACTION_DISPATCHER_SECRET;
 
-  // const response = await fetch(API_URL, {
-  //   method: "POST",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     secret: API_SECRET,
-  //   },
-  //   body: JSON.stringify({
-  //     actions,
-  //     playerAddress: playerAddress,
-  //   }),
-  // });
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      secret: API_SECRET,
+    },
+    body: JSON.stringify({
+      actions,
+      playerAddress: playerAddress,
+    }),
+  });
 
-  // if (!response.ok) {
-  //   console.error(`Failed to dispatch actions: ${response.statusText}`);
-  // } else {
-  //   console.log(`Actions dispatched: ${actions.join(", ")}`);
-  // }
+  if (!response.ok) {
+    console.error(`Failed to dispatch actions: ${response.statusText}`);
+  } else {
+    console.log(`Actions dispatched: ${actions.join(", ")}`);
+  }
 
-  // return await response.json();
+  return await response.json();
 }
 
 /**
- * Checks quest progression and dispatches actions when thresholds are met
- * @param playerAddress The player's address
- * @param achievement The CartridgeAchievement enum value
- * @param newCount The new count to be added
- * @returns Promise with the dispatched actions
+ * Gets the block timestamp from a transaction hash
+ * @param txHash The transaction hash to get the block timestamp from
+ * @returns Promise with the block timestamp
  */
-export async function checkAndDispatchGgXyzQuestProgress(
-  playerAddress: string,
-  achievement: CartridgeAchievement,
-): Promise<string[]> {
-  const currentCount = await fetchTrophyProgression(playerAddress, achievement);
+export async function getBlockTimestampFromTxHash(txHash: string): Promise<number> {
+  let blockNumber: number | undefined;
 
-  const thresholds = QUEST_THRESHOLDS[achievement];
-  const completedActions: string[] = [];
+  const getTransactionReceipt = async () => {
+    const response = await fetch(env.VITE_PUBLIC_NODE_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        method: "starknet_getTransactionReceipt",
+        params: [txHash],
+        id: 1,
+        jsonrpc: "2.0",
+      }),
+    });
+    const data = await response.json();
+    return data;
+  };
 
-  for (const threshold of thresholds) {
-    // Check if we've just reached or exceeded this threshold
-    if (currentCount >= threshold.threshold) {
-      completedActions.push(threshold.action);
+  let receipt;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (attempts < maxAttempts) {
+    receipt = await getTransactionReceipt();
+    if (receipt?.result?.block_number) {
+      blockNumber = receipt.result.block_number;
+      break;
+    }
+    attempts++;
+    if (attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
 
-  if (completedActions.length > 0) {
-    await dispatchActions(completedActions, playerAddress);
+  if (!blockNumber) {
+    throw new Error(`Failed to get block number for transaction ${txHash} after ${maxAttempts} attempts`);
   }
 
-  return completedActions;
+  const block = await starknetProvider.getBlock(blockNumber);
+  return block.timestamp;
 }
 
 /**
@@ -312,15 +321,9 @@ export async function checkAndDispatchMultipleGgXyzQuestProgress(
   txHash: string,
   achievements: CartridgeAchievement[],
 ): Promise<Record<CartridgeAchievement, string[]>> {
-  console.log("txHash", txHash);
-  const receipt = await starknetProvider.getTransactionReceipt(txHash);
-  console.log("receipt", receipt);
-  const blockNumber = receipt.block_number;
-  console.log("blockNumber", blockNumber);
-  // const blockNumber = receipt.blockNumber;
-  // console.log("blockNumber", blockNumber);
+  const blockTimestamp = await getBlockTimestampFromTxHash(txHash);
 
-  const progressions = await fetchMultipleTrophyProgressions(playerAddress, achievements);
+  const progressions = await fetchMultipleTrophyProgressions(playerAddress, blockTimestamp, achievements);
   const completedActionsByAchievement: Record<CartridgeAchievement, string[]> = {} as Record<
     CartridgeAchievement,
     string[]

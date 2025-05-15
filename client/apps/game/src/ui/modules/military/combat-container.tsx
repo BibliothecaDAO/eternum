@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
+import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -261,12 +261,15 @@ export const CombatContainer = ({
         explorer_id: attackerEntityId,
         structure_id: target?.id || 0,
         structure_direction: direction,
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          CartridgeAchievement.WIN_BATTLE,
+        ]);
       });
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
     }
   };
 
@@ -329,13 +332,16 @@ export const CombatContainer = ({
         defender_id: target?.id || 0,
         defender_direction: direction,
         steal_resources: targetResources,
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          CartridgeAchievement.WIN_BATTLE,
+          CartridgeAchievement.KILL_AGENT,
+        ]);
       });
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
-      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.KILL_AGENT);
     }
   };
 
@@ -352,12 +358,16 @@ export const CombatContainer = ({
         structure_guard_slot: selectedGuardSlot,
         explorer_id: target?.id || 0,
         explorer_direction: direction,
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          CartridgeAchievement.WIN_BATTLE,
+          CartridgeAchievement.KILL_AGENT,
+        ]);
       });
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.WIN_BATTLE);
     }
   };
 

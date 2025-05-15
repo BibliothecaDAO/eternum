@@ -427,7 +427,6 @@ export default class WorldmapScene extends HexagonScene {
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then((res: any) => {
-          console.log("res", res);
           if (!isExplored) {
             checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
               CartridgeAchievement.EXPLORE,

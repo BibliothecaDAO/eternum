@@ -21,7 +21,7 @@ import {
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
-import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
+import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
 import { useComponentValue } from "@dojoengine/react";
@@ -107,20 +107,21 @@ export const Castle = () => {
     if (!structure) return;
 
     try {
-      await dojo.setup.systemCalls.upgrade_realm({
-        signer: dojo.account.account,
-        realm_entity_id: structure?.entity_id,
-      });
+      await dojo.setup.systemCalls
+        .upgrade_realm({
+          signer: dojo.account.account,
+          realm_entity_id: structure?.entity_id,
+        })
+        .then((res: any) => {
+          checkAndDispatchMultipleGgXyzQuestProgress(dojo.account.account.address, res.transaction_hash, [
+            CartridgeAchievement.UPGRADE_REALM,
+            CartridgeAchievement.UPGRADE_VILLAGE,
+          ]);
+        });
       setIsLevelUpLoading(false);
     } catch (error) {
       console.error("Error upgrading realm:", error);
       setIsLevelUpLoading(false);
-    } finally {
-      if (structure.base.category === StructureType.Realm) {
-        checkAndDispatchGgXyzQuestProgress(dojo.account.account.address, CartridgeAchievement.UPGRADE_REALM);
-      } else if (structure.base.category === StructureType.Village) {
-        checkAndDispatchGgXyzQuestProgress(dojo.account.account.address, CartridgeAchievement.UPGRADE_VILLAGE);
-      }
     }
     setIsLevelUpLoading(false);
   };

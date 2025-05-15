@@ -1,4 +1,4 @@
-import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
+import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
 import { PRIZE_POOL_GUILDS } from "@/ui/constants";
@@ -145,6 +145,10 @@ export const Guilds = ({
         is_public: isPublic,
         guild_name: guildName,
         signer: account,
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          CartridgeAchievement.JOIN_TRIBE,
+        ]);
       });
       // Assuming synchronous success or if create_guild doesn't throw,
       // optimistically update UI.
@@ -156,7 +160,6 @@ export const Guilds = ({
       // On error, form remains open, isLoading will become false.
     } finally {
       setIsLoading(false);
-      checkAndDispatchGgXyzQuestProgress(account.address, CartridgeAchievement.JOIN_TRIBE);
     }
   };
 

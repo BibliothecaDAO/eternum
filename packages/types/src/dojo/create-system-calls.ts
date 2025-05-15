@@ -334,7 +334,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.claim_reward(props);
   };
 
-  const get_game_count = async (props: SystemProps.GetGameCountProps): Promise<Result> => {
+  const get_game_count = async (props: SystemProps.GetGameCountProps) => {
     return await provider.get_game_count(props);
   };
 

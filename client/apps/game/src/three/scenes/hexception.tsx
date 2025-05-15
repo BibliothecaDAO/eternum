@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CartridgeAchievement, checkAndDispatchGgXyzQuestProgress } from "@/services/gg-xyz";
+import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
@@ -349,22 +349,23 @@ export default class HexceptionScene extends HexagonScene {
             buildingId: buildingType.type,
           });
 
-          await this.tileManager.placeBuilding(
-            account!,
-            useUIStore.getState().structureEntityId,
-            buildingType.type,
-            normalizedCoords,
-            useSimpleCost,
-          );
+          await this.tileManager
+            .placeBuilding(
+              account!,
+              useUIStore.getState().structureEntityId,
+              buildingType.type,
+              normalizedCoords,
+              useSimpleCost,
+            )
+            .then((res: any) => {
+              checkAndDispatchMultipleGgXyzQuestProgress(account!.address, res.transaction_hash, [
+                CartridgeAchievement.BUILD_SIMPLE,
+                CartridgeAchievement.BUILD_STANDARD,
+              ]);
+            });
         } catch (error) {
           console.log("catched error so removing building", error);
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
-        } finally {
-          if (useSimpleCost) {
-            checkAndDispatchGgXyzQuestProgress(account!.address, CartridgeAchievement.BUILD_SIMPLE);
-          } else {
-            checkAndDispatchGgXyzQuestProgress(account!.address, CartridgeAchievement.BUILD_STANDARD);
-          }
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
       }
