@@ -1,3 +1,4 @@
+import { getInternalAddressName } from "@bibliothecadao/eternum";
 import { Player } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
@@ -17,10 +18,16 @@ export const usePlayers = (): Player[] => {
       .map((id) => {
         const addressName = getComponentValue(components.AddressName, id);
         if (!addressName) return;
+
+        let actualName = getInternalAddressName(addressName.address.toString());
+        if (!actualName) {
+          actualName = shortString.decodeShortString(addressName.name.toString());
+        }
+
         return {
           entity: id,
           address: addressName.address,
-          name: shortString.decodeShortString(addressName.name.toString()),
+          name: actualName,
         };
       })
       .filter(Boolean) as Player[];
