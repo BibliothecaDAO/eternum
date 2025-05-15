@@ -233,7 +233,6 @@ export const SeasonPassCard = ({
         onOpenChange={setIsModalOpen}
         realmData={pass}
         isOwner={isOwner}
-        hasSeasonPassMinted={false}
         marketplaceActions={marketplaceActions}
         collection_id={SEASON_PASS_COLLECTION_ID}
         price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}

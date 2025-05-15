@@ -3,7 +3,6 @@ import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
-  configManager,
   divideByPrecision,
   getBalance,
   getTotalResourceWeightKg,
@@ -89,34 +88,58 @@ export const TravelInfo = ({
   );
 };
 
-const ResourceWeight = ({ className }: { className?: string }) => {
+export const ResourceWeight = ({ className }: { className?: string }) => {
   return (
     <div className={`text-xs text-gray-200 mx-auto ${className}`}>
-      <p className="italic text-xs">Each resource has a different weight per unit.</p>
-      <div className="grid grid-cols-2 gap-x-4 my-1">
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="md" className="mr-1" />
-          {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}
+      <p className="italic text-xs">Resource weights per unit:</p>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-2 my-1">
+        {/* Zero weight resources (Lords and Donkey) */}
+        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
+          <div className="text-center text-gold/90 text-xs font-medium">0 kg/unit</div>
+          <div className="flex items-center justify-center gap-1.5">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="sm" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Donkey]} size="sm" />
+          </div>
         </div>
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="md" className="mr-1" />
-          {`${configManager.getResourceWeightKg(ResourcesIds.Knight)} kg/unit`}
+
+        {/* Ancient Fragments */}
+        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
+          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
+          <div className="flex items-center justify-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.AncientFragment]} size="sm" />
+            <span className="ml-1 text-2xs">(Fragment)</span>
+          </div>
         </div>
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="md" className="mr-1" />
-          {`(Food) ${configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit`}
+
+        {/* Food resources */}
+        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
+          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
+          <div className="flex items-center justify-center gap-1.5">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="sm" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Fish]} size="sm" />
+            <span className="ml-1 text-2xs">(Food)</span>
+          </div>
         </div>
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="md" className="mr-1" />
-          {`${configManager.getResourceWeightKg(ResourcesIds.Crossbowman)} kg/unit`}
+
+        {/* Standard resources */}
+        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
+          <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
+          <div className="flex items-center justify-center">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Stone]} size="xs" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Gold]} size="xs" />
+            <span className="ml-1 text-2xs">(Resources)</span>
+          </div>
         </div>
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="md" className="mr-1" />
-          {`(Other) ${configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit`}
-        </div>
-        <div className="flex items-center justify-center">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="md" className="mr-1" />
-          {`${configManager.getResourceWeightKg(ResourcesIds.Paladin)} kg/unit`}
+
+        {/* Troops */}
+        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30 col-span-2">
+          <div className="text-center text-gold/90 text-xs font-medium">5 kg/unit (All Troops)</div>
+          <div className="flex items-center justify-center gap-1.5">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" />
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" />
+          </div>
         </div>
       </div>
     </div>

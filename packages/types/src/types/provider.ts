@@ -912,6 +912,7 @@ export interface CreateMarketplaceOrderProps {
   price: num.BigNumberish;
   expiration: number;
   signer: AccountInterface;
+  cancel_order_id?: num.BigNumberish;
 }
 
 export interface AcceptMarketplaceOrdersProps {

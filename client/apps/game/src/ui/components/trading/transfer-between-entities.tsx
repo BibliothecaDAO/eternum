@@ -318,7 +318,7 @@ export const TransferBetweenEntities = ({
             <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
-                  entityId={selectedEntityIdTo?.entityId!}
+                  entityId={selectedEntityIdFrom?.entityId!}
                   resources={selectedResourceIds.map((resourceId: number) => ({
                     resourceId,
                     amount: selectedResourceAmounts[resourceId],

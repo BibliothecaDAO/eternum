@@ -84,7 +84,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
           ref={ref}
           style={tooltip.fixed ? { left: tooltip.fixed.x, top: tooltip.fixed.y } : undefined}
           className={clsx(
-            "fixed z-[250] panel-wood inline-flex border-gradient border text-xxs px-4 py-1 bg-brown/90 flex-col justify-start items-center text-gold leading-loose shadow-3xl",
+            "fixed z-[250] panel-wood inline-flex border text-xxs px-4 py-1 bg-dark-wood flex-col justify-start items-center text-gold",
             className,
           )}
         >

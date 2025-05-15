@@ -1,12 +1,14 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ResourceWeight } from "@/ui/components/resources/travel-info";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
+import { CircularProgress } from "./top-left-navigation";
 
 const StorehouseInfo = ({
   storehouseCapacity,
@@ -15,11 +17,6 @@ const StorehouseInfo = ({
   storehouseCapacity: number;
   storehouseCapacityUsed: number;
 }) => {
-  const capacity = storehouseCapacity;
-  // All troops have the same weight now, so we can use any troop type to calculate
-  const troopWeight = configManager.getResourceWeightKg(ResourcesIds.Knight);
-  const maxTroops = Math.floor(capacity / troopWeight);
-
   return (
     <div className="max-w-xs z-50 space-y-3">
       {/* Storage summary */}
@@ -34,41 +31,14 @@ const StorehouseInfo = ({
         <p className="font-bold text-white">{(storehouseCapacity - storehouseCapacityUsed).toLocaleString()} kg</p>
       </div>
 
-      {/* Example capacities */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex items-center bg-white/5 rounded p-1">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-          <span>{(capacity / configManager.getResourceWeightKg(ResourcesIds.Lords)).toLocaleString()} Lords</span>
-        </div>
-        <div className="flex items-center bg-white/5 rounded p-1">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-          <span>{(capacity / configManager.getResourceWeightKg(ResourcesIds.Wheat)).toLocaleString()} Food</span>
-        </div>
-        <div className="flex items-center bg-white/5 rounded p-1">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-          <span>{(capacity / configManager.getResourceWeightKg(ResourcesIds.Wood)).toLocaleString()} Resources</span>
-        </div>
-        <div className="flex items-center bg-white/5 rounded p-1">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="xs" className="mr-1" />
-          <span>{(capacity / configManager.getResourceWeightKg(ResourcesIds.Labor)).toLocaleString()} Labor</span>
-        </div>
-      </div>
-
-      {/* Troop capacity */}
-      <div className="bg-white/5 rounded p-2 space-y-1">
-        <p className="text-gold">Troop Capacity</p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            <span className="font-semibold">{maxTroops.toLocaleString()} troops</span>
-          </div>
-          <span className="text-gray-300 italic bg-black/30 rounded px-1 py-0.5">Per troop type and tier</span>
-        </div>
-      </div>
+      <ResourceWeight />
 
       {/* Hint */}
       <p className="pt-2 border-t border-white/10 italic flex items-center">
         <span className="text-green mr-1">+</span> Build Storehouses to increase capacity
+      </p>
+      <p className="italic text-red/80 flex items-center">
+        <span className="mr-1">⚠️</span> At max capacity, you risk losing materials
       </p>
     </div>
   );
@@ -130,8 +100,15 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
 
   const isPopulationNearCapacity = populationPercentage >= 80;
 
+  // Calculate storage capacity percentage
+  const storagePercentage = realmInfo?.storehouses
+    ? Math.min(100, Math.round((realmInfo.storehouses.capacityUsedKg / realmInfo.storehouses.capacityKg) * 100))
+    : 0;
+
+  const isStorageNearCapacity = storagePercentage >= 80;
+
   return (
-    <div className={clsx("flex", className)}>
+    <div className={clsx("flex gap-4", className)}>
       {realmInfo?.storehouses && (
         <div
           onMouseEnter={() => {
@@ -148,12 +125,16 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseLeave={() => {
             setTooltip(null);
           }}
-          className="storehouse-selector text-lg px-3 py-1 flex gap-2 justify-start items-center   transition-colors duration-200 cursor-help"
+          className="storehouse-selector text-lg flex gap-2 justify-start items-center transition-colors duration-200 cursor-help"
         >
-          <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-          <div className="self-center text-xs">
-            {realmInfo.storehouses.capacityUsedKg.toLocaleString()} /{" "}
-            {realmInfo.storehouses.capacityKg.toLocaleString()} kg
+          <CircularProgress progress={storagePercentage} size="sm" color={isStorageNearCapacity ? "red" : "gold"}>
+            <ResourceIcon withTooltip={false} resource="Silo" size="xs" className="self-center" />
+          </CircularProgress>
+          <div className="flex flex-col">
+            <div className={clsx("text-xs", isStorageNearCapacity && "text-red")}>
+              {Math.round(realmInfo.storehouses.capacityUsedKg).toLocaleString()} /{" "}
+              {Math.round(realmInfo.storehouses.capacityKg).toLocaleString()} kg
+            </div>
           </div>
         </div>
       )}
@@ -168,23 +149,14 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
         onMouseLeave={() => {
           setTooltip(null);
         }}
-        className={clsx(
-          "population-selector p-1  flex gap-2 justify-start items-center rounded-md transition-colors duration-200 cursor-help text-lg  ",
-        )}
+        className="population-selector flex gap-2 justify-start items-center cursor-help text-lg"
       >
-        <ResourceIcon withTooltip={false} resource="House" size="sm" />
-        <div className="flex flex-col self-center">
-          <div className={clsx("self-center", isPopulationNearCapacity && "text-red")}>
+        <CircularProgress progress={populationPercentage} size="sm" color={isPopulationNearCapacity ? "red" : "gold"}>
+          <ResourceIcon withTooltip={false} resource="House" size="xs" className="self-center" />
+        </CircularProgress>
+        <div className="flex flex-col">
+          <div className={clsx("text-xs", isPopulationNearCapacity && "text-red")}>
             {realmInfo?.population || 0} / {(realmInfo?.capacity || 0) + configManager.getBasePopulationCapacity()}
-          </div>
-          <div className="w-full bg-gray-700 rounded-full overflow-hidden text-lg ">
-            <div
-              className={clsx(
-                "h-full rounded-full",
-                populationPercentage < 60 ? "bg-green" : populationPercentage < 80 ? "bg-yellow" : "bg-red",
-              )}
-              style={{ width: `${populationPercentage}%` }}
-            />
           </div>
         </div>
       </div>

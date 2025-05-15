@@ -87,6 +87,7 @@ export const useMarketplace = () => {
         collection_id: params.collection_id,
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
+        cancel_order_id: params.cancel_order_id,
       });
       toast.success("Transaction confirmed! Syncing listing status...");
       // Add success handling if needed

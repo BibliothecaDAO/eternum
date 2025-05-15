@@ -217,16 +217,18 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
 TopLeftNavigation.displayName = "TopLeftNavigation";
 
-const CircularProgress = ({
+export const CircularProgress = ({
   progress,
   size = "sm",
   children,
   className,
+  color = "red",
 }: {
   progress: number;
   size?: "sm" | "md" | "lg";
   children?: React.ReactNode;
   className?: string;
+  color?: "red" | "green" | "gold";
 }) => {
   const normalizedProgress = Math.min(100, Math.max(0, progress));
   const strokeWidth = size === "sm" ? 2 : size === "md" ? 3 : 4;
@@ -246,6 +248,12 @@ const CircularProgress = ({
     lg: "text-base",
   };
 
+  const colorClasses = {
+    red: "stroke-red",
+    green: "stroke-green",
+    gold: "stroke-gold",
+  };
+
   return (
     <div className={cn("relative inline-flex items-center justify-center", sizeClasses[size], className)}>
       <svg className="w-full h-full -rotate-90">
@@ -262,7 +270,7 @@ const CircularProgress = ({
           cx="50%"
           cy="50%"
           r={radius}
-          className="fill-none stroke-gold transition-all duration-300 ease-in-out"
+          className={cn("fill-none transition-all duration-300 ease-in-out", colorClasses[color])}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -339,7 +347,7 @@ const TickProgress = memo(() => {
       onMouseLeave={handleMouseLeave}
       className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
     >
-      <CircularProgress progress={progress} size="sm" className="text-gold">
+      <CircularProgress progress={progress} size="sm" color="gold">
         <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
       </CircularProgress>
       <span className="text-sm">{progress.toFixed()}%</span>

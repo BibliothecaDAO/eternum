@@ -146,7 +146,7 @@ const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: 
           {renderEntityStatus}
         </div>
         <div className="flex justify-between items-center">
-          <DepositResourceArrival arrival={arrival} />
+          <DepositResourceArrival isMaxCapacity={isOverCapacity} arrival={arrival} />
         </div>
       </div>
       {isOverCapacity && (
