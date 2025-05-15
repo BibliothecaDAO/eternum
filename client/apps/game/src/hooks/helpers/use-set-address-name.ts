@@ -26,23 +26,21 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
       let username;
       try {
         username = await (connector as unknown as ControllerConnector)?.username();
-        if (!username) {
-          username = "adventurer"; // Default to adventurer in local mode
-        }
       } catch (error) {
-        username = "adventurer"; // If username() fails, we're in local mode
-        console.log("Using default username 'adventurer' for local mode");
+        console.log("No username found in controller account");
       }
 
-      const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-      const calldata = {
-        signer: controllerAccount!,
-        name: usernameFelt,
-      };
-      value.systemCalls.set_address_name(calldata);
-      setAddressName(username);
-      setIsAddressNameSet(true);
-      hasSetUsername.current = true;
+      if (username) {
+        const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
+        const calldata = {
+          signer: controllerAccount!,
+          name: usernameFelt,
+        };
+        value.systemCalls.set_address_name(calldata);
+        setAddressName(username);
+        setIsAddressNameSet(true);
+        hasSetUsername.current = true;
+      }
     };
 
     const handleAddressName = async () => {
