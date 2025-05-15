@@ -24,7 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
 import { useComponentValue } from "@dojoengine/react";
-import { ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
+import { AlertCircleIcon, ArrowUpRightIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
 const WONDER_BONUS_DISTANCE = 12;
 
@@ -100,6 +100,29 @@ export const Castle = () => {
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
   }, [getBalance, structureEntityId]);
+
+  const missingResources = useMemo(() => {
+    if (!getNextRealmLevel) return [];
+
+    const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
+    const missing: { resource: number; amount: number; current: number }[] = [];
+
+    Object.keys(cost).forEach((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
+      const currentAmount = divideByPrecision(balance.balance);
+
+      if (currentAmount < resourceCost.amount) {
+        missing.push({
+          resource: resourceCost.resource,
+          amount: resourceCost.amount - currentAmount,
+          current: currentAmount,
+        });
+      }
+    });
+
+    return missing;
+  }, [getNextRealmLevel, structureEntityId, currentDefaultTick]);
 
   const levelUpRealm = async () => {
     setIsLevelUpLoading(true);
@@ -208,6 +231,40 @@ export const Castle = () => {
                       />
                     ))}
                   </div>
+
+                  {/* Missing Resources Section */}
+                  {!checkBalance && missingResources.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gold/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertCircleIcon className="w-4 h-4 text-amber-400" />
+                        <h6 className="text-amber-400 font-semibold">Missing Resources</h6>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {missingResources.map((resource) => (
+                          <div key={resource.resource} className="relative">
+                            <ResourceCost
+                              type="vertical"
+                              size="md"
+                              resourceId={resource.resource}
+                              amount={resource.amount}
+                              className="opacity-80"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => toggleModal(<ProductionModal />)}
+                        variant="outline"
+                        size="md"
+                        className="mt-3 w-full border-amber-400/30 text-amber-400 hover:bg-amber-400/10"
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <PlusIcon className="w-3 h-3" />
+                          Produce Resources
+                        </div>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
