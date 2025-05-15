@@ -48,11 +48,12 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
         const address = ContractAddress(controllerAccount.address);
         // can use because we have synced all address names
         const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([address]))?.name;
+        const decodedAddressName = addressName ? shortString.decodeShortString(addressName.toString()) : undefined;
 
-        if (!addressName) {
+        // fix to rename adventurer to controller account
+        if (!decodedAddressName || decodedAddressName === "adventurer") {
           await setUserName();
         } else {
-          const decodedAddressName = shortString.decodeShortString(addressName?.toString());
           setAddressName(decodedAddressName);
           setIsAddressNameSet(true);
           hasSetUsername.current = true;
