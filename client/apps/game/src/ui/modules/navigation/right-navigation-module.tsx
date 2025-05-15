@@ -80,7 +80,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[500px] right-4 pointer-events-none pt-16 ${
         isOffscreen ? "translate-x-[83%]" : ""
       }`}
     >

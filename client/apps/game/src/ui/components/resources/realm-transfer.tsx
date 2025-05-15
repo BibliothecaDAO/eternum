@@ -53,8 +53,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     return resourceManager.balanceWithProduction(tick, resource).balance;
   }, [resourceManager, tick, resource]);
 
-  console.log(balance);
-
   const playerStructures = usePlayerStructures();
 
   const playerStructuresFiltered = useMemo(() => {
@@ -408,8 +406,8 @@ const RealmTransferBalance = memo(
     }, [resourceWeightKg]);
 
     const relevantDonkeyBalance = useMemo(() => {
-      return type === "send" ? getSourceDonkeyBalance() : getDestinationDonkeyBalance();
-    }, [type, getSourceDonkeyBalance, getDestinationDonkeyBalance]);
+      return getSourceDonkeyBalance();
+    }, [getSourceDonkeyBalance]);
 
     const canCarry = useMemo(() => {
       return relevantDonkeyBalance >= neededDonkeysForThisTransfer;

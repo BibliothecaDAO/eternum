@@ -2,7 +2,13 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
-import { configManager, divideByPrecision, formatTime, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  formatTime,
+  getTotalResourceWeightKg,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -12,12 +18,16 @@ export const ResourceChip = ({
   size = "default",
   hideZeroBalance = false,
   showTransfer = true,
+  storageCapacity = 0,
+  storageCapacityUsed = 0,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   size?: "default" | "large";
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
+  storageCapacity?: number;
+  storageCapacityUsed?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -43,7 +53,7 @@ export const ResourceChip = ({
     const resource = resourceManager.getResource();
     if (!resource) return null;
     return ResourceManager.balanceAndProduction(resource, resourceId).production;
-  }, [resourceManager, currentTick]);
+  }, [resourceManager, currentTick, resourceId, hasReachedMaxCap, amountProducedLimited, amountProduced, balance]);
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
@@ -65,14 +75,11 @@ export const ResourceChip = ({
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balanceWithProduction(realTick, resourceId).balance;
-    // setBalance(newBalance);
-
     if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
         const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
-        // setBalance(balance);
+
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
@@ -85,18 +92,57 @@ export const ResourceChip = ({
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait as string}
         size={size === "large" ? "md" : "sm"}
-        className="mr-3 self-center"
+        className=" self-center"
       />
     );
   }, [resourceId, size]);
 
+  const producedWeight = useMemo(() => {
+    return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
+  }, [amountProduced, resourceId]);
+
+  const storageRemaining = useMemo(() => {
+    return storageCapacity - storageCapacityUsed;
+  }, [storageCapacity, storageCapacityUsed]);
+
+  const isStorageFull = useMemo(() => {
+    return storageRemaining <= 0;
+  }, [storageRemaining]);
+
   const handleMouseEnter = useCallback(() => {
-    setTooltip({
-      position: "top",
-      content: <>{findResourceById(resourceId)?.trait as string}</>,
-    });
-    setShowPerHour(false);
-  }, [resourceId, setTooltip]);
+    if (Number(amountProduced || 0n) > 0) {
+      setTooltip({
+        position: "top",
+        content: (
+          <div className="space-y-1 text-lg">
+            <p>
+              You have{" "}
+              <span className={!isStorageFull ? "text-green" : "text-red"}>
+                {currencyFormat(Number(amountProduced || 0n), 2)}
+              </span>{" "}
+              {findResourceById(resourceId)?.trait} waiting to be stored.
+            </p>
+            <p>
+              Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
+              moved into storage.
+              <br />
+              Only the portion that fits within your remaining capacity&nbsp;(
+              <span className="text-green">
+                {storageCapacity.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+              </span>
+              ) will be saved; any excess&nbsp;(
+              <span className="text-red">
+                MAX of{" "}
+                {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                kg
+              </span>
+              ) will be permanently burned. If you need to store more build a Store house.
+            </p>
+          </div>
+        ),
+      });
+    }
+  }, [resourceId, setTooltip, isStorageFull, amountProduced, storageCapacity, producedWeight]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
@@ -114,76 +160,54 @@ export const ResourceChip = ({
     <div
       className={`flex relative group items-center ${
         size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/20`}
+      } hover:bg-gold/5`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {icon}
-      <div className="grid grid-cols-10 w-full items-center">
-        <div className={`self-center font-bold col-span-5 ${size === "large" ? "text-lg" : ""}`}>
-          {currencyFormat(actualBalance ? Number(actualBalance) : 0, 2)}
+      <div className="grid grid-cols-12 w-full items-center">
+        <div className={`self-center flex w-full gap-2 justify-between ${size === "large" ? "text-lg" : ""}`}>
+          <div className="flex items-center gap-2">
+            {icon}
+            {currencyFormat(actualBalance ? Number(actualBalance) : 0, 2)}{" "}
+          </div>
+
+          {amountProduced > 0n && (
+            <div className={` flex  gap-2 self-start text-xs text-gold/50`}>
+              [
+              <span className={!isStorageFull ? "text-green" : "text-red"}>
+                {currencyFormat(Number(amountProduced || 0n), 2)}
+              </span>
+              <div className="flex  gap-4 w-full col-span-12">
+                {isActive &&
+                !hasReachedMaxCap &&
+                (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
+                  <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
+                    <div className={!isStorageFull ? "text-green" : "text-red"}>
+                      +
+                      {showPerHour
+                        ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
+                        : `${currencyIntlFormat(productionRate, 4)}/s`}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`self-center col-span-5 text-right ${size === "large" ? "text-base" : "text-xs"} font-medium`}
+                  >
+                    {hasReachedMaxCap ? "Max" : ""}
+                  </div>
+                )}
+              </div>
+              ]
+            </div>
+          )}
         </div>
 
-        {isActive && !hasReachedMaxCap && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
-          <div
-            className={`${
-              productionRate < 0 ? "text-light-red" : "text-green/60"
-            } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-5 justify-end`}
-          >
-            <div className={`self-center`}>
-              +
-              {showPerHour
-                ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
-                : `${currencyIntlFormat(productionRate, 4)}/s`}
-            </div>
-          </div>
-        ) : (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "top",
-                content: (
-                  <>
-                    {hasReachedMaxCap
-                      ? "Production has stopped because the max balance has been reached"
-                      : "Production has stopped because labor has been depleted"}
-                  </>
-                ),
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className={`self-center px-2 col-span-5 text-right ${
-              size === "large" ? "text-base" : "text-xs"
-            } font-medium`}
-          >
-            {hasReachedMaxCap ? "MaxCap" : ""}
-          </div>
-        )}
-
-        {amountProduced > 0n && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "top",
-                content: (
-                  <div>
-                    You have produced {currencyFormat(Number(amountProduced || 0n), 2)}{" "}
-                    {findResourceById(resourceId)?.trait} . Upon using {findResourceById(resourceId)?.trait} anywhere
-                    else, any amount that exceeds your storage cap will be lost (burned) once the cap is reached.
-                    <br />
-                    <br />
-                  </div>
-                ),
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className={`col-span-10 self-start text-xs text-gold/50`}
-          >
-            {currencyFormat(Number(amountProduced || 0n), 2)} producing
+        {producedWeight > 0 && (
+          <div className="text-xs text-gold/40 col-span-12 flex items-center">
+            {divideByPrecision(Number(producedWeight || 0n), false).toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })}{" "}
+            kg produced
           </div>
         )}
 
