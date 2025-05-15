@@ -1,3 +1,4 @@
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -65,7 +66,11 @@ export const ResourceProductionControls = ({
     };
 
     try {
-      await burn_resource_for_resource_production(calldata);
+      await burn_resource_for_resource_production(calldata).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          Achievements.RESOURCE_PRODUCE,
+        ]);
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -87,7 +92,11 @@ export const ResourceProductionControls = ({
       };
 
       try {
-        await burn_labor_for_resource_production(calldata);
+        await burn_labor_for_resource_production(calldata).then((res: any) => {
+          checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+            Achievements.RESOURCE_PRODUCE,
+          ]);
+        });
       } catch (error) {
         console.error(error);
       } finally {

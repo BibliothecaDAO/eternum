@@ -10,6 +10,7 @@ import { ModalContainer } from "../modal-container";
 import { SettlementMinimap } from "./settlement-minimap";
 import { VillageResourceReveal } from "./village-resource-reveal";
 
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
@@ -245,6 +246,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           direction: selectedDirection,
           village_pass_address: getVillagePassAddress(),
           signer: account,
+        }).then((res: any) => {
+          checkAndDispatchMultipleGgXyzQuestProgress(account?.address, res.transaction_hash, [
+            Achievements.VILLAGE_SETTLEMENT,
+          ]);
         });
         setCurrentStep(4);
         setShowResourceReveal(true);

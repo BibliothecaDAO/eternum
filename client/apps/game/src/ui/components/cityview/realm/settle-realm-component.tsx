@@ -1,5 +1,6 @@
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { Position } from "@/types/position";
 import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
@@ -168,6 +169,10 @@ export const SeasonPassRealm = ({
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
         season_pass_address: getSeasonPassAddress(),
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account?.address, res.transaction_hash, [
+          Achievements.REALM_SETTLEMENT,
+        ]);
       });
       toast.success("Realms settled successfully");
       setIsSettled(true);

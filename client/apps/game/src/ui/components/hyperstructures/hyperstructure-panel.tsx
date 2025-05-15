@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
 import Button from "@/ui/elements/button";
@@ -134,6 +135,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
         contributions: formattedContributions,
         contributor_entity_id: structureEntityId,
         hyperstructure_entity_id: entity.entity_id,
+      }).then((res: any) => {
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
+          Achievements.CONTRIBUTE_HYPERSTRUCTURE,
+        ]);
       });
     } finally {
       setIsLoading(Loading.None);

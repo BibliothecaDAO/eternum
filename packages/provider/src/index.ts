@@ -968,7 +968,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_building(props: SystemProps.CreateBuildingProps) {
+  public async create_building(props: SystemProps.CreateBuildingProps): Promise<Result> {
     const { entity_id, directions, building_category, use_simple, signer } = props;
 
     const call = this.createProviderCall(signer, {
