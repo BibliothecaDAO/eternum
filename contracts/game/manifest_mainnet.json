@@ -6602,7 +6602,7 @@
     },
     {
       "address": "0x601421e73dfd18852d7eb35d8a133a82d9ec3d116fae048a1991fa8dc12c45c",
-      "class_hash": "0x7e3804b581e391f6fccc1a5e05cdb02b2c9a5e30528e334780999adce43168e",
+      "class_hash": "0x3e443518d310ddd19712bbf7bb556855a80691aea8b38e053cebc1c2222ae31",
       "abi": [
         {
           "type": "impl",

@@ -29,7 +29,7 @@ pub mod name_systems {
 
             // assert that name not set
             let mut address_name: AddressName = world.read_model(caller);
-            assert!(address_name.name == 0, "Name already set");
+            // assert!(address_name.name == 0, "Name already set");
 
             // set name
             address_name.name = name;
