@@ -16,7 +16,6 @@ export const formatGuilds = (
     .map((guild_entity_id) => {
       const guild = getComponentValue(components.Guild, guild_entity_id);
       if (!guild) {
-        console.log("no guild", guild_entity_id);
         return;
       }
 
