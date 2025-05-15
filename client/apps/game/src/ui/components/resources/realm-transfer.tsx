@@ -184,7 +184,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex flex-col h-[70vh]">
         <div className="flex flex-row gap-2">
           <ResourceIcon
             withTooltip={false}
@@ -233,72 +233,73 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         </div>
         {/* End Dedicated Burn Section */}
 
-        {playerStructuresFiltered
-          .filter((structure) => {
-            // First, skip if it's the structure itself, as no transfer row should be rendered.
-            if (structure.structure.entity_id === selectedStructureEntityId) {
-              return false;
-            }
+        {/* Scrollable content area */}
+        <div className="flex-grow overflow-y-auto pr-2">
+          {playerStructuresFiltered
+            .filter((structure) => {
+              // First, skip if it's the structure itself, as no transfer row should be rendered.
+              if (structure.structure.entity_id === selectedStructureEntityId) {
+                return false;
+              }
 
-            let relevantBalanceValue: number | undefined = undefined;
+              let relevantBalanceValue: number | undefined = undefined;
 
-            if (type === "send") {
-              // Assuming 'balance' (from component scope) is number | undefined based on linter error context
-              relevantBalanceValue = balance as number | undefined; // Explicit cast if needed, or direct assignment if type matches
-            } else {
-              // type === "receive"
-              const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
-              // Assuming this .balance is number | undefined based on linter error context
-              const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
-              relevantBalanceValue = receivedBalance as number | undefined; // Explicit cast if needed
-            }
+              if (type === "send") {
+                // Assuming 'balance' (from component scope) is number | undefined based on linter error context
+                relevantBalanceValue = balance as number | undefined; // Explicit cast if needed, or direct assignment if type matches
+              } else {
+                // type === "receive"
+                const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
+                // Assuming this .balance is number | undefined based on linter error context
+                const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
+                relevantBalanceValue = receivedBalance as number | undefined; // Explicit cast if needed
+              }
 
-            if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
-              return false; // If balance is not available, filter out.
-            }
+              if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
+                return false; // If balance is not available, filter out.
+              }
 
-            // relevantBalanceValue is now confirmed to be 'number'
-            const calculatedMaxAmountForFilter = relevantBalanceValue / RESOURCE_PRECISION;
+              // relevantBalanceValue is now confirmed to be 'number'
+              const calculatedMaxAmountForFilter = relevantBalanceValue / RESOURCE_PRECISION;
 
-            // Only include the structure if there's a positive amount of resource that can be transferred.
-            return calculatedMaxAmountForFilter > 0;
-          })
-          .map((structure) => (
-            <RealmTransferBalance
-              key={structure.structure.entity_id}
-              structure={structure}
-              selectedStructureEntityId={selectedStructureEntityId}
-              resource={resource}
-              tick={tick}
-              add={setCalls}
-              type={type}
-            />
-          ))}
-
-        <div className="py-4 border-t border-gold/20">
-          <div className="uppercase font-bold text h6 flex gap-3 items-center">
-            Transfers Queue ({calls.length}) |
-            <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
-            {totalNeededDonkeys.toString()}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {calls.map((call, index) => (
-              <div
-                className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
-                key={index}
-              >
-                <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
-                <div className="self-center" self-center>
-                  {call.resources[1].toLocaleString()}
-                </div>
-                <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
-                  Remove
-                </Button>
-              </div>
+              // Only include the structure if there's a positive amount of resource that can be transferred.
+              return calculatedMaxAmountForFilter > 0;
+            })
+            .map((structure) => (
+              <RealmTransferBalance
+                key={structure.structure.entity_id}
+                structure={structure}
+                selectedStructureEntityId={selectedStructureEntityId}
+                resource={resource}
+                tick={tick}
+                add={setCalls}
+                type={type}
+              />
             ))}
+
+          <div className="py-4 border-t border-gold/20">
+            <div className="uppercase font-bold text h6 flex gap-3 items-center">
+              Transfers Queue ({calls.length}) |
+              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
+              {totalNeededDonkeys.toString()}
+            </div>
+            <div className="flex flex-col gap-2">
+              {calls.map((call, index) => (
+                <div
+                  className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
+                  key={index}
+                >
+                  <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
+                  <div className="self-center">{call.resources[1].toLocaleString()}</div>
+                  <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+        {/* End scrollable content area */}
 
         {/* Enhanced Pre-Transfer Summary */}
         {calls.length > 0 && (
