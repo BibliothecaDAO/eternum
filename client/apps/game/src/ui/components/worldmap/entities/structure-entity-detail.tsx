@@ -48,6 +48,7 @@ export const StructureEntityDetail = memo(
     const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | null>(null);
     const [resources, setResources] = useState<ComponentValue<ClientComponents["Resource"]["schema"]> | null>(null);
     const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
+    const [isAlly, setIsAlly] = useState<boolean>(false);
     const [guards, setGuards] = useState<DefenseTroop[]>([]);
     const [addressName, setAddressName] = useState<string | undefined>(undefined);
 
@@ -57,7 +58,9 @@ export const StructureEntityDetail = memo(
         if (!structure || !resources) return;
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
         const guards = structure ? getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n) : [];
-
+        const userGuild = getGuildFromPlayerAddress(userAddress, components);
+        const isAlly = guild && userGuild && guild.entityId === userGuild.entityId;
+        setIsAlly(isAlly || false);
         // explorer troops that are roaming the world are always daydreams agents if they are not owned by a player
         setAddressName(structure?.owner ? getAddressName(structure?.owner, components) : MERCENARIES);
         setStructure(structure);
@@ -130,9 +133,9 @@ export const StructureEntityDetail = memo(
           </div>
           <div className="flex items-center gap-1">
             <div
-              className={`px-2 py-1 rounded text-xs h6 ${isMine ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
+              className={`px-2 py-1 rounded text-xs h6 ${isAlly ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
             >
-              {isMine ? "Ally" : "Enemy"}
+              {isAlly ? "Ally" : "Enemy"}
             </div>
             <button onClick={handleChatClick}>
               <MessageCircle />
