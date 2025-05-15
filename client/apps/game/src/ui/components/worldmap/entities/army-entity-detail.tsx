@@ -91,8 +91,8 @@ export const ArmyEntityDetail = memo(
 
         const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
-        const isAlly = guild && userGuild && guild.entityId === userGuild.entityId;
-        setIsAlly(isAlly || false);
+        const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
+        setIsAlly(isAlly);
         setAddressName(
           structure?.owner
             ? getAddressName(structure?.owner, components)
