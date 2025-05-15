@@ -309,10 +309,6 @@ export const SettingsWindow = () => {
                 High
               </Button>
             </div>
-            <div className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold" onClick={toggleFlatMode}>
-              <Checkbox enabled={isFlatMode} />
-              <div>Flat Mode</div>
-            </div>
           </section>
 
           {/* Guild Section */}
