@@ -8,7 +8,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Trash2 } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
@@ -25,8 +25,11 @@ export const ArmyEntityDetail = memo(
   ({ armyEntityId, className, compact = false, maxInventory = Infinity }: ArmyEntityDetailProps) => {
     const {
       network: { toriiClient },
-      account,
-      setup: { components },
+      account: { account },
+      setup: {
+        components,
+        systemCalls: { explorer_delete },
+      },
     } = useDojo();
 
     const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
@@ -41,11 +44,26 @@ export const ArmyEntityDetail = memo(
     const [structure, setStructure] = useState<
       ComponentValue<ClientComponents["Structure"]["schema"]> | null | undefined
     >(undefined);
-    const userAddress = ContractAddress(account.account.address);
+    const userAddress = ContractAddress(account.address);
     const [addressName, setAddressName] = useState<string | undefined>(undefined);
     const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
     const [stamina, setStamina] = useState<{ amount: bigint; updated_tick: bigint } | undefined>(undefined);
     const [maxStamina, setMaxStamina] = useState<number | undefined>(undefined);
+    const [isLoadingDelete, setIsLoadingDelete] = useState(false);
+
+    const handleDeleteExplorer = async () => {
+      setIsLoadingDelete(true);
+      try {
+        await explorer_delete({
+          signer: account,
+          explorer_id: armyEntityId,
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoadingDelete(false);
+      }
+    };
 
     useEffect(() => {
       const fetch = async () => {
@@ -148,12 +166,31 @@ export const ArmyEntityDetail = memo(
               </div>
             )}
           </div>
-          <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
-            {isMine ? "Ally" : "Enemy"}
+          <div className="flex items-center gap-2">
+            <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
+              {isMine ? "Ally" : "Enemy"}
+            </div>
+            <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
+              <MessageCircle />
+            </button>
+            {isMine && (
+              <button
+                onClick={handleDeleteExplorer}
+                className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${
+                  isLoadingDelete ? "opacity-60 cursor-not-allowed" : ""
+                }`}
+                title="Delete Army"
+                disabled={isLoadingDelete}
+              >
+                {isLoadingDelete ? (
+                  <span className="animate-spin mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                ) : (
+                  <Trash2 size={25} />
+                )}
+                {isLoadingDelete && <span className="ml-1 text-xs">Deleting...</span>}
+              </button>
+            )}
           </div>
-          <button onClick={handleChatClick}>
-            <MessageCircle />
-          </button>
         </div>
 
         <div className="flex flex-col gap-2 w-full">
