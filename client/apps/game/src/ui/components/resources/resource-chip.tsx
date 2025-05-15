@@ -123,7 +123,7 @@ export const ResourceChip = ({
     setTooltip({
       position: "left",
       content: (
-        <div className="space-y-1 text-lg max-w-72">
+        <div className="space-y-1 max-w-72">
           <div>
             <span className="text-gold font-bold">Total available:</span>{" "}
             <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
@@ -152,7 +152,7 @@ export const ResourceChip = ({
                   {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   kg
                 </span>
-                ) will be permanently burned. If you need to store more build a Store house.
+                ) will be permanently burned.
               </p>
             </>
           )}
