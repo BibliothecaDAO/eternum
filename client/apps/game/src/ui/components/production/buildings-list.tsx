@@ -1,9 +1,10 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ResourceManager } from "@bibliothecadao/eternum";
-import { useBuildings, useResourceManager } from "@bibliothecadao/react";
+import { getEntityIdFromKeys, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
@@ -27,13 +28,35 @@ export const BuildingsList = ({
     );
   }
 
+  const { setup } = useDojo();
+
   const buildings = useBuildings(realm.position.x, realm.position.y);
-
   const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
-
   const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
   const resourceManager = useResourceManager(realm.entityId);
+  const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(realm.entityId)]));
+
+  const structureBuildings = useComponentValue(
+    setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(realm.entityId)]),
+  );
+
+  const realmInfo = useMemo(
+    () => getRealmInfo(getEntityIdFromKeys([BigInt(realm.entityId)]), setup.components),
+    [realm.entityId, structureBuildings, resources],
+  );
+
+  const storageRemaining = useMemo(() => {
+    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
+      return 0;
+    }
+    return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
+  }, [realmInfo?.storehouses?.capacityUsedKg, realmInfo?.storehouses?.capacityKg]);
+
+  const isStorageFull = useMemo(() => {
+    return storageRemaining <= 0;
+  }, [storageRemaining]);
 
   const resource = useMemo(() => {
     return resourceManager.getResource();
@@ -196,6 +219,8 @@ export const BuildingsList = ({
                         resourceManager={resourceManager}
                         size="large"
                         showTransfer={false}
+                        storageCapacity={realmInfo?.storehouses?.capacityKg}
+                        storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
                       />
                     </div>
                   </div>

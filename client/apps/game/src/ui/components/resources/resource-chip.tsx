@@ -35,12 +35,18 @@ export const ResourceChip = ({
   const [amountProduced, setAmountProduced] = useState(0n);
   const [amountProducedLimited, setAmountProducedLimited] = useState(0n);
   const [hasReachedMaxCap, setHasReachedMaxCap] = useState(false);
+  const [displayBalance, setDisplayBalance] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
   }, [resourceManager, currentTick]);
+
+  useEffect(() => {
+    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
+  }, [actualBalance]);
 
   const production = useMemo(() => {
     if (currentTick === 0) return null;
@@ -110,44 +116,67 @@ export const ResourceChip = ({
   }, [storageRemaining]);
 
   const handleMouseEnter = useCallback(() => {
-    if (Number(amountProduced || 0n) > 0) {
-      setTooltip({
-        position: "top",
-        content: (
-          <div className="space-y-1 text-lg">
-            <p>
-              You have{" "}
-              <span className={!isStorageFull ? "text-green" : "text-red"}>
-                {currencyFormat(Number(amountProduced || 0n), 2)}
-              </span>{" "}
-              {findResourceById(resourceId)?.trait} waiting to be stored.
-            </p>
-            <p>
-              Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
-              moved into storage.
-              <br />
-              Only the portion that fits within your remaining capacity&nbsp;(
-              <span className="text-green">
-                {storageCapacity.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-              </span>
-              ) will be saved; any excess&nbsp;(
-              <span className="text-red">
-                MAX of{" "}
-                {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                kg
-              </span>
-              ) will be permanently burned. If you need to store more build a Store house.
-            </p>
+    setIsHovered(true);
+    const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
+    setDisplayBalance(newDisplayBalance);
+
+    setTooltip({
+      position: "left",
+      content: (
+        <div className="space-y-1 text-lg max-w-72">
+          <div>
+            <span className="text-gold font-bold">Total available:</span>{" "}
+            <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
+            {findResourceById(resourceId)?.trait}
           </div>
-        ),
-      });
-    }
-  }, [resourceId, setTooltip, isStorageFull, amountProduced, storageCapacity, producedWeight]);
+          {Number(amountProduced || 0n) > 0 && (
+            <>
+              <p>
+                You have{" "}
+                <span className={!isStorageFull ? "text-green" : "text-red"}>
+                  {currencyFormat(Number(amountProduced || 0n), 2)}
+                </span>{" "}
+                {findResourceById(resourceId)?.trait} waiting to be stored.
+              </p>
+              <p>
+                Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
+                moved into storage.
+                <br />
+                Only the portion that fits within your remaining capacity&nbsp;(
+                <span className="text-green">
+                  {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+                </span>
+                ) will be saved; any excess&nbsp;(
+                <span className="text-red">
+                  MAX of{" "}
+                  {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  kg
+                </span>
+                ) will be permanently burned. If you need to store more build a Store house.
+              </p>
+            </>
+          )}
+        </div>
+      ),
+    });
+  }, [
+    actualBalance,
+    amountProduced,
+    resourceId,
+    setTooltip,
+    isStorageFull,
+    storageRemaining,
+    producedWeight,
+    setIsHovered,
+    setDisplayBalance,
+  ]);
 
   const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
     setTooltip(null);
     setShowPerHour(true);
-  }, [setTooltip]);
+    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
+  }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
@@ -168,7 +197,9 @@ export const ResourceChip = ({
         <div className={`self-center flex w-full gap-2 justify-between ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            {currencyFormat(actualBalance ? Number(actualBalance) : 0, 2)}{" "}
+            <span className={`${isHovered ? "font-bold animate-pulse" : ""}`}>
+              {currencyFormat(displayBalance, 2)}
+            </span>{" "}
           </div>
 
           {amountProduced > 0n && (
