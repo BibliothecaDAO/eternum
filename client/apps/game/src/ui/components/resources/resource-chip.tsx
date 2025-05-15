@@ -75,14 +75,11 @@ export const ResourceChip = ({
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balanceWithProduction(realTick, resourceId).balance;
-    // setBalance(newBalance);
-
     if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
         const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
-        // setBalance(balance);
+
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
@@ -100,17 +97,9 @@ export const ResourceChip = ({
     );
   }, [resourceId, size]);
 
-  const balanceWeight = useMemo(() => {
-    return getTotalResourceWeightKg([{ resourceId, amount: Number(actualBalance) }]);
-  }, [balance, resourceId]);
-
   const producedWeight = useMemo(() => {
     return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
   }, [amountProduced, resourceId]);
-
-  const storageCapacityUsedPercentage = useMemo(() => {
-    return ((storageCapacity - storageCapacityUsed) / storageCapacity) * 100;
-  }, [storageCapacityUsed, storageCapacity]);
 
   const storageRemaining = useMemo(() => {
     return storageCapacity - storageCapacityUsed;
@@ -153,7 +142,7 @@ export const ResourceChip = ({
         ),
       });
     }
-  }, [resourceId, setTooltip, isStorageFull, amountProduced]);
+  }, [resourceId, setTooltip, isStorageFull, amountProduced, storageCapacity, producedWeight]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);

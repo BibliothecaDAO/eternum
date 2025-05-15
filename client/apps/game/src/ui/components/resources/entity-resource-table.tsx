@@ -50,23 +50,12 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
   const resourceManager = useResourceManager(entityId);
 
-  const storageCapacityUsedPercentage = useMemo(() => {
-    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
-      return 0;
-    }
-    return (
-      ((realmInfo?.storehouses?.capacityUsedKg - realmInfo?.storehouses?.capacityKg) /
-        realmInfo?.storehouses?.capacityKg) *
-      100
-    );
-  }, [realmInfo?.storehouses.capacityUsedKg, realmInfo?.storehouses.capacityKg]);
-
   const storageRemaining = useMemo(() => {
     if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
       return 0;
     }
     return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
-  }, [realmInfo?.storehouses.capacityUsedKg, realmInfo?.storehouses.capacityKg]);
+  }, [realmInfo?.storehouses?.capacityUsedKg, realmInfo?.storehouses?.capacityKg]);
 
   const isStorageFull = useMemo(() => {
     return storageRemaining <= 0;
