@@ -4,27 +4,17 @@ import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { calculateArrivalTime, currencyFormat, formatArrivalTime, formatNumber } from "@/ui/utils/utils";
+import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
-  computeTravelTime,
-  configManager,
   divideByPrecision,
-  getAddressNameFromEntity,
   getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import {
-  EntityType,
-  findResourceById,
-  ResourcesIds,
-  StructureType,
-  type ID,
-  type MarketInterface,
-} from "@bibliothecadao/types";
+import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -187,10 +177,9 @@ const MarketOrders = memo(
 
 const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
-    <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs">
-      <div>qty.</div>
-      <div>dist.</div>
-      <div className="flex">
+    <div className="grid grid-cols-4 gap-2 p-2 uppercase text-xs">
+      <div className="col-span-1">qty.</div>
+      <div className="col-span-1 flex justify-center">
         {resourceId && (
           <>
             {" "}
@@ -200,8 +189,8 @@ const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy
           </>
         )}
       </div>
-      <div className="flex">{isBuy ? "gain" : "cost"}</div>
-      <div className="ml-auto">Action</div>
+      <div className="col-span-1 flex justify-center">{isBuy ? "gain" : "cost"}</div>
+      <div className="col-span-1 flex justify-end">Action</div>
     </div>
   );
 });
@@ -237,18 +226,6 @@ const OrderRow = memo(
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
-    const travelTime = useMemo(
-      () =>
-        computeTravelTime(
-          entityId,
-          offer.makerId,
-          configManager.getSpeedConfig(EntityType.DONKEY),
-          dojo.setup.components,
-          true,
-        ),
-      [entityId, offer],
-    );
-
     const [loading, setLoading] = useState(false);
 
     const isSelf = useMemo(() => {
@@ -257,7 +234,7 @@ const OrderRow = memo(
 
     const getsDisplay = useMemo(() => {
       return isBuy ? currencyFormat(offer.makerGets[0].amount, 3) : currencyFormat(offer.takerGets[0].amount, 3);
-    }, [entityId, offer.makerId, offer.tradeId, offer]);
+    }, [entityId, offer.makerId, offer.tradeId]);
 
     const getsDisplayNumber = useMemo(() => {
       return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
@@ -319,10 +296,6 @@ const OrderRow = memo(
     const donkeyBalance = useMemo(() => {
       return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance);
     }, [resourceManager, currentDefaultTick]);
-
-    const accountName = useMemo(() => {
-      return getAddressNameFromEntity(offer.makerId, dojo.setup.components);
-    }, [offer.originName]);
 
     const onAccept = async () => {
       try {
@@ -435,51 +408,33 @@ const OrderRow = memo(
     return (
       <div
         key={offer.tradeId}
-        className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
+        className={`flex flex-col p-1 px-2 hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
           isSelf ? "bg-blueish/10" : "bg-white/10"
         }`}
       >
-        <div className="grid grid-cols-5 gap-1">
-          <div className={`flex gap-1  ${isBuy ? "text-red" : "text-green"} `}>
+        <div className="grid grid-cols-4 gap-2">
+          <div className={`col-span-1 flex gap-1 ${isBuy ? "text-red" : "text-green"}`}>
             <ResourceIcon withTooltip={false} size="sm" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
             {getsDisplay}
           </div>
-          {travelTime && (
-            <div className="flex flex-col">
-              <div className="text-gold font-semibold">
-                Estimated Arrival: {formatArrivalTime(calculateArrivalTime(travelTime))}
-              </div>
-            </div>
-          )}
-          <div className="flex gap-1 text-green">{formatNumber(offer.perLords, 4)}</div>
-          <div className={`flex gap-1  ${isBuy ? "text-green" : "text-red"}`}>
+          <div className="col-span-1 flex justify-center text-green">{formatNumber(offer.perLords, 4)}</div>
+          <div className={`col-span-1 flex justify-center gap-1 ${isBuy ? "text-green" : "text-red"}`}>
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
             {currencyFormat(getTotalLords, 0)}
           </div>
-          {!isSelf ? (
-            <Button
-              isLoading={loading}
-              onClick={() => setConfirmOrderModal(true)}
-              size="xs"
-              className={`self-center flex flex-grow`}
-            >
-              {!isBuy ? "Buy" : "Sell"}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setConfirmOrderModal(true)}
-              variant="danger"
-              size="xs"
-              className={`self-center flex flex-grow`}
-            >
-              {loading ? "cancelling" : "cancel"}
-            </Button>
-          )}
-          <div className="col-span-2 text-xxs text-gold/50 uppercase">
-            expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
+          <div className="col-span-1 flex justify-end">
+            {!isSelf ? (
+              <Button isLoading={loading} onClick={() => setConfirmOrderModal(true)} size="xs" className="w-full">
+                {!isBuy ? "Buy" : "Sell"}
+              </Button>
+            ) : (
+              <Button onClick={() => setConfirmOrderModal(true)} variant="danger" size="xs" className="w-full">
+                {loading ? "cancelling" : "cancel"}
+              </Button>
+            )}
           </div>
-          <div className="col-span-3 text-xxs uppercase text-right text-gold/50">
-            {accountName} ({offer.originName})
+          <div className="col-span-4 text-xxs text-gold/50 uppercase">
+            expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
           </div>
         </div>
         {confirmOrderModal && renderConfirmationPopup()}
