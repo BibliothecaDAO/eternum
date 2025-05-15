@@ -7,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -20,7 +20,7 @@ import {
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { PauseIcon, PlayIcon, PlusIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
@@ -44,6 +44,8 @@ export const BuildingEntityDetails = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+
+  const resourceManager = useResourceManager(structureEntityId);
 
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
@@ -150,6 +152,18 @@ export const BuildingEntityDetails = () => {
     return (population?.population.max || 0) - (population?.population.current || 0) >= populationImpact;
   }, [buildingState.buildingType, buildingState.ownerEntityId]);
 
+  const productionEndsAt = useMemo(() => {
+    if (!buildingState.resource) return 0;
+    return resourceManager.getProductionEndsAt(buildingState.resource || 0);
+  }, [resourceManager, buildingState.resource]);
+
+  const isActive = useMemo(() => {
+    if (!buildingState.resource) return false;
+    return resourceManager.isActive(buildingState.resource || 0);
+  }, [resourceManager, buildingState.resource]);
+
+  console.log(productionEndsAt, isActive);
+
   return (
     <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
@@ -178,11 +192,10 @@ export const BuildingEntityDetails = () => {
             )}
           </div>
           {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
-            <div className="flex justify-between space-x-3 px-4">
+            <div className="flex justify-between space-x-3 px-4 mb-4">
               {buildingState.buildingType !== BuildingType.ResourceFish &&
                 buildingState.buildingType !== BuildingType.ResourceWheat && (
                   <Button
-                    className="mb-4"
                     onClick={() => {
                       toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
                     }}
@@ -192,30 +205,20 @@ export const BuildingEntityDetails = () => {
                   >
                     <div className="flex items-center gap-2">
                       <PlusIcon className="w-4 h-4" />
-                      Produce
+                      Add Production
                     </div>
                   </Button>
                 )}
 
-              <Button
-                className="mb-4"
-                onClick={handlePauseResumeProduction}
-                isLoading={isLoading}
-                variant="secondary"
-                withoutSound
-              >
-                {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
-                {isPaused ? "Resume" : "Pause"}
-              </Button>
-              <Button
-                disabled={!canDestroyBuilding}
-                className="mb-4"
-                onClick={handleDestroyBuilding}
-                variant="danger"
-                withoutSound
-              >
-                {showDestroyConfirm ? "Confirm Destroy" : "Destroy"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={handlePauseResumeProduction} isLoading={isLoading} variant="secondary" withoutSound>
+                  {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
+                  {/* {isPaused ? "Resume" : "Pause"} */}
+                </Button>
+                <Button disabled={!canDestroyBuilding} onClick={handleDestroyBuilding} variant="danger" withoutSound>
+                  {showDestroyConfirm ? "Confirm Destroy" : <Trash2Icon className="w-4 h-4" />}
+                </Button>
+              </div>
             </div>
           )}
         </>

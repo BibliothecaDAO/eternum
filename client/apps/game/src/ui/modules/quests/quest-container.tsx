@@ -76,7 +76,7 @@ export const QuestContainer = ({
         to_address: account?.address,
       });
 
-      return currentGameCount;
+      return currentGameCount + 1;
     } catch (error) {
       console.error(error);
     } finally {

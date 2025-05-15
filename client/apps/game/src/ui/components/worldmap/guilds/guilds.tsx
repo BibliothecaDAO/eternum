@@ -120,8 +120,14 @@ export const Guilds = ({
       sortItems(
         guildsWithStats.filter((guild) => {
           const nameMatch = guild.name.toLowerCase().startsWith(guildsGuildSearchTerm.toLowerCase());
+          console.log(guildInvites);
           if (guildsViewGuildInvites) {
-            return nameMatch && guildInvites.some((invite) => invite.entityId === guild.entityId);
+            return (
+              nameMatch &&
+              guildInvites.some((invite) => {
+                return invite.guildEntityId === Number(guild.entityId);
+              })
+            );
           }
           return nameMatch;
         }),

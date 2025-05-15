@@ -53,7 +53,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
     itemsToProcess.forEach(({ entityId, data }) => {
       const isEntityDelete = isToriiDeleteNotification(data);
       if (isEntityDelete) {
-        batch[entityId] = data
+        batch[entityId] = data;
       }
       // Deep merge logic for each entity
       if (batch[entityId]) {
