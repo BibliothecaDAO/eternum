@@ -1,4 +1,4 @@
-import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -35,9 +35,7 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
 
     try {
       await burn_resource_for_labor_production(calldata).then((res: any) => {
-        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-          CartridgeAchievement.LABOR_PRODUCE,
-        ]);
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [Achievements.LABOR_PRODUCE]);
       });
     } catch (error) {
       console.error(error);

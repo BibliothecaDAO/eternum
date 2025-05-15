@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
@@ -359,8 +359,8 @@ export default class HexceptionScene extends HexagonScene {
             )
             .then((res: any) => {
               checkAndDispatchMultipleGgXyzQuestProgress(account!.address, res.transaction_hash, [
-                CartridgeAchievement.BUILD_SIMPLE,
-                CartridgeAchievement.BUILD_STANDARD,
+                Achievements.BUILD_SIMPLE,
+                Achievements.BUILD_STANDARD,
               ]);
             });
         } catch (error) {

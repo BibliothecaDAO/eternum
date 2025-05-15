@@ -4,18 +4,13 @@ import { env } from "../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 const starknetProvider = new Provider({ nodeUrl: env.VITE_PUBLIC_NODE_URL });
-// const starknetProvider = new Provider({ nodeUrl:  });
 
 export interface ActionDispatcherResponse {
   success: boolean;
   message?: string;
 }
 
-export interface TrophyProgression {
-  count: number;
-}
-
-export enum CartridgeAchievement {
+export enum Achievements {
   REALM_SETTLEMENT = "REALM_SETTLEMENT",
   VILLAGE_SETTLEMENT = "VILLAGE_SETTLEMENT",
   EXPLORE = "EXPLORE",
@@ -37,83 +32,75 @@ export enum CartridgeAchievement {
 }
 
 interface QuestThreshold {
-  achievement: CartridgeAchievement;
+  achievement: Achievements;
   threshold: number;
   action: string;
 }
 
-const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
-  [CartridgeAchievement.REALM_SETTLEMENT]: [
-    { achievement: CartridgeAchievement.REALM_SETTLEMENT, threshold: 1, action: "Settle a Realm" },
+const QUEST_THRESHOLDS: Record<Achievements, QuestThreshold[]> = {
+  [Achievements.REALM_SETTLEMENT]: [
+    { achievement: Achievements.REALM_SETTLEMENT, threshold: 1, action: "Settle a Realm" },
   ],
-  [CartridgeAchievement.VILLAGE_SETTLEMENT]: [
-    { achievement: CartridgeAchievement.VILLAGE_SETTLEMENT, threshold: 1, action: "Settle a Village" },
+  [Achievements.VILLAGE_SETTLEMENT]: [
+    { achievement: Achievements.VILLAGE_SETTLEMENT, threshold: 1, action: "Settle a Village" },
   ],
-  [CartridgeAchievement.EXPLORE]: [
-    { achievement: CartridgeAchievement.EXPLORE, threshold: 1, action: "Explore 1 hex on the World Map" },
+  [Achievements.EXPLORE]: [
+    { achievement: Achievements.EXPLORE, threshold: 1, action: "Explore 1 hex on the World Map" },
   ],
   // can do it 16 times for 16 different biomes
-  [CartridgeAchievement.BIOME_DISCOVER]: [
-    { achievement: CartridgeAchievement.BIOME_DISCOVER, threshold: 1, action: "Discover a new Biome" },
+  [Achievements.BIOME_DISCOVER]: [
+    { achievement: Achievements.BIOME_DISCOVER, threshold: 1, action: "Discover a new Biome" },
   ],
-  [CartridgeAchievement.AGENT_DISCOVER]: [
-    { achievement: CartridgeAchievement.AGENT_DISCOVER, threshold: 1, action: "Discover an Agent" },
+  [Achievements.AGENT_DISCOVER]: [
+    { achievement: Achievements.AGENT_DISCOVER, threshold: 1, action: "Discover an Agent" },
   ],
-  [CartridgeAchievement.QUEST_DISCOVER]: [
-    { achievement: CartridgeAchievement.QUEST_DISCOVER, threshold: 1, action: "Discover a Quest Tile" },
+  [Achievements.QUEST_DISCOVER]: [
+    { achievement: Achievements.QUEST_DISCOVER, threshold: 1, action: "Discover a Quest Tile" },
   ],
-  [CartridgeAchievement.MINE_DISCOVER]: [
-    { achievement: CartridgeAchievement.MINE_DISCOVER, threshold: 1, action: "Discover a Fragment Mine" },
+  [Achievements.MINE_DISCOVER]: [
+    { achievement: Achievements.MINE_DISCOVER, threshold: 1, action: "Discover a Fragment Mine" },
   ],
-  [CartridgeAchievement.HYPERSTRUCTURE_DISCOVER]: [
+  [Achievements.HYPERSTRUCTURE_DISCOVER]: [
     {
-      achievement: CartridgeAchievement.HYPERSTRUCTURE_DISCOVER,
+      achievement: Achievements.HYPERSTRUCTURE_DISCOVER,
       threshold: 1,
       action: "Discover a Hyperstructure Foundation",
     },
   ],
-  [CartridgeAchievement.RESOURCE_PRODUCE]: [
+  [Achievements.RESOURCE_PRODUCE]: [
     {
-      achievement: CartridgeAchievement.RESOURCE_PRODUCE,
+      achievement: Achievements.RESOURCE_PRODUCE,
       threshold: 50000,
       action: "Produce 50,000 resources",
     },
   ],
-  [CartridgeAchievement.BUILD_STANDARD]: [
+  [Achievements.BUILD_STANDARD]: [
     {
-      achievement: CartridgeAchievement.BUILD_STANDARD,
+      achievement: Achievements.BUILD_STANDARD,
       threshold: 1,
       action: "Construct 1 building using the Standard construction mode",
     },
   ],
-  [CartridgeAchievement.BUILD_SIMPLE]: [
+  [Achievements.BUILD_SIMPLE]: [
     {
-      achievement: CartridgeAchievement.BUILD_SIMPLE,
+      achievement: Achievements.BUILD_SIMPLE,
       threshold: 1,
       action: "Construct 1 building using the Simple construction mode",
     },
   ],
-  [CartridgeAchievement.LABOR_PRODUCE]: [
-    { achievement: CartridgeAchievement.LABOR_PRODUCE, threshold: 50000, action: "Produce 50,000 Labor" },
+  [Achievements.LABOR_PRODUCE]: [
+    { achievement: Achievements.LABOR_PRODUCE, threshold: 50000, action: "Produce 50,000 Labor" },
   ],
-  [CartridgeAchievement.WIN_BATTLE]: [
-    { achievement: CartridgeAchievement.WIN_BATTLE, threshold: 1, action: "Win a battle" },
+  [Achievements.WIN_BATTLE]: [{ achievement: Achievements.WIN_BATTLE, threshold: 1, action: "Win a battle" }],
+  [Achievements.KILL_AGENT]: [{ achievement: Achievements.KILL_AGENT, threshold: 1, action: "Kill an Agent" }],
+  [Achievements.UPGRADE_REALM]: [{ achievement: Achievements.UPGRADE_REALM, threshold: 1, action: "Upgrade a Realm" }],
+  [Achievements.UPGRADE_VILLAGE]: [
+    { achievement: Achievements.UPGRADE_VILLAGE, threshold: 1, action: "Upgrade a Village" },
   ],
-  [CartridgeAchievement.KILL_AGENT]: [
-    { achievement: CartridgeAchievement.KILL_AGENT, threshold: 1, action: "Kill an Agent" },
-  ],
-  [CartridgeAchievement.UPGRADE_REALM]: [
-    { achievement: CartridgeAchievement.UPGRADE_REALM, threshold: 1, action: "Upgrade a Realm" },
-  ],
-  [CartridgeAchievement.UPGRADE_VILLAGE]: [
-    { achievement: CartridgeAchievement.UPGRADE_VILLAGE, threshold: 1, action: "Upgrade a Village" },
-  ],
-  [CartridgeAchievement.JOIN_TRIBE]: [
-    { achievement: CartridgeAchievement.JOIN_TRIBE, threshold: 1, action: "Create or join a Tribe" },
-  ],
-  [CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE]: [
+  [Achievements.JOIN_TRIBE]: [{ achievement: Achievements.JOIN_TRIBE, threshold: 1, action: "Create or join a Tribe" }],
+  [Achievements.CONTRIBUTE_HYPERSTRUCTURE]: [
     {
-      achievement: CartridgeAchievement.CONTRIBUTE_HYPERSTRUCTURE,
+      achievement: Achievements.CONTRIBUTE_HYPERSTRUCTURE,
       threshold: 500_000,
       action: "Contribute 500,000 resources to a Hyperstructure",
     },
@@ -126,7 +113,7 @@ const QUEST_THRESHOLDS: Record<CartridgeAchievement, QuestThreshold[]> = {
  * @param achievement The CartridgeAchievement enum value
  * @returns The padded felt252 value as a string
  */
-export function getTaskId(achievement: CartridgeAchievement): string {
+export function getTaskId(achievement: Achievements): string {
   const felt = cairoShortStringToFelt(achievement);
   // Remove 0x prefix if present
   const withoutPrefix = felt.startsWith("0x") ? felt.slice(2) : felt;
@@ -172,8 +159,8 @@ export function normalizeTimestamp(timestamp: number): string {
 export async function fetchMultipleTrophyProgressions(
   playerAddress: string,
   blockTimestamp: number,
-  achievements: CartridgeAchievement[],
-): Promise<Record<CartridgeAchievement, number>> {
+  achievements: Achievements[],
+): Promise<Record<Achievements, number>> {
   const normalizedAddress = normalizePlayerAddress(playerAddress);
   const normalizedTimestamp = normalizeTimestamp(blockTimestamp);
   const taskIds = achievements.map((achievement) => `'${getTaskId(achievement)}'`).join(", ");
@@ -194,8 +181,6 @@ export async function fetchMultipleTrophyProgressions(
       time
   `;
 
-  console.log({ normalizedAddress, normalizedTimestamp, taskIds, achievements, query });
-
   const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
   const response = await fetch(url);
 
@@ -206,7 +191,7 @@ export async function fetchMultipleTrophyProgressions(
   const data: { task_id: string; total_count: number; time: number }[] = await response.json();
 
   // Create a map to store the results
-  const result: Record<CartridgeAchievement, number> = {} as Record<CartridgeAchievement, number>;
+  const result: Record<Achievements, number> = {} as Record<Achievements, number>;
 
   // Initialize all achievements with 0 count
   achievements.forEach((achievement) => {
@@ -319,15 +304,12 @@ export async function getBlockTimestampFromTxHash(txHash: string): Promise<numbe
 export async function checkAndDispatchMultipleGgXyzQuestProgress(
   playerAddress: string,
   txHash: string,
-  achievements: CartridgeAchievement[],
-): Promise<Record<CartridgeAchievement, string[]>> {
+  achievements: Achievements[],
+): Promise<Record<Achievements, string[]>> {
   const blockTimestamp = await getBlockTimestampFromTxHash(txHash);
 
   const progressions = await fetchMultipleTrophyProgressions(playerAddress, blockTimestamp, achievements);
-  const completedActionsByAchievement: Record<CartridgeAchievement, string[]> = {} as Record<
-    CartridgeAchievement,
-    string[]
-  >;
+  const completedActionsByAchievement: Record<Achievements, string[]> = {} as Record<Achievements, string[]>;
   const allCompletedActions: string[] = [];
 
   // Process each achievement

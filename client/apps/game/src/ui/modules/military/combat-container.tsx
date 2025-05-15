@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -262,9 +262,7 @@ export const CombatContainer = ({
         structure_id: target?.id || 0,
         structure_direction: direction,
       }).then((res: any) => {
-        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-          CartridgeAchievement.WIN_BATTLE,
-        ]);
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [Achievements.WIN_BATTLE]);
       });
     } catch (error) {
       console.error(error);
@@ -334,8 +332,8 @@ export const CombatContainer = ({
         steal_resources: targetResources,
       }).then((res: any) => {
         checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-          CartridgeAchievement.WIN_BATTLE,
-          CartridgeAchievement.KILL_AGENT,
+          Achievements.WIN_BATTLE,
+          Achievements.KILL_AGENT,
         ]);
       });
     } catch (error) {
@@ -360,8 +358,8 @@ export const CombatContainer = ({
         explorer_direction: direction,
       }).then((res: any) => {
         checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-          CartridgeAchievement.WIN_BATTLE,
-          CartridgeAchievement.KILL_AGENT,
+          Achievements.WIN_BATTLE,
+          Achievements.KILL_AGENT,
         ]);
       });
     } catch (error) {

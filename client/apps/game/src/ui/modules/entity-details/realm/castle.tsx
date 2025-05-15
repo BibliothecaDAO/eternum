@@ -21,7 +21,7 @@ import {
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
-import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
 import { useComponentValue } from "@dojoengine/react";
@@ -114,8 +114,8 @@ export const Castle = () => {
         })
         .then((res: any) => {
           checkAndDispatchMultipleGgXyzQuestProgress(dojo.account.account.address, res.transaction_hash, [
-            CartridgeAchievement.UPGRADE_REALM,
-            CartridgeAchievement.UPGRADE_VILLAGE,
+            Achievements.UPGRADE_REALM,
+            Achievements.UPGRADE_VILLAGE,
           ]);
         });
       setIsLevelUpLoading(false);

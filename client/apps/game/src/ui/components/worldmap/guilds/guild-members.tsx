@@ -1,4 +1,4 @@
-import { CartridgeAchievement, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
+import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { GuildMemberList } from "@/ui/components/worldmap/guilds/guild-member-list";
 import Button from "@/ui/elements/button";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
@@ -111,9 +111,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
     setIsLoading(true);
     try {
       await join_guild({ guild_entity_id: guildEntityId, signer: account }).then((res: any) => {
-        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-          CartridgeAchievement.JOIN_TRIBE,
-        ]);
+        checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [Achievements.JOIN_TRIBE]);
       });
     } catch (error) {
       console.error(error);
