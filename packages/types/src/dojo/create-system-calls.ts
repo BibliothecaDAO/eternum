@@ -48,155 +48,155 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.mint_and_settle_test_realm(props);
   };
 
-  const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
+  const mint_test_realm = async (props: SystemProps.MintTestRealmProps): Promise<Result> => {
     return await provider.mint_test_realm(props);
   };
 
-  const mint_season_passes = async (props: SystemProps.MintSeasonPassesProps) => {
+  const mint_season_passes = async (props: SystemProps.MintSeasonPassesProps): Promise<Result> => {
     return await provider.mint_season_passes(props);
   };
 
-  const attach_lords = async (props: SystemProps.AttachLordsProps) => {
+  const attach_lords = async (props: SystemProps.AttachLordsProps): Promise<Result> => {
     return await provider.attach_lords(props);
   };
 
-  const detach_lords = async (props: SystemProps.DetachLordsProps) => {
+  const detach_lords = async (props: SystemProps.DetachLordsProps): Promise<Result> => {
     return await provider.detach_lords(props);
   };
 
-  const mint_test_lords = async (props: SystemProps.MintTestLordsProps) => {
+  const mint_test_lords = async (props: SystemProps.MintTestLordsProps): Promise<Result> => {
     return await provider.mint_test_lords(props);
   };
 
-  const bridge_deposit_into_realm = async (props: SystemProps.BridgeDepositIntoRealmProps) => {
+  const bridge_deposit_into_realm = async (props: SystemProps.BridgeDepositIntoRealmProps): Promise<Result> => {
     return await provider.bridge_deposit_into_realm(props);
   };
 
-  const bridge_withdraw_from_realm = async (props: SystemProps.BridgeWithdrawFromRealmProps) => {
+  const bridge_withdraw_from_realm = async (props: SystemProps.BridgeWithdrawFromRealmProps): Promise<Result> => {
     return await provider.bridge_withdraw_from_realm(props);
   };
 
-  const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
+  const upgrade_realm = async (props: SystemProps.UpgradeRealmProps): Promise<Result> => {
     return await provider.upgrade_realm(props);
   };
 
-  const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
+  const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps): Promise<Result> => {
     return await provider.create_multiple_realms(props);
   };
 
-  const send_resources = async (props: SystemProps.SendResourcesProps) => {
+  const send_resources = async (props: SystemProps.SendResourcesProps): Promise<Result> => {
     return await provider.send_resources(props);
   };
 
-  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps) => {
+  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps): Promise<Result> => {
     return await provider.send_resources_multiple(props);
   };
 
-  const pickup_resources = async (props: SystemProps.PickupResourcesProps) => {
+  const pickup_resources = async (props: SystemProps.PickupResourcesProps): Promise<Result> => {
     return await provider.pickup_resources(props);
   };
 
-  const arrivals_offload = async (props: SystemProps.ArrivalsOffloadProps) => {
+  const arrivals_offload = async (props: SystemProps.ArrivalsOffloadProps): Promise<Result> => {
     return await provider.arrivals_offload(props);
   };
 
-  const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
+  const set_address_name = async (props: SystemProps.SetAddressNameProps): Promise<Result> => {
     return await provider.set_address_name(props);
   };
 
-  const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
+  const set_entity_name = async (props: SystemProps.SetEntityNameProps): Promise<Result> => {
     return await provider.set_entity_name(props);
   };
 
-  const create_building = async (props: SystemProps.CreateBuildingProps) => {
+  const create_building = async (props: SystemProps.CreateBuildingProps): Promise<Result> => {
     return await provider.create_building(props);
   };
 
-  const destroy_building = async (props: SystemProps.DestroyBuildingProps) => {
+  const destroy_building = async (props: SystemProps.DestroyBuildingProps): Promise<Result> => {
     return await provider.destroy_building(props);
   };
 
-  const pause_production = async (props: SystemProps.PauseProductionProps) => {
+  const pause_production = async (props: SystemProps.PauseProductionProps): Promise<Result> => {
     return await provider.pause_production(props);
   };
 
-  const resume_production = async (props: SystemProps.ResumeProductionProps) => {
+  const resume_production = async (props: SystemProps.ResumeProductionProps): Promise<Result> => {
     return await provider.resume_production(props);
   };
 
-  const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps) => {
+  const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps): Promise<Result> => {
     return await provider.change_bank_owner_fee(props);
   };
 
-  const buy_resources = async (props: SystemProps.BuyResourcesProps) => {
+  const buy_resources = async (props: SystemProps.BuyResourcesProps): Promise<Result> => {
     return await provider.buy_resources(props);
   };
 
-  const sell_resources = async (props: SystemProps.SellResourcesProps) => {
+  const sell_resources = async (props: SystemProps.SellResourcesProps): Promise<Result> => {
     return await provider.sell_resources(props);
   };
 
-  const add_liquidity = async (props: SystemProps.AddLiquidityProps) => {
+  const add_liquidity = async (props: SystemProps.AddLiquidityProps): Promise<Result> => {
     return await provider.add_liquidity(props);
   };
 
-  const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
+  const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps): Promise<Result> => {
     return await provider.remove_liquidity(props);
   };
 
-  const mint_resources = async (props: SystemProps.MintResourcesProps) => {
+  const mint_resources = async (props: SystemProps.MintResourcesProps): Promise<Result> => {
     return await provider.mint_resources(props);
   };
 
-  const initialize_hyperstructure = async (props: SystemProps.InitializeHyperstructureProps) => {
+  const initialize_hyperstructure = async (props: SystemProps.InitializeHyperstructureProps): Promise<Result> => {
     return await provider.initialize(props);
   };
 
-  const allocate_shares = async (props: SystemProps.SetCoOwnersProps) => {
+  const allocate_shares = async (props: SystemProps.SetCoOwnersProps): Promise<Result> => {
     return await provider.allocate_shares(props);
   };
 
-  const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps) => {
+  const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps): Promise<Result> => {
     return await provider.contribute_to_construction(props);
   };
 
-  const set_access = async (props: SystemProps.SetAccessProps) => {
+  const set_access = async (props: SystemProps.SetAccessProps): Promise<Result> => {
     return await provider.set_access(props);
   };
 
-  const end_game = async (props: SystemProps.EndGameProps) => {
+  const end_game = async (props: SystemProps.EndGameProps): Promise<Result> => {
     return await provider.end_game(props);
   };
 
-  const create_guild = async (props: SystemProps.CreateGuildProps) => {
+  const create_guild = async (props: SystemProps.CreateGuildProps): Promise<Result> => {
     return await provider.create_guild(props);
   };
 
-  const join_guild = async (props: SystemProps.JoinGuildProps) => {
+  const join_guild = async (props: SystemProps.JoinGuildProps): Promise<Result> => {
     return await provider.join_guild(props);
   };
 
-  const update_whitelist = async (props: SystemProps.UpdateWhitelist) => {
+  const update_whitelist = async (props: SystemProps.UpdateWhitelist): Promise<Result> => {
     return await provider.update_whitelist(props);
   };
 
-  const claim_construction_points = async (props: SystemProps.ClaimConstructionPointsProps) => {
+  const claim_construction_points = async (props: SystemProps.ClaimConstructionPointsProps): Promise<Result> => {
     return await provider.claim_construction_points(props);
   };
 
-  const claim_share_points = async (props: SystemProps.ClaimSharePointsProps) => {
+  const claim_share_points = async (props: SystemProps.ClaimSharePointsProps): Promise<Result> => {
     return await provider.claim_share_points(props);
   };
 
-  const season_prize_claim = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
+  const season_prize_claim = async (props: SystemProps.ClaimLeaderboardRewardsProps): Promise<Result> => {
     return await provider.season_prize_claim(props);
   };
 
-  const remove_guild_member = async (props: SystemProps.RemoveGuildMember) => {
+  const remove_guild_member = async (props: SystemProps.RemoveGuildMember): Promise<Result> => {
     return await provider.remove_guild_member(props);
   };
 
-  const disband_guild = async (props: SystemProps.DisbandGuild) => {
+  const disband_guild = async (props: SystemProps.DisbandGuild): Promise<Result> => {
     return await provider.disband_guild(props);
   };
 
@@ -209,49 +209,53 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     }
   };
 
-  const burn_resource_for_labor_production = async (props: SystemProps.BurnOtherResourcesForLaborProductionProps) => {
+  const burn_resource_for_labor_production = async (
+    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
+  ): Promise<Result> => {
     return await provider.burn_resource_for_labor_production(props);
   };
 
-  const burn_labor_for_resource_production = async (props: SystemProps.BurnLaborResourcesForOtherProductionProps) => {
+  const burn_labor_for_resource_production = async (
+    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
+  ): Promise<Result> => {
     return await provider.burn_labor_for_resource_production(props);
   };
 
   const burn_resource_for_resource_production = async (
     props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
-  ) => {
+  ): Promise<Result> => {
     return await provider.burn_resource_for_resource_production(props);
   };
 
-  const guard_add = async (props: SystemProps.GuardAddProps) => {
+  const guard_add = async (props: SystemProps.GuardAddProps): Promise<Result> => {
     return await provider.guard_add(props);
   };
 
-  const guard_delete = async (props: SystemProps.GuardDeleteProps) => {
+  const guard_delete = async (props: SystemProps.GuardDeleteProps): Promise<Result> => {
     return await provider.guard_delete(props);
   };
 
-  const explorer_create = async (props: SystemProps.ExplorerCreateProps) => {
+  const explorer_create = async (props: SystemProps.ExplorerCreateProps): Promise<Result> => {
     return await provider.explorer_create(props);
   };
 
-  const explorer_add = async (props: SystemProps.ExplorerAddProps) => {
+  const explorer_add = async (props: SystemProps.ExplorerAddProps): Promise<Result> => {
     return await provider.explorer_add(props);
   };
 
-  const explorer_delete = async (props: SystemProps.ExplorerDeleteProps) => {
+  const explorer_delete = async (props: SystemProps.ExplorerDeleteProps): Promise<Result> => {
     return await provider.explorer_delete(props);
   };
 
-  const explorer_explorer_swap = async (props: SystemProps.ExplorerExplorerSwapProps) => {
+  const explorer_explorer_swap = async (props: SystemProps.ExplorerExplorerSwapProps): Promise<Result> => {
     return await provider.explorer_explorer_swap(props);
   };
 
-  const explorer_guard_swap = async (props: SystemProps.ExplorerGuardSwapProps) => {
+  const explorer_guard_swap = async (props: SystemProps.ExplorerGuardSwapProps): Promise<Result> => {
     return await provider.explorer_guard_swap(props);
   };
 
-  const guard_explorer_swap = async (props: SystemProps.GuardExplorerSwapProps) => {
+  const guard_explorer_swap = async (props: SystemProps.GuardExplorerSwapProps): Promise<Result> => {
     return await provider.guard_explorer_swap(props);
   };
 
@@ -259,87 +263,94 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.explorer_move(props);
   };
 
-  const attack_explorer_vs_explorer = async (props: SystemProps.AttackExplorerVsExplorerProps) => {
+  const attack_explorer_vs_explorer = async (props: SystemProps.AttackExplorerVsExplorerProps): Promise<Result> => {
     return await provider.attack_explorer_vs_explorer(props);
   };
 
-  const attack_explorer_vs_guard = async (props: SystemProps.AttackExplorerVsGuardProps) => {
+  const attack_explorer_vs_guard = async (props: SystemProps.AttackExplorerVsGuardProps): Promise<Result> => {
     return await provider.attack_explorer_vs_guard(props);
   };
 
-  const attack_guard_vs_explorer = async (props: SystemProps.AttackGuardVsExplorerProps) => {
+  const attack_guard_vs_explorer = async (props: SystemProps.AttackGuardVsExplorerProps): Promise<Result> => {
     return await provider.attack_guard_vs_explorer(props);
   };
 
-  const raid_explorer_vs_guard = async (props: SystemProps.RaidExplorerVsGuardProps) => {
+  const raid_explorer_vs_guard = async (props: SystemProps.RaidExplorerVsGuardProps): Promise<Result> => {
     return await provider.raid_explorer_vs_guard(props);
   };
 
-  const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps) => {
+  const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps): Promise<Result> => {
     return await provider.troop_troop_adjacent_transfer(props);
   };
 
-  const troop_structure_adjacent_transfer = async (props: SystemProps.TroopStructureAdjacentTransferProps) => {
+  const troop_structure_adjacent_transfer = async (
+    props: SystemProps.TroopStructureAdjacentTransferProps,
+  ): Promise<Result> => {
     return await provider.troop_structure_adjacent_transfer(props);
   };
 
-  const structure_troop_adjacent_transfer = async (props: SystemProps.StructureTroopAdjacentTransferProps) => {
+  const structure_troop_adjacent_transfer = async (
+    props: SystemProps.StructureTroopAdjacentTransferProps,
+  ): Promise<Result> => {
     return await provider.structure_troop_adjacent_transfer(props);
   };
 
-  const create_village = async (props: SystemProps.CreateVillageProps) => {
+  const create_village = async (props: SystemProps.CreateVillageProps): Promise<Result> => {
     return await provider.create_village(props);
   };
 
-  const create_marketplace_order = async (props: SystemProps.CreateMarketplaceOrderProps) => {
+  const create_marketplace_order = async (props: SystemProps.CreateMarketplaceOrderProps): Promise<Result> => {
     return await provider.create_marketplace_order(props);
   };
 
-  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) => {
+  const accept_marketplace_order = async (
+    props: SystemProps.AcceptMarketplaceOrdersProps,
+    approval: Call,
+  ): Promise<Result> => {
     return await provider.accept_marketplace_orders(props, approval);
   };
 
-  const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps) => {
+  const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps): Promise<Result> => {
     return await provider.cancel_marketplace_order(props);
   };
 
-  const edit_marketplace_order = async (props: SystemProps.EditMarketplaceOrderProps) => {
+  const edit_marketplace_order = async (props: SystemProps.EditMarketplaceOrderProps): Promise<Result> => {
     return await provider.edit_marketplace_order(props);
   };
 
-  const leave_guild = async (props: SystemProps.LeaveGuildProps) => {
+  const leave_guild = async (props: SystemProps.LeaveGuildProps): Promise<Result> => {
     return await provider.leave_guild(props);
   };
 
-  const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps) => {
+  const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps): Promise<Result> => {
     return await provider.claim_wonder_production_bonus(props);
   };
 
-  const start_quest = async (props: SystemProps.StartQuestProps) => {
+  const start_quest = async (props: SystemProps.StartQuestProps): Promise<Result> => {
     return await provider.start_quest(props);
   };
 
-  const claim_reward = async (props: SystemProps.ClaimRewardProps) => {
+  const claim_reward = async (props: SystemProps.ClaimRewardProps): Promise<Result> => {
     return await provider.claim_reward(props);
   };
 
-  const get_game_count = async (props: SystemProps.GetGameCountProps) => {
+  const get_game_count = async (props: SystemProps.GetGameCountProps): Promise<Result> => {
     return await provider.get_game_count(props);
   };
 
-  const transfer_structure_ownership = async (props: SystemProps.TransferStructureOwnershipProps) => {
+  const transfer_structure_ownership = async (props: SystemProps.TransferStructureOwnershipProps): Promise<Result> => {
     return await provider.transfer_structure_ownership(props);
   };
 
-  const transfer_agent_ownership = async (props: SystemProps.TransferAgentOwnershipProps) => {
+  const transfer_agent_ownership = async (props: SystemProps.TransferAgentOwnershipProps): Promise<Result> => {
     return await provider.transfer_agent_ownership(props);
   };
 
-  const structure_burn = async (props: SystemProps.StructureBurnProps) => {
+  const structure_burn = async (props: SystemProps.StructureBurnProps): Promise<Result> => {
     return await provider.structure_burn(props);
   };
 
-  const troop_burn = async (props: SystemProps.TroopBurnProps) => {
+  const troop_burn = async (props: SystemProps.TroopBurnProps): Promise<Result> => {
     return await provider.troop_burn(props);
   };
 
