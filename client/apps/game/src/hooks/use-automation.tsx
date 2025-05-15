@@ -5,6 +5,7 @@ import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { Account as StarknetAccount } from "starknet";
 import { useAutomationStore } from "../stores/automation-store";
+import { useBlockTimestamp } from "./helpers/use-block-timestamp";
 
 // --- Helper: Get all numeric enum values for ResourcesIds ---
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof value === "number") as ResourcesIds[];
@@ -12,7 +13,11 @@ const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof va
 /**
  * Fetches the current resource balances for a given realm entity ID.
  */
-async function fetchBalances(realmEntityId: string, dojoComponents: ClientComponents): Promise<Record<number, number>> {
+async function fetchBalances(
+  tick: number,
+  realmEntityId: string,
+  dojoComponents: ClientComponents,
+): Promise<Record<number, number>> {
   // console.log(`Fetching balances for realm ${realmEntityId} using ResourceManager.`);
   const balances: Record<number, number> = {};
   try {
@@ -23,7 +28,7 @@ async function fetchBalances(realmEntityId: string, dojoComponents: ClientCompon
     }
     const manager = new ResourceManager(dojoComponents, realmIdNumber);
     for (const resourceId of ALL_RESOURCE_IDS) {
-      balances[resourceId] = Number(manager.balance(resourceId));
+      balances[resourceId] = Number(manager.balanceWithProduction(tick, resourceId));
     }
   } catch (error) {
     console.error(`Error fetching balances for realm ${realmEntityId}:`, error);
@@ -57,7 +62,7 @@ function getProductionRecipe(
   return undefined;
 }
 
-const PROCESS_INTERVAL_MS = 1 * 60 * 1000; // Changed from TEN_MINUTES_MS for clarity
+const PROCESS_INTERVAL_MS = 1 * 60 * 1000;
 
 export const useAutomation = () => {
   const {
@@ -67,6 +72,7 @@ export const useAutomation = () => {
     },
     account: { account: starknetSignerAccount }, // Assuming useDojo().account.account is the StarknetAccount
   } = useDojo();
+  const tick = useBlockTimestamp();
 
   const orders = useAutomationStore((state) => state.orders);
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
@@ -91,7 +97,7 @@ export const useAutomation = () => {
       if (order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount) continue;
 
       try {
-        const currentBalances = await fetchBalances(order.realmEntityId, components);
+        const currentBalances = await fetchBalances(tick.currentDefaultTick, order.realmEntityId, components);
         const recipe = getProductionRecipe(order.resourceToProduce, order.productionType);
 
         if (!recipe || recipe.outputAmount === 0) {
