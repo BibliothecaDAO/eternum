@@ -1,9 +1,7 @@
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
-import { Provider } from "starknet";
-import { env } from "../../env";
+import { env } from "process";
 
-const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
-const starknetProvider = new Provider({ nodeUrl: env.VITE_PUBLIC_NODE_URL });
+const API_BASE_URL = env.PUBLIC_TORII + "/sql";
 
 export interface ActionDispatcherResponse {
   success: boolean;
@@ -138,84 +136,8 @@ function normalizePlayerAddress(address: string): string {
   return "0x0" + address;
 }
 
-/**
- * Normalizes a timestamp number to a 32-byte hex string with 0x prefix
- * @param timestamp The timestamp number to normalize
- * @returns The normalized timestamp as a hex string
- */
-export function normalizeTimestamp(timestamp: number): string {
-  // Convert to hex and remove '0x' prefix
-  const hex = timestamp.toString(16);
-  // Pad with zeros to 64 characters (32 bytes)
-  return "0x" + hex.padStart(64, "0");
-}
-
-/**
- * Fetches trophy progression for multiple achievements in a single query
- * @param playerAddress The player's address
- * @param achievements Array of CartridgeAchievement enum values
- * @returns Promise with a map of achievement to count
- */
-export async function fetchMultipleTrophyProgressions(
-  playerAddress: string,
-  blockTimestamp: number,
-  achievements: Achievements[],
-): Promise<Record<Achievements, number>> {
-  const normalizedAddress = normalizePlayerAddress(playerAddress);
-  const normalizedTimestamp = normalizeTimestamp(blockTimestamp);
-  const taskIds = achievements.map((achievement) => `'${getTaskId(achievement)}'`).join(", ");
-
-  const query = `
-    SELECT
-      task_id,
-      time,
-      SUM(count) as total_count
-    FROM
-      "s1_eternum-TrophyProgression"
-    WHERE
-      player_id = '${normalizedAddress}'
-      AND task_id IN (${taskIds})
-      AND time = '${normalizedTimestamp}'
-    GROUP BY
-      task_id,
-      time
-  `;
-
-  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    console.error(`Failed to fetch trophy progressions: ${response.statusText}`);
-  }
-
-  const data: { task_id: string; total_count: number; time: number }[] = await response.json();
-
-  // Create a map to store the results
-  const result: Record<Achievements, number> = {} as Record<Achievements, number>;
-
-  // Initialize all achievements with 0 count
-  achievements.forEach((achievement) => {
-    result[achievement] = 0;
-  });
-
-  // Update with actual counts from the query
-  data.forEach((item) => {
-    // Find the achievement that corresponds to this task_id
-    for (const achievement of achievements) {
-      if (getTaskId(achievement) === item.task_id) {
-        result[achievement] = item.total_count || 0;
-        break;
-      }
-    }
-  });
-
-  console.log({ blockTimestamp, result });
-
-  return result;
-}
-
-const API_URL = env.VITE_PUBLIC_ACTION_DISPATCHER_URL || "";
-const API_SECRET = env.VITE_PUBLIC_ACTION_DISPATCHER_SECRET || "";
+const API_URL = env.PUBLIC_ACTION_DISPATCHER_URL || "";
+const API_SECRET = env.PUBLIC_ACTION_DISPATCHER_SECRET || "";
 
 /**
  * Dispatch actions to the GG.xyz API endpoint through our secure backend
@@ -245,94 +167,94 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   return await response.json();
 }
 
-/**
- * Gets the block timestamp from a transaction hash
- * @param txHash The transaction hash to get the block timestamp from
- * @returns Promise with the block timestamp
- */
-export async function getBlockTimestampFromTxHash(txHash: string): Promise<number> {
-  let blockNumber: number | undefined;
+interface TrophyEvent {
+  player_id: string;
+  task_id: string;
+  time: number;
+  total_count: number;
+  action: string;
+}
 
-  const getTransactionReceipt = async () => {
-    const response = await fetch(env.VITE_PUBLIC_NODE_URL, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        method: "starknet_getTransactionReceipt",
-        params: [txHash],
-        id: 1,
-        jsonrpc: "2.0",
-      }),
-    });
-    const data = await response.json();
-    return data;
-  };
+export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promise<void> {
+  const progressions = await fetchAllTrophyEventsAfterTimestamp(afterTimestamp);
+  console.log(`Fetched ${progressions.length} trophy events`);
 
-  let receipt;
-  let attempts = 0;
-  const maxAttempts = 10;
+  // process each progression
+  for (const progression of progressions) {
+    const { player_id, task_id, total_count } = progression;
 
-  while (attempts < maxAttempts) {
-    receipt = await getTransactionReceipt();
-    if (receipt?.result?.block_number) {
-      blockNumber = receipt.result.block_number;
-      break;
-    }
-    attempts++;
-    if (attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+    // check if the achievement is completed
+    const achievement = Object.keys(QUEST_THRESHOLDS).find((key) => getTaskId(key as Achievements) === task_id);
+    if (achievement) {
+      const thresholds = QUEST_THRESHOLDS[achievement as Achievements];
+      for (const threshold of thresholds) {
+        if (total_count >= threshold.threshold) {
+          const normalizedPlayerId = normalizePlayerAddress(player_id);
+
+          // Dispatch action if API is configured
+          if (API_URL !== "" && API_SECRET !== "") {
+            try {
+              await dispatchActions([threshold.action], normalizedPlayerId);
+            } catch (error) {
+              console.error("Failed to dispatch actions:", error);
+              throw error;
+            }
+          }
+        }
+      }
     }
   }
-
-  if (!blockNumber) {
-    throw new Error(`Failed to get block number for transaction ${txHash} after ${maxAttempts} attempts`);
-  }
-
-  const block = await starknetProvider.getBlock(blockNumber);
-  return block.timestamp;
 }
 
 /**
- * Checks quest progression for multiple achievements and dispatches actions when thresholds are met
- * @param playerAddress The player's address
- * @param achievements Array of CartridgeAchievement enum values
- * @returns Promise with the dispatched actions
+ * Fetches all trophy progression events for all players after a specific timestamp
+ * @param afterTimestamp The timestamp to fetch events after (in seconds)
+ * @returns Promise with an array of trophy progression events
  */
-export async function checkAndDispatchMultipleGgXyzQuestProgress(
-  playerAddress: string,
-  txHash: string,
-  achievements: Achievements[],
-): Promise<Record<Achievements, string[]>> {
-  const blockTimestamp = await getBlockTimestampFromTxHash(txHash);
+export async function fetchAllTrophyEventsAfterTimestamp(afterTimestamp: number): Promise<
+  Array<{
+    player_id: string;
+    task_id: string;
+    time: number;
+    total_count: number;
+  }>
+> {
+  // Convert Unix timestamp to ISO string
+  const isoDate = new Date(afterTimestamp * 1000).toISOString();
 
-  const progressions = await fetchMultipleTrophyProgressions(playerAddress, blockTimestamp, achievements);
-  const completedActionsByAchievement: Record<Achievements, string[]> = {} as Record<Achievements, string[]>;
-  const allCompletedActions: string[] = [];
+  const query = `
+    SELECT
+      player_id,
+      task_id,
+      time,
+      SUM(count) as total_count
+    FROM
+      "s1_eternum-TrophyProgression"
+    WHERE
+      internal_executed_at > '${isoDate}'
+    GROUP BY
+      player_id,
+      task_id,
+      time
+    ORDER BY
+      time ASC
+  `;
 
-  // Process each achievement
-  for (const achievement of achievements) {
-    const currentCount = progressions[achievement] || 0;
-    const thresholds = QUEST_THRESHOLDS[achievement];
-    const achievementCompletedActions: string[] = [];
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
 
-    // Check thresholds for this achievement
-    for (const threshold of thresholds) {
-      if (currentCount >= threshold.threshold) {
-        achievementCompletedActions.push(threshold.action);
-        allCompletedActions.push(threshold.action);
-      }
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to fetch trophy events: ${response.statusText}`, errorText);
+      throw new Error(`Failed to fetch trophy events: ${response.statusText} - ${errorText}`);
     }
 
-    completedActionsByAchievement[achievement] = achievementCompletedActions;
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching trophy events:", error);
+    throw error;
   }
-
-  // Dispatch all completed actions at once
-  if (allCompletedActions.length > 0 && API_URL !== "" && API_SECRET !== "") {
-    await dispatchActions(allCompletedActions, playerAddress);
-  }
-
-  return completedActionsByAchievement;
 }
