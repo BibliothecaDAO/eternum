@@ -5,7 +5,8 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "@dojoengine/torii-wasm": "^1.5.6",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "starknet": "^6.24.1"
   },
   "scripts": {
     "dispatch-quest-progress": "bun ./scripts/index.ts"
