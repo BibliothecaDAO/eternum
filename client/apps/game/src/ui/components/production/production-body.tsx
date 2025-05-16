@@ -1,10 +1,11 @@
 import { BuildingThumbs } from "@/ui/config";
 import { configManager, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import { useBuildings, useDojo } from "@bibliothecadao/react";
+import { getProducedResource, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AutomationTable } from "../automation/automation-table";
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
 import { RealmInfo } from "./realm-info";
@@ -14,7 +15,7 @@ export const ProductionBody = ({
   preSelectedResource,
 }: {
   realm: RealmInfoType;
-  preSelectedResource?: ResourcesIds;
+  preSelectedResource?: ResourcesIds | null;
 }) => {
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource || null);
 
@@ -36,6 +37,10 @@ export const ProductionBody = ({
       hasActivatedWonderBonus,
     };
   }, [realm.entityId]);
+
+  const buildings = useBuildings(realm.position.x, realm.position.y);
+  const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
+  const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
   return (
     <>
@@ -70,7 +75,20 @@ export const ProductionBody = ({
             </p>
           </div>
         </div>
-        <BuildingsList realm={realm} onSelectProduction={setSelectedResource} selectedResource={selectedResource} />
+        <div className="flex gap-2">
+          <AutomationTable
+            realmInfo={realm}
+            availableResources={producedResources}
+            realmEntityId={realm.entityId.toString()}
+          />
+        </div>
+        <BuildingsList
+          realm={realm}
+          onSelectProduction={setSelectedResource}
+          selectedResource={selectedResource}
+          producedResources={producedResources}
+          productionBuildings={productionBuildings}
+        />
         {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} bonus={bonus} />}
       </div>
     </>

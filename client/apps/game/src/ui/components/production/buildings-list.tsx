@@ -2,8 +2,8 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getEntityIdFromKeys, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
-import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
@@ -13,10 +13,14 @@ export const BuildingsList = ({
   realm,
   onSelectProduction,
   selectedResource,
+  producedResources,
+  productionBuildings,
 }: {
   realm: RealmInfo;
   onSelectProduction: (resource: number | null) => void;
   selectedResource: number | null;
+  producedResources: ResourcesIds[];
+  productionBuildings: Building[];
 }) => {
   // Guard against invalid realm data to prevent crashes
   if (!realm || !realm.position || !realm.entityId) {
@@ -29,10 +33,6 @@ export const BuildingsList = ({
   }
 
   const { setup } = useDojo();
-
-  const buildings = useBuildings(realm.position.x, realm.position.y);
-  const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
-  const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
   const resourceManager = useResourceManager(realm.entityId);
   const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(realm.entityId)]));
@@ -98,8 +98,8 @@ export const BuildingsList = ({
           const selectedProduction = productions.find((p) => p.resource === selectedResource);
 
           if (!selectedProduction) {
-            // This case should ideally not happen with the realm guard and valid selectedResource
-            // but as a fallback, render a simple message with a clear button
+            onSelectProduction(null);
+
             return (
               <motion.div
                 key="error-production"
