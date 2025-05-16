@@ -8,11 +8,11 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { useExplorersByStructure, usePlayerStructures } from "@bibliothecadao/react";
+import { useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 
 export const EntitiesArmyTable = () => {
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   return (

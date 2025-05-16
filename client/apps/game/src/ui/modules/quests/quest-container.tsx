@@ -6,7 +6,7 @@ import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getArmy, getRemainingCapacityInKg, toHexString } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure, useGetQuestForExplorer, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure, useGetQuestForExplorer } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
@@ -32,7 +32,7 @@ export const QuestContainer = ({
       components: { QuestLevels },
     },
   } = useDojo();
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const addressName = useAddressStore((state) => state.addressName) ?? "test";
 

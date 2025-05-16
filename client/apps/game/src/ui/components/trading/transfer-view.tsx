@@ -1,7 +1,8 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { fetchOtherStructures } from "@/services/api";
 import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
 import { getGuildMembersFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Structure, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -36,7 +37,7 @@ export const TransferView = () => {
     fetch();
   }, [account.address]);
 
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const [guildOnly, setGuildOnly] = useState(false);
 
