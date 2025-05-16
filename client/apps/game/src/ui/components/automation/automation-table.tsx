@@ -1,4 +1,4 @@
-import { AutomationOrder, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { AutomationOrder, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -33,23 +33,39 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const [showAddForm, setShowAddForm] = useState(false);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
     priority: 5,
-    // Default to first available resource in the realm, or Wood as a fallback if list is empty or Wood is not in list initially
-    resourceToProduce: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+    resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
     maxAmount: 1000,
-    productionType: "labor",
+    productionType: ProductionType.ResourceToResource,
     realmName: realmInfo.name,
   }));
   const [maxAmountInput, setMaxAmountInput] = useState<string>("5000");
   const [isInfinite, setIsInfinite] = useState(false);
 
+  // Filter resources for the select based on productionType
+  const filteredResourcesForSelect = useMemo(() => {
+    if (
+      newOrder.productionType === ProductionType.LaborToResource ||
+      newOrder.productionType === ProductionType.ResourceToLabor ||
+      newOrder.productionType === ProductionType.ResourceToResource
+    ) {
+      // Hide Labor from the resource select for all production types
+      return availableResourcesForRealm.filter((res) => res.id !== ResourcesIds.Labor);
+    }
+    return availableResourcesForRealm;
+  }, [availableResourcesForRealm, newOrder.productionType]);
+
   // Effect to update default resource if realmInfo (and thus availableResourcesForRealm) changes
   React.useEffect(() => {
-    setNewOrder((prev) => ({
-      ...prev,
-      resourceToProduce: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
-    }));
-    // Reset other parts of form if needed when realm context changes, or handle more gracefully
-  }, [availableResourcesForRealm]);
+    setNewOrder({
+      priority: 5,
+      resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+      maxAmount: 1000,
+      productionType: ProductionType.ResourceToResource,
+      realmName: realmInfo.name,
+    });
+    setMaxAmountInput("1000");
+    setIsInfinite(false);
+  }, [availableResourcesForRealm, realmInfo.name, realmEntityId]);
 
   if (!realmEntityId || !realmInfo) {
     return <p>Realm data not available.</p>;
@@ -60,10 +76,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   };
 
   const handleResourceChange = (value: string) => {
-    setNewOrder((prev) => ({ ...prev, resourceToProduce: parseInt(value, 10) as ResourcesIds }));
+    setNewOrder((prev) => ({
+      ...prev,
+      resourceToUse: parseInt(value, 10) as ResourcesIds,
+    }));
   };
 
-  const handleProductionTypeChange = (value: "resource" | "labor") => {
+  const handleProductionTypeChange = (value: ProductionType) => {
     setNewOrder((prev) => ({ ...prev, productionType: value }));
   };
 
@@ -91,8 +110,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const handleAddOrder = (e: React.FormEvent) => {
     e.preventDefault();
     if (
-      newOrder.resourceToProduce === undefined ||
-      !availableResourcesForRealm.find((r) => r.id === newOrder.resourceToProduce)
+      newOrder.resourceToUse === undefined ||
+      !availableResourcesForRealm.find((r) => r.id === newOrder.resourceToUse)
     ) {
       alert("Please select a valid resource to produce for this realm.");
       return;
@@ -101,13 +120,21 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       alert("Target amount must be greater than 0, or set to infinite.");
       return;
     }
+    // If resource is Labor, laborResourceId must be set
+    if (
+      newOrder.productionType === ProductionType.ResourceToResource &&
+      newOrder.resourceToUse === ResourcesIds.Labor
+    ) {
+      alert("Please select a labor resource.");
+      return;
+    }
     addOrder({ ...newOrder, realmEntityId });
     setShowAddForm(false);
     setNewOrder({
       priority: 5,
-      resourceToProduce: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+      resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
       maxAmount: 1000,
-      productionType: "resource",
+      productionType: ProductionType.ResourceToResource,
       realmName: realmInfo.name,
     });
     setMaxAmountInput("1000");
@@ -118,7 +145,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     <div className="p-4 border rounded-lg shadow-md panel-wood">
       <h6 className="text-red/90">IMPORTANT: Your browser must stay open for automation.</h6>
       <h4 className="mb-4 font-bold">
-        Automation Orders for Realm {realmInfo.name} ({realmEntityId})
+        Automation for Realm {realmInfo.name} ({realmEntityId})
       </h4>
       <p>
         This allows you to select the quantity you want to produce. The automation will attempt to fulfill the orders in
@@ -127,7 +154,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
       <div className="my-4">
         <Button onClick={() => setShowAddForm(!showAddForm)} variant="default" size="md">
-          {showAddForm ? "Cancel" : "+ Add New Automation Order"}
+          {showAddForm ? "Cancel" : "+ Add New Automation"}
         </Button>
       </div>
 
@@ -144,8 +171,9 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="resource">Standard (Resource-based)</SelectItem>
-                  <SelectItem value="labor">Simple (Labor-based)</SelectItem>
+                  <SelectItem value={ProductionType.ResourceToResource}>Standard (Resource-based)</SelectItem>
+                  <SelectItem value={ProductionType.LaborToResource}>Simple (Labor-based)</SelectItem>
+                  <SelectItem value={ProductionType.ResourceToLabor}>Resource to Labor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -162,20 +190,22 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
               />
             </div>
             <div>
-              <label htmlFor="resourceToProduce" className="block mb-1 text-sm font-medium">
-                Resource to Produce:
+              <label htmlFor="resourceToUse" className="block mb-1 text-sm font-medium">
+                {newOrder.productionType === ProductionType.ResourceToLabor
+                  ? "Resource Input For Labor:"
+                  : "Resource to Produce:"}
               </label>
               <Select
-                value={String(newOrder.resourceToProduce)}
+                value={String(newOrder.resourceToUse)}
                 onValueChange={handleResourceChange}
-                disabled={availableResourcesForRealm.length === 0}
+                disabled={filteredResourcesForSelect.length === 0}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select resource" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableResourcesForRealm.length > 0 ? (
-                    availableResourcesForRealm.map((res) => (
+                  {filteredResourcesForSelect.length > 0 ? (
+                    filteredResourcesForSelect.map((res) => (
                       <SelectItem key={res.id} value={String(res.id)}>
                         <div className="flex items-center">
                           <ResourceIcon resource={ResourcesIds[res.id]} size="xs" className="mr-2" />
@@ -194,14 +224,14 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
             <div>
               <label htmlFor="maxAmount" className="block mb-1 text-sm font-medium">
-                Target Amount:
+                {newOrder.productionType === ProductionType.ResourceToLabor ? "Target Labor Amount:" : "Target Amount:"}
               </label>
               <div className="flex items-center gap-2">
                 <NumberInput
                   value={isInfinite ? 0 : parseInt(maxAmountInput, 10) || 0}
                   disabled={isInfinite}
                   onChange={(val) => handleMaxAmountChange(String(val))}
-                  min={0}
+                  min={1000}
                   className="w-full"
                 />
                 <input
@@ -219,7 +249,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
           </div>
 
           <Button type="submit" variant="gold" disabled={availableResourcesForRealm.length === 0}>
-            Add Automation Order
+            Add Automation
           </Button>
         </form>
       )}
@@ -252,17 +282,37 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
           </thead>
           <tbody>
             {ordersForRealm.map((order) => (
-              <tr key={order.id} className="border-b border-gray-700 hover:bg-gray-600/30">
+              <tr key={order.id} className="border-b border-gold/50">
                 <td className="px-6 py-4">{order.priority}</td>
                 <td className="px-6 py-4 flex items-center">
-                  <ResourceIcon resource={ResourcesIds[order.resourceToProduce]} size="sm" className="mr-2" />
-                  {ResourcesIds[order.resourceToProduce]}
+                  {order.productionType === ProductionType.ResourceToLabor ? (
+                    <>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      <span className="mx-1">→</span>
+                      <ResourceIcon resource={"Labor"} size="sm" className="mr-2" /> Labor
+                    </>
+                  ) : (
+                    <>
+                      <ResourceIcon resource={"Labor"} size="sm" className="mr-2" />
+                      <span className="mx-1">→</span>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      {ResourcesIds[order.resourceToUse]}
+                    </>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}
                 </td>
                 <td className="px-6 py-4">{order.producedAmount.toLocaleString()}</td>
-                <td className="px-6 py-4 capitalize">{order.productionType}</td>
+                <td className="px-6 py-4 capitalize">
+                  {order.productionType === ProductionType.ResourceToLabor
+                    ? "Resource To Labor"
+                    : order.productionType === ProductionType.ResourceToResource
+                      ? "Resource To Resource"
+                      : order.productionType === ProductionType.LaborToResource
+                        ? "Labor To Resource"
+                        : order.productionType}
+                </td>
                 <td className="px-6 py-4">
                   <Button onClick={() => handleRemoveOrder(order.id)} variant="danger" size="xs">
                     Remove

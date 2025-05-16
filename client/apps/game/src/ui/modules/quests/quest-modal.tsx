@@ -68,7 +68,7 @@ export const QuestModal = ({
 
   const { data: questGames, loading: loadingQuests } = useOwnedGamesWithScores({
     address: queryAddress,
-    gameAddress: queryGameAddress,
+    gameAddress: queryGameAddress ?? "",
     metagame: {
       namespace: "s1_eternum",
       model: "Quest",
