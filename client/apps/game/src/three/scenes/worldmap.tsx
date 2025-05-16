@@ -5,7 +5,6 @@ import { getMapFromTorii } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { Achievements, checkAndDispatchMultipleGgXyzQuestProgress } from "@/services/gg-xyz";
 import { ArmyManager } from "@/three/managers/army-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
@@ -424,24 +423,10 @@ export default class WorldmapScene extends HexagonScene {
         }
       };
 
-      armyActionManager
-        .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
-        .then((res: any) => {
-          if (!isExplored) {
-            checkAndDispatchMultipleGgXyzQuestProgress(account.address, res.transaction_hash, [
-              Achievements.EXPLORE,
-              Achievements.AGENT_DISCOVER,
-              Achievements.QUEST_DISCOVER,
-              Achievements.MINE_DISCOVER,
-              Achievements.HYPERSTRUCTURE_DISCOVER,
-              Achievements.BIOME_DISCOVER,
-            ]);
-          }
-        })
-        .catch((e) => {
-          cleanup();
-          console.error("Army movement failed:", e);
-        });
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick).catch((e) => {
+        cleanup();
+        console.error("Army movement failed:", e);
+      });
 
       this.state.updateEntityActionHoveredHex(null);
     }
