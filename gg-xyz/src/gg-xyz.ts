@@ -1,6 +1,19 @@
 import { env } from "process";
 import { shortString } from "starknet";
 
+// ANSI color codes
+const colors = {
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+};
+
 const API_BASE_URL = env.PUBLIC_TORII + "/sql";
 
 export interface ActionDispatcherResponse {
@@ -146,7 +159,9 @@ const API_SECRET = env.PUBLIC_ACTION_DISPATCHER_SECRET || "";
  * @returns Promise with the API response
  */
 export async function dispatchActions(actions: string[], playerAddress: string): Promise<ActionDispatcherResponse> {
-  console.log(`Dispatching actions: ${actions.join(", ")} to player: ${playerAddress}`);
+  console.log(
+    `${colors.blue}${colors.bright}📤 Dispatching actions:${colors.reset} ${colors.dim}${actions.join(", ")}${colors.reset} ${colors.blue}${colors.bright}to player:${colors.reset} ${colors.dim}${playerAddress}${colors.reset}`,
+  );
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -160,9 +175,13 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   });
 
   if (!response.ok) {
-    console.error(`Failed to dispatch actions: ${response.statusText}`);
+    console.error(
+      `${colors.red}${colors.bright}❌ Failed to dispatch actions:${colors.reset} ${colors.dim}${response.statusText}${colors.reset}`,
+    );
   } else {
-    console.log(`Actions dispatched: ${actions.join(", ")}`);
+    console.log(
+      `${colors.green}${colors.bright}✅ Actions dispatched:${colors.reset} ${colors.dim}${actions.join(", ")}${colors.reset}`,
+    );
   }
 
   return await response.json();
@@ -171,7 +190,9 @@ export async function dispatchActions(actions: string[], playerAddress: string):
 // takes timestamp in seconds
 export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promise<number> {
   const progressions = await fetchAllTrophyEventsAfterTimestamp(afterTimestamp);
-  console.log(`Fetched ${progressions.length} trophy events since ${new Date(afterTimestamp * 1000).toISOString()}`);
+  console.log(
+    `${colors.cyan}${colors.bright}📊 Fetched ${progressions.length} trophy events since ${colors.reset}${colors.dim}${new Date(afterTimestamp * 1000).toISOString()}${colors.reset}`,
+  );
 
   if (progressions.length === 0) {
     return afterTimestamp;
@@ -197,7 +218,7 @@ export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promis
             try {
               await dispatchActions([threshold.action], normalizedPlayerId);
             } catch (error) {
-              console.error("Failed to dispatch actions:", error);
+              console.error(`${colors.red}${colors.bright}❌ Failed to dispatch actions:${colors.reset}`, error);
               // Don't throw here, continue processing other events
             }
           }
@@ -206,7 +227,9 @@ export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promis
     }
   }
 
-  console.log(`Successfully processed events up to ${new Date(latestTimestamp * 1000).toISOString()}`);
+  console.log(
+    `${colors.green}${colors.bright}✅ Successfully processed events up to ${colors.reset}${colors.dim}${new Date(latestTimestamp * 1000).toISOString()}${colors.reset}`,
+  );
   return latestTimestamp;
 }
 
@@ -251,14 +274,17 @@ export async function fetchAllTrophyEventsAfterTimestamp(afterTimestamp: number)
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to fetch trophy events: ${response.statusText}`, errorText);
+      console.error(
+        `${colors.red}${colors.bright}❌ Failed to fetch trophy events:${colors.reset} ${colors.dim}${response.statusText}${colors.reset}`,
+        errorText,
+      );
       throw new Error(`Failed to fetch trophy events: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching trophy events:", error);
+    console.error(`${colors.red}${colors.bright}❌ Error fetching trophy events:${colors.reset}`, error);
     throw error;
   }
 }

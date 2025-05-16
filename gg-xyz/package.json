@@ -8,6 +8,6 @@
     "ts-node": "^10.9.2"
   },
   "scripts": {
-    "dispatch-quest-progress": "bun ./scripts/dispatch-quest-progress.ts"
+    "dispatch-quest-progress": "bun ./scripts/index.ts"
   }
 }
