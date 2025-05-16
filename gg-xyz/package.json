@@ -1,0 +1,13 @@
+{
+  "name": "eternum-gg-xyz-scripts",
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "@dojoengine/torii-wasm": "workspace:*",
+    "ts-node": "^10.9.2"
+  },
+  "scripts": {
+    "dispatch-quest-progress": "bun ./scripts/dispatch-quest-progress.ts"
+  }
+}

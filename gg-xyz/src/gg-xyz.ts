@@ -1,5 +1,5 @@
-import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { env } from "process";
+import { shortString } from "starknet";
 
 const API_BASE_URL = env.PUBLIC_TORII + "/sql";
 
@@ -112,7 +112,7 @@ const QUEST_THRESHOLDS: Record<Achievements, QuestThreshold[]> = {
  * @returns The padded felt252 value as a string
  */
 export function getTaskId(achievement: Achievements): string {
-  const felt = cairoShortStringToFelt(achievement);
+  const felt = shortString.encodeShortString(achievement);
   // Remove 0x prefix if present
   const withoutPrefix = felt.startsWith("0x") ? felt.slice(2) : felt;
   // Pad with zeros to 64 characters (66 with 0x prefix)
@@ -146,6 +146,7 @@ const API_SECRET = env.PUBLIC_ACTION_DISPATCHER_SECRET || "";
  * @returns Promise with the API response
  */
 export async function dispatchActions(actions: string[], playerAddress: string): Promise<ActionDispatcherResponse> {
+  console.log(`Dispatching actions: ${actions.join(", ")} to player: ${playerAddress}`);
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -167,17 +168,17 @@ export async function dispatchActions(actions: string[], playerAddress: string):
   return await response.json();
 }
 
-interface TrophyEvent {
-  player_id: string;
-  task_id: string;
-  time: number;
-  total_count: number;
-  action: string;
-}
-
-export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promise<void> {
+// takes timestamp in seconds
+export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promise<number> {
   const progressions = await fetchAllTrophyEventsAfterTimestamp(afterTimestamp);
-  console.log(`Fetched ${progressions.length} trophy events`);
+  console.log(`Fetched ${progressions.length} trophy events since ${new Date(afterTimestamp * 1000).toISOString()}`);
+
+  if (progressions.length === 0) {
+    return afterTimestamp;
+  }
+
+  // Find the latest timestamp in this batch
+  const latestTimestamp = Math.max(...progressions.map((p) => p.time));
 
   // process each progression
   for (const progression of progressions) {
@@ -197,13 +198,16 @@ export async function dispatchGgXyzQuestProgress(afterTimestamp: number): Promis
               await dispatchActions([threshold.action], normalizedPlayerId);
             } catch (error) {
               console.error("Failed to dispatch actions:", error);
-              throw error;
+              // Don't throw here, continue processing other events
             }
           }
         }
       }
     }
   }
+
+  console.log(`Successfully processed events up to ${new Date(latestTimestamp * 1000).toISOString()}`);
+  return latestTimestamp;
 }
 
 /**
