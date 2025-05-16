@@ -39,8 +39,14 @@ export const ProductionBody = ({
   }, [realm.entityId]);
 
   const buildings = useBuildings(realm.position.x, realm.position.y);
-  const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
-  const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
+  const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
+  const producedResources = Array.from(
+    new Set(
+      productionBuildings
+        .filter((building) => building.produced && building.produced.resource)
+        .map((building) => building.produced.resource),
+    ),
+  );
 
   return (
     <>

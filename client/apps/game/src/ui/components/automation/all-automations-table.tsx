@@ -3,9 +3,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
+import { TrashIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductionModal } from "../production/production-modal";
+
+const eternumConfig = ETERNUM_CONFIG();
 
 export const AllAutomationsTable: React.FC = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -103,26 +107,6 @@ export const AllAutomationsTable: React.FC = () => {
           {displayedOrders.map((order) => (
             <tr key={order.id} className="border-b border-gold/10 hover:bg-gray-600/30">
               <td className=" py-4">
-                <div className="flex items-center mb-1">
-                  {order.productionType === ProductionType.ResourceToLabor ? (
-                    <>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                      <span className="mx-1">→</span>
-                      <ResourceIcon resource={"Labor"} size="sm" className="" />
-                    </>
-                  ) : order.productionType === ProductionType.LaborToResource ? (
-                    <>
-                      <ResourceIcon resource={"Labor"} size="sm" className="" />
-                      <span className="mx-1">→</span>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                    </>
-                  ) : (
-                    <>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                      {ResourcesIds[order.resourceToUse]}
-                    </>
-                  )}
-                </div>
                 <div className="text-xs bg-gold/20 px-2 py-1 rounded border border-gold/30">
                   <div className="h4">{order.realmName ?? order.realmEntityId}</div>
                   <div className="font-bold">Priority {order.priority}</div>
@@ -135,17 +119,42 @@ export const AllAutomationsTable: React.FC = () => {
                         ? "Labor To Resource"
                         : order.productionType}
                 </div>
-
-                <Button
-                  onClick={() => removeOrder(order.realmEntityId, order.id)}
-                  variant="danger"
-                  size="xs"
-                  className="mt-1"
-                >
-                  Remove
-                </Button>
               </td>
               <td className="px-6 py-4 text-lg">
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center">
+                    {order.productionType === ProductionType.ResourceToLabor ? (
+                      <>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={"Labor"} size="sm" className="" />
+                      </>
+                    ) : order.productionType === ProductionType.LaborToResource ? (
+                      <>
+                        <ResourceIcon resource={"Labor"} size="sm" className="" />
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      </>
+                    ) : (
+                      <>
+                        {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
+                          <ResourceIcon resource={ResourcesIds[recipe.resource]} size="sm" className="" />
+                        ))}
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={() => removeOrder(order.realmEntityId, order.id)}
+                    variant="danger"
+                    size="xs"
+                    className="mt-1"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </Button>
+                </div>
                 {order.producedAmount.toLocaleString()} /{" "}
                 {order.maxAmount === "infinite" ? "∞" : order.maxAmount.toLocaleString()}{" "}
                 {order.maxAmount !== "infinite" && order.maxAmount > 0 && (
