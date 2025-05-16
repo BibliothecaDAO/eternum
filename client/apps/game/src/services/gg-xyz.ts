@@ -214,6 +214,9 @@ export async function fetchMultipleTrophyProgressions(
   return result;
 }
 
+const API_URL = env.VITE_PUBLIC_ACTION_DISPATCHER_URL || "";
+const API_SECRET = env.VITE_PUBLIC_ACTION_DISPATCHER_SECRET || "";
+
 /**
  * Dispatch actions to the GG.xyz API endpoint through our secure backend
  * @param actions Array of action strings to dispatch
@@ -221,9 +224,6 @@ export async function fetchMultipleTrophyProgressions(
  * @returns Promise with the API response
  */
 export async function dispatchActions(actions: string[], playerAddress: string): Promise<ActionDispatcherResponse> {
-  const API_URL = env.VITE_PUBLIC_ACTION_DISPATCHER_URL;
-  const API_SECRET = env.VITE_PUBLIC_ACTION_DISPATCHER_SECRET;
-
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -330,7 +330,7 @@ export async function checkAndDispatchMultipleGgXyzQuestProgress(
   }
 
   // Dispatch all completed actions at once
-  if (allCompletedActions.length > 0) {
+  if (allCompletedActions.length > 0 && API_URL !== "" && API_SECRET !== "") {
     await dispatchActions(allCompletedActions, playerAddress);
   }
 
