@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { dispatchGgXyzQuestProgress } from "../src/gg-xyz";
@@ -23,12 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, ".env") });
 
 // Validate required environment variables
-const requiredEnvVars = [
-  "PUBLIC_TORII",
-  "PUBLIC_ACTION_DISPATCHER_URL",
-  "PUBLIC_ACTION_DISPATCHER_SECRET",
-  "LAST_PROCESSED_TIMESTAMP",
-];
+const requiredEnvVars = ["PUBLIC_TORII", "PUBLIC_ACTION_DISPATCHER_URL", "PUBLIC_ACTION_DISPATCHER_SECRET"];
 
 const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
@@ -40,17 +36,41 @@ if (missingEnvVars.length > 0) {
   throw new Error("Missing required environment variables");
 }
 
-// Get the last processed timestamp from environment variable or use 0
+const TIMESTAMP_FILE = resolve(__dirname, "last_processed_timestamp.txt");
+
+// Get the last processed timestamp from file or use 0
 // timestamp is in seconds
 const getLastProcessedTimestamp = (): number => {
-  const timestamp = process.env.LAST_PROCESSED_TIMESTAMP;
-  return timestamp ? parseInt(timestamp, 10) : 0;
+  if (!existsSync(TIMESTAMP_FILE)) {
+    throw new Error(
+      `${colors.red}${colors.bright}❌ Timestamp file does not exist at: ${TIMESTAMP_FILE}${colors.reset}`,
+    );
+  }
+
+  const timestamp = readFileSync(TIMESTAMP_FILE, "utf-8").trim();
+  if (!timestamp) {
+    throw new Error(`${colors.red}${colors.bright}❌ Timestamp file is empty${colors.reset}`);
+  }
+
+  const parsedTimestamp = parseInt(timestamp, 10);
+  if (isNaN(parsedTimestamp)) {
+    throw new Error(`${colors.red}${colors.bright}❌ Invalid timestamp format in file${colors.reset}`);
+  }
+
+  return parsedTimestamp;
 };
 
-// Store the timestamp in environment variable
+// Store the timestamp in file
 // timestamp is in seconds
 const storeLastProcessedTimestamp = (timestamp: number): void => {
-  process.env.LAST_PROCESSED_TIMESTAMP = timestamp.toString();
+  try {
+    writeFileSync(TIMESTAMP_FILE, timestamp.toString());
+    console.log(
+      `${colors.green}${colors.bright}💾 Timestamp saved to file: ${colors.reset}${colors.dim}${timestamp}${colors.reset}`,
+    );
+  } catch (error) {
+    console.error(`${colors.red}${colors.bright}❌ Error saving timestamp to file:${colors.reset}`, error);
+  }
 };
 
 async function processEvents() {
