@@ -4,7 +4,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
 import React, { useMemo, useState } from "react";
 
 interface AutomationTableProps {
@@ -35,7 +35,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const [showAddForm, setShowAddForm] = useState(false);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
     priority: 5,
-    resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+    resourceToUse: availableResourcesForRealm[0]?.id,
     maxAmount: 1000,
     productionType: ProductionType.ResourceToResource,
     realmName: realmInfo.name,
@@ -45,29 +45,31 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
   // Filter resources for the select based on productionType
   const filteredResourcesForSelect = useMemo(() => {
-    if (
-      newOrder.productionType === ProductionType.LaborToResource ||
-      newOrder.productionType === ProductionType.ResourceToLabor ||
-      newOrder.productionType === ProductionType.ResourceToResource
-    ) {
-      // Hide Labor from the resource select for all production types
-      return availableResourcesForRealm.filter((res) => res.id !== ResourcesIds.Labor);
-    }
-    return availableResourcesForRealm;
-  }, [availableResourcesForRealm, newOrder.productionType]);
+    // Hide Labor from the resource select for all production types
+    return availableResourcesForRealm.filter((res) => res.id !== ResourcesIds.Labor);
+  }, [availableResourcesForRealm]);
+
+  const filteredResourcesForLaborInput = useMemo(() => {
+    return resources
+      .filter((res) => res.id <= ResourcesIds.Dragonhide)
+      .map((res) => ({
+        id: res.id,
+        name: res.trait,
+      }));
+  }, []);
 
   // Effect to update default resource if realmInfo (and thus availableResourcesForRealm) changes
   React.useEffect(() => {
     setNewOrder({
       priority: 5,
-      resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+      resourceToUse: filteredResourcesForSelect[0]?.id,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
       realmName: realmInfo.name,
     });
     setMaxAmountInput("1000");
     setIsInfinite(false);
-  }, [availableResourcesForRealm, realmInfo.name, realmEntityId]);
+  }, [filteredResourcesForSelect, realmInfo.name, realmEntityId]);
 
   if (!realmEntityId || !realmInfo) {
     return <p>Realm data not available.</p>;
@@ -78,14 +80,26 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   };
 
   const handleResourceChange = (value: string) => {
-    setNewOrder((prev) => ({
-      ...prev,
-      resourceToUse: parseInt(value, 10) as ResourcesIds,
-    }));
+    const parsedValue = parseInt(value, 10);
+    if (!isNaN(parsedValue)) {
+      setNewOrder((prev) => ({
+        ...prev,
+        resourceToUse: parsedValue as ResourcesIds,
+      }));
+    }
   };
 
   const handleProductionTypeChange = (value: ProductionType) => {
-    setNewOrder((prev) => ({ ...prev, productionType: value }));
+    const newResourceToUse =
+      value === ProductionType.ResourceToLabor
+        ? filteredResourcesForLaborInput[0]?.id
+        : filteredResourcesForSelect[0]?.id;
+
+    setNewOrder((prev) => ({
+      ...prev,
+      productionType: value,
+      resourceToUse: newResourceToUse,
+    }));
   };
 
   const handleMaxAmountChange = (value: string) => {
@@ -111,10 +125,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
   const handleAddOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      newOrder.resourceToUse === undefined ||
-      !availableResourcesForRealm.find((r) => r.id === newOrder.resourceToUse)
-    ) {
+    if (newOrder.resourceToUse === undefined) {
       alert("Please select a valid resource to produce for this realm.");
       return;
     }
@@ -134,7 +145,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     setShowAddForm(false);
     setNewOrder({
       priority: 5,
-      resourceToUse: availableResourcesForRealm[0]?.id || ResourcesIds.Wood,
+      resourceToUse: availableResourcesForRealm[0]?.id,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
       realmName: realmInfo.name,
@@ -207,20 +218,25 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   ? "Resource Input For Labor:"
                   : "Resource to Produce:"}
               </label>
-              <Select
-                value={String(newOrder.resourceToUse)}
-                onValueChange={handleResourceChange}
-                disabled={filteredResourcesForSelect.length === 0}
-              >
-                <SelectTrigger className="w-full border border-gold/20 rounded-md">
+              <Select value={String(newOrder.resourceToUse)} onValueChange={handleResourceChange}>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select resource" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredResourcesForSelect.length > 0 ? (
+                  {newOrder.productionType === ProductionType.ResourceToLabor ? (
+                    filteredResourcesForLaborInput.map((res) => (
+                      <SelectItem key={res.id} value={String(res.id)}>
+                        <div className="flex items-center">
+                          <ResourceIcon resource={res.name} size="xs" className="mr-2" />
+                          {res.name}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : filteredResourcesForSelect.length > 0 ? (
                     filteredResourcesForSelect.map((res) => (
                       <SelectItem key={res.id} value={String(res.id)}>
                         <div className="flex items-center">
-                          <ResourceIcon resource={ResourcesIds[res.id]} size="xs" className="mr-2" />
+                          <ResourceIcon resource={res.name} size="xs" className="mr-2" />
                           {res.name}
 
                           {newOrder.productionType === ProductionType.ResourceToResource &&
@@ -231,7 +247,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="no-resources" disabled>
                       No resources available for this realm to automate.
                     </SelectItem>
                   )}
@@ -272,7 +288,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="submit" variant="gold" disabled={availableResourcesForRealm.length === 0}>
+            <Button type="submit" variant="gold" disabled={newOrder.resourceToUse === undefined}>
               Add Automation
             </Button>
             <Button onClick={() => setShowAddForm(false)} variant="default" size="md">
