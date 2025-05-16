@@ -2,14 +2,20 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+export enum ProductionType {
+  ResourceToResource = "resource_to_resource",
+  ResourceToLabor = "resource_to_labor",
+  LaborToResource = "labor_to_resource",
+}
+
 export interface AutomationOrder {
   id: string; // Unique identifier for the order
   priority: number; // 1-9, 1 is highest for this realm
-  resourceToProduce: ResourcesIds; // ID of the resource
+  resourceToUse: ResourcesIds; // resource to product (labor or resource) or resource to use for labor production
   maxAmount: number | "infinite"; // Target amount to produce
   producedAmount: number; // How much has been produced by this order so far
   realmEntityId: string; // Store as string, consistent for object keys
-  productionType: "resource" | "labor"; // Example: to distinguish system calls
+  productionType: ProductionType; // Example: to distinguish system calls
   realmName?: string; // Name of the realm
 }
 
