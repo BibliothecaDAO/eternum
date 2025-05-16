@@ -1,8 +1,9 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
 import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { getArmy, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -23,7 +24,7 @@ export const RealmsContainer = ({
       components: { QuestLevels },
     },
   } = useDojo();
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const questLevelsEntity = useMemo(() => {
     return getComponentValue(QuestLevels, getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]));

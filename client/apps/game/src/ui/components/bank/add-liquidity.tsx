@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/components/bank/liquidity-table";
@@ -14,8 +15,8 @@ import {
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -26,7 +27,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const playerStructures = usePlayerStructures(ContractAddress(account.address));
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 

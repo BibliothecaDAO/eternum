@@ -3,14 +3,12 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { ContractAddress } from "@bibliothecadao/types";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
+import { StoreManagers } from "../store-managers";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
@@ -72,34 +70,8 @@ const RealmTransferManager = lazy(() =>
   import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
 );
 
-const StructureSynchronizer = () => {
+const StructureSynchronizerManager = () => {
   useSyncPlayerStructures();
-  return null;
-};
-
-const ButtonStateManager = () => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
-
-  const setDisableButtons = useUIStore((state) => state.setDisableButtons);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
-    [structureEntityId, account.address, components],
-  );
-
-  const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
-
-  const seasonHasStarted = useMemo(() => env.VITE_PUBLIC_SEASON_START_TIME < Date.now() / 1000, []);
-
-  useEffect(() => {
-    const disableButtons = !structureIsMine || account.address === "0x0" || !seasonHasStarted;
-    setDisableButtons(disableButtons);
-  }, [setDisableButtons, structureIsMine, account.address, seasonHasStarted]);
-
   return null;
 };
 
@@ -135,7 +107,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const minigameStore = useMinigameStore.getState();
 
   // uses recs so needs to be synced first
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const { data: minigames } = useMiniGames({});
 
@@ -157,8 +129,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   return (
     <>
-      <StructureSynchronizer />
-      <ButtonStateManager />
+      <StoreManagers />
+      <StructureSynchronizerManager />
       <NotLoggedInMessage />
 
       {/* Main world layer */}

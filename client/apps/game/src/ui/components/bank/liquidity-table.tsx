@@ -1,6 +1,7 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
-import { ContractAddress, ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
+import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -36,7 +37,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
     );
   });
 
-  const playerStructures = usePlayerStructures(ContractAddress(account.address));
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 

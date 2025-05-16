@@ -12,7 +12,7 @@ import {
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   findResourceById,
   ID,
@@ -53,7 +53,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     return resourceManager.balanceWithProduction(tick, resource).balance;
   }, [resourceManager, tick, resource]);
 
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const playerStructuresFiltered = useMemo(() => {
     // For military resources, we need special handling
