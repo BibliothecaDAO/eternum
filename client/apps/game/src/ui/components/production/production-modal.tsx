@@ -26,10 +26,15 @@ const ProductionContainer = ({
 
   const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerRealmsAndVillages[0]);
 
+  const [currentPreSelectedResource, setCurrentPreSelectedResource] = useState<ResourcesIds | null>(
+    preSelectedResource || null,
+  );
+
   const handleSelectRealm = useCallback(
     (id: ID) => {
       const realm = playerRealmsAndVillages.find((r) => r.entityId === id);
       setSelectedRealm(realm);
+      setCurrentPreSelectedResource(null);
     },
     [playerRealmsAndVillages],
   );
@@ -49,7 +54,7 @@ const ProductionContainer = ({
       </div>
       <div className="col-span-9 h-full row-span-10 overflow-y-auto p-8 pb-36">
         <Suspense fallback={<LoadingAnimation />}>
-          {selectedRealm && <ProductionBody realm={selectedRealm} preSelectedResource={preSelectedResource} />}
+          {selectedRealm && <ProductionBody realm={selectedRealm} preSelectedResource={currentPreSelectedResource} />}
         </Suspense>
       </div>
     </div>
