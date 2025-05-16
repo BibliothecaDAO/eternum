@@ -1,10 +1,11 @@
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { ResourceManager } from "@bibliothecadao/eternum";
+import { multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Account as StarknetAccount } from "starknet";
-import { useAutomationStore } from "../stores/automation-store";
 import { useBlockTimestamp } from "./helpers/use-block-timestamp";
 
 // --- Helper: Get all numeric enum values for ResourcesIds ---
@@ -28,7 +29,8 @@ async function fetchBalances(
     }
     const manager = new ResourceManager(dojoComponents, realmIdNumber);
     for (const resourceId of ALL_RESOURCE_IDS) {
-      balances[resourceId] = Number(manager.balanceWithProduction(tick, resourceId));
+      const balanceComponent = manager.balanceWithProduction(tick, resourceId);
+      balances[resourceId] = Number(balanceComponent.balance);
     }
   } catch (error) {
     console.error(`Error fetching balances for realm ${realmEntityId}:`, error);
@@ -70,13 +72,24 @@ export const useAutomation = () => {
       systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
       components,
     },
-    account: { account: starknetSignerAccount }, // Assuming useDojo().account.account is the StarknetAccount
+    account: { account: starknetSignerAccount },
   } = useDojo();
-  const tick = useBlockTimestamp();
+  const { currentDefaultTick } = useBlockTimestamp();
 
-  const orders = useAutomationStore((state) => state.orders);
+  const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
   const processingRef = useRef(false);
+  const ordersByRealmRef = useRef(ordersByRealm);
+
+  // ---- Keep the latest block tick in a ref so that callbacks remain stable ---
+  const currentTickRef = useRef(currentDefaultTick);
+  useEffect(() => {
+    currentTickRef.current = currentDefaultTick;
+  }, [currentDefaultTick]);
+
+  useEffect(() => {
+    ordersByRealmRef.current = ordersByRealm;
+  }, [ordersByRealm]);
 
   const processOrders = useCallback(async () => {
     if (processingRef.current) return;
@@ -84,138 +97,184 @@ export const useAutomation = () => {
       !starknetSignerAccount ||
       !starknetSignerAccount.address ||
       starknetSignerAccount.address === "0x0" ||
-      !components
+      !components ||
+      currentTickRef.current === 0
     ) {
-      console.warn("Automation: Conditions not met (signer/components). Skipping.");
+      console.warn("Automation: Conditions not met (signer/components/currentDefaultTick). Skipping.");
       return;
     }
 
     processingRef.current = true;
-    const sortedOrders = [...orders].sort((a, b) => a.priority - b.priority);
 
-    for (const order of sortedOrders) {
-      if (order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount) continue;
+    const currentOrdersByRealm = ordersByRealmRef.current;
 
-      try {
-        const currentBalances = await fetchBalances(tick.currentDefaultTick, order.realmEntityId, components);
-        const recipe = getProductionRecipe(order.resourceToProduce, order.productionType);
+    for (const realmEntityId in currentOrdersByRealm) {
+      const realmOrders = currentOrdersByRealm[realmEntityId].sort((a, b) => a.priority - b.priority);
+      if (!realmOrders || realmOrders.length === 0) continue;
 
-        if (!recipe || recipe.outputAmount === 0) {
-          console.warn(
-            `Automation: No valid recipe or zero output amount for ${ResourcesIds[order.resourceToProduce]} (type: ${order.productionType}) in order ${order.id}.`,
+      console.log(
+        `Automation: Processing orders for realm ${realmEntityId}, ${JSON.stringify(realmOrders, null, 2)} orders found.`,
+      );
+
+      for (const order of realmOrders) {
+        if (order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount) {
+          console.log(
+            `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
           );
           continue;
         }
 
-        let maxPossibleCycles = Infinity;
-        if (recipe.inputs.length > 0) {
-          for (const input of recipe.inputs) {
-            if (input.amount <= 0) continue; // Skip if input amount is zero or negative (should not happen in valid recipe)
-            const balance = currentBalances[input.resourceId] || 0;
-            maxPossibleCycles = Math.min(maxPossibleCycles, Math.floor(balance / input.amount));
+        try {
+          const currentBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
+          const recipe = getProductionRecipe(order.resourceToProduce, order.productionType);
+
+          console.log(
+            `Automation: Recipe for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+            recipe,
+          );
+
+          if (!recipe || recipe.outputAmount === 0) {
+            console.warn(
+              `Automation: No valid recipe or zero output for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}.`,
+            );
+            continue;
           }
-        } else {
-          // If no inputs, theoretically infinite cycles, but will be capped by maxAmount or a default
-          maxPossibleCycles = 1000; // Default cap for no-input recipes, adjust as needed
-        }
 
-        if (maxPossibleCycles === 0 || maxPossibleCycles === Infinity) {
-          // console.log(`Automation: Cannot produce ${ResourcesIds[order.resourceToProduce]} for order ${order.id} due to resource constraints (maxPossibleCycles: ${maxPossibleCycles}).`);
-          continue;
-        }
+          let maxPossibleCycles = Infinity;
+          if (recipe.inputs.length > 0) {
+            for (const input of recipe.inputs) {
+              if (input.amount <= 0) continue;
+              const balance = currentBalances[input.resourceId] || 0;
+              console.log(
+                `Automation: Balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}:`,
+                balance,
+              );
+              maxPossibleCycles = Math.min(maxPossibleCycles, Math.floor(balance / multiplyByPrecision(input.amount)));
+            }
+          } else {
+            maxPossibleCycles = 10000;
+          }
 
-        let cyclesToRun = maxPossibleCycles;
-
-        if (order.maxAmount !== "infinite") {
-          const remainingAmountToProduce = order.maxAmount - order.producedAmount;
-          if (remainingAmountToProduce <= 0) continue; // Should have been caught by earlier check, but good for safety
-
-          const cyclesForRemainingAmount = Math.ceil(remainingAmountToProduce / recipe.outputAmount);
-          cyclesToRun = Math.min(cyclesToRun, cyclesForRemainingAmount);
-        }
-
-        if (cyclesToRun <= 0) {
-          // console.log(`Automation: No cycles to run for ${ResourcesIds[order.resourceToProduce]} in order ${order.id}.`);
-          continue;
-        }
-
-        const realmEntityIdNumber = Number(order.realmEntityId);
-        if (isNaN(realmEntityIdNumber)) {
-          console.error(`Automation: Invalid realmEntityId in order ${order.id}: ${order.realmEntityId}`);
-          continue;
-        }
-
-        const baseCalldata = {
-          signer: starknetSignerAccount as StarknetAccount,
-          from_entity_id: realmEntityIdNumber,
-        };
-
-        let producedThisCycle = 0;
-        let systemCallToMake = null;
-
-        if (order.productionType === "resource") {
-          const calldata = {
-            ...baseCalldata,
-            production_cycles: [cyclesToRun],
-            produced_resource_types: [order.resourceToProduce],
-          };
-          systemCallToMake = () => burn_resource_for_resource_production(calldata);
-          producedThisCycle = cyclesToRun * recipe.outputAmount;
-        } else if (order.productionType === "labor") {
-          const calldata = {
-            ...baseCalldata,
-            production_cycles: [cyclesToRun],
-            produced_resource_types: [order.resourceToProduce],
-          };
-          systemCallToMake = () => burn_labor_for_resource_production(calldata);
-          producedThisCycle = cyclesToRun * recipe.outputAmount;
-        }
-
-        if (systemCallToMake) {
           console.log(
-            `Automation: Plan to execute ${order.productionType} production for ${ResourcesIds[order.resourceToProduce]} in order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}).`,
+            `Automation: Max possible cycles for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+            maxPossibleCycles,
           );
-          // await systemCallToMake(); // UNCOMMENT TO ENABLE ACTUAL TRANSACTION
-          console.log(
-            `Automation: MOCK CALL for ${order.productionType} production. Would produce ${producedThisCycle} of ${ResourcesIds[order.resourceToProduce]}.`,
+
+          if (maxPossibleCycles === 0 || maxPossibleCycles === Infinity) {
+            continue;
+          }
+
+          let cyclesToRun = maxPossibleCycles;
+
+          if (order.maxAmount !== "infinite") {
+            const remainingAmountToProduce = order.maxAmount - order.producedAmount;
+
+            console.log(
+              `Automation: Remaining amount to produce for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              remainingAmountToProduce,
+            );
+            if (remainingAmountToProduce <= 0) continue;
+
+            const cyclesForRemainingAmount = Math.ceil(remainingAmountToProduce / recipe.outputAmount);
+            cyclesToRun = Math.min(cyclesToRun, cyclesForRemainingAmount);
+
+            console.log(
+              `Automation: Cycles to run for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              cyclesToRun,
+            );
+          }
+
+          if (cyclesToRun <= 0) continue;
+
+          const realmIdNumberForSyscall = Number(order.realmEntityId);
+          if (isNaN(realmIdNumberForSyscall)) {
+            console.error(`Automation: Invalid realmEntityId for syscall in order ${order.id}: ${order.realmEntityId}`);
+            continue;
+          }
+
+          const baseCalldata = {
+            signer: starknetSignerAccount as StarknetAccount,
+            from_entity_id: realmIdNumberForSyscall,
+          };
+
+          let producedThisCycle = 0;
+          let systemCallToMake = null;
+
+          if (order.productionType === "resource") {
+            const calldata = {
+              ...baseCalldata,
+              production_cycles: [cyclesToRun],
+              produced_resource_types: [order.resourceToProduce],
+            };
+            console.log(
+              `Automation: Calldata for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              calldata,
+            );
+            systemCallToMake = () => burn_resource_for_resource_production(calldata);
+            producedThisCycle = cyclesToRun * recipe.outputAmount;
+          } else if (order.productionType === "labor") {
+            const calldata = {
+              ...baseCalldata,
+              production_cycles: [cyclesToRun],
+              produced_resource_types: [order.resourceToProduce],
+            };
+            console.log(
+              `Automation: Calldata for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              calldata,
+            );
+            systemCallToMake = () => burn_labor_for_resource_production(calldata);
+            producedThisCycle = cyclesToRun * recipe.outputAmount;
+          }
+
+          if (systemCallToMake) {
+            console.log(
+              `Automation: Plan to execute ${order.productionType} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}). Calldata `,
+            );
+            await systemCallToMake(); // UNCOMMENT FOR REAL TRANSACTION
+            console.log(
+              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${ResourcesIds[order.resourceToProduce]}.`,
+            );
+            updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
+            toast.success(
+              `Automation: ${order.productionType}. Would produce ${producedThisCycle.toLocaleString()} of ${ResourcesIds[order.resourceToProduce]} on realm ${order?.realmName}.`,
+            );
+          } else {
+            console.warn(
+              `Automation: No system call for order ${order.id} (type ${order.productionType}) in realm ${order?.realmName}.`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}:`,
+            error,
           );
-          updateOrderProducedAmount(order.id, producedThisCycle);
-        } else {
-          console.warn(`Automation: No system call defined for order ${order.id} with type ${order.productionType}`);
         }
-      } catch (error) {
-        console.error(
-          `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToProduce]}:`,
-          error,
-        );
       }
     }
     processingRef.current = false;
   }, [
-    orders,
     starknetSignerAccount,
     components,
+    currentTickRef,
     burn_resource_for_resource_production,
     burn_labor_for_resource_production,
     updateOrderProducedAmount,
   ]);
 
+  // Setup the automation interval as soon as the hook mounts. The `processOrders` function
+  // contains its own early-exit checks, so we don't need to guard here – this ensures the
+  // interval is created immediately and will start working as soon as the required data is
+  // available.
   useEffect(() => {
-    if (
-      !starknetSignerAccount ||
-      !starknetSignerAccount.address ||
-      starknetSignerAccount.address === "0x0" ||
-      !components
-    ) {
-      return;
-    }
     processOrders();
     const intervalId = setInterval(processOrders, PROCESS_INTERVAL_MS);
     return () => {
       clearInterval(intervalId);
       processingRef.current = false;
     };
-  }, [processOrders, starknetSignerAccount?.address, components]);
+    // `processOrders` is a stable callback (its deps are managed in its own definition) so we
+    // can safely depend only on it here.
+  }, [processOrders]);
 
   return {};
 };
