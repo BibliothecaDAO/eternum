@@ -10,6 +10,50 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { createContentContainer, createLabelBase, createOwnerDisplayElement } from "../utils/label-utils";
+
+// Guild badge color utilities
+const getGuildColorSet = (guildName: string) => {
+  // Helper to clean guild name - remove null chars (0) and trim whitespace
+  const cleanGuildName = (name?: string) => {
+    if (!name) return "";
+    // Convert to string, filter out null characters, then trim whitespace
+    return name
+      .toString()
+      .split("")
+      .filter((char) => char.charCodeAt(0) !== 0)
+      .join("")
+      .trim();
+  };
+
+  const cleanedName = cleanGuildName(guildName);
+
+  // Different gradient combinations based on first letter
+  const colorSets = [
+    ["from-emerald-600/60", "to-emerald-800/60", "border-emerald-500/30"], // a-d
+    ["from-violet-600/60", "to-violet-800/60", "border-violet-500/30"], // e-h
+    ["from-amber-600/60", "to-amber-800/60", "border-amber-500/30"], // i-l
+    ["from-cyan-600/60", "to-cyan-800/60", "border-cyan-500/30"], // m-p
+    ["from-rose-600/60", "to-rose-800/60", "border-rose-500/30"], // q-t
+    ["from-blue-600/60", "to-blue-800/60", "border-blue-500/30"], // u-z
+    ["from-orange-600/60", "to-red-700/60", "border-orange-500/30"], // other
+  ];
+
+  // If empty after cleaning, default to "A"
+  const firstChar = cleanedName.length > 0 ? cleanedName.charAt(0).toLowerCase() : "a";
+  const charCode = firstChar.charCodeAt(0);
+
+  let index = Math.floor((charCode - 97) / 4);
+  if (index < 0 || index >= colorSets.length) {
+    index = colorSets.length - 1;
+  }
+
+  return {
+    colorSet: colorSets[index],
+    cleanedName,
+    firstChar,
+  };
+};
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -34,6 +78,66 @@ const ICONS = {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
+  ALLY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Realm]: "/images/labels/allies_realm.png",
+  } as Record<StructureType, string>,
+};
+
+// Create structure info label
+const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView) => {
+  // Create label div using the shared base
+  const labelDiv = createLabelBase({
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+  });
+
+  // Create icon container
+  const iconContainer = document.createElement("div");
+  iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
+
+  // Select appropriate icon
+  let iconPath = ICONS.STRUCTURES[structure.structureType];
+  if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
+    iconPath = structure.isMine
+      ? ICONS.MY_STRUCTURES[structure.structureType]
+      : structure.isAlly
+        ? ICONS.ALLY_STRUCTURES[structure.structureType]
+        : ICONS.STRUCTURES[structure.structureType];
+  }
+
+  // Create and set icon image
+  const iconImg = document.createElement("img");
+  iconImg.src = iconPath;
+  iconImg.classList.add("w-full", "h-full", "object-contain");
+  iconContainer.appendChild(iconImg);
+  labelDiv.appendChild(iconContainer);
+
+  // Create content container with transition using shared utility
+  const contentContainer = createContentContainer(cameraView);
+
+  // Add owner display using shared component
+  const ownerText = createOwnerDisplayElement({
+    owner: structure.owner,
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+    cameraView,
+  });
+  contentContainer.appendChild(ownerText);
+
+  // Add structure type and level
+  const typeText = document.createElement("strong");
+  typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+    structure.structureType === StructureType.Hyperstructure
+      ? structure.initialized
+        ? `(Stage ${structure.stage + 1})`
+        : "Foundation"
+      : ""
+  }`;
+  contentContainer.appendChild(typeText);
+
+  labelDiv.appendChild(contentContainer);
+  return labelDiv;
 };
 
 export class StructureManager {
@@ -188,6 +292,7 @@ export class StructureManager {
         guildName: owner.guildName || "",
       },
       hasWonder,
+      update.isAlly,
     );
 
     // Update the visible structures if this structure is in the current chunk
@@ -350,85 +455,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    const labelDiv = document.createElement("div");
-    labelDiv.classList.add(
-      "rounded-md",
-      "bg-brown/50",
-      "hover:bg-brown/90",
-      "pointer-events-auto",
-      "h-10",
-      structure.isMine ? "text-order-brilliance" : "text-gold",
-      "p-0.5",
-      "-translate-x-1/2",
-      "text-xxs",
-      "flex",
-      "items-center",
-      "group",
-    );
-
-    // Create icon container
-    const iconContainer = document.createElement("div");
-    iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
-
-    // Select appropriate icon
-    let iconPath = ICONS.STRUCTURES[structure.structureType];
-    if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
-      if (structure.hasWonder) {
-        iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
-      } else {
-        iconPath = structure.isMine
-          ? ICONS.MY_STRUCTURES[structure.structureType]
-          : ICONS.STRUCTURES[structure.structureType];
-      }
-    }
-
-    // Create and set icon image
-    const iconImg = document.createElement("img");
-    iconImg.src = iconPath;
-    iconImg.classList.add("w-full", "h-full", "object-contain");
-    iconContainer.appendChild(iconImg);
-    labelDiv.appendChild(iconContainer);
-
-    // Create content container with transition
-    const contentContainer = document.createElement("div");
-
-    // Add empty div with w-2 for spacing
-    const spacerDiv = document.createElement("div");
-    spacerDiv.classList.add("w-2");
-    contentContainer.appendChild(spacerDiv);
-
-    contentContainer.classList.add(
-      "flex",
-      "flex-col",
-      "transition-width",
-      "duration-700",
-      "ease-in-out",
-      "overflow-hidden",
-      "whitespace-nowrap",
-      "group-hover:max-w-[250px]",
-      "group-hover:ml-2",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
-      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
-    );
-
-    const ownerText = document.createElement("span");
-    const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
-    ownerText.textContent = structure.owner.guildName ? `${displayName} [${structure.owner.guildName}]` : displayName;
-    ownerText.classList.add("opacity-80");
-
-    // Add structure type and level
-    const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure
-        ? structure.initialized
-          ? `(Stage ${structure.stage + 1})`
-          : "Foundation"
-        : ""
-    }`;
-
-    contentContainer.appendChild(ownerText);
-    contentContainer.appendChild(typeText);
-    labelDiv.appendChild(contentContainer);
+    const labelDiv = createStructureInfoElement(structure, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -502,6 +529,7 @@ class Structures {
     level: number = 0,
     owner: { address: bigint; ownerName: string; guildName: string },
     hasWonder: boolean,
+    isAlly: boolean,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -516,6 +544,7 @@ class Structures {
       owner,
       structureType,
       hasWonder,
+      isAlly,
     });
   }
 

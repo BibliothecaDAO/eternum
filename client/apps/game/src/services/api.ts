@@ -2,10 +2,10 @@ import { ContractAddress, HexPosition, ID, StructureType } from "@bibliothecadao
 import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
-const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+export const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
-const QUERIES = {
+export const QUERIES = {
   OTHER_STRUCTURES: `
     SELECT entity_id AS entityId, \`metadata.realm_id\` AS realmId, owner, category FROM [s1_eternum-Structure] WHERE owner != '{owner}';
   `,
@@ -26,6 +26,32 @@ const QUERIES = {
     FROM \`s1_eternum-Tile\`
     ORDER BY col, row;
   `,
+  BASIC_PLAYER_DETAILS: `
+    SELECT NULL as guild_id, owner AS player_address, NULL AS guild_name, name as player_name
+    FROM [s1_eternum-StructureOwnerStats]
+    UNION ALL
+    SELECT 
+      gm.guild_id, 
+      gm.member AS player_address, 
+      g.name as guild_name,
+      NULL as player_name
+    FROM [s1_eternum-GuildMember] gm
+    JOIN [s1_eternum-Guild] g
+      ON gm.guild_id = g.guild_id
+  `,
+
+  STRUCTURE_OWNERS: `
+    SELECT entity_id, owner FROM [s1_eternum-Structure];
+  `,
+
+  EXPLORER_OWNERS: `
+    SELECT 
+      et.explorer_id AS explorer_id,
+      s.owner AS owner_address
+    FROM [s1_eternum-ExplorerTroops] et
+    LEFT JOIN [s1_eternum-Structure] s ON et.owner = s.entity_id
+  `,
+
   HYPERSTRUCTURES: `
     SELECT 
         hyperstructure_id
