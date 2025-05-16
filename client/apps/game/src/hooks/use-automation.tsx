@@ -1,6 +1,6 @@
-import { useAutomationStore } from "@/hooks/store/use-automation-store";
+import { ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
@@ -43,33 +43,47 @@ async function fetchBalances(
  * Replace with your actual game config/data.
  */
 function getProductionRecipe(
-  resourceToProduce: ResourcesIds,
-  productionType: "resource" | "labor",
+  resourceToUse: ResourcesIds,
+  productionType: ProductionType,
 ): { inputs: { resourceId: ResourcesIds; amount: number }[]; outputAmount: number } | undefined {
   const eternumConfig = ETERNUM_CONFIG();
 
-  if (productionType === "resource") {
-    const recipeInputs = eternumConfig.resources.productionByComplexRecipe[resourceToProduce];
-    const outputAmount = eternumConfig.resources.productionByComplexRecipeOutputs[resourceToProduce];
+  if (productionType === ProductionType.ResourceToResource) {
+    const recipeInputs = eternumConfig.resources.productionByComplexRecipe[resourceToUse];
+    const outputAmount = eternumConfig.resources.productionByComplexRecipeOutputs[resourceToUse];
     if (recipeInputs && typeof outputAmount === "number") {
       return { inputs: recipeInputs.map(({ resource, amount }) => ({ resourceId: resource, amount })), outputAmount };
     }
-  } else if (productionType === "labor") {
-    const recipeInputs = eternumConfig.resources.productionBySimpleRecipe[resourceToProduce];
-    const outputAmount = eternumConfig.resources.productionBySimpleRecipeOutputs[resourceToProduce];
+  } else if (productionType === ProductionType.LaborToResource) {
+    const recipeInputs = eternumConfig.resources.productionBySimpleRecipe[resourceToUse];
+    const outputAmount = eternumConfig.resources.productionBySimpleRecipeOutputs[resourceToUse];
     if (recipeInputs && typeof outputAmount === "number") {
       return { inputs: recipeInputs.map(({ resource, amount }) => ({ resourceId: resource, amount })), outputAmount };
+    }
+  } else if (productionType === ProductionType.ResourceToLabor) {
+    // For resource to labor, the input is the selected resource, output is labor
+    const laborConfig = configManager.getLaborConfig(resourceToUse);
+    if (laborConfig && laborConfig.laborProductionPerResource) {
+      return {
+        inputs: [{ resourceId: resourceToUse, amount: 1 }],
+        outputAmount: laborConfig.laborProductionPerResource,
+      };
     }
   }
   return undefined;
 }
 
 const PROCESS_INTERVAL_MS = 1 * 60 * 1000;
+const CYCLE_BUFFER = 100;
 
 export const useAutomation = () => {
   const {
     setup: {
-      systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
+      systemCalls: {
+        burn_resource_for_resource_production,
+        burn_labor_for_resource_production,
+        burn_resource_for_labor_production,
+      },
       components,
     },
     account: { account: starknetSignerAccount },
@@ -119,23 +133,23 @@ export const useAutomation = () => {
       for (const order of realmOrders) {
         if (order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount) {
           console.log(
-            `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
+            `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
           );
           continue;
         }
 
         try {
           const currentBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
-          const recipe = getProductionRecipe(order.resourceToProduce, order.productionType);
+          const recipe = getProductionRecipe(order.resourceToUse, order.productionType);
 
           console.log(
-            `Automation: Recipe for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+            `Automation: Recipe for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
             recipe,
           );
 
           if (!recipe || recipe.outputAmount === 0) {
             console.warn(
-              `Automation: No valid recipe or zero output for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}.`,
+              `Automation: No valid recipe or zero output for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}.`,
             );
             continue;
           }
@@ -155,8 +169,11 @@ export const useAutomation = () => {
             maxPossibleCycles = 10000;
           }
 
+          // Apply cycle buffer to reduce risk of race condition
+          maxPossibleCycles = Math.max(1, maxPossibleCycles - CYCLE_BUFFER);
+
           console.log(
-            `Automation: Max possible cycles for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+            `Automation: Max possible cycles for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
             maxPossibleCycles,
           );
 
@@ -170,7 +187,7 @@ export const useAutomation = () => {
             const remainingAmountToProduce = order.maxAmount - order.producedAmount;
 
             console.log(
-              `Automation: Remaining amount to produce for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              `Automation: Remaining amount to produce for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
               remainingAmountToProduce,
             );
             if (remainingAmountToProduce <= 0) continue;
@@ -179,7 +196,7 @@ export const useAutomation = () => {
             cyclesToRun = Math.min(cyclesToRun, cyclesForRemainingAmount);
 
             console.log(
-              `Automation: Cycles to run for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              `Automation: Cycles to run for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
               cyclesToRun,
             );
           }
@@ -200,44 +217,65 @@ export const useAutomation = () => {
           let producedThisCycle = 0;
           let systemCallToMake = null;
 
-          if (order.productionType === "resource") {
+          if (order.productionType === ProductionType.ResourceToResource) {
             const calldata = {
               ...baseCalldata,
               production_cycles: [cyclesToRun],
-              produced_resource_types: [order.resourceToProduce],
+              produced_resource_types: [order.resourceToUse],
             };
             console.log(
-              `Automation: Calldata for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
               calldata,
             );
             systemCallToMake = () => burn_resource_for_resource_production(calldata);
             producedThisCycle = cyclesToRun * recipe.outputAmount;
-          } else if (order.productionType === "labor") {
+          } else if (order.productionType === ProductionType.LaborToResource) {
             const calldata = {
               ...baseCalldata,
               production_cycles: [cyclesToRun],
-              produced_resource_types: [order.resourceToProduce],
+              produced_resource_types: [order.resourceToUse],
             };
             console.log(
-              `Automation: Calldata for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
               calldata,
             );
             systemCallToMake = () => burn_labor_for_resource_production(calldata);
+            producedThisCycle = cyclesToRun * recipe.outputAmount;
+          } else if (order.productionType === ProductionType.ResourceToLabor) {
+            const inputAmount = recipe.inputs[0].amount;
+            const totalToSpend = cyclesToRun * inputAmount;
+            const calldata = {
+              signer: starknetSignerAccount as StarknetAccount,
+              resource_types: [order.resourceToUse],
+              resource_amounts: [multiplyByPrecision(totalToSpend)],
+              entity_id: realmIdNumberForSyscall,
+            };
+            console.log(
+              `Automation: Calldata for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
+              calldata,
+            );
+            systemCallToMake = () => burn_resource_for_labor_production(calldata);
             producedThisCycle = cyclesToRun * recipe.outputAmount;
           }
 
           if (systemCallToMake) {
             console.log(
-              `Automation: Plan to execute ${order.productionType} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}, order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}). Calldata `,
+              `Automation: Plan to execute ${order.productionType} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}). Calldata `,
             );
             await systemCallToMake(); // UNCOMMENT FOR REAL TRANSACTION
             console.log(
-              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${ResourcesIds[order.resourceToProduce]}.`,
+              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${ResourcesIds[order.resourceToUse]}.`,
             );
             updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
-            toast.success(
-              `Automation: ${order.productionType}. Would produce ${producedThisCycle.toLocaleString()} of ${ResourcesIds[order.resourceToProduce]} on realm ${order?.realmName}.`,
-            );
+            if (order.productionType === ProductionType.ResourceToLabor) {
+              toast.success(
+                `Automation: ${order.productionType}. Produced ${producedThisCycle.toLocaleString()} labor from ${ResourcesIds[order.resourceToUse]} on realm ${order?.realmName}.`,
+              );
+            } else {
+              toast.success(
+                `Automation: ${order.productionType}. Produced ${producedThisCycle.toLocaleString()} of ${ResourcesIds[order.resourceToUse]} on realm ${order?.realmName}.`,
+              );
+            }
           } else {
             console.warn(
               `Automation: No system call for order ${order.id} (type ${order.productionType}) in realm ${order?.realmName}.`,
@@ -245,7 +283,7 @@ export const useAutomation = () => {
           }
         } catch (error) {
           console.error(
-            `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToProduce]} in realm ${order.realmEntityId}:`,
+            `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}:`,
             error,
           );
         }

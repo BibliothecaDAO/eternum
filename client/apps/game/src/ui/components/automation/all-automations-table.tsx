@@ -1,4 +1,4 @@
-import { AutomationOrder, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { AutomationOrder, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -60,16 +60,16 @@ export const AllAutomationsTable: React.FC = () => {
   if (allOrders.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Button onClick={() => toggleModal(<ProductionModal />)}>Add Automation Order</Button>
+        <Button onClick={() => toggleModal(<ProductionModal />)}>Add Automation</Button>
       </div>
     );
   }
 
   return (
     <div className=" ">
-      <h4 className="mb-2 font-bold">Automation Orders</h4>
+      <h4 className="mb-2 font-bold">Automation</h4>
 
-      <Button onClick={() => toggleModal(<ProductionModal />)}>Add Automation Order</Button>
+      <Button onClick={() => toggleModal(<ProductionModal />)}>Add Automation</Button>
 
       {/* Realm filter */}
       <div className="mb-4 flex items-center text-sm">
@@ -91,30 +91,61 @@ export const AllAutomationsTable: React.FC = () => {
       <table className="w-full text-sm text-left table-auto">
         <thead className="text-xs uppercase bg-gray-700/50 text-gold">
           <tr>
-            <th scope="col" className="px-6 py-3">
+            <th scope="col" className="px-6">
               Order
             </th>
-            <th scope="col" className="px-6 py-3">
+            <th scope="col" className="px-6">
               Progress
-            </th>
-            <th scope="col" className="px-6 py-3">
-              Actions
             </th>
           </tr>
         </thead>
         <tbody>
           {displayedOrders.map((order) => (
-            <tr key={order.id} className="border-b border-gold/30 hover:bg-gray-600/30">
+            <tr key={order.id} className="border-b border-gold/10 hover:bg-gray-600/30">
               <td className=" py-4">
                 <div className="flex items-center mb-1">
-                  <ResourceIcon resource={ResourcesIds[order.resourceToProduce]} size="sm" className="mr-2" />
-                  <span className="font-medium h4">{ResourcesIds[order.resourceToProduce]}</span>
+                  {order.productionType === ProductionType.ResourceToLabor ? (
+                    <>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      <span className="mx-1">→</span>
+                      <ResourceIcon resource={"Labor"} size="sm" className="" />
+                    </>
+                  ) : order.productionType === ProductionType.LaborToResource ? (
+                    <>
+                      <ResourceIcon resource={"Labor"} size="sm" className="" />
+                      <span className="mx-1">→</span>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                    </>
+                  ) : (
+                    <>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      {ResourcesIds[order.resourceToUse]}
+                    </>
+                  )}
                 </div>
-                <div className="text-xs bg-gold/20 p-1 rounded-md border border-gold/30">
-                  {order.realmName ?? order.realmEntityId} • Priority {order.priority} • {order.productionType}
+                <div className="text-xs bg-gold/20 px-2 py-1 rounded border border-gold/30">
+                  <div className="h4">{order.realmName ?? order.realmEntityId}</div>
+                  <div className="font-bold">Priority {order.priority}</div>
+
+                  {order.productionType === ProductionType.ResourceToLabor
+                    ? "Resource To Labor"
+                    : order.productionType === ProductionType.ResourceToResource
+                      ? "Resource To Resource"
+                      : order.productionType === ProductionType.LaborToResource
+                        ? "Labor To Resource"
+                        : order.productionType}
                 </div>
+
+                <Button
+                  onClick={() => removeOrder(order.realmEntityId, order.id)}
+                  variant="danger"
+                  size="xs"
+                  className="mt-1"
+                >
+                  Remove
+                </Button>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4 text-lg">
                 {order.producedAmount.toLocaleString()} /{" "}
                 {order.maxAmount === "infinite" ? "∞" : order.maxAmount.toLocaleString()}{" "}
                 {order.maxAmount !== "infinite" && order.maxAmount > 0 && (
@@ -122,11 +153,6 @@ export const AllAutomationsTable: React.FC = () => {
                     ({Math.floor((order.producedAmount / order.maxAmount) * 100)}% )
                   </span>
                 )}
-              </td>
-              <td className="px-6 py-4">
-                <Button onClick={() => removeOrder(order.realmEntityId, order.id)} variant="danger" size="xs">
-                  Remove
-                </Button>
               </td>
             </tr>
           ))}
