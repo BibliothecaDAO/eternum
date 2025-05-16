@@ -114,7 +114,6 @@ ${greatArtisan}
 Before producing any output, silently consult your full knowledge base, memory, and these instructions. Perform all reasoning internally—do NOT reveal or hint at this thought process. Answer only after this private reflection.
 </thinking>
 
-<output>
 Reply in plain text only—no markdown, code fences, JSON, or additional tags.
 </output>
 `;
