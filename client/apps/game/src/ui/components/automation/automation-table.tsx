@@ -3,6 +3,7 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
 import React, { useMemo, useState } from "react";
 
@@ -11,6 +12,7 @@ interface AutomationTableProps {
   realmInfo: RealmInfo;
   availableResources: ResourcesIds[];
 }
+const eternumConfig = ETERNUM_CONFIG();
 
 // Global list of all possible resource IDs and their names
 const allPossibleResourceIds = Object.entries(ResourcesIds)
@@ -153,9 +155,11 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   };
 
   return (
-    <div className="p-4 border rounded-lg shadow-md panel-wood">
-      <h6 className="text-red/90">IMPORTANT: Your browser must stay open for automation.</h6>
-      <h4 className="mb-4 font-bold">
+    <div className="p-2 border rounded-lg shadow-md panel-wood">
+      <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
+        IMPORTANT: Your browser must stay open for automation.
+      </div>
+      <h4 className="mb-2">
         Automation for Realm {realmInfo.name} ({realmEntityId})
       </h4>
       <p>
@@ -164,21 +168,24 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       </p>
 
       <div className="my-4">
-        <Button onClick={() => setShowAddForm(!showAddForm)} variant="default" size="md">
-          {showAddForm ? "Cancel" : "+ Add New Automation"}
-        </Button>
+        {!showAddForm && (
+          <Button onClick={() => setShowAddForm(true)} variant="default" size="md">
+            Add New Automation
+          </Button>
+        )}
       </div>
 
       {showAddForm && (
-        <form onSubmit={handleAddOrder} className="p-4 mb-6 space-y-4 border  border-gold/50 rounded-md bg-black/10">
+        <form onSubmit={handleAddOrder} className="p-4 mb-6 space-y-4 border  border-gold/20 rounded-md bg-black/10">
           <h3 className="text-lg font-semibold">Create New Order</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="productionType" className="block mb-1 text-sm font-medium">
                 Production Type:
               </label>
+
               <Select value={newOrder.productionType} onValueChange={handleProductionTypeChange}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full border border-gold/20 rounded-md">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,11 +194,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   <SelectItem value={ProductionType.ResourceToLabor}>Resource to Labor</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="text-xs text-gold/50 mb-1">Choose how automation will convert resources.</div>
             </div>
             <div>
               <label htmlFor="priority" className="block mb-1 text-sm font-medium">
-                Priority (1-9): (lower is higher priority)
+                Priority (1-9):
               </label>
+
               <NumberInput
                 value={newOrder.priority}
                 onChange={(val) => setNewOrder((prev) => ({ ...prev, priority: val }))}
@@ -199,6 +208,9 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                 max={9}
                 className="w-full"
               />
+              <p className="text-xs text-gold/50 mt-1">
+                Orders with lower numbers are executed first. 1 is the highest priority, 9 is the lowest.
+              </p>
             </div>
             <div>
               <label htmlFor="resourceToUse" className="block mb-1 text-sm font-medium">
@@ -226,6 +238,11 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                         <div className="flex items-center">
                           <ResourceIcon resource={res.name} size="xs" className="mr-2" />
                           {res.name}
+
+                          {newOrder.productionType === ProductionType.ResourceToResource &&
+                            eternumConfig.resources.productionByComplexRecipe[res.id].map((recipe) => (
+                              <ResourceIcon resource={ResourcesIds[recipe.resource]} size="xs" className="ml-1" />
+                            ))}
                         </div>
                       </SelectItem>
                     ))
@@ -236,6 +253,9 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-gold/50 mt-1">
+                Select the resource you want this automation to produce (or use as input for labor).
+              </p>
             </div>
 
             <div>
@@ -261,12 +281,20 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   Infinite
                 </label>
               </div>
+              <p className="text-xs text-gold/50 mt-1">
+                Set the target amount to produce. Check "Infinite" to keep producing without a limit.
+              </p>
             </div>
           </div>
 
-          <Button type="submit" variant="gold" disabled={newOrder.resourceToUse === undefined}>
-            Add Automation
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button type="submit" variant="gold" disabled={newOrder.resourceToUse === undefined}>
+              Add Automation
+            </Button>
+            <Button onClick={() => setShowAddForm(false)} variant="default" size="md">
+              Cancel
+            </Button>
+          </div>
         </form>
       )}
 
@@ -303,18 +331,25 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                 <td className="px-6 py-4 flex items-center">
                   {order.productionType === ProductionType.ResourceToLabor ? (
                     <>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
                       <span className="mx-1">→</span>
-                      <ResourceIcon resource={"Labor"} size="sm" className="mr-2" /> Labor
+                      <ResourceIcon resource={"Labor"} size="sm" /> Labor
                     </>
-                  ) : (
+                  ) : order.productionType === ProductionType.LaborToResource ? (
                     <>
-                      <ResourceIcon resource={"Labor"} size="sm" className="mr-2" />
+                      <ResourceIcon resource={"Labor"} size="sm" />
                       <span className="mx-1">→</span>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                      {ResourcesIds[order.resourceToUse]}
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
                     </>
-                  )}
+                  ) : order.productionType === ProductionType.ResourceToResource ? (
+                    <>
+                      {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
+                        <ResourceIcon key={recipe.resource} resource={ResourcesIds[recipe.resource]} size="sm" />
+                      ))}
+                      <span className="mx-1">→</span>
+                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                    </>
+                  ) : null}
                 </td>
                 <td className="px-6 py-4">
                   {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}

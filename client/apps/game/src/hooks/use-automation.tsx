@@ -1,4 +1,5 @@
 import { ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -73,7 +74,7 @@ function getProductionRecipe(
   return undefined;
 }
 
-const PROCESS_INTERVAL_MS = 1 * 60 * 1000;
+const PROCESS_INTERVAL_MS = 10 * 60 * 1000;
 const CYCLE_BUFFER = 100;
 
 export const useAutomation = () => {
@@ -155,6 +156,7 @@ export const useAutomation = () => {
           }
 
           let maxPossibleCycles = Infinity;
+          let insufficientBalance = false;
           if (recipe.inputs.length > 0) {
             for (const input of recipe.inputs) {
               if (input.amount <= 0) continue;
@@ -163,11 +165,20 @@ export const useAutomation = () => {
                 `Automation: Balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}:`,
                 balance,
               );
+              if (balance < multiplyByPrecision(input.amount)) {
+                console.warn(
+                  `Automation: Insufficient balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}: required ${multiplyByPrecision(input.amount)}, available ${balance}. Skipping order.`,
+                );
+                insufficientBalance = true;
+                break;
+              }
               maxPossibleCycles = Math.min(maxPossibleCycles, Math.floor(balance / multiplyByPrecision(input.amount)));
             }
           } else {
             maxPossibleCycles = 10000;
           }
+
+          if (insufficientBalance) continue;
 
           // Apply cycle buffer to reduce risk of race condition
           maxPossibleCycles = Math.max(1, maxPossibleCycles - CYCLE_BUFFER);
@@ -269,11 +280,27 @@ export const useAutomation = () => {
             updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
             if (order.productionType === ProductionType.ResourceToLabor) {
               toast.success(
-                `Automation: ${order.productionType}. Produced ${producedThisCycle.toLocaleString()} labor from ${ResourcesIds[order.resourceToUse]} on realm ${order?.realmName}.`,
+                <div>
+                  Automation: $
+                  {order.productionType === ProductionType.ResourceToLabor
+                    ? "Resource To Labor"
+                    : order.productionType === ProductionType.ResourceToResource
+                      ? "Resource To Resource"
+                      : order.productionType === ProductionType.LaborToResource
+                        ? "Labor To Resource"
+                        : order.productionType}
+                  . Produced ${producedThisCycle.toLocaleString()} labor from $
+                  {<ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />} on realm ${order?.realmName}
+                  ,
+                </div>,
               );
             } else {
               toast.success(
-                `Automation: ${order.productionType}. Produced ${producedThisCycle.toLocaleString()} of ${ResourcesIds[order.resourceToUse]} on realm ${order?.realmName}.`,
+                <div>
+                  Automation: Resource To Labor. Produced ${producedThisCycle.toLocaleString()} of
+                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" /> on
+                  realm ${order?.realmName}.
+                </div>,
               );
             }
           } else {
