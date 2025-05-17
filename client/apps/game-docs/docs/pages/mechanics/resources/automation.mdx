@@ -1,0 +1,91 @@
+# Resource Automation
+
+Resource automation allows players to set up continuous production processes within their realms, converting existing resources or labor into other desired resources. This system helps manage resource generation efficiently without constant manual intervention.
+
+## Overview
+
+The automation system works by processing "orders" that you define for each of your realms. These orders specify what resource you want to produce (or what resource you want to convert to labor), the method of production, a target amount, and a priority.
+
+**Key Features:**
+
+*   **Order-Based**: Define specific production tasks.
+*   **Priority System**: Control the sequence of execution for multiple orders.
+*   **Multiple Production Types**: Choose how resources are generated.
+*   **Realm-Specific**: Automation is configured on a per-realm basis.
+*   **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to function.
+
+## How It Works
+
+The automation system periodically checks and processes active orders for each realm.
+
+1.  **Processing Interval**: Orders are evaluated approximately every 10 minutes.
+2.  **Order Prioritization**: For each realm, orders are sorted by their priority number (1 being the highest).
+3.  **Balance Check**: Before executing an order, the system checks if the realm has sufficient input resources or labor as per the recipe. If not, the order is skipped for that cycle.
+4.  **Recipe-Based Production**: Production follows predefined recipes from the game's configuration, detailing the inputs and outputs.
+5.  **Cycle Calculation**:
+    *   The system determines the maximum number of production cycles possible based on available inputs.
+    *   If a target amount is set, production will not exceed this amount.
+6.  **Transaction**: If all conditions are met, a blockchain transaction is initiated to perform the production.
+
+## Production Types
+
+There are three types of production automation:
+
+1.  **Standard (Resource-to-Resource)**:
+    *   Converts one or more input resources into a different output resource.
+    *   Example: Using Wood and Stone to produce Tools.
+2.  **Simple (Labor-to-Resource)**:
+    *   Utilizes Labor from the realm to produce a specific resource.
+    *   Example: Using Labor to harvest Food.
+3.  **Resource-to-Labor**:
+    *   Converts a specified resource into Labor for the realm.
+    *   Example: Burning Food to generate Labor.
+
+## Managing Automation Orders (UI)
+
+You can manage automation orders through the "Automation" tab within a Realm's interface.
+
+### Adding a New Order
+
+1.  Click the "Add New Automation" button.
+2.  Configure the following:
+    *   **Production Type**:
+        *   `Standard (Resource-based)`
+        *   `Simple (Labor-based)`
+        *   `Resource to Labor`
+    *   **Priority (1-9)**:
+        *   Set the execution priority. `1` is the highest priority, `9` is the lowest. Orders with lower numbers are processed first.
+    *   **Resource to Produce / Resource Input for Labor**:
+        *   If "Resource to Labor" is selected, choose the resource you want to consume to generate Labor.
+        *   Otherwise, select the resource you want the automation to produce. (Note: Certain resources like Fish and Wheat cannot be automated for direct production via this UI).
+        *   The UI may show the input resources required for a "Resource-to-Resource" recipe.
+    *   **Target Amount / Target Labor Amount**:
+        *   Set the total quantity of the resource (or Labor) you want to produce.
+        *   **Infinite**: Check this box if you want the order to run continuously without a specific target cap.
+3.  Click "Add Automation".
+
+### Viewing Orders
+
+Existing orders are displayed in a table with the following columns:
+
+*   **Priority**: The order's priority.
+*   **Resource**:
+    *   For "Resource to Labor": Shows `Input Resource -> Labor`.
+    *   For "Labor to Resource": Shows `Labor -> Output Resource`.
+    *   For "Resource to Resource": Shows `Input Resources -> Output Resource`.
+    *   Icons for each resource are displayed.
+*   **Target**: The target amount (or "Infinite").
+*   **Produced**: The amount produced by this order so far.
+*   **Type**: The production type (e.g., "Resource To Resource", "Labor To Resource", "Resource To Labor").
+*   **Actions**: Allows you to "Remove" the order.
+
+### Removing an Order
+
+Click the "Remove" button next to an order in the table to delete it.
+
+## Important Considerations
+
+*   **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser, automation will stop.
+*   **Resource Availability**: Orders will only execute if the required input resources are available in the realm at the time of processing.
+*   **Transaction Costs**: Each successful automation cycle that results in production will involve a blockchain transaction, which incurs network transaction fees.
+*   **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay before an order is executed or its results are visible.
