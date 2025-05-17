@@ -10,9 +10,12 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-
-const neutralColor = new THREE.Color(0xffffff);
-const myColor = new THREE.Color("lime");
+import {
+  createContentContainer,
+  createLabelBase,
+  createOwnerDisplayElement,
+  transitionManager,
+} from "../utils/label-utils";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -34,6 +37,66 @@ const ICONS = {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
+  ALLY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Realm]: "/images/labels/allies_realm.png",
+  } as Record<StructureType, string>,
+};
+
+// Create structure info label
+const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView) => {
+  // Create label div using the shared base
+  const labelDiv = createLabelBase({
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+  });
+
+  // Create icon container
+  const iconContainer = document.createElement("div");
+  iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
+
+  // Select appropriate icon
+  let iconPath = ICONS.STRUCTURES[structure.structureType];
+  if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
+    iconPath = structure.isMine
+      ? ICONS.MY_STRUCTURES[structure.structureType]
+      : structure.isAlly
+        ? ICONS.ALLY_STRUCTURES[structure.structureType]
+        : ICONS.STRUCTURES[structure.structureType];
+  }
+
+  // Create and set icon image
+  const iconImg = document.createElement("img");
+  iconImg.src = iconPath;
+  iconImg.classList.add("w-full", "h-full", "object-contain");
+  iconContainer.appendChild(iconImg);
+  labelDiv.appendChild(iconContainer);
+
+  // Create content container with transition using shared utility
+  const contentContainer = createContentContainer(cameraView);
+
+  // Add owner display using shared component
+  const ownerText = createOwnerDisplayElement({
+    owner: structure.owner,
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+    cameraView,
+  });
+  contentContainer.appendChild(ownerText);
+
+  // Add structure type and level
+  const typeText = document.createElement("strong");
+  typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+    structure.structureType === StructureType.Hyperstructure
+      ? structure.initialized
+        ? `(Stage ${structure.stage + 1})`
+        : "Foundation"
+      : ""
+  }`;
+  contentContainer.appendChild(typeText);
+
+  labelDiv.appendChild(contentContainer);
+  return labelDiv;
 };
 
 export class StructureManager {
@@ -79,19 +142,59 @@ export class StructureManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
+
+    // If we're moving away from Medium view, clean up transition state
+    if (this.currentCameraView === CameraView.Medium) {
+      transitionManager.clearMediumViewTransition();
+    }
+
     this.currentCameraView = view;
+
+    // If we're switching to Medium view, store timestamp
+    if (view === CameraView.Medium) {
+      transitionManager.setMediumViewTransition();
+    }
 
     // Update all existing labels to reflect the new view
     this.entityIdLabels.forEach((label, entityId) => {
       if (label.element) {
         const contentContainer = label.element.querySelector(".flex.flex-col");
         if (contentContainer) {
+          // Get or create a container ID for tracking timeouts
+          let containerId = (contentContainer as HTMLElement).dataset.containerId;
+          if (!containerId) {
+            containerId = `structure_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
+            (contentContainer as HTMLElement).dataset.containerId = containerId;
+          }
+
           if (view === CameraView.Far) {
+            // For Far view, always collapse immediately
             contentContainer.classList.add("max-w-0", "ml-0");
             contentContainer.classList.remove("max-w-[250px]", "ml-2");
-          } else {
+            transitionManager.clearTimeout(containerId);
+          } else if (view === CameraView.Close) {
+            // For Close view, always expand and never collapse
             contentContainer.classList.remove("max-w-0", "ml-0");
             contentContainer.classList.add("max-w-[250px]", "ml-2");
+            transitionManager.clearTimeout(containerId);
+          } else if (view === CameraView.Medium) {
+            // For Medium view, expand initially
+            contentContainer.classList.remove("max-w-0", "ml-0");
+            contentContainer.classList.add("max-w-[250px]", "ml-2");
+
+            // And set up timeout to collapse after 2 seconds
+            transitionManager.setMediumViewTransition(containerId);
+            transitionManager.setLabelTimeout(
+              () => {
+                if (contentContainer.isConnected) {
+                  contentContainer.classList.remove("max-w-[250px]", "ml-2");
+                  contentContainer.classList.add("max-w-0", "ml-0");
+                  transitionManager.clearMediumViewTransition(containerId);
+                }
+              },
+              2000,
+              containerId,
+            );
           }
         }
       }
@@ -188,6 +291,7 @@ export class StructureManager {
         guildName: owner.guildName || "",
       },
       hasWonder,
+      update.isAlly,
     );
 
     // Update the visible structures if this structure is in the current chunk
@@ -350,85 +454,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    const labelDiv = document.createElement("div");
-    labelDiv.classList.add(
-      "rounded-md",
-      "bg-brown/50",
-      "hover:bg-brown/90",
-      "pointer-events-auto",
-      "h-10",
-      structure.isMine ? "text-order-brilliance" : "text-gold",
-      "p-0.5",
-      "-translate-x-1/2",
-      "text-xxs",
-      "flex",
-      "items-center",
-      "group",
-    );
-
-    // Create icon container
-    const iconContainer = document.createElement("div");
-    iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
-
-    // Select appropriate icon
-    let iconPath = ICONS.STRUCTURES[structure.structureType];
-    if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
-      if (structure.hasWonder) {
-        iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
-      } else {
-        iconPath = structure.isMine
-          ? ICONS.MY_STRUCTURES[structure.structureType]
-          : ICONS.STRUCTURES[structure.structureType];
-      }
-    }
-
-    // Create and set icon image
-    const iconImg = document.createElement("img");
-    iconImg.src = iconPath;
-    iconImg.classList.add("w-full", "h-full", "object-contain");
-    iconContainer.appendChild(iconImg);
-    labelDiv.appendChild(iconContainer);
-
-    // Create content container with transition
-    const contentContainer = document.createElement("div");
-
-    // Add empty div with w-2 for spacing
-    const spacerDiv = document.createElement("div");
-    spacerDiv.classList.add("w-2");
-    contentContainer.appendChild(spacerDiv);
-
-    contentContainer.classList.add(
-      "flex",
-      "flex-col",
-      "transition-width",
-      "duration-700",
-      "ease-in-out",
-      "overflow-hidden",
-      "whitespace-nowrap",
-      "group-hover:max-w-[250px]",
-      "group-hover:ml-2",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
-      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
-    );
-
-    const ownerText = document.createElement("span");
-    const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
-    ownerText.textContent = structure.owner.guildName ? `${displayName} [${structure.owner.guildName}]` : displayName;
-    ownerText.classList.add("opacity-80");
-
-    // Add structure type and level
-    const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure
-        ? structure.initialized
-          ? `(Stage ${structure.stage + 1})`
-          : "Foundation"
-        : ""
-    }`;
-
-    contentContainer.appendChild(ownerText);
-    contentContainer.appendChild(typeText);
-    labelDiv.appendChild(contentContainer);
+    const labelDiv = createStructureInfoElement(structure, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -502,6 +528,7 @@ class Structures {
     level: number = 0,
     owner: { address: bigint; ownerName: string; guildName: string },
     hasWonder: boolean,
+    isAlly: boolean,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -516,6 +543,7 @@ class Structures {
       owner,
       structureType,
       hasWonder,
+      isAlly,
     });
   }
 

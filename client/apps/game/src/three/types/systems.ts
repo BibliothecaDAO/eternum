@@ -18,6 +18,7 @@ export type ArmySystemUpdate = {
   troopTier: TroopTier;
   owner: { address: bigint; ownerName: string; guildName: string };
   isDaydreamsAgent: boolean;
+  isAlly: boolean;
 };
 
 export type StructureSystemUpdate = {
@@ -27,6 +28,7 @@ export type StructureSystemUpdate = {
   stage: StructureProgress;
   initialized: boolean;
   level: number;
+  isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   hasWonder: boolean;
 };

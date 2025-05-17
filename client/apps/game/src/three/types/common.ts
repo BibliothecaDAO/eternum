@@ -25,6 +25,7 @@ export interface StructureInfo {
   initialized: boolean;
   level: number;
   isMine: boolean;
+  isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
@@ -35,6 +36,7 @@ export interface ArmyData {
   matrixIndex: number;
   hexCoords: Position;
   isMine: boolean;
+  isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   order: string;
   color: string;

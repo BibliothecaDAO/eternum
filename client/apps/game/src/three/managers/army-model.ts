@@ -1,4 +1,5 @@
 import { gltfLoader } from "@/three/helpers/utils";
+import { CameraView } from "@/three/scenes/hexagon-scene";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
@@ -15,6 +16,7 @@ import {
 } from "../constants/army.constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army.types";
 import { getHexForWorldPosition } from "../utils";
+import { transitionManager } from "../utils/label-utils";
 
 export class ArmyModel {
   // Core properties
@@ -29,6 +31,7 @@ export class ArmyModel {
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
   private readonly labelsGroup: THREE.Group;
+  private currentCameraView: CameraView = CameraView.Medium;
 
   // Reusable objects for matrix operations
   private readonly dummyMatrix: THREE.Matrix4 = new THREE.Matrix4();
@@ -54,11 +57,12 @@ export class ArmyModel {
   // agent
   private isAgent: boolean = false;
 
-  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
+  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group, cameraView?: CameraView) {
     this.scene = scene;
     this.dummyObject = new THREE.Object3D();
     this.loadPromise = this.loadModels();
     this.labelsGroup = labelsGroup || new THREE.Group();
+    this.currentCameraView = cameraView || CameraView.Medium;
 
     // Initialize animation arrays
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
@@ -627,6 +631,14 @@ export class ArmyModel {
     this.isAgent = isAgent;
   }
 
+  /**
+   * Updates the current camera view
+   * @param view - The new camera view
+   */
+  public setCurrentCameraView(view: CameraView): void {
+    this.currentCameraView = view;
+  }
+
   // Label Management Methods
   public addLabel(entityId: number, label: CSS2DObject): void {
     this.removeLabel(entityId);
@@ -650,12 +662,47 @@ export class ArmyModel {
     if (labelData?.label.element) {
       const textContainer = labelData.label.element.querySelector(".flex.flex-col");
       if (textContainer) {
+        // Get the container's unique ID or generate one if it doesn't exist
+        let containerId = (textContainer as HTMLElement).dataset.containerId;
+        if (!containerId) {
+          containerId = `army_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
+          (textContainer as HTMLElement).dataset.containerId = containerId;
+        }
+
         if (isCompact) {
+          // For Far view (isCompact = true), always collapse immediately
           textContainer.classList.add("max-w-0", "ml-0");
           textContainer.classList.remove("max-w-[250px]", "ml-2");
+          // Clear any existing timeouts
+          transitionManager.clearTimeout(containerId);
         } else {
+          // For Medium and Close views, expand immediately
           textContainer.classList.remove("max-w-0", "ml-0");
           textContainer.classList.add("max-w-[250px]", "ml-2");
+
+          // Only add timeout for Medium view, not for Close view
+          if (this.currentCameraView === CameraView.Medium) {
+            // Store timestamp for Medium view transition
+            transitionManager.setMediumViewTransition(containerId);
+
+            // Use the managed timeout
+            transitionManager.setLabelTimeout(
+              () => {
+                // Only apply the transition if the element is still in the DOM
+                if (textContainer.isConnected) {
+                  textContainer.classList.remove("max-w-[250px]", "ml-2");
+                  textContainer.classList.add("max-w-0", "ml-0");
+                  // Clear the transition state
+                  transitionManager.clearMediumViewTransition(containerId);
+                }
+              },
+              2000,
+              containerId,
+            );
+          } else if (this.currentCameraView === CameraView.Close) {
+            // For Close view, ensure we cancel any existing timeouts
+            transitionManager.clearTimeout(containerId);
+          }
         }
       }
     }

@@ -13,15 +13,17 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import {
+  createContentContainer,
+  createLabelBase,
+  createOwnerDisplayElement,
+  LABEL_STYLES,
+  TIERS_TO_STARS,
+} from "../utils/label-utils";
 import { FXManager } from "./fx-manager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
-const TIERS_TO_STARS = {
-  [TroopTier.T1]: "⭐",
-  [TroopTier.T2]: "⭐⭐",
-  [TroopTier.T3]: "⭐⭐⭐",
-};
 
 export class ArmyManager {
   private scene: THREE.Scene;
@@ -45,14 +47,14 @@ export class ArmyManager {
     hexagonScene?: HexagonScene,
   ) {
     this.scene = scene;
-    this.armyModel = new ArmyModel(scene, labelsGroup);
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
-    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = new FXManager(scene, 1);
 
     // Subscribe to camera view changes if scene is provided
@@ -85,6 +87,7 @@ export class ArmyManager {
               1,
               TroopType.Paladin,
               TroopTier.T1,
+              false,
               false,
             );
           },
@@ -153,7 +156,7 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent);
+      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent, update.isAlly);
     }
     return false;
   }
@@ -255,6 +258,7 @@ export class ArmyManager {
         color: army.color,
         matrixIndex: index,
         owner: army.owner,
+        isAlly: army.isAlly,
         order: army.order,
         category: army.category,
         tier: army.tier,
@@ -272,6 +276,7 @@ export class ArmyManager {
     category: TroopType,
     tier: TroopTier,
     isDaydreamsAgent: boolean,
+    isAlly: boolean,
   ) {
     if (this.armies.has(entityId)) return;
 
@@ -282,24 +287,33 @@ export class ArmyManager {
 
     const orderData = orders.find((_order) => _order.orderId === order);
     const isMine = isAddressEqualToAccount(owner.address);
+
+    // Determine the color based on ownership (consistent with structure labels)
+    let color;
+    if (isDaydreamsAgent) {
+      color = COLORS.SELECTED;
+    } else if (isMine) {
+      color = LABEL_STYLES.MINE.textColor;
+    } else if (isAlly) {
+      color = LABEL_STYLES.ALLY.textColor;
+    } else {
+      color = LABEL_STYLES.ENEMY.textColor;
+    }
+
     this.armies.set(entityId, {
       entityId,
       matrixIndex: this.armies.size - 1,
       hexCoords,
       isMine,
+      isAlly,
       owner,
-      color: this.getColorForArmy({ isMine, isDaydreamsAgent }),
+      color,
       order: orderData?.orderName || "",
       category,
       tier,
       isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
-  }
-
-  public getColorForArmy(army: { isMine: boolean; isDaydreamsAgent: boolean }) {
-    if (army.isDaydreamsAgent) return COLORS.SELECTED;
-    return army.isMine ? COLORS.MINE : COLORS.SETTLED;
   }
 
   public moveArmy(
@@ -385,60 +399,43 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
-    const labelDiv = document.createElement("div");
-    labelDiv.classList.add(
-      "rounded-md",
-      "bg-brown/50",
-      "hover:bg-brown/90",
-      "pointer-events-auto",
-      army.isMine ? "text-order-brilliance" : "text-gold",
-      "p-0.5",
-      "-translate-x-1/2",
-      "text-xxs",
-      "h-10",
-      "flex",
-      "items-center",
-      "group",
-    );
+    // Create base label using shared utility
+    const labelDiv = createLabelBase({
+      isMine: army.isMine,
+      isAlly: army.isAlly,
+      isDaydreamsAgent: army.isDaydreamsAgent,
+      // No need to specify textColor - it will use LABEL_STYLES from our utility
+    });
+
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       e.stopPropagation();
     });
 
+    // Add army icon
     const img = document.createElement("img");
     img.src = army.isDaydreamsAgent
       ? "/images/logos/daydreams.png"
-      : `/images/labels/${army.isMine ? "army" : "enemy_army"}.png`;
+      : `/images/labels/${army.isMine ? "army" : army.isAlly ? "allies_army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
-    // Create text container with transition
-    const textContainer = document.createElement("div");
+    // Create text container with transition using shared utility
+    const textContainer = createContentContainer(this.currentCameraView);
 
-    const spacerDiv = document.createElement("div");
-    spacerDiv.classList.add("w-2");
-    textContainer.appendChild(spacerDiv);
+    // Add owner information using shared component
+    const line1 = createOwnerDisplayElement({
+      owner: army.owner,
+      isMine: army.isMine,
+      isAlly: army.isAlly,
+      cameraView: this.currentCameraView,
+      color: army.color, // Use the color directly from the army data
+      isDaydreamsAgent: army.isDaydreamsAgent,
+    });
 
-    textContainer.classList.add(
-      "flex",
-      "flex-col",
-      "transition-width",
-      "duration-700",
-      "ease-in-out",
-      "overflow-hidden",
-      "whitespace-nowrap",
-      "group-hover:max-w-[250px]",
-      "group-hover:ml-2",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
-      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
-    );
-
-    const line1 = document.createElement("span");
-    line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
-    line1.style.color = army.isDaydreamsAgent ? "inherit" : army.color;
+    // Add troop type information with consistent styling
     const line2 = document.createElement("strong");
-
     if (army.isDaydreamsAgent) {
       line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
     } else {
@@ -486,6 +483,9 @@ export class ArmyManager {
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
     this.currentCameraView = view;
+
+    // Update the ArmyModel's camera view
+    this.armyModel.setCurrentCameraView(view);
 
     // Update all existing labels to reflect the new view
     this.visibleArmies.forEach((army) => {
