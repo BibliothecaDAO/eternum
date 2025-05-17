@@ -25,12 +25,16 @@ interface AutomationState {
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
   getOrdersForRealm: (realmEntityId: string) => AutomationOrder[];
+  removeAllOrders: (realmEntityId?: string) => void; // realmEntityId is optional
+  nextRunTimestamp: number | null; // Timestamp for the next automation run
+  setNextRunTimestamp: (timestamp: number) => void; // Action to set the next run timestamp
 }
 
 export const useAutomationStore = create<AutomationState>()(
   persist(
     (set, get) => ({
       ordersByRealm: {},
+      nextRunTimestamp: null, // Initialize nextRunTimestamp
       addOrder: (newOrderData) => {
         const newOrder: AutomationOrder = {
           ...newOrderData,
@@ -64,6 +68,17 @@ export const useAutomationStore = create<AutomationState>()(
             },
           };
         }),
+      removeAllOrders: (realmEntityId?: string) =>
+        set((state) => {
+          if (realmEntityId && realmEntityId !== "all") {
+            // Remove orders for a specific realm
+            const { [realmEntityId]: _, ...remainingRealms } = state.ordersByRealm;
+            return { ordersByRealm: remainingRealms };
+          } else {
+            // Remove all orders from all realms
+            return { ordersByRealm: {} };
+          }
+        }),
       updateOrderProducedAmount: (realmEntityId, orderId, producedThisCycle) =>
         set((state) => ({
           ordersByRealm: {
@@ -73,6 +88,7 @@ export const useAutomationStore = create<AutomationState>()(
             ),
           },
         })),
+      setNextRunTimestamp: (timestamp) => set({ nextRunTimestamp: timestamp }), // Implement setNextRunTimestamp
       getOrdersForRealm: (realmEntityId: string) => {
         return get().ordersByRealm[realmEntityId] || [];
       },

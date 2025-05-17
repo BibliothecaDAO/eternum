@@ -157,20 +157,25 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   return (
     <div className="p-2 border rounded-lg shadow-md panel-wood">
       <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        IMPORTANT: Your browser must stay open for automation.
+        IMPORTANT: Your browser must stay open for automation. <br />
       </div>
       <h4 className="mb-2">
-        Automation for Realm {realmInfo.name} ({realmEntityId})
+        [BETA] Automation for Realm {realmInfo.name} ({realmEntityId})
       </h4>
-      <p>
-        This allows you to select the quantity you want to produce. The automation will attempt to fulfill the orders in
-        priority until the target amount is reached. This will activate every{" "}
-        <span className="font-bold">10 minutes</span>.
-      </p>
+      <ul className="list-disc pl-4">
+        <li>
+          Automation will fulfill orders in priority order until target amount is reached. This will increase the
+          balance of the realm, and may cause resource loss if you have no space to store them. Read documentation for
+          more information.
+        </li>
+        <li>
+          Process activates every <span className="font-bold">10 minutes</span> automatically.
+        </li>
+      </ul>
 
       <div className="my-4">
         {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)} variant="default" size="md">
+          <Button onClick={() => setShowAddForm(true)} variant="default" size="xs">
             Add New Automation
           </Button>
         )}
