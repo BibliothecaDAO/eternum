@@ -148,11 +148,29 @@ export const ResourceChip = ({
                 </span>
                 ) will be saved; any excess&nbsp;(
                 <span className="text-red">
-                  MAX of{" "}
-                  {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   kg
                 </span>
                 ) will be permanently burned.
+              </p>
+              <p>
+                {
+                  // Calculate the net result of claiming all produced weight against remaining storage.
+                  storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
+                    <span className="text-green">All will fit if used right now.</span>
+                  ) : (
+                    <>
+                      <span className="text-red">
+                        {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
+                          undefined,
+                          { maximumFractionDigits: 0 },
+                        )}
+                        kg&nbsp;
+                      </span>
+                      will be burnt if you claim it all.
+                    </>
+                  )
+                }
               </p>
             </>
           )}

@@ -6,7 +6,6 @@ import { AllResourceArrivals } from "@/ui/components/trading/resource-arrivals";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
-import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -35,6 +34,9 @@ export const LeftNavigationModule = memo(() => {
     account: { account },
     setup: { components },
   } = useDojo();
+
+  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
+  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -92,7 +94,6 @@ export const LeftNavigationModule = memo(() => {
               size={"xl"}
               onClick={() => setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView)}
             />
-            <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
           </div>
         ),
       },
@@ -129,15 +130,31 @@ export const LeftNavigationModule = memo(() => {
       {
         name: MenuEnum.resourceArrivals,
         button: (
-          <CircleButton
-            disabled={disableButtons}
-            image={BuildingThumbs.trade}
-            tooltipLocation="top"
-            label="Resource Arrivals"
-            active={view === LeftView.ResourceArrivals}
-            size={"xl"}
-            onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
-          />
+          <div className="relative">
+            <CircleButton
+              disabled={disableButtons}
+              image={BuildingThumbs.trade}
+              tooltipLocation="top"
+              label="Resource Arrivals"
+              active={view === LeftView.ResourceArrivals}
+              size={"xl"}
+              onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
+            />
+            {(arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0) && (
+              <div className="absolute -top-0.5 -right-0.5 flex items-center gap-0.5">
+                {arrivedArrivalsNumber > 0 && (
+                  <div className="bg-emerald-900/70 text-emerald-400 text-[10px] rounded-full w-4 h-4 flex items-center justify-center shadow-sm border border-emerald-700/70 animate-pulse">
+                    {arrivedArrivalsNumber}
+                  </div>
+                )}
+                {pendingArrivalsNumber > 0 && (
+                  <div className="bg-amber-900/70 text-amber-400 text-[10px] rounded-full w-4 h-4 flex items-center justify-center shadow-sm border border-amber-700/70">
+                    {pendingArrivalsNumber}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ),
       },
       {
@@ -198,7 +215,16 @@ export const LeftNavigationModule = memo(() => {
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealmOrVillage]);
+  }, [
+    view,
+    openedPopups,
+    structureEntityId,
+    isMapView,
+    disableButtons,
+    isRealmOrVillage,
+    arrivedArrivalsNumber,
+    pendingArrivalsNumber,
+  ]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

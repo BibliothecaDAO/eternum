@@ -106,10 +106,16 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
     });
   };
 
-  const joinGuild = useCallback((guildEntityId: ContractAddress) => {
+  const joinGuild = async (guildEntityId: ContractAddress) => {
     setIsLoading(true);
-    join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
-  }, []);
+    try {
+      await join_guild({ guild_entity_id: guildEntityId, signer: account });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const removePlayerFromWhitelist = (address: ContractAddress) => {
     setIsLoading(true);

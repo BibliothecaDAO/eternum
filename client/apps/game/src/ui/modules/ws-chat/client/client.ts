@@ -51,7 +51,7 @@ class ChatClient {
 
     // Handle initialData event which contains combined data
     this.socket.on("initialData", (data) => {
-      console.log("Received initial data:", data);
+      // console.log("Received initial data:", data);
       // The data handling will be done in the App component
     });
 

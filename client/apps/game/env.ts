@@ -15,6 +15,10 @@ const envSchema = z.object({
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
 
+  // Action Dispatcher
+  VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
+  VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z.string().optional(),
+
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
     .transform((v) => v === "true")

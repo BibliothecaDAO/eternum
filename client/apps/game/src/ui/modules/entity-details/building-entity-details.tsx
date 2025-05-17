@@ -7,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -50,7 +50,7 @@ export const BuildingEntityDetails = () => {
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
 
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const selectedStructureInfo = getEntityInfo(
     structureEntityId,

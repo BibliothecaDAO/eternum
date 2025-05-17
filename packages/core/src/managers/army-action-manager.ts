@@ -277,13 +277,12 @@ export class ArmyActionManager {
     }
 
     try {
-      await this.systemCalls.explorer_move({
+      return await this.systemCalls.explorer_move({
         explorer_id: this.entityId,
         directions: [direction],
         explore: true,
         signer,
       });
-      return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);
     }
@@ -305,13 +304,12 @@ export class ArmyActionManager {
       .filter((d) => d !== undefined) as number[];
 
     try {
-      await this.systemCalls.explorer_move({
+      return await this.systemCalls.explorer_move({
         signer,
         explorer_id: this.entityId,
         directions,
         explore: false,
       });
-      return Promise.resolve();
     } catch (e) {
       console.log({ e });
       return Promise.reject(e);

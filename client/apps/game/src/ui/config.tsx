@@ -124,6 +124,7 @@ export const BuildingThumbs = {
   time: `${prefix}time.png`,
   leave: `${prefix}leave.png`,
   bridge: `${prefix}portal.png`,
+  automation: `${prefix}robot.png`,
 };
 
 export enum MenuEnum {
@@ -136,4 +137,5 @@ export enum MenuEnum {
   resourceTable = "resourceTable",
   production = "production",
   bridge = "bridge",
+  automation = "automation",
 }

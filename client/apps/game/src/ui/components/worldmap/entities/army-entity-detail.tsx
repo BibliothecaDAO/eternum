@@ -47,6 +47,7 @@ export const ArmyEntityDetail = memo(
     const userAddress = ContractAddress(account.address);
     const [addressName, setAddressName] = useState<string | undefined>(undefined);
     const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
+    const [isAlly, setIsAlly] = useState(false);
     const [stamina, setStamina] = useState<{ amount: bigint; updated_tick: bigint } | undefined>(undefined);
     const [maxStamina, setMaxStamina] = useState<number | undefined>(undefined);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -89,6 +90,9 @@ export const ArmyEntityDetail = memo(
         );
 
         const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
+        const userGuild = getGuildFromPlayerAddress(userAddress, components);
+        const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
+        setIsAlly(isAlly);
         setAddressName(
           structure?.owner
             ? getAddressName(structure?.owner, components)
@@ -167,8 +171,8 @@ export const ArmyEntityDetail = memo(
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
-              {isMine ? "Ally" : "Enemy"}
+            <div className={`px-2 py-1 rounded text-xs font-bold ${isAlly ? "bg-green/20" : "bg-red/20"}`}>
+              {isAlly ? "Ally" : "Enemy"}
             </div>
             <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
               <MessageCircle />

@@ -9,8 +9,11 @@ import {
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getRealmNameById } from "./realm";
+
+const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
 export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
   const { Structure, ExplorerTroops } = components;
@@ -94,16 +97,23 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
 };
 
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([address]));
+  const internalName = getInternalAddressName(address.toString());
+  if (internalName) return internalName;
+
+  const addressBigInt = BigInt(address);
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([addressBigInt]));
 
   return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
 };
 
-export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents) => {
+export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents): string | undefined => {
   const address = getAddressFromStructureEntity(entityId, components);
-  if (!address) return;
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
+  if (!address) return undefined;
 
+  const internalName = getInternalAddressName(address.toString());
+  if (internalName) return internalName;
+
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
   return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
 };
 
@@ -112,4 +122,9 @@ export const getAddressFromStructureEntity = (
   components: ClientComponents,
 ): ContractAddress | undefined => {
   return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.owner || undefined;
+};
+
+export const getInternalAddressName = (address: string): string | undefined => {
+  const normalizedAddress = BigInt(address).toString();
+  return knownAddressesJSON[normalizedAddress];
 };

@@ -31,7 +31,7 @@ export const LaborResourcesPanel = ({
     if (!laborInputResources || !resourceBalances) return 1;
 
     const maxAmounts = laborInputResources.map((input) => {
-      const balance = resourceBalances[input.resource] || 0;
+      const balance = Math.max((resourceBalances[input.resource] || 0) - 1000, 0);
       return Math.floor((balance / input.amount) * resourceOutputPerInputResources);
     });
 

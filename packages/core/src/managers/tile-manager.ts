@@ -1,23 +1,23 @@
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { uuid } from "@latticexyz/utils";
-import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
 import {
   type DojoAccount,
   BUILDINGS_CENTER,
   BuildingType,
+  ClientComponents,
   Direction,
   FELT_CENTER,
+  HexPosition,
+  ID,
   RealmLevels,
   StructureType,
+  SystemCalls,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   getProducedResource,
-  ClientComponents,
-  SystemCalls,
-  HexPosition,
-  ID,
 } from "@bibliothecadao/types";
+import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { uuid } from "@latticexyz/utils";
+import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -354,7 +354,7 @@ export class TileManager {
     const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
 
     try {
-      await this.systemCalls.create_building({
+      return await this.systemCalls.create_building({
         signer,
         entity_id: structureEntityId,
         directions: directions,

@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
+import { AllAutomationsTable } from "@/ui/components/automation/all-automations-table";
 import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
@@ -54,6 +55,21 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             onClick={() => {
               toggleModal(<ProductionModal />);
             }}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.automation,
+        button: (
+          <CircleButton
+            className="automation-selector"
+            image={BuildingThumbs.automation}
+            size="xl"
+            disabled={disableButtons}
+            tooltipLocation="top"
+            label="Automation"
+            active={view === RightView.Automation}
+            onClick={() => setView(view === RightView.Automation ? RightView.None : RightView.Automation)}
           />
         ),
       },
@@ -114,6 +130,11 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
               {view === RightView.Bridge && (
                 <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
                   <Bridge structures={structures} />
+                </div>
+              )}
+              {view === RightView.Automation && (
+                <div className="automation-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <AllAutomationsTable />
                 </div>
               )}
             </Suspense>

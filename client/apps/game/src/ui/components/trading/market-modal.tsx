@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { MarketHeader } from "./market-header";
@@ -53,7 +53,7 @@ export const MarketModal = () => {
 export const MarketContent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
-  const playerStructures = usePlayerStructures();
+  const playerStructures = useUIStore((state) => state.playerStructures);
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
