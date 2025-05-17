@@ -14,9 +14,7 @@ import {
 import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { loggedInAccount } from "../helpers/utils";
-import { ExplorerOwnerStore } from "../managers/explorer-owner-store";
-import { GuildMemberStore } from "../managers/guild-member-store";
-import { StructureOwnerStore } from "../managers/structure-owner-store";
+import { PlayerDataStore } from "../managers/player-data-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 import {
   type ArmySystemUpdate,
@@ -188,24 +186,16 @@ export const getStructureInfoFromTileOccupier = (
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  private structureOwnerStore: StructureOwnerStore;
-  private guildMemberStore: GuildMemberStore;
-  private explorerOwnerStore: ExplorerOwnerStore;
-  private readonly DATA_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+  private playerDataStore: PlayerDataStore;
+  private readonly DATA_REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
   constructor(private setup: SetupResult) {
-    this.structureOwnerStore = StructureOwnerStore.getInstance(this.DATA_REFRESH_INTERVAL);
-    this.guildMemberStore = GuildMemberStore.getInstance(this.DATA_REFRESH_INTERVAL);
-    this.explorerOwnerStore = ExplorerOwnerStore.getInstance(this.DATA_REFRESH_INTERVAL);
+    this.playerDataStore = PlayerDataStore.getInstance(this.DATA_REFRESH_INTERVAL);
     this.initializeStores();
   }
 
   private async initializeStores() {
     try {
-      await Promise.all([
-        this.structureOwnerStore.initialize(),
-        this.guildMemberStore.initialize(),
-        this.explorerOwnerStore.initialize(),
-      ]);
+      await Promise.all([this.playerDataStore.refresh()]);
     } catch (error) {
       console.error("Failed to initialize stores:", error);
     }
@@ -242,29 +232,56 @@ export class SystemManager {
 
               if (!explorer) return;
 
-              const explorerOwnerAddress = await this.explorerOwnerStore.getOwnerAddress(
+              let explorerOwnerAddress = await this.playerDataStore.getExplorerOwnerAddress(
                 currentState.occupier_id.toString(),
               );
-              let explorerGuildData = null;
-              let loggedInAccountGuildData = null;
+              if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
+                // Attempt to get explorer owner structure id from RECS
+                let explorerTroops = null;
+                let retries = 3;
+                while (retries > 0) {
+                  explorerTroops = getComponentValue(
+                    this.setup.components.ExplorerTroops,
+                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+                  );
+
+                  if (explorerTroops) break;
+                  await new Promise((resolve) => setTimeout(resolve, 100)); // Wait 100ms between retries
+                  retries--;
+                }
+                if (explorerTroops?.owner) {
+                  this.playerDataStore.updateExplorerStructure(
+                    currentState.occupier_id.toString(),
+                    explorerTroops.owner.toString(),
+                  );
+                  explorerOwnerAddress = await this.playerDataStore.getExplorerOwnerAddress(
+                    currentState.occupier_id.toString(),
+                  );
+                }
+              }
+
+              let explorerPlayerData = null;
+              let loggedInAccountPlayerData = null;
               if (explorerOwnerAddress) {
-                [explorerGuildData, loggedInAccountGuildData] = await Promise.all([
-                  this.guildMemberStore.getMemberData(BigInt(explorerOwnerAddress).toString()),
-                  this.guildMemberStore.getMemberData(BigInt(loggedInAccount()).toString()),
-                ]);
+                explorerPlayerData = await this.playerDataStore.getPlayerDataFromExplorerId(
+                  currentState.occupier_id.toString(),
+                );
+                loggedInAccountPlayerData = await this.playerDataStore.getPlayerDataFromAddress(
+                  BigInt(loggedInAccount()).toString(),
+                );
               }
 
               const isAlly =
-                Boolean(loggedInAccountGuildData?.guildId) &&
-                loggedInAccountGuildData?.guildId === explorerGuildData?.guildId;
+                Boolean(loggedInAccountPlayerData?.guildId) &&
+                loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
               return {
                 entityId: currentState.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
                   address: BigInt(explorerOwnerAddress),
-                  ownerName: explorerGuildData?.playerName || "",
-                  guildName: explorerGuildData?.guildName || "",
+                  ownerName: explorerPlayerData?.ownerName || "",
+                  guildName: explorerPlayerData?.guildName || "",
                 },
                 troopType: explorer.troopType as TroopType,
                 troopTier: explorer.troopTier as TroopTier,
@@ -327,6 +344,11 @@ export class SystemManager {
 
             if (!structureInfo) return;
 
+            const structureSynced = getComponentValue(
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+            );
+
             const hyperstructure = getComponentValue(
               this.setup.components.Hyperstructure,
               getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
@@ -334,19 +356,40 @@ export class SystemManager {
 
             const initialized = hyperstructure?.initialized || false;
 
-            const structureOwnerAddress = await this.structureOwnerStore.getOwner(currentState.occupier_id);
-            let structureGuildData = null;
-            let loggedInAccountGuildData = null;
+            let structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+              currentState.occupier_id.toString(),
+            );
+            const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
+            const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
+            if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
+              this.playerDataStore.updateStructureOwnerAddress(
+                currentState.occupier_id.toString(),
+                structureSyncedOwner.toString(),
+              );
+              structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+                currentState.occupier_id.toString(),
+              );
+              if (!structureOwnerDataQueried) {
+                // it is a new player
+                await this.playerDataStore.refresh();
+                structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+                  currentState.occupier_id.toString(),
+                );
+              }
+            }
+
+            const structureOwnerAddress = structureOwnerDataQueried?.ownerAddress;
+
+            let loggedInAccountPlayerData = null;
             if (structureOwnerAddress) {
-              [structureGuildData, loggedInAccountGuildData] = await Promise.all([
-                this.guildMemberStore.getMemberData(BigInt(structureOwnerAddress).toString()),
-                this.guildMemberStore.getMemberData(BigInt(loggedInAccount()).toString()),
-              ]);
+              loggedInAccountPlayerData = await this.playerDataStore.getPlayerDataFromAddress(
+                BigInt(loggedInAccount()).toString(),
+              );
             }
 
             const isAlly =
-              Boolean(loggedInAccountGuildData?.guildId) &&
-              loggedInAccountGuildData?.guildId === structureGuildData?.guildId;
+              Boolean(loggedInAccountPlayerData?.guildId) &&
+              loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
             return {
               entityId: currentState.occupier_id,
               hexCoords: {
@@ -358,9 +401,9 @@ export class SystemManager {
               stage: structureInfo.stage,
               level: structureInfo.level,
               owner: {
-                address: BigInt(structureOwnerAddress) || 0n,
-                ownerName: structureGuildData?.playerName || "",
-                guildName: structureGuildData?.guildName || "",
+                address: BigInt(structureOwnerAddress || "") || 0n,
+                ownerName: structureOwnerDataQueried?.ownerName || "",
+                guildName: structureOwnerDataQueried?.guildName || "",
               },
               hasWonder: structureInfo.hasWonder,
               isAlly,
