@@ -75,7 +75,7 @@ function getProductionRecipe(
 }
 
 const PROCESS_INTERVAL_MS = 10 * 60 * 1000;
-const CYCLE_BUFFER = 100;
+const CYCLE_BUFFER = 150;
 
 export const useAutomation = () => {
   const {
