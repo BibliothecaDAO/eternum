@@ -267,14 +267,16 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
             <div>
               <label htmlFor="maxAmount" className="block mb-1 text-sm font-medium">
                 {newOrder.productionType === ProductionType.ResourceToLabor ? "Target Labor Amount:" : "Target Amount:"}
+                {!isInfinite && parseInt(maxAmountInput, 10) < 1000 && (
+                  <span className="text-red ml-1">(min 1000)</span>
+                )}
               </label>
               <div className="flex items-center gap-2">
                 <NumberInput
                   value={isInfinite ? 0 : parseInt(maxAmountInput, 10) || 0}
                   disabled={isInfinite}
                   onChange={(val) => handleMaxAmountChange(String(val))}
-                  min={1000}
-                  className="w-full"
+                  min={0}
                 />
                 <input
                   type="checkbox"
@@ -294,7 +296,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="submit" variant="gold" disabled={newOrder.resourceToUse === undefined}>
+            <Button
+              type="submit"
+              variant="gold"
+              disabled={
+                newOrder.resourceToUse === undefined || (newOrder.maxAmount !== "infinite" && newOrder.maxAmount < 1000)
+              }
+            >
               Add Automation
             </Button>
             <Button onClick={() => setShowAddForm(false)} variant="default" size="md">
