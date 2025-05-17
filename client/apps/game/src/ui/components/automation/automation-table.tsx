@@ -164,7 +164,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       </h4>
       <p>
         This allows you to select the quantity you want to produce. The automation will attempt to fulfill the orders in
-        priority until the target amount is reached.
+        priority until the target amount is reached. This will activate every{" "}
+        <span className="font-bold">10 minutes</span>.
       </p>
 
       <div className="my-4">
