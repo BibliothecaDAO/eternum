@@ -95,6 +95,7 @@ export const useAutomation = () => {
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
+  const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
 
   // ---- Keep the latest block tick in a ref so that callbacks remain stable ---
   const currentTickRef = useRef(currentDefaultTick);
@@ -280,26 +281,30 @@ export const useAutomation = () => {
             updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
             if (order.productionType === ProductionType.ResourceToLabor) {
               toast.success(
-                <div>
-                  Automation: $
-                  {order.productionType === ProductionType.ResourceToLabor
-                    ? "Resource To Labor"
-                    : order.productionType === ProductionType.ResourceToResource
-                      ? "Resource To Resource"
-                      : order.productionType === ProductionType.LaborToResource
-                        ? "Labor To Resource"
-                        : order.productionType}
-                  . Produced ${producedThisCycle.toLocaleString()} labor from $
-                  {<ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />} on realm ${order?.realmName}
-                  ,
+                <div className="flex">
+                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                  <span className="ml-2">
+                    Automation:{" "}
+                    {order.productionType === ProductionType.ResourceToLabor
+                      ? "Resource To Labor"
+                      : order.productionType === ProductionType.ResourceToResource
+                        ? "Resource To Resource"
+                        : order.productionType === ProductionType.LaborToResource
+                          ? "Labor To Resource"
+                          : order.productionType}
+                    . Produced {producedThisCycle.toLocaleString()} labor from {ResourcesIds[order.resourceToUse]} on
+                    realm {order?.realmName},
+                  </span>
                 </div>,
               );
             } else {
               toast.success(
-                <div>
-                  Automation: Resource To Labor. Produced ${producedThisCycle.toLocaleString()} of
-                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" /> on
-                  realm ${order?.realmName}.
+                <div className="flex">
+                  <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                  <span className="ml-2">
+                    Automation: Resource To Labor. Produced {producedThisCycle.toLocaleString()} of{" "}
+                    {ResourcesIds[order.resourceToUse]} on {order?.realmName}.
+                  </span>
                 </div>,
               );
             }
@@ -331,15 +336,21 @@ export const useAutomation = () => {
   // interval is created immediately and will start working as soon as the required data is
   // available.
   useEffect(() => {
-    processOrders();
-    const intervalId = setInterval(processOrders, PROCESS_INTERVAL_MS);
+    const runAndSchedule = async () => {
+      await processOrders();
+      setNextRunTimestamp(Date.now() + PROCESS_INTERVAL_MS);
+    };
+
+    runAndSchedule(); // Initial run and schedule
+    const intervalId = setInterval(runAndSchedule, PROCESS_INTERVAL_MS);
     return () => {
       clearInterval(intervalId);
       processingRef.current = false;
     };
     // `processOrders` is a stable callback (its deps are managed in its own definition) so we
     // can safely depend only on it here.
-  }, [processOrders]);
+    // Add setNextRunTimestamp to dependency array, it's stable from Zustand though.
+  }, [processOrders, setNextRunTimestamp]);
 
   return {};
 };
