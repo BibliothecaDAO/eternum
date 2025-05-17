@@ -2,6 +2,185 @@ import { CameraView } from "@/three/scenes/hexagon-scene";
 import { COLORS } from "@/ui/components/settlement/settlement-constants";
 import { TroopTier } from "@bibliothecadao/types";
 
+// In-memory database for managing label transitions
+interface LabelTransitionRecord {
+  id: string;
+  timestamp: number;
+  timeoutId?: number;
+  type: "medium" | "close" | "far";
+  entityType?: string;
+  entityId?: string;
+}
+
+class LabelTransitionDB {
+  private static instance: LabelTransitionDB;
+  private records: Map<string, LabelTransitionRecord> = new Map();
+  private indices: {
+    byType: Map<string, Set<string>>;
+    byEntity: Map<string, Set<string>>;
+  } = {
+    byType: new Map(),
+    byEntity: new Map(),
+  };
+
+  private constructor() {}
+
+  static getInstance(): LabelTransitionDB {
+    if (!LabelTransitionDB.instance) {
+      LabelTransitionDB.instance = new LabelTransitionDB();
+    }
+    return LabelTransitionDB.instance;
+  }
+
+  // Database operations
+  private addIndex(record: LabelTransitionRecord): void {
+    // Index by type
+    if (!this.indices.byType.has(record.type)) {
+      this.indices.byType.set(record.type, new Set());
+    }
+    this.indices.byType.get(record.type)!.add(record.id);
+
+    // Index by entity if available
+    if (record.entityType && record.entityId) {
+      const entityKey = `${record.entityType}:${record.entityId}`;
+      if (!this.indices.byEntity.has(entityKey)) {
+        this.indices.byEntity.set(entityKey, new Set());
+      }
+      this.indices.byEntity.get(entityKey)!.add(record.id);
+    }
+  }
+
+  private removeIndex(record: LabelTransitionRecord): void {
+    // Remove from type index
+    this.indices.byType.get(record.type)?.delete(record.id);
+
+    // Remove from entity index if available
+    if (record.entityType && record.entityId) {
+      const entityKey = `${record.entityType}:${record.entityId}`;
+      this.indices.byEntity.get(entityKey)?.delete(record.id);
+    }
+  }
+
+  private clearTimeout(id: string): void {
+    const record = this.records.get(id);
+    if (record?.timeoutId) {
+      window.clearTimeout(record.timeoutId);
+      // Update record
+      record.timeoutId = undefined;
+      this.records.set(id, record);
+    }
+  }
+
+  // Public API
+  set(id: string, type: "medium" | "close" | "far", entityType?: string, entityId?: string): void {
+    // Transaction-like behavior: get and clear existing record first
+    this.delete(id);
+
+    // Create new record
+    const record: LabelTransitionRecord = {
+      id,
+      timestamp: Date.now(),
+      type,
+      entityType,
+      entityId,
+    };
+
+    // Store and index
+    this.records.set(id, record);
+    this.addIndex(record);
+  }
+
+  get(id: string): LabelTransitionRecord | undefined {
+    return this.records.get(id);
+  }
+
+  delete(id: string): void {
+    const record = this.records.get(id);
+    if (record) {
+      // Clean up timeout if exists
+      this.clearTimeout(id);
+      // Remove from indices
+      this.removeIndex(record);
+      // Remove record
+      this.records.delete(id);
+    }
+  }
+
+  query(type?: string, entityType?: string, entityId?: string): LabelTransitionRecord[] {
+    // Simple query by type
+    if (type && !entityType) {
+      const ids = this.indices.byType.get(type) || new Set();
+      return Array.from(ids).map((id) => this.records.get(id)!);
+    }
+
+    // Query by entity
+    if (entityType && entityId) {
+      const entityKey = `${entityType}:${entityId}`;
+      const ids = this.indices.byEntity.get(entityKey) || new Set();
+      return Array.from(ids)
+        .map((id) => this.records.get(id)!)
+        .filter((record) => !type || record.type === type);
+    }
+
+    // Return all records if no filters
+    return Array.from(this.records.values());
+  }
+
+  // Specific methods for label transitions
+  setMediumViewTransition(id: string, entityType?: string, entityId?: string): void {
+    this.set(id, "medium", entityType, entityId);
+  }
+
+  getMediumViewExpanded(id: string): boolean {
+    const record = this.get(id);
+    return record && record.type === "medium" ? Date.now() - record.timestamp < 2000 : false;
+  }
+
+  clearMediumViewTransition(id: string): void {
+    this.delete(id);
+  }
+
+  scheduleTimeout(id: string, callback: () => void, ms: number): void {
+    const record = this.records.get(id);
+    if (record) {
+      // Clear existing timeout
+      this.clearTimeout(id);
+
+      // Set new timeout
+      const timeoutId = window.setTimeout(() => {
+        callback();
+        // Update record to show timeout completed
+        if (this.records.has(id)) {
+          const updatedRecord = this.records.get(id)!;
+          updatedRecord.timeoutId = undefined;
+          this.records.set(id, updatedRecord);
+        }
+      }, ms);
+
+      // Update record with new timeout ID
+      record.timeoutId = timeoutId;
+      this.records.set(id, record);
+    }
+  }
+
+  // Clear all expired records (useful for periodic cleanup)
+  cleanupExpired(maxAge: number = 5000): number {
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    this.records.forEach((record, id) => {
+      if (!record.timeoutId && now - record.timestamp > maxAge) {
+        this.delete(id);
+        cleanedCount++;
+      }
+    });
+
+    return cleanedCount;
+  }
+}
+
+export const transitionDB = LabelTransitionDB.getInstance();
+
 // Custom label styling based on ownership - using direct colors for more reliable rendering
 export const LABEL_STYLES = {
   MINE: {
@@ -95,7 +274,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions) => {
   container.classList.add("flex", "items-center", "truncate", "gap-1");
 
   // Create name element
-  const displayName = owner.ownerName || `0x${owner.address.toString(16).slice(0, 6)}...`;
+  const displayName = owner.ownerName || ``;
   const nameSpan = document.createElement("span");
   nameSpan.textContent = displayName;
   nameSpan.classList.add("font-medium");
@@ -172,9 +351,41 @@ export const createContentContainer = (cameraView: CameraView) => {
     "whitespace-nowrap",
     "group-hover:max-w-[250px]",
     "group-hover:ml-2",
-    cameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
-    cameraView === CameraView.Far ? "ml-0" : "ml-2",
   );
+
+  // Generate a unique ID for this container to manage its transitions
+  const containerId = `container_${Math.random().toString(36).substring(2, 9)}`;
+  (contentContainer as HTMLElement).dataset.containerId = containerId;
+
+  // Check if we have an active medium view transition
+  const mediumViewExpanded = transitionDB.getMediumViewExpanded(containerId);
+
+  // Set initial state based on camera view
+  if (cameraView === CameraView.Far || (cameraView === CameraView.Medium && !mediumViewExpanded)) {
+    contentContainer.classList.add("max-w-0", "ml-0");
+  } else {
+    contentContainer.classList.add("max-w-[250px]", "ml-2");
+
+    // For Medium view, add a timeout to revert to Far view style after 2 seconds
+    if (cameraView === CameraView.Medium) {
+      // Store the current timestamp
+      transitionDB.setMediumViewTransition(containerId);
+
+      transitionDB.scheduleTimeout(
+        containerId,
+        () => {
+          // Only apply the transition if the element is still in the DOM
+          if (contentContainer.isConnected) {
+            contentContainer.classList.remove("max-w-[250px]", "ml-2");
+            contentContainer.classList.add("max-w-0", "ml-0");
+            // Clear the timestamp when the transition is complete
+            transitionDB.clearMediumViewTransition(containerId);
+          }
+        },
+        2000,
+      );
+    }
+  }
 
   return contentContainer;
 };
@@ -252,4 +463,15 @@ export const TIERS_TO_STARS = {
   [TroopTier.T1]: "⭐",
   [TroopTier.T2]: "⭐⭐",
   [TroopTier.T3]: "⭐⭐⭐",
+};
+
+// Export the transitionManager alias for backward compatibility
+export const transitionManager = {
+  setMediumViewTransition: (id: string = "global", entityType?: string, entityId?: string) =>
+    transitionDB.setMediumViewTransition(id, entityType, entityId),
+  getMediumViewExpanded: (id: string = "global") => transitionDB.getMediumViewExpanded(id),
+  clearMediumViewTransition: (id: string = "global") => transitionDB.clearMediumViewTransition(id),
+  setLabelTimeout: (callback: () => void, ms: number, id: string = "global") =>
+    transitionDB.scheduleTimeout(id, callback, ms),
+  clearTimeout: (id: string = "global") => transitionDB.delete(id),
 };

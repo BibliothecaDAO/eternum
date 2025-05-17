@@ -47,14 +47,14 @@ export class ArmyManager {
     hexagonScene?: HexagonScene,
   ) {
     this.scene = scene;
-    this.armyModel = new ArmyModel(scene, labelsGroup);
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
-    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = new FXManager(scene, 1);
 
     // Subscribe to camera view changes if scene is provided
@@ -483,6 +483,9 @@ export class ArmyManager {
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
     this.currentCameraView = view;
+
+    // Update the ArmyModel's camera view
+    this.armyModel.setCurrentCameraView(view);
 
     // Update all existing labels to reflect the new view
     this.visibleArmies.forEach((army) => {

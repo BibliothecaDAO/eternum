@@ -10,53 +10,12 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createContentContainer, createLabelBase, createOwnerDisplayElement } from "../utils/label-utils";
-
-// Guild badge color utilities
-const getGuildColorSet = (guildName: string) => {
-  // Helper to clean guild name - remove null chars (0) and trim whitespace
-  const cleanGuildName = (name?: string) => {
-    if (!name) return "";
-    // Convert to string, filter out null characters, then trim whitespace
-    return name
-      .toString()
-      .split("")
-      .filter((char) => char.charCodeAt(0) !== 0)
-      .join("")
-      .trim();
-  };
-
-  const cleanedName = cleanGuildName(guildName);
-
-  // Different gradient combinations based on first letter
-  const colorSets = [
-    ["from-emerald-600/60", "to-emerald-800/60", "border-emerald-500/30"], // a-d
-    ["from-violet-600/60", "to-violet-800/60", "border-violet-500/30"], // e-h
-    ["from-amber-600/60", "to-amber-800/60", "border-amber-500/30"], // i-l
-    ["from-cyan-600/60", "to-cyan-800/60", "border-cyan-500/30"], // m-p
-    ["from-rose-600/60", "to-rose-800/60", "border-rose-500/30"], // q-t
-    ["from-blue-600/60", "to-blue-800/60", "border-blue-500/30"], // u-z
-    ["from-orange-600/60", "to-red-700/60", "border-orange-500/30"], // other
-  ];
-
-  // If empty after cleaning, default to "A"
-  const firstChar = cleanedName.length > 0 ? cleanedName.charAt(0).toLowerCase() : "a";
-  const charCode = firstChar.charCodeAt(0);
-
-  let index = Math.floor((charCode - 97) / 4);
-  if (index < 0 || index >= colorSets.length) {
-    index = colorSets.length - 1;
-  }
-
-  return {
-    colorSet: colorSets[index],
-    cleanedName,
-    firstChar,
-  };
-};
-
-const neutralColor = new THREE.Color(0xffffff);
-const myColor = new THREE.Color("lime");
+import {
+  createContentContainer,
+  createLabelBase,
+  createOwnerDisplayElement,
+  transitionManager,
+} from "../utils/label-utils";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -183,19 +142,59 @@ export class StructureManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
+
+    // If we're moving away from Medium view, clean up transition state
+    if (this.currentCameraView === CameraView.Medium) {
+      transitionManager.clearMediumViewTransition();
+    }
+
     this.currentCameraView = view;
+
+    // If we're switching to Medium view, store timestamp
+    if (view === CameraView.Medium) {
+      transitionManager.setMediumViewTransition();
+    }
 
     // Update all existing labels to reflect the new view
     this.entityIdLabels.forEach((label, entityId) => {
       if (label.element) {
         const contentContainer = label.element.querySelector(".flex.flex-col");
         if (contentContainer) {
+          // Get or create a container ID for tracking timeouts
+          let containerId = (contentContainer as HTMLElement).dataset.containerId;
+          if (!containerId) {
+            containerId = `structure_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
+            (contentContainer as HTMLElement).dataset.containerId = containerId;
+          }
+
           if (view === CameraView.Far) {
+            // For Far view, always collapse immediately
             contentContainer.classList.add("max-w-0", "ml-0");
             contentContainer.classList.remove("max-w-[250px]", "ml-2");
-          } else {
+            transitionManager.clearTimeout(containerId);
+          } else if (view === CameraView.Close) {
+            // For Close view, always expand and never collapse
             contentContainer.classList.remove("max-w-0", "ml-0");
             contentContainer.classList.add("max-w-[250px]", "ml-2");
+            transitionManager.clearTimeout(containerId);
+          } else if (view === CameraView.Medium) {
+            // For Medium view, expand initially
+            contentContainer.classList.remove("max-w-0", "ml-0");
+            contentContainer.classList.add("max-w-[250px]", "ml-2");
+
+            // And set up timeout to collapse after 2 seconds
+            transitionManager.setMediumViewTransition(containerId);
+            transitionManager.setLabelTimeout(
+              () => {
+                if (contentContainer.isConnected) {
+                  contentContainer.classList.remove("max-w-[250px]", "ml-2");
+                  contentContainer.classList.add("max-w-0", "ml-0");
+                  transitionManager.clearMediumViewTransition(containerId);
+                }
+              },
+              2000,
+              containerId,
+            );
           }
         }
       }

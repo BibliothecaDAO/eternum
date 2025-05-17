@@ -9,6 +9,7 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { createContentContainer, createLabelBase, transitionManager } from "../utils/label-utils";
 const MAX_INSTANCES = 1000;
 
 const ICONS = {
@@ -55,7 +56,18 @@ export class QuestManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
+
+    // If we're moving away from Medium view, clean up transition state
+    if (this.currentCameraView === CameraView.Medium) {
+      transitionManager.clearMediumViewTransition();
+    }
+
     this.currentCameraView = view;
+
+    // If we're switching to Medium view, store timestamp
+    if (view === CameraView.Medium) {
+      transitionManager.setMediumViewTransition();
+    }
 
     // Update all existing labels to reflect the new view
     this.visibleQuests.forEach((quest) => {
@@ -235,21 +247,12 @@ export class QuestManager {
   }
 
   private addEntityIdLabel(quest: QuestData, position: THREE.Vector3) {
-    const labelDiv = document.createElement("div");
-    labelDiv.classList.add(
-      "rounded-md",
-      "bg-brown/50",
-      "hover:bg-brown/90",
-      "pointer-events-auto",
-      "text-gold",
-      "p-0.5",
-      "-translate-x-1/2",
-      "text-xxs",
-      "h-10",
-      "flex",
-      "items-center",
-      "group",
-    );
+    // Create label div using the shared base
+    const labelDiv = createLabelBase({
+      isMine: false, // Quests don't have ownership
+      textColor: "text-gold", // Use gold color for quests
+    });
+
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -261,21 +264,8 @@ export class QuestManager {
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
-    // Create text container with transition
-    const textContainer = document.createElement("div");
-    textContainer.classList.add(
-      "flex",
-      "flex-col",
-      "transition-width",
-      "duration-700",
-      "ease-in-out",
-      "overflow-hidden",
-      "whitespace-nowrap",
-      "group-hover:max-w-[250px]",
-      "group-hover:ml-2",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
-      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
-    );
+    // Create text container with transition using shared utility
+    const textContainer = createContentContainer(this.currentCameraView);
 
     const line1 = document.createElement("span");
     line1.textContent = `Quest`;
@@ -324,12 +314,48 @@ export class QuestManager {
     if (labelData?.element) {
       const textContainer = labelData.element.querySelector(".flex.flex-col");
       if (textContainer) {
+        // Get the container's unique ID or generate one if it doesn't exist
+        let containerId = (textContainer as HTMLElement).dataset.containerId;
+        if (!containerId) {
+          containerId = `quest_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
+          (textContainer as HTMLElement).dataset.containerId = containerId;
+        }
+
         if (isCompact) {
+          // For Far view (isCompact = true), always collapse immediately
           textContainer.classList.add("max-w-0", "ml-0");
           textContainer.classList.remove("max-w-[250px]", "ml-2");
+          // Clear any existing timeouts
+          transitionManager.clearTimeout(containerId);
         } else {
+          // For Medium and Close views, expand immediately
           textContainer.classList.remove("max-w-0", "ml-0");
           textContainer.classList.add("max-w-[250px]", "ml-2");
+
+          // If this is Medium view, add timeout to switch back to compact
+          if (this.currentCameraView === CameraView.Medium) {
+            // Store the current timestamp
+            transitionManager.setMediumViewTransition(containerId);
+
+            // Use the managed timeout
+            transitionManager.setLabelTimeout(
+              () => {
+                // Only apply if the element is still connected to the DOM
+                if (textContainer.isConnected) {
+                  textContainer.classList.remove("max-w-[250px]", "ml-2");
+                  textContainer.classList.add("max-w-0", "ml-0");
+
+                  // Clear the transition state
+                  transitionManager.clearMediumViewTransition(containerId);
+                }
+              },
+              2000,
+              containerId,
+            );
+          } else if (this.currentCameraView === CameraView.Close) {
+            // For Close view, ensure we cancel any existing timeouts
+            transitionManager.clearTimeout(containerId);
+          }
         }
       }
     }

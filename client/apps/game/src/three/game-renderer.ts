@@ -26,6 +26,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
+import { transitionDB } from "./utils/label-utils";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -57,6 +58,7 @@ export default class GameRenderer {
   private dojo: SetupResult;
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
+  private cleanupIntervals: NodeJS.Timeout[] = [];
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -209,6 +211,19 @@ export default class GameRenderer {
     this.renderer.domElement.id = "main-canvas";
     document.body.appendChild(this.renderer.domElement);
 
+    // Set up periodic cleanup of the transition database
+    const dbCleanupInterval = setInterval(() => {
+      // Clean up expired records older than 10 seconds
+      const cleanedCount = transitionDB.cleanupExpired(10000);
+      if (cleanedCount > 0) {
+        console.debug(`Cleaned up ${cleanedCount} expired transition records`);
+      }
+    }, 30 * 1000); // Run every 30 seconds
+
+    // Store the interval ID for cleanup
+    this.cleanupIntervals = this.cleanupIntervals || [];
+    this.cleanupIntervals.push(dbCleanupInterval);
+
     // Adjust OrbitControls for new camera angle
     this.controls = new MapControls(this.camera, this.renderer.domElement);
     this.controls.enableRotate = false;
@@ -229,6 +244,9 @@ export default class GameRenderer {
       throttle(() => {
         if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
           this.worldmapScene.updateVisibleChunks();
+
+          // Expand labels temporarily when panning in Medium view
+          this.worldmapScene.expandLabelsTemporarily();
         }
       }, 30),
     );
