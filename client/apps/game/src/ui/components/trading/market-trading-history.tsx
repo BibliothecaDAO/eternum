@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { fetchSwapEvents } from "@/services/api";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resource } from "@bibliothecadao/types";
@@ -37,11 +38,14 @@ export const MarketTradingHistoryContent = memo(() => {
   const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
   const [showOnlyYourSwaps, setShowOnlyYourSwaps] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const playerStructures = useUIStore((state) => state.playerStructures);
 
   useEffect(() => {
+    setIsLoading(true);
     fetchSwapEvents(playerStructures.map((structure) => structure.entityId)).then((events) => {
       setTradeEvents(events);
+      setIsLoading(false);
     });
   }, [address]);
 
@@ -87,14 +91,21 @@ export const MarketTradingHistoryContent = memo(() => {
             Show only your swaps
           </div>
         </div>
+        <div className="text-sm text-gray-300">Total Swaps: {filteredAndSortedEvents.length}</div>
         <div className="w-1/3">
           <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-full" />
         </div>
       </div>
       <TradeHistoryRowHeader />
-      {paginatedEvents.map((trade, index) => {
-        return <TradeHistoryEvent key={index} trade={trade} />;
-      })}
+      {isLoading ? (
+        <div className="flex justify-center items-center">
+          <LoadingAnimation />
+        </div>
+      ) : (
+        paginatedEvents.map((trade, index) => {
+          return <TradeHistoryEvent key={index} trade={trade} />;
+        })
+      )}
 
       {/* Pagination Controls */}
       <div className="flex justify-center items-center space-x-4 mt-4 mb-4">

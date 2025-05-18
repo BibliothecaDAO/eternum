@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getRelativeTimeString } from "@/ui/utils/time-utils";
-import { currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Resource, ResourcesIds } from "@bibliothecadao/types";
@@ -58,7 +58,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size={"sm"} />
       </div>
       <div className="text-sm my-auto flex flex-row">
-        {currencyIntlFormat(Number(price), 2)}
+        {formatNumber(price, 8)}
         <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size={"sm"} />
         per
         <ResourceIcon
