@@ -84,6 +84,9 @@ export const MarketTradingHistoryContent = memo(() => {
 
   return (
     <div className="flex flex-col px-8 mt-8">
+      <div className="text-gold/70 text-sm mb-6">
+        ⚠️ Currently showing AMM Swaps events only. Orderbook events coming back soon.
+      </div>
       <div className="flex flex-row items-center justify-between mb-6">
         <div onClick={() => setShowOnlyYourSwaps((prev) => !prev)} className="flex items-center space-x-2">
           <Checkbox enabled={showOnlyYourSwaps} />
