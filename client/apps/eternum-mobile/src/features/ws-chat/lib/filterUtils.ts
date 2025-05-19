@@ -43,5 +43,5 @@ export const filterRoomsBySearch = (rooms: Room[], searchText: string): Room[] =
 export const filterUsersBySearch = (users: User[], searchText: string): User[] => {
   if (!searchText.trim()) return users;
 
-  return users.filter((user) => (user.username || user.id).toLowerCase().includes(searchText.toLowerCase()));
+  return users?.filter((user) => (user?.username || user?.id).toLowerCase().includes(searchText.toLowerCase()));
 };

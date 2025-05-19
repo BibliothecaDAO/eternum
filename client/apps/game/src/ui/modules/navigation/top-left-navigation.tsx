@@ -209,6 +209,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             </span>
           </div>
         </div>
+
         <SecondaryMenuItems />
       </motion.div>
     </div>
