@@ -546,6 +546,46 @@ function ChatModule() {
 
   const [isInputFocused, setIsInputFocused] = useState(false);
 
+  // Add save chat function
+  const saveChatToText = useCallback(() => {
+    if (!filteredMessages.length) return;
+
+    // Sort messages by timestamp to ensure correct order
+    const sortedMessages = [...filteredMessages].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
+
+    const formatMessage = (message: Message) => {
+      const timestamp = new Date(message.timestamp).toLocaleString();
+      const sender = message.senderUsername || message.senderId;
+      return `[${timestamp}] ${sender}: ${message.message}`;
+    };
+
+    // Generate filename based on chat type and current time
+    const now = new Date();
+    const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
+    let chatType = "global";
+    if (directMessageRecipientId) {
+      const recipient = [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId);
+      chatType = `dm-${recipient?.username || directMessageRecipientId}`;
+    } else if (activeRoomId) {
+      const room = availableRooms.find((r) => r.id === activeRoomId);
+      chatType = `room-${room?.name || activeRoomId}`;
+    }
+    const filename = `chat-${chatType}-${now.toISOString().split("T")[0]}-${timeStr}.txt`;
+
+    const chatContent = sortedMessages.map(formatMessage).join("\n");
+    const blob = new Blob([chatContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [filteredMessages, directMessageRecipientId, activeRoomId, onlineUsers, offlineUsers, availableRooms]);
+
   // If username is not set, show login form
   if (!isUsernameSet) {
     return <LoginForm onLogin={handleLogin} />;
@@ -800,6 +840,26 @@ function ChatModule() {
           </div>
 
           <div className="flex items-center gap-2 pr-2">
+            <button
+              onClick={saveChatToText}
+              className="text-gold/70 hover:text-gold transition-colors p-1"
+              title="Save chat to text file"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+            </button>
             <button
               onClick={() => chatActions.toggleExpand()}
               className="text-gold/70 hover:text-gold transition-colors p-1"
