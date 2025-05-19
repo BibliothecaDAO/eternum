@@ -512,8 +512,14 @@ function ChatModule() {
   const switchToGlobalChat = useCallback(() => {
     chatActions.switchToGlobalChat();
     // Global messages should already be loaded, but we'll show the spinner briefly
-    setTimeout(() => chatActions.setIsLoadingMessages(false), 200);
-  }, [chatActions]);
+    setTimeout(() => {
+      chatActions.setIsLoadingMessages(false);
+      // Add a small delay to ensure messages are rendered before scrolling
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }, 200);
+  }, [chatActions, scrollToBottom]);
 
   // If username is not set, show login form
   if (!isUsernameSet) {
