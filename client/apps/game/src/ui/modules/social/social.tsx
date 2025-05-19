@@ -26,26 +26,21 @@ export const Social = () => {
     },
   } = useDojo();
 
-  const {
-    selectedTab,
-    isExpanded,
-    isRegisterLoading,
-    isSharePointsLoading,
-    isUpdatePointsLoading,
-    selectedGuild,
-    selectedPlayer,
-    playersByRank,
-    playerInfo,
-    setSelectedTab,
-    setIsExpanded,
-    setIsRegisterLoading,
-    setIsSharePointsLoading,
-    setIsUpdatePointsLoading,
-    setSelectedGuild,
-    setSelectedPlayer,
-    setPlayersByRank,
-    setPlayerInfo,
-  } = useSocialStore();
+  const selectedTab = useSocialStore((state) => state.selectedTab);
+  const isExpanded = useSocialStore((state) => state.isExpanded);
+  const selectedGuild = useSocialStore((state) => state.selectedGuild);
+  const selectedPlayer = useSocialStore((state) => state.selectedPlayer);
+  const playersByRank = useSocialStore((state) => state.playersByRank);
+  const playerInfo = useSocialStore((state) => state.playerInfo);
+  const setSelectedTab = useSocialStore((state) => state.setSelectedTab);
+  const setIsExpanded = useSocialStore((state) => state.setIsExpanded);
+  const setIsRegisterLoading = useSocialStore((state) => state.setIsRegisterLoading);
+  const setIsSharePointsLoading = useSocialStore((state) => state.setIsSharePointsLoading);
+  const setIsUpdatePointsLoading = useSocialStore((state) => state.setIsUpdatePointsLoading);
+  const setSelectedGuild = useSocialStore((state) => state.setSelectedGuild);
+  const setSelectedPlayer = useSocialStore((state) => state.setSelectedPlayer);
+  const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
+  const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));

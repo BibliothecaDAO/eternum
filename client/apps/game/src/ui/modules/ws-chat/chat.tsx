@@ -41,16 +41,12 @@ function ChatModule() {
   // Account store state
   const { connector } = useAccountStore((state) => state);
 
-  // Zustand store integration
-  const {
-    isExpanded,
-    isMinimized,
-    activeView,
-    activeRoomId,
-    directMessageRecipientId,
-    isLoadingMessages: isStoreLoadingMessages,
-    actions: chatActions,
-  } = useChatStore();
+  const isExpanded = useChatStore((state) => state.isExpanded);
+  const isMinimized = useChatStore((state) => state.isMinimized);
+  const activeRoomId = useChatStore((state) => state.activeRoomId);
+  const directMessageRecipientId = useChatStore((state) => state.directMessageRecipientId);
+  const isStoreLoadingMessages = useChatStore((state) => state.isLoadingMessages);
+  const chatActions = useChatStore((state) => state.actions);
 
   const { onlineUsers, offlineUsers, isLoadingUsers } = useChatStore((state) => ({
     onlineUsers: state.onlineUsers,
