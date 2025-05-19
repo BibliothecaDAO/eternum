@@ -46,7 +46,7 @@ export type BuildingSystemUpdate = {
 
 export type ExplorerRewardSystemUpdate = {
   explorerId: ID;
-  resourceId: ResourcesIds;
+  resourceId: ResourcesIds | 0;
   amount: number;
 };
 export type RealmSystemUpdate = {

@@ -1,8 +1,9 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { divideByPrecision, getAddressNameFromEntity } from "@bibliothecadao/eternum";
-import { Resource, ResourcesIds } from "@bibliothecadao/types";
+import { getRelativeTimeString } from "@/ui/utils/time-utils";
+import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
+import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { Resource, ResourcesIds } from "@bibliothecadao/types";
 import { TradeEvent } from "./market-trading-history";
 
 export enum EventType {
@@ -36,13 +37,15 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   }
 
   const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
-  const taker = getAddressNameFromEntity(trade.event.takerId, components);
+  const taker = getAddressName(trade.event.takerAddress, components);
+  const relativeTime = getRelativeTimeString(trade.event.eventTime);
+  const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow overflow-y-auto p-1">
-      <div
-        className={`text-xs my-auto`}
-      >{`${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`}</div>
+      <div className="text-xs my-auto cursor-help" title={fullDateTime}>
+        {relativeTime}
+      </div>
       <div className={`text-sm my-auto`}>{trade.type}</div>
       <div className={`text-sm my-auto flex flex-row items-center justify-start`}>{taker}</div>
       <div className="text-sm my-auto flex flex-row">
@@ -55,7 +58,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size={"sm"} />
       </div>
       <div className="text-sm my-auto flex flex-row">
-        {currencyIntlFormat(Number(price), 2)}
+        {formatNumber(price, 8)}
         <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size={"sm"} />
         per
         <ResourceIcon

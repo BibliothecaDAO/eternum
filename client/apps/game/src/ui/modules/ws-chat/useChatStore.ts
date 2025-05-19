@@ -71,7 +71,8 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     getUserIdByUsername: (username: string) => {
       const allUsers = [...get().onlineUsers, ...get().offlineUsers];
 
-      const user = allUsers.filter((user) => user.username === username);
+      console.log("user", username);
+      const user = allUsers.filter((user) => user?.username === username);
       console.log("user", user);
       return user[0]?.id || null;
     },

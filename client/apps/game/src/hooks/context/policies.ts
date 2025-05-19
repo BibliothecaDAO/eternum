@@ -389,6 +389,10 @@ export const policies = toSessionPolicies({
           entrypoint: "arrivals_offload",
         },
         {
+          name: "troop_troop_adjacent_transfer",
+          entrypoint: "troop_troop_adjacent_transfer",
+        },
+        {
           name: "troop_structure_adjacent_transfer",
           entrypoint: "troop_structure_adjacent_transfer",
         },

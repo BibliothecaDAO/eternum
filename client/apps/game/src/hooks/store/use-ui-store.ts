@@ -125,7 +125,9 @@ export const useUIStore = create(
     isLoadingScreenEnabled: true,
     setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
     modalContent: null,
-    toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
+    toggleModal: (content) => {
+      set({ modalContent: content, showModal: !!content });
+    },
     showModal: false,
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
