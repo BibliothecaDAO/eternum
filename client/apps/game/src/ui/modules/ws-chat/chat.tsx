@@ -972,7 +972,18 @@ function ChatModule() {
         </div>
 
         {/* Message input */}
-        <MessageInput onSendMessage={handleSendMessage} onFocusChange={setIsInputFocused} />
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onFocusChange={setIsInputFocused}
+          isRecipientOffline={
+            directMessageRecipientId ? offlineUsers.some((user) => user?.id === directMessageRecipientId) : false
+          }
+          recipientUsername={
+            directMessageRecipientId
+              ? [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)?.username
+              : undefined
+          }
+        />
       </div>
     </div>
   );
