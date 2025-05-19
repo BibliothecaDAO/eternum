@@ -1,8 +1,9 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
 import Button from "@/ui/elements/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
-import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";
+import { MinusIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
@@ -177,23 +178,29 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                                 time={cooldownSlots?.find((c) => c.slot === index)?.timeLeft || 0}
                               />
                             ) : defense && defense.troops.count > 0n ? (
-                              <div className="relative">
+                              <div className="relative flex gap-4">
                                 <TroopChip
                                   troops={defense.troops}
                                   iconSize="sm"
                                   className="flex-1 hover:border-gold/40 transition-colors"
                                 />
-                                <button
-                                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
-                                    isExpanded ? "bg-gold/40" : "bg-gold/20 hover:bg-gold/40"
-                                  } rounded-full p-1 transition-colors`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleDefenseExpansion(index);
-                                  }}
-                                >
-                                  <PlusIcon className="w-4 h-4 fill-gold" />
-                                </button>
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    className={` ${
+                                      isExpanded ? "bg-gold/80 text-brown fill-brown" : "bg-gold hover:bg-gold"
+                                    } rounded-full p-1 transition-colors`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleDefenseExpansion(index);
+                                    }}
+                                  >
+                                    {isExpanded ? (
+                                      <MinusIcon className="w-4 h-4 fill-brown" />
+                                    ) : (
+                                      <PlusIcon className="w-4 h-4 fill-brown" />
+                                    )}
+                                  </button>
+                                </div>
                               </div>
                             ) : (
                               <div

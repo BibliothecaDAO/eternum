@@ -12,8 +12,13 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     setup: { components },
   } = useDojo();
 
-  const { selectedLocation, availableLocations, settledLocations, bankLocations, bankIcon, selectedCoords, actions } =
-    useSettlementStore();
+  const selectedLocation = useSettlementStore((state) => state.selectedLocation);
+  const actions = useSettlementStore((state) => state.actions);
+  const availableLocations = useSettlementStore((state) => state.availableLocations);
+  const settledLocations = useSettlementStore((state) => state.settledLocations);
+  const bankLocations = useSettlementStore((state) => state.bankLocations);
+  const bankIcon = useSettlementStore((state) => state.bankIcon);
+  const selectedCoords = useSettlementStore((state) => state.selectedCoords);
 
   useEffect(() => {
     actions.fetchBankLocations(components);
