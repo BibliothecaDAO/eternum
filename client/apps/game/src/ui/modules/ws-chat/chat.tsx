@@ -136,7 +136,10 @@ function ChatModule() {
   const [roomSearch, setRoomSearch] = useState<string>("");
   const [userSearch, setUserSearch] = useState<string>("");
 
-  // Scroll helper function for consistency
+  // Add new state for initial scroll
+  const [isInitialScrollComplete, setIsInitialScrollComplete] = useState(false);
+
+  // Modify scrollToBottom function
   const scrollToBottom = useCallback(() => {
     // First attempt at immediate scroll
     if (chatContainerRef.current) {
@@ -166,6 +169,8 @@ function ChatModule() {
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
+      // Set initial scroll complete after final attempt
+      setIsInitialScrollComplete(true);
     }, 300);
   }, []);
 
@@ -178,6 +183,7 @@ function ChatModule() {
   // Add effect to handle scroll when chat is reopened
   useEffect(() => {
     if (!isMinimized) {
+      setIsInitialScrollComplete(false); // Reset scroll state
       // Small delay to ensure DOM is updated
       setTimeout(() => {
         scrollToBottom();
@@ -264,9 +270,47 @@ function ChatModule() {
     }
   }, [directMessageRecipientId]);
 
-  // Set direct message recipient from online users list
+  // Modify switchToGlobalChat function
+  const switchToGlobalChat = useCallback(() => {
+    setIsInitialScrollComplete(false); // Reset scroll state
+    chatActions.switchToGlobalChat();
+    // Global messages should already be loaded, but we'll show the spinner briefly
+    setTimeout(() => {
+      chatActions.setIsLoadingMessages(false);
+      // Add a small delay to ensure messages are rendered before scrolling
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }, 200);
+  }, [chatActions, scrollToBottom]);
+
+  // Modify joinRoomFromSidebar function
+  const joinRoomFromSidebar = (roomId: string) => {
+    if (!chatClient) return;
+
+    setIsInitialScrollComplete(false); // Reset scroll state
+    chatActions.selectRoom(roomId);
+
+    // Clear unread messages for this room
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [roomId]: 0,
+    }));
+
+    // Then join the socket.io room
+    chatClient.joinRoom(roomId);
+
+    // Request room history after joining
+    setTimeout(() => {
+      chatLogger.log(`Requesting room history for ${roomId} after join`);
+      chatClient.getRoomHistory(roomId);
+    }, 100);
+  };
+
+  // Modify selectRecipient function
   const selectRecipient = useCallback(
     (recipientId: string) => {
+      setIsInitialScrollComplete(false); // Reset scroll state
       // Show loading state immediately
       chatActions.selectDirectMessageRecipient(recipientId);
 
@@ -286,6 +330,14 @@ function ChatModule() {
     },
     [chatClient, setUnreadMessages, chatActions],
   );
+
+  // Add effect to handle scroll when messages are loaded
+  useEffect(() => {
+    if (!isStoreLoadingMessages && filteredMessages.length > 0) {
+      setIsInitialScrollComplete(false); // Reset scroll state
+      scrollToBottom();
+    }
+  }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
 
   // Send a message based on active tab
   const handleSendMessage = useCallback(
@@ -465,28 +517,6 @@ function ChatModule() {
     setNewRoomId("");
   };
 
-  // Join a room from the sidebar
-  const joinRoomFromSidebar = (roomId: string) => {
-    if (!chatClient) return;
-
-    chatActions.selectRoom(roomId);
-
-    // Clear unread messages for this room
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [roomId]: 0,
-    }));
-
-    // Then join the socket.io room
-    chatClient.joinRoom(roomId);
-
-    // Request room history after joining
-    setTimeout(() => {
-      chatLogger.log(`Requesting room history for ${roomId} after join`);
-      chatClient.getRoomHistory(roomId);
-    }, 100);
-  };
-
   // Filter rooms based on search input
   const filteredRooms = useMemo(() => {
     return filterRoomsBySearch(availableRooms, roomSearch);
@@ -542,19 +572,6 @@ function ChatModule() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-
-  // Chat Header - add content before return statement
-  const switchToGlobalChat = useCallback(() => {
-    chatActions.switchToGlobalChat();
-    // Global messages should already be loaded, but we'll show the spinner briefly
-    setTimeout(() => {
-      chatActions.setIsLoadingMessages(false);
-      // Add a small delay to ensure messages are rendered before scrolling
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
-    }, 200);
-  }, [chatActions, scrollToBottom]);
 
   const [isInputFocused, setIsInputFocused] = useState(false);
 
@@ -995,7 +1012,9 @@ function ChatModule() {
               {/* Spacer to push content to bottom when there are few messages */}
               <div className="flex-grow" />
 
-              <div className="space-y-1">
+              <div
+                className={`space-y-1 transition-opacity duration-500 ${isInitialScrollComplete ? "opacity-100" : "opacity-0"}`}
+              >
                 {messageGroups.map((group, groupIndex) => {
                   const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
                   return (
