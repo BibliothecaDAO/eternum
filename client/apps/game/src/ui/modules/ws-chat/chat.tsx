@@ -17,7 +17,7 @@ import {
   useRoomMessageEvents,
   useUserEvents,
 } from "./hooks/useSocketEvents";
-import { Message, Room } from "./types";
+import { Message, Room, User } from "./types";
 import { useChatStore } from "./useChatStore";
 import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./utils/filterUtils";
 import { groupMessagesBySender } from "./utils/messageUtils";
@@ -105,15 +105,29 @@ function ChatModule() {
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
 
   // Unread messages state - track unread messages by user ID
-  const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+  const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>(() => {
+    try {
+      const stored = localStorage.getItem("chat_unread_messages");
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error("Error reading unread messages from localStorage:", error);
+      return {};
+    }
+  });
 
   const hasUnreadMessages = useMemo(() => {
     return Object.values(unreadMessages).some((count) => count > 0);
   }, [unreadMessages]);
 
+  // Update localStorage when unread messages change
   useEffect(() => {
-    console.log("UNREAD MESSAGES", hasUnreadMessages, unreadMessages);
-  }, [hasUnreadMessages, unreadMessages]);
+    try {
+      localStorage.setItem("chat_unread_messages", JSON.stringify(unreadMessages));
+    } catch (error) {
+      console.error("Error saving unread messages to localStorage:", error);
+    }
+  }, [unreadMessages]);
+
   // Auto-scroll to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -256,11 +270,19 @@ function ChatModule() {
       // Show loading state immediately
       chatActions.selectDirectMessageRecipient(recipientId);
 
-      // Clear unread messages for this user
-      setUnreadMessages((prev) => ({
-        ...prev,
-        [recipientId]: 0,
-      }));
+      // Clear unread messages for this user and update localStorage
+      setUnreadMessages((prev) => {
+        const newState = {
+          ...prev,
+          [recipientId]: 0,
+        };
+        try {
+          localStorage.setItem("chat_unread_messages", JSON.stringify(newState));
+        } catch (error) {
+          console.error("Error saving unread messages to localStorage:", error);
+        }
+        return newState;
+      });
     },
     [chatClient, setUnreadMessages, chatActions],
   );
@@ -472,6 +494,7 @@ function ChatModule() {
 
   // Filter users based on search input
   const filteredUsers = useMemo(() => {
+    // Only show online users in the DM list
     const users = filterUsersBySearch(onlineUsers, userSearch);
     return users.sort((a, b) => {
       const unreadA = (unreadMessages[a.id] || 0) > 0;
@@ -488,23 +511,10 @@ function ChatModule() {
     });
   }, [onlineUsers, userSearch, unreadMessages]);
 
-  // Filter offline users based on search input
+  // Filter offline users based on search input - this is now redundant since we only show online users
   const filteredOfflineUsers = useMemo(() => {
-    const users = filterUsersBySearch(offlineUsers, userSearch);
-    return users.sort((a, b) => {
-      const unreadA = (unreadMessages[a.id] || 0) > 0;
-      const unreadB = (unreadMessages[b.id] || 0) > 0;
-
-      if (unreadA && !unreadB) {
-        return -1; // A comes first
-      }
-      if (!unreadA && unreadB) {
-        return 1; // B comes first
-      }
-      // If both have or don't have unread, sort by username
-      return (a.username || a.id).localeCompare(b.username || b.id);
-    });
-  }, [offlineUsers, userSearch, unreadMessages]);
+    return [] as User[];
+  }, []);
 
   // Add resize listener to detect mobile view
   useEffect(() => {
@@ -700,6 +710,11 @@ function ChatModule() {
                       }`
                     : "Direct Messages"}
                 </span>
+                {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0) > 0 && (
+                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                    {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0)}
+                  </span>
+                )}
               </button>
               {isUsersVisible && (
                 <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
