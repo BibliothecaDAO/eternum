@@ -6,7 +6,6 @@ import MessageGroupComponent from "./components/chat/MessageGroup";
 import MessageInput from "./components/chat/MessageInput";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
 import {
   chatLogger,
@@ -562,303 +561,99 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col panel-wood md:flex-row overflow-hidden bg-brown z-100 pointer-events-auto panel-wood-corners ${
+      className={`flex flex-col panel-wood md:flex-row overflow-hidden bg-brown/10 z-100 pointer-events-auto panel-wood-corners ${
         isExpanded ? "h-[600px]" : "h-72"
-      } border-gold/20 border-2 transition-all duration-300`}
+      } border-gold/20 border-2 transition-all duration-300 backdrop-blur-sm`}
     >
-      {/* Online Users Sidebar - modified for responsive design */}
-      {sidebarVisible && (
-        <div
-          className={`${
-            isMobileView ? "absolute z-10" : "w-72"
-          } md:w-72 md:relative from-black to-gray-950 text-gray-200 shadow-lg flex-shrink-0 flex flex-col border-r border-gold/30`}
-        >
-          <div className="px-1 py-1 border-b border-gold/30">
-            <div className="flex items-center justify-between gap-2 border-b border-gold/30 pb-1">
-              <div className="flex items-center gap-2 ">
-                <button
-                  onClick={() => setIsRoomsVisible(!isRoomsVisible)}
-                  className="text-gold/70 hover:text-gold transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-4 w-4 transform transition-transform ${isRoomsVisible ? "rotate-0" : "-rotate-90"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <h2 className="text-lg font-bold">Rooms</h2>
-              </div>
-
-              <div className="flex items-center gap-2 flex-1">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search rooms..."
-                    value={roomSearch}
-                    onChange={(e) => setRoomSearch(e.target.value)}
-                    className="w-full pl-2 py-0.5 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
-                  />
-                </div>
-                <button
-                  onClick={() => setShowRoomCreation(!showRoomCreation)}
-                  className="text-gold/70 hover:text-gold transition-colors p-1"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-                <span className="bg-orange-600/60 px-2 py-0.5 text-xs font-medium">{availableRooms.length}</span>
-              </div>
-            </div>
-
-            {/* Room Creation Form */}
-            {showRoomCreation && (
-              <form onSubmit={joinRoom} className="flex space-x-1 mt-2">
-                <input
-                  type="text"
-                  placeholder="Room name"
-                  value={newRoomId}
-                  onChange={(e) => setNewRoomId(e.target.value)}
-                  className="w-full px-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
-                />
-                <Button type="submit">Create</Button>
-              </form>
-            )}
-
-            <div className={`${isRoomsVisible ? "block" : "hidden"}`}>
-              <div className="overflow-y-auto max-h-[200px] scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-                {isLoadingRooms ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin h-5 w-5 border-2 border-orange-500 rounded-full border-t-transparent"></div>
-                    <span className="ml-2 text-sm text-gray-400">Loading rooms...</span>
-                  </div>
-                ) : filteredRooms.length === 0 ? (
-                  roomSearch ? (
-                    <p className="text-gray-400 text-center text-sm py-2">No rooms match your search</p>
-                  ) : (
-                    <p className="text-gray-400 text-center text-sm py-2">No active rooms</p>
-                  )
-                ) : (
-                  <ul className="space-y-1">
-                    {filteredRooms.map((room) => (
-                      <li
-                        key={room.id}
-                        className={`flex items-center px-1 py-1 cursor-pointer transition-colors h6 ${
-                          room.id === activeRoomId ? "bg-orange/20 border-l-2 border-orange" : "hover:bg-gray/50"
-                        }`}
-                        onClick={() => joinRoomFromSidebar(room.id)}
-                      >
-                        <div className="flex items-center justify-center w-6 h-6 bg-orange-600/20 mr-2">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-3.5 w-3.5 text-orange-300"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
-                            />
-                          </svg>
-                        </div>
-                        <span className="text-sm truncate">{room.name || room.id}</span>
-                        {room.userCount && (
-                          <span className="ml-auto bg-gray-600/70 px-2 py-0.5 text-xs">{room.userCount}</span>
-                        )}
-                        {/* Unread message notification badge for rooms */}
-                        {unreadMessages[room.id] > 0 && (
-                          <span className="ml-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {unreadMessages[room.id]}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Users Section */}
-          <div className="px-1 py-1 flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between">
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-3 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
-              />
-            </div>
-
-            {/* User Search */}
-            <div className="relative">
-              {userSearch && (
-                <button
-                  className="absolute right-2 top-2.5 text-gray-400 hover:text-white"
-                  onClick={() => setUserSearch("")}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-              {isLoadingUsers ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin h-5 w-5 border-2 border-orange-500 rounded-full border-t-transparent"></div>
-                  <span className="ml-2 text-sm text-gray-400">Loading users...</span>
-                </div>
-              ) : filteredUsers.length === 0 && filteredOfflineUsers.length === 0 ? (
-                userSearch ? (
-                  <p className="text-gray-400 text-center text-sm py-2">No users match your search</p>
-                ) : (
-                  <p className="text-gray-400 text-center text-sm py-2">No users found</p>
-                )
-              ) : (
-                <div className="">
-                  {/* Online Users */}
-                  {filteredUsers.length > 0 && (
-                    <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 justify-between ">
-                        Online Lords{" "}
-                        <span className="bg-green-600 px-2 py-0.5 text-xs font-medium">
-                          <span className="text-green">{onlineUsers.length}</span>
-                        </span>
-                      </div>
-                      <ul className="">
-                        {filteredUsers
-                          .filter((user) => user && user.id !== userId)
-                          .map((user) => (
-                            <li
-                              key={user.id}
-                              className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
-                                user.id === userId
-                                  ? "bg-orange-600/20 border-l-2 border-orange "
-                                  : user?.id === directMessageRecipientId
-                                    ? "bg-orange/10 border-l-2 border-orange"
-                                    : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
-                              }`}
-                            >
-                              <button
-                                className="flex items-center w-full focus:outline-none"
-                                onClick={() => {
-                                  if (user.id !== userId) {
-                                    selectRecipient(user.id);
-                                  }
-                                }}
-                                disabled={user.id === userId}
-                              >
-                                <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2">
-                                  {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                                </div>
-                                <span className="text-sm truncate font-medium rounded">
-                                  {user.username || user.id} {user.id === userId && "(You)"}
-                                </span>
-                                {/* Status indicator */}
-                                <div className="ml-auto w-2 h-2 bg-green-500"></div>
-                                {/* Unread message notification badge */}
-                                {user.id !== userId && unreadMessages[user.id] > 0 && (
-                                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                                    {unreadMessages[user.id]}
-                                  </span>
-                                )}
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Offline Users */}
-                  {filteredOfflineUsers.length > 0 && (
-                    <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-                        Offline
-                      </div>
-                      <ul className="space-y-2">
-                        {filteredOfflineUsers.map((user) => (
-                          <li
-                            key={user.id}
-                            className={`flex items-center px-2 cursor-pointer transition-colors opacity-60 ${
-                              user?.id === directMessageRecipientId
-                                ? "bg-gray-800/30 border-l-2 border-gray-500"
-                                : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
-                            }`}
-                          >
-                            <button
-                              className="flex items-center w-full focus:outline-none"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                selectRecipient(user.id);
-                              }}
-                            >
-                              <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2">
-                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                              </div>
-                              <span className="text-sm truncate font-medium text-gray-400">
-                                {user.username || user.id}
-                              </span>
-                              {/* Unread message notification badge */}
-                              {unreadMessages[user.id] > 0 && (
-                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                                  {unreadMessages[user.id]}
-                                </span>
-                              )}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Chat Area */}
       <div
         className={`flex flex-col ${isMobileView && sidebarVisible ? "hidden" : "flex"} md:flex overflow-hidden w-96`}
       >
         {/* Chat Header */}
-        <div className="from-black px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
-          <div className="flex items-center">
-            <div className="truncate h6">
-              {directMessageRecipientId ? (
-                `Chat with ${
-                  [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)?.username ||
-                  directMessageRecipientId
-                }`
-              ) : activeRoomId ? (
-                `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
-              ) : (
-                <span className="cursor-pointer hover:text-orange-300" onClick={switchToGlobalChat}>
-                  Game Chat
+        <div className="from-black/80 px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
+          <div className="flex items-center gap-2">
+            {/* Room/DM Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsRoomsVisible(!isRoomsVisible)}
+                className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="truncate max-w-[150px]">
+                  {directMessageRecipientId
+                    ? `Chat with ${
+                        [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
+                          ?.username || directMessageRecipientId
+                      }`
+                    : activeRoomId
+                      ? `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
+                      : "Game Chat"}
                 </span>
+              </button>
+              {isRoomsVisible && (
+                <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
+                  <div className="p-2 border-b border-gold/30">
+                    <input
+                      type="text"
+                      placeholder="Search rooms..."
+                      value={roomSearch}
+                      onChange={(e) => setRoomSearch(e.target.value)}
+                      className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
+                    />
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {filteredRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        onClick={() => {
+                          joinRoomFromSidebar(room.id);
+                          setIsRoomsVisible(false);
+                        }}
+                        className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
+                          room.id === activeRoomId ? "bg-gold/30" : ""
+                        }`}
+                      >
+                        <span className="text-sm">{room.name || room.id}</span>
+                        {room.userCount && (
+                          <span className="ml-2 text-xs bg-gold/20 px-1 rounded">{room.userCount}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Users Button */}
+            <button
+              onClick={() => setSidebarVisible(!sidebarVisible)}
+              className="text-gold/70 hover:text-gold transition-colors p-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+            </button>
           </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => chatActions.toggleExpand()}
@@ -907,7 +702,7 @@ function ChatModule() {
 
         {/* Messages display */}
         <div
-          className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-gradient-to-b from-black to-gray-950`}
+          className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-gradient-to-b from-black/50 to-gray-950/50 transition-all duration-300`}
           ref={chatContainerRef}
         >
           {isStoreLoadingMessages ? (
@@ -946,7 +741,6 @@ function ChatModule() {
 
               <div className="space-y-1">
                 {messageGroups.map((group, groupIndex) => {
-                  // Create a unique key based on the group's first message id and index
                   const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
                   return (
                     <MessageGroupComponent
@@ -957,7 +751,6 @@ function ChatModule() {
                     />
                   );
                 })}
-                {/* Always keep the scroll anchor at the end of the content */}
                 <div ref={messagesEndRef} style={{ height: "", clear: "both" }} />
               </div>
             </>
@@ -967,6 +760,114 @@ function ChatModule() {
         {/* Message input */}
         <MessageInput onSendMessage={handleSendMessage} />
       </div>
+
+      {/* Users Sidebar - Now as a dropdown */}
+      {sidebarVisible && (
+        <div
+          className={`${
+            isMobileView ? "absolute z-10" : "w-72"
+          } md:w-72 md:relative from-black/80 to-gray-950/80 text-gray-200 shadow-lg flex-shrink-0 flex flex-col border-l border-gold/30`}
+        >
+          <div className="px-2 py-2 border-b border-gold/30">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full pl-3 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
+            />
+          </div>
+
+          <div className="overflow-y-auto flex-1">
+            {/* Online Users */}
+            {filteredUsers.length > 0 && (
+              <div>
+                <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+                  Online Lords{" "}
+                  <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
+                </div>
+                <ul>
+                  {filteredUsers
+                    .filter((user) => user && user.id !== userId)
+                    .map((user) => (
+                      <li
+                        key={user.id}
+                        className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
+                          user.id === userId
+                            ? "bg-orange-600/20 border-l-2 border-orange"
+                            : user?.id === directMessageRecipientId
+                              ? "bg-orange/10 border-l-2 border-orange"
+                              : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
+                        }`}
+                      >
+                        <button
+                          className="flex items-center w-full focus:outline-none"
+                          onClick={() => {
+                            if (user.id !== userId) {
+                              selectRecipient(user.id);
+                              setSidebarVisible(false);
+                            }
+                          }}
+                          disabled={user.id === userId}
+                        >
+                          <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2">
+                            {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                          </div>
+                          <span className="text-sm truncate font-medium">
+                            {user.username || user.id} {user.id === userId && "(You)"}
+                          </span>
+                          <div className="ml-auto w-2 h-2 bg-green-500"></div>
+                          {user.id !== userId && unreadMessages[user.id] > 0 && (
+                            <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                              {unreadMessages[user.id]}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Offline Users */}
+            {filteredOfflineUsers.length > 0 && (
+              <div>
+                <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Offline</div>
+                <ul>
+                  {filteredOfflineUsers.map((user) => (
+                    <li
+                      key={user.id}
+                      className={`flex items-center px-2 py-1 cursor-pointer transition-colors opacity-60 ${
+                        user?.id === directMessageRecipientId
+                          ? "bg-gray-800/30 border-l-2 border-gray-500"
+                          : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
+                      }`}
+                    >
+                      <button
+                        className="flex items-center w-full focus:outline-none"
+                        onClick={() => {
+                          selectRecipient(user.id);
+                          setSidebarVisible(false);
+                        }}
+                      >
+                        <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2">
+                          {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                        </div>
+                        <span className="text-sm truncate font-medium text-gray-400">{user.username || user.id}</span>
+                        {unreadMessages[user.id] > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                            {unreadMessages[user.id]}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
