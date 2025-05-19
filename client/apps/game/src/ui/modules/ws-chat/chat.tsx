@@ -112,8 +112,13 @@ function ChatModule() {
   });
 
   const hasUnreadMessages = useMemo(() => {
-    return Object.values(unreadMessages).some((count) => count > 0);
-  }, [unreadMessages]);
+    // Only check for unread direct messages
+    return Object.entries(unreadMessages).some(([userId, count]) => {
+      // Only count unread messages from users (not rooms or global)
+      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
+      return isUser && count > 0;
+    });
+  }, [unreadMessages, onlineUsers, offlineUsers]);
 
   // Update localStorage when unread messages change
   useEffect(() => {
@@ -287,12 +292,6 @@ function ChatModule() {
     setIsInitialScrollComplete(false); // Reset scroll state
     chatActions.selectRoom(roomId);
 
-    // Clear unread messages for this room
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [roomId]: 0,
-    }));
-
     // Then join the socket.io room
     chatClient.joinRoom(roomId);
 
@@ -419,14 +418,7 @@ function ChatModule() {
     setMessages,
   );
 
-  useRoomMessageEvents(
-    chatClient,
-    activeRoomId || "",
-    addMessage,
-    setUnreadMessages,
-    _setIsLoadingMessagesLocal, // Pass local setter to hooks
-    setMessages,
-  );
+  useRoomMessageEvents(chatClient, activeRoomId || "", addMessage, _setIsLoadingMessagesLocal, setMessages);
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
@@ -843,7 +835,7 @@ function ChatModule() {
                           <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
                         </div>
                         {filteredUsers
-                          .filter((user) => user && user.id !== userId)
+                          .filter((user) => user && user?.id !== userId)
                           .map((user) => (
                             <button
                               key={user.id}
