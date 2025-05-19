@@ -2,6 +2,148 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-bold text-white transition-all duration-200 ease-in-out;
+  }
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600;
+  }
+  .btn-secondary {
+    @apply bg-gray-500 hover:bg-gray-600;
+  }
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+/* Add any other global styles or overrides here */
+body {
+  overscroll-behavior: none;
+  /* Additional global styles */
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  @apply bg-brown/10;
+  /* background: #f1f1f1; */
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  @apply bg-gold/30;
+  border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gold/50;
+}
+
+.clip-angled {
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+}
+
+.clip-angled-tlb {
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+}
+
+.clip-angled-br {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+}
+
+.clip-angled-tr {
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+}
+
+.clip-angled-bl {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+}
+
+.gold-gradient-text {
+  background: linear-gradient(172deg, #fef08a 0%, #d4af37 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tooltip-text-color {
+  color: #fef08a !important;
+}
+
+.tooltip-arrow-color {
+  border-color: #fef08a !important;
+}
+
+.select-item-blue {
+  background: linear-gradient(90deg, #0000ff 0%, #0000aa 100%);
+}
+
+.move-button-animation {
+  animation: moveButton 0.5s infinite alternate;
+}
+
+@keyframes moveButton {
+  from {
+    transform: translateY(-2px);
+  }
+  to {
+    transform: translateY(2px);
+  }
+}
+
+.loading-animation {
+  filter: drop-shadow(0 0 0.75rem crimson);
+  animation: loadingAnimation 1s infinite alternate;
+}
+
+@keyframes loadingAnimation {
+  from {
+    filter: drop-shadow(0 0 0.2rem #fde047);
+  }
+  to {
+    filter: drop-shadow(0 0 1rem #fde047);
+  }
+}
+
+.bordered-text {
+  -webkit-text-stroke: 1.5px black; /* For WebKit browsers */
+  text-stroke: 1.5px black; /* Standard property */
+}
+
+.highlight-central-cell {
+  animation: highlightPulse 2s infinite;
+}
+
+@keyframes highlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); /* Gold color with some transparency */
+  }
+  70% {
+    box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0); /* Expand shadow and fade out */
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); /* Reset shadow */
+  }
+}
+
 html,
 body {
   overflow: hidden;

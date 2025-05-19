@@ -754,7 +754,7 @@ function ChatModule() {
                               className={`flex items-center px-2 py-1 cursor-pointer transition-colors   ${
                                 user.id === userId
                                   ? "bg-orange-600/20 border-l-2 border-orange "
-                                  : user.id === directMessageRecipientId
+                                  : user?.id === directMessageRecipientId
                                     ? "bg-orange/10 border-l-2 border-orange"
                                     : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
                               }`}
@@ -800,7 +800,7 @@ function ChatModule() {
                           <li
                             key={user.id}
                             className={`flex items-center px-2 cursor-pointer transition-colors opacity-60 ${
-                              user.id === directMessageRecipientId
+                              user?.id === directMessageRecipientId
                                 ? "bg-gray-800/30 border-l-2 border-gray-500"
                                 : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
                             }`}
@@ -847,7 +847,7 @@ function ChatModule() {
             <div className="truncate h6">
               {directMessageRecipientId ? (
                 `Chat with ${
-                  [...onlineUsers, ...offlineUsers].find((user) => user.id === directMessageRecipientId)?.username ||
+                  [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)?.username ||
                   directMessageRecipientId
                 }`
               ) : activeRoomId ? (

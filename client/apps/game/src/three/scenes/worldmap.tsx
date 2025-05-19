@@ -221,6 +221,9 @@ export default class WorldmapScene extends HexagonScene {
       setTimeout(() => {
         const armyPosition = this.armiesPositions.get(explorerId);
         if (armyPosition) {
+          if (resourceId === 0) {
+            return;
+          }
           const resource = findResourceById(resourceId);
           // Play the sound for the resource gain
           playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);

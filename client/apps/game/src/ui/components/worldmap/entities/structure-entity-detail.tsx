@@ -12,12 +12,11 @@ import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, GuildInfo, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
-import { MessageCircle } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
+import { useQuery } from "@tanstack/react-query";
+import { Loader, MessageCircle } from "lucide-react";
+import { memo, useMemo } from "react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
-import { DefenseTroop } from "../../military/structure-defence";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { RealmResourcesIO } from "../../resources/realm-resources-io";
 import { ImmunityTimer } from "../structures/immunity-timer";
@@ -45,31 +44,55 @@ export const StructureEntityDetail = memo(
     } = useDojo();
 
     const userAddress = ContractAddress(account.account.address);
-    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | null>(null);
-    const [resources, setResources] = useState<ComponentValue<ClientComponents["Resource"]["schema"]> | null>(null);
-    const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
-    const [isAlly, setIsAlly] = useState<boolean>(false);
-    const [guards, setGuards] = useState<DefenseTroop[]>([]);
-    const [addressName, setAddressName] = useState<string | undefined>(undefined);
 
-    useEffect(() => {
-      const fetchStructure = async () => {
+    const {
+      data: structureDetails,
+      isLoading: isLoadingStructure,
+      // error: structureError, // Can be used for error UI
+    } = useQuery({
+      queryKey: ["structureDetails", String(structureEntityId), String(userAddress)],
+      queryFn: async () => {
+        if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
+
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        if (!structure || !resources) return;
+        if (!structure)
+          return {
+            structure: null,
+            resources: null,
+            playerGuild: undefined,
+            guards: [],
+            isAlly: false,
+            addressName: MERCENARIES,
+            isMine: false,
+          };
+
+        const isMine = structure.owner === userAddress;
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-        const guards = structure ? getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n) : [];
+        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-        setIsAlly(isAlly);
-        // explorer troops that are roaming the world are always daydreams agents if they are not owned by a player
-        setAddressName(structure?.owner ? getAddressName(structure?.owner, components) : MERCENARIES);
-        setStructure(structure);
-        setResources(resources);
-        setPlayerGuild(guild);
-        setGuards(guards);
-      };
-      fetchStructure();
-    }, [structureEntityId, userAddress]);
+        const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
+
+        return {
+          structure,
+          resources,
+          playerGuild: guild,
+          guards,
+          isAlly,
+          addressName,
+          isMine,
+        };
+      },
+      staleTime: 30000, // 30 seconds
+    });
+
+    const structure = structureDetails?.structure;
+    const resources = structureDetails?.resources;
+    const playerGuild = structureDetails?.playerGuild;
+    const guards = structureDetails?.guards || [];
+    const isAlly = structureDetails?.isAlly || false;
+    const addressName = structureDetails?.addressName;
+    const isMine = structureDetails?.isMine || false;
 
     const isRealmOrVillage =
       structure?.base.category === StructureType.Realm || structure?.base.category === StructureType.Village;
@@ -83,12 +106,9 @@ export const StructureEntityDetail = memo(
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-    const isMine = useMemo(() => {
-      return structure?.owner === userAddress;
-    }, [structure?.owner, userAddress]);
-
     const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
 
+    console.log("CHAT_DEBUG: addressName", addressName);
     const handleChatClick = () => {
       if (isMine) {
         openChat();
@@ -113,7 +133,15 @@ export const StructureEntityDetail = memo(
       return unpackValue(structure?.resources_packed || 0n);
     }, [structure]);
 
-    if (!structure) return null;
+    if (isLoadingStructure) {
+      return (
+        <div className="flex items-center justify-center h-full mt-2 ">
+          <Loader className="animate-spin" />
+        </div>
+      );
+    }
+
+    if (!structure || !structureDetails) return null;
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -137,9 +165,11 @@ export const StructureEntityDetail = memo(
             >
               {isAlly ? "Ally" : "Enemy"}
             </div>
-            <button onClick={handleChatClick}>
-              <MessageCircle />
-            </button>
+            {addressName !== undefined && (
+              <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
+                <MessageCircle />
+              </button>
+            )}
           </div>
         </div>
 

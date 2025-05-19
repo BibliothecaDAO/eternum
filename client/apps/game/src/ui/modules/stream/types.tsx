@@ -15,4 +15,5 @@ export interface EventData {
   timestamp: number;
   position: Position | undefined;
   address: ContractAddress | undefined;
+  entityId: string | number;
 }

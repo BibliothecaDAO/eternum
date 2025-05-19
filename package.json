@@ -10,6 +10,7 @@
     "build:mobile": "pnpm --dir ./client/apps/eternum-mobile build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
+    "dev:mainnet": "NODE_ENV=mainnet pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
     "dev:mobile": "pnpm --dir ./client/apps/eternum-mobile dev",

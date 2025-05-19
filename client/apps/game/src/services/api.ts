@@ -1,4 +1,5 @@
-import { ContractAddress, HexPosition, ID, StructureType } from "@bibliothecadao/types";
+import { TradeEvent } from "@/ui/components/trading/market-trading-history";
+import { ContractAddress, HexPosition, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
@@ -6,6 +7,20 @@ const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
+  SWAP_EVENTS: `
+    SELECT 
+      se.entity_id,
+      se.resource_type,
+      se.lords_amount,
+      se.resource_amount,
+      se.resource_price,
+      se.buy,
+      se.timestamp,
+      s.owner
+    FROM \`s1_eternum-SwapEvent\` se
+    LEFT JOIN \`s1_eternum-Structure\` s ON se.entity_id = s.entity_id
+    ORDER BY se.timestamp DESC;
+  `,
   OTHER_STRUCTURES: `
     SELECT entity_id AS entityId, \`metadata.realm_id\` AS realmId, owner, category FROM [s1_eternum-Structure] WHERE owner != '{owner}';
   `,
@@ -147,6 +162,26 @@ export interface Hyperstructure {
   hyperstructure_id: number;
 }
 
+export enum EventType {
+  SWAP = "AMM Swap",
+  ORDERBOOK = "Orderbook",
+}
+
+export interface Resource {
+  resourceId: number;
+  amount: number;
+}
+
+interface SwapEventResponse {
+  entity_id: number;
+  resource_type: number;
+  lords_amount: string;
+  resource_amount: string;
+  resource_price: string;
+  buy: number;
+  timestamp: string;
+  owner: ContractAddress;
+}
 /**
  * Fetch settlement structures from the API
  */
@@ -289,4 +324,44 @@ export async function fetchOtherStructures(
   }
 
   return await response.json();
+}
+
+/**
+ * Fetch swap events from the API and transform them into TradeEvents
+ */
+export async function fetchSwapEvents(userEntityIds: ID[]): Promise<TradeEvent[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.SWAP_EVENTS)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch swap events: ${response.statusText}`);
+  }
+
+  const events: SwapEventResponse[] = await response.json();
+
+  return events.map((event) => {
+    const isBuy = event.buy === 1;
+    const lordsAmount = BigInt(event.lords_amount);
+    const resourceAmount = BigInt(event.resource_amount);
+
+    return {
+      type: EventType.SWAP,
+      event: {
+        takerId: event.entity_id,
+        makerId: 0, // For swap events, there's no maker
+        makerAddress: 0n,
+        takerAddress: event.owner,
+        isYours: userEntityIds.includes(event.entity_id),
+        resourceGiven: {
+          resourceId: isBuy ? ResourcesIds.Lords : event.resource_type,
+          amount: Number(isBuy ? lordsAmount : resourceAmount),
+        },
+        resourceTaken: {
+          resourceId: isBuy ? event.resource_type : ResourcesIds.Lords,
+          amount: Number(isBuy ? resourceAmount : lordsAmount),
+        },
+        eventTime: new Date(Number(event.timestamp) * 1000),
+      },
+    };
+  });
 }
