@@ -23,7 +23,8 @@ export const InfoContainer = ({
       components: { QuestLevels },
     },
   } = useDojo();
-  const { minigames, settingsMetadata } = useMinigameStore();
+  const minigames = useMinigameStore((state) => state.minigames);
+  const settingsMetadata = useMinigameStore((state) => state.settingsMetadata);
 
   const questLevelsEntity = getComponentValue(
     QuestLevels,

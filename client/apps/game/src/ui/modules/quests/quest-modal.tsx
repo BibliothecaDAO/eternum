@@ -39,7 +39,7 @@ export const QuestModal = ({
     ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
   >(undefined);
   const [loadingQuestTile, setLoadingQuestTile] = useState(true);
-  const { setScores } = useMinigameStore();
+  const setScores = useMinigameStore((state) => state.setScores);
 
   const queryAddress = useMemo(() => account?.address, [account]);
 
