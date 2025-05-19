@@ -47,7 +47,7 @@ export class GameConfigDeployer {
   }
 
   async setupAll(account: Account, provider: EternumProvider) {
-    await this.setupNonBank(account, provider);
+    // await this.setupNonBank(account, provider);
     await this.setupBank(account, provider);
   }
 
@@ -122,14 +122,14 @@ export class GameConfigDeployer {
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await createBanks(config);
-    await this.sleepNonLocal();
-
-    // await mintResources(config);
+    // await createBanks(config);
     // await this.sleepNonLocal();
 
-    await addLiquidity(config);
+    await mintResources(config);
     await this.sleepNonLocal();
+
+    // await addLiquidity(config);
+    // await this.sleepNonLocal();
   }
 
   getResourceOutputsScaled(): ResourceOutputs {
@@ -1368,8 +1368,8 @@ export const mintResources = async (config: Config) => {
 
   await config.provider.mint_resources({
     signer: config.account,
-    receiver_id: ADMIN_BANK_ENTITY_ID,
-    resources: [ResourcesIds.Lords, lordsAmount],
+    receiver_id: 246,
+    resources: [ResourcesIds.Labor, lordsAmount * 10],
   });
 
   // Mint other resources
