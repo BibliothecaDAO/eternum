@@ -567,12 +567,12 @@ function ChatModule() {
     >
       {/* Main Chat Area */}
       <div
-        className={`flex flex-col ${isMobileView && sidebarVisible ? "hidden" : "flex"} md:flex overflow-hidden w-96`}
+        className={`flex flex-col ${isMobileView && sidebarVisible ? "hidden" : "flex"} md:flex overflow-hidden w-[700px] max-w-[35vw]`}
       >
         {/* Chat Header */}
         <div className="from-black/80 px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center gap-2">
-            {/* Room/DM Selector Dropdown */}
+            {/* Room Selector Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsRoomsVisible(!isRoomsVisible)}
@@ -585,17 +585,17 @@ function ChatModule() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+                  />
                 </svg>
                 <span className="truncate max-w-[150px]">
-                  {directMessageRecipientId
-                    ? `Chat with ${
-                        [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
-                          ?.username || directMessageRecipientId
-                      }`
-                    : activeRoomId
-                      ? `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
-                      : "Game Chat"}
+                  {activeRoomId
+                    ? `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
+                    : "Game Chat"}
                 </span>
               </button>
               {isRoomsVisible && (
@@ -610,6 +610,20 @@ function ChatModule() {
                     />
                   </div>
                   <div className="max-h-[300px] overflow-y-auto">
+                    {/* Global Chat Option */}
+                    <button
+                      onClick={() => {
+                        switchToGlobalChat();
+                        setIsRoomsVisible(false);
+                      }}
+                      className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
+                        !activeRoomId && !directMessageRecipientId ? "bg-gold/30" : ""
+                      }`}
+                    >
+                      <span className="text-sm">Game Chat</span>
+                    </button>
+
+                    {/* Rooms */}
                     {filteredRooms.map((room) => (
                       <button
                         key={room.id}
@@ -632,26 +646,114 @@ function ChatModule() {
               )}
             </div>
 
-            {/* Users Button */}
-            <button
-              onClick={() => setSidebarVisible(!sidebarVisible)}
-              className="text-gold/70 hover:text-gold transition-colors p-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* User Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setSidebarVisible(!sidebarVisible)}
+                className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                <span className="truncate max-w-[150px]">
+                  {directMessageRecipientId
+                    ? `Chat with ${
+                        [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
+                          ?.username || directMessageRecipientId
+                      }`
+                    : "Direct Messages"}
+                </span>
+              </button>
+              {sidebarVisible && (
+                <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
+                  <div className="p-2 border-b border-gold/30">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
+                    />
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {/* Online Users */}
+                    {filteredUsers.length > 0 && (
+                      <div>
+                        <div className="px-2 py-1 text-xs font-medium text-gray-400">
+                          Online Lords{" "}
+                          <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
+                        </div>
+                        {filteredUsers
+                          .filter((user) => user && user.id !== userId)
+                          .map((user) => (
+                            <button
+                              key={user.id}
+                              onClick={() => {
+                                selectRecipient(user.id);
+                                setSidebarVisible(false);
+                              }}
+                              className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
+                                user.id === directMessageRecipientId ? "bg-gold/30" : ""
+                              }`}
+                            >
+                              <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2 rounded">
+                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                              </div>
+                              <span className="text-sm truncate">{user.username || user.id}</span>
+                              <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
+                              {unreadMessages[user.id] > 0 && (
+                                <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                                  {unreadMessages[user.id]}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Offline Users */}
+                    {filteredOfflineUsers.length > 0 && (
+                      <div>
+                        <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
+                        {filteredOfflineUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            onClick={() => {
+                              selectRecipient(user.id);
+                              setSidebarVisible(false);
+                            }}
+                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
+                              user.id === directMessageRecipientId ? "bg-gold/30" : ""
+                            }`}
+                          >
+                            <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2 rounded">
+                              {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                            </div>
+                            <span className="text-sm truncate text-gray-400">{user.username || user.id}</span>
+                            {unreadMessages[user.id] > 0 && (
+                              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                                {unreadMessages[user.id]}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -760,114 +862,6 @@ function ChatModule() {
         {/* Message input */}
         <MessageInput onSendMessage={handleSendMessage} />
       </div>
-
-      {/* Users Sidebar - Now as a dropdown */}
-      {sidebarVisible && (
-        <div
-          className={`${
-            isMobileView ? "absolute z-10" : "w-72"
-          } md:w-72 md:relative from-black/80 to-gray-950/80 text-gray-200 shadow-lg flex-shrink-0 flex flex-col border-l border-gold/30`}
-        >
-          <div className="px-2 py-2 border-b border-gold/30">
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-              className="w-full pl-3 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded"
-            />
-          </div>
-
-          <div className="overflow-y-auto flex-1">
-            {/* Online Users */}
-            {filteredUsers.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-                  Online Lords{" "}
-                  <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
-                </div>
-                <ul>
-                  {filteredUsers
-                    .filter((user) => user && user.id !== userId)
-                    .map((user) => (
-                      <li
-                        key={user.id}
-                        className={`flex items-center px-2 py-1 cursor-pointer transition-colors ${
-                          user.id === userId
-                            ? "bg-orange-600/20 border-l-2 border-orange"
-                            : user?.id === directMessageRecipientId
-                              ? "bg-orange/10 border-l-2 border-orange"
-                              : "hover:bg-gray/50 hover:border-l-2 hover:border-gray-500 active:bg-orange/10 active:border-orange"
-                        }`}
-                      >
-                        <button
-                          className="flex items-center w-full focus:outline-none"
-                          onClick={() => {
-                            if (user.id !== userId) {
-                              selectRecipient(user.id);
-                              setSidebarVisible(false);
-                            }
-                          }}
-                          disabled={user.id === userId}
-                        >
-                          <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2">
-                            {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                          </div>
-                          <span className="text-sm truncate font-medium">
-                            {user.username || user.id} {user.id === userId && "(You)"}
-                          </span>
-                          <div className="ml-auto w-2 h-2 bg-green-500"></div>
-                          {user.id !== userId && unreadMessages[user.id] > 0 && (
-                            <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                              {unreadMessages[user.id]}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Offline Users */}
-            {filteredOfflineUsers.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Offline</div>
-                <ul>
-                  {filteredOfflineUsers.map((user) => (
-                    <li
-                      key={user.id}
-                      className={`flex items-center px-2 py-1 cursor-pointer transition-colors opacity-60 ${
-                        user?.id === directMessageRecipientId
-                          ? "bg-gray-800/30 border-l-2 border-gray-500"
-                          : "hover:bg-gray-800/30 hover:border-l-2 hover:border-gray-600 active:bg-gray-800/50 active:border-gray-500"
-                      }`}
-                    >
-                      <button
-                        className="flex items-center w-full focus:outline-none"
-                        onClick={() => {
-                          selectRecipient(user.id);
-                          setSidebarVisible(false);
-                        }}
-                      >
-                        <div className="h-7 w-7 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2">
-                          {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                        </div>
-                        <span className="text-sm truncate font-medium text-gray-400">{user.username || user.id}</span>
-                        {unreadMessages[user.id] > 0 && (
-                          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                            {unreadMessages[user.id]}
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
