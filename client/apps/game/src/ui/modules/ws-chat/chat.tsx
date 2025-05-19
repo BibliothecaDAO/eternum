@@ -574,6 +574,15 @@ function ChatModule() {
 
   const [isInputFocused, setIsInputFocused] = useState(false);
 
+  // Add memoized calculation for total unread messages
+  const totalUnreadMessages = useMemo(() => {
+    return Object.entries(unreadMessages).reduce((sum, [userId, count]) => {
+      // Only count unread messages from users (not rooms or global)
+      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
+      return sum + (isUser ? count : 0);
+    }, 0);
+  }, [unreadMessages, onlineUsers, offlineUsers]);
+
   // Add save chat function
   const saveChatToText = useCallback(() => {
     if (!filteredMessages.length) return;
@@ -799,9 +808,9 @@ function ChatModule() {
                       }`
                     : "Direct Messages"}
                 </span>
-                {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0) > 0 && (
+                {totalUnreadMessages > 0 && (
                   <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
-                    {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0)}
+                    {totalUnreadMessages}
                   </span>
                 )}
               </button>
