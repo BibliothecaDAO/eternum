@@ -161,6 +161,16 @@ function ChatModule() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Add effect to handle scroll when chat is reopened
+  useEffect(() => {
+    if (!isMinimized) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }
+  }, [isMinimized, scrollToBottom]);
+
   // Synchronize local loading state with Zustand store
   useEffect(() => {
     chatActions.setIsLoadingMessages(_isLoadingMessagesLocal);
