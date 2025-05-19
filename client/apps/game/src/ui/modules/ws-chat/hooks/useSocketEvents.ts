@@ -139,7 +139,6 @@ export const useRoomMessageEvents = (
   chatClient: ChatClient | null,
   activeRoom: string,
   addMessage: (message: Message) => void,
-  setUnreadMessages: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
@@ -152,13 +151,6 @@ export const useRoomMessageEvents = (
 
     const handleRoomMessage = ({ senderId, senderUsername, roomId, message, timestamp }: any) => {
       chatLogger.log(`Received room message from ${senderId} (${senderUsername}) in room ${roomId}: ${message}`);
-
-      if (roomId !== activeRoom) {
-        setUnreadMessages((prev) => ({
-          ...prev,
-          [roomId]: (prev[roomId] || 0) + 1,
-        }));
-      }
 
       addMessage({
         id: Date.now().toString(),
@@ -212,7 +204,7 @@ export const useRoomMessageEvents = (
         chatClient.socket.off("roomHistory", handleRoomHistory);
       }
     };
-  }, [chatClient, activeRoom, addMessage, setUnreadMessages, setIsLoadingMessages, setMessages]);
+  }, [chatClient, activeRoom, addMessage, setIsLoadingMessages, setMessages]);
 };
 
 // Hook for handling global message events
