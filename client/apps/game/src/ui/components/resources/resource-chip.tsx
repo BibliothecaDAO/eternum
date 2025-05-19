@@ -211,8 +211,8 @@ export const ResourceChip = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="grid grid-cols-12 w-full items-center">
-        <div className={`self-center flex w-full gap-2 justify-between ${size === "large" ? "text-lg" : ""}`}>
+      <div className="flex flex-wrap w-full items-center">
+        <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
             <span className={`${isHovered ? "font-bold animate-pulse" : ""}`}>
