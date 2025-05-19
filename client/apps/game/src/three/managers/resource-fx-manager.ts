@@ -302,7 +302,7 @@ export class ResourceFXManager {
     const texture = this.getOrLoadTexture(resourceId);
 
     if (!texture || !texture.image) {
-      console.warn("Resource texture not loaded yet, skipping FX");
+      console.warn("Resource texture not loaded yet, skipping FX", resourceId);
       return Promise.reject("Resource texture not loaded");
     }
 
