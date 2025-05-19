@@ -101,7 +101,9 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
         : (army.troops.category as TroopType)
       : TroopType.Crossbowman,
   );
-  const [selectedTier, setSelectedTier] = useState<TroopTier>(TroopTier.T1);
+  const [selectedTier, setSelectedTier] = useState<TroopTier>(
+    army && army.troops.count > 0n ? (army.troops.tier as TroopTier) : TroopTier.T1,
+  );
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
@@ -306,7 +308,6 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
 
           <div className="mb-4">
             <h5 className="text-center my-4">SELECT TROOP TYPE</h5>
-
             <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
               {troops.map((troop) => {
                 const balance = getBalance(
