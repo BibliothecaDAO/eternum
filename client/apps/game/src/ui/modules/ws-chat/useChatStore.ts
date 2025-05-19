@@ -28,7 +28,7 @@ interface ChatStoreState {
 
 export const useChatStore = create<ChatStoreState>((set, get) => ({
   isExpanded: false,
-  isMinimized: true, // Start minimized by default
+  isMinimized: false, // Start minimized by default
   activeView: "global",
   activeRoomId: null,
   directMessageRecipientId: null,
