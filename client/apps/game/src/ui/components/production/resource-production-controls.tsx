@@ -121,7 +121,7 @@ export const ResourceProductionControls = ({
 
   useEffect(() => {
     // don't take wonder bonus into account because production time is not affected by it
-    setTicks(Math.floor(productionAmount / (outputResourceAmountWithBonus / bonus)));
+    setTicks(Math.floor(productionAmount / outputResourceAmountWithBonus));
   }, [productionAmount, outputResourceAmountWithBonus, bonus]);
 
   const rawCurrentInputs = useMemo(() => {
