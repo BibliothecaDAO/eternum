@@ -28,7 +28,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
     account: { account },
   } = useDojo();
 
-  const { selectedGuild: selectedGuildEntityId } = useSocialStore();
+  const selectedGuildEntityId = useSocialStore((state) => state.selectedGuild);
 
   const guildMembers = useGuildMembers(selectedGuildEntityId);
 

@@ -27,14 +27,12 @@ export const Guilds = ({
     account: { account },
   } = useDojo();
 
-  const {
-    guildsViewGuildInvites,
-    guildsGuildSearchTerm,
-    guildsActiveSort,
-    setGuildsViewGuildInvites,
-    setGuildsGuildSearchTerm,
-    setGuildsActiveSort,
-  } = useSocialStore();
+  const guildsViewGuildInvites = useSocialStore((state) => state.guildsViewGuildInvites);
+  const guildsGuildSearchTerm = useSocialStore((state) => state.guildsGuildSearchTerm);
+  const guildsActiveSort = useSocialStore((state) => state.guildsActiveSort);
+  const setGuildsViewGuildInvites = useSocialStore((state) => state.setGuildsViewGuildInvites);
+  const setGuildsGuildSearchTerm = useSocialStore((state) => state.setGuildsGuildSearchTerm);
+  const setGuildsActiveSort = useSocialStore((state) => state.setGuildsActiveSort);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingGuild, setIsCreatingGuild] = useState(false);
