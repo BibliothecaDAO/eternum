@@ -524,6 +524,8 @@ function ChatModule() {
     }, 200);
   }, [chatActions, scrollToBottom]);
 
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
   // If username is not set, show login form
   if (!isUsernameSet) {
     return <LoginForm onLogin={handleLogin} />;
@@ -563,14 +565,14 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col md:flex-row overflow-hidden bg-brown/10 z-100 pointer-events-auto ${
+      className={`flex flex-col md:flex-row overflow-hidden bg-black/30 z-100 pointer-events-auto transition-all duration-300 ${
         isExpanded ? "h-[600px]" : "h-72"
-      }`}
+      } ${isInputFocused ? "bg-black/60" : "bg-black/20"}`}
     >
       {/* Main Chat Area */}
       <div className={`flex flex-col flex overflow-hidden w-[700px] max-w-[35vw]`}>
         {/* Chat Header */}
-        <div className="bg-black/30 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
+        <div className=" flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center">
             {/* Room Selector Tab */}
             <div className="relative">
@@ -819,10 +821,7 @@ function ChatModule() {
         </div>
 
         {/* Messages display */}
-        <div
-          className={`flex-1 overflow-y-auto p-1 flex flex-col bg-black/30 transition-all duration-300`}
-          ref={chatContainerRef}
-        >
+        <div className={`flex-1 overflow-y-auto p-1 flex flex-col transition-all duration-300`} ref={chatContainerRef}>
           {isStoreLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="animate-spin h-8 w-8 border-3 border-orange-500 rounded-full border-t-transparent mb-4"></div>
@@ -876,7 +875,7 @@ function ChatModule() {
         </div>
 
         {/* Message input */}
-        <MessageInput onSendMessage={handleSendMessage} />
+        <MessageInput onSendMessage={handleSendMessage} onFocusChange={setIsInputFocused} />
       </div>
     </div>
   );
