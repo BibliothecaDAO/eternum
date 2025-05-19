@@ -570,16 +570,18 @@ function ChatModule() {
       {/* Main Chat Area */}
       <div className={`flex flex-col flex overflow-hidden w-[700px] max-w-[35vw]`}>
         {/* Chat Header */}
-        <div className="bg-black/30 px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
-          <div className="flex items-center gap-2">
-            {/* Room Selector Dropdown */}
+        <div className="bg-black/30 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
+          <div className="flex items-center">
+            {/* Room Selector Tab */}
             <div className="relative">
               <button
                 onClick={() => {
                   setIsRoomsVisible(!isRoomsVisible);
-                  setIsUsersVisible(false); // Close DM popup if open
+                  setIsUsersVisible(false);
                 }}
-                className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
+                  activeRoomId || (!activeRoomId && !directMessageRecipientId) ? "bg-gold/20 text-gold" : ""
+                }`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -620,7 +622,7 @@ function ChatModule() {
                       onClick={() => {
                         switchToGlobalChat();
                         setIsRoomsVisible(false);
-                        setIsUsersVisible(false); // Close DM popup when switching to global chat
+                        setIsUsersVisible(false);
                       }}
                       className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
                         !activeRoomId && !directMessageRecipientId ? "bg-gold/30" : ""
@@ -636,7 +638,7 @@ function ChatModule() {
                         onClick={() => {
                           joinRoomFromSidebar(room.id);
                           setIsRoomsVisible(false);
-                          setIsUsersVisible(false); // Close DM popup when joining a room
+                          setIsUsersVisible(false);
                         }}
                         className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
                           room.id === activeRoomId ? "bg-gold/30" : ""
@@ -653,14 +655,16 @@ function ChatModule() {
               )}
             </div>
 
-            {/* User Selector Dropdown */}
+            {/* User Selector Tab */}
             <div className="relative">
               <button
                 onClick={() => {
                   setIsUsersVisible(!isUsersVisible);
-                  setIsRoomsVisible(false); // Close room popup if open
+                  setIsRoomsVisible(false);
                 }}
-                className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
+                className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors ${
+                  directMessageRecipientId ? "bg-gold/20 text-gold" : ""
+                }`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -712,7 +716,7 @@ function ChatModule() {
                               onClick={() => {
                                 selectRecipient(user.id);
                                 setIsUsersVisible(false);
-                                setIsRoomsVisible(false); // Close room popup when selecting a DM recipient
+                                setIsRoomsVisible(false);
                               }}
                               className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
                                 user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -743,7 +747,7 @@ function ChatModule() {
                             onClick={() => {
                               selectRecipient(user.id);
                               setIsUsersVisible(false);
-                              setIsRoomsVisible(false); // Close room popup when selecting a DM recipient
+                              setIsRoomsVisible(false);
                             }}
                             className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
                               user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -768,7 +772,7 @@ function ChatModule() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-2">
             <button
               onClick={() => chatActions.toggleExpand()}
               className="text-gold/70 hover:text-gold transition-colors p-1"
