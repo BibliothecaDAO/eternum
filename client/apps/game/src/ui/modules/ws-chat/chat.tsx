@@ -17,7 +17,7 @@ import {
   useRoomMessageEvents,
   useUserEvents,
 } from "./hooks/useSocketEvents";
-import { Message, Room, User } from "./types";
+import { Message, Room } from "./types";
 import { useChatStore } from "./useChatStore";
 import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./utils/filterUtils";
 import { groupMessagesBySender } from "./utils/messageUtils";
@@ -494,7 +494,6 @@ function ChatModule() {
 
   // Filter users based on search input
   const filteredUsers = useMemo(() => {
-    // Only show online users in the DM list
     const users = filterUsersBySearch(onlineUsers, userSearch);
     return users.sort((a, b) => {
       const unreadA = (unreadMessages[a.id] || 0) > 0;
@@ -511,10 +510,23 @@ function ChatModule() {
     });
   }, [onlineUsers, userSearch, unreadMessages]);
 
-  // Filter offline users based on search input - this is now redundant since we only show online users
+  // Filter offline users based on search input
   const filteredOfflineUsers = useMemo(() => {
-    return [] as User[];
-  }, []);
+    const users = filterUsersBySearch(offlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) {
+        return -1; // A comes first
+      }
+      if (!unreadA && unreadB) {
+        return 1; // B comes first
+      }
+      // If both have or don't have unread, sort by username
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [offlineUsers, userSearch, unreadMessages]);
 
   // Add resize listener to detect mobile view
   useEffect(() => {
