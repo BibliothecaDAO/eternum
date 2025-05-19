@@ -6,10 +6,10 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ContractAddress, GuildInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
-import { MessageCircle, Trash2 } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { useQuery } from "@tanstack/react-query";
+import { Loader, MessageCircle, Trash2 } from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "../armies/army-warning";
@@ -32,25 +32,70 @@ export const ArmyEntityDetail = memo(
       },
     } = useDojo();
 
-    const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
-      undefined,
-    );
-    const [explorerResources, setExplorerResources] = useState<
-      ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
-    >(undefined);
-    const [structureResources, setStructureResources] = useState<
-      ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
-    >(undefined);
-    const [structure, setStructure] = useState<
-      ComponentValue<ClientComponents["Structure"]["schema"]> | null | undefined
-    >(undefined);
     const userAddress = ContractAddress(account.address);
-    const [addressName, setAddressName] = useState<string | undefined>(undefined);
-    const [playerGuild, setPlayerGuild] = useState<GuildInfo | undefined>(undefined);
-    const [isAlly, setIsAlly] = useState(false);
-    const [stamina, setStamina] = useState<{ amount: bigint; updated_tick: bigint } | undefined>(undefined);
-    const [maxStamina, setMaxStamina] = useState<number | undefined>(undefined);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
+
+    const {
+      data: explorerData,
+      isLoading: isLoadingExplorer,
+      // error: explorerError, // Available if error handling is needed
+    } = useQuery({
+      queryKey: ["explorer", String(armyEntityId)],
+      queryFn: async () => {
+        if (!toriiClient || !armyEntityId) return undefined;
+        return getExplorerFromToriiClient(toriiClient, armyEntityId);
+      },
+      staleTime: 30000, // 30 seconds
+    });
+
+    const explorer = explorerData?.explorer;
+    const explorerResources = explorerData?.resources;
+
+    const {
+      data: structureData,
+      isLoading: isLoadingStructure,
+      // error: structureError, // Available if error handling is needed
+    } = useQuery({
+      queryKey: ["structure", explorer?.owner ? String(explorer.owner) : undefined],
+      queryFn: async () => {
+        if (!toriiClient || !explorer?.owner) return undefined;
+        return getStructureFromToriiClient(toriiClient, explorer.owner);
+      },
+      enabled: !!explorer?.owner,
+      staleTime: 30000, // 30 seconds
+    });
+
+    const structure = structureData?.structure;
+    const structureResources = structureData?.resources;
+
+    const derivedData = useMemo(() => {
+      if (!explorer) return undefined;
+
+      const { currentArmiesTick } = getBlockTimestamp();
+      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+      const maxStamina = StaminaManager.getMaxStamina(
+        explorer.troops.category as TroopType,
+        explorer.troops.tier as TroopTier,
+      );
+
+      const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
+      const userGuild = getGuildFromPlayerAddress(userAddress, components);
+      const isMine = structure?.owner === userAddress;
+      const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
+
+      const addressName = structure?.owner
+        ? getAddressName(structure?.owner, components)
+        : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
+
+      return {
+        stamina,
+        maxStamina,
+        playerGuild: guild,
+        isAlly,
+        addressName,
+        isMine,
+      };
+    }, [explorer, structure, components, userAddress, armyEntityId]);
 
     const handleDeleteExplorer = async () => {
       setIsLoadingDelete(true);
@@ -66,56 +111,13 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    useEffect(() => {
-      const fetch = async () => {
-        const { explorer, resources: explorerResources } = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        if (!explorer) {
-          return {
-            explorer: undefined,
-            explorerResources: undefined,
-            structure: undefined,
-            structureResources: undefined,
-          };
-        }
-        const { structure, resources: structureResources } = await getStructureFromToriiClient(
-          toriiClient,
-          explorer.owner,
-        );
-
-        const { currentArmiesTick } = getBlockTimestamp();
-        const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
-        const maxStamina = StaminaManager.getMaxStamina(
-          explorer.troops.category as TroopType,
-          explorer.troops.tier as TroopTier,
-        );
-
-        const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-        const userGuild = getGuildFromPlayerAddress(userAddress, components);
-        const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-        setIsAlly(isAlly);
-        setAddressName(
-          structure?.owner
-            ? getAddressName(structure?.owner, components)
-            : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId),
-        );
-        setStamina(stamina);
-        setMaxStamina(maxStamina);
-        setPlayerGuild(guild);
-        setExplorer(explorer);
-        setExplorerResources(explorerResources);
-        setStructure(structure);
-        setStructureResources(structureResources);
-      };
-      fetch();
-    }, [armyEntityId]);
-
     const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
 
     const handleChatClick = () => {
-      if (isMine) {
+      if (derivedData?.isMine) {
         openChat();
       } else {
-        const userId = getUserIdByUsername(addressName || "");
+        const userId = getUserIdByUsername(derivedData?.addressName || "");
 
         if (userId) {
           selectDirectMessageRecipient(userId);
@@ -123,36 +125,18 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    useEffect(() => {
-      const fetchStructure = async () => {
-        if (!explorer) return;
-        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
-
-        // If a structure object is returned, use it; otherwise explicitly mark as null (fetched, but none found)
-        if (result.structure !== undefined) {
-          // Found (may still be undefined if Torii entity did not include Structure model)
-          if (result.structure) {
-            setStructure(result.structure);
-          } else {
-            setStructure(null);
-          }
-          // Always set resources even if undefined to stop further fetching attempts
-          setStructureResources(result.resources);
-        } else {
-          // In unexpected scenario (shouldn't happen), mark as null to avoid indefinite loading
-          setStructure(null);
-        }
-      };
-      fetchStructure();
-    }, [explorer]);
-
-    const isMine = structure?.owner === userAddress;
-
-    // Precompute common class strings
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-    if (!explorer) return null;
+    if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
+      return (
+        <div className="flex items-center justify-center h-full mt-2 ">
+          <Loader className="animate-spin" />
+        </div>
+      );
+    }
+
+    if (!explorer || !derivedData) return null;
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -160,24 +144,26 @@ export const ArmyEntityDetail = memo(
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
           <div className="flex flex-col">
             <h4 className={`${headerTextClass} font-bold`}>
-              {addressName} <span className="text-xs text-gold/80">({armyEntityId})</span>
+              {derivedData.addressName} <span className="text-xs text-gold/80">({armyEntityId})</span>
             </h4>
-            {playerGuild && (
+            {derivedData.playerGuild && (
               <div className="text-xs text-gold/80">
                 {"< "}
-                {playerGuild.name}
+                {derivedData.playerGuild.name}
                 {" >"}
               </div>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className={`px-2 py-1 rounded text-xs font-bold ${isAlly ? "bg-green/20" : "bg-red/20"}`}>
-              {isAlly ? "Ally" : "Enemy"}
+            <div className={`px-2 py-1 rounded text-xs font-bold ${derivedData.isAlly ? "bg-green/20" : "bg-red/20"}`}>
+              {derivedData.isAlly ? "Ally" : "Enemy"}
             </div>
-            <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-              <MessageCircle />
-            </button>
-            {isMine && (
+            {derivedData.addressName !== undefined && (
+              <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
+                <MessageCircle />
+              </button>
+            )}
+            {derivedData.isMine && (
               <button
                 onClick={handleDeleteExplorer}
                 className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${
@@ -199,26 +185,6 @@ export const ArmyEntityDetail = memo(
 
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col w-full gap-2">
-            {/* Army name - made more prominent */}
-            {/* {explorer && (
-              <div className="flex flex-col gap-0.5">
-                <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>
-                    {getCharacterName(
-                      explorer.troops.tier as TroopTier,
-                      explorer.troops.category as TroopType,
-                      armyEntityId,
-                    )}
-                  </h6>
-                </div>
-                <div
-                  className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}
-                >
-                  Army
-                </div>
-              </div>
-            )} */}
-
             {/* Army warnings */}
             {structureResources && explorerResources && (
               <ArmyWarning
@@ -232,11 +198,11 @@ export const ArmyEntityDetail = memo(
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
-                {stamina && maxStamina && (
+                {derivedData.stamina && derivedData.maxStamina && (
                   <StaminaResource
                     entityId={armyEntityId}
-                    stamina={stamina}
-                    maxStamina={maxStamina}
+                    stamina={derivedData.stamina}
+                    maxStamina={derivedData.maxStamina}
                     className="flex-1"
                   />
                 )}
