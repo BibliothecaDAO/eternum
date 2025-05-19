@@ -139,6 +139,7 @@ function ChatModule() {
 
   // Add new state for initial scroll
   const [isInitialScrollComplete, setIsInitialScrollComplete] = useState(false);
+  const [shouldShowTransition, setShouldShowTransition] = useState(true);
 
   // Modify scrollToBottom function
   const scrollToBottom = useCallback(() => {
@@ -271,9 +272,18 @@ function ChatModule() {
     }
   }, [directMessageRecipientId]);
 
+  // Add effect to handle scroll when messages are loaded
+  useEffect(() => {
+    if (!isStoreLoadingMessages && filteredMessages.length > 0) {
+      setIsInitialScrollComplete(false); // Reset scroll state
+      scrollToBottom();
+    }
+  }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
+
   // Modify switchToGlobalChat function
   const switchToGlobalChat = useCallback(() => {
     setIsInitialScrollComplete(false); // Reset scroll state
+    setShouldShowTransition(true); // Enable transition
     chatActions.switchToGlobalChat();
     // Global messages should already be loaded, but we'll show the spinner briefly
     setTimeout(() => {
@@ -290,6 +300,7 @@ function ChatModule() {
     if (!chatClient) return;
 
     setIsInitialScrollComplete(false); // Reset scroll state
+    setShouldShowTransition(true); // Enable transition
     chatActions.selectRoom(roomId);
 
     // Then join the socket.io room
@@ -306,6 +317,7 @@ function ChatModule() {
   const selectRecipient = useCallback(
     (recipientId: string) => {
       setIsInitialScrollComplete(false); // Reset scroll state
+      setShouldShowTransition(true); // Enable transition
       // Show loading state immediately
       chatActions.selectDirectMessageRecipient(recipientId);
 
@@ -326,13 +338,12 @@ function ChatModule() {
     [chatClient, setUnreadMessages, chatActions],
   );
 
-  // Add effect to handle scroll when messages are loaded
+  // Add effect to disable transition after initial load
   useEffect(() => {
-    if (!isStoreLoadingMessages && filteredMessages.length > 0) {
-      setIsInitialScrollComplete(false); // Reset scroll state
-      scrollToBottom();
+    if (isInitialScrollComplete) {
+      setShouldShowTransition(false);
     }
-  }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
+  }, [isInitialScrollComplete]);
 
   // Send a message based on active tab
   const handleSendMessage = useCallback(
@@ -1001,7 +1012,9 @@ function ChatModule() {
               <div className="flex-grow" />
 
               <div
-                className={`space-y-1 transition-opacity duration-500 ${isInitialScrollComplete ? "opacity-100" : "opacity-0"}`}
+                className={`space-y-1 transition-opacity duration-500 ${
+                  shouldShowTransition ? (isInitialScrollComplete ? "opacity-100" : "opacity-0") : "opacity-100"
+                }`}
               >
                 {messageGroups.map((group, groupIndex) => {
                   const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
