@@ -30,6 +30,7 @@ function ChatModule() {
   const [username, setUsername] = useState<string>("");
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
   const [isRoomsVisible, setIsRoomsVisible] = useState<boolean>(false);
+  const [isUsersVisible, setIsUsersVisible] = useState<boolean>(false);
 
   // Room creation state
   const [showRoomCreation, setShowRoomCreation] = useState<boolean>(false);
@@ -93,8 +94,6 @@ function ChatModule() {
 
   // Online users state
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
-
-  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Add mobile detection state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
@@ -498,12 +497,6 @@ function ChatModule() {
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 768);
-      // Auto-hide sidebar on small screens
-      if (window.innerWidth < 768) {
-        setSidebarVisible(false);
-      } else {
-        setSidebarVisible(true);
-      }
     };
 
     window.addEventListener("resize", handleResize);
@@ -561,16 +554,14 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col panel-wood md:flex-row overflow-hidden bg-brown/10 z-100 pointer-events-auto panel-wood-corners ${
+      className={`flex flex-col md:flex-row overflow-hidden bg-brown/10 z-100 pointer-events-auto ${
         isExpanded ? "h-[600px]" : "h-72"
-      } border-gold/20 border-2 transition-all duration-300 backdrop-blur-sm`}
+      }`}
     >
       {/* Main Chat Area */}
-      <div
-        className={`flex flex-col ${isMobileView && sidebarVisible ? "hidden" : "flex"} md:flex overflow-hidden w-[700px] max-w-[35vw]`}
-      >
+      <div className={`flex flex-col flex overflow-hidden w-[700px] max-w-[35vw]`}>
         {/* Chat Header */}
-        <div className="from-black/80 px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
+        <div className="bg-black/30 px-2 flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center gap-2">
             {/* Room Selector Dropdown */}
             <div className="relative">
@@ -649,7 +640,7 @@ function ChatModule() {
             {/* User Selector Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setSidebarVisible(!sidebarVisible)}
+                onClick={() => setIsUsersVisible(!isUsersVisible)}
                 className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
               >
                 <svg
@@ -668,14 +659,14 @@ function ChatModule() {
                 </svg>
                 <span className="truncate max-w-[150px]">
                   {directMessageRecipientId
-                    ? `Chat with ${
+                    ? `DM: ${
                         [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
                           ?.username || directMessageRecipientId
                       }`
                     : "Direct Messages"}
                 </span>
               </button>
-              {sidebarVisible && (
+              {isUsersVisible && (
                 <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
                   <div className="p-2 border-b border-gold/30">
                     <input
@@ -701,7 +692,7 @@ function ChatModule() {
                               key={user.id}
                               onClick={() => {
                                 selectRecipient(user.id);
-                                setSidebarVisible(false);
+                                setIsUsersVisible(false);
                               }}
                               className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
                                 user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -731,7 +722,7 @@ function ChatModule() {
                             key={user.id}
                             onClick={() => {
                               selectRecipient(user.id);
-                              setSidebarVisible(false);
+                              setIsUsersVisible(false);
                             }}
                             className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
                               user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -804,7 +795,7 @@ function ChatModule() {
 
         {/* Messages display */}
         <div
-          className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-gradient-to-b from-black/50 to-gray-950/50 transition-all duration-300`}
+          className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-black/30 transition-all duration-300`}
           ref={chatContainerRef}
         >
           {isStoreLoadingMessages ? (
