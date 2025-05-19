@@ -111,6 +111,9 @@ function ChatModule() {
     return Object.values(unreadMessages).some((count) => count > 0);
   }, [unreadMessages]);
 
+  useEffect(() => {
+    console.log("UNREAD MESSAGES", hasUnreadMessages, unreadMessages);
+  }, [hasUnreadMessages, unreadMessages]);
   // Auto-scroll to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -572,7 +575,10 @@ function ChatModule() {
             {/* Room Selector Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setIsRoomsVisible(!isRoomsVisible)}
+                onClick={() => {
+                  setIsRoomsVisible(!isRoomsVisible);
+                  setIsUsersVisible(false); // Close DM popup if open
+                }}
                 className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
               >
                 <svg
@@ -614,6 +620,7 @@ function ChatModule() {
                       onClick={() => {
                         switchToGlobalChat();
                         setIsRoomsVisible(false);
+                        setIsUsersVisible(false); // Close DM popup when switching to global chat
                       }}
                       className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
                         !activeRoomId && !directMessageRecipientId ? "bg-gold/30" : ""
@@ -629,6 +636,7 @@ function ChatModule() {
                         onClick={() => {
                           joinRoomFromSidebar(room.id);
                           setIsRoomsVisible(false);
+                          setIsUsersVisible(false); // Close DM popup when joining a room
                         }}
                         className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
                           room.id === activeRoomId ? "bg-gold/30" : ""
@@ -648,7 +656,10 @@ function ChatModule() {
             {/* User Selector Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setIsUsersVisible(!isUsersVisible)}
+                onClick={() => {
+                  setIsUsersVisible(!isUsersVisible);
+                  setIsRoomsVisible(false); // Close room popup if open
+                }}
                 className="flex items-center gap-1 text-gold/70 hover:text-gold transition-colors"
               >
                 <svg
@@ -701,6 +712,7 @@ function ChatModule() {
                               onClick={() => {
                                 selectRecipient(user.id);
                                 setIsUsersVisible(false);
+                                setIsRoomsVisible(false); // Close room popup when selecting a DM recipient
                               }}
                               className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
                                 user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -731,6 +743,7 @@ function ChatModule() {
                             onClick={() => {
                               selectRecipient(user.id);
                               setIsUsersVisible(false);
+                              setIsRoomsVisible(false); // Close room popup when selecting a DM recipient
                             }}
                             className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
                               user.id === directMessageRecipientId ? "bg-gold/30" : ""
@@ -803,7 +816,7 @@ function ChatModule() {
 
         {/* Messages display */}
         <div
-          className={`flex-1 overflow-y-auto p-2 md:p-4 flex flex-col bg-black/30 transition-all duration-300`}
+          className={`flex-1 overflow-y-auto p-1 flex flex-col bg-black/30 transition-all duration-300`}
           ref={chatContainerRef}
         >
           {isStoreLoadingMessages ? (
