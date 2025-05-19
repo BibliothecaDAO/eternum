@@ -711,7 +711,7 @@ function ChatModule() {
                     : "Direct Messages"}
                 </span>
                 {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0) > 0 && (
-                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
                     {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0)}
                   </span>
                 )}
