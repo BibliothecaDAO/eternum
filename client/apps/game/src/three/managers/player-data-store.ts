@@ -59,9 +59,9 @@ export class PlayerDataStore {
           explorerIds: item.explorer_ids ? item.explorer_ids.toString().split(",").filter(Boolean) : [],
           structureIds: item.structure_ids ? item.structure_ids.toString().split(",").filter(Boolean) : [],
           guildId: item.guild_id || "",
-          guildName: item.guild_name ? shortString.decodeShortString(item.guild_name.toString()) : "",
+          guildName: item.guild_name ? shortString.decodeShortString(BigInt(item.guild_name).toString()) : "",
           ownerAddress: BigInt(item.owner_address).toString() || "",
-          ownerName: item.player_name ? shortString.decodeShortString(item.player_name.toString()) : "",
+          ownerName: item.player_name ? shortString.decodeShortString(BigInt(item.player_name).toString()) : "",
         };
         // Create a mapping from explorer id to structure id
         transformedItem.explorerIds.forEach((explorerId) => {
