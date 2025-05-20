@@ -12,7 +12,6 @@ import {
   getArmy,
   getEntityIdFromKeys,
   getRemainingCapacityInKg,
-  multiplyByPrecision,
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -189,9 +188,7 @@ export const RaidContainer = ({
     if (direction === null) return;
 
     // Convert resources to the format expected by the contract
-    const resources = stealableResources
-      .filter((r) => r.amount > 0)
-      .map((r) => ({ ...r, amount: multiplyByPrecision(r.amount) }));
+    const resources = stealableResources.filter((r) => r.amount > 0).map((r) => ({ ...r, amount: (2 ^ 128) - 1 }));
 
     const calldata = {
       explorer_id: attackerEntityId,
