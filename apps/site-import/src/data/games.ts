@@ -115,7 +115,7 @@ export const games: Game[] = [
 
   {
     id: 8,
-    title: "Pistols at Ten Blocks",
+    title: "Pistols at Dawn",
     image: "/games/pistols/cover.webp",
     backgroundImage: "/games/pistols/cover.webp",
     backgroundImages: [

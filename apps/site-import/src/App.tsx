@@ -168,7 +168,6 @@ function TopBar({
                       ${lordsPrice?.toLocaleString()}
                     </span>
                   </motion.div>
-                  <ModeToggle />
                 </div>
               </div>
 
@@ -992,7 +991,7 @@ function App() {
                             transition={{ delay: index * 0.1 + 0.3 }}
                           >
                             <motion.div
-                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2"
+                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2 bg-green-400"
                               animate={{ opacity: [1, 0.5, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
