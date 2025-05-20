@@ -110,7 +110,8 @@ const DojoContextProvider = ({
 
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting, connector } = useAccount();
-  const [username, setUsername] = useState<string | null>(null);
+  const accountName = useAccountStore((state) => state.accountName);
+  const setAccountName = useAccountStore((state) => state.setAccountName);
 
   useEffect(() => {
     const getUsername = async () => {
@@ -118,7 +119,7 @@ const DojoContextProvider = ({
       if (!username) {
         username = "adventurer"; // Default to adventurer in local mode
       }
-      setUsername(username);
+      setAccountName(username);
     };
     getUsername();
   }, [connector]);
@@ -163,7 +164,7 @@ const DojoContextProvider = ({
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
-    if (username && showBlankOverlay) {
+    if (accountName && showBlankOverlay) {
       const showTimer = setTimeout(() => {
         setShowWelcome(true);
         const hideTimer = setTimeout(() => {
@@ -173,7 +174,7 @@ const DojoContextProvider = ({
       }, 2000);
       return () => clearTimeout(showTimer);
     }
-  }, [username, showBlankOverlay]);
+  }, [accountName, showBlankOverlay]);
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
@@ -230,13 +231,13 @@ const DojoContextProvider = ({
   // Once account is set, render the children
   return (
     <>
-      {username && showBlankOverlay && (
+      {accountName && showBlankOverlay && (
         <div
           className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-brown/80 text-gold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ${
             showWelcome ? "opacity-100" : "opacity-0"
           }`}
         >
-          Welcome, {username}!
+          Welcome, {accountName}!
         </div>
       )}
       <DojoContext.Provider

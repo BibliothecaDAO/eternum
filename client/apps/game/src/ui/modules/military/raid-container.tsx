@@ -258,7 +258,7 @@ export const RaidContainer = ({
               </h3>
               <RaidResult
                 raiderId={attackerEntityId}
-                structureId={target?.id || 0}
+                target={target}
                 successRate={raidSimulation?.successChance || 50}
                 stolenResources={stealableResources}
               />

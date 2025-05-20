@@ -1,3 +1,5 @@
+import { env } from "@/../env";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
@@ -6,9 +8,7 @@ import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
-import { ControllerConnector } from "@cartridge/connector";
 import { useComponentValue } from "@dojoengine/react";
-import { useAccount } from "@starknet-react/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
@@ -160,19 +160,7 @@ export const VillageResourceReveal = ({
       "Wood"
     : "";
 
-  const { connector } = useAccount();
-  const [username, setUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    const getUsername = async () => {
-      let username = await (connector as unknown as ControllerConnector)?.username();
-      if (!username) {
-        username = "adventurer"; // Default to adventurer in local mode
-      }
-      setUsername(username);
-    };
-    getUsername();
-  }, [connector]);
+  const accountName = useAccountStore((state) => state.accountName);
 
   const { resourceTier, resourceProbability } = useMemo(() => {
     const resource = resourceProbabilities.find((tier) => tier.resources.some((r) => r.name === resourceName));
@@ -184,11 +172,11 @@ export const VillageResourceReveal = ({
 
   // Format the tweet text
   const tweetText = formatSocialText(twitterTemplates.villageResourceReveal, {
-    addressName: username || account.address.slice(0, 6) + "..." + account.address.slice(-4),
+    addressName: accountName || account.address.slice(0, 6) + "..." + account.address.slice(-4),
     resourceType: resourceName.toUpperCase(),
     resourceTier: resourceTier,
     resourceProbability: resourceProbability ? resourceProbability : 0,
-    url: window.location.href,
+    url: env.VITE_SOCIAL_LINK,
   });
 
   return (

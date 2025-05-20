@@ -1,10 +1,11 @@
+import { fetchExplorerAddressOwner } from "@/services/api";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { ID, Resource, STEALABLE_RESOURCES, StructureType, Troops } from "@bibliothecadao/types";
+import { ContractAddress, ID, Resource, STEALABLE_RESOURCES, StructureType, Troops } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
 import { CombatContainer } from "./combat-container";
@@ -27,6 +28,7 @@ export type AttackTarget = {
   targetType: TargetType;
   structureCategory: StructureType | null;
   hex: { x: number; y: number };
+  addressOwner: ContractAddress;
 };
 
 // Function to order resources according to STEALABLE_RESOURCES order
@@ -86,6 +88,7 @@ export const AttackContainer = ({
             targetType: TargetType.Structure,
             structureCategory: structure.category,
             hex: { x: targetTile.col, y: targetTile.row },
+            addressOwner: structure.owner,
           });
         }
         if (resources) {
@@ -97,12 +100,14 @@ export const AttackContainer = ({
           setTargetResources(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
         }
         if (explorer) {
+          const addressOwner = await fetchExplorerAddressOwner(targetTile.occupier_id);
           setTarget({
             info: [explorer.troops],
             id: targetTile?.occupier_id,
             targetType: TargetType.Army,
             structureCategory: null,
             hex: { x: targetTile.col, y: targetTile.row },
+            addressOwner: addressOwner,
           });
         }
       }

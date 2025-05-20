@@ -1,4 +1,5 @@
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
@@ -11,11 +12,9 @@ import { getSeasonPassAddress } from "@/utils/addresses";
 import { getOffchainRealm, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/types";
-import { ControllerConnector } from "@cartridge/connector";
-import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { gql } from "graphql-request";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
@@ -174,19 +173,7 @@ export const SeasonPassRealm = ({
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
   const [isLoading, setIsLoading] = useState(false);
   const [isSettled, setIsSettled] = useState(false);
-  const { connector } = useAccount();
-  const [username, setUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    const getUsername = async () => {
-      let username = await (connector as unknown as ControllerConnector)?.username();
-      if (!username) {
-        username = "adventurer"; // Default to adventurer in local mode
-      }
-      setUsername(username);
-    };
-    getUsername();
-  }, [connector]);
+  const accountName = useAccountStore((state) => state.accountName);
 
   const setLocationRef = useRef<SettlementLocation | null>(null);
 
@@ -310,12 +297,12 @@ export const SeasonPassRealm = ({
   // Format tweet text
   const tweetText = useMemo(() => {
     return formatSocialText(twitterTemplates.realmSettled, {
-      addressName: username || account.address.slice(0, 6) + "..." + account.address.slice(-4),
+      addressName: accountName || account.address.slice(0, 6) + "..." + account.address.slice(-4),
       realmName: seasonPassRealm.name,
       realmResources: formattedResources,
-      url: window.location.href,
+      url: env.VITE_SOCIAL_LINK,
     });
-  }, [username, account.address, seasonPassRealm.name, formattedResources]);
+  }, [accountName, account.address, seasonPassRealm.name, formattedResources]);
 
   return (
     <>
