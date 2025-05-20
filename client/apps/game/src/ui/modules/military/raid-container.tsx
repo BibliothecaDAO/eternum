@@ -21,6 +21,7 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RESOURCE_PRECISION,
   resources,
   TroopTier,
   TroopType,
@@ -188,8 +189,9 @@ export const RaidContainer = ({
     if (direction === null) return;
 
     // Convert resources to the format expected by the contract
-    const resources = stealableResources.filter((r) => r.amount > 0).map((r) => ({ ...r, amount: (2 ^ 128) - 1 }));
-
+    const resources = stealableResources
+      .filter((r) => r.amount > 0)
+      .map((r) => ({ ...r, amount: r.amount * RESOURCE_PRECISION }));
     const calldata = {
       explorer_id: attackerEntityId,
       structure_id: target?.id || 0,

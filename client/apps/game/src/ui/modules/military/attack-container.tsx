@@ -72,7 +72,7 @@ export const AttackContainer = ({
 
     const getTarget = async () => {
       setIsLoading(true);
-      const { currentArmiesTick } = getBlockTimestamp();
+      const { currentArmiesTick, currentBlockTimestamp } = getBlockTimestamp();
       if (isStructure) {
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
         if (structure) {
@@ -88,8 +88,14 @@ export const AttackContainer = ({
             hex: { x: targetTile.col, y: targetTile.row },
           });
         }
+
+        // let timestamp be 1 minute behind so raider doesnt request resources
+        // that havent been produced yet because of block timestamp mismatch between blockchain and client
+        let oneMinuteAgo = currentBlockTimestamp - 60 * 1;
         if (resources) {
-          setTargetResources(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
+          setTargetResources(
+            orderResourcesByPriority(ResourceManager.getResourceBalancesWithProduction(resources, oneMinuteAgo)),
+          );
         }
       } else {
         const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
