@@ -1,15 +1,21 @@
 type TemplateVariables = {
+  // player name and tribe
   attackerNameText: string;
+  // player name and tribe
   defenderNameText: string;
+  // ex: 5940 T1 Knight
   attackerTroopsText: string;
+  // ex: 5940 T1 Knight
   defenderTroopsText: string;
   // game url
   url: string;
+  // realm name
   realmName: string;
   // player name
   addressName: string;
   // 300 diamonds, 100 donkeys, 2000 gold
   raidResources: string;
+  // tribe name
   tribeName: string;
   // resource type for village
   resourceType: string;
