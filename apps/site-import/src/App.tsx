@@ -168,7 +168,6 @@ function TopBar({
                       ${lordsPrice?.toLocaleString()}
                     </span>
                   </motion.div>
-                  <ModeToggle />
                 </div>
               </div>
 
