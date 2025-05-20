@@ -376,7 +376,6 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         }
         onSelectLocation={handleSelectLocation}
         occupiedLocations={occupiedLocations}
-        realmCount={realmCount}
         maxLayers={maxLayers}
       />
     ));

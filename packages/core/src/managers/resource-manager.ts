@@ -738,8 +738,10 @@ export class ResourceManager {
     }
   }
 
-  static getResourceBalances(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Resource[] {
-    const resourceMapping: [keyof typeof resource, ResourcesIds][] = [
+  static getResourceMapping(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+  ): [keyof typeof resource, ResourcesIds][] {
+    return [
       ["STONE_BALANCE", ResourcesIds.Stone],
       ["COAL_BALANCE", ResourcesIds.Coal],
       ["WOOD_BALANCE", ResourcesIds.Wood],
@@ -778,13 +780,30 @@ export class ResourceManager {
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
     ];
+  }
 
+  static getResourceBalances(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Resource[] {
+    const resourceMapping = ResourceManager.getResourceMapping(resource);
     return resourceMapping
       .filter(([key]) => (resource[key] as bigint) > 0n)
       .map(([key, resourceId]) => ({
         resourceId,
         amount: Number(resource[key]),
       }));
+  }
+
+  static getResourceBalancesWithProduction(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+    currentTick: number,
+  ): Resource[] {
+    const resourceMapping = ResourceManager.getResourceMapping(resource);
+    return resourceMapping.map(([key, resourceId]) => {
+      const { balance } = ResourceManager.balanceWithProduction(resource, currentTick, resourceId);
+      return {
+        resourceId,
+        amount: balance,
+      };
+    });
   }
 
   public static balanceWithProduction(

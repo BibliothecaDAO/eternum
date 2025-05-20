@@ -7,6 +7,12 @@ const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
+  EXPLORER_ADDRESS_OWNER: `
+    SELECT s.owner as address_owner
+    FROM \`s1_eternum-ExplorerTroops\` e
+    JOIN \`s1_eternum-Structure\` s ON e.owner = s.entity_id
+    WHERE e.explorer_id = {entityId};
+  `,
   SWAP_EVENTS: `
     SELECT 
       se.entity_id,
@@ -364,4 +370,16 @@ export async function fetchSwapEvents(userEntityIds: ID[]): Promise<TradeEvent[]
       },
     };
   });
+}
+
+export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractAddress> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.EXPLORER_ADDRESS_OWNER.replace("{entityId}", entityId.toString()))}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch explorer address owner: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data[0].address_owner;
 }
