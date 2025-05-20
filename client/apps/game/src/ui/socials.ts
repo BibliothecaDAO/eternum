@@ -35,8 +35,8 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
 };
 
 export const twitterTemplates = {
-  combat: `⚔️ BATTLE DECLARED! ⚔️\n\n{attackerNameText}\n🗡️ VS 🛡️\n{defenderNameText} in @RealmsEternum \n\n{attackerTroopsText}\n⚔️ VS ⚔️\n{defenderTroopsText}\n\nJoin the epic clash at {url}! 🏰⚔️🔥`,
-  raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n🗡️ VS 🛡️\n{defenderNameText} in @RealmsEternum \n\nSpoils of war: {raidResources} 💰\n\nJoin the conquest at {url}! 🏰⚔️🔥`,
+  combat: `⚔️ BATTLE DECLARED! ⚔️\n\n{attackerNameText} with {attackerTroopsText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} with {defenderTroopsText} \n\nJoin the epic clash for @RealmsEternum at {url}! 🏰⚔️🔥`,
+  raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} \n\nSpoils of war: {raidResources} 💰\n\nJoin the conquest for @RealmsEternum at {url}! 🏰⚔️🔥`,
   realmSettled: `🏰 REALM SETTLED! 🏰\n\nI, {addressName}, have settled {realmName} in @RealmsEternum!\n\nThis realm produces: {realmResources} ⛏️\n\nJoin the conquest at {url}! ⚔️`,
   villageResourceReveal: `🛖 NEW VILLAGE SETTLED! 🛖\n\nI, {addressName}, have settled a {resourceType} village in @RealmsEternum!\n\nWith a {resourceProbability}% chance of finding this {resourceTier} tier resource!\n\nSettle your village at {url}! 🛖💎`,
   joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe in @RealmsEternum!\n\nUnited we stand, ready to forge our legacy across the lands!\n\nJoin our ranks at {url}! ✊⚔️`,

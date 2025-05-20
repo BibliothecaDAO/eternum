@@ -10,7 +10,7 @@ const QUERIES = {
   EXPLORER_ADDRESS_OWNER: `
     SELECT s.owner as address_owner
     FROM \`s1_eternum-ExplorerTroops\` e
-    JOIN \`s1_eternum-Structure\` s ON e.structure_id = s.entity_id
+    JOIN \`s1_eternum-Structure\` s ON e.owner = s.entity_id
     WHERE e.explorer_id = {entityId};
   `,
   SWAP_EVENTS: `
