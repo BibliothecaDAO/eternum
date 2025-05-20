@@ -12,7 +12,6 @@ import {
   getArmy,
   getEntityIdFromKeys,
   getRemainingCapacityInKg,
-  multiplyByPrecision,
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -22,6 +21,7 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RESOURCE_PRECISION,
   resources,
   TroopTier,
   TroopType,
@@ -191,8 +191,7 @@ export const RaidContainer = ({
     // Convert resources to the format expected by the contract
     const resources = stealableResources
       .filter((r) => r.amount > 0)
-      .map((r) => ({ ...r, amount: multiplyByPrecision(r.amount) }));
-
+      .map((r) => ({ ...r, amount: r.amount * RESOURCE_PRECISION }));
     const calldata = {
       explorer_id: attackerEntityId,
       structure_id: target?.id || 0,
