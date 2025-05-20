@@ -1,7 +1,11 @@
+import { env } from "@/../env";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -9,8 +13,10 @@ import {
   CombatSimulator,
   configManager,
   divideByPrecision,
+  getAddressName,
   getEntityIdFromKeys,
   getGuardsByStructure,
+  getGuildFromPlayerAddress,
   getRemainingCapacityInKg,
   getTroopResourceId,
   StaminaManager,
@@ -18,6 +24,8 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
+  ClientComponents,
+  ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
   RESOURCE_PRECISION,
@@ -31,6 +39,36 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { AttackTarget, TargetType } from "./attack-container";
 import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+
+// Add the new function before the CombatContainer component
+const getFormattedCombatTweet = ({
+  attackerArmyData,
+  target,
+  accountName,
+  accountAddress,
+  targetArmyData,
+  components,
+}: {
+  attackerArmyData: { troops: Troops } | null;
+  target: AttackTarget;
+  accountName: string | null;
+  accountAddress: string;
+  targetArmyData: { troops: Troops } | null;
+  components: ClientComponents;
+}) => {
+  if (!attackerArmyData || !targetArmyData) return undefined;
+
+  const attackerGuild = getGuildFromPlayerAddress(ContractAddress(accountAddress), components)?.name;
+  const defenderGuild = getGuildFromPlayerAddress(ContractAddress(target.addressOwner || 0n), components)?.name;
+
+  return formatSocialText(twitterTemplates.combat, {
+    attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+    attackerTroopsText: `${Math.floor(divideByPrecision(Number(attackerArmyData.troops.count)))} ${TroopTier[attackerArmyData.troops.tier as TroopTier]} ${TroopType[attackerArmyData.troops.category as TroopType]}`,
+    defenderTroopsText: `${Math.floor(divideByPrecision(Number(targetArmyData.troops.count)))} ${TroopTier[targetArmyData.troops.tier as TroopTier]} ${TroopType[targetArmyData.troops.category as TroopType]}`,
+    defenderNameText: `${target.addressOwner ? getAddressName(target.addressOwner, components) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    url: env.VITE_SOCIAL_LINK,
+  });
+};
 
 enum AttackerType {
   Structure,
@@ -57,6 +95,9 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
+  const accountName = useAccountStore((state) => state.accountName);
+  const [showShareButton, setShowShareButton] = useState(false);
+  const [tweetText, setTweetText] = useState("");
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
@@ -232,6 +273,17 @@ export const CombatContainer = ({
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
 
+  const formattedTweet = useMemo(() => {
+    return getFormattedCombatTweet({
+      attackerArmyData,
+      target,
+      accountName,
+      accountAddress: account.address,
+      targetArmyData,
+      components,
+    });
+  }, [attackerArmyData, target, accountName, account.address, targetArmyData, components]);
+
   const onAttack = async () => {
     if (!selectedHex) return;
 
@@ -243,6 +295,7 @@ export const CombatContainer = ({
     } else {
       await onExplorerVsGuardAttack();
     }
+
     // close modal after attack because we already know the result
     updateSelectedEntityId(null);
     toggleModal(null);
@@ -785,7 +838,7 @@ export const CombatContainer = ({
       )}
 
       {/* Attack Button */}
-      <div className="mt-2 flex justify-center">
+      <div className="mt-2 flex flex-col items-center gap-4">
         <Button
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
@@ -795,6 +848,11 @@ export const CombatContainer = ({
         >
           {buttonMessage}
         </Button>
+
+        {/* Twitter Share Button */}
+        {formattedTweet && (
+          <TwitterShareButton text={formattedTweet} callToActionText="Share your Battle" variant="outline" />
+        )}
       </div>
     </div>
   );

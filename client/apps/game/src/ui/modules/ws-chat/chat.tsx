@@ -112,8 +112,13 @@ function ChatModule() {
   });
 
   const hasUnreadMessages = useMemo(() => {
-    return Object.values(unreadMessages).some((count) => count > 0);
-  }, [unreadMessages]);
+    // Only check for unread direct messages
+    return Object.entries(unreadMessages).some(([userId, count]) => {
+      // Only count unread messages from users (not rooms or global)
+      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
+      return isUser && count > 0;
+    });
+  }, [unreadMessages, onlineUsers, offlineUsers]);
 
   // Update localStorage when unread messages change
   useEffect(() => {
@@ -134,6 +139,7 @@ function ChatModule() {
 
   // Add new state for initial scroll
   const [isInitialScrollComplete, setIsInitialScrollComplete] = useState(false);
+  const [shouldShowTransition, setShouldShowTransition] = useState(true);
 
   // Modify scrollToBottom function
   const scrollToBottom = useCallback(() => {
@@ -266,9 +272,18 @@ function ChatModule() {
     }
   }, [directMessageRecipientId]);
 
+  // Add effect to handle scroll when messages are loaded
+  useEffect(() => {
+    if (!isStoreLoadingMessages && filteredMessages.length > 0) {
+      setIsInitialScrollComplete(false); // Reset scroll state
+      scrollToBottom();
+    }
+  }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
+
   // Modify switchToGlobalChat function
   const switchToGlobalChat = useCallback(() => {
     setIsInitialScrollComplete(false); // Reset scroll state
+    setShouldShowTransition(true); // Enable transition
     chatActions.switchToGlobalChat();
     // Global messages should already be loaded, but we'll show the spinner briefly
     setTimeout(() => {
@@ -285,13 +300,8 @@ function ChatModule() {
     if (!chatClient) return;
 
     setIsInitialScrollComplete(false); // Reset scroll state
+    setShouldShowTransition(true); // Enable transition
     chatActions.selectRoom(roomId);
-
-    // Clear unread messages for this room
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [roomId]: 0,
-    }));
 
     // Then join the socket.io room
     chatClient.joinRoom(roomId);
@@ -307,6 +317,7 @@ function ChatModule() {
   const selectRecipient = useCallback(
     (recipientId: string) => {
       setIsInitialScrollComplete(false); // Reset scroll state
+      setShouldShowTransition(true); // Enable transition
       // Show loading state immediately
       chatActions.selectDirectMessageRecipient(recipientId);
 
@@ -327,13 +338,12 @@ function ChatModule() {
     [chatClient, setUnreadMessages, chatActions],
   );
 
-  // Add effect to handle scroll when messages are loaded
+  // Add effect to disable transition after initial load
   useEffect(() => {
-    if (!isStoreLoadingMessages && filteredMessages.length > 0) {
-      setIsInitialScrollComplete(false); // Reset scroll state
-      scrollToBottom();
+    if (isInitialScrollComplete) {
+      setShouldShowTransition(false);
     }
-  }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
+  }, [isInitialScrollComplete]);
 
   // Send a message based on active tab
   const handleSendMessage = useCallback(
@@ -419,14 +429,7 @@ function ChatModule() {
     setMessages,
   );
 
-  useRoomMessageEvents(
-    chatClient,
-    activeRoomId || "",
-    addMessage,
-    setUnreadMessages,
-    _setIsLoadingMessagesLocal, // Pass local setter to hooks
-    setMessages,
-  );
+  useRoomMessageEvents(chatClient, activeRoomId || "", addMessage, _setIsLoadingMessagesLocal, setMessages);
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
@@ -570,6 +573,15 @@ function ChatModule() {
   }, []);
 
   const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // Add memoized calculation for total unread messages
+  const totalUnreadMessages = useMemo(() => {
+    return Object.entries(unreadMessages).reduce((sum, [userId, count]) => {
+      // Only count unread messages from users (not rooms or global)
+      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
+      return sum + (isUser ? count : 0);
+    }, 0);
+  }, [unreadMessages, onlineUsers, offlineUsers]);
 
   // Add save chat function
   const saveChatToText = useCallback(() => {
@@ -796,9 +808,9 @@ function ChatModule() {
                       }`
                     : "Direct Messages"}
                 </span>
-                {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0) > 0 && (
+                {totalUnreadMessages > 0 && (
                   <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
-                    {Object.values(unreadMessages).reduce((sum, count) => sum + count, 0)}
+                    {totalUnreadMessages}
                   </span>
                 )}
               </button>
@@ -843,7 +855,7 @@ function ChatModule() {
                           <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
                         </div>
                         {filteredUsers
-                          .filter((user) => user && user.id !== userId)
+                          .filter((user) => user && user?.id !== userId)
                           .map((user) => (
                             <button
                               key={user.id}
@@ -1009,7 +1021,9 @@ function ChatModule() {
               <div className="flex-grow" />
 
               <div
-                className={`space-y-1 transition-opacity duration-500 ${isInitialScrollComplete ? "opacity-100" : "opacity-0"}`}
+                className={`space-y-1 transition-opacity duration-500 ${
+                  shouldShowTransition ? (isInitialScrollComplete ? "opacity-100" : "opacity-0") : "opacity-100"
+                }`}
               >
                 {messageGroups.map((group, groupIndex) => {
                   const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;

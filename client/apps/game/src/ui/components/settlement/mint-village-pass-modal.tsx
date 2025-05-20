@@ -46,7 +46,7 @@ interface RarityTier {
   color: string; // Tailwind color classes for background/border
 }
 
-const resourceProbabilities: RarityTier[] = [
+export const resourceProbabilities: RarityTier[] = [
   {
     name: "Common",
     totalChance: 50.43,
