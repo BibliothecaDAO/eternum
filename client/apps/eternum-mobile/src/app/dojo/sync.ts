@@ -3,13 +3,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import type { Entity } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
-import {
-  getAddressNamesFromTorii,
-  getBankStructuresFromTorii,
-  getConfigFromTorii,
-  getGuildsFromTorii,
-  getSeasonPrizeFromTorii,
-} from "./queries";
+import { getBankStructuresFromTorii, getConfigFromTorii, getMarketFromTorii } from "./queries";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
@@ -165,33 +159,22 @@ export const initialSync = async (setup: SetupResult, setInitialSyncProgress: (p
   let end;
 
   // BANKS
-  // todo: this is not needed for initial sync, should be placed to market sync but currently not working
   await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] bank structures query", end - start);
   setInitialSyncProgress(10);
 
+  // CONFIG
   start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
   setInitialSyncProgress(50);
 
+  // AMM MARKET
   start = performance.now();
-  await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
+  await getMarketFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
-  console.log("[sync] season prize query", end - start);
-  setInitialSyncProgress(75);
-
-  start = performance.now();
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] address names query", end - start);
-  setInitialSyncProgress(90);
-
-  start = performance.now();
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] guilds query", end - start);
-  setInitialSyncProgress(100);
+  console.log("[sync] market query", end - start);
+  setInitialSyncProgress(99);
 };
