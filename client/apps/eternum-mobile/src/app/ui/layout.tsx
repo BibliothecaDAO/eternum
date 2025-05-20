@@ -1,3 +1,4 @@
+import { useSyncPlayerStructures } from "@/shared/hooks/use-sync-player-structures";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { usePlayerStructures } from "@bibliothecadao/react";
@@ -6,6 +7,9 @@ import { useEffect } from "react";
 
 export function Layout() {
   const playerStructures = usePlayerStructures();
+
+  // sync player structures
+  useSyncPlayerStructures();
 
   useEffect(() => {
     console.log("playerStructures", playerStructures);
