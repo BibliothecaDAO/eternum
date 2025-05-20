@@ -10,6 +10,14 @@ type TemplateVariables = {
   // 300 diamonds, 100 donkeys, 2000 gold
   resources: string;
   tribeName: string;
+  // resource type for village
+  resourceType: string;
+  // resource probability for village
+  resourceProbability: number;
+  // resource tier for village
+  resourceTier: string;
+  // realm resources
+  realmResources: string;
 };
 
 export const formatSocialText = (template: string, variables: Partial<TemplateVariables>): string => {
@@ -20,11 +28,10 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
 };
 
 export const twitterTemplates = {
-  battling: `⚔️ CLASH OF ARMIES IN ETERNUM! ⚔️\n\nMy mighty force of {attackerTroops} troops engages {enemyName}'s {defenderTroops} troops in an epic battle for supremacy in @RealmsEternum!\n\nWatch the carnage at {url} 🗡️`,
-  underSiege: `🚨 REALM UNDER SIEGE! 🚨\n\n{enemyName}'s army of {attackerTroops} troops lays siege to my {defenderTroops} brave defenders in @RealmsEternum!\n\nRally to my defense at {url} ⚔️\n\nThe fate of my realm hangs in the balance! 🏰`,
-  attacking: `⚔️ LAUNCHING AN ASSAULT! ⚔️\n\nLeading {attackerTroops} valiant warriors to conquer {enemyName}'s realm in @RealmsEternum!\n\nTheir {defenderTroops} defenders stand in our way...\n\nJoin the siege at {url} and claim glory! 🏰🔥`,
-  settle: `I've joined the @RealmsEternum battle for glory.\n\nWars will be fought, tears will be shed.\n\n{realmName} has been settled. ⚔️\n\nSettle your realm at {url} and join the conquest! 🏰`,
-  pillage: `🏰 SUCCESSFUL RAID! 🏰\n\nI, {addressName}, have plundered {enemyName}'s realm in @RealmsEternum!\n\nSpoils of war: {resources} 💰\n\nJoin the conquest at {url} and claim your share of glory! ⚔️`,
+  combat: `⚔️ LAUNCHING AN ASSAULT! ⚔️\n\nLeading {attackerTroops} valiant warriors to conquer {enemyName}'s realm in @RealmsEternum!\n\nTheir {defenderTroops} defenders stand in our way...\n\nJoin the siege at {url} and claim glory! 🏰🔥`,
+  raid: `🏰 SUCCESSFUL RAID! 🏰\n\nI, {addressName}, have plundered {enemyName}'s realm in @RealmsEternum!\n\nSpoils of war: {resources} 💰\n\nJoin the conquest at {url} and claim your share of glory! ⚔️`,
+  realmSettled: `🏰 REALM SETTLED! 🏰\n\nI, {addressName}, have settled {realmName} in @RealmsEternum!\n\nThis realm produces: {realmResources} ⛏️\n\nJoin the conquest at {url} and claim your share of glory! ⚔️`,
+  villageResourceReveal: `🛖 NEW VILLAGE SETTLED! 🛖\n\nI, {addressName}, have settled a {resourceType} village in @RealmsEternum!\n\nWith a {resourceProbability}% chance of finding this {resourceTier} tier resource!\n\nSettle your village at {url} and join the conquest! 🏰💎`,
   joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe in @RealmsEternum!\n\nUnited we stand, ready to forge our legacy across the lands!\n\nJoin our ranks at {url}! 🏰✨`,
   createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI, {addressName}, have founded the {tribeName} tribe in @RealmsEternum!\n\nOur banners now fly over these lands as we forge our destiny!\n\nJoin our ranks at {url}! 🏰👑`,
 };

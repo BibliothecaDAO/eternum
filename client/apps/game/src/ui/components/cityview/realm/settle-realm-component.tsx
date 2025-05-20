@@ -5,12 +5,17 @@ import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-mi
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getSeasonPassAddress } from "@/utils/addresses";
 import { getOffchainRealm, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/types";
+import { ControllerConnector } from "@cartridge/connector";
+import { useAccount } from "@starknet-react/core";
+import { motion } from "framer-motion";
 import { gql } from "graphql-request";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
@@ -99,6 +104,55 @@ export type SeasonPassRealm = RealmInterface & {
   selectedLocation?: SettlementLocation | null;
 };
 
+const SettlementSuccessModal = ({
+  realmName,
+  resources,
+  tweetText,
+  onClose,
+}: {
+  realmName: string;
+  resources: string;
+  tweetText: string;
+  onClose: () => void;
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    >
+      <div className="bg-dark-wood border border-gold/20 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center">
+            <span className="text-3xl">🏰</span>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-gold">Realm Settled!</h3>
+            <p className="text-gold/80">
+              You have successfully settled <span className="text-gold font-semibold">{realmName}</span>
+            </p>
+            <p className="text-sm text-gold/60">Resources: {resources}</p>
+          </div>
+
+          <div className="flex flex-col gap-3 w-full mt-2">
+            <TwitterShareButton
+              text={tweetText}
+              callToActionText="Share your Realm"
+              variant="primary"
+              className="w-full"
+            />
+            <Button variant="outline" onClick={onClose} className="w-full">
+              Continue
+            </Button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export const SeasonPassRealm = ({
   seasonPassRealm,
   selected,
@@ -106,7 +160,6 @@ export const SeasonPassRealm = ({
   className,
   onSelectLocation,
   occupiedLocations = [],
-  realmCount,
   maxLayers,
 }: {
   seasonPassRealm: SeasonPassRealm;
@@ -115,13 +168,25 @@ export const SeasonPassRealm = ({
   className?: string;
   onSelectLocation?: (realmId: number, location: SettlementLocation | null) => void;
   occupiedLocations?: SettlementLocation[];
-  realmCount: number;
   maxLayers: number | null;
 }) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
   const [isLoading, setIsLoading] = useState(false);
   const [isSettled, setIsSettled] = useState(false);
+  const { connector } = useAccount();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUsername = async () => {
+      let username = await (connector as unknown as ControllerConnector)?.username();
+      if (!username) {
+        username = "adventurer"; // Default to adventurer in local mode
+      }
+      setUsername(username);
+    };
+    getUsername();
+  }, [connector]);
 
   const setLocationRef = useRef<SettlementLocation | null>(null);
 
@@ -171,6 +236,14 @@ export const SeasonPassRealm = ({
       });
       toast.success("Realms settled successfully");
       setIsSettled(true);
+      toggleModal(
+        <SettlementSuccessModal
+          realmName={seasonPassRealm.name}
+          resources={formattedResources}
+          tweetText={tweetText}
+          onClose={() => toggleModal(null)}
+        />,
+      );
     } catch (error) {
       toast.error("Error settling realms");
       console.error("Error settling realms:", error);
@@ -229,73 +302,90 @@ export const SeasonPassRealm = ({
     };
   }, [seasonPassRealm.selectedLocation]);
 
-  return (
-    <div
-      key={seasonPassRealm.realmId}
-      className={`flex flex-col gap-2 p-2 panel-wood rounded-md bg-dark-wood transition-colors duration-200 relative ${
-        selected ? "border-gold/40 bg-black/80" : "border-transparent"
-      } ${className} border hover:border-gold cursor-pointer`}
-      onClick={() => setSelected(!selected)}
-    >
-      {isLoading && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="w-10 h-10 border-t-2 border-b-2 border-gold rounded-full animate-spin"></div>
-        </div>
-      )}
-      <div className="flex flex-row items-center gap-2 justify-between">
-        <h4 className="font-semibold text-gold">{seasonPassRealm.name}</h4>
-      </div>
-      <div className="flex gap-2 z-10 items-end">
-        {resourcesProduced.map((resourceId) => (
-          <ResourceIcon
-            className=""
-            resource={ResourcesIds[resourceId]}
-            size="md"
-            key={resourceId}
-            withTooltip={false}
-          />
-        ))}
-      </div>
+  // Format resources for tweet
+  const formattedResources = useMemo(() => {
+    return resourcesProduced.map((resourceId) => ResourcesIds[resourceId].toUpperCase()).join(", ");
+  }, [resourcesProduced]);
 
-      <div className="mt-auto border-t border-gold/20 pt-2">
-        {isSettled ? (
-          <div className="flex items-center justify-center h-full py-2">
-            <h5 className="text-gold font-semibold">Realm Settled!</h5>
+  // Format tweet text
+  const tweetText = useMemo(() => {
+    return formatSocialText(twitterTemplates.realmSettled, {
+      addressName: username || account.address.slice(0, 6) + "..." + account.address.slice(-4),
+      realmName: seasonPassRealm.name,
+      realmResources: formattedResources,
+      url: window.location.href,
+    });
+  }, [username, account.address, seasonPassRealm.name, formattedResources]);
+
+  return (
+    <>
+      <div
+        key={seasonPassRealm.realmId}
+        className={`flex flex-col gap-2 p-2 panel-wood rounded-md bg-dark-wood transition-colors duration-200 relative ${
+          selected ? "border-gold/40 bg-black/80" : "border-transparent"
+        } ${className} border hover:border-gold cursor-pointer`}
+        onClick={() => setSelected(!selected)}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="w-10 h-10 border-t-2 border-b-2 border-gold rounded-full animate-spin"></div>
           </div>
-        ) : normalizedSelectedLocation ? (
-          <div className="flex flex-col gap-1">
-            <h6 className="text-xs text-gold/70">Selected Location</h6>
-            <div className="flex justify-between items-center">
-              <h5 className="">
-                ({normalizedSelectedLocation.x}, {normalizedSelectedLocation.y})
-              </h5>
-              <div className="flex gap-2">
-                <Button onClick={handleCancelLocation} disabled={isLoading} variant="danger" className="!p-1">
-                  <span className="text-lg leading-none">✕</span>
-                </Button>
-                <Button onClick={handleSelectLocationClick} disabled={isLoading} variant="primary" className="!p-1">
-                  <MapIcon className="w-4 h-4 fill-current" />
-                </Button>
+        )}
+        <div className="flex flex-row items-center gap-2 justify-between">
+          <h4 className="font-semibold text-gold">{seasonPassRealm.name}</h4>
+        </div>
+        <div className="flex gap-2 z-10 items-end">
+          {resourcesProduced.map((resourceId) => (
+            <ResourceIcon
+              className=""
+              resource={ResourcesIds[resourceId]}
+              size="md"
+              key={resourceId}
+              withTooltip={false}
+            />
+          ))}
+        </div>
+
+        <div className="mt-auto border-t border-gold/20 pt-2">
+          {isSettled ? (
+            <div className="flex items-center justify-center h-full py-2">
+              <h5 className="text-gold font-semibold">Realm Settled!</h5>
+            </div>
+          ) : normalizedSelectedLocation ? (
+            <div className="flex flex-col gap-1">
+              <h6 className="text-xs text-gold/70">Selected Location</h6>
+              <div className="flex justify-between items-center">
+                <h5 className="">
+                  ({normalizedSelectedLocation.x}, {normalizedSelectedLocation.y})
+                </h5>
+                <div className="flex gap-2">
+                  <Button onClick={handleCancelLocation} disabled={isLoading} variant="danger" className="!p-1">
+                    <span className="text-lg leading-none">✕</span>
+                  </Button>
+                  <Button onClick={handleSelectLocationClick} disabled={isLoading} variant="primary" className="!p-1">
+                    <MapIcon className="w-4 h-4 fill-current" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <Button
-            isPulsing={true}
-            onClick={handleSelectLocationClick}
-            disabled={isLoading}
-            variant="primary"
-            size="md"
-            className="w-full"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <MapIcon className="w-4 h-4 fill-current" />
-              <div>Select Location</div>
-            </div>
-          </Button>
-        )}
+          ) : (
+            <Button
+              isPulsing={true}
+              onClick={handleSelectLocationClick}
+              disabled={isLoading}
+              variant="primary"
+              size="md"
+              className="w-full"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <MapIcon className="w-4 h-4 fill-current" />
+                <div>Select Location</div>
+              </div>
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

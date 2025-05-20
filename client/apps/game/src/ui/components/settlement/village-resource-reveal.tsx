@@ -1,13 +1,18 @@
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import { ControllerConnector } from "@cartridge/connector";
 import { useComponentValue } from "@dojoengine/react";
+import { useAccount } from "@starknet-react/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
+import { resourceProbabilities } from "./mint-village-pass-modal";
 
 // Define common resource types for the roulette
 const COMMON_RESOURCES = ["Wood", "Stone", "Coal", "Copper", "Obsidian", "Silver", "Ironwood", "ColdIron", "Gold"];
@@ -148,6 +153,43 @@ export const VillageResourceReveal = ({
       return () => clearTimeout(timeout);
     }
   }, [revealedResource, isSpinning, spinComplete, startSpin]);
+
+  // Get the resource name for sharing
+  const resourceName = revealedResource
+    ? Object.keys(ResourcesIds).find((key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource) ||
+      "Wood"
+    : "";
+
+  const { connector } = useAccount();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUsername = async () => {
+      let username = await (connector as unknown as ControllerConnector)?.username();
+      if (!username) {
+        username = "adventurer"; // Default to adventurer in local mode
+      }
+      setUsername(username);
+    };
+    getUsername();
+  }, [connector]);
+
+  const { resourceTier, resourceProbability } = useMemo(() => {
+    const resource = resourceProbabilities.find((tier) => tier.resources.some((r) => r.name === resourceName));
+    return {
+      resourceTier: resource?.name,
+      resourceProbability: resource?.resources.find((r) => r.name === resourceName)?.chance,
+    };
+  }, [resourceName]);
+
+  // Format the tweet text
+  const tweetText = formatSocialText(twitterTemplates.villageResourceReveal, {
+    addressName: username || account.address.slice(0, 6) + "..." + account.address.slice(-4),
+    resourceType: resourceName.toUpperCase(),
+    resourceTier: resourceTier,
+    resourceProbability: resourceProbability ? resourceProbability : 0,
+    url: window.location.href,
+  });
 
   return (
     <div className="flex flex-col items-center w-full h-full relative">
@@ -327,23 +369,35 @@ export const VillageResourceReveal = ({
       </div>
 
       {/* Close and restart buttons */}
-      <div className="flex gap-4 justify-center mt-8">
-        <Button
-          variant="gold"
-          disabled={isSpinning || !revealedResource}
-          onClick={onRestart}
-          className="px-8 py-4 text-base font-semibold"
-        >
-          Mint New Village
-        </Button>
-        <Button
-          variant="outline"
-          disabled={isSpinning || !revealedResource}
-          onClick={onClose}
-          className="px-8 py-4 text-base"
-        >
-          Continue to your Village
-        </Button>
+      <div className="flex flex-col gap-4 items-center mt-8">
+        <div className="flex gap-4 justify-center">
+          <Button
+            variant="gold"
+            disabled={isSpinning || !revealedResource}
+            onClick={onRestart}
+            className="px-8 py-4 text-base font-semibold"
+          >
+            Mint New Village
+          </Button>
+          <Button
+            variant="outline"
+            disabled={isSpinning || !revealedResource}
+            onClick={onClose}
+            className="px-8 py-4 text-base"
+          >
+            Continue to your Village
+          </Button>
+        </div>
+
+        {/* Add Twitter share button */}
+        {spinComplete && revealedResource && (
+          <TwitterShareButton
+            text={tweetText}
+            callToActionText={`Share your ${resourceName} Village`}
+            variant="outline"
+            className="mt-4"
+          />
+        )}
       </div>
     </div>
   );
