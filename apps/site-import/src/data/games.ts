@@ -128,7 +128,7 @@ export const games: Game[] = [
     ],
     genre: ["Social", "Casual", "Strategy", "PVP"],
     description:
-      'Thou art an offence to all that is decent, dog. I challenge you... to a duel!". In Pistols at Ten Blocks, you face off against your opponent for honour or profit, in a pistol duel at "10" paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself fame and riches, or a shallow grave in the crypt beneath the Fool & Flintlock tavern',
+      'Thou art an offence to all that is decent, dog. I challenge you... to a duel!". In Pistols at Dawn, you face off against your opponent for honour or profit, in a pistol duel at "10" paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself fame and riches, or a shallow grave in the crypt beneath the Fool & Flintlock tavern',
     status: "development",
     isLive: true,
     studio: "Underware",
