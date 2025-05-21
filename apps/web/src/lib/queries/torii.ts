@@ -1,11 +1,13 @@
 import type { TypedDocumentString } from "@/gql/graphql";
+import { env } from "env";
 
 export async function executeTorii<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ) {
   const response = await fetch(
-    "https://api.cartridge.gg/x/seasonpass-mainnet-2/torii/graphql",
+    (env.VITE_TORII_API_URL ??
+      "https://api.cartridge.gg/x/eternum-empire-mainnet-2/torii") + "/graphql",
     {
       method: "POST",
       headers: {
