@@ -101,16 +101,6 @@ const DojoContextProvider = ({
 
   const [retries, setRetries] = useState(0);
 
-  // const connectWallet = async () => {
-  //   try {
-  //     console.log("Attempting to connect wallet...");
-  //     await connect({ connector: connectors[0] });
-  //     console.log("Wallet connected successfully.");
-  //   } catch (error) {
-  //     console.error("Failed to connect wallet:", error);
-  //   }
-  // };
-
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
   );
@@ -124,18 +114,6 @@ const DojoContextProvider = ({
   }, [controllerAccount]);
 
   useEffect(() => {
-    // const setUserName = async () => {
-    //   const username = await (connector as ControllerConnector)?.username();
-    //   if (!username) return;
-
-    //   const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-    //   value.systemCalls.set_address_name({
-    //     signer: controllerAccount!,
-    //     name: usernameFelt,
-    //   });
-    //   setAddressName(username);
-    // };
-
     if (controllerAccount) {
       useStore.getState().setAccount(controllerAccount);
 

@@ -1,18 +1,57 @@
+import { env } from "@/../env";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { formatSocialText, twitterTemplates } from "@/ui/socials";
+import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ID, resources, world } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, resources, world } from "@bibliothecadao/types";
 import { ComponentValue, defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AttackTarget } from "./attack-container";
+
+// Add the tweet formatting function
+const getFormattedRaidTweet = ({
+  accountName,
+  accountAddress,
+  targetAddress,
+  stolenResources,
+  components,
+}: {
+  accountName: string | null;
+  accountAddress: string;
+  targetAddress: ContractAddress;
+  stolenResources: Array<{ resourceId: number; amount: number }>;
+  components: ClientComponents;
+}) => {
+  const attackerGuild = getGuildFromPlayerAddress(ContractAddress(accountAddress), components)?.name;
+  const defenderGuild = getGuildFromPlayerAddress(ContractAddress(targetAddress), components)?.name;
+
+  // Format the resources text
+  const resourcesText = stolenResources
+    .map((resource) => {
+      const resourceName = resources.find((r) => r.id === resource.resourceId)?.trait || "";
+      return `${resource.amount} ${resourceName.toUpperCase()}`;
+    })
+    .join(", ");
+
+  return formatSocialText(twitterTemplates.raid, {
+    attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+    defenderNameText: `${targetAddress ? getAddressName(targetAddress, components) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    raidResources: resourcesText,
+    url: env.VITE_SOCIAL_LINK,
+  });
+};
 
 export const RaidResult = ({
   raiderId,
-  structureId,
+  target,
   successRate = 50,
   stolenResources,
 }: {
   raiderId: ID;
-  structureId: ID;
+  target: AttackTarget;
   successRate?: number;
   stolenResources: {
     resourceId: number;
@@ -20,8 +59,10 @@ export const RaidResult = ({
   }[];
 }) => {
   const {
+    account: { account },
     setup: {
       network: { contractComponents },
+      components,
     },
   } = useDojo();
 
@@ -39,13 +80,26 @@ export const RaidResult = ({
     ClientComponents["events"]["ExplorerRaidEvent"]["schema"]
   > | null>(null);
 
+  const accountName = useAccountStore((state) => state.accountName);
+
+  // Format the tweet text
+  const formattedTweet = useMemo(() => {
+    return getFormattedRaidTweet({
+      accountName,
+      accountAddress: account.address,
+      targetAddress: target.addressOwner,
+      stolenResources: initialStolenResources,
+      components,
+    });
+  }, [raidResult, account.address, initialStolenResources, components]);
+
   useEffect(() => {
     const handleRaidEventUpdate = (update: any) => {
       if (isComponentUpdate(update, contractComponents.events.ExplorerRaidEvent)) {
         const [currentState, _prevState] = update.value;
 
         // Check if this event matches our current raid
-        if (currentState?.explorer_id === raiderId && currentState?.structure_id === structureId) {
+        if (currentState?.explorer_id === raiderId && currentState?.structure_id === target.id) {
           setRaidResult(currentState);
           setIsSlowingDown(true);
         }
@@ -56,7 +110,7 @@ export const RaidResult = ({
     defineComponentSystem(world, contractComponents.events.ExplorerRaidEvent, handleRaidEventUpdate, {
       runOnInit: false,
     });
-  }, [contractComponents.events.ExplorerRaidEvent, raiderId, structureId]);
+  }, [contractComponents.events.ExplorerRaidEvent, raiderId, target]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -387,6 +441,13 @@ export const RaidResult = ({
                   </div>
                 </div>
               )
+            )}
+
+            {/* Add Twitter Share Button */}
+            {formattedTweet && raidResult.success && (
+              <div className="mt-4 pt-4 border-t border-gold/10">
+                <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" variant="outline" />
+              </div>
             )}
           </div>
         </div>

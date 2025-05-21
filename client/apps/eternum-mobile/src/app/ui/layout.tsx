@@ -1,23 +1,19 @@
-import useStore from "@/shared/store";
+import { useSyncPlayerStructures } from "@/shared/hooks/use-sync-player-structures";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { usePlayerStructures } from "@bibliothecadao/react";
 import { Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { syncMarketAndBankData, syncPlayerStructuresData } from "../dojo/sync";
 
 export function Layout() {
-  const dojo = useDojo();
   const playerStructures = usePlayerStructures();
-  const setLoading = useStore((state) => state.setLoading);
+
+  // sync player structures
+  useSyncPlayerStructures();
 
   useEffect(() => {
-    syncPlayerStructuresData(dojo.setup, playerStructures, setLoading);
-  }, [playerStructures.length]);
-
-  useEffect(() => {
-    syncMarketAndBankData(dojo.setup, setLoading);
-  }, []);
+    console.log("playerStructures", playerStructures);
+  }, [playerStructures]);
 
   return (
     <div className="min-h-screen flex flex-col">

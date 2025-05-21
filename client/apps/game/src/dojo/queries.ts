@@ -325,23 +325,6 @@ export const getMarketFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const promiseResourceList = getEntities(
-    client,
-    {
-      Member: {
-        model: "s1_eternum-ResourceList",
-        member: "amount",
-        operator: "Gt",
-        value: { Primitive: { U128: "0" } },
-      },
-    },
-    components,
-    [],
-    ["s1_eternum-ResourceList"],
-    EVENT_QUERY_LIMIT,
-    false,
-  );
-
   const promiseMarket = getEntities(
     client,
     {
@@ -358,9 +341,7 @@ export const getMarketFromTorii = async <S extends Schema>(
     false,
   );
 
-  const promiseBankStructures = getBankStructuresFromTorii(client, components as any);
-
-  return Promise.all([promiseResourceList, promiseMarket, promiseBankStructures]);
+  return Promise.all([promiseMarket]);
 };
 
 export const getBankStructuresFromTorii = async <S extends Schema>(
