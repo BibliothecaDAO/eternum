@@ -268,8 +268,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                             content: <>Hyperstructure must be initialized first</>,
                             position: "right",
                           });
-                        }
-                        if (!entity.isOwner) {
+                        } else if (!entity.isOwner) {
                           setTooltip({
                             content: <>You are not the owner of the hyperstructure</>,
                             position: "right",
@@ -313,7 +312,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                                 value={access}
                                 disabled={!entity.isOwner || !hyperstructure.initialized}
                               >
-                                {DisplayedAccess[access as keyof typeof Access]}
+                                {DisplayedAccess[access as keyof typeof DisplayedAccess]}
                               </SelectItem>
                             ))}
                         </SelectContent>
