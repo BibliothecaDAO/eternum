@@ -5,7 +5,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
+import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
@@ -208,12 +208,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
   };
 
-  const [selectedAccess, setSelectedAccess] = useState<"Public" | "Private" | "GuildOnly">(
-    hyperstructure
-      ? (DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess] as "Public" | "Private" | "GuildOnly")
-      : "Private",
-  );
-
   return (
     <div className="flex flex-col justify-between h-full">
       <div className="flex flex-col p-2">
@@ -265,19 +259,42 @@ export const HyperstructurePanel = ({ entity }: any) => {
                   </div>
                 </div>
 
-                {account.address === entity.owner && (
+                {hyperstructure && (
                   <div className="flex flex-col gap-2">
-                    {hyperstructure && entity.isOwner && isLoading !== Loading.SetPrivate ? (
+                    <div
+                      onMouseEnter={() => {
+                        if (!hyperstructure.initialized) {
+                          setTooltip({
+                            content: <>Hyperstructure must be initialized first</>,
+                            position: "right",
+                          });
+                        }
+                        if (!entity.isOwner) {
+                          setTooltip({
+                            content: <>You are not the owner of the hyperstructure</>,
+                            position: "right",
+                          });
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        setTooltip(null);
+                      }}
+                      className="relative group"
+                    >
                       <Select
+                        disabled={!hyperstructure.initialized || !entity.isOwner || isLoading === Loading.SetPrivate}
                         onValueChange={(access: keyof typeof Access) => {
-                          setSelectedAccess(access);
+                          if (!hyperstructure.initialized) return;
                           setAccess(BigInt(Access[access]));
                         }}
+                        value={isLoading === Loading.SetPrivate ? "loading" : hyperstructure.access}
                       >
                         <SelectTrigger className="w-[140px] h-8 text-sm border border-gold/20">
-                          <SelectValue
-                            placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
-                          />
+                          <SelectValue>
+                            {isLoading === Loading.SetPrivate
+                              ? "Loading..."
+                              : DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-black/90 text-gold">
                           {Object.keys(Access)
@@ -291,15 +308,17 @@ export const HyperstructurePanel = ({ entity }: any) => {
                               return access !== hyperstructure!.access;
                             })
                             .map((access) => (
-                              <SelectItem key={access} value={access} disabled={!entity.isOwner}>
-                                {separateCamelCase(access)}
+                              <SelectItem
+                                key={access}
+                                value={access}
+                                disabled={!entity.isOwner || !hyperstructure.initialized}
+                              >
+                                {DisplayedAccess[access as keyof typeof Access]}
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <div className="text-sm">Loading...</div>
-                    )}
+                    </div>
 
                     {account.address === entity.owner && (
                       <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
