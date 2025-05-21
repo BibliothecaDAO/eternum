@@ -260,6 +260,9 @@ export default class WorldmapScene extends HexagonScene {
     // Add mouse wheel handler
     this.wheelHandler = throttle(
       (event: WheelEvent) => {
+        // Expand labels temporarily during scroll in Medium view
+        this.expandLabelsTemporarily();
+
         if (event.deltaY > 0) {
           // Zoom out
           const newView = Math.min(CameraView.Far, this.currentCameraView + 1);
@@ -277,6 +280,16 @@ export default class WorldmapScene extends HexagonScene {
     // Get the main canvas by its ID
     const canvas = document.getElementById("main-canvas");
     if (canvas) {
+      // Add a simple, non-throttled wheel handler to expand labels on every scroll
+      canvas.addEventListener(
+        "wheel",
+        () => {
+          this.expandLabelsTemporarily();
+        },
+        { passive: true },
+      );
+
+      // Add the throttled handler for camera view changes
       canvas.addEventListener("wheel", this.wheelHandler, { passive: true });
     }
   }

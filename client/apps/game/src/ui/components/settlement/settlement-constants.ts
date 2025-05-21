@@ -11,6 +11,7 @@ export const BANK_ICON_PATH = `images/resources/${ResourcesIds.Lords}.png`;
 
 // Colors for different states
 export const COLORS = {
+  ALLY: "#B5BD75", // green
   AVAILABLE: "#776756", // gray-gold
   SELECTED: "#FFF5EA", // lightest
   HOVERED: "#FAFF00", // yellow

@@ -20,6 +20,7 @@ import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
+import { transitionDB } from "../utils/label-utils";
 
 export enum CameraView {
   Close = 1,
@@ -497,6 +498,35 @@ export abstract class HexagonScene {
 
   public getCurrentCameraView(): CameraView {
     return this.currentCameraView;
+  }
+
+  // Method to expand labels temporarily during scroll in Medium view
+  public expandLabelsTemporarily(): void {
+    // Only expand labels if we're in Medium view
+    if (this.currentCameraView === CameraView.Medium) {
+      // Generate a global transition ID for the scene
+      const sceneTransitionId = `scene_${this.sceneName}_medium_transition`;
+
+      // Store current timestamp for Medium view transition
+      transitionDB.setMediumViewTransition(sceneTransitionId, "scene", this.sceneName);
+
+      // Notify all listeners to expand the labels
+      this.cameraViewListeners.forEach((listener) => {
+        // Call with Close view first to force expansion, then back to Medium
+        // to start the collapsing timeout
+        listener(CameraView.Close);
+        listener(CameraView.Medium);
+      });
+
+      // Schedule a cleanup for this global scene transition
+      transitionDB.scheduleTimeout(
+        sceneTransitionId,
+        () => {
+          // Do nothing in the timeout, just let it expire naturally
+        },
+        2000,
+      );
+    }
   }
 
   public addCameraViewListener(listener: (view: CameraView) => void) {
