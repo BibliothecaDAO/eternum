@@ -3,7 +3,7 @@ import { ContractAddress, HexPosition, ID, ResourcesIds, StructureType } from "@
 import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
-const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+export const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
@@ -47,6 +47,28 @@ const QUERIES = {
     FROM \`s1_eternum-Tile\`
     ORDER BY col, row;
   `,
+  STRUCTURE_AND_EXPLORER_DETAILS: `
+    SELECT
+        s.owner AS owner_address,
+        GROUP_CONCAT(DISTINCT s.entity_id) AS structure_ids,
+        GROUP_CONCAT(
+            CASE 
+                WHEN et.explorer_id IS NOT NULL 
+                THEN et.explorer_id || ':' || s.entity_id 
+                ELSE NULL 
+            END
+        ) AS explorer_ids,
+        gm.guild_id,
+        g.name AS guild_name,
+        sos.name AS player_name
+    FROM [s1_eternum-Structure] s
+    LEFT JOIN [s1_eternum-ExplorerTroops] et ON et.owner = s.entity_id
+    LEFT JOIN [s1_eternum-GuildMember] gm ON gm.member = s.owner
+    LEFT JOIN [s1_eternum-Guild] g ON g.guild_id = gm.guild_id
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    GROUP BY s.owner
+  `,
+
   HYPERSTRUCTURES: `
     SELECT 
         hyperstructure_id
@@ -147,6 +169,14 @@ export interface TokenTransfer {
   symbol: string;
 }
 
+export interface PlayersData {
+  explorer_ids: string | number;
+  structure_ids: string;
+  guild_id: string | null;
+  guild_name: string | null;
+  player_name: string | null;
+  owner_address: string;
+}
 export interface StructureDetails {
   internal_id: string; // Assuming internal_id might be non-numeric or large
   entity_id: number; // Assuming entity_id is numeric
@@ -282,6 +312,22 @@ export async function fetchStructureByCoord(coordX: number, coordY: number): Pro
 
   if (!response.ok) {
     throw new Error(`Failed to fetch structure details: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Fetch global structure explorer and guild details from the API
+ */
+export async function fetchGlobalStructureExplorerAndGuildDetails(): Promise<PlayersData[]> {
+  const query = QUERIES.STRUCTURE_AND_EXPLORER_DETAILS;
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch structure explorer and guild details: ${response.statusText}`);
   }
 
   return await response.json();
