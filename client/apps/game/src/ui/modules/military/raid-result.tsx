@@ -21,12 +21,14 @@ const getFormattedRaidTweet = ({
 }: {
   accountName: string | null;
   accountAddress: string;
-  targetAddress: ContractAddress;
+  targetAddress: ContractAddress | null;
   stolenResources: Array<{ resourceId: number; amount: number }>;
   components: ClientComponents;
 }) => {
   const attackerGuild = getGuildFromPlayerAddress(ContractAddress(accountAddress), components)?.name;
-  const defenderGuild = getGuildFromPlayerAddress(ContractAddress(targetAddress), components)?.name;
+  const defenderGuild = targetAddress
+    ? getGuildFromPlayerAddress(ContractAddress(targetAddress), components)?.name
+    : "";
 
   // Format the resources text
   const resourcesText = stolenResources

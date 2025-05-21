@@ -12,7 +12,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../../elements/resource-icon";
-import { resourceProbabilities } from "./mint-village-pass-modal";
+import { resourceProbabilities, ResourceTierEmojis } from "./mint-village-pass-modal";
 
 // Define common resource types for the roulette
 const COMMON_RESOURCES = ["Wood", "Stone", "Coal", "Copper", "Obsidian", "Silver", "Ironwood", "ColdIron", "Gold"];
@@ -166,7 +166,7 @@ export const VillageResourceReveal = ({
     const resource = resourceProbabilities.find((tier) => tier.resources.some((r) => r.name === resourceName));
     return {
       resourceTier: resource?.name,
-      resourceProbability: resource?.resources.find((r) => r.name === resourceName)?.chance,
+      resourceProbability: resource?.totalChance,
     };
   }, [resourceName]);
 
@@ -177,6 +177,7 @@ export const VillageResourceReveal = ({
     resourceTier: resourceTier,
     resourceProbability: resourceProbability ? resourceProbability : 0,
     url: env.VITE_SOCIAL_LINK,
+    tierEmoji: ResourceTierEmojis[resourceTier as keyof typeof ResourceTierEmojis],
   });
 
   return (
