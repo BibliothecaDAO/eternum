@@ -28,7 +28,7 @@ export type AttackTarget = {
   targetType: TargetType;
   structureCategory: StructureType | null;
   hex: { x: number; y: number };
-  addressOwner: ContractAddress;
+  addressOwner: ContractAddress | null;
 };
 
 // Function to order resources according to STEALABLE_RESOURCES order

@@ -418,7 +418,7 @@ export async function fetchSwapEvents(userEntityIds: ID[]): Promise<TradeEvent[]
   });
 }
 
-export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractAddress> {
+export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractAddress | null> {
   const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.EXPLORER_ADDRESS_OWNER.replace("{entityId}", entityId.toString()))}`;
   const response = await fetch(url);
 
@@ -427,5 +427,8 @@ export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractA
   }
 
   const data = await response.json();
+  if (data.length === 0) {
+    return null;
+  }
   return data[0].address_owner;
 }
