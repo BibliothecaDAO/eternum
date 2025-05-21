@@ -46,9 +46,27 @@ interface RarityTier {
   color: string; // Tailwind color classes for background/border
 }
 
+export enum ResourceTier {
+  Common = "Common",
+  Uncommon = "Uncommon",
+  Rare = "Rare",
+  Epic = "Epic",
+  Legendary = "Legendary",
+  Mythic = "Mythic",
+}
+
+export const ResourceTierEmojis = {
+  [ResourceTier.Common]: "🟢", // green
+  [ResourceTier.Uncommon]: "🔵", // blue
+  [ResourceTier.Rare]: "🟣", // purple
+  [ResourceTier.Epic]: "🟠", // orange
+  [ResourceTier.Legendary]: "🔴", // red
+  [ResourceTier.Mythic]: "⚫", // black (ultimate rarity)
+};
+
 export const resourceProbabilities: RarityTier[] = [
   {
-    name: "Common",
+    name: ResourceTier.Common,
     totalChance: 50.43,
     color: "bg-gray-600 border-gray-400",
     resources: [
@@ -58,7 +76,7 @@ export const resourceProbabilities: RarityTier[] = [
     ],
   },
   {
-    name: "Uncommon",
+    name: ResourceTier.Uncommon,
     totalChance: 39.259,
     color: "bg-green-800 border-green-600",
     resources: [
@@ -71,7 +89,7 @@ export const resourceProbabilities: RarityTier[] = [
     ],
   },
   {
-    name: "Rare",
+    name: ResourceTier.Rare,
     totalChance: 5.802,
     color: "bg-blue-800 border-blue-600",
     resources: [
@@ -82,7 +100,7 @@ export const resourceProbabilities: RarityTier[] = [
     ],
   },
   {
-    name: "Epic",
+    name: ResourceTier.Epic,
     totalChance: 2.5,
     color: "bg-purple-800 border-purple-600",
     resources: [
@@ -92,7 +110,7 @@ export const resourceProbabilities: RarityTier[] = [
     ],
   },
   {
-    name: "Legendary",
+    name: ResourceTier.Legendary,
     totalChance: 1.451,
     color: "bg-indigo-800 border-indigo-600",
     resources: [
@@ -102,7 +120,7 @@ export const resourceProbabilities: RarityTier[] = [
     ],
   },
   {
-    name: "Mythic",
+    name: ResourceTier.Mythic,
     totalChance: 0.556,
     color: "bg-orange-800 border-orange-600",
     resources: [
@@ -477,13 +495,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span
-                            className={cn(
-                              "inline-block w-3 h-3 rounded-full mr-2",
-                              tier.color.replace("bg-", "border-").replace("-800", "-500").replace("-600", "-400"), // Use border color for dot
-                              tier.color,
-                            )}
-                          ></span>
+                          <span className="text-gray-400 text-sm mr-1.5">
+                            {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
+                          </span>
                           {tier.name}{" "}
                           <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
@@ -512,13 +526,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span
-                            className={cn(
-                              "inline-block w-3 h-3 rounded-full mr-2",
-                              tier.color.replace("bg-", "border-").replace("-800", "-500").replace("-600", "-400"),
-                              tier.color,
-                            )}
-                          ></span>
+                          <span className="text-gray-400 text-sm mr-1.5">
+                            {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
+                          </span>
                           {tier.name}{" "}
                           <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
