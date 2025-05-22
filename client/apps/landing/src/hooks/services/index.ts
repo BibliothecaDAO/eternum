@@ -284,7 +284,7 @@ export async function fetchMarketOrderEvents(
 
 export async function fetchDonkeyBurn(): Promise<number> {
   const rawData = await gameClientFetch<any[]>(QUERIES.DONKEY_BURN);
-  return rawData[0].total_donkeys_burned;
+  return rawData.reduce((acc, donkey) => acc + Number(donkey.amount), 0);
 }
 
 export async function fetchTotalGuilds(): Promise<number> {
@@ -322,4 +322,9 @@ export async function fetchTotalAgents(): Promise<number> {
 export async function fetchTotalCreatedAgents(): Promise<number> {
   const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_CREATED_AGENTS);
   return rawData[0].total_agent_created_events;
+}
+
+export async function fetchTotalPlayers(): Promise<number> {
+  const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_PLAYERS);
+  return rawData[0].unique_wallets;
 }

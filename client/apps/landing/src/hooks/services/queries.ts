@@ -241,31 +241,9 @@ WITH limited_active_orders AS (
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
   DONKEY_BURN: `
-  WITH RECURSIVE
-  digits(d,v) AS (
-    VALUES ('0',0),('1',1),('2',2),('3',3),('4',4),('5',5),('6',6),('7',7),
-           ('8',8),('9',9),('a',10),('b',11),('c',12),('d',13),('e',14),('f',15)
-  ),
-  parsed AS (
-    SELECT lower(substr(amount,3)) AS hex         -- strip "0x"
-    FROM   "s1_eternum-BurnDonkey"
-  ),
-  explode AS (
-    SELECT hex, length(hex) AS len, 0 AS pos, 0 AS val
-    FROM   parsed
-    UNION ALL
-    SELECT e.hex,
-           e.len,
-           pos + 1,
-           val*16 + d.v
-    FROM   explode e
-    JOIN   digits  d ON d.d = substr(e.hex, pos+1, 1)
-    WHERE  pos < len-1
-  )
-SELECT SUM(val) AS total_donkeys_burned
-FROM   explode
-WHERE  pos = len-1;
-`,
+  SELECT amount
+  FROM "s1_eternum-BurnDonkey"
+  `,
   TOTAL_GUILDS: `SELECT
     COUNT(*) AS total_guilds
 FROM
@@ -330,4 +308,6 @@ FROM
     COUNT(*) AS total_agent_created_events
 FROM
     "s1_eternum-AgentCreatedEvent";`,
+  TOTAL_PLAYERS: `SELECT COUNT(DISTINCT owner) AS unique_wallets
+FROM   "s1_eternum-Structure";`,
 };
