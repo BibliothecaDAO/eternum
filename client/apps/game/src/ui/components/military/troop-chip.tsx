@@ -1,4 +1,5 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -43,7 +44,13 @@ export const TroopChip = ({
             {currencyFormat(Number(troops.count || 0), 0)}
           </div>
         </div>
-        <div className="text-xs text-gold/80 self-center">Tier {troops.tier}</div>
+        <span
+          className={`px-1.5 py-0.5 rounded ${
+            iconSize === "sm" ? "text-[11px]" : iconSize === "md" ? "text-xs" : "text-sm"
+          } font-bold border relative ${getTierStyle(troops.tier)}`}
+        >
+          <span className="relative z-10">{troops.tier}</span>
+        </span>
       </div>
     </div>
   );

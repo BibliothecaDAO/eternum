@@ -1,4 +1,5 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -18,6 +19,11 @@ export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefense
           className="flex items-center bg-brown-900/90 border border-gold/20 rounded-md px-1.5 py-0.5"
           title={`Defense Slot ${defense.slot}`}
         >
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
+          >
+            <span className="relative z-10">{defense.troops.tier}</span>
+          </span>
           <ResourceIcon
             withTooltip={false}
             resource={
