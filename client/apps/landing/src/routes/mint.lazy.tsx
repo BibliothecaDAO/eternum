@@ -79,7 +79,7 @@ function Mint() {
   // --- Filtering Hook ---
   const getRealmMetadataString = useCallback((realm: SeasonPassRealm) => {
     if (!realm.metadata) return null;
-    return JSON.parse(realm.metadata);
+    return realm.metadata;
   }, []);
 
   const {
