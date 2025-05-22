@@ -217,7 +217,7 @@ export async function fetchTokenBalancesWithMetadata(
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
   return rawData.map((item) => ({
-    token_id: item.token_id,
+    token_id: Number(item.token_id.split(":")[1]),
     balance: item.balance,
     contract_address: item.contract_address,
     account_address: item.token_owner,
