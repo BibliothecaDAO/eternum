@@ -576,6 +576,14 @@ function ChatModule() {
 
   // Add memoized calculation for total unread messages
   const totalUnreadMessages = useMemo(() => {
+    // console.log(
+    //   "All Users:",
+    //   [...onlineUsers, ...offlineUsers].map((user) => ({
+    //     id: user?.id,
+    //     username: user?.username,
+    //     status: onlineUsers.some((u) => u?.id === user?.id) ? "online" : "offline",
+    //   })),
+    // );
     return Object.entries(unreadMessages).reduce((sum, [userId, count]) => {
       // Only count unread messages from users (not rooms or global)
       const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
@@ -622,6 +630,29 @@ function ChatModule() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [filteredMessages, directMessageRecipientId, activeRoomId, onlineUsers, offlineUsers, availableRooms]);
+
+  // Add new memoized computations for user lists
+  const usersWithUnreadMessages = useMemo(() => {
+    return [...filteredUsers, ...filteredOfflineUsers]
+      .filter((user) => user && user?.id !== userId && (unreadMessages[user?.id] || 0) > 0)
+      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
+  }, [filteredUsers, filteredOfflineUsers, userId, unreadMessages]);
+
+  const onlineUsersWithoutUnread = useMemo(() => {
+    return filteredUsers
+      .filter((user) => user && user?.id !== userId && !(unreadMessages[user?.id] || 0))
+      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
+  }, [filteredUsers, userId, unreadMessages]);
+
+  const offlineUsersWithoutUnread = useMemo(() => {
+    return filteredOfflineUsers
+      .filter((user) => !(unreadMessages[user?.id] || 0))
+      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
+  }, [filteredOfflineUsers, unreadMessages]);
+
+  const onlineUsersCount = useMemo(() => {
+    return filteredUsers.filter((user) => !(unreadMessages[user?.id] || 0)).length;
+  }, [filteredUsers, unreadMessages]);
 
   // If username is not set, show login form
   if (!isUsernameSet) {
@@ -847,67 +878,96 @@ function ChatModule() {
                     </div>
                   </div>
                   <div className="max-h-[300px] overflow-y-auto">
-                    {/* Online Users */}
-                    {filteredUsers.length > 0 && (
+                    {/* Users with unread messages */}
+                    {usersWithUnreadMessages.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-xs font-medium text-gray-400">
-                          Online Lords{" "}
-                          <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsers.length}</span>
-                        </div>
-                        {filteredUsers
-                          .filter((user) => user && user?.id !== userId)
-                          .map((user) => (
-                            <button
-                              key={user.id}
-                              onClick={() => {
-                                selectRecipient(user.id);
-                                setIsUsersVisible(false);
-                                setIsRoomsVisible(false);
-                              }}
-                              className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
-                                user.id === directMessageRecipientId ? "bg-gold/30" : ""
-                              }`}
+                        <div className="px-2 py-1 text-xs font-medium text-gray-400">Unread Messages</div>
+                        {usersWithUnreadMessages.map((user) => (
+                          <button
+                            key={user?.id}
+                            onClick={() => {
+                              selectRecipient(user?.id);
+                              setIsUsersVisible(false);
+                              setIsRoomsVisible(false);
+                            }}
+                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
+                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
+                            } ${offlineUsers.some((u) => u?.id === user?.id) ? "opacity-60" : ""}`}
+                          >
+                            <div
+                              className={`h-6 w-6 flex items-center justify-center text-sm ${
+                                offlineUsers.some((u) => u?.id === user?.id)
+                                  ? "bg-gradient-to-br from-gray-500/30 to-gray-600/30"
+                                  : "bg-gradient-to-br from-orange-500/30 to-orange-600/30"
+                              } mr-2 rounded`}
                             >
-                              <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2 rounded">
-                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-                              </div>
-                              <span className="text-sm truncate">{user.username || user.id}</span>
+                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
+                            </div>
+                            <span
+                              className={`text-sm truncate ${offlineUsers.some((u) => u?.id === user?.id) ? "text-gray-400" : ""}`}
+                            >
+                              {user?.username || user?.id}
+                            </span>
+                            {!offlineUsers.some((u) => u?.id === user?.id) && (
                               <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
-                              {unreadMessages[user.id] > 0 && (
-                                <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                                  {unreadMessages[user.id]}
-                                </span>
-                              )}
-                            </button>
-                          ))}
+                            )}
+                            <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+                              {unreadMessages[user?.id]}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                     )}
 
-                    {/* Offline Users */}
-                    {filteredOfflineUsers.length > 0 && (
+                    {/* Online Users without unread messages */}
+                    {onlineUsersWithoutUnread.length > 0 && (
+                      <div>
+                        <div className="px-2 py-1 text-xs font-medium text-gray-400">
+                          Online Lords{" "}
+                          <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsersCount}</span>
+                        </div>
+                        {onlineUsersWithoutUnread.map((user) => (
+                          <button
+                            key={user?.id}
+                            onClick={() => {
+                              selectRecipient(user?.id);
+                              setIsUsersVisible(false);
+                              setIsRoomsVisible(false);
+                            }}
+                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
+                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
+                            }`}
+                          >
+                            <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2 rounded">
+                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
+                            </div>
+                            <span className="text-sm truncate">{user?.username || user?.id}</span>
+                            <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Offline Users without unread messages */}
+                    {offlineUsersWithoutUnread.length > 0 && (
                       <div>
                         <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
-                        {filteredOfflineUsers.map((user) => (
+                        {offlineUsersWithoutUnread.map((user) => (
                           <button
-                            key={user.id}
+                            key={user?.id}
                             onClick={() => {
-                              selectRecipient(user.id);
+                              selectRecipient(user?.id);
                               setIsUsersVisible(false);
                               setIsRoomsVisible(false);
                             }}
                             className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
-                              user.id === directMessageRecipientId ? "bg-gold/30" : ""
+                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
                             }`}
                           >
                             <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2 rounded">
-                              {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
                             </div>
-                            <span className="text-sm truncate text-gray-400">{user.username || user.id}</span>
-                            {unreadMessages[user.id] > 0 && (
-                              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                                {unreadMessages[user.id]}
-                              </span>
-                            )}
+                            <span className="text-sm truncate text-gray-400">{user?.username || user?.id}</span>
                           </button>
                         ))}
                       </div>
