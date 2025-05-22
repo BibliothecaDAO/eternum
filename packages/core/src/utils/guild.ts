@@ -57,7 +57,7 @@ export const formatGuildMembers = (
         guildEntityId: Number(guildMember.guild_id),
         name: addressName ? addressName : "Unknown",
         isUser: guildMember.member === playerAddress,
-        isGuildMaster: false, // todo: fix
+        isGuildMaster: BigInt(guildMember.member) === BigInt(guildMember.guild_id),
       };
     })
     .filter((guildMember): guildMember is NonNullable<typeof guildMember> => guildMember !== undefined);
