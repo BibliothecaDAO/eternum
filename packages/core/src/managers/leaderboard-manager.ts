@@ -129,6 +129,7 @@ export class LeaderboardManager {
       this.components.HyperstructureShareholders,
       getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
     );
+
     if (!hyperstructureShareholders) return 0;
 
     const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
@@ -136,6 +137,8 @@ export class LeaderboardManager {
     const playerShare = shareholders.find(
       (share: ContractAddressAndAmount) => ContractAddress(share.value[0].value) === playerAddress,
     );
+
+    console.log({ shareholders, playerShare });
 
     return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
   }

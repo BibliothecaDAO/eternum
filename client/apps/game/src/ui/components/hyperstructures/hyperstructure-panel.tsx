@@ -193,6 +193,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
     );
   }, [updates, structureEntityId]);
 
+  console.log(myShares);
+
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
     try {
