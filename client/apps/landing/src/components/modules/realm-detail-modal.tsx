@@ -273,7 +273,7 @@ export const RealmDetailModal = ({
                 <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
                   Owned By
                 </Label>
-                <span>{shortenHex(realmData.token_owner ?? "", 10)}</span>
+                <span>{shortenHex(realmData.account_address ?? "", 10)}</span>
               </div>
             </div>
           </div>
