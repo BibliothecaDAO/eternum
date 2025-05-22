@@ -42,28 +42,6 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
 
-  /*const {
-    data: seasonPassOwnerData,
-    error: seasonPassError,
-    isSuccess: isSeasonPassMintedSuccess,
-    refetch: refetchSeasonPass,
-    isFetching: isFetchingSeasonPass,
-  } = useReadContract({
-    abi: [
-      {
-        type: "function",
-        name: "owner_of",
-        inputs: [{ name: "token_id", type: "core::integer::u256" }],
-        outputs: [{ type: "core::starknet::contract_address::ContractAddress" }],
-        state_mutability: "view",
-      },
-    ] as const,
-    functionName: "owner_of",
-    address: seasonPassAddress as `0x${string}`,
-    args: [tokenId.toString()], // Pass tokenId as string if needed by hook
-    watch: true,
-  });*/
-
   const isOwner = realm.originalRealm?.account_address === (accountAddress ?? "");
 
   // --- Image Loading State & Logic ---
