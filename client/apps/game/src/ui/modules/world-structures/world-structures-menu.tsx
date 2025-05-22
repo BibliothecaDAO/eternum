@@ -6,13 +6,14 @@ import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import Button from "@/ui/elements/button";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import TextInput from "@/ui/elements/text-input";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, getHyperstructureProgress, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
 import { ContractAddress, HyperstructureInfo, MERCENARIES } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, Filter, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 // Define filter options
@@ -137,22 +138,20 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               <h2 className="text-xl font-bold text-gold mb-4">World Hyperstructures</h2>
 
               {/* Search and filter bar */}
-              <div className="mb-4 space-y-3">
+              <div className="mb-1 space-y-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4" />
-                  <input
-                    type="text"
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 t" />
+                  <TextInput
                     placeholder="Search hyperstructures..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold text-gold"
+                    onChange={(value) => setSearchTerm(value)}
+                    className="pr-3 pl-10"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                  <Filter className="h-4 w-4 text-gold/80 mr-1" />
+                <div className="flex items-center overflow-x-auto">
                   <FilterButton label="All" value="all" />
-                  <FilterButton label="My Contributions" value="mine" />
+                  <FilterButton label="Contributions" value="mine" />
                   <FilterButton label="Completed" value="completed" />
                   <FilterButton label="In Progress" value="in-progress" />
                 </div>
@@ -161,7 +160,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               {/* Hyperstructures list */}
               <div className="overflow-y-auto flex-grow">
                 {filteredHyperstructures.length > 0 ? (
-                  <ul className="space-y-3">
+                  <ul className="space-y-1">
                     {filteredHyperstructures.map((hyperstructure) => {
                       // Get progress for display and filtering
                       const progress = getHyperstructureProgress(hyperstructure.entity_id, components);
@@ -236,14 +235,14 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
 const AccessBadge = ({ access }: { access: string }) => {
   const displayAccess = DisplayedAccess[access as keyof typeof DisplayedAccess];
   const accessStyles = {
-    Public: "text-green border border-green bg-green/10",
-    Private: "text-red border border-red bg-red/10",
-    "Tribe Only": "text-gold border border-gold bg-gold/10",
+    Public: "text-green border border-green/50 bg-green/10",
+    Private: "text-red border border-red/50 bg-red/10",
+    "Tribe Only": "text-gold border border-gold/50 bg-gold/10",
   };
 
   const accessStyle = accessStyles[displayAccess as keyof typeof accessStyles] || "";
 
-  return <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${accessStyle}`}>{displayAccess}</span>;
+  return <span className={`text-xxs px-1 uppercase ${accessStyle}`}>{displayAccess}</span>;
 };
 
 const HyperstructureContentRow = ({
@@ -253,50 +252,65 @@ const HyperstructureContentRow = ({
   hyperstructure: HyperstructureInfo;
   progress: { percentage: number };
 }) => {
+  // Hooks
   const {
     setup: { components },
     account: { account },
   } = useDojo();
 
-  const idNumber = Number(hyperstructure.entity_id);
-  const latestChangeEvent = LeaderboardManager.instance(components).getCurrentCoOwners(idNumber);
-  const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
-  const shares =
-    LeaderboardManager.instance(components).getPlayerShares(ContractAddress(account.address), idNumber) || 0;
+  // Entity ID as number
+  const entityId = Number(hyperstructure.entity_id);
 
-  // Get owner information
+  // Get latest co-owner change event
+  const latestCoOwnerChange = LeaderboardManager.instance(components).getCurrentCoOwners(entityId);
+  // If no co-owner event and progress is 100%, co-owners need to be set
+  const needsCoOwners = !latestCoOwnerChange && progress.percentage === 100;
+
+  // Player's shares in this hyperstructure
+  const playerShares =
+    LeaderboardManager.instance(components).getPlayerShares(ContractAddress(account.address), entityId) || 0;
+
+  // Owner and guild info
   const ownerName = hyperstructure.ownerName;
-  const address = hyperstructure.owner;
-  const guildName = getGuildFromPlayerAddress(address || 0n, components)?.name;
+  const ownerAddress = hyperstructure.owner;
+  const guildName = getGuildFromPlayerAddress(ownerAddress || 0n, components)?.name;
 
-  // Calculate progress bar color
+  // Progress bar color logic
   const progressBarColor =
     progress.percentage < 50 ? "bg-red-500" : progress.percentage < 100 ? "bg-yellow-500" : "bg-green-500";
 
+  // Format shares as percentage
+  const formattedShares = currencyIntlFormat(playerShares * 100, 0);
+
   return (
-    <div className="space-y-3">
+    <div className="">
       {/* Progress bar */}
-      <div className="relative w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+      <div className="relative w-full h-1.5 rounded-full overflow-hidden">
         <div
           className={`absolute left-0 top-0 h-full ${progressBarColor} transition-all duration-500`}
           style={{ width: `${progress.percentage}%` }}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-xs">
+      <div className="flex justify-between text-xs">
+        {/* Owner info */}
         <div className="flex items-center gap-2">
           <span className="text-gold/80">Owner:</span>
           <span className="font-medium">{guildName || ownerName || MERCENARIES}</span>
         </div>
+        {/* Progress info */}
         <div className="flex items-center gap-2">
           <span className="text-gold/80">Progress:</span>
-          <span className="font-medium">{progress.percentage}%</span>
-          {needTosetCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
+          <span className="font-medium">{progress.percentage.toFixed(2)}%</span>
+          {needsCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
         </div>
+        {/* Shares info */}
         <div className="flex items-center gap-2">
           <span className="text-gold/80">Shares:</span>
-          <span className="font-medium">{currencyIntlFormat(shares * 100, 0)}%</span>
-          {shares > 0 && <span className="text-xs text-green bg-green/10 px-1.5 py-0.5 rounded-sm">Contributing</span>}
+          <span className="font-medium">{formattedShares}%</span>
+          {playerShares > 0 && (
+            <span className="text-xs text-green bg-green/10 px-1.5 py-0.5 rounded-sm">Contributing</span>
+          )}
         </div>
       </div>
     </div>

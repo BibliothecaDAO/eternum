@@ -43,7 +43,7 @@ export const SeasonPassCard = ({
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  const isOwner = pass.token_owner === trimAddress(accountAddress);
+  const isOwner = pass.account_address === trimAddress(accountAddress);
 
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
