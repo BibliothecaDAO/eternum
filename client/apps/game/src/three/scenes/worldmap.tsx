@@ -482,6 +482,9 @@ export default class WorldmapScene extends HexagonScene {
     const selectedHex = selectedPath[0];
     const selected = this.getHexagonEntity(selectedHex);
     const target = this.getHexagonEntity(targetHex);
+    const account = ContractAddress(useAccountStore.getState().account?.address || "");
+    const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
+    const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
 
     this.state.toggleModal(
       <HelpModal
@@ -495,6 +498,7 @@ export default class WorldmapScene extends HexagonScene {
           id: target.army?.id || target.structure?.id || 0,
           hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
         }}
+        allowBothDirections={isTargetMine && isSelectedMine}
       />,
     );
   }
