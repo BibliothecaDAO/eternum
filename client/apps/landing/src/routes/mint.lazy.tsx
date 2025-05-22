@@ -79,7 +79,7 @@ function Mint() {
   // --- Filtering Hook ---
   const getRealmMetadataString = useCallback((realm: SeasonPassRealm) => {
     if (!realm.metadata) return null;
-    return JSON.parse(realm.metadata);
+    return realm.metadata;
   }, []);
 
   const {
@@ -105,14 +105,14 @@ function Mint() {
       .map((realm) => {
         const tokenId = parseInt(realm?.token_id);
 
-        let parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] } = {
+        let parsedMetadata: { name: string; attributes: { trait_type: string; value: string | number }[] } = {
           name: "",
           attributes: [],
         };
         try {
-          const metaString = getRealmMetadataString(realm);
-          if (metaString) {
-            parsedMetadata = JSON.parse(metaString);
+          const metadata = getRealmMetadataString(realm);
+          if (metadata) {
+            parsedMetadata = metadata;
           }
         } catch (e) {
           console.error(`Failed to parse metadata for token ${tokenId}:`, e);
