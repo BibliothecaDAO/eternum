@@ -319,7 +319,7 @@ export class SystemManager {
         this.setupSystem(this.setup.components.HyperstructureRequirements, callback, async (update: any) => {
           const structure = getComponentValue(
             this.setup.components.Structure,
-            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
+            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_id)]),
           );
 
           if (!structure) return;

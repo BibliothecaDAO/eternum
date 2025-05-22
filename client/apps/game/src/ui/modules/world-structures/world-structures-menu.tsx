@@ -145,7 +145,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                     placeholder="Search hyperstructures..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold text-gold"
+                    className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold "
                   />
                 </div>
 
