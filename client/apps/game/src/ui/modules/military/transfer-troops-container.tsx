@@ -1,17 +1,13 @@
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
-import { getEntityIdFromKeys, getGuardsByStructure } from "@bibliothecadao/eternum";
+import { divideByPrecision, getGuardsByStructure, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { DEFENSE_NAMES, ID, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-
-export enum TransferDirection {
-  ExplorerToStructure,
-  StructureToExplorer,
-  ExplorerToExplorer,
-}
+import { TransferDirection } from "./help-container";
 
 interface TransferTroopsContainerProps {
   selectedEntityId: ID;
@@ -32,9 +28,9 @@ export const TransferTroopsContainer = ({
 }: TransferTroopsContainerProps) => {
   const {
     account: { account },
+    network: { toriiClient },
     setup: {
       systemCalls: { explorer_explorer_swap, explorer_guard_swap, guard_explorer_swap },
-      components,
     },
   } = useDojo();
 
@@ -42,90 +38,98 @@ export const TransferTroopsContainer = ({
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<number>(0); // Default to first guard slot
 
-  const selected = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-  const target = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
+  // Query for selected entity data
+  const { data: selectedEntityData, isLoading: isSelectedLoading } = useQuery({
+    queryKey: ["selectedEntity", String(selectedEntityId)],
+    queryFn: async () => {
+      const [structureData, explorerData] = await Promise.all([
+        getStructureFromToriiClient(toriiClient, selectedEntityId),
+        getExplorerFromToriiClient(toriiClient, selectedEntityId),
+      ]);
 
-  console.log(selected, target);
+      return {
+        structure: structureData.structure,
+        explorer: explorerData.explorer,
+      };
+    },
+    staleTime: 10000, // 10 seconds
+  });
+
+  // Query for target entity data
+  const { data: targetEntityData, isLoading: isTargetLoading } = useQuery({
+    queryKey: ["targetEntity", String(targetEntityId)],
+    queryFn: async () => {
+      const [structureData, explorerData] = await Promise.all([
+        getStructureFromToriiClient(toriiClient, targetEntityId),
+        getExplorerFromToriiClient(toriiClient, targetEntityId),
+      ]);
+
+      return {
+        structure: structureData.structure,
+        explorer: explorerData.explorer,
+      };
+    },
+    staleTime: 10000, // 10 seconds
+  });
+
+  const selectedStructure = selectedEntityData?.structure;
+  const selectedExplorerTroops = selectedEntityData?.explorer;
+  const targetStructure = targetEntityData?.structure;
+  const targetExplorerTroops = targetEntityData?.explorer;
 
   const availableGuards = useMemo<number[]>(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
       // Guards are on the target structure
-      if (!target) return [];
-      return Array.from({ length: target.base.level + 1 }, (_, i) => i);
+      if (!targetStructure) return [];
+      return Array.from({ length: targetStructure.base.level + 1 }, (_, i) => i);
     } else if (transferDirection === TransferDirection.StructureToExplorer) {
       // Guards are on the selected structure
-      if (!selected) return [];
-      return Array.from({ length: selected.base.level + 1 }, (_, i) => i);
+      if (!selectedStructure) return [];
+      return Array.from({ length: selectedStructure.base.level + 1 }, (_, i) => i);
     } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
       // Guards aren't directly involved in the same way for transfer amount calculation,
       // but the UI might use this for displaying guard slots (though it seems hidden).
       // Using selected structure's level as a fallback like the original code, with check.
-      if (!selected) return [];
-      return Array.from({ length: selected.base.level + 1 }, (_, i) => i);
+      if (!selectedStructure) return [];
+      return Array.from({ length: selectedStructure.base.level + 1 }, (_, i) => i);
     }
     // Default case or unknown direction
     return [];
-  }, [selected, target, transferDirection]);
+  }, [selectedStructure, targetStructure, transferDirection]);
 
   // list of guards
-  const targetGuards = (() => {
-    if (!targetEntityId) return [];
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
-    if (!structure) return [];
-    const guards = getGuardsByStructure(structure);
+  const targetGuards = useMemo(() => {
+    if (!targetStructure) return [];
+    const guards = getGuardsByStructure(targetStructure);
     return guards.map((guard) => ({
       ...guard,
       troops: {
         ...guard.troops,
-        count: Number(guard.troops.count) / 10 ** 9,
+        count: divideByPrecision(Number(guard.troops.count)),
       },
     }));
-  })();
-
-  // one explorer troop
-  const targetExplorerTroops = (() => {
-    if (!targetEntityId) return undefined;
-    const explorers = getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(targetEntityId)]));
-    if (!explorers?.troops) return undefined;
-    return {
-      ...explorers.troops,
-      count: Number(explorers.troops.count) / 10 ** 9,
-    };
-  })();
+  }, [targetStructure]);
 
   // list of guards
-  const selectedGuards = (() => {
-    if (!selectedEntityId) return [];
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-    if (!structure) return [];
-    const guards = getGuardsByStructure(structure);
+  const selectedGuards = useMemo(() => {
+    if (!selectedStructure) return [];
+    const guards = getGuardsByStructure(selectedStructure);
     return guards.map((guard) => ({
       ...guard,
       troops: {
         ...guard.troops,
-        count: Number(guard.troops.count) / 10 ** 9,
+        count: divideByPrecision(Number(guard.troops.count)),
       },
     }));
-  })();
-
-  // one explorer troop
-  const selectedExplorerTroops = (() => {
-    if (!selectedEntityId) return undefined;
-    const explorers = getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-    if (!explorers?.troops) return undefined;
-    return {
-      ...explorers.troops,
-      count: Number(explorers.troops.count) / 10 ** 9,
-    };
-  })();
+  }, [selectedStructure]);
 
   const maxTroops = (() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return Math.max(0, Number(selectedExplorerTroops?.count || 0) - 1);
+      return Math.max(0, divideByPrecision(Number(selectedExplorerTroops?.troops.count || 0)) - 1);
     } else if (transferDirection === TransferDirection.StructureToExplorer) {
-      return Number(selectedGuards[guardSlot].troops.count);
+      return Number(selectedGuards[guardSlot]?.troops.count || 0);
     } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      return Number(selectedExplorerTroops?.count || 0);
+      return divideByPrecision(Number(selectedExplorerTroops?.troops.count || 0));
     }
     return 0;
   })();
@@ -153,7 +157,7 @@ export const TransferTroopsContainer = ({
       setLoading(true);
 
       // Apply precision to troop amount for the transaction
-      const troopAmountWithPrecision = troopAmount * 10 ** 9;
+      const troopAmountWithPrecision = multiplyByPrecision(troopAmount);
 
       if (transferDirection === TransferDirection.ExplorerToExplorer) {
         await explorer_explorer_swap({
@@ -201,18 +205,18 @@ export const TransferTroopsContainer = ({
 
       // Check if troop tier and category match between selected and target
       if (transferDirection === TransferDirection.ExplorerToStructure) {
-        const selectedTroop = selectedExplorerTroops;
-        const targetTroop = targetGuards[guardSlot].troops;
+        const selectedTroop = selectedExplorerTroops?.troops;
+        const targetTroop = targetGuards[guardSlot]?.troops;
         // If target troop count is 0, tier and category don't matter
         if (targetTroop?.count === 0) {
           return false;
         }
         return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
       } else {
-        const selectedTroop = selectedGuards[guardSlot].troops;
-        const targetTroop = targetExplorerTroops;
+        const selectedTroop = selectedGuards[guardSlot]?.troops;
+        const targetTroop = targetExplorerTroops?.troops;
         // If target troop count is 0, tier and category don't matter
-        if (targetTroop?.count === 0) {
+        if (targetTroop?.count === 0n) {
           return false;
         }
         return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
@@ -230,11 +234,11 @@ export const TransferTroopsContainer = ({
       let selectedTroop, targetTroop;
 
       if (transferDirection === TransferDirection.ExplorerToStructure) {
-        selectedTroop = selectedExplorerTroops;
-        targetTroop = targetGuards[guardSlot].troops;
+        selectedTroop = selectedExplorerTroops?.troops;
+        targetTroop = targetGuards[guardSlot]?.troops;
       } else {
-        selectedTroop = selectedGuards[guardSlot].troops;
-        targetTroop = targetExplorerTroops;
+        selectedTroop = selectedGuards[guardSlot]?.troops;
+        targetTroop = targetExplorerTroops?.troops;
       }
 
       // If target troop count is 0, no mismatch message needed
@@ -252,138 +256,144 @@ export const TransferTroopsContainer = ({
 
   return (
     <div className="flex flex-col space-y-4">
-      {/* Available Troops Section */}
-      <div className="flex flex-col space-y-1 p-3 border border-gold/30 rounded-md bg-dark-brown/50">
-        <h4 className="text-gold font-semibold text-lg">Available for Transfer</h4>
-        <p className="text-gold/80 text-md">{formatNumber(maxTroops, 0)} troops</p>
-        {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
-          <p className="text-gold/70 text-sm">
-            From Explorer: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
-          </p>
-        )}
-        {transferDirection === TransferDirection.StructureToExplorer &&
-          selectedGuards.length > 0 &&
-          guardSlot !== undefined &&
-          selectedGuards[guardSlot] && (
-            <p className="text-gold/70 text-sm">
-              From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier{" "}
-              {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
-            </p>
-          )}
-        {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
-          <p className="text-gold/70 text-sm">
-            From Explorer: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
-          </p>
-        )}
-      </div>
-
-      {/* Troop Amount Input Section */}
-      <div className="flex flex-col space-y-2">
-        <label htmlFor="troopAmountInput" className="text-gold font-semibold h6">
-          Set Amount to Transfer
-        </label>
-        <div className="flex items-center space-x-2">
-          <input
-            id="troopAmountInput"
-            type="range"
-            min="0"
-            max={maxTroops}
-            value={troopAmount}
-            onChange={handleTroopAmountChange}
-            className="w-full accent-gold"
-          />
-          <input
-            type="number"
-            min="0"
-            max={maxTroops}
-            value={troopAmount}
-            onChange={handleTroopAmountChange}
-            className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
-          />
-        </div>
-      </div>
-
-      {/* Transferring Details Section */}
-      {troopAmount > 0 && (
-        <div className="flex flex-col space-y-1 p-3 border border-blue-500/50 rounded-md bg-blue-900/30 mt-4">
-          <h4 className="text-blue-300 font-semibold text-lg">You will transfer:</h4>
-          <p className="text-blue-200/80 text-md">{formatNumber(troopAmount, 0)} troops</p>
-          {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
-            <p className="text-blue-200/70 text-sm">
-              Type: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
-            </p>
-          )}
-          {transferDirection === TransferDirection.StructureToExplorer &&
-            selectedGuards.length > 0 &&
-            guardSlot !== undefined &&
-            selectedGuards[guardSlot] && (
-              <p className="text-blue-200/70 text-sm">
-                Type: Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+      {isTargetLoading || isSelectedLoading ? (
+        <LoadingAnimation />
+      ) : (
+        <>
+          {/* Available Troops Section */}
+          <div className="flex flex-col space-y-1 p-3 border border-gold/30 rounded-md bg-dark-brown/50">
+            <h4 className="text-gold font-semibold text-lg">Available for Transfer</h4>
+            <p className="text-gold/80 text-md">{formatNumber(maxTroops, 0)} troops</p>
+            {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
+              <p className="text-gold/70 text-sm">
+                From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
               </p>
             )}
-          {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
-            <p className="text-blue-200/70 text-sm">
-              Type: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
-            </p>
-          )}
-        </div>
-      )}
-
-      {(transferDirection === TransferDirection.ExplorerToStructure ||
-        transferDirection === TransferDirection.StructureToExplorer) && (
-        <div className="flex flex-col space-y-2 mt-4">
-          <label className="text-gold font-semibold h6">Guard Slot</label>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {availableGuards.map((slotIndex) => {
-              const guards =
-                transferDirection === TransferDirection.ExplorerToStructure ? targetGuards : selectedGuards;
-              if (!guards[slotIndex] || !guards[slotIndex].troops) {
-                // This case should ideally not happen if guards are always initialized for 4 slots
-                return (
-                  <div
-                    key={slotIndex}
-                    className={`p-2 border rounded-md cursor-not-allowed bg-dark-brown border-danger- Glimmer text-light-pink/70`}
-                  >
-                    Slot {slotIndex + 1} - Empty/Error
-                  </div>
-                );
-              }
-              const troopInfo = guards[slotIndex].troops;
-              const isActive = guardSlot === slotIndex;
-              return (
-                <div
-                  key={slotIndex}
-                  onClick={() => setGuardSlot(slotIndex)}
-                  className={`p-3 border rounded-md cursor-pointer transition-all duration-150 ease-in-out \
-                                                ${isActive ? "bg-gold/20 border-gold ring-2 ring-gold/50" : "bg-dark-brown border-gold/30 hover:bg-gold/10"}`}
-                >
-                  <div className="font-semibold text-gold">
-                    {DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}
-                  </div>
-                  <div className="text-sm text-gold/80">
-                    Tier {troopInfo.tier} {troopInfo.category}
-                  </div>
-                  <div className="text-sm text-gold/60">Available: {formatNumber(troopInfo.count, 0)}</div>
-                </div>
-              );
-            })}
+            {transferDirection === TransferDirection.StructureToExplorer &&
+              selectedGuards.length > 0 &&
+              guardSlot !== undefined &&
+              selectedGuards[guardSlot] && (
+                <p className="text-gold/70 text-sm">
+                  From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier{" "}
+                  {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+                </p>
+              )}
+            {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
+              <p className="text-gold/70 text-sm">
+                From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
+              </p>
+            )}
           </div>
-        </div>
+
+          {/* Troop Amount Input Section */}
+          <div className="flex flex-col space-y-2">
+            <label htmlFor="troopAmountInput" className="text-gold font-semibold h6">
+              Set Amount to Transfer
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                id="troopAmountInput"
+                type="range"
+                min="0"
+                max={maxTroops}
+                value={troopAmount}
+                onChange={handleTroopAmountChange}
+                className="w-full accent-gold"
+              />
+              <input
+                type="number"
+                min="0"
+                max={maxTroops}
+                value={troopAmount}
+                onChange={handleTroopAmountChange}
+                className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
+              />
+            </div>
+          </div>
+
+          {/* Transferring Details Section */}
+          {troopAmount > 0 && (
+            <div className="flex flex-col space-y-1 p-3 border border-blue-500/50 rounded-md bg-blue-900/30 mt-4">
+              <h4 className="text-blue-300 font-semibold text-lg">You will transfer:</h4>
+              <p className="text-blue-200/80 text-md">{formatNumber(troopAmount, 0)} troops</p>
+              {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
+                <p className="text-blue-200/70 text-sm">
+                  Type: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
+                </p>
+              )}
+              {transferDirection === TransferDirection.StructureToExplorer &&
+                selectedGuards.length > 0 &&
+                guardSlot !== undefined &&
+                selectedGuards[guardSlot] && (
+                  <p className="text-blue-200/70 text-sm">
+                    Type: Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+                  </p>
+                )}
+              {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
+                <p className="text-blue-200/70 text-sm">
+                  Type: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
+                </p>
+              )}
+            </div>
+          )}
+
+          {(transferDirection === TransferDirection.ExplorerToStructure ||
+            transferDirection === TransferDirection.StructureToExplorer) && (
+            <div className="flex flex-col space-y-2 mt-4">
+              <label className="text-gold font-semibold h6">Guard Slot</label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {availableGuards.map((slotIndex) => {
+                  const guards =
+                    transferDirection === TransferDirection.ExplorerToStructure ? targetGuards : selectedGuards;
+                  if (!guards[slotIndex] || !guards[slotIndex].troops) {
+                    // This case should ideally not happen if guards are always initialized for 4 slots
+                    return (
+                      <div
+                        key={slotIndex}
+                        className={`p-2 border rounded-md cursor-not-allowed bg-dark-brown border-danger- Glimmer text-light-pink/70`}
+                      >
+                        Slot {slotIndex + 1} - Empty/Error
+                      </div>
+                    );
+                  }
+                  const troopInfo = guards[slotIndex].troops;
+                  const isActive = guardSlot === slotIndex;
+                  return (
+                    <div
+                      key={slotIndex}
+                      onClick={() => setGuardSlot(slotIndex)}
+                      className={`p-3 border rounded-md cursor-pointer transition-all duration-150 ease-in-out \
+                                                ${isActive ? "bg-gold/20 border-gold ring-2 ring-gold/50" : "bg-dark-brown border-gold/30 hover:bg-gold/10"}`}
+                    >
+                      <div className="font-semibold text-gold">
+                        {DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}
+                      </div>
+                      <div className="text-sm text-gold/80">
+                        Tier {troopInfo.tier} {troopInfo.category}
+                      </div>
+                      <div className="text-sm text-gold/60">Available: {formatNumber(troopInfo.count, 0)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {getTroopMismatchMessage() && <div className="text-red-500 text-sm mt-2">{getTroopMismatchMessage()}</div>}
+
+          <div className="flex justify-center mt-6">
+            <Button
+              onClick={handleTransfer}
+              variant="primary"
+              disabled={loading || isTroopsTransferDisabled}
+              isLoading={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading ? "Processing..." : "Transfer Troops"}
+            </Button>
+          </div>
+        </>
       )}
-
-      {getTroopMismatchMessage() && <div className="text-red-500 text-sm mt-2">{getTroopMismatchMessage()}</div>}
-
-      <div className="flex justify-center mt-6">
-        <Button
-          onClick={handleTransfer}
-          variant="primary"
-          disabled={loading || isTroopsTransferDisabled}
-          isLoading={loading}
-          className="w-full sm:w-auto"
-        >
-          {loading ? "Processing..." : "Transfer Troops"}
-        </Button>
-      </div>
     </div>
   );
 };

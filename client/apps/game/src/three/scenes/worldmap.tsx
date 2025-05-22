@@ -29,6 +29,7 @@ import {
   StructureActionManager,
 } from "@bibliothecadao/eternum";
 import {
+  ActorType,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -461,12 +462,12 @@ export default class WorldmapScene extends HexagonScene {
     this.state.toggleModal(
       <CombatModal
         selected={{
-          type: selected.army ? "explorer" : "structure",
+          type: selected.army ? ActorType.Explorer : ActorType.Structure,
           id: selectedEntityId,
           hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
         }}
         target={{
-          type: target.army ? "explorer" : "structure",
+          type: target.army ? ActorType.Explorer : ActorType.Structure,
           id: target.army?.id || target.structure?.id || 0,
           hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
         }}
@@ -485,12 +486,12 @@ export default class WorldmapScene extends HexagonScene {
     this.state.toggleModal(
       <HelpModal
         selected={{
-          type: selected.army ? "explorer" : "structure",
+          type: selected.army ? ActorType.Explorer : ActorType.Structure,
           id: selectedEntityId,
           hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
         }}
         target={{
-          type: target.army ? "explorer" : "structure",
+          type: target.army ? ActorType.Explorer : ActorType.Structure,
           id: target.army?.id || target.structure?.id || 0,
           hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
         }}

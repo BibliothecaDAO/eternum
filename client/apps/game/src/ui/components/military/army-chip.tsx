@@ -12,7 +12,7 @@ import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -100,12 +100,12 @@ export const ArmyChip = ({
     toggleModal(
       <HelpModal
         selected={{
-          type: "explorer",
+          type: ActorType.Explorer,
           id: army.entityId,
           hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
         }}
         target={{
-          type: "structure",
+          type: ActorType.Structure,
           id: army.entity_owner_id,
           hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
         }}

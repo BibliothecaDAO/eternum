@@ -1,6 +1,6 @@
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID } from "@bibliothecadao/types";
+import { ActorType, ID } from "@bibliothecadao/types";
 import { Suspense } from "react";
 import { HelpContainer } from "./help-container";
 
@@ -10,12 +10,12 @@ export const HelpModal = ({
   allowBothDirections = false,
 }: {
   selected: {
-    type: "explorer" | "structure";
+    type: ActorType;
     id: ID;
     hex: { x: number; y: number };
   };
   target: {
-    type: "explorer" | "structure";
+    type: ActorType;
     id: ID;
     hex: { x: number; y: number };
   };

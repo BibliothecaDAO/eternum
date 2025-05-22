@@ -1,8 +1,24 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ID } from "@bibliothecadao/types";
+import { ActorType, ID } from "@bibliothecadao/types";
 import { useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
-import { TransferDirection, TransferTroopsContainer } from "./transfer-troops-container";
+import { TransferTroopsContainer } from "./transfer-troops-container";
+
+export enum TransferDirection {
+  ExplorerToStructure,
+  StructureToExplorer,
+  ExplorerToExplorer,
+}
+
+export const getActorTypes = (direction: TransferDirection) => {
+  if (direction === TransferDirection.ExplorerToStructure) {
+    return { selected: ActorType.Explorer, target: ActorType.Structure };
+  } else if (direction === TransferDirection.StructureToExplorer) {
+    return { selected: ActorType.Structure, target: ActorType.Explorer };
+  } else {
+    return { selected: ActorType.Explorer, target: ActorType.Explorer };
+  }
+};
 
 enum TransferType {
   Resources,
@@ -15,12 +31,12 @@ export const HelpContainer = ({
   allowBothDirections = false,
 }: {
   selected: {
-    type: "explorer" | "structure";
+    type: ActorType;
     id: ID;
     hex: { x: number; y: number };
   };
   target: {
-    type: "explorer" | "structure";
+    type: ActorType;
     id: ID;
     hex: { x: number; y: number };
   };
@@ -38,15 +54,15 @@ export const HelpContainer = ({
 
   // Determine the transfer direction based on entity types
   const transferDirection = (() => {
-    if (currentSelected.type === "explorer" && currentTarget.type === "structure") {
+    if (currentSelected.type === ActorType.Explorer && currentTarget.type === ActorType.Structure) {
       return TransferDirection.ExplorerToStructure;
     }
 
-    if (currentSelected.type === "structure" && currentTarget.type === "explorer") {
+    if (currentSelected.type === ActorType.Structure && currentTarget.type === ActorType.Explorer) {
       return TransferDirection.StructureToExplorer;
     }
 
-    if (currentSelected.type === "explorer" && currentTarget.type === "explorer") {
+    if (currentSelected.type === ActorType.Explorer && currentTarget.type === ActorType.Explorer) {
       return TransferDirection.ExplorerToExplorer;
     }
 
