@@ -3,17 +3,20 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
 
-export const Route = createFileRoute("/trade")({
+export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
 });
 
 function TradeLayout() {
+  const { collection } = useParams({ from: "/trade/$collection" });
+  const collectionAddress = collection || seasonPassAddress;
+
   const { data: totals } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress],
-    queryFn: () => fetchActiveMarketOrdersTotal(seasonPassAddress),
+    queryKey: ["activeMarketOrdersTotal", collectionAddress],
+    queryFn: () => fetchActiveMarketOrdersTotal(collectionAddress),
     refetchInterval: 30_000,
   });
 
@@ -45,12 +48,15 @@ function TradeLayout() {
             <Tabs defaultValue="items" className="w-full items-center flex justify-center">
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                  <Link to="/trade" className="cursor-pointer">
+                  <Link to={collection ? `/trade/${collection}` : "/trade"} className="cursor-pointer">
                     Items
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger value="activity" asChild>
-                  <Link to="/trade/activity" className="cursor-pointer">
+                  <Link
+                    to={collection ? `/trade/${collection}/activity` : "/trade/activity"}
+                    className="cursor-pointer"
+                  >
                     Activity
                   </Link>
                 </TabsTrigger>

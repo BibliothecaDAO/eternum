@@ -13,7 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as TradeRouteImport } from './routes/trade/route'
+import { Route as TradeCollectionRouteImport } from './routes/trade/$collection/route'
 
 // Create Virtual Routes
 
@@ -24,6 +24,10 @@ const ClaimLazyImport = createFileRoute('/claim')()
 const IndexLazyImport = createFileRoute('/')()
 const TradeIndexLazyImport = createFileRoute('/trade/')()
 const TradeActivityLazyImport = createFileRoute('/trade/activity')()
+const TradeCollectionIndexLazyImport = createFileRoute('/trade/$collection/')()
+const TradeCollectionActivityLazyImport = createFileRoute(
+  '/trade/$collection/activity',
+)()
 
 // Create/Update Routes
 
@@ -51,12 +55,6 @@ const ClaimLazyRoute = ClaimLazyImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/claim.lazy').then((d) => d.Route))
 
-const TradeRouteRoute = TradeRouteImport.update({
-  id: '/trade',
-  path: '/trade',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const IndexLazyRoute = IndexLazyImport.update({
   id: '/',
   path: '/',
@@ -64,18 +62,41 @@ const IndexLazyRoute = IndexLazyImport.update({
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
 const TradeIndexLazyRoute = TradeIndexLazyImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TradeRouteRoute,
+  id: '/trade/',
+  path: '/trade/',
+  getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/trade/index.lazy').then((d) => d.Route))
 
 const TradeActivityLazyRoute = TradeActivityLazyImport.update({
-  id: '/activity',
-  path: '/activity',
-  getParentRoute: () => TradeRouteRoute,
+  id: '/trade/activity',
+  path: '/trade/activity',
+  getParentRoute: () => rootRoute,
 } as any).lazy(() =>
   import('./routes/trade/activity.lazy').then((d) => d.Route),
 )
+
+const TradeCollectionRouteRoute = TradeCollectionRouteImport.update({
+  id: '/trade/$collection',
+  path: '/trade/$collection',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TradeCollectionIndexLazyRoute = TradeCollectionIndexLazyImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TradeCollectionRouteRoute,
+} as any).lazy(() =>
+  import('./routes/trade/$collection/index.lazy').then((d) => d.Route),
+)
+
+const TradeCollectionActivityLazyRoute =
+  TradeCollectionActivityLazyImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => TradeCollectionRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/trade/$collection/activity.lazy').then((d) => d.Route),
+  )
 
 // Populate the FileRoutesByPath interface
 
@@ -86,13 +107,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexLazyImport
-      parentRoute: typeof rootRoute
-    }
-    '/trade': {
-      id: '/trade'
-      path: '/trade'
-      fullPath: '/trade'
-      preLoaderRoute: typeof TradeRouteImport
       parentRoute: typeof rootRoute
     }
     '/claim': {
@@ -123,48 +137,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SeasonPassesLazyImport
       parentRoute: typeof rootRoute
     }
+    '/trade/$collection': {
+      id: '/trade/$collection'
+      path: '/trade/$collection'
+      fullPath: '/trade/$collection'
+      preLoaderRoute: typeof TradeCollectionRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/trade/activity': {
       id: '/trade/activity'
-      path: '/activity'
+      path: '/trade/activity'
       fullPath: '/trade/activity'
       preLoaderRoute: typeof TradeActivityLazyImport
-      parentRoute: typeof TradeRouteImport
+      parentRoute: typeof rootRoute
     }
     '/trade/': {
       id: '/trade/'
-      path: '/'
-      fullPath: '/trade/'
+      path: '/trade'
+      fullPath: '/trade'
       preLoaderRoute: typeof TradeIndexLazyImport
-      parentRoute: typeof TradeRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/trade/$collection/activity': {
+      id: '/trade/$collection/activity'
+      path: '/activity'
+      fullPath: '/trade/$collection/activity'
+      preLoaderRoute: typeof TradeCollectionActivityLazyImport
+      parentRoute: typeof TradeCollectionRouteImport
+    }
+    '/trade/$collection/': {
+      id: '/trade/$collection/'
+      path: '/'
+      fullPath: '/trade/$collection/'
+      preLoaderRoute: typeof TradeCollectionIndexLazyImport
+      parentRoute: typeof TradeCollectionRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
-interface TradeRouteRouteChildren {
-  TradeActivityLazyRoute: typeof TradeActivityLazyRoute
-  TradeIndexLazyRoute: typeof TradeIndexLazyRoute
+interface TradeCollectionRouteRouteChildren {
+  TradeCollectionActivityLazyRoute: typeof TradeCollectionActivityLazyRoute
+  TradeCollectionIndexLazyRoute: typeof TradeCollectionIndexLazyRoute
 }
 
-const TradeRouteRouteChildren: TradeRouteRouteChildren = {
-  TradeActivityLazyRoute: TradeActivityLazyRoute,
-  TradeIndexLazyRoute: TradeIndexLazyRoute,
+const TradeCollectionRouteRouteChildren: TradeCollectionRouteRouteChildren = {
+  TradeCollectionActivityLazyRoute: TradeCollectionActivityLazyRoute,
+  TradeCollectionIndexLazyRoute: TradeCollectionIndexLazyRoute,
 }
 
-const TradeRouteRouteWithChildren = TradeRouteRoute._addFileChildren(
-  TradeRouteRouteChildren,
-)
+const TradeCollectionRouteRouteWithChildren =
+  TradeCollectionRouteRoute._addFileChildren(TradeCollectionRouteRouteChildren)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
-  '/trade': typeof TradeRouteRouteWithChildren
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
   '/season-passes': typeof SeasonPassesLazyRoute
+  '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
-  '/trade/': typeof TradeIndexLazyRoute
+  '/trade': typeof TradeIndexLazyRoute
+  '/trade/$collection/activity': typeof TradeCollectionActivityLazyRoute
+  '/trade/$collection/': typeof TradeCollectionIndexLazyRoute
 }
 
 export interface FileRoutesByTo {
@@ -175,31 +211,37 @@ export interface FileRoutesByTo {
   '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade': typeof TradeIndexLazyRoute
+  '/trade/$collection/activity': typeof TradeCollectionActivityLazyRoute
+  '/trade/$collection': typeof TradeCollectionIndexLazyRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
-  '/trade': typeof TradeRouteRouteWithChildren
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
   '/season-passes': typeof SeasonPassesLazyRoute
+  '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade/': typeof TradeIndexLazyRoute
+  '/trade/$collection/activity': typeof TradeCollectionActivityLazyRoute
+  '/trade/$collection/': typeof TradeCollectionIndexLazyRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/trade'
     | '/claim'
     | '/data'
     | '/mint'
     | '/season-passes'
+    | '/trade/$collection'
     | '/trade/activity'
-    | '/trade/'
+    | '/trade'
+    | '/trade/$collection/activity'
+    | '/trade/$collection/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -209,35 +251,43 @@ export interface FileRouteTypes {
     | '/season-passes'
     | '/trade/activity'
     | '/trade'
+    | '/trade/$collection/activity'
+    | '/trade/$collection'
   id:
     | '__root__'
     | '/'
-    | '/trade'
     | '/claim'
     | '/data'
     | '/mint'
     | '/season-passes'
+    | '/trade/$collection'
     | '/trade/activity'
     | '/trade/'
+    | '/trade/$collection/activity'
+    | '/trade/$collection/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
-  TradeRouteRoute: typeof TradeRouteRouteWithChildren
   ClaimLazyRoute: typeof ClaimLazyRoute
   DataLazyRoute: typeof DataLazyRoute
   MintLazyRoute: typeof MintLazyRoute
   SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute
+  TradeCollectionRouteRoute: typeof TradeCollectionRouteRouteWithChildren
+  TradeActivityLazyRoute: typeof TradeActivityLazyRoute
+  TradeIndexLazyRoute: typeof TradeIndexLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
-  TradeRouteRoute: TradeRouteRouteWithChildren,
   ClaimLazyRoute: ClaimLazyRoute,
   DataLazyRoute: DataLazyRoute,
   MintLazyRoute: MintLazyRoute,
   SeasonPassesLazyRoute: SeasonPassesLazyRoute,
+  TradeCollectionRouteRoute: TradeCollectionRouteRouteWithChildren,
+  TradeActivityLazyRoute: TradeActivityLazyRoute,
+  TradeIndexLazyRoute: TradeIndexLazyRoute,
 }
 
 export const routeTree = rootRoute
@@ -251,22 +301,17 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/trade",
         "/claim",
         "/data",
         "/mint",
-        "/season-passes"
+        "/season-passes",
+        "/trade/$collection",
+        "/trade/activity",
+        "/trade/"
       ]
     },
     "/": {
       "filePath": "index.lazy.tsx"
-    },
-    "/trade": {
-      "filePath": "trade/route.tsx",
-      "children": [
-        "/trade/activity",
-        "/trade/"
-      ]
     },
     "/claim": {
       "filePath": "claim.lazy.tsx"
@@ -280,13 +325,26 @@ export const routeTree = rootRoute
     "/season-passes": {
       "filePath": "season-passes.lazy.tsx"
     },
+    "/trade/$collection": {
+      "filePath": "trade/$collection/route.tsx",
+      "children": [
+        "/trade/$collection/activity",
+        "/trade/$collection/"
+      ]
+    },
     "/trade/activity": {
-      "filePath": "trade/activity.lazy.tsx",
-      "parent": "/trade"
+      "filePath": "trade/activity.lazy.tsx"
     },
     "/trade/": {
-      "filePath": "trade/index.lazy.tsx",
-      "parent": "/trade"
+      "filePath": "trade/index.lazy.tsx"
+    },
+    "/trade/$collection/activity": {
+      "filePath": "trade/$collection/activity.lazy.tsx",
+      "parent": "/trade/$collection"
+    },
+    "/trade/$collection/": {
+      "filePath": "trade/$collection/index.lazy.tsx",
+      "parent": "/trade/$collection"
     }
   }
 }
