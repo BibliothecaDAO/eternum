@@ -218,13 +218,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
     <div className="flex flex-col justify-between h-full">
       <div className="flex flex-col p-2">
         <div className="flex">
-          {/* Owner Column */}
-          <div className="flex flex-col min-w-[120px] mr-4">
+          <div className="flex flex-col w-24 mr-4">
             <div className="text-xxs uppercase text-gold/80">Owner</div>
             <h5 className="text-sm truncate">{ownerName}</h5>
           </div>
 
-          {/* Name & Controls Column */}
           <div className="flex-1">
             {editName ? (
               <div className="flex gap-2">
@@ -257,7 +255,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
             ) : (
               <div className="flex gap-2 justify-between w-full">
                 <div className="flex items-center justify-between">
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex justify-between items-center gap-1">
                     <h4 className="truncate">{entity.name}</h4>
                     <Button size="xs" onClick={() => {}}>
                       Reload
@@ -356,65 +354,65 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-1 w-full mb-1">
-        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+      <div className="grid grid-cols-3 gap-1 w-full mb-1">
+        <div className="flex justify-between px-3 items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Progress</div>
           <div className="font-bold text-sm">{currencyIntlFormat(progresses.percentage)}%</div>
         </div>
-        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="flex justify-between px-3  items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Shares</div>
           <div className="font-bold text-sm">{currencyIntlFormat((myShares || 0) * 100)}%</div>
         </div>
-        <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
+        <div className="flex justify-between px-3 items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Points/cycle</div>
           <div className="font-bold text-sm">
             {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
           </div>
         </div>
       </div>
-      <div className="overflow-y-auto no-scrollbar h-[40vh] bg-gold/10  p-2">
+      <div className="overflow-y-auto no-scrollbar h-[40vh] bg-gold/10">
         {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
-          <div className="">
-            {resourceElements}
-            <div className="flex justify-end w-full mt-2">
-              <div
-                onMouseEnter={() => {
-                  if (!canContribute) {
-                    setTooltip({
-                      content: <>Not the correct access</>,
-                      position: "right",
-                    });
-                  } else if (!progresses.initialized) {
-                    setTooltip({
-                      content: <>Hyperstructure must be initialized first</>,
-                      position: "right",
-                    });
-                  }
-                }}
-                onMouseLeave={() => {
-                  setTooltip(null);
-                }}
-              >
-                <Button
-                  isLoading={isLoading === Loading.Contribute}
-                  variant="primary"
-                  disabled={
-                    Object.keys(newContributions).length === 0 ||
-                    isLoading !== Loading.None ||
-                    !canContribute ||
-                    !progresses.initialized
-                  }
-                  onClick={contributeToConstruction}
-                >
-                  Contribute To Construction
-                </Button>
-              </div>
-            </div>
-          </div>
+          <div className="relative">{resourceElements}</div>
         )}
       </div>
+      {progresses.percentage !== 100 && (
+        <div className="flex justify-end w-full mt-2">
+          <div
+            onMouseEnter={() => {
+              if (!canContribute) {
+                setTooltip({
+                  content: <>Not the correct access</>,
+                  position: "right",
+                });
+              } else if (!progresses.initialized) {
+                setTooltip({
+                  content: <>Hyperstructure must be initialized first</>,
+                  position: "right",
+                });
+              }
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+          >
+            <Button
+              isLoading={isLoading === Loading.Contribute}
+              variant="primary"
+              disabled={
+                Object.keys(newContributions).length === 0 ||
+                isLoading !== Loading.None ||
+                !canContribute ||
+                !progresses.initialized
+              }
+              onClick={contributeToConstruction}
+            >
+              Contribute To Construction
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

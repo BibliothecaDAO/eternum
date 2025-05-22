@@ -5,8 +5,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
-import { findResourceById, ID } from "@bibliothecadao/types";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
+import { findResourceById, ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 
 type HyperstructureResourceChipProps = {
@@ -61,7 +61,7 @@ export const HyperstructureResourceChip = ({
   return (
     <div className="mt-0.5 grid grid-cols-8 gap-1 items-center">
       <div
-        className={`flex relative items-center text-xs px-2 py-0.5 col-span-4`}
+        className={`flex relative items-center text-xs px-2 py-0.5 col-span-5`}
         style={{
           backgroundImage:
             progress.percentage > 0
@@ -91,8 +91,8 @@ export const HyperstructureResourceChip = ({
           className="mr-2 self-center"
         />
 
-        <div className="flex justify-between">
-          <div className="self-center text-xs font-semibold">{`${progress.percentage}% (${currencyIntlFormat(
+        <div className="flex justify-between text-gold/70">
+          <div className="self-center text-xs">{`${currencyIntlFormat(progress.percentage)}% (${currencyIntlFormat(
             progress.amount,
           )} / ${currencyIntlFormat(progress.costNeeded)})`}</div>
         </div>
@@ -100,16 +100,11 @@ export const HyperstructureResourceChip = ({
 
       <NumberInput
         value={inputValue}
-        className="w-full text-xs col-span-3 h-6"
+        className="w-full text-xs col-span-2 h-6"
         onChange={setInputValue}
         max={maxContributableAmount}
       />
-      <Button
-        variant="default"
-        size="xs"
-        className="ml-1 flex items-center text-xs cursor-pointer"
-        onClick={() => setInputValue(maxContributableAmount)}
-      >
+      <Button variant="default" size="xs" onClick={() => setInputValue(maxContributableAmount)}>
         MAX
       </Button>
     </div>
