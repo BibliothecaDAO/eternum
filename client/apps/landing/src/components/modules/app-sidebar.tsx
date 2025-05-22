@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
+import { Castle, Database, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -35,6 +35,11 @@ const items = [
     title: "Buy A Pass",
     url: "/trade",
     icon: Scale,
+  },
+  {
+    title: "Data",
+    icon: Database,
+    url: "/data",
   },
 ];
 
