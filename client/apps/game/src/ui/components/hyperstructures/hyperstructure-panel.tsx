@@ -170,7 +170,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         />
       );
     });
-  }, [progresses, currentAmounts, newContributions]);
+  }, [progresses, currentAmounts, newContributions, structureEntityId]);
 
   const canContribute = useMemo(() => {
     const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
@@ -184,14 +184,14 @@ export const HyperstructurePanel = ({ entity }: any) => {
         hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
       hyperstructure?.access === Access[Access.Public]
     );
-  }, [newContributions]);
+  }, [newContributions, structureEntityId]);
 
   const myShares = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
       ContractAddress(account.address),
       entity.entity_id,
     );
-  }, [updates]);
+  }, [updates, structureEntityId]);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);

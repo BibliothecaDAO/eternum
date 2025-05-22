@@ -20,6 +20,7 @@ function Index() {
     totalCreatedAgents,
     isLoading,
     totalPlayers,
+    totalTransactions,
   } = useData();
 
   if (isLoading) {
@@ -34,6 +35,12 @@ function Index() {
           <CardHeader className="relative">
             <CardDescription>Total Players</CardDescription>
             <CardTitle className="text-4xl font-semibold tabular-nums">{totalPlayers}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="@container/card col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-2">
+          <CardHeader className="relative">
+            <CardDescription>Total Transactions</CardDescription>
+            <CardTitle className="text-4xl font-semibold tabular-nums">{totalTransactions?.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="@container/card col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-2">

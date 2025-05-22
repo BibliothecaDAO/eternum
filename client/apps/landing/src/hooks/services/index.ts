@@ -328,3 +328,8 @@ export async function fetchTotalPlayers(): Promise<number> {
   const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_PLAYERS);
   return rawData[0].unique_wallets;
 }
+
+export async function fetchTotalTransactions(): Promise<number> {
+  const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_TRANSACTIONS);
+  return rawData[0].total_rows;
+}

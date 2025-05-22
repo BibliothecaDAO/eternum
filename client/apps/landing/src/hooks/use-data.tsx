@@ -7,6 +7,7 @@ import {
   fetchTotalGuilds,
   fetchTotalPlayers,
   fetchTotalStructures,
+  fetchTotalTransactions,
   fetchTotalTroops,
 } from "./services";
 
@@ -52,6 +53,11 @@ export const useData = () => {
     queryFn: () => fetchTotalPlayers(),
   });
 
+  const { data: totalTransactions, isLoading: isLoadingTotalTransactions } = useQuery({
+    queryKey: ["totalTransactions"],
+    queryFn: () => fetchTotalTransactions(),
+  });
+
   const isLoading = [
     isLoadingDonkeyBurn,
     isLoadingTotalGuilds,
@@ -61,6 +67,7 @@ export const useData = () => {
     isLoadingTotalAgents,
     isLoadingTotalCreatedAgents,
     isLoadingTotalPlayers,
+    isLoadingTotalTransactions,
   ].some(Boolean);
 
   return {
@@ -72,6 +79,7 @@ export const useData = () => {
     totalAgents,
     totalCreatedAgents,
     totalPlayers,
+    totalTransactions,
     isLoading,
   };
 };
