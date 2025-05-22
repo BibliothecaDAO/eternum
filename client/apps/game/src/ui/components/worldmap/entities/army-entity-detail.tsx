@@ -10,6 +10,7 @@ import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { TroopChip } from "../../military/troop-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "../armies/army-warning";
@@ -122,7 +123,12 @@ export const ArmyEntityDetail = memo(
           selectDirectMessageRecipient(userId);
           openChat();
         } else {
-          // If user not found, open global chat
+          // Show toast notification when user is not found
+          toast.error(`${derivedData.addressName} is not available for direct messaging`, {
+            description: "They probably offline right now, please try again later.",
+            duration: 5000,
+          });
+          // Open global chat as fallback
           openChat();
         }
       }
