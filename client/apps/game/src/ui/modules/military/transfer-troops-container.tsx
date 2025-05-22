@@ -221,6 +221,15 @@ export const TransferTroopsContainer = ({
         }
         return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
       }
+    } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      // check if selected troops is same category and tier as target troops
+      if (selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category) {
+        return true;
+      }
+      if (selectedExplorerTroops?.troops.tier !== targetExplorerTroops?.troops.tier) {
+        return true;
+      }
+      return false;
     }
     return troopAmount === 0;
   })();
@@ -251,6 +260,47 @@ export const TransferTroopsContainer = ({
       }
     }
 
+    return null;
+  };
+
+  const getDisabledMessage = () => {
+    if (loading) return "Processing transfer...";
+    if (troopAmount === 0) return "Please select an amount of troops to transfer";
+    if (
+      guardSlot === undefined &&
+      (transferDirection === TransferDirection.ExplorerToStructure ||
+        transferDirection === TransferDirection.StructureToExplorer)
+    ) {
+      return "Please select a guard slot";
+    }
+    if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      if (selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category) {
+        return `Cannot transfer troops: Category mismatch (${selectedExplorerTroops?.troops.category} ≠ ${targetExplorerTroops?.troops.category})`;
+      }
+      if (selectedExplorerTroops?.troops.tier !== targetExplorerTroops?.troops.tier) {
+        return `Cannot transfer troops: Tier mismatch (Tier ${selectedExplorerTroops?.troops.tier} ≠ Tier ${targetExplorerTroops?.troops.tier})`;
+      }
+    }
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      const selectedTroop = selectedExplorerTroops?.troops;
+      const targetTroop = targetGuards[guardSlot]?.troops;
+      if (
+        targetTroop?.count !== 0 &&
+        (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category)
+      ) {
+        return `Cannot transfer troops: Type mismatch (Tier ${selectedTroop?.tier} ${selectedTroop?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
+      }
+    }
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      const selectedTroop = selectedGuards[guardSlot]?.troops;
+      const targetTroop = targetExplorerTroops?.troops;
+      if (
+        targetTroop?.count !== 0n &&
+        (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category)
+      ) {
+        return `Cannot transfer troops: Type mismatch (Tier ${selectedTroop?.tier} ${selectedTroop?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
+      }
+    }
     return null;
   };
 
@@ -380,6 +430,7 @@ export const TransferTroopsContainer = ({
           )}
 
           {getTroopMismatchMessage() && <div className="text-red-500 text-sm mt-2">{getTroopMismatchMessage()}</div>}
+          {isTroopsTransferDisabled && <div className="text-red-500 text-sm mt-2">{getDisabledMessage()}</div>}
 
           <div className="flex justify-center mt-6">
             <Button
