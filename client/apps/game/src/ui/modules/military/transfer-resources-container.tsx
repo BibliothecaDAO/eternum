@@ -103,9 +103,6 @@ export const TransferResourcesContainer = ({
   const availableResources = availableResourcesData || [];
   const availableCapacityKg = explorerCapacity ? explorerCapacity.remainingCapacityKg - selectedResourcesWeightKg : 0;
 
-  console.log({ availableResourcesData, isResourcesLoading });
-  console.log({ explorerCapacity, isExplorerCapacityLoading });
-
   useEffect(() => {
     // Calculate weight of selected resources
     const selectedResourcesWeight = selectedResources.reduce((total, { resourceId, amount }) => {
