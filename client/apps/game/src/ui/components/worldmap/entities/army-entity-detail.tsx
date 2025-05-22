@@ -116,11 +116,14 @@ export const ArmyEntityDetail = memo(
     const handleChatClick = () => {
       if (derivedData?.isMine) {
         openChat();
-      } else {
-        const userId = getUserIdByUsername(derivedData?.addressName || "");
-
+      } else if (derivedData?.addressName) {
+        const userId = getUserIdByUsername(derivedData.addressName);
         if (userId) {
           selectDirectMessageRecipient(userId);
+          openChat();
+        } else {
+          // If user not found, open global chat
+          openChat();
         }
       }
     };

@@ -70,11 +70,8 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
     setIsLoadingUsers: (loading) => set({ isLoadingUsers: loading }),
     getUserIdByUsername: (username: string) => {
       const allUsers = [...get().onlineUsers, ...get().offlineUsers];
-
-      console.log("user", username);
-      const user = allUsers.filter((user) => user?.username === username);
-      console.log("user", user);
-      return user[0]?.id || null;
+      const user = allUsers.find((user) => user?.username?.toLowerCase() === username?.toLowerCase());
+      return user?.id || null;
     },
   },
 }));
