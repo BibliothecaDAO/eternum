@@ -310,4 +310,6 @@ FROM
     "s1_eternum-AgentCreatedEvent";`,
   TOTAL_PLAYERS: `SELECT COUNT(DISTINCT owner) AS unique_wallets
 FROM   "s1_eternum-Structure";`,
+  TOTAL_TRANSACTIONS: `SELECT COUNT(*) AS total_rows
+FROM transactions;`,
 };

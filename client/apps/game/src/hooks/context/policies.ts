@@ -213,20 +213,20 @@ export const policies = toSessionPolicies({
           entrypoint: "initialize",
         },
         {
-          name: "contribute_to_construction",
-          entrypoint: "contribute_to_construction",
+          name: "contribute",
+          entrypoint: "contribute",
         },
         {
-          name: "set_co_owners",
-          entrypoint: "set_co_owners",
+          name: "claim_share_points",
+          entrypoint: "claim_share_points",
         },
         {
-          name: "end_game",
-          entrypoint: "end_game",
+          name: "allocate_shares",
+          entrypoint: "allocate_shares",
         },
         {
-          name: "set_access",
-          entrypoint: "set_access",
+          name: "update_construction_access",
+          entrypoint: "update_construction_access",
         },
         {
           name: "dojo_name",
