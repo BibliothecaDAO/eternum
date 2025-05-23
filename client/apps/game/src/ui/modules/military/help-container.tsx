@@ -112,7 +112,7 @@ export const HelpContainer = ({
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto">
+    <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto mb-4">
       <div className="px-6 h-full backdrop-blur-sm w-full flex flex-col">
         {/* Transfer Type Selection */}
         <div className="flex justify-center mb-6 mx-auto mt-4">

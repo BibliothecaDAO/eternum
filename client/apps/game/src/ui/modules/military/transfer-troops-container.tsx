@@ -366,7 +366,7 @@ export const TransferTroopsContainer = ({
   };
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 ">
       {isTargetLoading || isSelectedLoading ? (
         <LoadingAnimation />
       ) : (
@@ -400,7 +400,10 @@ export const TransferTroopsContainer = ({
                 </div>
               </div>
               {!isStructureOwnerOfExplorer && (
-                <div className="text-red text-sm mt-1">Cannot use balance: Explorer not owned by this structure</div>
+                <div className="text-red text-sm mt-1">
+                  Cannot use balance: Explorer not owned by this structure. You can circumvent this by first
+                  transferring the troops to a guard slot and then transferring them to the explorer.
+                </div>
               )}
               <p className="text-gold/80 text-md">
                 Available: {formatNumber(divideByPrecision(Number(structureTroopBalance.balance)), 0)} troops
