@@ -235,10 +235,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
 
                       return (
                         <li
-                          className={clsx(
-                            "p-3 hover:bg-crimson/10 rounded border panel-wood transition-all cursor-pointer",
-                            "hover:translate-y-[-2px] hover:shadow-md",
-                          )}
+                          className={clsx("p-3 hover:bg-crimson/10 rounded border panel-wood cursor-pointer")}
                           key={hyperstructure.entity_id}
                           onClick={() => setSelectedEntity(hyperstructure)}
                         >
@@ -281,7 +278,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                                   />
                                 </div>
                               </div>
-                              <ArrowRight className="w-4 h-4 fill-current text-gold/60" />
+                              <ArrowRight className="w-6 h-6 fill-current text-gold bg-gold/20 rounded-full p-1 hover:bg-gold/30 hover:text-gold/80 hover:scale-110 transition-all duration-200 cursor-pointer" />
                             </div>
 
                             <HyperstructureContentRow hyperstructure={hyperstructure} progress={progress} />
@@ -349,19 +346,31 @@ const HyperstructureContentRow = ({
   const guildName = getGuildFromPlayerAddress(ownerAddress || 0n, components)?.name;
 
   // Progress bar color logic
-  const progressBarColor = progress.percentage < 50 ? "bg-red" : progress.percentage < 100 ? "bg-yellow" : "bg-green";
+  const progressBarColor =
+    progress.percentage < 50 ? "bg-gold" : progress.percentage < 100 ? "bg-amber-500" : "bg-green/90";
 
   // Format shares as percentage
   const formattedShares = currencyIntlFormat(playerShares * 100, 0);
 
   return (
     <div className="">
-      {/* Progress bar */}
-      <div className="relative w-full h-1.5 rounded-full overflow-hidden">
-        <div
-          className={`absolute left-0 top-0 h-full ${progressBarColor} transition-all duration-500`}
-          style={{ width: `${progress.percentage}%` }}
-        />
+      {/* Progress section */}
+      <div className="mb-2">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs text-gold/80">Progress</span>
+          <span className="text-xs font-medium text-gold">{progress.percentage.toFixed(1)}%</span>
+        </div>
+        <div className="relative w-full h-3 bg-gray-800 border border-gold/30 rounded overflow-hidden">
+          <div
+            className={`absolute left-0 top-0 h-full ${progressBarColor} transition-all duration-500`}
+            style={{ width: `${progress.percentage}%` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[10px] font-medium text-white drop-shadow-md">
+              {`${progress.percentage.toFixed(0)}%`}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-between text-xs">
@@ -370,15 +379,13 @@ const HyperstructureContentRow = ({
           <span className="text-gold/80">Owner:</span>
           <span className="font-medium">{guildName || ownerName || MERCENARIES}</span>
         </div>
-        {/* Progress info */}
+        {/* Status info */}
         <div className="flex items-center gap-2">
-          <span className="text-gold/80">Progress:</span>
-          <span className="font-medium">{progress.percentage.toFixed(2)}%</span>
           {needsCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
         </div>
         {/* Shares info */}
         <div className="flex items-center gap-2">
-          <span className="text-gold/80">Shares:</span>
+          <span className="text-gold/80">My Shares:</span>
           <span className="font-medium">{formattedShares}%</span>
           {playerShares > 0 && (
             <span className="text-xs text-green bg-green/10 px-1.5 py-0.5 rounded-sm">Contributing</span>
