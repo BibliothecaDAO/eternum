@@ -12,6 +12,11 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 
+export enum ActorType {
+  Explorer = "explorer",
+  Structure = "structure",
+}
+
 export enum TileOccupier {
   None = 0,
   RealmRegularLevel1 = 1,
