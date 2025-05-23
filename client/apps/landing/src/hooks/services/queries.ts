@@ -2,6 +2,15 @@ export const QUERIES = {
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
+  SEASON_CONFIG: `
+    SELECT 
+      "season_config.start_settling_at" AS start_settling_at,
+      "season_config.start_main_at" AS start_main_at,
+      "season_config.end_at" AS end_at,
+      "season_config.end_grace_seconds" AS end_grace_seconds,
+      "season_config.registration_grace_seconds" AS registration_grace_seconds
+    FROM "s1_eternum-WorldConfig"
+  `,
   ACTIVE_MARKET_ORDERS: `
     SELECT 
       mo.order_id AS order_id,

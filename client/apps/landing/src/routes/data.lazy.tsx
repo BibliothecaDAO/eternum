@@ -12,6 +12,7 @@ export const Route = createLazyFileRoute("/data")({
 function Index() {
   const {
     donkeyBurn,
+    seasonDay,
     totalGuilds,
     totalStructures,
     totalTroops,
@@ -29,7 +30,9 @@ function Index() {
 
   return (
     <div>
-      <TypeH1 className="text-2xl font-semibold mb-2 sm:mb-4 mt-6 sm:mt-8 mx-auto flex justify-center">Season 1</TypeH1>
+      <TypeH1 className="text-2xl font-semibold mb-2 sm:mb-4 mt-6 sm:mt-8 mx-auto flex justify-center">
+        Season 1 - {seasonDay?.dayString}
+      </TypeH1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4">
         <Card className="@container/card col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-2">
           <CardHeader className="relative">
