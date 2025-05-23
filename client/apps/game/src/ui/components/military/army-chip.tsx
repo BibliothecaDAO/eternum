@@ -134,7 +134,7 @@ export const ArmyChip = ({
       ) : (
         <>
           <div className="flex w-full h-full justify-between p-2 gap-4">
-            <div className="flex flex-col justify-between w-[45%]">
+            <div className="flex flex-col justify-between w-[55%]">
               <div className="flex items-center justify-between mb-2">
                 <div
                   className="text-base mr-2 truncate cursor-default"
@@ -228,6 +228,20 @@ export const ArmyChip = ({
                         At Base
                       </div>
                     )}
+                    {!isHome && !hasAdjacentOwnedStructure && (
+                      <div
+                        className="text-amber-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content: "Army is away from base - limited actions available",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        Away
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
@@ -236,7 +250,7 @@ export const ArmyChip = ({
                 </div>
               )}
             </div>
-            <div className="flex flex-col w-[55%] gap-2">
+            <div className="flex flex-col w-[45%] gap-2">
               <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources
