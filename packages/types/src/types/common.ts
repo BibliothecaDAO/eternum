@@ -111,6 +111,7 @@ export type ArmyInfo = {
   weight: number;
   explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
+  hasAdjacentStructure: boolean;
 };
 
 export type Structure = {
