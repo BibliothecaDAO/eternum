@@ -76,6 +76,7 @@ export const ArmyChip = ({
   const [editMode, setEditMode] = useState(false);
 
   const isHome = army.isHome;
+  const hasAdjacentOwnedStructure = army.hasAdjacentStructure;
 
   const [location] = useLocation();
   const { hexPosition } = useQuery();
@@ -160,7 +161,7 @@ export const ArmyChip = ({
                           />
                         )}
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
-                        {isHome && (
+                        {(isHome || hasAdjacentOwnedStructure) && (
                           <ArrowLeftRight
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                               army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
@@ -185,7 +186,37 @@ export const ArmyChip = ({
               </div>
               {armyHasTroops([army]) && (
                 <div className="flex justify-between items-end mt-auto">
-                  <div className="flex items-center">{isHome && <div className="text-green text-xs">At Base</div>}</div>
+                  <div className="flex items-center">
+                    {isHome && (
+                      <div
+                        className="text-emerald-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content: "Army is at home base - can add troops and swap resources",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        At Home
+                      </div>
+                    )}
+                    {!isHome && hasAdjacentOwnedStructure && (
+                      <div
+                        className="text-blue-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content:
+                              "Army is near an owned structure - can swap resources and add transfer troops from guards but not structure balance",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        At Base
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-col items-end gap-1">
                     <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
                     <ArmyCapacity resource={resources} />
