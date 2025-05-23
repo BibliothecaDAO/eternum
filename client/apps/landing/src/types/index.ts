@@ -37,7 +37,7 @@ export interface MergedNftData {
   marketplaceOwner?: string | null;
   order_id?: number | null;
   expiration: number | null;
-  token_owner?: string | null;
+  account_address?: string | null;
   order_owner?: string | null;
   best_price_hex?: bigint | null;
   token_id: string | number;

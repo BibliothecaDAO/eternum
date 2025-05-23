@@ -149,7 +149,7 @@ WITH limited_active_orders AS (
         t.name,
         t.symbol,
         t.metadata,
-        lao.token_owner,
+        lao.token_owner AS account_address,
         lao.price_hex,
         lao.expiration,
         lao.order_owner,
@@ -310,4 +310,6 @@ FROM
     "s1_eternum-AgentCreatedEvent";`,
   TOTAL_PLAYERS: `SELECT COUNT(DISTINCT owner) AS unique_wallets
 FROM   "s1_eternum-Structure";`,
+  TOTAL_TRANSACTIONS: `SELECT COUNT(*) AS total_rows
+FROM transactions;`,
 };

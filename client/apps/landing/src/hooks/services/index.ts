@@ -74,7 +74,7 @@ export interface SeasonPassRealm {
   balance: string;
   contract_address: string;
   season_pass_balance: string | null;
-  metadata: string | null;
+  metadata: RealmMetadata | null;
   account_address: string;
 }
 
@@ -163,7 +163,11 @@ export async function fetchSeasonPassRealmsByAddress(
   const query = QUERIES.SEASON_PASS_REALMS_BY_ADDRESS.replace("{realmsAddress}", realmsAddress)
     .replace("{seasonPassAddress}", seasonPassAddress)
     .replace(/{accountAddress}/g, accountAddress);
-  return await fetchSQL<SeasonPassRealm[]>(query);
+  const rawData = await fetchSQL<any[]>(query);
+  return rawData.map((item) => ({
+    ...item,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+  }));
 }
 
 export interface TokenBalanceWithToken {
@@ -217,7 +221,7 @@ export async function fetchTokenBalancesWithMetadata(
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
   return rawData.map((item) => ({
-    token_id: item.token_id,
+    token_id: Number(item.token_id.split(":")[1]).toString(),
     balance: item.balance,
     contract_address: item.contract_address,
     account_address: item.token_owner,
@@ -327,4 +331,9 @@ export async function fetchTotalCreatedAgents(): Promise<number> {
 export async function fetchTotalPlayers(): Promise<number> {
   const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_PLAYERS);
   return rawData[0].unique_wallets;
+}
+
+export async function fetchTotalTransactions(): Promise<number> {
+  const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_TRANSACTIONS);
+  return rawData[0].total_rows;
 }
