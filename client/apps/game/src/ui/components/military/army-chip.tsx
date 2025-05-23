@@ -136,7 +136,18 @@ export const ArmyChip = ({
           <div className="flex w-full h-full justify-between p-2 gap-4">
             <div className="flex flex-col justify-between w-[45%]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-base mr-2 truncate">{army.name}</div>
+                <div
+                  className="text-base mr-2 truncate cursor-default"
+                  onMouseEnter={() =>
+                    setTooltip({
+                      content: `Army ID: ${army.entityId}`,
+                      position: "bottom",
+                    })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  {army.name}
+                </div>
                 {showButtons && army.isMine && (
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isHome && (
@@ -154,13 +165,6 @@ export const ArmyChip = ({
                     )}
                     {army.troops.count > 0n && (
                       <React.Fragment>
-                        {!isHome && (
-                          <ViewOnMapIcon
-                            className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
-                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
-                          />
-                        )}
-                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                         {(isHome || hasAdjacentOwnedStructure) && (
                           <ArrowLeftRight
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
@@ -179,6 +183,14 @@ export const ArmyChip = ({
                             onMouseLeave={() => setTooltip(null)}
                           />
                         )}
+
+                        {
+                          <ViewOnMapIcon
+                            className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
+                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                          />
+                        }
+                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                       </React.Fragment>
                     )}
                   </div>
