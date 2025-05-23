@@ -44,7 +44,7 @@ export const TransferTroopsContainer = ({
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<number>(0);
-  const [useStructureBalance, setUseStructureBalance] = useState(true);
+  const [useStructureBalance, setUseStructureBalance] = useState(false);
 
   // Query for selected entity data
   const { data: selectedEntityData, isLoading: isSelectedLoading } = useQuery({
@@ -80,6 +80,10 @@ export const TransferTroopsContainer = ({
     },
     staleTime: 10000, // 10 seconds
   });
+
+  const isStructureOwnerOfExplorer = useMemo(() => {
+    return selectedEntityId === targetEntityData?.explorer?.owner;
+  }, [selectedEntityId, targetEntityData?.explorer?.owner]);
 
   const structureTroopBalance = useMemo(() => {
     const resources = selectedEntityData?.structureResources;
@@ -187,12 +191,11 @@ export const TransferTroopsContainer = ({
         if (useStructureBalance && structureTroopBalance) {
           // Get home direction for the explorer
           const homeDirection = getDirectionBetweenAdjacentHexes(
+            // from army to structure to find home direction
             { col: targetHex.x, row: targetHex.y },
             { col: selectedHex.x, row: selectedHex.y },
           );
-          if (homeDirection === null) {
-            throw new Error("Could not determine home direction");
-          }
+          if (homeDirection === null) return;
 
           await explorer_add({
             signer: account,
@@ -244,6 +247,15 @@ export const TransferTroopsContainer = ({
       transferDirection === TransferDirection.StructureToExplorer
     ) {
       if (guardSlot === undefined) return true;
+
+      // For StructureToExplorer, if using balance but not owner, disable
+      if (
+        transferDirection === TransferDirection.StructureToExplorer &&
+        useStructureBalance &&
+        !isStructureOwnerOfExplorer
+      ) {
+        return true;
+      }
 
       // Check if troop tier and category match between selected and target
       if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -315,6 +327,13 @@ export const TransferTroopsContainer = ({
     ) {
       return "Please select a guard slot";
     }
+    if (
+      transferDirection === TransferDirection.StructureToExplorer &&
+      useStructureBalance &&
+      !isStructureOwnerOfExplorer
+    ) {
+      return "Cannot use structure balance: Explorer is not owned by this structure";
+    }
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category) {
         return `Cannot transfer troops: Category mismatch (${selectedExplorerTroops?.troops.category} ≠ ${targetExplorerTroops?.troops.category})`;
@@ -358,16 +377,21 @@ export const TransferTroopsContainer = ({
               <div className="flex items-center justify-between">
                 <h4 className="text-gold font-semibold text-lg">Structure Troop Balance</h4>
                 <div className="flex items-center gap-2">
-                  <label className="inline-flex items-center cursor-pointer">
+                  <label
+                    className={`inline-flex items-center ${!isStructureOwnerOfExplorer ? "cursor-not-allowed" : "cursor-pointer"}`}
+                  >
                     <span className={`mr-2 text-xs ${useStructureBalance ? "text-gold/50" : "text-gold"}`}>Guards</span>
                     <div className="relative">
                       <input
                         type="checkbox"
                         className="sr-only peer"
                         checked={useStructureBalance}
-                        onChange={() => setUseStructureBalance(!useStructureBalance)}
+                        onChange={() => isStructureOwnerOfExplorer && setUseStructureBalance(!useStructureBalance)}
+                        disabled={!isStructureOwnerOfExplorer}
                       />
-                      <div className="w-9 h-5 bg-gold/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
+                      <div
+                        className={`w-9 h-5 bg-gold/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30 ${!isStructureOwnerOfExplorer ? "opacity-50" : ""}`}
+                      ></div>
                     </div>
                     <span className={`ml-2 text-xs ${useStructureBalance ? "text-gold" : "text-gold/50"}`}>
                       Balance
@@ -375,6 +399,9 @@ export const TransferTroopsContainer = ({
                   </label>
                 </div>
               </div>
+              {!isStructureOwnerOfExplorer && (
+                <div className="text-red text-sm mt-1">Cannot use balance: Explorer not owned by this structure</div>
+              )}
               <p className="text-gold/80 text-md">
                 Available: {formatNumber(divideByPrecision(Number(structureTroopBalance.balance)), 0)} troops
               </p>
@@ -412,13 +439,15 @@ export const TransferTroopsContainer = ({
             )}
           </div>
 
-          {/* Guard Slot Selection - Only show for StructureToExplorer when not using structure balance */}
-          {transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance && (
+          {/* Guard Slot Selection - Show for both StructureToExplorer and ExplorerToStructure */}
+          {(transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance) ||
+          transferDirection === TransferDirection.ExplorerToStructure ? (
             <div className="flex flex-col space-y-2 mt-4">
               <label className="text-gold font-semibold h6">Guard Slot</label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {availableGuards.map((slotIndex) => {
-                  const guards = selectedGuards;
+                  const guards =
+                    transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
                   if (!guards[slotIndex] || !guards[slotIndex].troops) {
                     return (
                       <div
@@ -450,7 +479,7 @@ export const TransferTroopsContainer = ({
                 })}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Troop Amount Input Section */}
           <div className="flex flex-col space-y-2">
@@ -504,10 +533,10 @@ export const TransferTroopsContainer = ({
             </div>
           )}
 
-          {getTroopMismatchMessage() && <div className="text-red-500 text-sm mt-2">{getTroopMismatchMessage()}</div>}
-          {isTroopsTransferDisabled && <div className="text-red-500 text-sm mt-2">{getDisabledMessage()}</div>}
+          {getTroopMismatchMessage() && <div className="text-red text-sm mt-2">{getTroopMismatchMessage()}</div>}
+          {isTroopsTransferDisabled && <div className="text-red text-sm mt-2">{getDisabledMessage()}</div>}
 
-          <div className="flex justify-center mt-6">
+          <div className="flex flex-col items-center mt-6 space-y-2">
             <Button
               onClick={handleTransfer}
               variant="primary"
@@ -517,6 +546,31 @@ export const TransferTroopsContainer = ({
             >
               {loading ? "Processing..." : "Transfer Troops"}
             </Button>
+            {troopAmount > 0 && !loading && !isTroopsTransferDisabled && (
+              <div className="text-gold/80 text-sm text-center">
+                {transferDirection === TransferDirection.StructureToExplorer && (
+                  <>
+                    {useStructureBalance ? (
+                      <>Transferring {formatNumber(troopAmount, 0)} troops from structure balance to explorer</>
+                    ) : (
+                      <>
+                        Transferring {formatNumber(troopAmount, 0)} troops from guard slot {guardSlot + 1} (
+                        {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}) to explorer
+                      </>
+                    )}
+                  </>
+                )}
+                {transferDirection === TransferDirection.ExplorerToStructure && (
+                  <>
+                    Transferring {formatNumber(troopAmount, 0)} troops from explorer to guard slot {guardSlot + 1} (
+                    {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]})
+                  </>
+                )}
+                {transferDirection === TransferDirection.ExplorerToExplorer && (
+                  <>Transferring {formatNumber(troopAmount, 0)} troops from explorer to explorer</>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
