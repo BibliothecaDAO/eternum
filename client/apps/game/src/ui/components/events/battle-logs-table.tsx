@@ -55,6 +55,13 @@ interface FilterState {
 const DAYDREAM_AGENT_ID = 4294967288;
 const UNKNOWN_ENTITY_ID = 0;
 
+const cleanPlayerName = (name: string) => {
+  if (name == "0") {
+    return "";
+  }
+  return name;
+};
+
 // Entity data management hook
 const useEntityData = (battleLogs: ProcessedBattleLogEvent[]) => {
   const [entities, setEntities] = useState<Map<number, EntityInfo>>(new Map());
@@ -107,47 +114,50 @@ const useEntityData = (battleLogs: ProcessedBattleLogEvent[]) => {
           // Try to resolve as structure
           let playerData = await playerStore.getPlayerDataByStructureId(entityId.toString());
           if (playerData) {
+            let playerName = cleanPlayerName(playerData.ownerName);
             const structureName = await playerStore.getStructureName(entityId.toString());
             const displayName = structureName
-              ? `${playerData.ownerName}'s ${structureName} #${entityId}`
-              : `${playerData.ownerName}'s Structure #${entityId}`;
+              ? `${playerName} ${structureName} #${entityId}`
+              : `${playerName} Structure #${entityId}`;
 
             newEntities.set(entityId, {
               id: entityId,
               name: displayName,
               type: "structure",
-              playerName: playerData.ownerName,
+              playerName: playerName,
               isResolved: true,
             });
-            newPlayers.set(entityId, playerData.ownerName);
+            newPlayers.set(entityId, playerName);
             return;
           }
 
           // Try to resolve as army/explorer
           playerData = await playerStore.getPlayerDataByExplorerId(entityId.toString());
           if (playerData) {
+            let playerName = cleanPlayerName(playerData.ownerName);
             newEntities.set(entityId, {
               id: entityId,
-              name: `${playerData.ownerName}'s Army #${entityId}`,
+              name: `${playerName} Army #${entityId}`,
               type: "army",
-              playerName: playerData.ownerName,
+              playerName: playerName,
               isResolved: true,
             });
-            newPlayers.set(entityId, playerData.ownerName);
+            newPlayers.set(entityId, playerName);
             return;
           }
 
           // Try to resolve as DEAD army/explorer
           playerData = await playerStore.getPlayerDataByStructureId(ownerId.toString());
           if (playerData) {
+            let playerName = cleanPlayerName(playerData.ownerName);
             newEntities.set(entityId, {
               id: entityId,
-              name: `${playerData.ownerName}'s Army #${entityId} [DEAD]`,
+              name: `${playerName} Army #${entityId} [DEAD]`,
               type: "army",
-              playerName: playerData.ownerName,
+              playerName: playerName,
               isResolved: true,
             });
-            newPlayers.set(ownerId, playerData.ownerName);
+            newPlayers.set(ownerId, playerName);
             return;
           }
 
