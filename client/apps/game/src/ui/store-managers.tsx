@@ -1,3 +1,4 @@
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAllArrivals, getEntityInfo } from "@bibliothecadao/eternum";
@@ -74,12 +75,39 @@ const ButtonStateStoreManager = () => {
   return null;
 };
 
+const PlayerDataStoreManager = () => {
+  const {
+    account: { account },
+  } = useDojo();
+  
+  const initializePlayerStore = usePlayerStore((state) => state.initializePlayerStore);
+  const getCurrentPlayerData = usePlayerStore((state) => state.getCurrentPlayerData);
+  const playerDataStore = usePlayerStore((state) => state.playerDataStore);
+
+  // Initialize the player store on mount
+  useEffect(() => {
+    if (!playerDataStore) {
+      initializePlayerStore();
+    }
+  }, [initializePlayerStore, playerDataStore]);
+
+  // Update current player data when account changes
+  useEffect(() => {
+    if (account?.address && playerDataStore) {
+      getCurrentPlayerData(account.address);
+    }
+  }, [account?.address, getCurrentPlayerData, playerDataStore]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
       <ResourceArrivalsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
+      <PlayerDataStoreManager />
     </>
   );
 };

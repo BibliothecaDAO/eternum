@@ -1,3 +1,4 @@
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { divideByPrecision, getHyperstructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -14,7 +15,6 @@ import {
 import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { loggedInAccount } from "../helpers/utils";
-import { PlayerDataStore } from "../managers/player-data-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 import {
   type ArmySystemUpdate,
@@ -186,19 +186,7 @@ export const getStructureInfoFromTileOccupier = (
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  private playerDataStore: PlayerDataStore;
-  private readonly DATA_REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
   constructor(private setup: SetupResult) {
-    this.playerDataStore = PlayerDataStore.getInstance(this.DATA_REFRESH_INTERVAL);
-    this.initializeStores();
-  }
-
-  private async initializeStores() {
-    try {
-      await Promise.all([this.playerDataStore.refresh()]);
-    } catch (error) {
-      console.error("Failed to initialize stores:", error);
-    }
   }
 
   private setupSystem<T>(
@@ -232,7 +220,10 @@ export class SystemManager {
 
               if (!explorer) return;
 
-              let explorerOwnerAddress = await this.playerDataStore.getExplorerOwnerAddress(
+              // Use the global player store instead of local instance
+              const playerStore = usePlayerStore.getState();
+              
+              let explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(
                 currentState.occupier_id.toString(),
               );
               if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
@@ -250,11 +241,11 @@ export class SystemManager {
                   retries--;
                 }
                 if (explorerTroops?.owner) {
-                  this.playerDataStore.updateExplorerStructure(
+                  playerStore.updateExplorerStructure(
                     currentState.occupier_id.toString(),
                     explorerTroops.owner.toString(),
                   );
-                  explorerOwnerAddress = await this.playerDataStore.getExplorerOwnerAddress(
+                  explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(
                     currentState.occupier_id.toString(),
                   );
                 }
@@ -263,10 +254,10 @@ export class SystemManager {
               let explorerPlayerData = null;
               let loggedInAccountPlayerData = null;
               if (explorerOwnerAddress) {
-                explorerPlayerData = await this.playerDataStore.getPlayerDataFromExplorerId(
+                explorerPlayerData = await playerStore.getPlayerDataByExplorerId(
                   currentState.occupier_id.toString(),
                 );
-                loggedInAccountPlayerData = await this.playerDataStore.getPlayerDataFromAddress(
+                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
                   BigInt(loggedInAccount()).toString(),
                 );
               }
@@ -356,23 +347,26 @@ export class SystemManager {
 
             const initialized = hyperstructure?.initialized || false;
 
-            let structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+            // Use the global player store instead of local instance
+            const playerStore = usePlayerStore.getState();
+            
+            let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
               currentState.occupier_id.toString(),
             );
             const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
             const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
             if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
-              this.playerDataStore.updateStructureOwnerAddress(
+              playerStore.updateStructureOwnerAddress(
                 currentState.occupier_id.toString(),
                 structureSyncedOwner.toString(),
               );
-              structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+              structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
                 currentState.occupier_id.toString(),
               );
               if (!structureOwnerDataQueried) {
                 // it is a new player
-                await this.playerDataStore.refresh();
-                structureOwnerDataQueried = await this.playerDataStore.getPlayerDataFromStructureId(
+                await playerStore.refreshPlayerData();
+                structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
                   currentState.occupier_id.toString(),
                 );
               }
@@ -382,7 +376,7 @@ export class SystemManager {
 
             let loggedInAccountPlayerData = null;
             if (structureOwnerAddress) {
-              loggedInAccountPlayerData = await this.playerDataStore.getPlayerDataFromAddress(
+              loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
                 BigInt(loggedInAccount()).toString(),
               );
             }
