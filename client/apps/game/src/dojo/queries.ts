@@ -105,6 +105,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-SeasonPrize",
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
+    "s1_eternum-PlayerRegisteredPoints",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];

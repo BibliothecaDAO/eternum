@@ -10,6 +10,11 @@ export interface PlayerDataTransformed {
   guildName: string;
   ownerName: string;
   ownerAddress: string;
+  realmsCount: number;
+  hyperstructuresCount: number;
+  bankCount: number;
+  mineCount: number;
+  villageCount: number;
 }
 
 export class PlayerDataStore {
@@ -66,6 +71,11 @@ export class PlayerDataStore {
           guildName: item.guild_name ? shortString.decodeShortString(BigInt(item.guild_name).toString()) : "",
           ownerAddress: BigInt(item.owner_address).toString() || "",
           ownerName: item.player_name ? shortString.decodeShortString(BigInt(item.player_name).toString()) : "",
+          realmsCount: item.realms_count,
+          hyperstructuresCount: item.hyperstructures_count,
+          bankCount: item.bank_count,
+          mineCount: item.mine_count,
+          villageCount: item.village_count,
         };
         // Create a mapping from explorer id to structure id
         transformedItem.explorerIds.forEach((explorerId) => {
@@ -129,6 +139,11 @@ export class PlayerDataStore {
 
   public async getStructureName(structureId: string): Promise<string> {
     return this.structureToNameMap.get(structureId) || "";
+  }
+
+  public async getAllPlayersData(): Promise<PlayerDataTransformed[]> {
+    this._checkRefresh();
+    return Array.from(this.addressToPlayerDataMap.values());
   }
 
   public clear(): void {

@@ -153,6 +153,12 @@ export const PlayersPanel = ({
             </div>
           </div>
         )}
+        <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
+          <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed">
+            {" "}
+            SHOULD ANY LORD GATHER 9.6M POINTS, THEY GAIN THE ULTIMATE POWER TO <br></br> END THIS GAME
+          </p>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">
