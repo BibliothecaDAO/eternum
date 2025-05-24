@@ -9,7 +9,7 @@ interface PlayerStore {
   currentPlayerData: PlayerDataTransformed | null;
   isLoading: boolean;
   lastRefreshTime: number;
-  
+
   // Actions
   initializePlayerStore: (refreshInterval?: number) => void;
   refreshPlayerData: () => Promise<void>;
@@ -27,20 +27,20 @@ interface PlayerStore {
 
 /**
  * Global player data store using Zustand
- * 
+ *
  * This store provides global access to player data throughout the application.
  * It integrates with the PlayerDataStore singleton and provides a reactive interface
  * for accessing player information including names, guilds, and entity relationships.
- * 
+ *
  * @example
  * ```tsx
  * // Get current player data
  * const currentPlayerData = useCurrentPlayerData();
  * const isLoading = usePlayerDataLoading();
- * 
+ *
  * // Use the full store
  * const { getPlayerDataByAddress, refreshPlayerData } = usePlayerStore();
- * 
+ *
  * // Custom hook with automatic loading
  * const { data: playerData, loading } = usePlayerDataByAddress(playerAddress);
  * ```
@@ -60,7 +60,7 @@ export const usePlayerStore = create<PlayerStore>()(
     initializePlayerStore: (refreshInterval = 6 * 60 * 60 * 1000) => {
       const playerDataStore = PlayerDataStore.getInstance(refreshInterval);
       set({ playerDataStore });
-      
+
       // Initial refresh
       get().refreshPlayerData();
     },
@@ -187,9 +187,9 @@ export const usePlayerStore = create<PlayerStore>()(
       if (playerDataStore) {
         playerDataStore.clear();
       }
-      set({ 
-        currentPlayerData: null, 
-        lastRefreshTime: 0 
+      set({
+        currentPlayerData: null,
+        lastRefreshTime: 0,
       });
     },
 
@@ -200,7 +200,7 @@ export const usePlayerStore = create<PlayerStore>()(
     setLoading: (loading: boolean) => {
       set({ isLoading: loading });
     },
-  }))
+  })),
 );
 
 // Convenience hooks for common use cases
@@ -290,4 +290,4 @@ export const usePlayerDataByExplorerId = (explorerId: string | null) => {
   }, [explorerId, getPlayerDataByExplorerId]);
 
   return { data, loading };
-}; 
+};

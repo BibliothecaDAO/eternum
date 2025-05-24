@@ -16,7 +16,7 @@ export class PlayerDataStore {
   private addressToPlayerDataMap: Map<string, PlayerDataTransformed> = new Map();
   private structureToAddressMap: Map<string, string> = new Map();
   private explorerToStructureMap: Map<string, string> = new Map();
-  private structureToNameMap: Map<string, string> = new Map();  
+  private structureToNameMap: Map<string, string> = new Map();
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
   private readonly REFRESH_INTERVAL: number;
