@@ -1,7 +1,8 @@
 import { shortString } from "starknet";
+import realms from "../../../../../public/jsons/realms.json";
 import { fetchGlobalStructureExplorerAndGuildDetails } from "../../services/api";
 
-interface PlayerDataTransformed {
+export interface PlayerDataTransformed {
   explorerIds: string[];
   structureIds: string[];
   guildId: string;
@@ -15,6 +16,7 @@ export class PlayerDataStore {
   private addressToPlayerDataMap: Map<string, PlayerDataTransformed> = new Map();
   private structureToAddressMap: Map<string, string> = new Map();
   private explorerToStructureMap: Map<string, string> = new Map();
+  private structureToNameMap: Map<string, string> = new Map();  
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
   private readonly REFRESH_INTERVAL: number;
@@ -53,6 +55,7 @@ export class PlayerDataStore {
 
   private async fetchAndStoreData(): Promise<void> {
     const result = await fetchGlobalStructureExplorerAndGuildDetails();
+    let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
       result.map((item) => {
         let transformedItem = {
@@ -72,7 +75,11 @@ export class PlayerDataStore {
 
         // Create a mapping from structure id to player address
         transformedItem.structureIds.forEach((structureId) => {
-          this.structureToAddressMap.set(structureId, transformedItem.ownerAddress);
+          let actualStructureId = structureId.split(":")[0];
+          let actualRealmId = structureId.split(":")[1];
+          this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
+          const realmName = actualRealmId === "0" ? "Village" : realmsData[actualRealmId].name;
+          this.structureToNameMap.set(actualStructureId, realmName);
         });
 
         // Create a mapping from owner address to PlayerDataTransformed
@@ -115,6 +122,10 @@ export class PlayerDataStore {
   public async getExplorerOwnerAddress(id: string): Promise<string> {
     const data = await this.getPlayerDataFromExplorerId(id);
     return data?.ownerAddress || "";
+  }
+
+  public async getStructureName(structureId: string): Promise<string> {
+    return this.structureToNameMap.get(structureId) || "";
   }
 
   public clear(): void {
