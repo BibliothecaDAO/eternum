@@ -1,4 +1,4 @@
-import { ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { OrderMode, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
@@ -29,6 +29,7 @@ async function fetchBalances(
       return {};
     }
     const manager = new ResourceManager(dojoComponents, realmIdNumber);
+
     for (const resourceId of ALL_RESOURCE_IDS) {
       const balanceComponent = manager.balanceWithProduction(tick, resourceId);
       balances[resourceId] = Number(balanceComponent.balance);
@@ -37,6 +38,47 @@ async function fetchBalances(
     console.error(`Error fetching balances for realm ${realmEntityId}:`, error);
   }
   return balances;
+}
+
+/**
+ * Fetches the projected resource balance including pending production.
+ * This is crucial for MaintainBalance mode to avoid overproduction.
+ */
+async function getProjectedBalance(
+  tick: number,
+  realmEntityId: string,
+  resourceId: ResourcesIds,
+  dojoComponents: ClientComponents,
+): Promise<number> {
+  try {
+    const realmIdNumber = Number(realmEntityId);
+    if (isNaN(realmIdNumber)) {
+      console.error(`Invalid realmEntityId for getProjectedBalance: ${realmEntityId}`);
+      return 0;
+    }
+    const manager = new ResourceManager(dojoComponents, realmIdNumber);
+
+    // Get the time until current production ends
+    const ticksUntilProductionEnds = manager.timeUntilValueReached(tick, resourceId);
+
+    // If no pending production, return current balance
+    if (ticksUntilProductionEnds === 0) {
+      const currentBalance = manager.balanceWithProduction(tick, resourceId);
+      return currentBalance.balance;
+    }
+
+    // Calculate the balance after all pending production completes
+    const futureBalance = manager.balanceWithProduction(tick + ticksUntilProductionEnds, resourceId);
+
+    console.log(
+      `Automation: Projected balance for ${ResourcesIds[resourceId]} after ${ticksUntilProductionEnds} ticks: ${futureBalance.balance} (current production will complete)`,
+    );
+
+    return futureBalance.balance;
+  } catch (error) {
+    console.error(`Error getting projected balance for resource ${resourceId}:`, error);
+    return 0;
+  }
 }
 
 /**
@@ -74,7 +116,7 @@ function getProductionRecipe(
   return undefined;
 }
 
-const PROCESS_INTERVAL_MS = 10 * 60 * 1000;
+const PROCESS_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const CYCLE_BUFFER = 150;
 
 export const useAutomation = () => {
@@ -93,6 +135,7 @@ export const useAutomation = () => {
 
   const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
+  const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
@@ -125,6 +168,12 @@ export const useAutomation = () => {
     const currentOrdersByRealm = ordersByRealmRef.current;
 
     for (const realmEntityId in currentOrdersByRealm) {
+      // Check if realm is paused
+      if (isRealmPaused(realmEntityId)) {
+        console.log(`Automation: Realm ${realmEntityId} is paused. Skipping all orders.`);
+        continue;
+      }
+
       const realmOrders = currentOrdersByRealm[realmEntityId].sort((a, b) => a.priority - b.priority);
       if (!realmOrders || realmOrders.length === 0) continue;
 
@@ -133,7 +182,12 @@ export const useAutomation = () => {
       );
 
       for (const order of realmOrders) {
-        if (order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount) {
+        // For ProduceOnce mode, check if we've already produced enough
+        if (
+          order.mode === OrderMode.ProduceOnce &&
+          order.maxAmount !== "infinite" &&
+          order.producedAmount >= order.maxAmount
+        ) {
           console.log(
             `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
           );
@@ -154,6 +208,46 @@ export const useAutomation = () => {
               `Automation: No valid recipe or zero output for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}.`,
             );
             continue;
+          }
+
+          // For MaintainBalance mode, check if we need to produce
+          if (order.mode === OrderMode.MaintainBalance) {
+            const targetBalance = order.maxAmount as number;
+
+            // Determine which resource we're trying to maintain
+            let resourceToMaintain: ResourcesIds;
+            if (order.productionType === ProductionType.ResourceToLabor) {
+              // For ResourceToLabor, we're maintaining Labor balance
+              resourceToMaintain = ResourcesIds.Labor;
+            } else {
+              // For other production types, we're maintaining the output resource balance
+              resourceToMaintain = order.resourceToUse;
+            }
+
+            const currentBalance = currentBalances[resourceToMaintain] || 0;
+            const projectedBalance = await getProjectedBalance(
+              currentTickRef.current,
+              order.realmEntityId,
+              resourceToMaintain,
+              components,
+            );
+
+            const targetBalanceInPrecision = multiplyByPrecision(targetBalance);
+            const bufferPercentage = order.bufferPercentage || 10; // Default 10% buffer
+            const bufferAmount = targetBalanceInPrecision * (bufferPercentage / 100);
+            const triggerBalance = targetBalanceInPrecision - bufferAmount;
+
+            console.log(
+              `Automation: MaintainBalance mode for ${ResourcesIds[resourceToMaintain]} - Current: ${currentBalance}, Projected: ${projectedBalance}, Target: ${targetBalanceInPrecision}, Trigger: ${triggerBalance}`,
+            );
+
+            // If projected balance (after pending production) is above trigger threshold, skip
+            if (projectedBalance >= triggerBalance) {
+              console.log(
+                `Automation: Projected balance for ${ResourcesIds[resourceToMaintain]} is sufficient (${projectedBalance} >= ${triggerBalance}). Skipping.`,
+              );
+              continue;
+            }
           }
 
           let maxPossibleCycles = Infinity;
@@ -195,7 +289,7 @@ export const useAutomation = () => {
 
           let cyclesToRun = maxPossibleCycles;
 
-          if (order.maxAmount !== "infinite") {
+          if (order.mode === OrderMode.ProduceOnce && order.maxAmount !== "infinite") {
             const remainingAmountToProduce = order.maxAmount - order.producedAmount;
 
             console.log(
@@ -210,6 +304,40 @@ export const useAutomation = () => {
             console.log(
               `Automation: Cycles to run for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id}:`,
               cyclesToRun,
+            );
+          } else if (order.mode === OrderMode.MaintainBalance) {
+            // Calculate how much we need to produce to reach target
+            const targetBalance = order.maxAmount as number;
+
+            // Determine which resource we're trying to maintain
+            let resourceToMaintain: ResourcesIds;
+            if (order.productionType === ProductionType.ResourceToLabor) {
+              // For ResourceToLabor, we're maintaining Labor balance
+              resourceToMaintain = ResourcesIds.Labor;
+            } else {
+              // For other production types, we're maintaining the output resource balance
+              resourceToMaintain = order.resourceToUse;
+            }
+
+            const currentBalance = currentBalances[resourceToMaintain] || 0;
+            const projectedBalance = await getProjectedBalance(
+              currentTickRef.current,
+              order.realmEntityId,
+              resourceToMaintain,
+              components,
+            );
+            const targetBalanceInPrecision = multiplyByPrecision(targetBalance);
+            const amountNeeded = targetBalanceInPrecision - projectedBalance;
+
+            if (amountNeeded <= 0) continue;
+
+            // Convert output amount to precision units for correct calculation
+            const outputAmountInPrecision = multiplyByPrecision(recipe.outputAmount);
+            const cyclesForTargetAmount = Math.ceil(amountNeeded / outputAmountInPrecision);
+            cyclesToRun = Math.min(cyclesToRun, cyclesForTargetAmount);
+
+            console.log(
+              `Automation: MaintainBalance - Current: ${currentBalance}, Projected: ${projectedBalance}, Need ${amountNeeded} ${ResourcesIds[resourceToMaintain]} (precision units) to reach target. Output per cycle: ${outputAmountInPrecision} (precision units). Cycles to run: ${cyclesToRun}`,
             );
           }
 
@@ -275,8 +403,10 @@ export const useAutomation = () => {
               `Automation: Plan to execute ${order.productionType} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}, order ${order.id} (${cyclesToRun} cycles, producing ${producedThisCycle}). Calldata `,
             );
             await systemCallToMake(); // UNCOMMENT FOR REAL TRANSACTION
+            const producedResourceName =
+              order.productionType === ProductionType.ResourceToLabor ? "Labor" : ResourcesIds[order.resourceToUse];
             console.log(
-              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${ResourcesIds[order.resourceToUse]}.`,
+              `Automation: MOCK CALL for ${order.productionType}. Would produce ${producedThisCycle} of ${producedResourceName}.`,
             );
             updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
             if (order.productionType === ProductionType.ResourceToLabor) {
@@ -284,16 +414,8 @@ export const useAutomation = () => {
                 <div className="flex">
                   <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
                   <span className="ml-2">
-                    Automation:{" "}
-                    {order.productionType === ProductionType.ResourceToLabor
-                      ? "Resource To Labor"
-                      : order.productionType === ProductionType.ResourceToResource
-                        ? "Resource To Resource"
-                        : order.productionType === ProductionType.LaborToResource
-                          ? "Labor To Resource"
-                          : order.productionType}
-                    . Produced {producedThisCycle.toLocaleString()} labor from {ResourcesIds[order.resourceToUse]} on
-                    realm {order?.realmName},
+                    Automation: Resource To Labor. Produced {producedThisCycle.toLocaleString()} labor from{" "}
+                    {ResourcesIds[order.resourceToUse]} on realm {order?.realmName}.
                   </span>
                 </div>,
               );
@@ -302,8 +424,14 @@ export const useAutomation = () => {
                 <div className="flex">
                   <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
                   <span className="ml-2">
-                    Automation: Resource To Labor. Produced {producedThisCycle.toLocaleString()} of{" "}
-                    {ResourcesIds[order.resourceToUse]} on {order?.realmName}.
+                    Automation:{" "}
+                    {order.productionType === ProductionType.ResourceToResource
+                      ? "Resource To Resource"
+                      : order.productionType === ProductionType.LaborToResource
+                        ? "Labor To Resource"
+                        : order.productionType}
+                    . Produced {producedThisCycle.toLocaleString()} of {ResourcesIds[order.resourceToUse]} on{" "}
+                    {order?.realmName}.
                   </span>
                 </div>,
               );
@@ -328,7 +456,9 @@ export const useAutomation = () => {
     currentTickRef,
     burn_resource_for_resource_production,
     burn_labor_for_resource_production,
+    burn_resource_for_labor_production,
     updateOrderProducedAmount,
+    isRealmPaused,
   ]);
 
   // Setup the automation interval as soon as the hook mounts. The `processOrders` function

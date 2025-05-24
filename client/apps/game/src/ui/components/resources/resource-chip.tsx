@@ -73,6 +73,10 @@ export const ResourceChip = ({
     return resourceManager.getProductionEndsAt(resourceId);
   }, [resourceManager]);
 
+  const productionAmountRemaining = useMemo(() => {
+    return Number(divideByPrecision(Number(production?.output_amount_left || 0), false));
+  }, [production]);
+
   const isActive = useMemo(() => {
     return resourceManager.isActive(resourceId);
   }, [resourceManager]);
@@ -260,7 +264,7 @@ export const ResourceChip = ({
           </div>
         )}
 
-        <div className={`col-span-10 text-xs ${size === "large" ? "" : ""}`}>
+        <div className={`ml-2 text-xs text-gold/40  ${size === "large" ? "" : ""}`}>
           {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
         </div>
       </div>
