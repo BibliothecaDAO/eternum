@@ -1,5 +1,7 @@
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
@@ -54,7 +56,41 @@ export const Social = () => {
   }, [components, setPlayersByRank]);
 
   useEffect(() => {
-    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
+    const loadPlayerData = async () => {
+      // Create a Map to store address -> structure counts mapping (using bigint keys)
+      const playerStructureCountsMap = new Map<
+        bigint,
+        {
+          banks: number;
+          mines: number;
+          realms: number;
+          hyperstructures: number;
+          villages: number;
+        }
+      >();
+
+      const playerStore = usePlayerStore.getState();
+      await playerStore.refreshPlayerData();
+      const allPlayersData = await playerStore.getAllPlayersData();
+
+      if (allPlayersData) {
+        allPlayersData.forEach((playerData: PlayerDataTransformed) => {
+          playerStructureCountsMap.set(BigInt(playerData.ownerAddress), {
+            banks: playerData.bankCount ?? 0,
+            mines: playerData.mineCount ?? 0,
+            realms: playerData.realmsCount ?? 0,
+            hyperstructures: playerData.hyperstructuresCount ?? 0,
+            villages: playerData.villageCount ?? 0,
+          });
+        });
+      }
+
+      setPlayerInfo(
+        getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+      );
+    };
+
+    loadPlayerData();
   }, [players, account.address, playersByRank, components, setPlayerInfo]);
 
   const hyperstructuresEntityIds = useMemo(() => {

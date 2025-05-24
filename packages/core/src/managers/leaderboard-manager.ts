@@ -93,7 +93,8 @@ export class LeaderboardManager {
       if (!playerRegisteredPoints) continue;
 
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
-      const registeredPoints = Number(playerRegisteredPoints.registered_points);
+      const pointsPrecision = 1_000_000n;
+      const registeredPoints = Number(playerRegisteredPoints.registered_points / pointsPrecision);
 
       pointsPerPlayer.set(playerAddress, registeredPoints);
     }

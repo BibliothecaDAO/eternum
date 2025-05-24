@@ -185,7 +185,11 @@ const PlayerRow = ({
           {player.guild ? player.guild.name : "No Tribe"}
         </p>
         <p className="col-span-3 text-center font-medium">
-          {(player.realms || 0) + (player.mines || 0) + (player.hyperstructures || 0)}
+          {(player.banks || 0) +
+            (player.realms || 0) +
+            (player.mines || 0) +
+            (player.hyperstructures || 0) +
+            (player.villages || 0)}
         </p>
         <p
           className={clsx("col-span-2 text-center font-medium", {
