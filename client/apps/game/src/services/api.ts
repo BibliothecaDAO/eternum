@@ -50,7 +50,7 @@ const QUERIES = {
   STRUCTURE_AND_EXPLORER_DETAILS: `
     SELECT
         s.owner AS owner_address,
-        GROUP_CONCAT(DISTINCT s.entity_id) AS structure_ids,
+        GROUP_CONCAT(DISTINCT s.entity_id || ':' || s.\`metadata.realm_id\`) AS structure_ids,
         GROUP_CONCAT(
             CASE 
                 WHEN et.explorer_id IS NOT NULL 
