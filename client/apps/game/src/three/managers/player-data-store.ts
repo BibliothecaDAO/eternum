@@ -1,3 +1,4 @@
+import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
 import { fetchGlobalStructureExplorerAndGuildDetails } from "../../services/api";
@@ -87,8 +88,10 @@ export class PlayerDataStore {
         transformedItem.structureIds.forEach((structureId) => {
           let actualStructureId = structureId.split(":")[0];
           let actualRealmId = structureId.split(":")[1];
+          let actualCategory = structureId.split(":")[2];
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
-          const realmName = actualRealmId === "0" ? "Village" : realmsData[actualRealmId].name;
+          const realmName =
+            actualRealmId === "0" ? getStructureTypeName(Number(actualCategory)) : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });
 
