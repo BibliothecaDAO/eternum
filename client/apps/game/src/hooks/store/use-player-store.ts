@@ -18,6 +18,7 @@ interface PlayerStore {
   getPlayerDataByExplorerId: (explorerId: string) => Promise<PlayerDataTransformed | undefined>;
   getExplorerOwnerAddress: (explorerId: string) => Promise<string>;
   getStructureName: (structureId: string) => Promise<string>;
+  getAllPlayersData: () => Promise<PlayerDataTransformed[]>;
   getCurrentPlayerData: (playerAddress: string) => Promise<void>;
   updateStructureOwnerAddress: (structureId: string, ownerAddress: string) => void;
   updateExplorerStructure: (explorerId: string, structureId: string) => void;
@@ -199,6 +200,12 @@ export const usePlayerStore = create<PlayerStore>()(
      */
     setLoading: (loading: boolean) => {
       set({ isLoading: loading });
+    },
+
+    getAllPlayersData: async () => {
+      const { playerDataStore } = get();
+      if (!playerDataStore) return [];
+      return await playerDataStore.getAllPlayersData();
     },
   })),
 );

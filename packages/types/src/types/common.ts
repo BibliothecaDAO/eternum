@@ -583,6 +583,8 @@ export interface PlayerInfo {
   realms: number;
   mines: number;
   hyperstructures: number;
+  villages: number;
+  banks: number;
   isAlive: boolean;
   guildName: string;
 }
