@@ -186,8 +186,7 @@ export const getStructureInfoFromTileOccupier = (
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private setup: SetupResult) {
-  }
+  constructor(private setup: SetupResult) {}
 
   private setupSystem<T>(
     component: Component,
@@ -222,10 +221,8 @@ export class SystemManager {
 
               // Use the global player store instead of local instance
               const playerStore = usePlayerStore.getState();
-              
-              let explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(
-                currentState.occupier_id.toString(),
-              );
+
+              let explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
               if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
                 // Attempt to get explorer owner structure id from RECS
                 let explorerTroops = null;
@@ -245,18 +242,14 @@ export class SystemManager {
                     currentState.occupier_id.toString(),
                     explorerTroops.owner.toString(),
                   );
-                  explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(
-                    currentState.occupier_id.toString(),
-                  );
+                  explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
                 }
               }
 
               let explorerPlayerData = null;
               let loggedInAccountPlayerData = null;
               if (explorerOwnerAddress) {
-                explorerPlayerData = await playerStore.getPlayerDataByExplorerId(
-                  currentState.occupier_id.toString(),
-                );
+                explorerPlayerData = await playerStore.getPlayerDataByExplorerId(currentState.occupier_id.toString());
                 loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
                   BigInt(loggedInAccount()).toString(),
                 );
@@ -349,7 +342,7 @@ export class SystemManager {
 
             // Use the global player store instead of local instance
             const playerStore = usePlayerStore.getState();
-            
+
             let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
               currentState.occupier_id.toString(),
             );
