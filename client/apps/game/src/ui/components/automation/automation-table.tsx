@@ -1,4 +1,4 @@
-import { AutomationOrder, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { AutomationOrder, OrderMode, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -31,14 +31,18 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const ordersForRealm = useAutomationStore((state) => state.getOrdersForRealm(realmEntityId));
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
+  const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
+  const isRealmPaused = useAutomationStore((state) => state.isRealmPaused(realmEntityId));
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
     priority: 5,
     resourceToUse: availableResourcesForRealm[0]?.id,
+    mode: OrderMode.ProduceOnce,
     maxAmount: 1000,
     productionType: ProductionType.ResourceToResource,
     realmName: realmInfo.name,
+    bufferPercentage: 10,
   }));
   const [maxAmountInput, setMaxAmountInput] = useState<string>("5000");
   const [isInfinite, setIsInfinite] = useState(false);
@@ -63,9 +67,11 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     setNewOrder({
       priority: 5,
       resourceToUse: filteredResourcesForSelect[0]?.id,
+      mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
       realmName: realmInfo.name,
+      bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
     setIsInfinite(false);
@@ -146,9 +152,11 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     setNewOrder({
       priority: 5,
       resourceToUse: availableResourcesForRealm[0]?.id,
+      mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
       realmName: realmInfo.name,
+      bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
     setIsInfinite(false);
@@ -162,12 +170,32 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       <h4 className="mb-2">
         [BETA] Automation for Realm {realmInfo.name} ({realmEntityId})
       </h4>
+
+      {/* Add pause checkbox */}
+      <div className="flex items-center gap-2 mb-3 p-2 bg-black/20 rounded">
+        <input
+          type="checkbox"
+          id={`pause-realm-${realmEntityId}`}
+          checked={isRealmPaused}
+          onChange={() => toggleRealmPause(realmEntityId)}
+          className="w-4 h-4"
+        />
+        <label htmlFor={`pause-realm-${realmEntityId}`} className="text-sm font-medium">
+          Pause all automation for this realm
+        </label>
+        {isRealmPaused && <span className="text-red ml-2 text-xs">(PAUSED - No orders will run)</span>}
+      </div>
+
       <ul className="list-disc pl-4">
         <li>
-          Automation will fulfill orders in priority order until target amount is reached. This will increase the
-          balance of the realm, and may cause resource loss if you have no space to store them. Read documentation for
-          more information.
+          <span className="font-bold">Produce Once:</span> Automation will produce resources until the target amount is
+          reached, then stop.
         </li>
+        <li>
+          <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
+          level. Production triggers when balance drops below target minus buffer percentage.
+        </li>
+        <li>Resources produced will increase your realm's balance and may cause resource loss if storage is full.</li>
         <li>
           Process activates every <span className="font-bold">10 minutes</span> automatically.
         </li>
@@ -175,8 +203,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
       <div className="my-4">
         {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)} variant="default" size="xs">
-            Add New Automation
+          <Button onClick={() => setShowAddForm(true)} variant="default" size="xs" disabled={isRealmPaused}>
+            Add New Automation {isRealmPaused && "(Paused)"}
           </Button>
         )}
       </div>
@@ -185,6 +213,28 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         <form onSubmit={handleAddOrder} className="p-4 mb-6 space-y-4 border  border-gold/20 rounded-md bg-black/10">
           <h3 className="text-lg font-semibold">Create New Order</h3>
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="orderMode" className="block mb-1 text-sm font-medium">
+                Order Mode:
+              </label>
+              <Select
+                value={newOrder.mode}
+                onValueChange={(value: OrderMode) => setNewOrder((prev) => ({ ...prev, mode: value }))}
+              >
+                <SelectTrigger className="w-full border border-gold/20 rounded-md">
+                  <SelectValue placeholder="Select mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={OrderMode.ProduceOnce}>Produce Once</SelectItem>
+                  <SelectItem value={OrderMode.MaintainBalance}>Maintain Balance</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-gold/50 mb-1">
+                {newOrder.mode === OrderMode.ProduceOnce
+                  ? "Produce up to target amount then stop"
+                  : "Keep resource balance at target level"}
+              </div>
+            </div>
             <div>
               <label htmlFor="productionType" className="block mb-1 text-sm font-medium">
                 Production Type:
@@ -266,7 +316,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
             <div>
               <label htmlFor="maxAmount" className="block mb-1 text-sm font-medium">
-                {newOrder.productionType === ProductionType.ResourceToLabor ? "Target Labor Amount:" : "Target Amount:"}
+                {newOrder.mode === OrderMode.MaintainBalance
+                  ? newOrder.productionType === ProductionType.ResourceToLabor
+                    ? "Target Labor Balance:"
+                    : "Target Balance:"
+                  : newOrder.productionType === ProductionType.ResourceToLabor
+                    ? "Target Labor Amount:"
+                    : "Target Amount:"}
                 {!isInfinite && parseInt(maxAmountInput, 10) < 1000 && (
                   <span className="text-red ml-1">(min 1000)</span>
                 )}
@@ -278,21 +334,53 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   onChange={(val) => handleMaxAmountChange(String(val))}
                   min={0}
                 />
-                <input
-                  type="checkbox"
-                  id="isInfinite"
-                  checked={isInfinite}
-                  onChange={toggleInfinite}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="isInfinite" className="text-sm">
-                  Infinite
-                </label>
+                {newOrder.mode === OrderMode.ProduceOnce && (
+                  <>
+                    <input
+                      type="checkbox"
+                      id="isInfinite"
+                      checked={isInfinite}
+                      onChange={toggleInfinite}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="isInfinite" className="text-sm">
+                      Infinite
+                    </label>
+                  </>
+                )}
               </div>
               <p className="text-xs text-gold/50 mt-1">
-                Set the target amount to produce. Check "Infinite" to keep producing without a limit.
+                {newOrder.mode === OrderMode.MaintainBalance
+                  ? newOrder.productionType === ProductionType.ResourceToLabor
+                    ? "Set the target labor balance to maintain. Production will trigger when labor drops below this minus buffer."
+                    : "Set the target balance to maintain. Production will trigger when balance drops below this minus buffer."
+                  : 'Set the target amount to produce. Check "Infinite" to keep producing without a limit.'}
               </p>
             </div>
+
+            {newOrder.mode === OrderMode.MaintainBalance && (
+              <div>
+                <label htmlFor="bufferPercentage" className="block mb-1 text-sm font-medium">
+                  Buffer Percentage:
+                </label>
+                <NumberInput
+                  value={newOrder.bufferPercentage || 10}
+                  onChange={(val) => setNewOrder((prev) => ({ ...prev, bufferPercentage: val }))}
+                  min={0}
+                  max={50}
+                  className="w-full"
+                />
+                <p className="text-xs text-gold/50 mt-1">
+                  Production will start when balance drops below {100 - (newOrder.bufferPercentage || 10)}% of target.
+                  (Current trigger:{" "}
+                  {(
+                    ((newOrder.maxAmount as number) * (100 - (newOrder.bufferPercentage || 10))) /
+                    100
+                  ).toLocaleString()}
+                  )
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">
@@ -300,7 +388,10 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
               type="submit"
               variant="gold"
               disabled={
-                newOrder.resourceToUse === undefined || (newOrder.maxAmount !== "infinite" && newOrder.maxAmount < 1000)
+                newOrder.resourceToUse === undefined ||
+                (newOrder.mode === OrderMode.ProduceOnce &&
+                  newOrder.maxAmount !== "infinite" &&
+                  newOrder.maxAmount < 1000)
               }
             >
               Add Automation
@@ -315,78 +406,109 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       {ordersForRealm.length === 0 ? (
         <p>No automation orders set up for this realm yet.</p>
       ) : (
-        <table className="w-full text-sm text-left table-auto">
-          <thead className="text-xs uppercase bg-gray-700/50 text-gold">
-            <tr>
-              <th scope="col" className="px-6 py-3">
-                Priority
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Resource
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Target
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Produced
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Type
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {ordersForRealm.map((order) => (
-              <tr key={order.id} className="border-b border-gold/50">
-                <td className="px-6 py-4">{order.priority}</td>
-                <td className="px-6 py-4 flex items-center">
-                  {order.productionType === ProductionType.ResourceToLabor ? (
-                    <>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
-                      <span className="mx-1">→</span>
-                      <ResourceIcon resource={"Labor"} size="sm" /> Labor
-                    </>
-                  ) : order.productionType === ProductionType.LaborToResource ? (
-                    <>
-                      <ResourceIcon resource={"Labor"} size="sm" />
-                      <span className="mx-1">→</span>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
-                    </>
-                  ) : order.productionType === ProductionType.ResourceToResource ? (
-                    <>
-                      {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
-                        <ResourceIcon key={recipe.resource} resource={ResourcesIds[recipe.resource]} size="sm" />
-                      ))}
-                      <span className="mx-1">→</span>
-                      <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
-                    </>
-                  ) : null}
-                </td>
-                <td className="px-6 py-4">
-                  {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}
-                </td>
-                <td className="px-6 py-4">{order.producedAmount.toLocaleString()}</td>
-                <td className="px-6 py-4 capitalize">
-                  {order.productionType === ProductionType.ResourceToLabor
-                    ? "Resource To Labor"
-                    : order.productionType === ProductionType.ResourceToResource
-                      ? "Resource To Resource"
-                      : order.productionType === ProductionType.LaborToResource
-                        ? "Labor To Resource"
-                        : order.productionType}
-                </td>
-                <td className="px-6 py-4">
-                  <Button onClick={() => handleRemoveOrder(order.id)} variant="danger" size="xs">
-                    Remove
-                  </Button>
-                </td>
+        <div className={`relative ${isRealmPaused ? "opacity-50" : ""}`}>
+          {isRealmPaused && (
+            <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded">
+              <div className="bg-red/90 text-white px-4 py-2 rounded font-bold">AUTOMATION PAUSED</div>
+            </div>
+          )}
+          <table className="w-full text-sm text-left table-auto">
+            <thead className="text-xs uppercase bg-gray-700/50 text-gold">
+              <tr>
+                <th scope="col" className="px-6 py-3">
+                  Priority
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Mode
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Resource
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Target/Balance
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Produced
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Type
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {ordersForRealm.map((order) => (
+                <tr key={order.id} className="border-b border-gold/50">
+                  <td className="px-6 py-4">{order.priority}</td>
+                  <td className="px-6 py-4 capitalize">
+                    {order.mode === OrderMode.MaintainBalance ? (
+                      <span className="text-green">Maintain</span>
+                    ) : (
+                      <span className="text-blue">Once</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 flex items-center">
+                    {order.productionType === ProductionType.ResourceToLabor ? (
+                      <>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={"Labor"} size="sm" /> Labor
+                      </>
+                    ) : order.productionType === ProductionType.LaborToResource ? (
+                      <>
+                        <ResourceIcon resource={"Labor"} size="sm" />
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                      </>
+                    ) : order.productionType === ProductionType.ResourceToResource ? (
+                      <>
+                        {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
+                          <ResourceIcon key={recipe.resource} resource={ResourcesIds[recipe.resource]} size="sm" />
+                        ))}
+                        <span className="mx-1">→</span>
+                        <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
+                      </>
+                    ) : null}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}
+                      {order.mode === OrderMode.MaintainBalance && (
+                        <>
+                          {order.productionType === ProductionType.ResourceToLabor && (
+                            <div className="text-xs text-gold/50">Labor Balance</div>
+                          )}
+                          {order.bufferPercentage && (
+                            <div className="text-xs text-gold/50">Buffer: {order.bufferPercentage}%</div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {order.mode === OrderMode.ProduceOnce ? order.producedAmount.toLocaleString() : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 capitalize">
+                    {order.productionType === ProductionType.ResourceToLabor
+                      ? "Resource To Labor"
+                      : order.productionType === ProductionType.ResourceToResource
+                        ? "Resource To Resource"
+                        : order.productionType === ProductionType.LaborToResource
+                          ? "Labor To Resource"
+                          : order.productionType}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Button onClick={() => handleRemoveOrder(order.id)} variant="danger" size="xs">
+                      Remove
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
