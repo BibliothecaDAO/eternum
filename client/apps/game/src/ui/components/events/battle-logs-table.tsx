@@ -663,7 +663,7 @@ const BattleCard: React.FC<{
       </div>
 
       {/* Rewards Section */}
-      {event.parsedRewards && event.parsedRewards.length > 0 && (
+      {isWin && event.parsedRewards && event.parsedRewards.length > 0 && (
         <div className="mt-3 pt-3 border-t border-amber-600/20">
           {/* <div className="text-xs text-amber-500/90 mb-2 flex items-center gap-1.5">
             <span className="font-medium">Max Rewards:</span>
