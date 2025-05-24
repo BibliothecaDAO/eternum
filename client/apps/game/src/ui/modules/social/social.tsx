@@ -70,7 +70,6 @@ export const Social = () => {
       >();
 
       const playerStore = usePlayerStore.getState();
-      await playerStore.refreshPlayerData();
       const allPlayersData = await playerStore.getAllPlayersData();
 
       if (allPlayersData) {
