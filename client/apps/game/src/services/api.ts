@@ -128,6 +128,34 @@ const QUERIES = {
         AND
         \`base.coord_y\` = {coord_y};
   `,
+  BATTLE_LOGS: `
+    SELECT 
+        'ExplorerNewRaidEvent' as event_type,
+        explorer_id as attacker_id,
+        structure_id as defender_id,
+        explorer_owner_id as attacker_owner_id,
+        NULL as defender_owner_id,
+        NULL as winner_id,
+        NULL as max_reward,
+        success,
+        timestamp
+    FROM [s1_eternum-ExplorerNewRaidEvent]
+    {whereClause}
+    UNION ALL
+    SELECT 
+        'BattleEvent' as event_type,
+        attacker_id,
+        defender_id,
+        attacker_owner as attacker_owner_id,
+        defender_owner as defender_owner_id,
+        winner_id,
+        max_reward,
+        NULL as success,
+        timestamp
+    FROM [s1_eternum-BattleEvent]
+    {whereClause}
+    ORDER BY timestamp DESC
+  `,
 };
 
 // API response types
@@ -177,6 +205,19 @@ export interface PlayersData {
   player_name: string | null;
   owner_address: string;
 }
+
+export interface BattleLogEvent {
+  event_type: "BattleEvent" | "ExplorerNewRaidEvent";
+  attacker_id: number;
+  defender_id: number;
+  attacker_owner_id: number;
+  defender_owner_id: number | null;
+  winner_id: number | null;
+  max_reward: string | number;
+  success: number | null;
+  timestamp: string;
+}
+
 export interface StructureDetails {
   internal_id: string; // Assuming internal_id might be non-numeric or large
   entity_id: number; // Assuming entity_id is numeric
@@ -432,3 +473,18 @@ export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractA
   }
   return data[0].address_owner;
 }
+
+export const fetchBattleLogs = async (afterTimestamp?: string): Promise<BattleLogEvent[]> => {
+  const whereClause = afterTimestamp ? `WHERE timestamp > '${afterTimestamp ? afterTimestamp : "0"}'` : "";
+
+  const query = QUERIES.BATTLE_LOGS.replaceAll("{whereClause}", whereClause);
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch battle logs: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+};

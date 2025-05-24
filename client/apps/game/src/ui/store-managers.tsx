@@ -1,10 +1,11 @@
+import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAllArrivals, getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../env";
 
 const ResourceArrivalsStoreManager = () => {
@@ -79,7 +80,7 @@ const PlayerDataStoreManager = () => {
   const {
     account: { account },
   } = useDojo();
-  
+
   const initializePlayerStore = usePlayerStore((state) => state.initializePlayerStore);
   const getCurrentPlayerData = usePlayerStore((state) => state.getCurrentPlayerData);
   const playerDataStore = usePlayerStore((state) => state.playerDataStore);
@@ -101,6 +102,66 @@ const PlayerDataStoreManager = () => {
   return null;
 };
 
+const BattleLogsStoreManager = () => {
+  const fetchInitialBattleLogs = useBattleLogsStore((state) => state.fetchInitialBattleLogs);
+  const fetchNewBattleLogs = useBattleLogsStore((state) => state.fetchNewBattleLogs);
+  const battleLogs = useBattleLogsStore((state) => state.battleLogs);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize battle logs on mount
+  useEffect(() => {
+    // Fetch initial data only if we don't have any logs
+    if (battleLogs.length === 0) {
+      fetchInitialBattleLogs();
+    }
+  }, [fetchInitialBattleLogs, battleLogs.length]);
+
+  // Set up periodic refresh for new battle logs
+  useEffect(() => {
+    const startPeriodicRefresh = () => {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up new interval to fetch new logs every minute
+      refreshIntervalRef.current = setInterval(() => {
+        fetchNewBattleLogs();
+      }, 60 * 1000);
+    };
+
+    // Start periodic refresh after initial load
+    if (battleLogs.length > 0) {
+      startPeriodicRefresh();
+    }
+
+    // Clean up interval on unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [fetchNewBattleLogs, battleLogs.length]);
+
+  // Handle page visibility change to refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && battleLogs.length > 0) {
+        // Fetch new logs when page becomes visible
+        fetchNewBattleLogs();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchNewBattleLogs, battleLogs.length]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
@@ -108,6 +169,7 @@ export const StoreManagers = () => {
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
+      <BattleLogsStoreManager />
     </>
   );
 };
