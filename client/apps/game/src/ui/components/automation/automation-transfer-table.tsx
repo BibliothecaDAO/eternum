@@ -1,3 +1,4 @@
+import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { fetchOtherStructures } from "@/services/api";
@@ -8,9 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/elements/text-input";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { getAddressName, getGuildMembersFromPlayerAddress, getRealmNameById } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, ID, ResourcesIds, Structure, StructureType } from "@bibliothecadao/types";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import {
+  computeTravelTime,
+  configManager,
+  divideByPrecision,
+  getAddressName,
+  getBalance,
+  getGuildFromPlayerAddress,
+  getRealmNameById,
+} from "@bibliothecadao/eternum";
+import { useDojo, useGuildMembers } from "@bibliothecadao/react";
+import {
+  ContractAddress,
+  EntityType,
+  ID,
+  RESOURCE_TIERS,
+  ResourcesIds,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { LucideArrowRight } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -75,15 +93,25 @@ function useDebounce<T>(value: T, delay: number): T {
 export const AutomationTransferTable: React.FC = () => {
   const {
     account: { account },
-    setup: { components },
+    setup: {
+      components,
+      systemCalls: { send_resources },
+    },
   } = useDojo();
 
   const [isPending, startTransition] = useTransition();
+  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
+  const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
   const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
 
+  // Transfer type selection
+  const [transferType, setTransferType] = useState<"automation" | "oneoff">("automation");
+
+  // Automation transfer state
   const [showAddForm, setShowAddForm] = useState(false);
   const [transferMode, setTransferMode] = useState<TransferMode>(TransferMode.Recurring);
   const [transferInterval, setTransferInterval] = useState<number>(60); // Default 60 minutes
@@ -92,15 +120,25 @@ export const AutomationTransferTable: React.FC = () => {
   const [newResourceId, setNewResourceId] = useState<ResourcesIds | "">("");
   const [newResourceAmount, setNewResourceAmount] = useState<number>(100);
 
+  // One-off transfer state
+  const [oneOffSelectedResourceIds, setOneOffSelectedResourceIds] = useState<number[]>([]);
+  const [oneOffSelectedResourceAmounts, setOneOffSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
+  const [isOneOffLoading, setIsOneOffLoading] = useState(false);
+  const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
+
   // Fetch structures
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const [guildOnly, setGuildOnly] = useState(false);
+  const [guildOnly, setGuildOnly] = useState(true);
 
   // Entity selection state
   const [selectedSource, setSelectedSource] = useState<SelectedEntity | null>(null);
   const [selectedDestination, setSelectedDestination] = useState<SelectedEntity | null>(null);
   const [sourceSearchTerm, setSourceSearchTerm] = useState("");
   const [destinationSearchTerm, setDestinationSearchTerm] = useState("");
+
+  // Entity type selection state
+  const [sourceEntityType, setSourceEntityType] = useState<string>("");
+  const [destinationEntityType, setDestinationEntityType] = useState<string>("");
 
   // Use startTransition for search updates
   const handleSourceSearchChange = useCallback((value: string) => {
@@ -132,10 +170,25 @@ export const AutomationTransferTable: React.FC = () => {
     () => otherStructures.filter((a: EntityIdFormat) => a.category === StructureType.Village),
     [otherStructures],
   );
-  const otherRealms = useMemo(
-    () => otherStructures.filter((a: EntityIdFormat) => a.category === StructureType.Realm),
-    [otherStructures],
-  );
+  const otherRealms = useMemo(() => {
+    const realms = otherStructures.filter((a: EntityIdFormat) => a.category === StructureType.Realm);
+
+    // Debug logging
+    if (realms.length > 0) {
+      console.log("📦 Other Realms Sample:", realms.slice(0, 2));
+      console.log(
+        "📦 Owner types:",
+        realms.slice(0, 2).map((s) => ({
+          entityId: s.entityId,
+          owner: s.owner,
+          ownerType: typeof s.owner,
+          ownerString: s.owner.toString(),
+        })),
+      );
+    }
+
+    return realms;
+  }, [otherStructures]);
   const otherHyperstructures = useMemo(
     () => otherStructures.filter((a: EntityIdFormat) => a.category === StructureType.Hyperstructure),
     [otherStructures],
@@ -150,10 +203,11 @@ export const AutomationTransferTable: React.FC = () => {
   );
 
   // Get orders for selected source
+  const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
   const ordersForRealm = useMemo(() => {
     if (!selectedSource) return [];
-    return useAutomationStore.getState().getOrdersForRealm(selectedSource.entityId.toString());
-  }, [selectedSource]);
+    return ordersByRealm[selectedSource.entityId.toString()] || [];
+  }, [selectedSource, ordersByRealm]);
 
   const transferOrders = useMemo(() => {
     return ordersForRealm.filter((order) => order.productionType === ProductionType.Transfer);
@@ -164,12 +218,17 @@ export const AutomationTransferTable: React.FC = () => {
     return useAutomationStore.getState().isRealmPaused(selectedSource.entityId.toString());
   }, [selectedSource]);
 
-  const playersInPlayersGuildAddress = useMemo(() => {
-    return (
-      getGuildMembersFromPlayerAddress(ContractAddress(account.address), components)?.map((a) => BigInt(a.address)) ||
-      []
-    );
+  const guild = useMemo(() => {
+    const guildMembers = getGuildFromPlayerAddress(BigInt(account.address), components);
+
+    return guildMembers;
   }, [account.address, components]);
+
+  const guildMembers = useGuildMembers(guild?.entityId || BigInt(0));
+
+  const playersInPlayersGuildAddress = useMemo(() => {
+    return guildMembers.map((member) => member.address);
+  }, [guildMembers]);
 
   const mapToEntityIdFormat = (structure: Structure): EntityIdFormat => {
     return {
@@ -214,32 +273,43 @@ export const AutomationTransferTable: React.FC = () => {
         name: "Your Banks",
       },
       {
-        entities: otherRealms.filter((a: EntityIdFormat) =>
-          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
-        ),
+        entities: otherRealms.filter((a: EntityIdFormat) => {
+          const isGuildMember = playersInPlayersGuildAddress.includes(BigInt(a.owner));
+          const shouldInclude = guildOnly ? isGuildMember : !isGuildMember;
+
+          return shouldInclude;
+        }),
         name: "Other Realms",
       },
       {
         entities: otherVillages.filter((a: EntityIdFormat) =>
-          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+          guildOnly
+            ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
+            : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
         name: "Other Villages",
       },
       {
         entities: otherHyperstructures.filter((a: EntityIdFormat) =>
-          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+          guildOnly
+            ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
+            : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
         name: "Other Hyperstructures",
       },
       {
         entities: otherFragmentMines.filter((a: EntityIdFormat) =>
-          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+          guildOnly
+            ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
+            : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
         name: "Other Fragment Mines",
       },
       {
         entities: otherBanks.filter((a: EntityIdFormat) =>
-          guildOnly ? playersInPlayersGuildAddress.includes(a.owner) : !playersInPlayersGuildAddress.includes(a.owner),
+          guildOnly
+            ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
+            : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
         name: "Other Banks",
       },
@@ -256,10 +326,46 @@ export const AutomationTransferTable: React.FC = () => {
     ],
   );
 
+  // Create source entity list (only player-owned entities)
+  const sourceEntitiesList = useMemo(
+    () => [
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Realm)
+          .map(mapToEntityIdFormat),
+        name: "Your Realms",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Village)
+          .map(mapToEntityIdFormat),
+        name: "Your Villages",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Hyperstructure)
+          .map(mapToEntityIdFormat),
+        name: "Your Hyperstructures",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.FragmentMine)
+          .map(mapToEntityIdFormat),
+        name: "Your Fragment Mines",
+      },
+      {
+        entities: playerStructures
+          .filter((structure) => structure.structure.base.category === StructureType.Bank)
+          .map(mapToEntityIdFormat),
+        name: "Your Banks",
+      },
+    ],
+    [playerStructures],
+  );
+
   const entitiesListWithAccountNames = useMemo(() => {
     return entitiesList.map(({ entities, name }) => ({
-      entities: entities.slice(0, 100).map((entity) => ({
-        // Limit to first 100 entities per category
+      entities: entities.map((entity) => ({
         ...entity,
         accountName: getAddressName(ContractAddress(entity.owner), components),
         name: entity.realmId
@@ -271,27 +377,54 @@ export const AutomationTransferTable: React.FC = () => {
     }));
   }, [entitiesList, components]);
 
-  // Lazy name resolution for better performance
-  const getEntityDisplayName = useCallback((entity: EntityIdFormat & { name?: string; accountName?: string }) => {
-    if (entity.name) return entity.name;
-    return entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`;
-  }, []);
+  // Create source entities list with account names (only player-owned)
+  const sourceEntitiesListWithAccountNames = useMemo(() => {
+    return sourceEntitiesList.map(({ entities, name }) => ({
+      entities: entities.map((entity) => ({
+        ...entity,
+        accountName: getAddressName(ContractAddress(entity.owner), components),
+        name: entity.realmId
+          ? getRealmNameById(entity.realmId)
+          : `${StructureType[entity.category]} ${entity.entityId}`,
+      })),
+      name,
+      totalCount: entities.length,
+    }));
+  }, [sourceEntitiesList, components]);
 
-  // Flatten entities for easier search
-  const allEntities = useMemo(() => {
-    const flatEntities: Array<EntityIdFormat & { name: string; accountName?: string }> = [];
-    entitiesListWithAccountNames.forEach(({ entities }) => {
-      flatEntities.push(...entities);
-    });
-    return flatEntities;
+  // Create entity type options
+  const entityTypeOptions = useMemo(() => {
+    return entitiesListWithAccountNames
+      .filter(({ entities }) => entities.length > 0)
+      .map(({ name, totalCount }) => ({
+        value: name,
+        label: `${name} (${totalCount})`,
+      }));
   }, [entitiesListWithAccountNames]);
+
+  // Create source entity type options (only player-owned)
+  const sourceEntityTypeOptions = useMemo(() => {
+    return sourceEntitiesListWithAccountNames
+      .filter(({ entities }) => entities.length > 0)
+      .map(({ name, totalCount }) => ({
+        value: name,
+        label: `${name} (${totalCount})`,
+      }));
+  }, [sourceEntitiesListWithAccountNames]);
 
   // Optimized filtering with debounced search
   const filteredSourceEntities = useMemo(() => {
-    if (!debouncedSourceSearchTerm || debouncedSourceSearchTerm.length < 2) return allEntities.slice(0, 50); // Show first 50 when no search
+    if (!sourceEntityType) return [];
+
+    const categoryEntities =
+      sourceEntitiesListWithAccountNames.find(({ name }) => name === sourceEntityType)?.entities || [];
+
+    if (!debouncedSourceSearchTerm || debouncedSourceSearchTerm.length < 2) {
+      return categoryEntities.slice(0, 50); // Show first 50 when no search
+    }
 
     const normalizedSearch = normalizeDiacriticalMarks(debouncedSourceSearchTerm.toLowerCase());
-    return allEntities
+    return categoryEntities
       .filter(
         (entity) =>
           normalizeDiacriticalMarks(entity.name.toLowerCase()).includes(normalizedSearch) ||
@@ -299,13 +432,20 @@ export const AutomationTransferTable: React.FC = () => {
             normalizeDiacriticalMarks(entity.accountName.toLowerCase()).includes(normalizedSearch)),
       )
       .slice(0, 50); // Limit results to 50
-  }, [allEntities, debouncedSourceSearchTerm]);
+  }, [sourceEntitiesListWithAccountNames, sourceEntityType, debouncedSourceSearchTerm]);
 
-  const filteredEntities = useMemo(() => {
-    if (!debouncedDestinationSearchTerm || debouncedDestinationSearchTerm.length < 2) return allEntities.slice(0, 50);
+  const filteredDestinationEntities = useMemo(() => {
+    if (!destinationEntityType) return [];
+
+    const categoryEntities =
+      entitiesListWithAccountNames.find(({ name }) => name === destinationEntityType)?.entities || [];
+
+    if (!debouncedDestinationSearchTerm || debouncedDestinationSearchTerm.length < 2) {
+      return categoryEntities.slice(0, 50);
+    }
 
     const normalizedSearch = normalizeDiacriticalMarks(debouncedDestinationSearchTerm.toLowerCase());
-    return allEntities
+    return categoryEntities
       .filter(
         (entity) =>
           normalizeDiacriticalMarks(entity.name.toLowerCase()).includes(normalizedSearch) ||
@@ -313,24 +453,21 @@ export const AutomationTransferTable: React.FC = () => {
             normalizeDiacriticalMarks(entity.accountName.toLowerCase()).includes(normalizedSearch)),
       )
       .slice(0, 50); // Limit results to 50
-  }, [allEntities, debouncedDestinationSearchTerm]);
-
-  const handleAddResource = () => {
-    if (newResourceId !== "" && newResourceAmount > 0) {
-      const existing = selectedResources.find((r) => r.resourceId === newResourceId);
-      if (!existing) {
-        setSelectedResources([
-          ...selectedResources,
-          { resourceId: newResourceId as ResourcesIds, amount: newResourceAmount },
-        ]);
-        setNewResourceId("");
-        setNewResourceAmount(100);
-      }
-    }
-  };
+  }, [entitiesListWithAccountNames, destinationEntityType, debouncedDestinationSearchTerm]);
 
   const handleRemoveResource = (resourceId: ResourcesIds) => {
     setSelectedResources(selectedResources.filter((r) => r.resourceId !== resourceId));
+  };
+
+  const handleAddAutomationResource = (resourceId: ResourcesIds, amount: number) => {
+    // Check if resource is already added
+    if (selectedResources.some((r) => r.resourceId === resourceId)) {
+      alert("This resource is already added to the automation transfer.");
+      return;
+    }
+
+    // Add the resource to selectedResources
+    setSelectedResources([...selectedResources, { resourceId, amount }]);
   };
 
   const handleAddTransferOrder = (e: React.FormEvent) => {
@@ -360,16 +497,98 @@ export const AutomationTransferTable: React.FC = () => {
     // Reset form
     setShowAddForm(false);
     setSelectedDestination(null);
+    setDestinationEntityType("");
+    setDestinationSearchTerm("");
     setTransferMode(TransferMode.Recurring);
     setTransferInterval(60);
     setTransferThreshold(1000);
     setSelectedResources([]);
   };
 
+  // Calculate travel time when both entities are selected
+  useEffect(() => {
+    if (selectedSource && selectedDestination) {
+      // Travel time calculation temporarily disabled due to import issues
+      setTravelTime(
+        computeTravelTime(
+          selectedSource.entityId,
+          selectedDestination.entityId,
+          configManager.getSpeedConfig(EntityType.DONKEY),
+          components,
+        ),
+      );
+    }
+  }, [selectedSource, selectedDestination, components]);
+
+  // One-off transfer handlers
+  const handleOneOffTransfer = () => {
+    if (!selectedSource || !selectedDestination || oneOffSelectedResourceIds.length === 0) {
+      alert("Please select source, destination, and resources to transfer.");
+      return;
+    }
+
+    setIsOneOffLoading(true);
+    const resourcesList = oneOffSelectedResourceIds.map((id: number) => ({
+      resource: Number(id),
+      amount: Number(oneOffSelectedResourceAmounts[Number(id)]) * 1000000000, // Manual precision multiplication
+    }));
+
+    const systemCall = send_resources({
+      signer: account,
+      sender_entity_id: selectedSource.entityId,
+      recipient_entity_id: selectedDestination.entityId,
+      resources: resourcesList || [],
+    });
+
+    playDonkeyScreaming();
+
+    systemCall.finally(() => {
+      setIsOneOffLoading(false);
+      // Reset one-off transfer state
+      setOneOffSelectedResourceIds([]);
+      setOneOffSelectedResourceAmounts({});
+      alert("Transfer completed successfully!");
+    });
+  };
+
+  const handleAddOneOffResource = (resourceId: ResourcesIds, amount: number) => {
+    if (!oneOffSelectedResourceIds.includes(resourceId)) {
+      setOneOffSelectedResourceIds([...oneOffSelectedResourceIds, resourceId]);
+    }
+    setOneOffSelectedResourceAmounts({
+      ...oneOffSelectedResourceAmounts,
+      [resourceId]: amount,
+    });
+  };
+
+  const handleRemoveOneOffResource = (resourceId: ResourcesIds) => {
+    setOneOffSelectedResourceIds(oneOffSelectedResourceIds.filter((id) => id !== resourceId));
+    const newAmounts = { ...oneOffSelectedResourceAmounts };
+    delete newAmounts[resourceId];
+    setOneOffSelectedResourceAmounts(newAmounts);
+  };
+
+  // Create ordered resources with balances for the selected source
+  const orderedResourcesWithBalances = useMemo(() => {
+    if (!selectedSource) return [];
+
+    return Object.values(RESOURCE_TIERS)
+      .flat()
+      .map((resourceId) => {
+        const balance = getBalance(selectedSource.entityId, resourceId, currentDefaultTick, components);
+        return {
+          id: resourceId,
+          trait: ResourcesIds[resourceId],
+          balance: divideByPrecision(balance?.balance || 0),
+        };
+      })
+      .filter((res) => res.id !== ResourcesIds.Labor); // Exclude Labor from transfers
+  }, [selectedSource, currentDefaultTick, components]);
+
   return (
-    <div className="p-2 border rounded-lg shadow-md panel-wood">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Transfer Automation</h3>
+    <div className="p-2 container mx-auto w-1/2">
+      <div className="flex items-center justify-between my-4">
+        <h2>Transfer Hub</h2>
         <div className="flex items-center gap-2">
           <label className="text-sm">Guild Only</label>
           <input
@@ -381,85 +600,135 @@ export const AutomationTransferTable: React.FC = () => {
         </div>
       </div>
 
-      <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes.
-        <br />
+      {/* Transfer Type Selection */}
+      <div className="mb-4 p-3 bg-black/20 rounded-md border border-gold/20">
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="transferType"
+              value="automation"
+              checked={transferType === "automation"}
+              onChange={(e) => setTransferType(e.target.value as "automation" | "oneoff")}
+              className="mr-2"
+            />
+            <span>Automation Transfer</span>
+            <span className="text-xs text-gold/50 ml-2">(Recurring/Conditional)</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="transferType"
+              value="oneoff"
+              checked={transferType === "oneoff"}
+              onChange={(e) => setTransferType(e.target.value as "automation" | "oneoff")}
+              className="mr-2"
+            />
+            <span>One-off Transfer</span>
+            <span className="text-xs text-gold/50 ml-2">(Immediate)</span>
+          </label>
+        </div>
       </div>
+
+      {/* <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
+        {transferType === "automation"
+          ? "IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes."
+          : "IMPORTANT: One-off transfers happen immediately and require donkey travel time."}
+        <br />
+      </div> */}
       {!selectedSource ? (
-        <div className="mb-4">
-          <h4 className="mb-2">Select Source Entity</h4>
-          <TextInput
-            placeholder="Search entities..."
-            value={sourceSearchTerm}
-            onChange={handleSourceSearchChange}
-            className="mb-2"
-          />
-          <div className="max-h-64 overflow-y-auto">
-            <Select
-              onValueChange={(value) => {
-                const entity = allEntities.find((e) => e.entityId.toString() === value);
-                if (entity) {
-                  setSelectedSource({ name: entity.name, entityId: entity.entityId });
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select source entity" />
-              </SelectTrigger>
-              <SelectContent>
-                {sourceSearchTerm.length > 0 && sourceSearchTerm.length < 2 && (
-                  <div className="px-2 py-1 text-xs text-gold/50">Type at least 2 characters to search...</div>
-                )}
-                {debouncedSourceSearchTerm !== sourceSearchTerm && (
-                  <div className="px-2 py-1 text-xs text-gold/50">Searching...</div>
-                )}
-                {filteredSourceEntities.length === 0 ? (
-                  <div className="px-2 py-1 text-xs text-gold/50">No entities found</div>
-                ) : debouncedSourceSearchTerm.length >= 2 ? (
-                  // Show filtered results
-                  filteredSourceEntities.map((entity) => (
-                    <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
-                      {entity.name} {entity.accountName && `(${entity.accountName})`}
-                    </SelectItem>
-                  ))
-                ) : (
-                  // Show grouped results when not searching
-                  entitiesListWithAccountNames.map(
-                    ({ name: groupName, entities, totalCount }) =>
-                      entities.length > 0 && (
-                        <div key={groupName}>
-                          <div className="px-2 py-1 text-xs font-semibold text-gold/50">
-                            {groupName}{" "}
-                            {totalCount > entities.length && `(showing ${entities.length} of ${totalCount})`}
+        <div className="mb-4 border border-gold/20 rounded-md p-3">
+          <h4 className="mb-2">Select Source</h4>
+          <p className="text-xs text-gold/70 mb-3">You can only send resources from entities you own.</p>
+
+          <Select value={sourceEntityType} onValueChange={setSourceEntityType}>
+            <SelectTrigger className="w-full mb-2">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {sourceEntityTypeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Entity Selection */}
+          {sourceEntityType && (
+            <>
+              <TextInput
+                placeholder={`Search ${sourceEntityType.toLowerCase()}...`}
+                value={sourceSearchTerm}
+                onChange={handleSourceSearchChange}
+                className="mb-2"
+              />
+              <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
+                <Select
+                  onValueChange={(value) => {
+                    const entity = sourceEntitiesListWithAccountNames
+                      .find(({ name }) => name === sourceEntityType)
+                      ?.entities.find((e) => e.entityId.toString() === value);
+                    if (entity) {
+                      setSelectedSource({ name: entity.name, entityId: entity.entityId });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Select a ${sourceEntityType.toLowerCase().slice(0, -1)}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceSearchTerm.length > 0 && sourceSearchTerm.length < 2 && (
+                      <div className="px-2 py-1 text-xs text-gold/50">Type at least 2 characters to search...</div>
+                    )}
+                    {debouncedSourceSearchTerm !== sourceSearchTerm && (
+                      <div className="px-2 py-1 text-xs text-gold/50">Searching...</div>
+                    )}
+                    {filteredSourceEntities.length === 0 ? (
+                      <div className="px-2 py-1 text-xs text-gold/50">No entities found</div>
+                    ) : (
+                      <>
+                        {filteredSourceEntities.map((entity) => (
+                          <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
+                            {entity.name} {entity.accountName && `(${entity.accountName})`}
+                          </SelectItem>
+                        ))}
+                        {filteredSourceEntities.length === 50 && (
+                          <div className="px-2 py-1 text-xs text-gold/50 italic">
+                            Showing first 50 results. Search to find specific entities.
                           </div>
-                          {entities.map((entity) => (
-                            <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
-                              {entity.name} {entity.accountName && `(${entity.accountName})`}
-                            </SelectItem>
-                          ))}
-                        </div>
-                      ),
-                  )
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                        )}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between border border-gold/20 rounded-md p-3">
             <div>
               <h4>
                 Source: {selectedSource.name} ({selectedSource.entityId})
               </h4>
               {isRealmPaused && <span className="text-red text-xs">(PAUSED)</span>}
             </div>
-            <Button onClick={() => setSelectedSource(null)} variant="outline" size="xs">
+            <Button
+              onClick={() => {
+                setSelectedSource(null);
+                setSourceEntityType("");
+                setSourceSearchTerm("");
+              }}
+              variant="outline"
+              size="xs"
+            >
               Change Source
             </Button>
           </div>
 
-          {/* Pause checkbox */}
+          {/* Pause checkbox
           <div className="flex items-center gap-2 mb-3 p-2 bg-black/20 rounded">
             <input
               type="checkbox"
@@ -472,103 +741,245 @@ export const AutomationTransferTable: React.FC = () => {
               Pause all automation for this entity (includes production & transfers)
             </label>
             {isRealmPaused && <span className="text-red ml-2 text-xs">(PAUSED - No automations will run)</span>}
-          </div>
+          </div> */}
 
-          <ul className="list-disc pl-4 mb-4">
-            <li>
-              <span className="font-bold">Recurring:</span> Transfer resources at regular intervals (minimum 10 minutes
-              due to automation cycle).
-            </li>
-            <li>
-              <span className="font-bold">Maintain Stock:</span> Transfer when destination entity falls below threshold.
-            </li>
-            <li>
-              <span className="font-bold">Depletion Transfer:</span> Transfer when source entity exceeds threshold.
-            </li>
-          </ul>
+          {/* Destination Selection - shown for both types */}
+          {!selectedDestination ? (
+            <div className="mb-4 border border-gold/20 rounded-md p-3">
+              <h4 className="mb-2">Select Destination</h4>
 
-          <div className="my-4">
-            {!showAddForm && (
-              <Button onClick={() => setShowAddForm(true)} variant="default" size="xs" disabled={isRealmPaused}>
-                Add New Transfer Automation {isRealmPaused && "(Paused)"}
-              </Button>
-            )}
-          </div>
+              {/* Entity Type Selection */}
+              <Select value={destinationEntityType} onValueChange={setDestinationEntityType}>
+                <SelectTrigger className="w-full mb-2">
+                  <SelectValue placeholder="Select entity type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          {showAddForm && (
-            <form
-              onSubmit={handleAddTransferOrder}
-              className="p-4 mb-6 space-y-4 border border-gold/20 rounded-md bg-black/10"
-            >
-              <h3 className="text-lg font-semibold">Create New Transfer Order</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Destination Selection */}
-                <div className="col-span-2">
-                  <label className="block mb-1 text-sm font-medium">Destination Entity:</label>
+              {/* Entity Selection */}
+              {destinationEntityType && (
+                <>
+                  <label className="block mb-1 text-sm font-medium mt-3">Search {destinationEntityType}:</label>
                   <TextInput
-                    placeholder="Search entities..."
+                    placeholder={`Search ${destinationEntityType.toLowerCase()}...`}
                     value={destinationSearchTerm}
                     onChange={handleDestinationSearchChange}
                     className="mb-2"
                   />
+                  <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
+                    <Select
+                      onValueChange={(value) => {
+                        const entity = entitiesListWithAccountNames
+                          .find(({ name }) => name === destinationEntityType)
+                          ?.entities.find((e) => e.entityId.toString() === value);
+                        if (entity) {
+                          setSelectedDestination({ name: entity.name, entityId: entity.entityId });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={`Select a ${destinationEntityType.toLowerCase().slice(0, -1)}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {destinationSearchTerm.length > 0 && destinationSearchTerm.length < 2 && (
+                          <div className="px-2 py-1 text-xs text-gold/50">Type at least 2 characters to search...</div>
+                        )}
+                        {debouncedDestinationSearchTerm !== destinationSearchTerm && (
+                          <div className="px-2 py-1 text-xs text-gold/50">Searching...</div>
+                        )}
+                        {filteredDestinationEntities.length === 0 ? (
+                          <div className="px-2 py-1 text-xs text-gold/50">No entities found</div>
+                        ) : (
+                          <>
+                            {filteredDestinationEntities
+                              .filter((entity) => entity.entityId !== selectedSource?.entityId)
+                              .map((entity) => (
+                                <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
+                                  {entity.name} {entity.accountName && `(${entity.accountName})`}
+                                </SelectItem>
+                              ))}
+                            {filteredDestinationEntities.length === 50 && (
+                              <div className="px-2 py-1 text-xs text-gold/50 italic">
+                                Showing first 50 results. Search to find specific entities.
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="mb-4 flex items-center justify-between border border-gold/20 rounded-md p-3">
+              <div>
+                <h4>
+                  Destination: {selectedDestination.name} ({selectedDestination.entityId})
+                </h4>
+                {travelTime && transferType === "oneoff" && (
+                  <p className="text-sm text-gold/70">Travel Time: ~{Math.round(travelTime / 60)} minutes</p>
+                )}
+              </div>
+              <Button
+                onClick={() => {
+                  setSelectedDestination(null);
+                  setDestinationEntityType("");
+                  setDestinationSearchTerm("");
+                }}
+                variant="outline"
+                size="xs"
+              >
+                Change Destination
+              </Button>
+            </div>
+          )}
+
+          {transferType === "automation" ? (
+            <>
+              <div className="my-4">
+                {!showAddForm && (
+                  <Button onClick={() => setShowAddForm(true)} variant="default" disabled={isRealmPaused}>
+                    Add New Transfer Automation {isRealmPaused && "(Paused)"}
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-4 p-3 bg-blue/10 rounded-md border border-gold/20">
+                <h4 className=" mb-2 h6">One-off Transfer</h4>
+                <p className="text-sm text-gold/70">
+                  Send resources immediately between entities. Transfer will take time based on distance.
+                  {travelTime && (
+                    <span className="block mt-1">
+                      <strong>Travel Time:</strong> ~{Math.round(travelTime / 60)} minutes
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* One-off Resource Selection */}
+              <div className="mb-4 border border-gold/20 rounded-md p-3">
+                <label className="block mb-2 text-sm font-medium">Select Resources to Transfer:</label>
+
+                {/* Add Resource Form */}
+                <div className=" gap-2 mb-3 flex">
                   <Select
-                    value={selectedDestination?.entityId.toString()}
-                    onValueChange={(value) => {
-                      const entity = allEntities.find((e) => e.entityId.toString() === value);
-                      if (entity) {
-                        setSelectedDestination({ name: entity.name, entityId: entity.entityId });
-                      }
-                    }}
+                    value={newResourceId.toString()}
+                    onValueChange={(value) => setNewResourceId(Number(value) as ResourcesIds)}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select destination">
-                        {selectedDestination?.name || "Select destination"}
-                      </SelectValue>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select resource" />
                     </SelectTrigger>
                     <SelectContent>
-                      {destinationSearchTerm.length > 0 && destinationSearchTerm.length < 2 && (
-                        <div className="px-2 py-1 text-xs text-gold/50">Type at least 2 characters to search...</div>
-                      )}
-                      {debouncedDestinationSearchTerm !== destinationSearchTerm && (
-                        <div className="px-2 py-1 text-xs text-gold/50">Searching...</div>
-                      )}
-                      {filteredEntities.length === 0 ? (
-                        <div className="px-2 py-1 text-xs text-gold/50">No entities found</div>
-                      ) : debouncedDestinationSearchTerm.length >= 2 ? (
-                        // Show filtered results
-                        filteredEntities
-                          .filter((entity) => entity.entityId !== selectedSource?.entityId)
-                          .map((entity) => (
-                            <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
-                              {entity.name} {entity.accountName && `(${entity.accountName})`}
-                            </SelectItem>
-                          ))
+                      {orderedResourcesWithBalances.length === 0 ? (
+                        <div className="px-2 py-1 text-xs text-gold/50">
+                          No resources available or source not selected
+                        </div>
                       ) : (
-                        // Show grouped results when not searching
-                        entitiesListWithAccountNames.map(
-                          ({ name: groupName, entities, totalCount }) =>
-                            entities.length > 0 && (
-                              <div key={groupName}>
-                                <div className="px-2 py-1 text-xs font-semibold text-gold/50">
-                                  {groupName}{" "}
-                                  {totalCount > entities.length && `(showing ${entities.length} of ${totalCount})`}
-                                </div>
-                                {entities
-                                  .filter((entity) => entity.entityId !== selectedSource.entityId)
-                                  .map((entity) => (
-                                    <SelectItem key={entity.entityId} value={entity.entityId.toString()}>
-                                      {entity.name} {entity.accountName && `(${entity.accountName})`}
-                                    </SelectItem>
-                                  ))}
+                        orderedResourcesWithBalances.map((resource) => (
+                          <SelectItem key={resource.id} value={resource.id.toString()}>
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
+                                {resource.trait}
                               </div>
-                            ),
-                        )
+                              <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
+                            </div>
+                          </SelectItem>
+                        ))
                       )}
                     </SelectContent>
                   </Select>
+                  <NumberInput
+                    value={newResourceAmount}
+                    onChange={setNewResourceAmount}
+                    min={1}
+                    max={orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 1}
+                    className="w-24"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newResourceId !== "") {
+                        const selectedResource = orderedResourcesWithBalances.find((r) => r.id === newResourceId);
+                        if (selectedResource && selectedResource.balance > 0) {
+                          handleAddOneOffResource(
+                            newResourceId as ResourcesIds,
+                            Math.min(newResourceAmount, selectedResource.balance),
+                          );
+                          setNewResourceId("");
+                          setNewResourceAmount(100);
+                        } else {
+                          alert("Selected resource has no available balance.");
+                        }
+                      }
+                    }}
+                    variant="outline"
+                    size="xs"
+                    disabled={
+                      !newResourceId || orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance === 0
+                    }
+                  >
+                    Add
+                  </Button>
                 </div>
 
+                {/* Selected Resources Display */}
+                <div className="space-y-2">
+                  {oneOffSelectedResourceIds.map((resourceId) => (
+                    <div key={resourceId} className="flex items-center justify-between bg-gold/10 p-2 rounded">
+                      <div className="flex items-center">
+                        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" className="mr-2" />
+                        <span>
+                          {ResourcesIds[resourceId]}: {oneOffSelectedResourceAmounts[resourceId]?.toLocaleString()}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => handleRemoveOneOffResource(resourceId as ResourcesIds)}
+                        variant="danger"
+                        size="xs"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Transfer Button */}
+                <div className="mt-4">
+                  <Button
+                    onClick={handleOneOffTransfer}
+                    variant="primary"
+                    size="md"
+                    disabled={!selectedDestination || oneOffSelectedResourceIds.length === 0 || isOneOffLoading}
+                    isLoading={isOneOffLoading}
+                    className="w-full"
+                  >
+                    {isOneOffLoading ? "Transferring..." : "Send Resources Now"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Automation Form - only shown when automation type is selected and destination is chosen */}
+          {transferType === "automation" && selectedDestination && showAddForm && (
+            <form
+              onSubmit={handleAddTransferOrder}
+              className="p-4 mb-6 space-y-4 border border-gold/20 rounded-md bg-black/10"
+            >
+              <h3 className="text-lg font-semibold">Create New Transfer Automation</h3>
+
+              <div className="grid grid-cols-2 gap-4">
                 {/* Transfer Mode */}
                 <div>
                   <label className="block mb-1 text-sm font-medium">Transfer Mode:</label>
@@ -582,6 +993,20 @@ export const AutomationTransferTable: React.FC = () => {
                       <SelectItem value={TransferMode.DepletionTransfer}>Depletion Transfer</SelectItem>
                     </SelectContent>
                   </Select>
+                  <ul className="list-disc pl-4 mb-4 text-xs text-gold/70">
+                    <li>
+                      <span className="font-bold">Recurring:</span> Transfer resources at regular intervals (minimum 10
+                      minutes).
+                    </li>
+                    <li>
+                      <span className="font-bold">Maintain Stock:</span> Transfer when destination balance falls below
+                      threshold.
+                    </li>
+                    <li>
+                      <span className="font-bold">Depletion Transfer:</span> Transfer when source balance exceeds
+                      threshold.
+                    </li>
+                  </ul>
                 </div>
 
                 {/* Mode-specific inputs */}
@@ -685,20 +1110,56 @@ export const AutomationTransferTable: React.FC = () => {
                         <SelectValue placeholder="Select resource" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(ResourcesIds)
-                          .filter(([key, value]) => typeof value === "number" && value !== ResourcesIds.Labor)
-                          .map(([key, value]) => (
-                            <SelectItem key={value} value={value.toString()}>
-                              <div className="flex items-center">
-                                <ResourceIcon resource={key} size="xs" className="mr-2" />
-                                {key}
+                        {orderedResourcesWithBalances.length === 0 ? (
+                          <div className="px-2 py-1 text-xs text-gold/50">
+                            No resources available or source not selected
+                          </div>
+                        ) : (
+                          orderedResourcesWithBalances.map((resource) => (
+                            <SelectItem key={resource.id} value={resource.id.toString()}>
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center">
+                                  <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
+                                  {resource.trait}
+                                </div>
+                                <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
                               </div>
                             </SelectItem>
-                          ))}
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
-                    <NumberInput value={newResourceAmount} onChange={setNewResourceAmount} min={1} className="w-32" />
-                    <Button type="button" onClick={handleAddResource} variant="outline" size="xs">
+                    <NumberInput
+                      value={newResourceAmount}
+                      onChange={setNewResourceAmount}
+                      min={1}
+                      max={orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 1}
+                      className="w-32"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newResourceId !== "") {
+                          const selectedResource = orderedResourcesWithBalances.find((r) => r.id === newResourceId);
+                          if (selectedResource && selectedResource.balance > 0) {
+                            handleAddAutomationResource(
+                              newResourceId as ResourcesIds,
+                              Math.min(newResourceAmount, selectedResource.balance),
+                            );
+                            setNewResourceId("");
+                            setNewResourceAmount(100);
+                          } else {
+                            alert("Selected resource has no available balance.");
+                          }
+                        }
+                      }}
+                      variant="outline"
+                      size="xs"
+                      disabled={
+                        !newResourceId ||
+                        orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance === 0
+                      }
+                    >
                       Add
                     </Button>
                   </div>
@@ -731,7 +1192,7 @@ export const AutomationTransferTable: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="submit" variant="gold" disabled={!selectedDestination || selectedResources.length === 0}>
+                <Button type="submit" variant="gold" disabled={selectedResources.length === 0}>
                   Add Transfer Automation
                 </Button>
                 <Button onClick={() => setShowAddForm(false)} variant="default" size="md">
@@ -741,83 +1202,91 @@ export const AutomationTransferTable: React.FC = () => {
             </form>
           )}
 
-          {/* Transfer Orders Table */}
-          {transferOrders.length === 0 ? (
-            <p>No transfer automation orders set up for this entity yet.</p>
-          ) : (
-            <div className={`relative ${isRealmPaused ? "opacity-50" : ""}`}>
-              {isRealmPaused && (
-                <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded">
-                  <div className="bg-red/90 text-white px-4 py-2 rounded font-bold">AUTOMATION PAUSED</div>
+          {/* Transfer Orders Table - only show for automation type */}
+          {transferType === "automation" && (
+            <>
+              {transferOrders.length === 0 ? (
+                <p>No transfer automation orders set up for this entity yet.</p>
+              ) : (
+                <div className={`relative border border-gold/20 rounded-md p-3 ${isRealmPaused ? "opacity-50" : ""}`}>
+                  {isRealmPaused && (
+                    <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded">
+                      <div className="bg-red/90 text-white px-4 py-2 rounded font-bold">AUTOMATION PAUSED</div>
+                    </div>
+                  )}
+                  <table className="w-full text-sm text-left table-auto">
+                    <thead className="text-xs uppercase bg-gray-700/50 text-gold">
+                      <tr>
+                        <th scope="col" className="px-6 py-3">
+                          Destination
+                        </th>
+                        <th scope="col" className="px-6 py-3">
+                          Mode
+                        </th>
+                        <th scope="col" className="px-6 py-3">
+                          Resources
+                        </th>
+                        <th scope="col" className="px-6 py-3">
+                          Schedule
+                        </th>
+                        <th scope="col" className="px-6 py-3">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transferOrders.map((order) => (
+                        <tr key={order.id} className="border-b border-gold/50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <span className="mr-2">{selectedSource?.name}</span>
+                              <LucideArrowRight className="w-4 h-4" />
+                              <span className="ml-2">{order.targetEntityName || order.targetEntityId}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 capitalize">
+                            {order.transferMode === TransferMode.Recurring && "Recurring"}
+                            {order.transferMode === TransferMode.MaintainStock && "Maintain Stock"}
+                            {order.transferMode === TransferMode.DepletionTransfer && "Depletion"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1">
+                              {order.transferResources?.map((resource, idx) => (
+                                <div key={idx} className="flex items-center bg-gold/10 px-2 py-1 rounded">
+                                  <ResourceIcon
+                                    resource={ResourcesIds[resource.resourceId]}
+                                    size="xs"
+                                    className="mr-1"
+                                  />
+                                  <span className="text-xs">{resource.amount}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs">
+                            {order.transferMode === TransferMode.Recurring &&
+                              `Every ${formatMinutes(order.transferInterval || 60)}`}
+                            {order.transferMode === TransferMode.MaintainStock &&
+                              `When < ${order.transferThreshold?.toLocaleString()}`}
+                            {order.transferMode === TransferMode.DepletionTransfer &&
+                              `When > ${order.transferThreshold?.toLocaleString()}`}
+                          </td>
+                          <td className="px-6 py-4">
+                            <Button
+                              onClick={() => removeOrder(selectedSource?.entityId.toString() || "", order.id)}
+                              variant="danger"
+                              size="xs"
+                            >
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
-              <table className="w-full text-sm text-left table-auto">
-                <thead className="text-xs uppercase bg-gray-700/50 text-gold">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">
-                      Destination
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Mode
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Resources
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Schedule
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transferOrders.map((order) => (
-                    <tr key={order.id} className="border-b border-gold/50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <span className="mr-2">{selectedSource?.name}</span>
-                          <LucideArrowRight className="w-4 h-4" />
-                          <span className="ml-2">{order.targetEntityName || order.targetEntityId}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 capitalize">
-                        {order.transferMode === TransferMode.Recurring && "Recurring"}
-                        {order.transferMode === TransferMode.MaintainStock && "Maintain Stock"}
-                        {order.transferMode === TransferMode.DepletionTransfer && "Depletion"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {order.transferResources?.map((resource, idx) => (
-                            <div key={idx} className="flex items-center bg-gold/10 px-2 py-1 rounded">
-                              <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="xs" className="mr-1" />
-                              <span className="text-xs">{resource.amount}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs">
-                        {order.transferMode === TransferMode.Recurring &&
-                          `Every ${formatMinutes(order.transferInterval || 60)}`}
-                        {order.transferMode === TransferMode.MaintainStock &&
-                          `When < ${order.transferThreshold?.toLocaleString()}`}
-                        {order.transferMode === TransferMode.DepletionTransfer &&
-                          `When > ${order.transferThreshold?.toLocaleString()}`}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Button
-                          onClick={() => removeOrder(selectedSource?.entityId.toString() || "", order.id)}
-                          variant="danger"
-                          size="xs"
-                        >
-                          Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            </>
           )}
         </>
       )}

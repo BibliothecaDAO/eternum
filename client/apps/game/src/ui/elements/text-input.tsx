@@ -32,7 +32,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         ref={ref}
         autoFocus={true}
         className={clsx(
-          "w-full p-2 h-full  transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder:text-gold flex-grow bg-transparent font-bold",
+          "w-full p-2 h-full  transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder:text-gold flex-grow bg-transparent",
         )}
         disabled={disabled || false}
         type="text"
