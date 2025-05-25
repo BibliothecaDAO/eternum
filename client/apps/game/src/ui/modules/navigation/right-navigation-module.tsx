@@ -2,6 +2,8 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { AllAutomationsTable } from "@/ui/components/automation/all-automations-table";
+import { AutomationTransferTable } from "@/ui/components/automation/automation-transfer-table";
+import { TransferModal } from "@/ui/components/automation/transfer-modal";
 import { Bridge } from "@/ui/components/bridge/bridge";
 import { BattleLogsTable } from "@/ui/components/events/battle-logs-table";
 import { ProductionModal } from "@/ui/components/production/production-modal";
@@ -55,6 +57,23 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
             active={view === RightView.Production}
             onClick={() => {
               toggleModal(<ProductionModal />);
+            }}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.transfer,
+        button: (
+          <CircleButton
+            className="transfer-selector"
+            image={BuildingThumbs.transfer}
+            size="xl"
+            disabled={disableButtons}
+            tooltipLocation="top"
+            label="Transfer"
+            active={view === RightView.Transfer}
+            onClick={() => {
+              toggleModal(<TransferModal />);
             }}
           />
         ),
@@ -156,6 +175,11 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
               {view === RightView.Logs && (
                 <div className="logs-selector p-2 flex flex-col space-y-1 overflow-y-auto">
                   <BattleLogsTable />
+                </div>
+              )}
+              {view === RightView.Transfer && (
+                <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <AutomationTransferTable />
                 </div>
               )}
             </Suspense>
