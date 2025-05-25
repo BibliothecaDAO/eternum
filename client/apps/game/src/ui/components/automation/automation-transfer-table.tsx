@@ -6,7 +6,6 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import TextInput from "@/ui/elements/text-input";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -585,8 +584,50 @@ export const AutomationTransferTable: React.FC = () => {
       .filter((res) => res.id !== ResourcesIds.Labor); // Exclude Labor from transfers
   }, [selectedSource, currentDefaultTick, components]);
 
+  // Auto-select source entity when there's an exact match or only one result
+  useEffect(() => {
+    if (!sourceEntityType || !debouncedSourceSearchTerm || debouncedSourceSearchTerm.length < 2) return;
+
+    // Check for exact match (case-insensitive)
+    const normalizedSearch = normalizeDiacriticalMarks(debouncedSourceSearchTerm.toLowerCase());
+    const exactMatch = filteredSourceEntities.find(
+      (entity) => normalizeDiacriticalMarks(entity.name.toLowerCase()) === normalizedSearch,
+    );
+
+    if (exactMatch) {
+      setSelectedSource({ name: exactMatch.name, entityId: exactMatch.entityId });
+      setSourceSearchTerm("");
+    } else if (filteredSourceEntities.length === 1) {
+      // Auto-select if there's only one result
+      const entity = filteredSourceEntities[0];
+      setSelectedSource({ name: entity.name, entityId: entity.entityId });
+      setSourceSearchTerm("");
+    }
+  }, [filteredSourceEntities, debouncedSourceSearchTerm, sourceEntityType]);
+
+  // Auto-select destination entity when there's an exact match or only one result
+  useEffect(() => {
+    if (!destinationEntityType || !debouncedDestinationSearchTerm || debouncedDestinationSearchTerm.length < 2) return;
+
+    // Check for exact match (case-insensitive)
+    const normalizedSearch = normalizeDiacriticalMarks(debouncedDestinationSearchTerm.toLowerCase());
+    const exactMatch = filteredDestinationEntities.find(
+      (entity) => normalizeDiacriticalMarks(entity.name.toLowerCase()) === normalizedSearch,
+    );
+
+    if (exactMatch) {
+      setSelectedDestination({ name: exactMatch.name, entityId: exactMatch.entityId });
+      setDestinationSearchTerm("");
+    } else if (filteredDestinationEntities.length === 1) {
+      // Auto-select if there's only one result
+      const entity = filteredDestinationEntities[0];
+      setSelectedDestination({ name: entity.name, entityId: entity.entityId });
+      setDestinationSearchTerm("");
+    }
+  }, [filteredDestinationEntities, debouncedDestinationSearchTerm, destinationEntityType]);
+
   return (
-    <div className="p-2 container mx-auto w-1/2">
+    <div className=" container mx-auto xl:w-1/2">
       <div className="flex items-center justify-between my-4">
         <h2>Transfer Hub</h2>
         <div className="flex items-center gap-2">
@@ -657,11 +698,20 @@ export const AutomationTransferTable: React.FC = () => {
           {/* Entity Selection */}
           {sourceEntityType && (
             <>
-              <TextInput
+              <input
+                type="text"
                 placeholder={`Search ${sourceEntityType.toLowerCase()}...`}
                 value={sourceSearchTerm}
-                onChange={handleSourceSearchChange}
-                className="mb-2"
+                onChange={(e) => handleSourceSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && filteredSourceEntities.length > 0) {
+                    e.preventDefault();
+                    const firstEntity = filteredSourceEntities[0];
+                    setSelectedSource({ name: firstEntity.name, entityId: firstEntity.entityId });
+                    setSourceSearchTerm("");
+                  }
+                }}
+                className="w-full p-2 mb-2 transition-all duration-300 focus:outline-none border border-gold/20 rounded-lg bg-black/20 placeholder:text-gold/50"
               />
               <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
                 <Select
@@ -766,11 +816,20 @@ export const AutomationTransferTable: React.FC = () => {
               {destinationEntityType && (
                 <>
                   <label className="block mb-1 text-sm font-medium mt-3">Search {destinationEntityType}:</label>
-                  <TextInput
+                  <input
+                    type="text"
                     placeholder={`Search ${destinationEntityType.toLowerCase()}...`}
                     value={destinationSearchTerm}
-                    onChange={handleDestinationSearchChange}
-                    className="mb-2"
+                    onChange={(e) => handleDestinationSearchChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && filteredDestinationEntities.length > 0) {
+                        e.preventDefault();
+                        const firstEntity = filteredDestinationEntities[0];
+                        setSelectedDestination({ name: firstEntity.name, entityId: firstEntity.entityId });
+                        setDestinationSearchTerm("");
+                      }
+                    }}
+                    className="w-full p-2 mb-2 transition-all duration-300 focus:outline-none border border-gold/20 rounded-lg bg-black/20 placeholder:text-gold/50"
                   />
                   <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
                     <Select
@@ -1098,7 +1157,7 @@ export const AutomationTransferTable: React.FC = () => {
 
                 {/* Resource Selection */}
                 <div className="col-span-2">
-                  <label className="block mb-1 text-sm font-medium">Resources to Transfer:</label>
+                  <label className="block mb-1 text-sm font-medium">Resources to Transfer</label>
 
                   {/* Add new resource */}
                   <div className="flex gap-2 mb-2">
@@ -1193,9 +1252,9 @@ export const AutomationTransferTable: React.FC = () => {
 
               <div className="flex justify-end gap-2">
                 <Button type="submit" variant="gold" disabled={selectedResources.length === 0}>
-                  Add Transfer Automation
+                  Confirm Transfer Automation
                 </Button>
-                <Button onClick={() => setShowAddForm(false)} variant="default" size="md">
+                <Button onClick={() => setShowAddForm(false)} variant="default" size="xs">
                   Cancel
                 </Button>
               </div>
@@ -1217,19 +1276,19 @@ export const AutomationTransferTable: React.FC = () => {
                   <table className="w-full text-sm text-left table-auto">
                     <thead className="text-xs uppercase bg-gray-700/50 text-gold">
                       <tr>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Destination
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Mode
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Resources
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Schedule
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Actions
                         </th>
                       </tr>
@@ -1258,7 +1317,7 @@ export const AutomationTransferTable: React.FC = () => {
                                     size="xs"
                                     className="mr-1"
                                   />
-                                  <span className="text-xs">{resource.amount}</span>
+                                  <span className="text-xs">{resource.amount.toLocaleString()}</span>
                                 </div>
                               ))}
                             </div>
