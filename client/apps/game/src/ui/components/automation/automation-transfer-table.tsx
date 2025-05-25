@@ -627,7 +627,7 @@ export const AutomationTransferTable: React.FC = () => {
   }, [filteredDestinationEntities, debouncedDestinationSearchTerm, destinationEntityType]);
 
   return (
-    <div className="p-2 container mx-auto w-1/2">
+    <div className=" container mx-auto xl:w-1/2">
       <div className="flex items-center justify-between my-4">
         <h2>Transfer Hub</h2>
         <div className="flex items-center gap-2">
@@ -1276,19 +1276,19 @@ export const AutomationTransferTable: React.FC = () => {
                   <table className="w-full text-sm text-left table-auto">
                     <thead className="text-xs uppercase bg-gray-700/50 text-gold">
                       <tr>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Destination
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Mode
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Resources
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Schedule
                         </th>
-                        <th scope="col" className="px-6 py-3">
+                        <th scope="col" className="px-6 py-1">
                           Actions
                         </th>
                       </tr>
@@ -1317,7 +1317,7 @@ export const AutomationTransferTable: React.FC = () => {
                                     size="xs"
                                     className="mr-1"
                                   />
-                                  <span className="text-xs">{resource.amount}</span>
+                                  <span className="text-xs">{resource.amount.toLocaleString()}</span>
                                 </div>
                               ))}
                             </div>
