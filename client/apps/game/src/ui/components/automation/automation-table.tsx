@@ -1,10 +1,17 @@
-import { AutomationOrder, OrderMode, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import {
+  AutomationOrder,
+  OrderMode,
+  ProductionType,
+  TransferMode,
+  useAutomationStore,
+} from "@/hooks/store/use-automation-store";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
+import { LucideArrowRight } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 interface AutomationTableProps {
@@ -13,6 +20,19 @@ interface AutomationTableProps {
   availableResources: ResourcesIds[];
 }
 const eternumConfig = ETERNUM_CONFIG();
+
+// Helper function to format minutes into a human-readable string
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
 
 // Global list of all possible resource IDs and their names
 const allPossibleResourceIds = Object.entries(ResourcesIds)
@@ -165,7 +185,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   return (
     <div className="p-2 border rounded-lg shadow-md panel-wood">
       <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        IMPORTANT: Your browser must stay open for automation. <br />
+        IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes.
+        <br />
       </div>
       <h4 className="mb-2">
         [BETA] Automation for Realm {realmInfo.name} ({realmEntityId})
@@ -443,14 +464,26 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                 <tr key={order.id} className="border-b border-gold/50">
                   <td className="px-6 py-4">{order.priority}</td>
                   <td className="px-6 py-4 capitalize">
-                    {order.mode === OrderMode.MaintainBalance ? (
+                    {order.productionType === ProductionType.Transfer ? (
+                      <span className="text-purple">
+                        {order.transferMode === TransferMode.Recurring && "Recurring"}
+                        {order.transferMode === TransferMode.MaintainStock && "Stock"}
+                        {order.transferMode === TransferMode.DepletionTransfer && "Depletion"}
+                      </span>
+                    ) : order.mode === OrderMode.MaintainBalance ? (
                       <span className="text-green">Maintain</span>
                     ) : (
                       <span className="text-blue">Once</span>
                     )}
                   </td>
                   <td className="px-6 py-4 flex items-center">
-                    {order.productionType === ProductionType.ResourceToLabor ? (
+                    {order.productionType === ProductionType.Transfer ? (
+                      <>
+                        <span className="text-sm">{order.realmName}</span>
+                        <LucideArrowRight className="w-4 h-4 mx-2" />
+                        <span className="text-sm">{order.targetEntityName || order.targetEntityId}</span>
+                      </>
+                    ) : order.productionType === ProductionType.ResourceToLabor ? (
                       <>
                         <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" />
                         <span className="mx-1">→</span>
@@ -474,30 +507,57 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}
-                      {order.mode === OrderMode.MaintainBalance && (
+                      {order.productionType === ProductionType.Transfer ? (
                         <>
-                          {order.productionType === ProductionType.ResourceToLabor && (
-                            <div className="text-xs text-gold/50">Labor Balance</div>
-                          )}
-                          {order.bufferPercentage && (
-                            <div className="text-xs text-gold/50">Buffer: {order.bufferPercentage}%</div>
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {order.transferResources?.map((resource, idx) => (
+                              <div key={idx} className="flex items-center bg-gold/10 px-1 py-0.5 rounded text-xs">
+                                <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="xs" className="mr-1" />
+                                <span>{resource.amount}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="text-xs text-gold/50">
+                            {order.transferMode === TransferMode.Recurring &&
+                              `Every ${formatMinutes(order.transferInterval || 60)}`}
+                            {order.transferMode === TransferMode.MaintainStock &&
+                              `When < ${order.transferThreshold?.toLocaleString()}`}
+                            {order.transferMode === TransferMode.DepletionTransfer &&
+                              `When > ${order.transferThreshold?.toLocaleString()}`}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {order.maxAmount === "infinite" ? "Infinite" : order.maxAmount.toLocaleString()}
+                          {order.mode === OrderMode.MaintainBalance && (
+                            <>
+                              {order.productionType === ProductionType.ResourceToLabor && (
+                                <div className="text-xs text-gold/50">Labor Balance</div>
+                              )}
+                              {order.bufferPercentage && (
+                                <div className="text-xs text-gold/50">Buffer: {order.bufferPercentage}%</div>
+                              )}
+                            </>
                           )}
                         </>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {order.mode === OrderMode.ProduceOnce ? order.producedAmount.toLocaleString() : "N/A"}
+                    {order.productionType === ProductionType.Transfer || order.mode === OrderMode.MaintainBalance
+                      ? "N/A"
+                      : order.producedAmount.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 capitalize">
-                    {order.productionType === ProductionType.ResourceToLabor
-                      ? "Resource To Labor"
-                      : order.productionType === ProductionType.ResourceToResource
-                        ? "Resource To Resource"
-                        : order.productionType === ProductionType.LaborToResource
-                          ? "Labor To Resource"
-                          : order.productionType}
+                    {order.productionType === ProductionType.Transfer
+                      ? "Transfer"
+                      : order.productionType === ProductionType.ResourceToLabor
+                        ? "Resource To Labor"
+                        : order.productionType === ProductionType.ResourceToResource
+                          ? "Resource To Resource"
+                          : order.productionType === ProductionType.LaborToResource
+                            ? "Labor To Resource"
+                            : order.productionType}
                   </td>
                   <td className="px-6 py-4">
                     <Button onClick={() => handleRemoveOrder(order.id)} variant="danger" size="xs">

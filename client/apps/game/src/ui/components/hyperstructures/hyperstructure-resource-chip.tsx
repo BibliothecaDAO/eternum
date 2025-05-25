@@ -7,7 +7,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { findResourceById, ID } from "@bibliothecadao/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type HyperstructureResourceChipProps = {
   structureEntityId: ID;
@@ -16,6 +16,7 @@ type HyperstructureResourceChipProps = {
   contributions: Record<number, number>;
   setContributions: (val: Record<number, number>) => void;
   resetContributions: boolean;
+  disabled?: boolean;
 };
 
 export const HyperstructureResourceChip = ({
@@ -25,15 +26,18 @@ export const HyperstructureResourceChip = ({
   setContributions,
   progress,
   resetContributions,
+  disabled,
 }: HyperstructureResourceChipProps) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const balance = divideByPrecision(
-    getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
-  );
+  const balance = useMemo(() => {
+    return divideByPrecision(
+      getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
+    );
+  }, [structureEntityId, resourceId, currentDefaultTick, dojo.setup.components]);
 
   let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
   maxContributableAmount = Math.ceil(maxContributableAmount);
@@ -47,6 +51,11 @@ export const HyperstructureResourceChip = ({
     }
     setContributions(contributionsCopy);
   }, [inputValue]);
+
+  // reset input value when structure entity id changes
+  useEffect(() => {
+    setInputValue(0);
+  }, [structureEntityId]);
 
   useEffect(() => {
     if (resetContributions) {
@@ -99,8 +108,9 @@ export const HyperstructureResourceChip = ({
         className="w-full text-xs col-span-2 h-6"
         onChange={setInputValue}
         max={maxContributableAmount}
+        disabled={disabled}
       />
-      <Button variant="default" size="xs" onClick={() => setInputValue(maxContributableAmount)}>
+      <Button variant="default" size="xs" onClick={() => setInputValue(maxContributableAmount)} disabled={disabled}>
         MAX
       </Button>
     </div>

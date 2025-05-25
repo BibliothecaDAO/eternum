@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchDonkeyBurn,
+  fetchSeasonDay,
   fetchTotalAgents,
   fetchTotalBattles,
   fetchTotalCreatedAgents,
@@ -16,6 +17,12 @@ export const useData = () => {
     queryKey: ["donkeyBurn"],
     queryFn: () => fetchDonkeyBurn(),
     refetchInterval: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const { data: seasonDay, isLoading: isLoadingSeasonDay } = useQuery({
+    queryKey: ["seasonDay"],
+    queryFn: () => fetchSeasonDay(),
+    refetchInterval: 1000 * 60 * 60, // 1 hour
   });
 
   const { data: totalGuilds, isLoading: isLoadingTotalGuilds } = useQuery({
@@ -60,6 +67,7 @@ export const useData = () => {
 
   const isLoading = [
     isLoadingDonkeyBurn,
+    isLoadingSeasonDay,
     isLoadingTotalGuilds,
     isLoadingTotalStructures,
     isLoadingTotalTroops,
@@ -72,6 +80,7 @@ export const useData = () => {
 
   return {
     donkeyBurn: data,
+    seasonDay,
     totalGuilds,
     totalStructures,
     totalTroops,
