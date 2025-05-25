@@ -159,7 +159,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
 
     if (isExplorer) {
       if (army) {
-        if (army.isHome && homeDirection) {
+        if (army.isHome && homeDirection !== null) {
           await armyManager.addTroopsToExplorer(
             account,
             army.entityId,

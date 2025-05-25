@@ -90,7 +90,6 @@ export class LeaderboardManager {
 
     for (const entityId of registredPoints) {
       const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
-      console.log({ playerRegisteredPoints });
       if (!playerRegisteredPoints) continue;
 
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
@@ -137,8 +136,6 @@ export class LeaderboardManager {
     const playerShare = shareholders.find(
       (share: ContractAddressAndAmount) => ContractAddress(share.value[0].value) === playerAddress,
     );
-
-    console.log({ shareholders, playerShare });
 
     return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
   }
