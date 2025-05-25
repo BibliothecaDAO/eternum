@@ -6,6 +6,8 @@ export enum RightView {
   Production,
   Bridge,
   Automation,
+  Logs,
+  Transfer,
 }
 
 export enum LeftView {

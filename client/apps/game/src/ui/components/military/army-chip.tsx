@@ -12,7 +12,7 @@ import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -76,6 +76,7 @@ export const ArmyChip = ({
   const [editMode, setEditMode] = useState(false);
 
   const isHome = army.isHome;
+  const hasAdjacentOwnedStructure = army.hasAdjacentStructure;
 
   const [location] = useLocation();
   const { hexPosition } = useQuery();
@@ -100,12 +101,12 @@ export const ArmyChip = ({
     toggleModal(
       <HelpModal
         selected={{
-          type: "explorer",
+          type: ActorType.Explorer,
           id: army.entityId,
           hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
         }}
         target={{
-          type: "structure",
+          type: ActorType.Structure,
           id: army.entity_owner_id,
           hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
         }}
@@ -133,9 +134,20 @@ export const ArmyChip = ({
       ) : (
         <>
           <div className="flex w-full h-full justify-between p-2 gap-4">
-            <div className="flex flex-col justify-between w-[45%]">
+            <div className="flex flex-col justify-between w-[55%]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-base mr-2 truncate">{army.name}</div>
+                <div
+                  className="text-base mr-2 truncate cursor-default"
+                  onMouseEnter={() =>
+                    setTooltip({
+                      content: `Army ID: ${army.entityId}`,
+                      position: "bottom",
+                    })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  {army.name}
+                </div>
                 {showButtons && army.isMine && (
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isHome && (
@@ -153,14 +165,7 @@ export const ArmyChip = ({
                     )}
                     {army.troops.count > 0n && (
                       <React.Fragment>
-                        {!isHome && (
-                          <ViewOnMapIcon
-                            className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
-                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
-                          />
-                        )}
-                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
-                        {isHome && (
+                        {(isHome || hasAdjacentOwnedStructure) && (
                           <ArrowLeftRight
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                               army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
@@ -178,6 +183,14 @@ export const ArmyChip = ({
                             onMouseLeave={() => setTooltip(null)}
                           />
                         )}
+
+                        {
+                          <ViewOnMapIcon
+                            className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
+                            position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                          />
+                        }
+                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                       </React.Fragment>
                     )}
                   </div>
@@ -185,7 +198,51 @@ export const ArmyChip = ({
               </div>
               {armyHasTroops([army]) && (
                 <div className="flex justify-between items-end mt-auto">
-                  <div className="flex items-center">{isHome && <div className="text-green text-xs">At Base</div>}</div>
+                  <div className="flex items-center">
+                    {isHome && (
+                      <div
+                        className="text-emerald-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content: "Army is at home base - can add troops and swap resources",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        At Home
+                      </div>
+                    )}
+                    {!isHome && hasAdjacentOwnedStructure && (
+                      <div
+                        className="text-blue-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content:
+                              "Army is near an owned structure - can swap resources and add transfer troops from guards but not structure balance",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        At Base
+                      </div>
+                    )}
+                    {!isHome && !hasAdjacentOwnedStructure && (
+                      <div
+                        className="text-amber-400 text-xs cursor-default"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            content: "Army is away from base - limited actions available",
+                            position: "top",
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        Away
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-col items-end gap-1">
                     <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
                     <ArmyCapacity resource={resources} />
@@ -193,7 +250,7 @@ export const ArmyChip = ({
                 </div>
               )}
             </div>
-            <div className="flex flex-col w-[55%] gap-2">
+            <div className="flex flex-col w-[45%] gap-2">
               <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources

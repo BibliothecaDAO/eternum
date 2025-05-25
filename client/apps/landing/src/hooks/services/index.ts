@@ -337,3 +337,46 @@ export async function fetchTotalTransactions(): Promise<number> {
   const rawData = await gameClientFetch<any[]>(QUERIES.TOTAL_TRANSACTIONS);
   return rawData[0].total_rows;
 }
+
+export interface SeasonConfig {
+  start_settling_at: number;
+  start_main_at: number;
+  end_at: number;
+  end_grace_seconds: number;
+  registration_grace_seconds: number;
+}
+
+export interface SeasonDay {
+  day: number;
+  dayString: string;
+}
+
+/**
+ * Fetch season config and calculate the current day since start_main_at
+ */
+export async function fetchSeasonDay(): Promise<SeasonDay> {
+  const rawData = await gameClientFetch<SeasonConfig[]>(QUERIES.SEASON_CONFIG);
+  console.log("rawData", rawData);
+
+  if (!rawData || rawData.length === 0) {
+    return {
+      day: 0,
+      dayString: "Day 0",
+    };
+  }
+
+  const seasonConfig = rawData[0];
+  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+  const startMainAt = seasonConfig.start_main_at;
+
+  // Calculate days since start_main_at
+  const daysSinceStart = Math.floor((currentTime - startMainAt) / (24 * 60 * 60));
+
+  // Ensure day is at least 1 if the game has started
+  const currentDay = Math.max(currentTime >= startMainAt ? 1 : 0, daysSinceStart + 1);
+
+  return {
+    day: currentDay,
+    dayString: `Day ${currentDay}`,
+  };
+}

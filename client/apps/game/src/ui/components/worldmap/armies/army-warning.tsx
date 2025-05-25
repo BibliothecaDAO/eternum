@@ -6,6 +6,7 @@ import {
   computeExploreFoodCosts,
   configManager,
   divideByPrecision,
+  getArmyTotalCapacityInKg,
   getRemainingCapacityInKg,
   ResourceManager,
   StaminaManager,
@@ -22,6 +23,16 @@ interface ArmyWarningProps {
 
 export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
   const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
+  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
+
+  const hasNoRemainingCapacityToExplore = useMemo(() => {
+    return remainingCapacity < configManager.getExploreReward();
+  }, [totalCapacity, remainingCapacity]);
+
+  const hasNoTotalCapacityToExplore = useMemo(() => {
+    return totalCapacity < configManager.getExploreReward();
+  }, [totalCapacity]);
+
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
@@ -88,7 +99,15 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           </div>
         </div>
       )}
-      {remainingCapacity < configManager.getExploreReward() && (
+      {hasNoTotalCapacityToExplore && (
+        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+          <div className="flex">
+            <span className="w-5">⚠️</span>
+            <span>Need more troops to explore (min 75)</span>
+          </div>
+        </div>
+      )}
+      {!hasNoTotalCapacityToExplore && hasNoRemainingCapacityToExplore && (
         <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>

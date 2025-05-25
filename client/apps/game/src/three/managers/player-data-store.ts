@@ -1,13 +1,20 @@
+import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
+import realms from "../../../../../public/jsons/realms.json";
 import { fetchGlobalStructureExplorerAndGuildDetails } from "../../services/api";
 
-interface PlayerDataTransformed {
+export interface PlayerDataTransformed {
   explorerIds: string[];
   structureIds: string[];
   guildId: string;
   guildName: string;
   ownerName: string;
   ownerAddress: string;
+  realmsCount: number;
+  hyperstructuresCount: number;
+  bankCount: number;
+  mineCount: number;
+  villageCount: number;
 }
 
 export class PlayerDataStore {
@@ -15,6 +22,7 @@ export class PlayerDataStore {
   private addressToPlayerDataMap: Map<string, PlayerDataTransformed> = new Map();
   private structureToAddressMap: Map<string, string> = new Map();
   private explorerToStructureMap: Map<string, string> = new Map();
+  private structureToNameMap: Map<string, string> = new Map();
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
   private readonly REFRESH_INTERVAL: number;
@@ -53,6 +61,7 @@ export class PlayerDataStore {
 
   private async fetchAndStoreData(): Promise<void> {
     const result = await fetchGlobalStructureExplorerAndGuildDetails();
+    let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
       result.map((item) => {
         let transformedItem = {
@@ -62,6 +71,11 @@ export class PlayerDataStore {
           guildName: item.guild_name ? shortString.decodeShortString(BigInt(item.guild_name).toString()) : "",
           ownerAddress: BigInt(item.owner_address).toString() || "",
           ownerName: item.player_name ? shortString.decodeShortString(BigInt(item.player_name).toString()) : "",
+          realmsCount: item.realms_count,
+          hyperstructuresCount: item.hyperstructures_count,
+          bankCount: item.bank_count,
+          mineCount: item.mine_count,
+          villageCount: item.village_count,
         };
         // Create a mapping from explorer id to structure id
         transformedItem.explorerIds.forEach((explorerId) => {
@@ -72,7 +86,13 @@ export class PlayerDataStore {
 
         // Create a mapping from structure id to player address
         transformedItem.structureIds.forEach((structureId) => {
-          this.structureToAddressMap.set(structureId, transformedItem.ownerAddress);
+          let actualStructureId = structureId.split(":")[0];
+          let actualRealmId = structureId.split(":")[1];
+          let actualCategory = structureId.split(":")[2];
+          this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
+          const realmName =
+            actualRealmId === "0" ? getStructureTypeName(Number(actualCategory)) : realmsData[actualRealmId].name;
+          this.structureToNameMap.set(actualStructureId, realmName);
         });
 
         // Create a mapping from owner address to PlayerDataTransformed
@@ -115,6 +135,15 @@ export class PlayerDataStore {
   public async getExplorerOwnerAddress(id: string): Promise<string> {
     const data = await this.getPlayerDataFromExplorerId(id);
     return data?.ownerAddress || "";
+  }
+
+  public async getStructureName(structureId: string): Promise<string> {
+    return this.structureToNameMap.get(structureId) || "";
+  }
+
+  public async getAllPlayersData(): Promise<PlayerDataTransformed[]> {
+    this._checkRefresh();
+    return Array.from(this.addressToPlayerDataMap.values());
   }
 
   public clear(): void {

@@ -3,12 +3,12 @@ import {
   type ClientComponents,
   type ContractAddress,
   type Direction,
+  getNeighborHexes,
   type ID,
   ResourcesIds,
   TickIds,
   TroopTier,
   TroopType,
-  getNeighborHexes,
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -41,6 +41,8 @@ export const formatArmies = (
 
       const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
 
+      const hasAdjacentStructure = hasAdjacentOwnedStructure(position, playerAddress, components);
+
       return {
         entityId: explorerTroops.explorer_id,
         troops: explorerTroops.troops,
@@ -57,6 +59,7 @@ export const formatArmies = (
         isMercenary,
         isHome,
         name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
+        hasAdjacentStructure,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);
@@ -183,6 +186,24 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
 
   // Filter out guards with no troops
   return guards;
+};
+
+export const hasAdjacentOwnedStructure = (
+  position: { x: number; y: number },
+  playerAddress: ContractAddress,
+  components: ClientComponents,
+) => {
+  const neighborHexes = getNeighborHexes(position.x, position.y);
+  for (const hex of neighborHexes) {
+    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(hex.col), BigInt(hex.row)]));
+    if (!tile?.occupier_is_structure) continue;
+    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
+    if (!structure) continue;
+    if (structure.owner === playerAddress) {
+      return true;
+    }
+  }
+  return false;
 };
 
 export const isArmyAdjacentToStructure = (

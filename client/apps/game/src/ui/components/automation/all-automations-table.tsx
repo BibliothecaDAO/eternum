@@ -1,15 +1,34 @@
-import { AutomationOrder, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import {
+  AutomationOrder,
+  OrderMode,
+  ProductionType,
+  TransferMode,
+  useAutomationStore,
+} from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { CheckIcon, TrashIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductionModal } from "../production/production-modal";
 
 const eternumConfig = ETERNUM_CONFIG();
+
+// Helper function to format minutes into a human-readable string
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
 
 export const AllAutomationsTable: React.FC = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -18,6 +37,8 @@ export const AllAutomationsTable: React.FC = () => {
   const removeOrder = useAutomationStore((state) => state.removeOrder);
   const removeAllOrders = useAutomationStore((state) => state.removeAllOrders);
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
+  const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
+  const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
 
   // Realm filter state
   const [realmFilter, setRealmFilter] = useState<string>("all");
@@ -137,36 +158,68 @@ export const AllAutomationsTable: React.FC = () => {
               Order
             </th>
             <th scope="col" className="px-6">
-              Progress
+              Progress / Target
             </th>
           </tr>
         </thead>
         <tbody>
           {displayedOrders.map((order) => {
-            const isFinished = order.maxAmount !== "infinite" && order.producedAmount >= order.maxAmount;
+            const isFinished =
+              order.mode === OrderMode.ProduceOnce &&
+              order.maxAmount !== "infinite" &&
+              order.producedAmount >= order.maxAmount;
+            const isPaused = isRealmPaused(order.realmEntityId);
             return (
               <tr
                 key={order.id}
-                className={`border-b border-gold/10 hover:bg-gray-600/30 ${isFinished ? "bg-green-700/40" : ""}`}
+                className={`border-b border-gold/10 hover:bg-gray-600/30 ${isFinished ? "bg-green-700/40" : ""} ${isPaused ? "opacity-50" : ""}`}
               >
                 <td className=" py-4">
+                  {order.productionType === ProductionType.Transfer ? (
+                    <div className="text-xs mb-2 font-bold text-green">Transfer</div>
+                  ) : (
+                    <div
+                      className={`text-xs mb-2 font-bold ${order.mode === OrderMode.MaintainBalance ? "text-green" : "text-blue"}`}
+                    >
+                      {order.mode === OrderMode.MaintainBalance ? "Maintain" : "Once"}
+                    </div>
+                  )}
+
                   <div className="text-xs bg-gold/20 px-2 py-1 rounded border border-gold/30">
-                    <div className="h4">{order.realmName ?? order.realmEntityId}</div>
+                    <div className="h4 flex items-center gap-2">
+                      {order.realmName ?? order.realmEntityId}
+                      {isPaused && <span className="text-red text-xs">(PAUSED)</span>}
+                    </div>
                     <div className="font-bold">Priority {order.priority}</div>
 
-                    {order.productionType === ProductionType.ResourceToLabor
-                      ? "Resource To Labor"
-                      : order.productionType === ProductionType.ResourceToResource
-                        ? "Resource To Resource"
-                        : order.productionType === ProductionType.LaborToResource
-                          ? "Labor To Resource"
-                          : order.productionType}
+                    {order.productionType === ProductionType.Transfer ? (
+                      <div className="text-xs">
+                        Transfer: {order.transferMode === TransferMode.Recurring && "Recurring"}
+                        {order.transferMode === TransferMode.MaintainStock && "Maintain Stock"}
+                        {order.transferMode === TransferMode.DepletionTransfer && "Depletion"}
+                      </div>
+                    ) : order.productionType === ProductionType.ResourceToLabor ? (
+                      "Resource To Labor"
+                    ) : order.productionType === ProductionType.ResourceToResource ? (
+                      "Resource To Resource"
+                    ) : order.productionType === ProductionType.LaborToResource ? (
+                      "Labor To Resource"
+                    ) : (
+                      order.productionType
+                    )}
                   </div>
                 </td>
+
                 <td className="px-6 py-4 text-lg">
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center">
-                      {order.productionType === ProductionType.ResourceToLabor ? (
+                      {order.productionType === ProductionType.Transfer ? (
+                        <>
+                          <span className="text-sm mr-1">{order.realmName}</span>
+                          <ArrowRightIcon className="w-4 h-4 mx-2" />
+                          <span className="text-sm ml-1">{order.targetEntityName || order.targetEntityId}</span>
+                        </>
+                      ) : order.productionType === ProductionType.ResourceToLabor ? (
                         <>
                           <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
                           <span className="mx-1">→</span>
@@ -181,30 +234,80 @@ export const AllAutomationsTable: React.FC = () => {
                       ) : (
                         <>
                           {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
-                            <ResourceIcon resource={ResourcesIds[recipe.resource]} size="sm" className="" />
+                            <ResourceIcon
+                              key={recipe.resource}
+                              resource={ResourcesIds[recipe.resource]}
+                              size="sm"
+                              className=""
+                            />
                           ))}
                           <span className="mx-1">→</span>
                           <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
                         </>
                       )}
                     </div>
-
+                  </div>
+                  <div className="text-xs">
+                    {order.productionType === ProductionType.Transfer ? (
+                      <div>
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {order.transferResources?.map((res, idx) => (
+                            <div key={idx} className="flex items-center bg-gold/10 px-1 py-0.5 rounded">
+                              <ResourceIcon resource={ResourcesIds[res.resourceId]} size="xs" className="mr-1" />
+                              <span className="text-xs">{res.amount}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gold/50">
+                          {order.transferMode === TransferMode.Recurring &&
+                            `Every ${formatMinutes(order.transferInterval || 60)}`}
+                          {order.transferMode === TransferMode.MaintainStock &&
+                            `When dest < ${order.transferThreshold?.toLocaleString()}`}
+                          {order.transferMode === TransferMode.DepletionTransfer &&
+                            `When source > ${order.transferThreshold?.toLocaleString()}`}
+                        </div>
+                      </div>
+                    ) : order.mode === OrderMode.ProduceOnce ? (
+                      <div>
+                        {order.producedAmount.toLocaleString()} /{" "}
+                        {order.maxAmount === "infinite" ? "∞" : order.maxAmount.toLocaleString()}{" "}
+                        {order.maxAmount !== "infinite" && order.maxAmount > 0 && (
+                          <span className="text-xs text-gray-400">
+                            ({Math.floor((order.producedAmount / order.maxAmount) * 100)}%)
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        Target: {order.maxAmount.toLocaleString()}
+                        <br />
+                        {order.productionType === ProductionType.ResourceToLabor && (
+                          <span className="text-xs text-gold/50"> Labor</span>
+                        )}
+                        {order.bufferPercentage && (
+                          <span className="text-xs text-gray-400"> (Buffer: {order.bufferPercentage}%)</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      onClick={() => toggleRealmPause(order.realmEntityId)}
+                      variant="outline"
+                      size="xs"
+                      title={isPaused ? "Resume automation for this realm" : "Pause automation for this realm"}
+                    >
+                      {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
+                    </Button>
                     <Button
                       onClick={() => removeOrder(order.realmEntityId, order.id)}
                       variant="danger"
                       size="xs"
-                      className="mt-1"
+                      title={isFinished ? "Order completed - click to remove" : "Remove order"}
                     >
                       {isFinished ? <CheckIcon className="w-4 h-4" /> : <TrashIcon className="w-4 h-4" />}
                     </Button>
                   </div>
-                  {order.producedAmount.toLocaleString()} /{" "}
-                  {order.maxAmount === "infinite" ? "∞" : order.maxAmount.toLocaleString()}{" "}
-                  {order.maxAmount !== "infinite" && order.maxAmount > 0 && (
-                    <span className="text-xs text-gray-400">
-                      ({Math.floor((order.producedAmount / order.maxAmount) * 100)}% )
-                    </span>
-                  )}
                 </td>
               </tr>
             );
