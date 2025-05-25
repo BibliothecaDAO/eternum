@@ -58,6 +58,11 @@ const QUERIES = {
                 ELSE NULL 
             END
         ) AS explorer_ids,
+        COUNT(DISTINCT CASE WHEN s.category = 1 THEN s.entity_id END) as realms_count,
+        COUNT(DISTINCT CASE WHEN s.category = 2 THEN s.entity_id END) as hyperstructures_count,
+        COUNT(DISTINCT CASE WHEN s.category = 3 THEN s.entity_id END) as bank_count,
+        COUNT(DISTINCT CASE WHEN s.category = 4 THEN s.entity_id END) as mine_count,
+        COUNT(DISTINCT CASE WHEN s.category = 5 THEN s.entity_id END) as village_count,
         gm.guild_id,
         g.name AS guild_name,
         sos.name AS player_name
@@ -66,7 +71,7 @@ const QUERIES = {
     LEFT JOIN [s1_eternum-GuildMember] gm ON gm.member = s.owner
     LEFT JOIN [s1_eternum-Guild] g ON g.guild_id = gm.guild_id
     LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-    GROUP BY s.owner
+    GROUP BY s.owner 
   `,
 
   HYPERSTRUCTURES: `
@@ -204,6 +209,11 @@ export interface PlayersData {
   guild_name: string | null;
   player_name: string | null;
   owner_address: string;
+  realms_count: number;
+  hyperstructures_count: number;
+  bank_count: number;
+  mine_count: number;
+  village_count: number;
 }
 
 export interface BattleLogEvent {
