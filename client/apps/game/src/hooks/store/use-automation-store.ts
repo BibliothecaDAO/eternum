@@ -6,11 +6,18 @@ export enum ProductionType {
   ResourceToResource = "resource_to_resource",
   ResourceToLabor = "resource_to_labor",
   LaborToResource = "labor_to_resource",
+  Transfer = "transfer", // New type for entity-to-entity transfers
 }
 
 export enum OrderMode {
   ProduceOnce = "produce_once", // Produce up to maxAmount then stop
-  MaintainBalance = "maintain_balance", // Keep balance at targetBalance
+  MaintainBalance = "maintain_balance", // Keep balance at target level
+}
+
+export enum TransferMode {
+  Recurring = "recurring", // Transfer at regular intervals
+  MaintainStock = "maintain_stock", // Transfer when destination falls below threshold
+  DepletionTransfer = "depletion_transfer", // Transfer when source exceeds threshold
 }
 
 export interface AutomationOrder {
@@ -20,10 +27,19 @@ export interface AutomationOrder {
   mode: OrderMode; // Whether to produce once or maintain balance
   maxAmount: number | "infinite"; // For ProduceOnce: target amount to produce. For MaintainBalance: target balance to maintain
   producedAmount: number; // How much has been produced by this order so far (for ProduceOnce mode)
-  realmEntityId: string; // Store as string, consistent for object keys
+  realmEntityId: string; // Store as string, consistent for object keys (for production: source entity, for transfer: source entity)
   productionType: ProductionType; // Example: to distinguish system calls
   realmName?: string; // Name of the realm
   bufferPercentage?: number; // For MaintainBalance: percentage buffer below target before producing (default 10%)
+
+  // Transfer-specific fields
+  targetEntityId?: string; // Destination entity for transfers
+  targetEntityName?: string; // Name of the destination entity
+  transferMode?: TransferMode; // How the transfer should behave
+  transferInterval?: number; // Hours between transfers (for Recurring mode)
+  lastTransferTimestamp?: number; // Timestamp of last transfer
+  transferThreshold?: number; // Amount threshold for MaintainStock/DepletionTransfer modes
+  transferResources?: { resourceId: ResourcesIds; amount: number }[]; // Resources and amounts to transfer
 }
 
 interface AutomationState {
@@ -32,6 +48,7 @@ interface AutomationState {
   addOrder: (orderData: Omit<AutomationOrder, "id" | "producedAmount"> & { mode?: OrderMode }) => void;
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
+  updateTransferTimestamp: (realmEntityId: string, orderId: string) => void; // Update last transfer timestamp
   getOrdersForRealm: (realmEntityId: string) => AutomationOrder[];
   removeAllOrders: (realmEntityId?: string) => void; // realmEntityId is optional
   nextRunTimestamp: number | null; // Timestamp for the next automation run
@@ -97,6 +114,15 @@ export const useAutomationStore = create<AutomationState>()(
             ...state.ordersByRealm,
             [realmEntityId]: (state.ordersByRealm[realmEntityId] || []).map((order) =>
               order.id === orderId ? { ...order, producedAmount: order.producedAmount + producedThisCycle } : order,
+            ),
+          },
+        })),
+      updateTransferTimestamp: (realmEntityId, orderId) =>
+        set((state) => ({
+          ordersByRealm: {
+            ...state.ordersByRealm,
+            [realmEntityId]: (state.ordersByRealm[realmEntityId] || []).map((order) =>
+              order.id === orderId ? { ...order, lastTransferTimestamp: Date.now() } : order,
             ),
           },
         })),

@@ -4,6 +4,7 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { Suspense, lazy, useCallback, useMemo, useState } from "react";
+import { AutomationTransferTable } from "../automation/automation-transfer-table";
 
 const ProductionSidebar = lazy(() =>
   import("./production-sidebar").then((module) => ({ default: module.ProductionSidebar })),
@@ -53,6 +54,9 @@ const ProductionContainer = ({
         </Suspense>
       </div>
       <div className="col-span-9 h-full row-span-10 overflow-y-auto p-8 pb-36">
+        <div className="col-span-12">
+          <AutomationTransferTable />
+        </div>
         <Suspense fallback={<LoadingAnimation />}>
           {selectedRealm && <ProductionBody realm={selectedRealm} preSelectedResource={currentPreSelectedResource} />}
         </Suspense>

@@ -1,4 +1,4 @@
-import { OrderMode, ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
@@ -126,6 +126,7 @@ export const useAutomation = () => {
         burn_resource_for_resource_production,
         burn_labor_for_resource_production,
         burn_resource_for_labor_production,
+        send_resources,
       },
       components,
     },
@@ -135,6 +136,7 @@ export const useAutomation = () => {
 
   const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
+  const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
   const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
@@ -186,12 +188,128 @@ export const useAutomation = () => {
         if (
           order.mode === OrderMode.ProduceOnce &&
           order.maxAmount !== "infinite" &&
-          order.producedAmount >= order.maxAmount
+          order.producedAmount >= order.maxAmount &&
+          order.productionType !== ProductionType.Transfer // Transfer orders don't use producedAmount
         ) {
           console.log(
             `Automation: Order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId} has already produced ${order.producedAmount} of ${order.maxAmount}. Skipping.`,
           );
           continue;
+        }
+
+        // Handle transfer orders separately
+        if (order.productionType === ProductionType.Transfer) {
+          try {
+            // Check if it's time to transfer based on the mode
+            let shouldTransfer = false;
+
+            if (order.transferMode === TransferMode.Recurring) {
+              // Check if enough time has passed since last transfer
+              const now = Date.now();
+              const lastTransfer = order.lastTransferTimestamp || 0;
+              const intervalMs = (order.transferInterval || 60) * 60 * 1000; // Convert minutes to ms
+              shouldTransfer = now - lastTransfer >= intervalMs;
+
+              if (!shouldTransfer) {
+                console.log(
+                  `Automation: Transfer order ${order.id} not due yet. Next transfer in ${Math.ceil((intervalMs - (now - lastTransfer)) / 1000 / 60)} minutes.`,
+                );
+                continue;
+              }
+            } else if (
+              order.transferMode === TransferMode.MaintainStock ||
+              order.transferMode === TransferMode.DepletionTransfer
+            ) {
+              // For threshold-based transfers, we need to check balances
+              const targetBalances = await fetchBalances(currentTickRef.current, order.targetEntityId!, components);
+              const sourceBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
+
+              // Check the first resource in the transfer list as the trigger
+              const triggerResource = order.transferResources?.[0];
+              if (triggerResource) {
+                if (order.transferMode === TransferMode.MaintainStock) {
+                  // Transfer if destination is below threshold
+                  const targetBalance = targetBalances[triggerResource.resourceId] || 0;
+                  shouldTransfer = targetBalance < multiplyByPrecision(order.transferThreshold || 0);
+                } else {
+                  // Transfer if source is above threshold
+                  const sourceBalance = sourceBalances[triggerResource.resourceId] || 0;
+                  shouldTransfer = sourceBalance > multiplyByPrecision(order.transferThreshold || 0);
+                }
+              }
+            }
+
+            if (!shouldTransfer) continue;
+
+            // Check if source has enough resources
+            const sourceBalances = await fetchBalances(currentTickRef.current, order.realmEntityId, components);
+            const resourcesToTransfer: { resource: ResourcesIds; amount: number }[] = [];
+            let hasEnoughResources = true;
+
+            for (const resource of order.transferResources || []) {
+              const requiredAmount = multiplyByPrecision(resource.amount);
+              const availableAmount = sourceBalances[resource.resourceId] || 0;
+
+              if (availableAmount < requiredAmount) {
+                console.warn(
+                  `Automation: Not enough ${ResourcesIds[resource.resourceId]} for transfer. Required: ${requiredAmount}, Available: ${availableAmount}`,
+                );
+                hasEnoughResources = false;
+                break;
+              }
+
+              resourcesToTransfer.push({
+                resource: resource.resourceId,
+                amount: requiredAmount,
+              });
+            }
+
+            if (!hasEnoughResources) continue;
+
+            // Execute the transfer
+            console.log(
+              `Automation: Executing transfer from ${order.realmName} to ${order.targetEntityName}`,
+              resourcesToTransfer,
+            );
+
+            await send_resources({
+              signer: starknetSignerAccount as StarknetAccount,
+              sender_entity_id: Number(order.realmEntityId),
+              recipient_entity_id: Number(order.targetEntityId),
+              resources: resourcesToTransfer,
+            });
+
+            console.log(
+              `Automation: MOCK TRANSFER from ${order.realmName} to ${order.targetEntityName}`,
+              resourcesToTransfer,
+            );
+
+            // Update last transfer timestamp for recurring transfers
+            if (order.transferMode === TransferMode.Recurring) {
+              updateTransferTimestamp(order.realmEntityId, order.id);
+              console.log(`Automation: Updated last transfer timestamp for order ${order.id}`);
+            }
+
+            toast.success(
+              <div className="flex flex-col">
+                <span className="font-bold">Automation: Transfer Completed</span>
+                <span className="text-sm">
+                  From {order.realmName} to {order.targetEntityName}
+                </span>
+                <div className="flex gap-2 mt-1">
+                  {order.transferResources?.map((res, idx) => (
+                    <div key={idx} className="flex items-center">
+                      <ResourceIcon resource={ResourcesIds[res.resourceId]} size="xs" className="mr-1" />
+                      <span className="text-xs">{res.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>,
+            );
+          } catch (error) {
+            console.error(`Automation: Error processing transfer order ${order.id}:`, error);
+          }
+          continue; // Skip to next order after handling transfer
         }
 
         try {
@@ -459,6 +577,7 @@ export const useAutomation = () => {
     burn_resource_for_labor_production,
     updateOrderProducedAmount,
     isRealmPaused,
+    updateTransferTimestamp,
   ]);
 
   // Setup the automation interval as soon as the hook mounts. The `processOrders` function
