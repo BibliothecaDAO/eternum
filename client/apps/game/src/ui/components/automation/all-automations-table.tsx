@@ -262,9 +262,9 @@ export const AllAutomationsTable: React.FC = () => {
                           {order.transferMode === TransferMode.Recurring &&
                             `Every ${formatMinutes(order.transferInterval || 60)}`}
                           {order.transferMode === TransferMode.MaintainStock &&
-                            `When dest < ${order.transferThreshold}`}
+                            `When dest < ${order.transferThreshold?.toLocaleString()}`}
                           {order.transferMode === TransferMode.DepletionTransfer &&
-                            `When source > ${order.transferThreshold}`}
+                            `When source > ${order.transferThreshold?.toLocaleString()}`}
                         </div>
                       </div>
                     ) : order.mode === OrderMode.ProduceOnce ? (
