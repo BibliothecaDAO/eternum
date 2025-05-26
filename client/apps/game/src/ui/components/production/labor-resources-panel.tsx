@@ -66,7 +66,6 @@ export const LaborResourcesPanel = ({
                     value={Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)}
                     onChange={(value) => handleInputChange(value, input.resource)}
                     min={0}
-                    max={resourceBalances[input.resource] || 0}
                     className="rounded-md border-gold/30 hover:border-gold/50"
                   />
                 </div>
