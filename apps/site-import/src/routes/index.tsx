@@ -3,7 +3,6 @@ import { IntroSection } from "@/components/sections/IntroSection";
 import { GamesSection } from "@/components/sections/GamesSection";
 import { TokenomicsSection } from "@/components/sections/TokenomicsSection";
 import { TreasurySection } from "@/components/sections/TreasurySection";
-import { FooterSection } from "@/components/sections/FooterSection";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -28,7 +27,6 @@ function HomePage() {
       <GamesSection />
       <TokenomicsSection />
       <TreasurySection />
-      <FooterSection />
     </>
   );
 }

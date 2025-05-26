@@ -4,6 +4,7 @@ import { HeadContent } from "@tanstack/react-router";
 import { TopBar } from "@/components/layout/TopBar";
 // import { WaveformBackground } from "@/components/WaveformBackground";
 import { motion } from "framer-motion";
+import { FooterSection } from "@/components/sections/FooterSection";
 // import AsciiArt from "@/components/ascii";
 
 export const Route = createRootRoute({
@@ -78,6 +79,7 @@ function RootComponent() {
           <Outlet />
         </div>
       </motion.div>
+      <FooterSection />
       <TanStackRouterDevtools position="bottom-right" />
     </>
   );

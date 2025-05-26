@@ -190,7 +190,7 @@ export function GameDetails({ game }: { game: Game }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/games" })}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

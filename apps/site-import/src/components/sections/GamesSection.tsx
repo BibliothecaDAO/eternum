@@ -50,7 +50,6 @@ export function GamesSection() {
             {games.map((game, index) => (
               <motion.div
                 key={game.id}
-                layoutId={`game-${game.id}`}
                 className="game-tile flex-shrink-0 w-[240px] sm:w-[320px] md:w-[400px] relative aspect-video bg-card overflow-hidden 
                   hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-md sm:rounded-lg"
                 onClick={() => handleGameClick(game.slug)}

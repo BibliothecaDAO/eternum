@@ -7,7 +7,7 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
 import { getLordsInfo } from "@/lib/getLordsPrice";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 
 export function TopBar() {
   const [time, setTime] = useState(new Date());
@@ -50,6 +50,20 @@ export function TopBar() {
                     className="w-14 sm:w-18"
                   />
                 </h1>
+
+                {/* Navigation Links */}
+                <nav className="flex items-center space-x-4">
+                  <Link
+                    to="/games"
+                    className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                    activeProps={{
+                      className: "text-primary",
+                    }}
+                  >
+                    Games
+                  </Link>
+                </nav>
+
                 <div className="hidden sm:flex items-center space-x-2 text-muted-foreground">
                   <span className="text-xs sm:text-sm">
                     {time.toLocaleTimeString([], {
