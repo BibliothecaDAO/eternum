@@ -85,37 +85,6 @@ export function PartnersSection() {
               </motion.a>
             ))}
           </motion.div>
-
-          {/* Call to Action */}
-          <motion.div
-            className="text-center pt-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 0.8 }}
-          >
-            <p className="text-muted-foreground mb-4">
-              Interested in partnering with us?
-            </p>
-            <a
-              href="mailto:partnerships@realms.world"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
-            >
-              Get in touch
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 8l4 4m0 0l-4 4m4-4H3"
-                />
-              </svg>
-            </a>
-          </motion.div>
         </motion.div>
       </div>
     </section>
