@@ -94,7 +94,6 @@ export const games: Game[] = [
     isLive: true,
     studio: "Provable Games",
     players: 1250,
-    tvl: 450000,
     links: {
       homepage: "https://survivor.realms.world/",
       discord: "https://discord.gg/realmsworld",

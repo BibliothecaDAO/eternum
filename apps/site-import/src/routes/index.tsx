@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { IntroSection } from "@/components/sections/IntroSection";
 import { GamesSection } from "@/components/sections/GamesSection";
 import { ValueFlowSection } from "@/components/sections/ValueFlowSection";
+import { VelordsAPYSection } from "@/components/sections/VelordsAPYSection";
 import { TokenomicsSection } from "@/components/sections/TokenomicsSection";
 import { TreasurySection } from "@/components/sections/TreasurySection";
 
@@ -27,6 +28,7 @@ function HomePage() {
       <IntroSection />
       <GamesSection />
       <ValueFlowSection />
+      <VelordsAPYSection />
       <TokenomicsSection />
       <TreasurySection />
     </>

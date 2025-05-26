@@ -1,15 +1,9 @@
-import { useCallback } from "react";
+import { useMemo, useEffect } from "react";
 import {
   ReactFlow,
-  useNodesState,
-  useEdgesState,
-  addEdge,
   Background,
-  Controls,
-  MiniMap,
   Node,
   Edge,
-  Connection,
   MarkerType,
   ConnectionMode,
   Handle,
@@ -18,8 +12,19 @@ import {
 import "@xyflow/react/dist/style.css";
 import { motion } from "framer-motion";
 import { games } from "@/data/games";
-import { useQuery } from "@tanstack/react-query";
-import { getLordsBalance } from "@/lib/getLordsBalance";
+import { useVelords } from "@/hooks/use-velords";
+import { useFlowStore } from "@/lib/stores/flow-store";
+
+// Custom edge style
+const edgeStyle = {
+  strokeWidth: 3,
+  stroke: "#10b981",
+};
+
+const animatedEdgeStyle = {
+  strokeWidth: 3,
+  stroke: "#3b82f6",
+};
 
 // Custom node component for games
 function GameNode({
@@ -54,7 +59,11 @@ function GameNode({
 }
 
 // Custom node component for veLords
-function VeLordsNode({ data }: { data: { label: string; value?: number } }) {
+function VeLordsNode({
+  data,
+}: {
+  data: { label: string; value?: number; tvl?: number };
+}) {
   return (
     <div className="px-6 py-4 shadow-lg rounded-lg bg-primary text-primary-foreground border-2 border-primary relative">
       <Handle
@@ -67,6 +76,12 @@ function VeLordsNode({ data }: { data: { label: string; value?: number } }) {
         {data.value && (
           <div className="text-2xl font-bold mt-1">
             {data.value.toLocaleString()} LORDS
+          </div>
+        )}
+        {data.tvl && (
+          <div className="text-sm mt-1 opacity-90">
+            TVL: $
+            {data.tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         )}
       </div>
@@ -90,145 +105,150 @@ function HoldersNode({ data }: { data: { label: string; count?: number } }) {
       />
       <div className="text-center">
         <div className="text-sm font-bold">{data.label}</div>
-        {data.count && (
-          <div className="text-lg font-semibold">
-            {data.count.toLocaleString()}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-const nodeTypes = {
-  game: GameNode,
-  velords: VeLordsNode,
-  holders: HoldersNode,
-};
-
-// Custom edge style
-const edgeStyle = {
-  strokeWidth: 3,
-  stroke: "#10b981",
-};
-
-const animatedEdgeStyle = {
-  strokeWidth: 3,
-  stroke: "#3b82f6",
-};
-
 export function ValueFlowSection() {
-  const { data: veLordsSupply } = useQuery({
-    queryKey: ["veLordsSupply"],
-    queryFn: getLordsBalance,
-  });
+  const { currentAPY, tokensThisWeek, lordsLocked, tvl } = useVelords();
+
+  // Get store methods
+  const nodes = useFlowStore((state) => state.nodes);
+  const edges = useFlowStore((state) => state.edges);
+  const setNodes = useFlowStore((state) => state.setNodes);
+  const setEdges = useFlowStore((state) => state.setEdges);
+  const onNodesChange = useFlowStore((state) => state.onNodesChange);
+  const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
+  const onConnect = useFlowStore((state) => state.onConnect);
 
   // Filter only specific games: Realms and Loot Survivor
-  const selectedGames = games.filter(
-    (game) => game.slug === "realms-eternum" || game.slug === "loot-survivor"
-  );
+  const selectedGames = games;
 
   // Create nodes with better positioning
-  const initialNodes: Node[] = [
-    // Game nodes - arranged vertically on the left
-    ...selectedGames.map((game, index) => {
-      const x = 100;
-      const y = 250 + index * 100; // Space them vertically
+  const initialNodes: Node[] = useMemo(
+    () => [
+      // Game nodes - arranged vertically on the left
+      ...selectedGames.map((game, index) => {
+        const x = 100;
+        const y = 250 + index * 100; // Space them vertically
 
-      return {
-        id: `game-${game.id}`,
-        type: "game",
-        position: { x, y },
+        return {
+          id: `game-${game.id}`,
+          type: "game",
+          position: { x, y },
+          data: {
+            label: game.title,
+            image: game.image,
+            players: game.players,
+          },
+        };
+      }),
+      // veLords node - center
+      {
+        id: "velords",
+        type: "velords",
+        position: { x: 450, y: 300 },
         data: {
-          label: game.title,
-          image: game.image,
-          players: game.players,
+          label: "veLORDS Pool",
+          value: lordsLocked,
+          tvl: tvl,
         },
-      };
-    }),
-    // veLords node - center
-    {
-      id: "velords",
-      type: "velords",
-      position: { x: 450, y: 300 },
-      data: {
-        label: "veLORDS Pool",
-        value: veLordsSupply,
       },
-    },
-    // Single stakers node on the right
-    {
-      id: "stakers",
-      type: "holders",
-      position: { x: 800, y: 300 },
-      data: { label: "Stakers", count: 2590 }, // Combined count
-    },
-  ];
+      // Single stakers node on the right
+      {
+        id: "stakers",
+        type: "holders",
+        position: { x: 800, y: 300 },
+        data: { label: "Stakers", count: 2590 }, // Combined count
+      },
+    ],
+    [selectedGames, lordsLocked, tvl]
+  );
 
   // Create edges with proper animation
-  const initialEdges: Edge[] = [
-    // From games to veLords
-    ...selectedGames.map((game, index) => ({
-      id: `edge-game-${game.id}`,
-      source: `game-${game.id}`,
-      target: "velords",
-      type: "smoothstep",
-      animated: true,
-      style: edgeStyle,
-      label: index === 0 ? "24hr: 12,450 LORDS" : "24hr: 8,320 LORDS", // Dynamic values to be added
-      labelStyle: {
-        fill: "#10b981",
-        fontWeight: 600,
-        fontSize: 12,
+  const initialEdges: Edge[] = useMemo(
+    () => [
+      // From games to veLords
+      ...selectedGames.map((game) => ({
+        id: `edge-game-${game.id}`,
+        source: `game-${game.id}`,
+        target: "velords",
+        type: "smoothstep",
+        animated: true,
+        style: edgeStyle,
+        // label: tokensThisWeek
+        //   ? `24hr: ${(
+        //       tokensThisWeek * (index === 0 ? 0.6 : 0.4)
+        //     ).toLocaleString(undefined, { maximumFractionDigits: 0 })} LORDS`
+        //   : index === 0
+        //   ? "24hr: 12,450 LORDS"
+        //   : "24hr: 8,320 LORDS", // Dynamic values based on actual data
+        labelStyle: {
+          fill: "#10b981",
+          fontWeight: 600,
+          fontSize: 12,
+        },
+        labelBgStyle: {
+          fill: "rgba(0, 0, 0, 0.8)",
+          fillOpacity: 0.8,
+        },
+        labelBgPadding: [8, 4] as [number, number],
+        labelBgBorderRadius: 4,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: "#10b981",
+        },
+      })),
+      // From veLords to stakers
+      {
+        id: "edge-stakers",
+        source: "velords",
+        target: "stakers",
+        type: "smoothstep",
+        animated: true,
+        style: animatedEdgeStyle,
+        label: currentAPY ? `APY: ${currentAPY.toFixed(2)}%` : "APY: 12.5%", // Dynamic APY
+        labelStyle: {
+          fill: "#3b82f6",
+          fontWeight: 600,
+          fontSize: 12,
+        },
+        labelBgStyle: {
+          fill: "rgba(0, 0, 0, 0.8)",
+          fillOpacity: 0.8,
+        },
+        labelBgPadding: [8, 4] as [number, number],
+        labelBgBorderRadius: 4,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: "#3b82f6",
+        },
       },
-      labelBgStyle: {
-        fill: "rgba(0, 0, 0, 0.8)",
-        fillOpacity: 0.8,
-      },
-      labelBgPadding: [8, 4] as [number, number],
-      labelBgBorderRadius: 4,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-        color: "#10b981",
-      },
-    })),
-    // From veLords to stakers
-    {
-      id: "edge-stakers",
-      source: "velords",
-      target: "stakers",
-      type: "smoothstep",
-      animated: true,
-      style: animatedEdgeStyle,
-      label: "APY: 12.5%", // Dynamic value to be added
-      labelStyle: {
-        fill: "#3b82f6",
-        fontWeight: 600,
-        fontSize: 12,
-      },
-      labelBgStyle: {
-        fill: "rgba(0, 0, 0, 0.8)",
-        fillOpacity: 0.8,
-      },
-      labelBgPadding: [8, 4] as [number, number],
-      labelBgBorderRadius: 4,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-        color: "#3b82f6",
-      },
-    },
-  ];
+    ],
+    [selectedGames, currentAPY, tokensThisWeek, lordsLocked, tvl]
+  );
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // Initialize nodes and edges when they change
+  useEffect(() => {
+    setNodes(initialNodes);
+  }, [currentAPY, lordsLocked, tvl, tokensThisWeek]);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+  useEffect(() => {
+    setEdges(initialEdges);
+  }, [currentAPY, lordsLocked, tvl, tokensThisWeek]);
+
+  const nodeTypes = useMemo(
+    () => ({
+      game: GameNode,
+      velords: VeLordsNode,
+      holders: HoldersNode,
+    }),
+    []
   );
 
   return (
@@ -264,6 +284,7 @@ export function ValueFlowSection() {
         transition={{ delay: 0.4, duration: 0.5 }}
       >
         <ReactFlow
+          key={`${lordsLocked}-${tvl}-${currentAPY}-${tokensThisWeek}`}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -273,24 +294,13 @@ export function ValueFlowSection() {
           connectionMode={ConnectionMode.Loose}
           fitView
           fitViewOptions={{ padding: 0.2 }}
-          attributionPosition="bottom-left"
+          // attributionPosition="bottom-left"
           defaultEdgeOptions={{
             animated: true,
             type: "smoothstep",
           }}
         >
           <Background color="#aaa" gap={16} />
-          <MiniMap
-            nodeColor={(node) => {
-              if (node.type === "velords") return "#10b981";
-              if (node.type === "holders") return "#3b82f6";
-              return "#6b7280";
-            }}
-            style={{
-              backgroundColor: "rgba(0, 0, 0, 0.1)",
-            }}
-          />
-          <Controls />
         </ReactFlow>
       </motion.div>
 
