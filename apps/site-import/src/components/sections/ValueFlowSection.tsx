@@ -202,11 +202,11 @@ export function ValueFlowSection() {
           data: source,
         };
       }),
-      // veLords node - center
+      // veLords node - center with more space
       {
         id: "velords",
         type: "velords",
-        position: { x: 450, y: 250 },
+        position: { x: 500, y: 250 },
         data: {
           label: "veLORDS Staking Pool",
           value: lordsLocked,
@@ -214,14 +214,14 @@ export function ValueFlowSection() {
           apy: currentAPY,
         },
       },
-      // Stakers node on the right
+      // Stakers node on the right with more space
       {
         id: "stakers",
         type: "stakers",
-        position: { x: 850, y: 250 },
+        position: { x: 950, y: 250 },
         data: {
           label: "veLORDS Stakers",
-          rewards: tokensThisWeek,
+          // rewards: tokensThisWeek,
         },
       },
     ],
@@ -361,7 +361,7 @@ export function ValueFlowSection() {
           nodeTypes={nodeTypes}
           connectionMode={ConnectionMode.Loose}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.3, minZoom: 0.8, maxZoom: 1 }}
           defaultEdgeOptions={{
             animated: true,
             type: "smoothstep",
