@@ -6,13 +6,26 @@ export const config = {
 
 export default async function handler(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
+    // Validate request and URL
+    if (!request || !request.url) {
+      throw new Error("Invalid request or missing URL");
+    }
 
-    // Get dynamic parameters
-    const title = searchParams.get("title") || "Realms World";
+    let searchParams: URLSearchParams;
+    try {
+      const url = new URL(request.url);
+      searchParams = url.searchParams;
+    } catch (urlError) {
+      console.error("Failed to parse URL:", urlError);
+      // Create empty search params as fallback
+      searchParams = new URLSearchParams();
+    }
+
+    // Get dynamic parameters with null-safe access
+    const title = searchParams?.get("title") || "Realms World";
     const description =
-      searchParams.get("description") || "The future of gaming is onchain";
-    const path = searchParams.get("path") || "";
+      searchParams?.get("description") || "The future of gaming is onchain";
+    const path = searchParams?.get("path") || "";
 
     return new ImageResponse(
       (
@@ -166,8 +179,9 @@ export default async function handler(request: Request) {
       }
     );
   } catch (e: any) {
-    console.log(`${e.message}`);
-    return new Response(`Failed to generate the image`, {
+    console.error("Error generating OG image:", e);
+    const errorMessage = e?.message || "Unknown error occurred";
+    return new Response(`Failed to generate the image: ${errorMessage}`, {
       status: 500,
     });
   }
