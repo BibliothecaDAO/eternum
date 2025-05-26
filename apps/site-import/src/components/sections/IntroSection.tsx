@@ -69,9 +69,6 @@ export function IntroSection() {
                 Explore Games <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#learn-more">Learn More</a>
-            </Button>
           </div>
         </motion.div>
 
