@@ -20,10 +20,10 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { ProposalQuery } from "./gql/graphql";
 import { getTreasuryBalance } from "./lib/getTreasuryBalance";
 import { EthplorerToken, getLordsInfo } from "./lib/getLordsPrice";
-import { getLordsBalance } from "./lib/getLordsBalance";
 
 import { ModeToggle } from "./components/ui/mode-toggle";
 import { AnimatedStat } from "./components/animated-stat";
+import { useVelords } from "@/hooks/use-velords";
 
 function BackgroundSlideshow({ images }: { images: string[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -645,14 +645,7 @@ function IntroSection({
 }: {
   lordsInfo: EthplorerToken | undefined;
 }) {
-  const { data: veLordsSupply } = useQuery(
-    queryOptions({
-      queryKey: ["veLordsSupply"],
-      queryFn: getLordsBalance,
-    })
-  );
-
-  console.log(lordsInfo);
+  const { totalSupply: veLordsSupply } = useVelords();
 
   return (
     <motion.div
@@ -710,20 +703,8 @@ function IntroSection({
           let displayValue: number = 0;
           let displayTrend: string = "";
 
-          const priceInfo = lordsInfo?.price as {
-            marketCapUsd?: number | string;
-            volume24h?: number | string;
-            diff7d?: number | string;
-            availableSupply?: number | string;
-            rate?: number | string;
-            diff?: number | string;
-            volDiff1?: number;
-          };
-          const lordsInfoData = lordsInfo as {
-            totalSupply?: string;
-            decimals?: string;
-            holdersCount?: number | string;
-          };
+          const priceInfo = lordsInfo?.price as any;
+          const lordsInfoData = lordsInfo as any;
 
           switch (baseStat.id) {
             case "marketCap":
@@ -800,7 +781,7 @@ function IntroSection({
                 const trendVal = priceInfo.diff;
                 if (typeof trendVal === "number") {
                   displayTrend = `${trendVal > 0 ? "+" : ""}${trendVal.toFixed(
-                    2
+                    4
                   )}%`;
                 }
               }

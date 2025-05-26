@@ -6,6 +6,7 @@ import "./index.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { StarknetProvider } from "./hooks/starknet-provider";
 
 // Create a new router instance
 const router = createRouter({
@@ -27,9 +28,11 @@ declare module "@tanstack/react-router" {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <StarknetProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </StarknetProvider>
     </ThemeProvider>
   </StrictMode>
 );
