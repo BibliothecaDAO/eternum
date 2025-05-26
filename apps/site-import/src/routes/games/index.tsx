@@ -3,66 +3,20 @@ import { games } from "@/data/games";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { generateMetaTags } from "@/lib/og-image";
 
 export const Route = createFileRoute("/games/")({
   component: GamesPage,
-  head: () => {
-    const origin =
-      typeof window !== "undefined"
-        ? window.location.origin
-        : "https://realms.world";
-
-    return {
-      meta: [
-        {
-          title: "Games - Realms World",
-        },
-        {
-          name: "description",
-          content:
-            "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
-        },
-        {
-          property: "og:title",
-          content: "Games - Realms World",
-        },
-        {
-          property: "og:description",
-          content:
-            "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
-        },
-        {
-          property: "og:image",
-          content: `${origin}/og.png`,
-        },
-        {
-          property: "og:url",
-          content: `${origin}/games`,
-        },
-        {
-          property: "og:type",
-          content: "website",
-        },
-        {
-          name: "twitter:card",
-          content: "summary_large_image",
-        },
-        {
-          name: "twitter:title",
-          content: "Games - Realms World",
-        },
-        {
-          name: "twitter:description",
-          content:
-            "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
-        },
-        {
-          name: "twitter:image",
-          content: `${origin}/og.png`,
-        },
-      ],
-    };
-  },
+  head: () => ({
+    meta: generateMetaTags({
+      title: "Games - Realms World",
+      description:
+        "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
+      path: "/games",
+      // You can specify a custom image for the games page
+      // image: "/og-games.png",
+    }),
+  }),
 });
 
 function GamesPage() {

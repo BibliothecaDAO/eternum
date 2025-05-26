@@ -5,20 +5,18 @@ import { ValueFlowSection } from "@/components/sections/ValueFlowSection";
 // import { VelordsAPYSection } from "@/components/sections/VelordsAPYSection";
 import { TokenomicsSection } from "@/components/sections/TokenomicsSection";
 import { TreasurySection } from "@/components/sections/TreasurySection";
+import { PartnersSection } from "@/components/sections/PartnersSection";
+import { generateMetaTags } from "@/lib/og-image";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
-    meta: [
-      {
-        title: "Realms World - Onchain Gaming Powered by $LORDS",
-      },
-      {
-        name: "description",
-        content:
-          "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
-      },
-    ],
+    meta: generateMetaTags({
+      title: "Realms World - Onchain Gaming Powered by $LORDS",
+      description:
+        "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+      path: "/",
+    }),
   }),
 });
 
@@ -30,6 +28,9 @@ function HomePage() {
       </div>
       <div id="games">
         <GamesSection />
+      </div>
+      <div id="partners">
+        <PartnersSection />
       </div>
       <div id="value-flow">
         <ValueFlowSection />
