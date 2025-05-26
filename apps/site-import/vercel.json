@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/og.tsx": {
-      "runtime": "@vercel/og"
+      "runtime": "vercel/node@20.x"
     }
   },
   "rewrites": [
