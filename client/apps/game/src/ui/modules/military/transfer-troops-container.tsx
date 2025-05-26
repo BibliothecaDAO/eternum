@@ -3,6 +3,7 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  configManager,
   divideByPrecision,
   getGuardsByStructure,
   getTroopResourceId,
@@ -11,9 +12,16 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
-import { DEFENSE_NAMES, getDirectionBetweenAdjacentHexes, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  DEFENSE_NAMES,
+  getDirectionBetweenAdjacentHexes,
+  ID,
+  StructureType,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TransferDirection } from "./help-container";
 
 interface TransferTroopsContainerProps {
@@ -102,24 +110,45 @@ export const TransferTroopsContainer = ({
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
 
+  const getStructureDefenseSlots = useCallback(
+    (structureType: StructureType, structureLevel: number) => {
+      const config = configManager.getWorldStructureDefenseSlotsConfig();
+      switch (structureType) {
+        case StructureType.FragmentMine:
+          return config[structureType];
+        case StructureType.Hyperstructure:
+          return config[structureType];
+        case StructureType.Bank:
+          return config[structureType];
+        case StructureType.Village:
+          return structureLevel + 1;
+        case StructureType.Realm:
+          return structureLevel + 1;
+        default:
+          return 0;
+      }
+    },
+    [configManager],
+  );
+
   const availableGuards = useMemo<number[]>(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
       // Guards are on the target structure
       if (!targetStructure) return [];
-      return Array.from({ length: targetStructure.base.level + 1 }, (_, i) => i);
+      return Array.from(
+        { length: getStructureDefenseSlots(targetStructure.category, targetStructure.base.level) },
+        (_, i) => i,
+      );
     } else if (transferDirection === TransferDirection.StructureToExplorer) {
       // Guards are on the selected structure
       if (!selectedStructure) return [];
-      return Array.from({ length: selectedStructure.base.level + 1 }, (_, i) => i);
-    } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      // Guards aren't directly involved in the same way for transfer amount calculation,
-      // but the UI might use this for displaying guard slots (though it seems hidden).
-      // Using selected structure's level as a fallback like the original code, with check.
-      if (!selectedStructure) return [];
-      return Array.from({ length: selectedStructure.base.level + 1 }, (_, i) => i);
+      return Array.from(
+        { length: getStructureDefenseSlots(selectedStructure.category, selectedStructure.base.level) },
+        (_, i) => i,
+      );
+    } else {
+      return [];
     }
-    // Default case or unknown direction
-    return [];
   }, [selectedStructure, targetStructure, transferDirection]);
 
   // list of guards
@@ -170,6 +199,10 @@ export const TransferTroopsContainer = ({
       setTroopAmount(Math.min(value, maxTroops));
     }
   };
+
+  useEffect(() => {
+    setTroopAmount(0);
+  }, [transferDirection, guardSlot]);
 
   // Handle transfer
   const handleTransfer = async () => {
@@ -242,6 +275,7 @@ export const TransferTroopsContainer = ({
   };
 
   const isTroopsTransferDisabled = (() => {
+    if (troopAmount === 0) return true;
     if (
       transferDirection === TransferDirection.ExplorerToStructure ||
       transferDirection === TransferDirection.StructureToExplorer
@@ -285,7 +319,7 @@ export const TransferTroopsContainer = ({
       }
       return false;
     }
-    return troopAmount === 0;
+    return false;
   })();
 
   const getTroopMismatchMessage = () => {

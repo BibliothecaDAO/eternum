@@ -6,6 +6,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  calculateDistance,
   calculateDonkeysNeeded,
   getEntityIdFromKeys,
   getTotalResourceWeightKg,
@@ -55,14 +56,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
+  const selectedStructure = useMemo(() => {
+    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedStructureEntityId)]));
+  }, [components.Structure, selectedStructureEntityId]);
+
   const playerStructuresFiltered = useMemo(() => {
     // For military resources, we need special handling
     if (isMilitaryResource(resource)) {
-      const selectedStructure = getComponentValue(
-        components.Structure,
-        getEntityIdFromKeys([BigInt(selectedStructureEntityId)]),
-      );
-
       // If the selected structure is a village, only show the connected realm
       if (selectedStructure?.category === StructureType.Village) {
         const realmEntityId = selectedStructure.metadata.village_realm;
@@ -78,7 +78,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     // Default case: return all player structures
     return playerStructures;
-  }, [components.Structure, playerStructures, selectedStructureEntityId, resource]);
+  }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
+
+  const structureDistances = useMemo(() => {
+    const distances: Record<number, number> = {};
+    if (!selectedStructure) return distances;
+    playerStructuresFiltered.forEach((structure) => {
+      distances[structure.structure.entity_id] = calculateDistance(
+        { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
+        { x: selectedStructure.base.coord_x, y: selectedStructure.base.coord_y },
+      );
+    });
+    return distances;
+  }, [playerStructuresFiltered, selectedStructure]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);
@@ -235,7 +247,15 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
         {/* Scrollable content area */}
         <div className="flex-grow overflow-y-auto pr-2">
+          <div className="text-xs text-gold/60 mb-2 italic">
+            Structures are sorted by distance (closest to furthest)
+          </div>
           {playerStructuresFiltered
+            .sort((a, b) => {
+              const distanceA = structureDistances[a.structure.entity_id] ?? 0;
+              const distanceB = structureDistances[b.structure.entity_id] ?? 0;
+              return distanceA - distanceB;
+            })
             .filter((structure) => {
               // First, skip if it's the structure itself, as no transfer row should be rendered.
               if (structure.structure.entity_id === selectedStructureEntityId) {
@@ -381,10 +401,6 @@ const RealmTransferBalance = memo(
     const getSourceDonkeyBalance = useCallback(() => {
       return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
     }, [sourceResourceManager, tick]);
-
-    const getDestinationDonkeyBalance = useCallback(() => {
-      return destinationResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
-    }, [destinationResourceManager, tick]);
 
     const currentResourceBalanceBigInt = getSourceBalance();
 
