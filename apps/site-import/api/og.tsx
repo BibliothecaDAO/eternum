@@ -6,26 +6,25 @@ export const config = {
 
 export default async function handler(request: Request) {
   try {
-    // Validate request and URL
-    if (!request || !request.url) {
-      throw new Error("Invalid request or missing URL");
-    }
+    // Get dynamic parameters with safer parsing
+    let title = "Realms World";
+    let description = "The future of gaming is onchain";
+    let path = "";
 
-    let searchParams: URLSearchParams;
     try {
-      const url = new URL(request.url);
-      searchParams = url.searchParams;
-    } catch (urlError) {
-      console.error("Failed to parse URL:", urlError);
-      // Create empty search params as fallback
-      searchParams = new URLSearchParams();
+      // Safely parse URL and search params
+      if (request && request.url) {
+        const url = new URL(request.url);
+        if (url.searchParams) {
+          title = url.searchParams.get("title") || title;
+          description = url.searchParams.get("description") || description;
+          path = url.searchParams.get("path") || path;
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing URL parameters:", error);
+      // Continue with default values
     }
-
-    // Get dynamic parameters with null-safe access
-    const title = searchParams?.get("title") || "Realms World";
-    const description =
-      searchParams?.get("description") || "The future of gaming is onchain";
-    const path = searchParams?.get("path") || "";
 
     return new ImageResponse(
       (
