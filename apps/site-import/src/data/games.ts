@@ -1,5 +1,6 @@
 export interface Game {
   id: number;
+  slug: string;
   title: string;
   image: string;
   backgroundImage: string;
@@ -12,6 +13,7 @@ export interface Game {
   whitepaper?: string;
   players?: number;
   tvl?: number;
+  video?: string;
   links?: {
     homepage?: string;
     discord?: string;
@@ -24,9 +26,11 @@ export interface Game {
 export const games: Game[] = [
   {
     id: 9,
+    slug: "realms-eternum",
     title: "Realms: Eternum",
     image: "/games/realms-eternum/cover.png",
     backgroundImage: "/games/realms-eternum/cover.png",
+    players: 600,
     backgroundImages: [
       "/games/realms-eternum/screenshots/1.png",
       "/games/realms-eternum/screenshots/2.png",
@@ -35,10 +39,12 @@ export const games: Game[] = [
     genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
     description:
       "Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.",
-    status: "development",
+    status: "mainnet",
     isLive: true,
     studio: "biblio-dao",
     whitepaper: "https://github.com/BibliothecaDAO/world-guide",
+    video: "https://www.youtube.com/embed/EDt8vGBDcYg", // Example video URL - replace with actual
+
     links: {
       homepage: "https://eternum.realms.world/",
       discord: "https://discord.gg/realmsworld",
@@ -48,6 +54,7 @@ export const games: Game[] = [
   },
   {
     id: 3,
+    slug: "dark-shuffle",
     title: "Dark Shuffle",
     image: "/games/dark-shuffle/cover.webp",
     backgroundImage: "/games/dark-shuffle/cover.webp",
@@ -59,7 +66,7 @@ export const games: Game[] = [
     genre: ["Deck-building", "Roguelike", "Play to Die"],
     description:
       "Draft a deck of mighty creatures and powerful spells. Venture through a map of challenges and fight against the beasts. Compete in seasons and reap the rewards.",
-    status: "development",
+    status: "mainnet",
     isLive: true,
     studio: "Provable Games",
     links: {
@@ -68,29 +75,9 @@ export const games: Game[] = [
       twitter: "https://twitter.com/await_0x",
     },
   },
-  /*{
-    id: 4,
-    title: "Kingdom & Lords",
-    image: "/games/kingdom-and-lords/cover.webp",
-    backgroundImage: "/games/kingdom-and-lords/cover.webp",
-    backgroundImages: [
-      "/games/kingdom-and-lords/screenshots/0.png",
-      "/games/kingdom-and-lords/screenshots/1.png",
-      "/games/kingdom-and-lords/screenshots/2.png"
-    ],
-    genre: ["SLG", "PVP", "MMO Strategy Game"],
-    description: "The kindom of Lords is a fully on-chain SLG game designed specifically for the Starknet. In the world of 'Kingdom&Lords', you embark on an epic journey, where strategy and wisdom go hand in hand, and alliances are forged to conquer new territories. Build your village, develop agriculture and economy, muster a mighty army, and erect invincible walls.",
-    status: "development",
-    isLive: true,
-    studio: "mississippi-team",
-    links: {
-      homepage: "https://kingdom.0xmssp.xyz/",
-      discord: "https://discord.gg/XKqfEcHaUh",
-      twitter: "https://twitter.com/0xMississippi"
-    }
-  },*/
   {
     id: 5,
+    slug: "loot-survivor",
     title: "Loot Survivor",
     image: "/games/loot-survivor/cover.webp",
     backgroundImage: "/games/loot-survivor/cover.webp",
@@ -106,6 +93,8 @@ export const games: Game[] = [
     status: "development",
     isLive: true,
     studio: "Provable Games",
+    players: 1250,
+    tvl: 450000,
     links: {
       homepage: "https://survivor.realms.world/",
       discord: "https://discord.gg/realmsworld",
@@ -115,6 +104,7 @@ export const games: Game[] = [
 
   {
     id: 8,
+    slug: "pistols-at-ten-blocks",
     title: "Pistols at Ten Blocks",
     image: "/games/pistols/cover.webp",
     backgroundImage: "/games/pistols/cover.webp",
@@ -129,7 +119,7 @@ export const games: Game[] = [
     genre: ["Social", "Casual", "Strategy", "PVP"],
     description:
       'Thou art an offence to all that is decent, dog. I challenge you... to a duel!". In Pistols at Ten Blocks, you face off against your opponent for honour or profit, in a pistol duel at "10" paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself fame and riches, or a shallow grave in the crypt beneath the Fool & Flintlock tavern',
-    status: "development",
+    status: "mainnet",
     isLive: true,
     studio: "Underware",
     links: {
@@ -184,6 +174,7 @@ export const games: Game[] = [
   },*/
   {
     id: 13,
+    slug: "zkube",
     title: "zKube",
     image: "/games/zkube/cover.png",
     backgroundImage: "/games/zkube/cover.png",
@@ -205,6 +196,7 @@ export const games: Game[] = [
   },
   {
     id: 1,
+    slug: "blob-arena",
     title: "Blob Arena",
     image: "/games/blob-arena/cover.webp",
     backgroundImage: "/games/blob-arena/cover.webp",
@@ -216,7 +208,7 @@ export const games: Game[] = [
     genre: ["Turn-Based Combat", "Strategy"],
     description:
       "Aiming to deliver a high-quality gaming experience, Blob Arena stands out for its gameplay dynamics and strategic focus. Players will navigate through exciting encounters, against other players or against AI, using their Bloberts' distinctive traits to outsmart and defeat opponents. The game's core mechanic revolves around an enhanced rock-paper-scissors style combat modified by each character's attributes such as Attack, Defence, Speed, and Strength, which are crucial for mastering the game.",
-    status: "development",
+    status: "mainnet",
     isLive: true,
     studio: "Grugs Lair",
     links: {
@@ -228,6 +220,7 @@ export const games: Game[] = [
   },
   {
     id: 10,
+    slug: "rising-revenant",
     title: "Rising Revenant",
     image: "/games/rising-revenant/cover.webp",
     backgroundImage: "/games/rising-revenant/cover.webp",
