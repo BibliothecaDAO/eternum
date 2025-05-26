@@ -2,7 +2,7 @@ import React from "react";
 import { ImageResponse } from "@vercel/og";
 
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs20.x",
 };
 
 export default async function handler(request: Request) {
