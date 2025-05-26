@@ -3,21 +3,26 @@ import { games } from "@/data/games";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Helmet } from "react-helmet-async";
+import { generateMetaTags } from "@/lib/og-image";
 
 export const Route = createFileRoute("/games/")({
   component: GamesPage,
+  head: () => ({
+    meta: generateMetaTags({
+      title: "Games - Realms World",
+      description:
+        "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
+      path: "/games",
+      // You can specify a custom image for the games page
+      // image: "/og-games.png",
+    }),
+  }),
 });
 
 function GamesPage() {
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
-
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://realms.world";
 
   // Get unique genres from all games
   const allGenres = Array.from(
@@ -40,47 +45,6 @@ function GamesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
-      <Helmet>
-        <title>Games - Realms World</title>
-        <meta
-          name="description"
-          content="Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token."
-        />
-
-        {/* Open Graph tags */}
-        <meta property="og:title" content="Games - Realms World" />
-        <meta
-          property="og:description"
-          content="Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token."
-        />
-        <meta
-          property="og:image"
-          content={`${origin}/api/og?title=${encodeURIComponent(
-            "Games"
-          )}&description=${encodeURIComponent(
-            "Explore all games in the Realms World ecosystem"
-          )}&path=${encodeURIComponent("/games")}`}
-        />
-        <meta property="og:url" content={`${origin}/games`} />
-        <meta property="og:type" content="website" />
-
-        {/* Twitter Card tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Games - Realms World" />
-        <meta
-          name="twitter:description"
-          content="Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token."
-        />
-        <meta
-          name="twitter:image"
-          content={`${origin}/api/og?title=${encodeURIComponent(
-            "Games"
-          )}&description=${encodeURIComponent(
-            "Explore all games in the Realms World ecosystem"
-          )}&path=${encodeURIComponent("/games")}`}
-        />
-      </Helmet>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

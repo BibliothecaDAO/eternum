@@ -3,7 +3,6 @@ import { games } from "@/data/games";
 // import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { GameDetails } from "@/components/game/GameDetails";
 import { motion } from "framer-motion";
-import { Helmet } from "react-helmet-async";
 
 export const Route = createFileRoute("/games/$slug")({
   loader: ({ params }) => {
@@ -14,50 +13,67 @@ export const Route = createFileRoute("/games/$slug")({
     return { game };
   },
   component: GamePage,
+  head: ({ loaderData }) => {
+    const game = loaderData?.game;
+    if (!game) return {};
+
+    // Use the origin from window.location or a default for SSR
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://realms.world";
+
+    return {
+      meta: [
+        {
+          title: `${game.title} - Realms World`,
+        },
+        {
+          name: "description",
+          content: game.description,
+        },
+        {
+          property: "og:title",
+          content: `${game.title} - Realms World`,
+        },
+        {
+          property: "og:description",
+          content: game.description,
+        },
+        {
+          property: "og:image",
+          content: `${origin}${game.image}`,
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary_large_image",
+        },
+        {
+          name: "twitter:title",
+          content: `${game.title} - Realms World`,
+        },
+        {
+          name: "twitter:description",
+          content: game.description,
+        },
+        {
+          name: "twitter:image",
+          content: `${origin}${game.image}`,
+        },
+      ],
+    };
+  },
 });
 
 function GamePage() {
   const { game } = Route.useLoaderData();
 
-  // Use the origin from window.location or a default for SSR
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://realms.world";
-
   return (
     <>
-      <Helmet>
-        <title>{`${game.title} - Realms World`}</title>
-        <meta name="description" content={game.description} />
-
-        {/* Open Graph tags */}
-        <meta property="og:title" content={`${game.title} - Realms World`} />
-        <meta property="og:description" content={game.description} />
-        <meta
-          property="og:image"
-          content={`${origin}/api/og?title=${encodeURIComponent(
-            game.title
-          )}&description=${encodeURIComponent(
-            game.description
-          )}&path=${encodeURIComponent(`/games/${game.slug}`)}`}
-        />
-        <meta property="og:type" content="website" />
-
-        {/* Twitter Card tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${game.title} - Realms World`} />
-        <meta name="twitter:description" content={game.description} />
-        <meta
-          name="twitter:image"
-          content={`${origin}/api/og?title=${encodeURIComponent(
-            game.title
-          )}&description=${encodeURIComponent(
-            game.description
-          )}&path=${encodeURIComponent(`/games/${game.slug}`)}`}
-        />
-      </Helmet>
-
       {/* Game-specific background */}
       {/* <div className="fixed inset-0 -z-10">
         <AnimatedBackground selectedGame={game} />

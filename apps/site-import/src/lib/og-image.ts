@@ -9,7 +9,7 @@ interface OGImageParams {
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://realms.world";
 
 // Default OG image
-const DEFAULT_OG_IMAGE = `${BASE_URL}/og-default.png`;
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og.jpg`;
 
 export function generateOGImageUrl(params: OGImageParams): string {
   // If a custom image is provided, use it
