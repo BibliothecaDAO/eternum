@@ -17,7 +17,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
-import { Access, ContractAddress, MAX_NAME_LENGTH, ResourcesIds } from "@bibliothecadao/types";
+import { Access, ContractAddress, MAX_NAME_LENGTH, RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -204,30 +204,37 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
 
-    return Object.values(requiredAmounts).map(({ resource }) => {
-      const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-      const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-      const progress = {
-        percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
-        costNeeded: requiredAmount,
-        hyperstructure_entity_id: entity.entity_id,
-        resource_type: resource,
-        amount: currentAmount,
-      };
+    return Object.values(requiredAmounts)
+      .sort((a, b) => {
+        // Sort by rarity, so that the least rare resources are at the top
+        const rarityA = RESOURCE_RARITY[a.resource] || Number.MAX_SAFE_INTEGER;
+        const rarityB = RESOURCE_RARITY[b.resource] || Number.MAX_SAFE_INTEGER;
+        return rarityA - rarityB;
+      })
+      .map(({ resource }) => {
+        const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+        const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+        const progress = {
+          percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
+          costNeeded: requiredAmount,
+          hyperstructure_entity_id: entity.entity_id,
+          resource_type: resource,
+          amount: currentAmount,
+        };
 
-      return (
-        <HyperstructureResourceChip
-          structureEntityId={structureEntityId}
-          setContributions={setNewContributions}
-          contributions={newContributions}
-          progress={progress}
-          key={resource}
-          resourceId={resource}
-          resetContributions={resetContributions}
-          disabled={!canContribute || !hyperstructure?.initialized}
-        />
-      );
-    });
+        return (
+          <HyperstructureResourceChip
+            structureEntityId={structureEntityId}
+            setContributions={setNewContributions}
+            contributions={newContributions}
+            progress={progress}
+            key={resource}
+            resourceId={resource}
+            resetContributions={resetContributions}
+            disabled={!canContribute || !hyperstructure?.initialized}
+          />
+        );
+      });
   }, [
     progresses,
     currentAmounts,

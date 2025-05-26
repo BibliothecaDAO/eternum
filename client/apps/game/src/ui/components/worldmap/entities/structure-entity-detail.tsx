@@ -8,6 +8,8 @@ import {
   unpackValue,
 } from "@bibliothecadao/eternum";
 
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { Position } from "@/types/position";
 import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
@@ -99,6 +101,8 @@ export const StructureEntityDetail = memo(
     const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
     const structureTypeName = structure ? getStructureTypeName(structure?.category) : undefined;
 
+    const goToStructure = useGoToStructure();
+
     const progress = useMemo(() => {
       return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, components) : undefined;
     }, [isHyperstructure, structure?.entity_id, components]);
@@ -108,7 +112,6 @@ export const StructureEntityDetail = memo(
 
     const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
 
-    console.log("CHAT_DEBUG: addressName", addressName);
     const handleChatClick = () => {
       if (isMine) {
         openChat();
@@ -165,10 +168,26 @@ export const StructureEntityDetail = memo(
             >
               {isAlly ? "Ally" : "Enemy"}
             </div>
-            {addressName !== undefined && (
-              <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-                <MessageCircle />
-              </button>
+            {addressName !== undefined && showButtons && (
+              <>
+                {isMine && (
+                  <button
+                    onClick={() =>
+                      goToStructure(
+                        structureEntityId,
+                        new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                        false,
+                      )
+                    }
+                    className="px-2 py-1 rounded text-xs bg-gold/20 hover:bg-gold/30 transition"
+                  >
+                    VIEW
+                  </button>
+                )}
+                <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
+                  <MessageCircle />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -243,9 +262,6 @@ export const StructureEntityDetail = memo(
               />
             )}
           </div>
-
-          {/* Action buttons */}
-          {showButtons && <div className="flex justify-end gap-1 mt-0.5">{showButtons}</div>}
         </div>
 
         {/* Immunity timer */}
