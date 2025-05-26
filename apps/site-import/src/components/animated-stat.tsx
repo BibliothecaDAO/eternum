@@ -70,7 +70,7 @@ export function AnimatedStat({
             >
               <CardTitle className="text-2xl sm:text-3xl">
                 {prefix}
-                {count.toLocaleString()}
+                {Number(count.toFixed(1)).toLocaleString()}
                 {suffix}
               </CardTitle>
             </motion.div>

@@ -98,7 +98,7 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
           ) : (
             <motion.div
               key={selectedGame.id}
-              className="absolute inset-0 "
+              className="absolute inset-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.7 }}
               exit={{ opacity: 0 }}
@@ -168,7 +168,6 @@ function TopBar({
                       ${lordsPrice?.toLocaleString()}
                     </span>
                   </motion.div>
-                  <ModeToggle />
                 </div>
               </div>
 
@@ -711,8 +710,20 @@ function IntroSection({
           let displayValue: number = 0;
           let displayTrend: string = "";
 
-          const priceInfo = lordsInfo?.price as any;
-          const lordsInfoData = lordsInfo as any;
+          const priceInfo = lordsInfo?.price as {
+            marketCapUsd?: number | string;
+            volume24h?: number | string;
+            diff7d?: number | string;
+            availableSupply?: number | string;
+            rate?: number | string;
+            diff?: number | string;
+            volDiff1?: number;
+          };
+          const lordsInfoData = lordsInfo as {
+            totalSupply?: string;
+            decimals?: string;
+            holdersCount?: number | string;
+          };
 
           switch (baseStat.id) {
             case "marketCap":
@@ -861,7 +872,7 @@ function LiveIndicator() {
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 2, repeat: Infinity }}
     >
-      <div className="w-2 h-2 rounded-full bg-positive mr-2" />
+      <div className="w-2 h-2 rounded-full bg-positive mr-2 bg-green-400" />
       <span className="text-sm text-positive">Live</span>
     </motion.div>
   );
@@ -919,7 +930,7 @@ function App() {
           onTitleClick={handleTitleClick}
         />
 
-        <div className="min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4">
+        <div className="min-h-screen pt-18 sm:pt-20 md:pt-24 mx-1 sm:mx-2 md:mx-4">
           {/* Intro Section */}
           {!selectedGame && <IntroSection lordsInfo={lordsInfo} />}
           {/* Games Section */}
@@ -930,12 +941,34 @@ function App() {
           >
             <div className="container mx-auto px-1 sm:px-2 md:px-4 mb-3 sm:mb-4 md:mb-8">
               <motion.h2
-                className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-4"
+                className="text-lg sm:text-xl md:text-2xl font-bold my-1 sm:my-2 md:my-4 flex justify-between"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                Featured Games
+                <div>Featured Games</div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSelectedGame(null)}
+                  className="hover:bg-primary/20 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  <span className="sr-only">Close</span>
+                </Button>
               </motion.h2>
             </div>
             <motion.div
@@ -992,7 +1025,7 @@ function App() {
                             transition={{ delay: index * 0.1 + 0.3 }}
                           >
                             <motion.div
-                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2"
+                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2 bg-green-400"
                               animate={{ opacity: [1, 0.5, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
@@ -1097,7 +1130,7 @@ function App() {
                         {/* Left Column - Basic Info */}
                         <div className="space-y-3 sm:space-y-4 md:space-y-6">
                           <div className="space-y-1 sm:space-y-2">
-                            <div className="flex items-center space-x-2 sm:space-x-4 text-foreground">
+                            <div className="flex items-center space-x-2 sm:space-x-4 text-foreground justify-between">
                               <motion.h2
                                 className="text-2xl sm:text-3xl md:text-5xl font-bold"
                                 initial={{ y: 20, opacity: 0 }}
@@ -1109,7 +1142,7 @@ function App() {
                               {selectedGame.isLive && <LiveIndicator />}
                             </div>
                             <motion.p
-                              className="text-sm sm:text-base md:text-lg text-muted-foreground"
+                              className="text-sm sm:text-base md:text-lg text-muted-foreground text-justify"
                               initial={{ y: 20, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
                               transition={{ delay: 0.3 }}
