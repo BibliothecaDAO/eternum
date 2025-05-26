@@ -89,19 +89,19 @@ function VeLordsNode({
       />
       <div className="text-center">
         <Coins className="w-10 h-10 mx-auto mb-2 opacity-90" />
-        <div className="text-xl font-bold">{data.label}</div>
+        <div className=" ">{data.label}</div>
         {data.apy && (
-          <div className="text-3xl font-semibold mt-2">
+          <div className="text-4xl font-semibold mt-2 text-green-800 px-4 my-2">
             {data.apy.toFixed(2)}% APY
           </div>
         )}
         {data.value && (
-          <div className="text-xl font-bold mt-2">
+          <div className="text-lg text-opacity-50">
             {data.value.toLocaleString()} $LORDS
           </div>
         )}
         {data.tvl && (
-          <div className="text-sm mt-1 opacity-90">
+          <div className="text-sm opacity-90">
             TVL: $
             {data.tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
