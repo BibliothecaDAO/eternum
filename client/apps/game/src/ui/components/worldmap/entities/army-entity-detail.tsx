@@ -187,7 +187,7 @@ export const ArmyEntityDetail = memo(
                 <MessageCircle />
               </button>
             )}
-            {derivedData.isMine && (
+            {derivedData.isMine && showButtons && (
               <button
                 onClick={handleDeleteExplorer}
                 className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${
