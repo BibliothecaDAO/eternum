@@ -25,12 +25,22 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   return (
     <>
-      <IntroSection />
-      <GamesSection />
-      <ValueFlowSection />
-      {/* <VelordsAPYSection /> */}
-      <TokenomicsSection />
-      <TreasurySection />
+      <div id="hero">
+        <IntroSection />
+      </div>
+      <div id="games">
+        <GamesSection />
+      </div>
+      <div id="value-flow">
+        <ValueFlowSection />
+      </div>
+      <div id="velords">{/* <VelordsAPYSection /> */}</div>
+      <div id="tokenomics">
+        <TokenomicsSection />
+      </div>
+      <div id="treasury">
+        <TreasurySection />
+      </div>
     </>
   );
 }

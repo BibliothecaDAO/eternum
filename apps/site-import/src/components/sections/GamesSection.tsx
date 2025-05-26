@@ -83,7 +83,7 @@ export function GamesSection() {
                       transition={{ delay: index * 0.1 + 0.3 }}
                     >
                       <motion.div
-                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-positive mr-1 sm:mr-2"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 mr-1 sm:mr-2"
                         animate={{ opacity: [1, 0.5, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
@@ -95,7 +95,7 @@ export function GamesSection() {
                 )}
 
                 {/* Title and Player Count Overlay - Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-1.5 sm:p-2 md:p-4 bg-gradient-to-t from-background/90 to-transparent">
+                <div className="absolute bottom-0 left-0 right-0 p-1.5 sm:p-2 md:p-4 bg-gradient-to-t from-background to-transparent">
                   <motion.div
                     className="space-y-0.5 sm:space-y-1 md:space-y-2"
                     initial={{ y: 20, opacity: 0 }}

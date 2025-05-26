@@ -1,4 +1,4 @@
-import { Pie, PieChart } from "recharts";
+import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import {
   Card,
   CardContent,
@@ -7,54 +7,103 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const tokenomicsData = [
-  { allocation: "Staking Rewards", value: 40, fill: "oklch(0.43 0.04 41.99)" },
-  { allocation: "Game Rewards", value: 35, fill: "oklch(0.92 0.07 74.37)" },
-  { allocation: "Development", value: 15, fill: "oklch(0.93 0 0)" },
-  { allocation: "Community", value: 10, fill: "oklch(0.94 0.05 75.50)" },
-];
+interface TokenomicsChartProps {
+  treasuryPercentage?: number;
+  marketPercentage?: number;
+}
 
-export function TokenomicsChart() {
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
+        <p className="font-semibold">{payload[0].payload.allocation}</p>
+        <p className="text-sm text-muted-foreground">{payload[0].value}%</p>
+        <p className="text-xs mt-1">{payload[0].payload.description}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export function TokenomicsChart({
+  treasuryPercentage = 40,
+  marketPercentage = 60,
+}: TokenomicsChartProps) {
+  const tokenomicsData = [
+    {
+      allocation: "DAO Treasury",
+      value: treasuryPercentage,
+      fill: "oklch(0.7 0.15 150)", // Green
+      description: "Controlled by DAO for ecosystem development",
+    },
+    {
+      allocation: "Market Liquid",
+      value: marketPercentage,
+      fill: "oklch(0.7 0.15 250)", // Blue
+      description: "Freely traded on decentralized exchanges",
+    },
+  ];
+
   return (
-    <Card className="backdrop-blur-md  sm:w-1/2 mx-auto">
-      <CardHeader className="items-center pb-0">
-        <CardTitle className="text-4xl">Token Distribution</CardTitle>
-        <CardDescription className="text-2xl">
-          Supply: 300,000,000 LORDS
+    <Card className="backdrop-blur-md border-border/50">
+      <CardHeader className="text-center pb-2">
+        <CardTitle className="text-3xl">Total Supply</CardTitle>
+        <CardDescription className="text-xl">
+          300,000,000 $LORDS
         </CardDescription>
+        <p className="text-sm text-muted-foreground mt-2">
+          100% Liquid • No Locks • No Vesting
+        </p>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <div className="mx-auto aspect-square max-h-[250px]">
-          <PieChart width={250} height={250}>
-            <Pie
-              data={tokenomicsData}
-              dataKey="value"
-              nameKey="allocation"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              stroke="none"
-            />
-          </PieChart>
+      <CardContent className="pb-6">
+        <div className="">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={tokenomicsData}
+                dataKey="value"
+                nameKey="allocation"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={2}
+                stroke="none"
+              >
+                {tokenomicsData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {tokenomicsData.map((item) => (
+            <div
+              key={item.allocation}
+              className="flex justify-between items-start"
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0"
+                  style={{ backgroundColor: item.fill }}
+                />
+                <div className="space-y-1">
+                  <p className="font-medium">{item.allocation}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+              <span className="font-bold text-lg ml-4">
+                {item.value.toFixed(1)}%
+              </span>
+            </div>
+          ))}
         </div>
       </CardContent>
-      <div className="p-6 space-y-4 text-2xl">
-        {tokenomicsData.map((item) => (
-          <div
-            key={item.allocation}
-            className="flex justify-between items-center"
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.fill }}
-              />
-              <span className=" text-muted-foreground">{item.allocation}</span>
-            </div>
-            <span className="font-bold">{item.value}%</span>
-          </div>
-        ))}
-      </div>
     </Card>
   );
 }
