@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "functions": {
     "api/og.tsx": {
       "runtime": "vercel/node@20.x"
