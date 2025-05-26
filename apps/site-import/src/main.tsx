@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { StarknetProvider } from "./hooks/starknet-provider";
+import { HelmetProvider } from "react-helmet-async";
 
 // Create a new router instance
 const router = createRouter({
@@ -27,12 +28,14 @@ declare module "@tanstack/react-router" {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <StarknetProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </StarknetProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <StarknetProvider>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </StarknetProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   </StrictMode>
 );
