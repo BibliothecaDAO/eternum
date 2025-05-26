@@ -106,6 +106,14 @@ function VeLordsNode({
             {data.tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         )}
+        {data.apy && (
+          <div className="mt-3 pt-3 border-t border-primary-foreground/20">
+            <p className="text-xs opacity-80 max-w-[250px] mx-auto">
+              APY is based on weekly fees from games. It is not guaranteed and
+              is expected to fluctuate.
+            </p>
+          </div>
+        )}
       </div>
       <Handle
         type="source"
