@@ -21,6 +21,7 @@
     "@tanstack/react-router-devtools": "^1.120.10",
     "@types/chroma-js": "^3.1.1",
     "@types/three": "^0.174.0",
+    "@xyflow/react": "^12.6.4",
     "chroma-js": "^3.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

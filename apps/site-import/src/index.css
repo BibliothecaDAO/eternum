@@ -260,3 +260,56 @@
 .snap-mandatory {
   overscroll-behavior-y: contain;
 }
+
+/* React Flow animated edges */
+.react-flow__edge-path {
+  stroke-width: 3;
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Ensure React Flow edges are visible in dark mode */
+.dark .react-flow__edge-path {
+  stroke: #10b981;
+}
+
+.dark .react-flow__edge.animated path {
+  stroke: #3b82f6;
+}
+
+/* React Flow node hover effects */
+.react-flow__node:hover {
+  z-index: 10;
+}
+
+/* React Flow edge labels */
+.react-flow__edge-text {
+  pointer-events: none;
+  user-select: none;
+}
+
+.react-flow__edge-textbg {
+  fill: rgba(0, 0, 0, 0.8);
+}
+
+.react-flow__edge-text text {
+  font-family: var(--font-sans);
+}
+
+/* Ensure labels are visible in light mode too */
+.react-flow__edge-textbg {
+  fill: rgba(0, 0, 0, 0.8);
+}
+
+.dark .react-flow__edge-textbg {
+  fill: rgba(0, 0, 0, 0.9);
+}

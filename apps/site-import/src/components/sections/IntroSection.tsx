@@ -154,7 +154,7 @@ export function IntroSection() {
                 const trendVal = priceInfo.diff;
                 if (typeof trendVal === "number") {
                   displayTrend = `${trendVal > 0 ? "+" : ""}${trendVal.toFixed(
-                    2
+                    4
                   )}%`;
                 }
               }
