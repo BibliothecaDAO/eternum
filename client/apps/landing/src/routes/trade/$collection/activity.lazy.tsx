@@ -2,6 +2,7 @@ import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import { ScrollHeader } from "@/components/ui/scroll-header";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { marketplaceCollections } from "@/config";
 import { fetchMarketOrderEvents } from "@/hooks/services";
 import { formatRelativeTime } from "@/lib/utils";
@@ -173,10 +174,21 @@ function ActivityPage() {
 
                         {/* Time */}
                         <div className="px-4 py-3 text-sm text-muted-foreground">
-                          <div className="flex items-center justify-end h-full">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatRelativeTime(event.executed_at)}
-                          </div>
+                          {event.executed_at && (
+                            <div className="flex items-center justify-end h-full">
+                              <Clock className="w-3 h-3 mr-1" />
+                              <TooltipProvider>
+                                <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
+                                  <TooltipTrigger asChild>
+                                    <span>{formatRelativeTime(new Date(event.executed_at).getTime() / 1000)}</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{new Date(event.executed_at).toLocaleString()}</p>{" "}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
