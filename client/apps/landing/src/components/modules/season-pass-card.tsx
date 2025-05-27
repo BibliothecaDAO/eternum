@@ -1,5 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { seasonPassAddress } from "@/config";
+import { marketplaceCollections, seasonPassAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
@@ -27,7 +27,12 @@ interface ListingDetails {
   expiration?: string;
 }
 
-const SEASON_PASS_COLLECTION_ID = 1;
+function getCollectionByAddress(address: string): (typeof marketplaceCollections)[keyof typeof marketplaceCollections] {
+  const collection = Object.entries(marketplaceCollections).find(([_, data]) => {
+    return trimAddress(data.address)?.toLowerCase() === trimAddress(address)?.toLowerCase();
+  });
+  return collection ? collection[1] : marketplaceCollections["season-passes"]; // Default to season passes if not found
+}
 
 export const SeasonPassCard = ({
   pass,
@@ -36,15 +41,16 @@ export const SeasonPassCard = ({
   onToggleSelection,
   toggleNftSelection,
 }: SeasonPassCardProps) => {
-  const { token_id, metadata } = pass;
+  const { token_id, metadata, contract_address } = pass;
   const { address: accountAddress } = useAccount();
-  const marketplaceActions = useMarketplace();
+  const marketplaceActions = useMarketplace({ collectionAddress: contract_address });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const isOwner = pass.account_address === trimAddress(accountAddress);
-
+  const collection = getCollectionByAddress(contract_address);
+  const collectionName = collection.name;
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!pass.expiration) return;
@@ -151,7 +157,7 @@ export const SeasonPassCard = ({
         <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <CardTitle className="items-center gap-2">
             <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-              Season 1 Pass
+              {collectionName}
             </div>
             <div className="flex justify-between gap-2">
               <h4 className="text-xl truncate">{name || `Pass #${token_id}`}</h4>
@@ -234,7 +240,7 @@ export const SeasonPassCard = ({
         realmData={pass}
         isOwner={isOwner}
         marketplaceActions={marketplaceActions}
-        collection_id={SEASON_PASS_COLLECTION_ID}
+        collection_id={collection.id}
         price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
         orderId={pass.order_id?.toString() ?? undefined}
         isListed={pass.expiration !== null}

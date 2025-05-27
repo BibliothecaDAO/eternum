@@ -149,6 +149,7 @@ WITH limited_active_orders AS (
         t.name,
         t.symbol,
         t.metadata,
+        t.contract_address,
         lao.token_owner AS account_address,
         lao.price_hex,
         lao.expiration,

@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { seasonPassAddress } from "@/config";
+import { marketplaceCollections } from "@/config";
 import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/trade/$collection")({
 
 function TradeLayout() {
   const { collection } = useParams({ from: "/trade/$collection" });
-  const collectionAddress = collection || seasonPassAddress;
-
+  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { data: totals } = useQuery({
     queryKey: ["activeMarketOrdersTotal", collectionAddress],
     queryFn: () => fetchActiveMarketOrdersTotal(collectionAddress),
@@ -29,7 +29,7 @@ function TradeLayout() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col h-full overflow-y-auto">
         <div className="text-center border-b py-6">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season 1 Pass Marketplace"}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">{collectionName + " Marketplace"}</h2>
           <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
             <span>
               <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings

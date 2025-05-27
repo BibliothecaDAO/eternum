@@ -18,6 +18,7 @@ import { Route as TradeCollectionRouteImport } from './routes/trade/$collection/
 // Create Virtual Routes
 
 const SeasonPassesLazyImport = createFileRoute('/season-passes')()
+const RealmsLazyImport = createFileRoute('/realms')()
 const MintLazyImport = createFileRoute('/mint')()
 const DataLazyImport = createFileRoute('/data')()
 const ClaimLazyImport = createFileRoute('/claim')()
@@ -36,6 +37,12 @@ const SeasonPassesLazyRoute = SeasonPassesLazyImport.update({
   path: '/season-passes',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/season-passes.lazy').then((d) => d.Route))
+
+const RealmsLazyRoute = RealmsLazyImport.update({
+  id: '/realms',
+  path: '/realms',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/realms.lazy').then((d) => d.Route))
 
 const MintLazyRoute = MintLazyImport.update({
   id: '/mint',
@@ -130,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MintLazyImport
       parentRoute: typeof rootRoute
     }
+    '/realms': {
+      id: '/realms'
+      path: '/realms'
+      fullPath: '/realms'
+      preLoaderRoute: typeof RealmsLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/season-passes': {
       id: '/season-passes'
       path: '/season-passes'
@@ -195,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
+  '/realms': typeof RealmsLazyRoute
   '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
@@ -208,6 +223,7 @@ export interface FileRoutesByTo {
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
+  '/realms': typeof RealmsLazyRoute
   '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade': typeof TradeIndexLazyRoute
@@ -221,6 +237,7 @@ export interface FileRoutesById {
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
+  '/realms': typeof RealmsLazyRoute
   '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
@@ -236,6 +253,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/data'
     | '/mint'
+    | '/realms'
     | '/season-passes'
     | '/trade/$collection'
     | '/trade/activity'
@@ -248,6 +266,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/data'
     | '/mint'
+    | '/realms'
     | '/season-passes'
     | '/trade/activity'
     | '/trade'
@@ -259,6 +278,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/data'
     | '/mint'
+    | '/realms'
     | '/season-passes'
     | '/trade/$collection'
     | '/trade/activity'
@@ -273,6 +293,7 @@ export interface RootRouteChildren {
   ClaimLazyRoute: typeof ClaimLazyRoute
   DataLazyRoute: typeof DataLazyRoute
   MintLazyRoute: typeof MintLazyRoute
+  RealmsLazyRoute: typeof RealmsLazyRoute
   SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute
   TradeCollectionRouteRoute: typeof TradeCollectionRouteRouteWithChildren
   TradeActivityLazyRoute: typeof TradeActivityLazyRoute
@@ -284,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimLazyRoute: ClaimLazyRoute,
   DataLazyRoute: DataLazyRoute,
   MintLazyRoute: MintLazyRoute,
+  RealmsLazyRoute: RealmsLazyRoute,
   SeasonPassesLazyRoute: SeasonPassesLazyRoute,
   TradeCollectionRouteRoute: TradeCollectionRouteRouteWithChildren,
   TradeActivityLazyRoute: TradeActivityLazyRoute,
@@ -304,6 +326,7 @@ export const routeTree = rootRoute
         "/claim",
         "/data",
         "/mint",
+        "/realms",
         "/season-passes",
         "/trade/$collection",
         "/trade/activity",
@@ -321,6 +344,9 @@ export const routeTree = rootRoute
     },
     "/mint": {
       "filePath": "mint.lazy.tsx"
+    },
+    "/realms": {
+      "filePath": "realms.lazy.tsx"
     },
     "/season-passes": {
       "filePath": "season-passes.lazy.tsx"

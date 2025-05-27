@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
-import { marketplaceAddress } from "@/config";
+import { marketplaceAddress, marketplaceCollections } from "@/config";
 import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
@@ -33,7 +33,7 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 function CollectionPage() {
   const { collection } = Route.useParams();
   const { connectors } = useConnect();
-
+  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
@@ -43,12 +43,12 @@ function CollectionPage() {
       {
         queryKey: ["openOrdersByPrice", marketplaceAddress, collection],
         queryFn: () =>
-          fetchOpenOrdersByPrice(collection, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+          fetchOpenOrdersByPrice(collectionAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
         refetchInterval: 8_000,
       },
       {
         queryKey: ["activeMarketOrdersTotal", collection],
-        queryFn: () => fetchActiveMarketOrdersTotal(collection),
+        queryFn: () => fetchActiveMarketOrdersTotal(collectionAddress),
         refetchInterval: 30_000,
       },
     ],
@@ -60,7 +60,6 @@ function CollectionPage() {
     }
     return null;
   }, []);
-
   const {
     selectedFilters,
     allTraits,

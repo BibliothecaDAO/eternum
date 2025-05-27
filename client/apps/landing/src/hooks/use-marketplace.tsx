@@ -1,4 +1,4 @@
-import { lordsAddress, marketplaceAddress, seasonPassAddress } from "@/config";
+import { lordsAddress, marketplaceAddress } from "@/config";
 import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
 import {
   AcceptMarketplaceOrdersProps,
@@ -18,7 +18,7 @@ type AcceptOrdersParams = Omit<AcceptMarketplaceOrdersProps, "signer" | "marketp
 type CancelOrderParams = Omit<CancelMarketplaceOrderProps, "signer" | "marketplace_address">;
 type EditOrderParams = Omit<EditMarketplaceOrderProps, "signer" | "marketplace_address">;
 
-export const useMarketplace = () => {
+export const useMarketplace = ({ collectionAddress }: { collectionAddress?: string }) => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
   const [isCancellingOrder, setIsCancellingOrder] = useState(false);
@@ -40,7 +40,7 @@ export const useMarketplace = () => {
 
   const { contract } = useContract({
     abi: SeasonPassAbi,
-    address: seasonPassAddress as `0x${string}`,
+    address: collectionAddress as `0x${string}`,
   });
 
   const { contract: lordsContract } = useContract({
@@ -51,7 +51,7 @@ export const useMarketplace = () => {
   // improve
   const { data: seasonPassApproved } = useReadContract({
     abi: SeasonPassAbi,
-    address: seasonPassAddress as `0x${string}`,
+    address: collectionAddress as `0x${string}`,
     functionName: "is_approved_for_all",
     args: [address as `0x${string}`, marketplaceAddress],
     watch: true,
@@ -103,8 +103,8 @@ export const useMarketplace = () => {
   const acceptOrders = async (params: AcceptOrdersParams & { totalPrice: bigint }) => {
     if (!account) throw new Error("Account not connected");
     setIsAcceptingOrder(true);
-
-    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice]);
+    console.log(params.totalPrice);
+    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice * 2n]);
 
     try {
       // accept order

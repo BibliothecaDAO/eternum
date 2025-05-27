@@ -27,12 +27,17 @@ const items = [
     icon: Castle,
   },
   {
-    title: "Manage Passes",
+    title: "Realms",
+    url: "/realms",
+    icon: Gamepad2,
+  },
+  {
+    title: "Season Passes",
     url: "/season-passes",
     icon: Gamepad2,
   },
   {
-    title: "Buy A Pass",
+    title: "Marketplace",
     url: "/trade",
     icon: Scale,
   },

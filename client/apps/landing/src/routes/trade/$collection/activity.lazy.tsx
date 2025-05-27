@@ -20,7 +20,7 @@ function ActivityPage() {
 
   const { data: events, isLoading } = useQuery({
     queryKey: ["marketOrderEvents", collection],
-    queryFn: () => fetchMarketOrderEvents(collection),
+    queryFn: () => fetchMarketOrderEvents(collection, "all"),
     refetchInterval: 30_000,
   });
 
