@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { formatRelativeTime } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -14,8 +16,11 @@ import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Separator } from "../ui/separator";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
@@ -231,18 +236,27 @@ export const RealmDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border text-foreground">
-        <DialogHeader>
-          <DialogTitle>Season 1 Pass</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl md:max-w-6xl bg-card border-border text-foreground">
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <img src={image} alt={name ?? "Realm"} className="rounded-md w-72 object-contain mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-center">
+              <img src={image} alt={name ?? "Realm"} className="rounded-md w-72 object-contain" />
+            </div>
             <div className="flex flex-col gap-5">
-              <div className=" leading-none tracking-tight items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <h3 className="text-gold font-semibold text-2xl">{name || "N/A"}</h3>
-                <p className="text-muted-foreground">#{parseInt(realmData.token_id?.toString())}</p>
+                <div className="flex items-center gap-2  ">
+                  <div className="flex items-center gap-2">{realmData.name}</div>
+                  <Separator orientation="vertical" className="h-4" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-sm">Owned By</span>
+                    <span className="text-foreground">{shortenHex(realmData.account_address ?? "", 10)}</span>
+                  </div>
+                </div>
               </div>
+              <Badge variant="outline" className="w-fit">
+                <span>TOKEN #{parseInt(realmData.token_id?.toString())}</span>
+              </Badge>
               {/* Display Resources */}
               <div>
                 <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
@@ -269,46 +283,169 @@ export const RealmDetailModal = ({
                   </span>
                 </div>
               )}
-              <div>
-                <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-                  Owned By
-                </Label>
-                <span>{shortenHex(realmData.account_address ?? "", 10)}</span>
+
+              {/* Display Price if Listed */}
+              <div className="border bg-card rounded-sm p-4">
+                {isListed && price !== undefined ? (
+                  <>
+                    <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-3xl font-bold text-gold -mt-2">
+                        {isSyncing
+                          ? "Syncing..."
+                          : parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                      </div>
+                      <ResourceIcon resource="Lords" size="sm" />
+                      <div className="text-sm text-muted-foreground">
+                        {timeRemaining ? (
+                          <span className="text-red-500 font-medium">{timeRemaining}</span>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
+                              <TooltipTrigger asChild>
+                                <span>Expires {formatRelativeTime(expiration)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{new Date(Number(expiration) * 1000).toLocaleString()}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">Price</p>
+                    {!showListInputs ? (
+                      <Button
+                        variant="cta"
+                        onClick={() => setShowListInputs(true)}
+                        size="lg"
+                        className="w-full"
+                        disabled={isLoading || isSyncing}
+                      >
+                        List Item
+                      </Button>
+                    ) : (
+                      <p className="text-2xl font-bold text-gold">Not Listed</p>
+                    )}
+                  </>
+                )}
+                {isListed && orderId && isOwner && !showEditInputs && (
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowEditInputs(true)}
+                      size="sm"
+                      disabled={isLoading || isSyncing}
+                    >
+                      Edit Listing
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelOrder}
+                      size="sm"
+                      className="border-destructive text-destructive"
+                      disabled={isLoading || isSyncing || marketplaceActions.isCancellingOrder}
+                    >
+                      {marketplaceActions.isCancellingOrder ? "Cancelling..." : "Cancel Listing"}
+                    </Button>
+                  </div>
+                )}
+                {isListed && price !== undefined && !isOwner && (
+                  <>
+                    {address ? (
+                      <div className="flex flex-col items-center sm:items-stretch mt-2">
+                        {/* Insufficient Balance Message - Showing Current Balance */}
+                        {address &&
+                          !hasSufficientBalance &&
+                          expiration !== undefined &&
+                          expiration * 1000 >= Date.now() && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
+                              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                              <span>
+                                Insufficient LORDS balance (Balance:{" "}
+                                {parseFloat(formatUnits(userBalance, 18)).toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                                )
+                              </span>
+                            </div>
+                          )}
+                        <Button
+                          onClick={handleAcceptOrder}
+                          size="lg"
+                          variant="cta"
+                          disabled={
+                            isLoading ||
+                            isSyncing ||
+                            marketplaceActions.isAcceptingOrder ||
+                            (expiration !== undefined && expiration * 1000 < Date.now())
+                          }
+                          className="w-full sm:w-auto"
+                        >
+                          {expiration !== undefined && expiration * 1000 < Date.now()
+                            ? "Listing Expired"
+                            : marketplaceActions.isAcceptingOrder
+                              ? "Purchasing..."
+                              : `Buy Now`}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 items-center">
+                        <p className="text-sm text-muted-foreground mb-2">Connect wallet to purchase</p>
+                        {connectors.map((connector) => (
+                          <Button
+                            key={connector.id}
+                            onClick={() => connect({ connector })}
+                            variant="default"
+                            size="sm"
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            {connector.icon && typeof connector.icon === "string" && (
+                              <img src={connector.icon} alt={`${connector.name} icon`} className="w-5 h-5" />
+                            )}
+                            {connector.icon &&
+                              typeof connector.icon !== "string" &&
+                              connector.id !== "argentX" &&
+                              connector.id !== "braavos" && (
+                                <span className="w-5 h-5 flex items-center justify-center">
+                                  {connector.icon.light ?? connector.icon}
+                                </span>
+                              )}
+                            Connect {connector.name}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="grid grid-cols-4 flex-wrap gap-2">
+                {attributes
+                  ?.filter((attribute) => ["Regions", "Cities", "Harbors", "Rivers"].includes(attribute.trait_type))
+                  .map((attribute, index) => (
+                    <Card key={`${attribute.trait_type}-${index}`} className="flex flex-col items-center p-1">
+                      <Label className="uppercase tracking-wider flex justify-between items-center text-muted-foreground text-xs">
+                        {attribute.trait_type}
+                      </Label>
+                      <span>{attribute.value}</span>
+                    </Card>
+                  ))}
               </div>
             </div>
           </div>
-          {/* Display Price if Listed */}
-          {isListed && price !== undefined ? (
-            <div className="border-t pt-6 px-4">
-              <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <div className="flex items-center gap-2">
-                <div className="text-3xl font-bold text-gold -mt-2">
-                  {isSyncing
-                    ? "Syncing..."
-                    : parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                </div>
-                <ResourceIcon resource="Lords" size="sm" />
-                <div className="text-sm text-muted-foreground">
-                  {timeRemaining ? (
-                    <span className="text-red-500 font-medium">{timeRemaining}</span>
-                  ) : (
-                    `Expires ${new Date(Number(expiration) * 1000).toLocaleString()}`
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
-            </div>
-          ) : (
-            <div className="text-center border-t pt-3 mt-3">
-              <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <p className="text-2xl font-bold text-gold">Not Listed</p>
-            </div>
-          )}
         </div>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-stretch pt-4 border-t">
+
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-stretch pt-4">
           <div className="flex-grow flex flex-col gap-2 order-2 sm:order-1 mb-4 sm:mb-0">
             {/* Syncing Indicator */}
             {isSyncing && (
@@ -331,84 +468,97 @@ export const RealmDetailModal = ({
                   <>
                     {isListed && orderId ? (
                       <>
-                        {" "}
                         {/* Owner & Listed & Approved */}
-                        {!showEditInputs ? (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="secondary"
-                              onClick={() => setShowEditInputs(true)}
-                              size="sm"
-                              disabled={isLoading || isSyncing}
-                            >
-                              Edit Listing
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={handleCancelOrder}
-                              size="sm"
-                              disabled={isLoading || isSyncing || marketplaceActions.isCancellingOrder}
-                            >
-                              {marketplaceActions.isCancellingOrder ? "Cancelling..." : "Cancel Listing"}
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-2 border p-3 rounded-md bg-background/50">
-                            <Label htmlFor="edit-price">
-                              New Price (LORDS) <ResourceIcon resource="Lords" size="sm" />
-                            </Label>
-                            {editPrice && parseFloat(editPrice) > 0 && (
-                              <div className="text-sm text-muted-foreground mb-1 flex justify-between">
-                                <span>
-                                  You receive:{" "}
-                                  {((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
-                                    "en-US",
-                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                                  )}{" "}
-                                  LORDS
-                                </span>
-                                <span>
-                                  Fee:{" "}
-                                  {((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })}{" "}
-                                  LORDS ({MARKETPLACE_FEE_PERCENT}%)
+                        {showEditInputs && (
+                          <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
+                            <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs font-semibold text-muted-foreground">
+                              <div className="col-span-2">Item</div>
+                              <div>Current</div>
+                              <div>Fee</div>
+                              <div className="justify-self-end col-span-2">New Price</div>
+                            </div>
+                            <div className="grid grid-cols-6 gap-2 items-center py-2">
+                              <div className="flex items-center gap-2 col-span-2">
+                                <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
+                                <span className="truncate max-w-[80px]">{name}</span>
+                              </div>
+                              <div className="text-sm">
+                                {price
+                                  ? parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : "-"}
+                              </div>
+                              <div className="text-xs">
+                                {editPrice && parseFloat(editPrice) > 0
+                                  ? ((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : "--"}
+                                <span className="ml-1">LORDS</span>
+                              </div>
+                              <div className="justify-self-end relative col-span-2">
+                                <Input
+                                  id="edit-price"
+                                  type="number"
+                                  value={editPrice}
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                  placeholder="0"
+                                  disabled={isLoading || isSyncing}
+                                  className="w-full max-w-36"
+                                />
+                                <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                              </div>
+                            </div>
+                            {/* Proceeds below the table */}
+                            <div className="mb-1 flex justify-between border-t py-3 font-semibold">
+                              <span>You receive: </span>
+                              <div>
+                                {editPrice
+                                  ? parseFloat(editPrice) > 0 &&
+                                    ((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
+                                      "en-US",
+                                      {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 2,
+                                      },
+                                    )
+                                  : 0}
+                                <span className="ml-3">LORDS</span>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div>
+                              <div className="flex items-center gap-2 w-full justify-end">
+                                <span className="text-sm font-medium text-muted-foreground ml-2">
+                                  Expires: {expiration ? new Date(expiration * 1000).toLocaleString() : "N/A"}
                                 </span>
                               </div>
-                            )}
-                            <Input
-                              id="edit-price"
-                              type="number"
-                              value={editPrice}
-                              onChange={(e) => setEditPrice(e.target.value)}
-                              placeholder="e.g., 1500"
-                              disabled={isLoading || isSyncing}
-                            />
-                            {expiration && ( // Display expiration if available
-                              <div className="text-sm font-medium text-muted-foreground mt-1">
-                                Current Expiration: {new Date(expiration * 1000).toLocaleString()}
+                              <div className="flex justify-between mt-1">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setShowEditInputs(false)}
+                                  size="sm"
+                                  disabled={isLoading || isSyncing}
+                                >
+                                  <ArrowLeft /> Back
+                                </Button>
+                                <Button
+                                  onClick={handleEditOrder}
+                                  disabled={
+                                    isLoading ||
+                                    isSyncing ||
+                                    !editPrice ||
+                                    marketplaceActions.isEditingOrder ||
+                                    editPrice == "0"
+                                  }
+                                >
+                                  {marketplaceActions.isEditingOrder ? "Saving..." : "Save Changes"}
+                                </Button>
                               </div>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              To change the expiration time, please cancel this listing and create a new one.
-                            </p>
-                            <div className="flex justify-end gap-2 mt-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setShowEditInputs(false)}
-                                size="sm"
-                                disabled={isLoading || isSyncing}
-                              >
-                                Back
-                              </Button>
-                              <Button
-                                onClick={handleEditOrder}
-                                size="sm"
-                                disabled={isLoading || isSyncing || !editPrice || marketplaceActions.isEditingOrder}
-                              >
-                                {marketplaceActions.isEditingOrder ? "Saving..." : "Save Changes"}
-                              </Button>
                             </div>
                           </div>
                         )}
@@ -417,17 +567,8 @@ export const RealmDetailModal = ({
                       <>
                         {" "}
                         {/* Owner & Not Listed & Approved */}
-                        {!showListInputs ? (
-                          <Button
-                            variant="cta"
-                            onClick={() => setShowListInputs(true)}
-                            size="lg"
-                            disabled={isLoading || isSyncing}
-                          >
-                            List Item
-                          </Button>
-                        ) : (
-                          <div className="flex flex-col gap-2 p-3 bg-background/50">
+                        {showListInputs && (
+                          <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
                             <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs font-semibold text-muted-foreground">
                               <div className="col-span-2">Item</div>
                               <div>Floor</div>
@@ -537,79 +678,7 @@ export const RealmDetailModal = ({
               </>
             ) : (
               // --- Non-Owner Logic ---
-              <>
-                {isListed && price !== undefined ? (
-                  <>
-                    {address ? (
-                      <div className="flex flex-col items-center sm:items-stretch">
-                        {/* Insufficient Balance Message - Showing Current Balance */}
-                        {address &&
-                          !hasSufficientBalance &&
-                          expiration !== undefined &&
-                          expiration * 1000 >= Date.now() && (
-                            <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
-                              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                              <span>
-                                Insufficient LORDS balance (Balance:{" "}
-                                {parseFloat(formatUnits(userBalance, 18)).toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                                )
-                              </span>
-                            </div>
-                          )}
-                        <Button
-                          onClick={handleAcceptOrder}
-                          size="lg"
-                          variant="cta"
-                          disabled={
-                            isLoading ||
-                            isSyncing ||
-                            marketplaceActions.isAcceptingOrder ||
-                            (expiration !== undefined && expiration * 1000 < Date.now())
-                          }
-                          className="w-full sm:w-auto"
-                        >
-                          {expiration !== undefined && expiration * 1000 < Date.now()
-                            ? "Listing Expired"
-                            : marketplaceActions.isAcceptingOrder
-                              ? "Purchasing..."
-                              : `Purchase`}
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 items-center">
-                        <p className="text-sm text-muted-foreground mb-2">Connect wallet to purchase</p>
-                        {connectors.map((connector) => (
-                          <Button
-                            key={connector.id}
-                            onClick={() => connect({ connector })}
-                            variant="default"
-                            size="sm"
-                            className="w-full flex items-center justify-center gap-2"
-                          >
-                            {connector.icon && typeof connector.icon === "string" && (
-                              <img src={connector.icon} alt={`${connector.name} icon`} className="w-5 h-5" />
-                            )}
-                            {connector.icon &&
-                              typeof connector.icon !== "string" &&
-                              connector.id !== "argentX" &&
-                              connector.id !== "braavos" && (
-                                <span className="w-5 h-5 flex items-center justify-center">
-                                  {connector.icon.light ?? connector.icon}
-                                </span>
-                              )}
-                            Connect {connector.name}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>{/* Optionally add a message like "Not available for purchase" */}</>
-                )}
-              </>
+              <></>
             )}
           </div>
         </DialogFooter>

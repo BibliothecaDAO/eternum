@@ -31,11 +31,13 @@ export const marketplaceCollections = {
     address: seasonPassAddress,
     id: COLLECTION_IDS[currentNetwork]["season-passes"],
     name: "Season 1 Pass",
+    image: "/collections/season-1-pass.png",
   },
   realms: {
     address: realmsAddress,
     id: COLLECTION_IDS[currentNetwork].realms,
     name: "Realms",
+    image: "/collections/realms.png",
   },
 } as const;
 
