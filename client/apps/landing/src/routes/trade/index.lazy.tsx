@@ -6,7 +6,7 @@ import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { formatUnits } from "viem";
 
-export const Route = createLazyFileRoute("/trade/$collection/")({
+export const Route = createLazyFileRoute("/trade/")({
   component: CollectionsPage,
   pendingComponent: FullPageLoader,
 });

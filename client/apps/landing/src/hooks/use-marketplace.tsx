@@ -103,8 +103,7 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
   const acceptOrders = async (params: AcceptOrdersParams & { totalPrice: bigint }) => {
     if (!account) throw new Error("Account not connected");
     setIsAcceptingOrder(true);
-    console.log(params.totalPrice);
-    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice * 2n]);
+    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice]);
 
     try {
       // accept order
