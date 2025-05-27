@@ -48,15 +48,12 @@ function TradeLayout() {
             <Tabs defaultValue="items" className="w-full items-center flex justify-center">
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                  <Link to={collection ? `/trade/${collection}` : "/trade"} className="cursor-pointer">
+                  <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
                     Items
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger value="activity" asChild>
-                  <Link
-                    to={collection ? `/trade/${collection}/activity` : "/trade/activity"}
-                    className="cursor-pointer"
-                  >
+                  <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
                     Activity
                   </Link>
                 </TabsTrigger>

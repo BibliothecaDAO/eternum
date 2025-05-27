@@ -16,7 +16,7 @@ interface RealmGridItem {
 
 interface SeasonPassRowProps {
   seasonPasses: MergedNftData[];
-  setIsTransferOpen: (tokenId?: string) => void;
+  setIsTransferOpen?: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;
   isCompactGrid?: boolean;
@@ -82,7 +82,7 @@ export const SeasonPassesGrid = ({
               checkOwner={checkOwner}
               isSelected={isSelected(tokenId.toString())}
               onToggleSelection={() => onToggleSelection?.(pass)}
-              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId.toString())}
+              toggleNftSelection={() => tokenId && setIsTransferOpen && setIsTransferOpen(tokenId.toString())}
             />
           );
         }}

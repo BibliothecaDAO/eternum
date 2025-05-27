@@ -47,6 +47,7 @@ export interface OpenOrderByPrice {
   token_owner: string | null;
   order_owner: string | null;
   balance: string | null;
+  contract_address: string;
 }
 
 // Raw type for data fetched by fetchOpenOrdersByPrice
@@ -145,7 +146,9 @@ export async function fetchOpenOrdersByPrice(
   offset?: number,
 ): Promise<OpenOrderByPrice[]> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
-
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
   const query = QUERIES.OPEN_ORDERS_BY_PRICE.replaceAll("{contractAddress}", contractAddress)
     .replace("{limit}", limit?.toString() ?? "20")
     .replace("{offset}", offset?.toString() ?? "0")
@@ -160,6 +163,7 @@ export async function fetchOpenOrdersByPrice(
     token_owner: item.token_owner ?? null,
     order_owner: item.order_owner ?? null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    contract_address: contractAddress,
   }));
 }
 
@@ -286,7 +290,10 @@ export async function fetchMarketOrderEvents(
   offset?: number,
 ): Promise<MarketOrderEvent[]> {
   const finalType = type === "sales" ? "Accepted" : type;
+  const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
+
   const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{collectionId}", collectionId?.toString())
     .replace("{limit}", limit?.toString() ?? "50")
     .replace("{offset}", offset?.toString() ?? "0")
     .replaceAll("{type}", finalType);

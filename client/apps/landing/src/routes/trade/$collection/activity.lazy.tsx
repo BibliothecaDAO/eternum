@@ -1,6 +1,8 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import { ScrollHeader } from "@/components/ui/scroll-header";
+import { marketplaceCollections } from "@/config";
 import { fetchMarketOrderEvents } from "@/hooks/services";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -16,18 +18,55 @@ export const Route = createLazyFileRoute("/trade/$collection/activity")({
 
 function ActivityPage() {
   const { collection } = Route.useParams();
-  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const [filterType, setFilterType] = useState<"all" | "sales" | "listings">("all");
 
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   const { data: events, isLoading } = useQuery({
     queryKey: ["marketOrderEvents", collection],
-    queryFn: () => fetchMarketOrderEvents(collection, "all"),
+    queryFn: () => fetchMarketOrderEvents(collectionAddress, "all"),
     refetchInterval: 30_000,
   });
-
+  // Function to get display status
+  const getDisplayStatus = (status: string) => {
+    if (status === "Accepted") return "Sale";
+    if (status === "Created") return "Listed";
+    return status;
+  };
   return (
     <>
       <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
         {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">Activity</h4> : <div></div>}
+        <div className="w-full flex justify-end gap-1 sm:gap-2 px-4 items-center">
+          Type:
+          <Button
+            variant={filterType === "all" ? "default" : "outline"}
+            size="sm"
+            className="hidden sm:flex"
+            onClick={() => setFilterType("all")}
+            title="Filter All"
+          >
+            All
+          </Button>
+          <Button
+            variant={filterType === "sales" ? "default" : "outline"}
+            size="sm"
+            className="hidden sm:flex"
+            onClick={() => setFilterType("sales")}
+            title="Filter Sales"
+          >
+            Sales
+          </Button>
+          <Button
+            variant={filterType === "listings" ? "default" : "outline"}
+            size="sm"
+            className="hidden sm:flex"
+            onClick={() => setFilterType("listings")}
+            title="Filter Listings"
+          >
+            Listings
+          </Button>
+        </div>
       </ScrollHeader>
 
       <div className="flex-1">
@@ -45,41 +84,104 @@ function ActivityPage() {
               </div>
             ) : events && events.length > 0 ? (
               <div className="space-y-4">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
-                  >
-                    <div className="flex items-center gap-4">
-                      {event.event_type === "LIST" && <Tag className="h-5 w-5 text-blue-500" />}
-                      {event.event_type === "EDIT" && <Pencil className="h-5 w-5 text-yellow-500" />}
-                      {event.event_type === "CANCEL" && <X className="h-5 w-5 text-red-500" />}
-                      {event.event_type === "PURCHASE" && <ShoppingCart className="h-5 w-5 text-green-500" />}
-                      <div>
-                        <div className="font-medium">
-                          {event.event_type === "LIST" && "Listed"}
-                          {event.event_type === "EDIT" && "Price Updated"}
-                          {event.event_type === "CANCEL" && "Listing Cancelled"}
-                          {event.event_type === "PURCHASE" && "Purchased"}
+                <div className="border-b grid grid-cols-7 w-full text-xs text-muted-foreground">
+                  <div className="px-4 py-2 text-left">Status</div>
+                  <div className="px-4 py-2 text-left col-span-2">Item</div>
+                  <div className="px-4 py-2 text-left">Price</div>
+                  <div className="px-4 py-2 text-left">Resources</div>
+                  <div className="px-4 py-2 text-right col-span-2">Time</div>
+                </div>
+
+                {/* Table body */}
+                <div className="w-full">
+                  {events.map((event) => {
+                    const metadata = event.metadata;
+                    const image = metadata?.image || "";
+                    const price = event.price ? formatUnits(BigInt(event.price), 18) : "0";
+                    const displayStatus = getDisplayStatus(event.state);
+
+                    // Set status color based on state
+                    let statusColor = "text-muted-foreground";
+                    if (event.state === "Accepted") statusColor = "text-green-500";
+                    else if (event.state === "Created") statusColor = "text-amber-500";
+
+                    return (
+                      <div
+                        key={event.event_id}
+                        className="border-b hover:bg-card/80 transition-colors grid grid-cols-7 w-full"
+                      >
+                        {/* Status */}
+                        <div className="px-4 py-3">
+                          <div className="flex items-center text-lg h-full">
+                            {event.state === "Accepted" ? (
+                              <ShoppingCart className="w-5 h-5 text-green-500 mr-3" />
+                            ) : event.state === "Created" ? (
+                              <Tag className="w-5 h-5 text-amber-500 mr-3" />
+                            ) : event.state === "Cancelled" ? (
+                              <X className="w-5 h-5 text-amber-500 mr-3" />
+                            ) : (
+                              <Pencil className="w-5 h-5 text-muted-foreground mr-3" />
+                            )}
+                            <span className={`font-medium ${statusColor}`}>{displayStatus}</span>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">Token ID: {event.token_id}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {event.price && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">
-                            {formatUnits(BigInt(event.price), 18)} <ResourceIcon resource="Lords" size="sm" />
-                          </span>
+
+                        {/* Item */}
+                        <div className="px-4 py-3  col-span-2">
+                          <div className="flex items-center h-full">
+                            <div className="w-10 h-10 rounded-md overflow-hidden mr-3">
+                              {image ? (
+                                <img
+                                  src={image}
+                                  alt={`Pass #${event.token_id}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground">No Image</span>
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium">
+                              {event.metadata?.name} #{parseInt(event.token_id, 16)}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {formatRelativeTime(event.timestamp)}
+
+                        {/* Price */}
+                        <div className="px-4 py-3 text-left">
+                          <div className="flex items-center  h-full">
+                            <span className="font-semibold mr-1">{price}</span>
+                            <ResourceIcon resource="Lords" size="sm" />
+                          </div>
+                        </div>
+
+                        {/* Resources */}
+                        <div className="px-4 py-3 text-left col-span-2">
+                          <div className="flex flex-wrap gap-2 mb-2 h-full items-center">
+                            {metadata?.attributes
+                              ?.filter((attribute) => attribute.trait_type === "Resource")
+                              .map((attribute, index) => (
+                                <ResourceIcon
+                                  resource={attribute.value as string}
+                                  size="sm"
+                                  key={`${attribute.trait_type}-${index}`}
+                                />
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Time */}
+                        <div className="px-4 py-3 text-sm text-muted-foreground">
+                          <div className="flex items-center justify-end h-full">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {formatRelativeTime(event.executed_at)}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">No activity found.</div>

@@ -201,7 +201,7 @@ WITH limited_active_orders AS (
     JOIN tokens t
       ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
       AND t.contract_address = '{contractAddress}'
-    WHERE moe."market_order.collection_id" = 1
+    WHERE moe."market_order.collection_id" = '{collectionId}'
       AND (( '{type}' = 'all' OR '{type}' = '')
            OR ('{type}' = 'listings' AND moe.state <> 'Accepted')
            OR ('{type}' <> 'listings' AND moe.state = '{type}'))

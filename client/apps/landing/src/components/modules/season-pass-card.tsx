@@ -227,18 +227,20 @@ export const SeasonPassCard = ({
         </CardFooter>
       </Card>
 
-      <RealmDetailModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        realmData={pass}
-        isOwner={isOwner}
-        marketplaceActions={marketplaceActions}
-        collection_id={collection?.id}
-        price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
-        orderId={pass.order_id?.toString() ?? undefined}
-        isListed={pass.expiration !== null}
-        expiration={pass.expiration ? Number(pass.expiration) : undefined}
-      />
+      {collection?.id && (
+        <RealmDetailModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          realmData={pass}
+          isOwner={isOwner}
+          marketplaceActions={marketplaceActions}
+          collection_id={collection?.id}
+          price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
+          orderId={pass.order_id?.toString() ?? undefined}
+          isListed={pass.expiration !== null}
+          expiration={pass.expiration ? Number(pass.expiration) : undefined}
+        />
+      )}
     </>
   );
 };
