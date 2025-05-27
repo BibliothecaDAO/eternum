@@ -79,7 +79,6 @@ export const RawResourcesPanel = ({
                     value={Math.round(input.amount * productionAmount)}
                     onChange={(value) => handleInputChange(value, input.resource)}
                     min={0}
-                    max={resourceBalances[input.resource] || 0}
                   />
                 </div>
               </div>

@@ -65,7 +65,7 @@ export const HexEntityDetails = () => {
           ) : isTileOccupierQuest(tile.occupier_type) ? (
             <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
           ) : (
-            <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} />
+            <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} showButtons={true} />
           )}
         </div>
       )}
