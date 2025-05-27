@@ -68,6 +68,7 @@ export const QUERIES = {
            AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
    
         WHERE  mo."order.active" = 1
+        AND    mo."order.collection_id" = {collectionId}
         AND    mo."order.expiration" > strftime('%s','now')
         ),
 
@@ -76,6 +77,8 @@ export const QUERIES = {
         SELECT "market_order.price" AS hex_price
         FROM   "marketplace-MarketOrderEvent"
         WHERE  state = 'Accepted'           -- <- use single quotes for the literal
+        AND    "market_order.collection_id" = {collectionId}
+
     ),
 
     -- recursive hex‑string → integer
@@ -136,8 +139,10 @@ WITH limited_active_orders AS (
            AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
                = ltrim(lower(replace(tb.account_address, "0x","")), "0")
            AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+           AND tb.contract_address = "{contractAddress}"
     WHERE  mo."order.active" = 1
       AND  mo."order.expiration" > strftime('%s','now')
+      AND  mo."order.collection_id" = {collectionId}
       AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
     )
@@ -157,9 +162,9 @@ WITH limited_active_orders AS (
         lao.order_id,
         lao.balance
     FROM limited_active_orders lao
-    LEFT JOIN (SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata FROM tokens GROUP BY token_id) t
-      ON t.token_id = substr(lao.token_id, instr(lao.token_id, ':') + 1)
-        AND t.contract_address = "{contractAddress}"
+    LEFT JOIN (SELECT id, token_id, name, symbol, contract_address, MAX(metadata) AS metadata FROM tokens GROUP BY id) t
+      ON t.id = lao.token_id
+      AND t.contract_address = "{contractAddress}"
     ORDER BY lao.price_hex IS NULL, lao.price_hex 
 
   `,
@@ -216,7 +221,7 @@ WITH limited_active_orders AS (
     WHERE mo."order.active" = 1
       AND mo."order.owner" = '{accountAddress}'
       AND  mo."order.expiration" > strftime('%s','now')
-
+      AND  mo."order.collection_id" = {collectionId}
     GROUP BY token_id_hex
   )
   SELECT

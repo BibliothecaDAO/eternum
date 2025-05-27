@@ -1,5 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { marketplaceCollections, seasonPassAddress } from "@/config";
+import { getCollectionByAddress, seasonPassAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
@@ -27,13 +27,6 @@ interface ListingDetails {
   expiration?: string;
 }
 
-function getCollectionByAddress(address: string): (typeof marketplaceCollections)[keyof typeof marketplaceCollections] {
-  const collection = Object.entries(marketplaceCollections).find(([_, data]) => {
-    return trimAddress(data.address)?.toLowerCase() === trimAddress(address)?.toLowerCase();
-  });
-  return collection ? collection[1] : marketplaceCollections["season-passes"]; // Default to season passes if not found
-}
-
 export const SeasonPassCard = ({
   pass,
   checkOwner = false,
@@ -50,7 +43,7 @@ export const SeasonPassCard = ({
 
   const isOwner = pass.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
-  const collectionName = collection.name;
+  const collectionName = collection?.name;
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!pass.expiration) return;
@@ -131,7 +124,7 @@ export const SeasonPassCard = ({
           )}
           <img
             src={image}
-            alt={name ?? "Season Pass"}
+            alt={name ?? "Token Image"}
             className={`w-full object-contain transition-all duration-200
               ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
           />
@@ -160,7 +153,7 @@ export const SeasonPassCard = ({
               {collectionName}
             </div>
             <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{name || `Pass #${token_id}`}</h4>
+              <h4 className="text-xl truncate">{name || `#${token_id}`}</h4>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -240,7 +233,7 @@ export const SeasonPassCard = ({
         realmData={pass}
         isOwner={isOwner}
         marketplaceActions={marketplaceActions}
-        collection_id={collection.id}
+        collection_id={collection?.id}
         price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
         orderId={pass.order_id?.toString() ?? undefined}
         isListed={pass.expiration !== null}

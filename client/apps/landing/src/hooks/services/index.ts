@@ -1,3 +1,4 @@
+import { getCollectionByAddress } from "@/config";
 import { trimAddress } from "@/lib/utils";
 import { RealmMetadata } from "@/types";
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
@@ -123,7 +124,14 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
  * Fetch totals for active market orders from the API
  */
 export async function fetchActiveMarketOrdersTotal(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
-  const query = QUERIES.ACTIVE_MARKET_ORDERS_TOTAL.replaceAll("{contractAddress}", contractAddress);
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+  const query = QUERIES.ACTIVE_MARKET_ORDERS_TOTAL.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
+    "{contractAddress}",
+    contractAddress,
+  );
   return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
 }
 
@@ -136,10 +144,13 @@ export async function fetchOpenOrdersByPrice(
   limit?: number,
   offset?: number,
 ): Promise<OpenOrderByPrice[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+
   const query = QUERIES.OPEN_ORDERS_BY_PRICE.replaceAll("{contractAddress}", contractAddress)
     .replace("{limit}", limit?.toString() ?? "20")
     .replace("{offset}", offset?.toString() ?? "0")
-    .replace("{ownerAddress}", ownerAddress ?? "");
+    .replace("{ownerAddress}", ownerAddress ?? "")
+    .replace("{collectionId}", collectionId.toString());
   const rawData = await fetchSQL<any[]>(query);
   return rawData.map((item) => ({
     ...item,
@@ -193,6 +204,7 @@ interface RawTokenBalanceWithMetadata {
   expiration?: number;
   best_price_hex?: string; // Raw hex string for bigint
   metadata?: string; // Raw JSON string
+  order_id?: string;
 }
 
 export interface ActiveMarketOrder {
@@ -216,7 +228,13 @@ export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
 ): Promise<TokenBalanceWithToken[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
+    .replace("{collectionId}", collectionId.toString())
     .replace("{accountAddress}", accountAddress)
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
@@ -230,6 +248,7 @@ export async function fetchTokenBalancesWithMetadata(
     expiration: item.expiration ?? null,
     best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    order_id: item.order_id ?? null,
   }));
 }
 

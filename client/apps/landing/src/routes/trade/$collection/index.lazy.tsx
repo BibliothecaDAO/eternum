@@ -34,6 +34,7 @@ function CollectionPage() {
   const { collection } = Route.useParams();
   const { connectors } = useConnect();
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  console.log(collectionAddress);
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
