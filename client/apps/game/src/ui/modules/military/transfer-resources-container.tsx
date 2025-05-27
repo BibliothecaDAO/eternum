@@ -57,6 +57,12 @@ export const TransferResourcesContainer = ({
   } | null>(null);
 
   useEffect(() => {
+    // when transfer direction changes, reset the selected resources
+    setSelectedResources([]);
+    setResourceAmounts({});
+  }, [transferDirection]);
+
+  useEffect(() => {
     const { selected, target } = getActorTypes(transferDirection);
     setActorTypes({ selected, target });
   }, [transferDirection]);
@@ -150,12 +156,13 @@ export const TransferResourcesContainer = ({
   const handleResourceAmountChange = (resourceId: number, amount: number) => {
     // Ensure amount is within valid range
     const resource = availableResources.find((r) => r.resourceId === resourceId);
-    if (!resource || !explorerCapacity) return;
+    if (!resource) return;
 
     let maxAmount = divideByPrecision(resource.amount);
 
     // If transferring to explorer, limit by remaining capacity
     if (actorTypes?.target === ActorType.Explorer) {
+      if (!explorerCapacity) return;
       const resourceWeight = configManager.resourceWeightsKg[resourceId] || 0;
 
       // Calculate how much capacity is used by other selected resources

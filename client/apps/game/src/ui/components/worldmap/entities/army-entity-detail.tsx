@@ -20,10 +20,17 @@ export interface ArmyEntityDetailProps {
   className?: string;
   compact?: boolean;
   maxInventory?: number;
+  showButtons?: boolean;
 }
 
 export const ArmyEntityDetail = memo(
-  ({ armyEntityId, className, compact = false, maxInventory = Infinity }: ArmyEntityDetailProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = false,
+    maxInventory = Infinity,
+    showButtons = false,
+  }: ArmyEntityDetailProps) => {
     const {
       network: { toriiClient },
       account: { account },
@@ -175,12 +182,12 @@ export const ArmyEntityDetail = memo(
             <div className={`px-2 py-1 rounded text-xs font-bold ${derivedData.isAlly ? "bg-green/20" : "bg-red/20"}`}>
               {derivedData.isAlly ? "Ally" : "Enemy"}
             </div>
-            {derivedData.addressName !== undefined && (
+            {derivedData.addressName !== undefined && showButtons && (
               <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
                 <MessageCircle />
               </button>
             )}
-            {derivedData.isMine && (
+            {derivedData.isMine && showButtons && (
               <button
                 onClick={handleDeleteExplorer}
                 className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${
