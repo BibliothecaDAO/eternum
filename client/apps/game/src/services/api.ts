@@ -1,9 +1,32 @@
 import { TradeEvent } from "@/ui/components/trading/market-trading-history";
 import { ContractAddress, HexPosition, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
 export const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+
+/**
+ * Properly formats an address by converting to bigint and padding to 64 hex characters
+ * This ensures consistent address formatting for database queries by:
+ * 1. Converting the input string to bigint (handles various formats)
+ * 2. Converting back to hex string (normalizes the format)
+ * 3. Padding with leading zeros to exactly 64 characters
+ * 4. Adding the 0x prefix
+ *
+ * Example: "0x1234" -> "0x0000000000000000000000000000000000000000000000000000000000001234"
+ */
+function formatAddressForQuery(address: string): string {
+  // Convert string to bigint to normalize it
+  const addressBigInt = BigInt(address);
+
+  // Convert back to hex string (without 0x prefix)
+  const hexString = addressBigInt.toString(16);
+
+  // Pad with leading zeros to make it 64 characters
+  const paddedHex = hexString.padStart(64, "0");
+
+  // Add 0x prefix back
+  return `0x${paddedHex}`;
+}
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
@@ -161,6 +184,20 @@ const QUERIES = {
     {whereClause}
     ORDER BY timestamp DESC
   `,
+  PLAYER_STRUCTURES: `
+    SELECT 
+        \`base.coord_x\` as coord_x,
+        \`base.coord_y\` as coord_y,
+        category,
+        resources_packed,
+        entity_id,
+        \`metadata.realm_id\` as realm_id,
+        \`metadata.has_wonder\` as has_wonder,
+        \`base.level\` as level
+    FROM \`s1_eternum-Structure\`
+    WHERE owner = '{owner}'
+    ORDER BY category, entity_id;
+  `,
 };
 
 // API response types
@@ -249,6 +286,17 @@ export interface Hyperstructure {
   hyperstructure_id: number;
 }
 
+export interface PlayerStructure {
+  coord_x: number;
+  coord_y: number;
+  category: number;
+  resources_packed: string;
+  entity_id: number;
+  realm_id: number | null;
+  has_wonder: boolean | null;
+  level: number;
+}
+
 export enum EventType {
   SWAP = "AMM Swap",
   ORDERBOOK = "Orderbook",
@@ -287,8 +335,10 @@ export async function fetchRealmSettlements(): Promise<StructureLocation[]> {
  * Fetch structures by owner from the API
  */
 export async function fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
+  const formattedOwner = formatAddressForQuery(owner);
+
   const url = `${API_BASE_URL}?query=${encodeURIComponent(
-    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", getChecksumAddress(owner).toLowerCase()),
+    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner),
   )}`;
   const response = await fetch(url);
 
@@ -415,11 +465,9 @@ export async function fetchHyperstructures(): Promise<Hyperstructure[]> {
 export async function fetchOtherStructures(
   owner: string,
 ): Promise<{ entityId: ID; owner: ContractAddress; category: StructureType; realmId: number }[]> {
-  // Ensure owner address is properly padded
-  const paddedOwner =
-    owner.startsWith("0x") && owner.length === 66 ? owner : owner.startsWith("0x") ? "0x0" + owner.substring(2) : owner;
+  const formattedOwner = formatAddressForQuery(owner);
 
-  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.OTHER_STRUCTURES.replace("{owner}", paddedOwner))}`;
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.OTHER_STRUCTURES.replace("{owner}", formattedOwner))}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -498,3 +546,19 @@ export const fetchBattleLogs = async (afterTimestamp?: string): Promise<BattleLo
   const data = await response.json();
   return data;
 };
+
+/**
+ * Fetch player structures with coordinates, category, and resources_packed from the API
+ */
+export async function fetchPlayerStructures(owner: string): Promise<PlayerStructure[]> {
+  const formattedOwner = formatAddressForQuery(owner);
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.PLAYER_STRUCTURES.replace("{owner}", formattedOwner))}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch player structures: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
