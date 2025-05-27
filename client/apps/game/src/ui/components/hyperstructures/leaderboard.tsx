@@ -3,8 +3,8 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getAddressName, LeaderboardManager } from "@bibliothecadao/eternum";
-import { ContractAddress, ID } from "@bibliothecadao/types";
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
+import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
@@ -22,8 +22,23 @@ export const Leaderboard = ({
   } = dojo;
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).playersByRank;
-  }, [hyperstructureEntityId]);
+    const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
+    const cachedPlayersByRank = leaderboardManager.playersByRank;
+
+    // Calculate real-time points for each player including unregistered shareholder points
+    const playersWithRealTimePoints = cachedPlayersByRank.map(([address, cachedPoints]) => {
+      // Get only registered points to avoid double-counting
+      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(address);
+      const unregisteredShareholderPoints =
+        leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(address);
+      const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+      return [address, totalPoints] as [ContractAddress, number];
+    });
+
+    // Sort by real-time total points
+    return playersWithRealTimePoints.sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
+  }, [dojo.setup.components]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 

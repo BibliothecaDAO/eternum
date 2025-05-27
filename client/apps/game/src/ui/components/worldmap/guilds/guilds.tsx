@@ -6,7 +6,7 @@ import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
 import { useSocialStore } from "@/ui/modules/social/socialStore";
 import { sortItems } from "@/ui/utils/utils";
-import { calculateGuildLordsPrize, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { calculateGuildLordsPrize, getGuildFromPlayerAddress, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { ChevronRight } from "lucide-react";
@@ -52,6 +52,8 @@ export const Guilds = ({
 
   // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
+    const leaderboardManager = LeaderboardManager.instance(components);
+
     const guildStats = new Map<
       string,
       {
@@ -74,7 +76,14 @@ export const Guilds = ({
           memberCount: 0,
         };
 
-        stats.totalPoints += player.points || 0;
+        // Calculate real-time total points including unregistered shareholder points
+        const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
+        const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+          player.address,
+        );
+        const totalPlayerPoints = registeredPoints + unregisteredShareholderPoints;
+
+        stats.totalPoints += totalPlayerPoints;
         stats.totalRealms += player.realms || 0;
         stats.totalMines += player.mines || 0;
         stats.totalHypers += player.hyperstructures || 0;
@@ -111,7 +120,7 @@ export const Guilds = ({
           lords: calculateGuildLordsPrize(rank, PRIZE_POOL_GUILDS),
         };
       });
-  }, [guilds, players]);
+  }, [guilds, players, components]);
 
   const filteredGuilds = useMemo(
     () =>
