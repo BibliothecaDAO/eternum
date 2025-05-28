@@ -24,8 +24,8 @@ function ActivityPage() {
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   const { data: events, isLoading } = useQuery({
-    queryKey: ["marketOrderEvents", collection],
-    queryFn: () => fetchMarketOrderEvents(collectionAddress, "all"),
+    queryKey: ["marketOrderEvents", collection, filterType],
+    queryFn: () => fetchMarketOrderEvents(collectionAddress, filterType),
     refetchInterval: 30_000,
   });
   // Function to get display status

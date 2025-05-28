@@ -49,12 +49,12 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
   });
 
   // improve
-  const { data: seasonPassApproved } = useReadContract({
+  const { data: collectionApprovedForMarketplace } = useReadContract({
     abi: SeasonPassAbi,
     address: collectionAddress as `0x${string}`,
     functionName: "is_approved_for_all",
     args: [address as `0x${string}`, marketplaceAddress],
-    watch: true,
+    refetchInterval: 10000,
   });
 
   const { send, error } = useSendTransaction({
@@ -173,7 +173,7 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
     cancelOrder,
     editOrder,
     approveMarketplace,
-    seasonPassApproved: seasonPassApproved,
+    collectionApprovedForMarketplace,
     isLoading: isCreatingOrder || isAcceptingOrder || isCancellingOrder || isEditingOrder,
     isCreatingOrder,
     isAcceptingOrder,

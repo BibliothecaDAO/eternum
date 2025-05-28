@@ -60,7 +60,7 @@ export const TokenDetailModal = ({
     acceptOrders,
     isLoading,
     approveMarketplace,
-    seasonPassApproved,
+    collectionApprovedForMarketplace,
     isApprovingMarketplace,
   } = marketplaceActions;
 
@@ -458,7 +458,7 @@ export const TokenDetailModal = ({
             {isOwner ? (
               // --- Owner Logic ---
               <>
-                {!seasonPassApproved ? (
+                {!collectionApprovedForMarketplace ? (
                   // --- Owner & Needs Approval ---
                   <Button onClick={approveMarketplace} disabled={isApprovingMarketplace} size="lg">
                     {isApprovingMarketplace ? "Approving..." : "Approve Marketplace"}
