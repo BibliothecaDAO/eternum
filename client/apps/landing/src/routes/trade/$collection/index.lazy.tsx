@@ -14,7 +14,7 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
-import { fetchActiveMarketOrdersTotal, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
+import { fetchCollectionStatistics, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
@@ -49,7 +49,7 @@ function CollectionPage() {
       },
       {
         queryKey: ["activeMarketOrdersTotal", collection],
-        queryFn: () => fetchActiveMarketOrdersTotal(collectionAddress),
+        queryFn: () => fetchCollectionStatistics(collectionAddress),
         refetchInterval: 30_000,
       },
     ],

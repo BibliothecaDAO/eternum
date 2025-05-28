@@ -1,7 +1,8 @@
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
-import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
+import { fetchCollectionStatistics } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
@@ -16,7 +17,7 @@ function TradeLayout() {
   const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { data: totals } = useQuery({
     queryKey: ["activeMarketOrdersTotal", collectionAddress],
-    queryFn: () => fetchActiveMarketOrdersTotal(collectionAddress),
+    queryFn: () => fetchCollectionStatistics(collectionAddress),
     refetchInterval: 30_000,
   });
 
@@ -24,6 +25,7 @@ function TradeLayout() {
   const totalWeiStr = BigInt(totals?.[0]?.open_orders_total_wei ?? 0);
   const totalWei = formatUnits(totalWeiStr, 18);
   const totalEth = totalWei ?? "0";
+  const floorPrice = totals?.[0]?.floor_price_wei ? formatUnits(BigInt(totals?.[0]?.floor_price_wei), 18) : "0";
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -34,7 +36,13 @@ function TradeLayout() {
             <span>
               <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings
             </span>
-            <span>•</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="flex items-center gap-1">
+              Floor Price{" "}
+              <span className="font-semibold text-foreground">{parseFloat(floorPrice).toLocaleString()}</span>{" "}
+              <ResourceIcon resource="Lords" size="sm" />
+            </span>
+            <Separator orientation="vertical" className="h-4" />
             <span className="flex items-center gap-1">
               Volume <span className="font-semibold text-foreground">{parseFloat(totalEth).toLocaleString()}</span>{" "}
               <ResourceIcon resource="Lords" size="sm" />

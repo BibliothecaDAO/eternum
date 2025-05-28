@@ -34,6 +34,7 @@ export interface TokenTransfer {
 export interface ActiveMarketOrdersTotal {
   active_order_count: number;
   open_orders_total_wei: bigint | null; // SUM can return null if there are no rows
+  floor_price_wei: bigint | null;
 }
 
 export interface OpenOrderByPrice {
@@ -124,12 +125,12 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
 /**
  * Fetch totals for active market orders from the API
  */
-export async function fetchActiveMarketOrdersTotal(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
+export async function fetchCollectionStatistics(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
   }
-  const query = QUERIES.ACTIVE_MARKET_ORDERS_TOTAL.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
+  const query = QUERIES.COLLECTION_STATISTICS.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
     "{contractAddress}",
     contractAddress,
   );

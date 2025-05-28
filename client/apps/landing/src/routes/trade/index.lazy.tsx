@@ -1,6 +1,6 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { marketplaceCollections } from "@/config";
-import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
+import { fetchCollectionStatistics } from "@/hooks/services";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -15,7 +15,7 @@ function CollectionsPage() {
   const collections = Object.entries(marketplaceCollections);
   const queries = collections.map(([key, collection]) => ({
     queryKey: ["activeMarketOrdersTotal", key],
-    queryFn: () => fetchActiveMarketOrdersTotal(collection.address),
+    queryFn: () => fetchCollectionStatistics(collection.address),
     refetchInterval: 30_000,
   }));
 
@@ -60,6 +60,7 @@ function CollectionsPage() {
           const stats = results[index].data?.[0];
           const activeOrders = stats?.active_order_count ?? 0;
           const totalVolume = stats?.open_orders_total_wei ? formatUnits(BigInt(stats.open_orders_total_wei), 18) : "0";
+          const floorPrice = stats?.floor_price_wei ? formatUnits(BigInt(stats.floor_price_wei), 18) : "0";
           const MotionLink = motion(Link);
           const commonProps = {
             className: `relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40`,
@@ -80,13 +81,17 @@ function CollectionsPage() {
                 </div>
                 <div>
                   <div className="flex space-x-3 justify-between items-center">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground mr-1.5">Listed:</span>
-                      <span className="font-medium text-gold">{activeOrders}</span>
+                    <div>
+                      <span className="text-muted-foreground mr-1.5">Floor:</span>
+                      <span className="font-medium text-lg text-gold">{floorPrice} Lords</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div>
+                      <span className="text-muted-foreground mr-1.5">Listed:</span>
+                      <span className="font-medium text-lg text-gold">{activeOrders}</span>
+                    </div>
+                    <div>
                       <span className="text-muted-foreground mr-1.5">Volume:</span>
-                      <span className="font-medium text-gold">{totalVolume} Lords</span>
+                      <span className="font-medium text-lg text-gold">{totalVolume} Lords</span>
                     </div>
                   </div>
                 </div>
