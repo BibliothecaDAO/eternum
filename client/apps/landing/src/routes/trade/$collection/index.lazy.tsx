@@ -1,6 +1,6 @@
+import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
-import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,6 @@ import { fetchCollectionStatistics, fetchOpenOrdersByPrice, OpenOrderByPrice } f
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
-import { useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Grid2X2, Grid3X3, Loader2 } from "lucide-react";
@@ -32,9 +31,7 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 
 function CollectionPage() {
   const { collection } = Route.useParams();
-  const { connectors } = useConnect();
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  console.log(collectionAddress);
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
@@ -181,8 +178,8 @@ function CollectionPage() {
             }
           >
             {filteredItems.length > 0 && (
-              <SeasonPassesGrid
-                seasonPasses={paginatedItems}
+              <CollectionTokenGrid
+                tokens={paginatedItems}
                 hideTransferButton={true}
                 checkOwner={true}
                 isCompactGrid={isCompactGrid}

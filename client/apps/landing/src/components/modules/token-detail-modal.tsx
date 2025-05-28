@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { seasonPassAddress } from "@/config";
@@ -12,21 +11,22 @@ import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Separator } from "../ui/separator";
+import { EditOrderInputs } from "./marketplace-edit-order-input";
+import { ListOrderInputs } from "./marketplace-list-order-input";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
 
 // Define the props for the modal component
-interface RealmDetailModalProps {
+interface TokenDetailModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   realmData: MergedNftData;
@@ -40,7 +40,7 @@ interface RealmDetailModalProps {
   expiration?: number; // Added: Expiration timestamp (seconds)
 }
 
-export const RealmDetailModal = ({
+export const TokenDetailModal = ({
   isOpen,
   onOpenChange,
   realmData,
@@ -51,7 +51,7 @@ export const RealmDetailModal = ({
   orderId,
   collection_id,
   expiration, // Added
-}: RealmDetailModalProps) => {
+}: TokenDetailModalProps) => {
   const { name, image, attributes } = realmData.metadata ?? {};
   const {
     listItem,
@@ -236,15 +236,15 @@ export const RealmDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl md:max-w-6xl bg-card border-border text-foreground">
+      <DialogContent className="sm:max-w-2xl md:max-w-6xl bg-card border-border text-foreground max-h-[100vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="grid gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center justify-center">
-              <img src={image} alt={name ?? "Realm"} className="rounded-md w-72 object-contain" />
+              <img src={image} alt={name ?? "Realm"} className="rounded-md  object-contain" />
             </div>
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
-                <h3 className="text-gold font-semibold text-2xl">{name || "N/A"}</h3>
+                <h3 className="text-gold font-semibold text-3xl">{name || "N/A"}</h3>
                 <div className="flex items-center gap-2  ">
                   <div className="flex items-center gap-2">{realmData.name}</div>
                   <Separator orientation="vertical" className="h-4" />
@@ -470,97 +470,19 @@ export const RealmDetailModal = ({
                       <>
                         {/* Owner & Listed & Approved */}
                         {showEditInputs && (
-                          <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
-                            <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs font-semibold text-muted-foreground">
-                              <div className="col-span-2">Item</div>
-                              <div>Current</div>
-                              <div>Fee</div>
-                              <div className="justify-self-end col-span-2">New Price</div>
-                            </div>
-                            <div className="grid grid-cols-6 gap-2 items-center py-2">
-                              <div className="flex items-center gap-2 col-span-2">
-                                <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
-                                <span className="truncate max-w-[80px]">{name}</span>
-                              </div>
-                              <div className="text-sm">
-                                {price
-                                  ? parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    })
-                                  : "-"}
-                              </div>
-                              <div className="text-xs">
-                                {editPrice && parseFloat(editPrice) > 0
-                                  ? ((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
-                                      minimumFractionDigits: 0,
-                                      maximumFractionDigits: 2,
-                                    })
-                                  : "--"}
-                                <span className="ml-1">LORDS</span>
-                              </div>
-                              <div className="justify-self-end relative col-span-2">
-                                <Input
-                                  id="edit-price"
-                                  type="number"
-                                  value={editPrice}
-                                  onChange={(e) => setEditPrice(e.target.value)}
-                                  placeholder="0"
-                                  disabled={isLoading || isSyncing}
-                                  className="w-full max-w-36"
-                                />
-                                <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
-                              </div>
-                            </div>
-                            {/* Proceeds below the table */}
-                            <div className="mb-1 flex justify-between border-t py-3 font-semibold">
-                              <span>You receive: </span>
-                              <div>
-                                {editPrice
-                                  ? parseFloat(editPrice) > 0 &&
-                                    ((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
-                                      "en-US",
-                                      {
-                                        minimumFractionDigits: 0,
-                                        maximumFractionDigits: 2,
-                                      },
-                                    )
-                                  : 0}
-                                <span className="ml-3">LORDS</span>
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div>
-                              <div className="flex items-center gap-2 w-full justify-end">
-                                <span className="text-sm font-medium text-muted-foreground ml-2">
-                                  Expires: {expiration ? new Date(expiration * 1000).toLocaleString() : "N/A"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between mt-1">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setShowEditInputs(false)}
-                                  size="sm"
-                                  disabled={isLoading || isSyncing}
-                                >
-                                  <ArrowLeft /> Back
-                                </Button>
-                                <Button
-                                  onClick={handleEditOrder}
-                                  disabled={
-                                    isLoading ||
-                                    isSyncing ||
-                                    !editPrice ||
-                                    marketplaceActions.isEditingOrder ||
-                                    editPrice == "0"
-                                  }
-                                >
-                                  {marketplaceActions.isEditingOrder ? "Saving..." : "Save Changes"}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                          <EditOrderInputs
+                            image={image ?? ""}
+                            name={name ?? ""}
+                            price={price ?? BigInt(0)}
+                            editPrice={editPrice}
+                            setEditPrice={setEditPrice}
+                            isLoading={isLoading}
+                            isSyncing={isSyncing}
+                            expiration={expiration ?? null}
+                            handleEditOrder={handleEditOrder}
+                            marketplaceActions={marketplaceActions}
+                            setShowEditInputs={setShowEditInputs}
+                          />
                         )}
                       </>
                     ) : (
@@ -568,108 +490,20 @@ export const RealmDetailModal = ({
                         {" "}
                         {/* Owner & Not Listed & Approved */}
                         {showListInputs && (
-                          <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
-                            <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs font-semibold text-muted-foreground">
-                              <div className="col-span-2">Item</div>
-                              <div>Floor</div>
-                              <div>Fee</div>
-                              <div className="justify-self-end col-span-2">List Price</div>
-                            </div>
-                            <div className="grid grid-cols-6 gap-2 items-center py-2 ">
-                              <div className="flex items-center gap-2 col-span-2">
-                                <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
-                                <span className="truncate max-w-[80px]">{name}</span>
-                              </div>
-                              <div className="text-sm">{/* Floor price here, e.g. */}-</div>
-                              <div className="text-xs">
-                                {listPrice && parseFloat(listPrice) > 0
-                                  ? ((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
-                                      minimumFractionDigits: 0,
-                                      maximumFractionDigits: 2,
-                                    })
-                                  : "--"}
-                                <span className="ml-1">LORDS</span>
-                              </div>
-                              <div className="justify-self-end relative col-span-2">
-                                <Input
-                                  id="list-price"
-                                  value={listPrice}
-                                  onChange={(e) => setListPrice(e.target.value)}
-                                  placeholder="0"
-                                  disabled={isLoading || isSyncing}
-                                  className="w-full max-w-36"
-                                />
-                                <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
-                              </div>
-                            </div>
-                            {/* Proceeds below the table */}
-                            <div className=" mb-1 flex justify-between border-t py-3 font-semibold">
-                              <span>You receive: </span>
-                              <div>
-                                {listPrice
-                                  ? parseFloat(listPrice) > 0 &&
-                                    ((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
-                                      "en-US",
-                                      {
-                                        minimumFractionDigits: 0,
-                                        maximumFractionDigits: 2,
-                                      },
-                                    )
-                                  : 0}
-                                <span className="ml-3">LORDS</span>
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div>
-                              {" "}
-                              <div className="flex items-center gap-2 w-full justify-end">
-                                <span className="text-sm font-medium text-muted-foreground ml-2">
-                                  Expires: {new Date(listExpiration * 1000).toLocaleString()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between mt-1">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setShowListInputs(false)}
-                                  size="sm"
-                                  disabled={isLoading || isSyncing}
-                                >
-                                  <ArrowLeft /> Back
-                                </Button>
-                                <div className="flex items-center gap-2">
-                                  <Select
-                                    value={selectedDuration}
-                                    disabled={isLoading || isSyncing}
-                                    onValueChange={handleDurationChange}
-                                  >
-                                    <SelectTrigger className="w-[140px]">
-                                      <SelectValue placeholder={"Expiration"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="12hr">12 hours</SelectItem>
-                                      <SelectItem value="24hr">24 hours</SelectItem>
-                                      <SelectItem value="3days">3 days</SelectItem>
-                                      <SelectItem value="7days">7 days</SelectItem>
-                                      <SelectItem value="30days">30 days</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <Button
-                                    onClick={handleListItem}
-                                    disabled={
-                                      isLoading || isSyncing || !listPrice || marketplaceActions.isCreatingOrder
-                                    }
-                                  >
-                                    {marketplaceActions.isCreatingOrder
-                                      ? "Listing..."
-                                      : !listPrice
-                                        ? "Set price"
-                                        : "Confirm Listing"}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          <ListOrderInputs
+                            image={image ?? ""}
+                            name={name ?? ""}
+                            listPrice={listPrice}
+                            setListPrice={setListPrice}
+                            isLoading={isLoading}
+                            isSyncing={isSyncing}
+                            listExpiration={listExpiration}
+                            selectedDuration={selectedDuration}
+                            handleDurationChange={handleDurationChange}
+                            handleListItem={handleListItem}
+                            marketplaceActions={marketplaceActions}
+                            setShowListInputs={setShowListInputs}
+                          />
                         )}
                       </>
                     )}

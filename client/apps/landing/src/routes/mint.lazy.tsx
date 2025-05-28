@@ -31,7 +31,7 @@ import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt"
 import { fetchSeasonPassRealmsByAddress, SeasonPassRealm } from "@/hooks/services";
 
 export const Route = createLazyFileRoute("/mint")({
-  component: Mint,
+  component: MintSeasonPasses,
 });
 
 // Define the structure of the augmented realm used internally
@@ -47,7 +47,7 @@ export interface AugmentedRealm {
   tokenId: string;
 }
 
-function Mint() {
+function MintSeasonPasses() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 

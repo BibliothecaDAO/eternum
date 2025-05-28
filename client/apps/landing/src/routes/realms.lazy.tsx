@@ -1,5 +1,5 @@
+import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
-import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
@@ -16,28 +16,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
-import { displayAddress } from "@/lib/utils";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
+import { Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 
 export const Route = createLazyFileRoute("/realms")({
-  component: SeasonPasses,
+  component: RealmsRoute,
 });
 
 type ViewMode = "my" | "all";
 
-function SeasonPasses() {
+function RealmsRoute() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
-  const [controllerAddress] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("my");
 
   // --- Pagination State ---
@@ -47,7 +45,7 @@ function SeasonPasses() {
   const [seasonPassTokenBalanceQuery] = useSuspenseQueries({
     queries: [
       {
-        queryKey: ["seasonPassTokenBalance", address],
+        queryKey: ["realmsTokenBalance", address],
         queryFn: () =>
           address
             ? fetchTokenBalancesWithMetadata(
@@ -135,16 +133,6 @@ function SeasonPasses() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <>
-        {controllerAddress && (
-          <div className="text-xl py-4 flex items-center">
-            Minting to:{" "}
-            <Badge fontVariant="secondary" className="text-lg ml-4 py-1.5">
-              <img className="w-6 pr-2" src={connectors[2].icon as string} alt="Connector Icon" />
-              {displayAddress(controllerAddress)}
-            </Badge>
-          </div>
-        )}
-
         {/* Page Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">
           {viewMode === "my" ? "Your Realms" : "All Realms"}
@@ -182,9 +170,9 @@ function SeasonPasses() {
           <div className="flex flex-col gap-2">
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
               {filteredSeasonPasses.length > 0 && (
-                <SeasonPassesGrid
+                <CollectionTokenGrid
                   checkOwner={true}
-                  seasonPasses={paginatedPasses}
+                  tokens={paginatedPasses}
                   setIsTransferOpen={handleTransferClick}
                   isCompactGrid={isCompactGrid}
                 />

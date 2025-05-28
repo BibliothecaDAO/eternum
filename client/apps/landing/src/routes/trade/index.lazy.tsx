@@ -47,10 +47,10 @@ function CollectionsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Marketplace Collections</h1>
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24 "
         variants={containerVariants}
         initial="hidden"
         animate="visible"

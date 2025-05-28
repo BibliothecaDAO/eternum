@@ -1,5 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCollectionByAddress, seasonPassAddress } from "@/config";
+import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
@@ -10,9 +10,9 @@ import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-import { RealmDetailModal } from "./realm-detail-modal";
+import { TokenDetailModal } from "./token-detail-modal";
 
-interface SeasonPassCardProps {
+interface TokenCardProps {
   pass: MergedNftData;
   checkOwner?: boolean;
   isSelected?: boolean;
@@ -27,13 +27,13 @@ interface ListingDetails {
   expiration?: string;
 }
 
-export const SeasonPassCard = ({
+export const TokenCard = ({
   pass,
   checkOwner = false,
   isSelected = false,
   onToggleSelection,
   toggleNftSelection,
-}: SeasonPassCardProps) => {
+}: TokenCardProps) => {
   const { token_id, metadata, contract_address } = pass;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace({ collectionAddress: contract_address });
@@ -84,18 +84,6 @@ export const SeasonPassCard = ({
   };
 
   const { attributes, name, image } = metadata ?? {};
-
-  // Prepare data for the modal (useMemo)
-  const modalData = useMemo(
-    () => ({
-      tokenId: token_id?.toString(),
-      contractAddress: seasonPassAddress,
-      name: name,
-      imageSrc: image || "",
-      attributes: attributes,
-    }),
-    [token_id, seasonPassAddress, name, image, attributes],
-  );
 
   const listingActive = useMemo(() => {
     if (pass.expiration !== null && pass.best_price_hex !== null) {
@@ -228,7 +216,7 @@ export const SeasonPassCard = ({
       </Card>
 
       {collection?.id && (
-        <RealmDetailModal
+        <TokenDetailModal
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
           realmData={pass}

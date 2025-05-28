@@ -1,5 +1,5 @@
+import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
-import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
@@ -186,9 +186,9 @@ function SeasonPasses() {
           <div className="flex flex-col gap-2">
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
               {filteredSeasonPasses.length > 0 && (
-                <SeasonPassesGrid
+                <CollectionTokenGrid
                   checkOwner={true}
-                  seasonPasses={paginatedPasses}
+                  tokens={paginatedPasses}
                   setIsTransferOpen={handleTransferClick}
                   isCompactGrid={isCompactGrid}
                 />
