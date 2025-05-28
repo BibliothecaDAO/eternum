@@ -6,9 +6,9 @@ import { ArmyCreate } from "@/ui/components/military/army-management-card";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ArmyManager, getEntityName } from "@bibliothecadao/eternum";
-import { ClientComponents, StructureType } from "@bibliothecadao/types";
+import { ArmyManager, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
+import { ClientComponents, StructureType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -59,10 +59,7 @@ export const EntityArmyList = ({
     return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
   }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
 
-  const name = useMemo(
-    () => getEntityName(structure.entity_id, dojo.setup.components),
-    [structure.entity_id, dojo.setup.components],
-  );
+  const name = useMemo(() => getStructureName(structure), [structure]);
 
   return (
     <div className="military-panel-selector p-4">

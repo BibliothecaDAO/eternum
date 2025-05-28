@@ -3,7 +3,7 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getRealmNameById,
+  getStructureName,
   getStructureTypeName,
   unpackValue,
 } from "@bibliothecadao/eternum";
@@ -125,11 +125,7 @@ export const StructureEntityDetail = memo(
     };
 
     const structureName = useMemo(() => {
-      if (structure?.base.category === StructureType.Realm) {
-        const realmName = getRealmNameById(structure?.metadata.realm_id);
-        return realmName;
-      }
-      return structure?.entity_id;
+      return structure ? getStructureName(structure) : undefined;
     }, [structure]);
 
     const resourcesProduced = useMemo(() => {

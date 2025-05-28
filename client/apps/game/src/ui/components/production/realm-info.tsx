@@ -1,4 +1,5 @@
 import { CapacityInfo } from "@/ui/modules/navigation/capacity-info";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
 import { memo } from "react";
 
@@ -21,7 +22,7 @@ export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <h1>{realm.name} </h1>
+            <h1>{getStructureName(realm.structure)} </h1>
             <CapacityInfo structureEntityId={realm.entityId} className="flex flex-row text-xl" />
           </div>
         </div>

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, formatTime, getEntityInfo } from "@bibliothecadao/eternum";
+import { configManager, formatTime, getEntityInfo, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, ID, PlayerStructure, TickIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -129,7 +129,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                         key={index}
                         value={structure.entityId?.toString() || ""}
                       >
-                        <div className="self-center flex gap-4 text-xl">{structure.name}</div>
+                        <div className="self-center flex gap-4 text-xl">{getStructureName(structure.structure)}</div>
                       </SelectItem>
                     </div>
                   ))}

@@ -2,7 +2,7 @@ import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/playe
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { getEntityName, getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, getStructureName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
@@ -53,8 +53,7 @@ export const PlayersPanel = ({
           const structure = getComponentValue(Structure, entityId);
           if (!structure) return undefined;
 
-          const structureName = getEntityName(structure.entity_id, components);
-          return structureName;
+          return getStructureName(structure);
         })
         .filter((structure): structure is string => structure !== undefined);
 

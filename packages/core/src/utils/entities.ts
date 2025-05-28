@@ -2,7 +2,9 @@ import {
   CapacityConfig,
   ClientComponents,
   ContractAddress,
+  DirectionName,
   EntityType,
+  getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
 } from "@bibliothecadao/types";
@@ -20,13 +22,18 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
   const entityIdBigInt = BigInt(entityId);
 
   const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
-
-  const name = getEntityName(entityId, components);
-
   const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
 
-  let owner = undefined;
+  let name = undefined;
+  if (explorer) {
+    name = `Army ${explorer.explorer_id}`;
+  } else {
+    if (structure) {
+      name = getStructureName(structure);
+    }
+  }
 
+  let owner = undefined;
   if (explorer) {
     owner = explorer.owner;
     const structureOwner = getComponentValue(Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
@@ -69,31 +76,45 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
-export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
-  const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+export const getStructureName = (
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  parentRealmPosition?: { col: number; row: number },
+) => {
+  const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
+  if (cachedName) return cachedName;
+
   if (!structure) return "";
   if (structure.base.category === StructureType.Realm) {
     return getRealmName(structure);
   }
-
-  if (entityName) {
-    return shortString.decodeShortString(entityName.name.toString());
-  }
-
-  if (abbreviate) {
-    const abbreviations: Record<string, string> = {
-      FragmentMine: "FM",
-      Hyperstructure: "HS",
-      Bank: "BK",
-    };
-
-    const abbr = abbreviations[structure.base.category];
-    if (abbr) {
-      return `${abbr} ${structure.entity_id}`;
-    }
+  if (structure.base.category === StructureType.Village && parentRealmPosition) {
+    return getVillageName(structure, parentRealmPosition);
   }
   return `${StructureType[structure.base.category]} ${structure.entity_id}`;
+};
+
+export const getVillageName = (
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  parentRealmPosition: { col: number; row: number },
+) => {
+  const direction = getDirectionBetweenAdjacentHexes(parentRealmPosition, {
+    col: structure.base.coord_x,
+    row: structure.base.coord_y,
+  });
+
+  const directionName = direction ? DirectionName[direction] : "";
+
+  const realmId = structure.metadata.village_realm;
+  const baseName = getRealmNameById(realmId);
+  return `${baseName} - ${directionName} Village`;
+};
+
+export const setEntityNameLocalStorage = (entityId: ID, name: string) => {
+  localStorage.setItem(`entity-name-${entityId}`, name);
+};
+
+export const getEntityNameFromLocalStorage = (entityId: ID) => {
+  return localStorage.getItem(`entity-name-${entityId}`);
 };
 
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {

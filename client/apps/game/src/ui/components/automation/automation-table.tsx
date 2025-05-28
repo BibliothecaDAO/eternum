@@ -10,6 +10,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
 import { LucideArrowRight } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -61,7 +62,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     mode: OrderMode.ProduceOnce,
     maxAmount: 1000,
     productionType: ProductionType.ResourceToResource,
-    realmName: realmInfo.name,
+    realmName: getStructureName(realmInfo.structure),
     bufferPercentage: 10,
   }));
   const [maxAmountInput, setMaxAmountInput] = useState<string>("5000");
@@ -90,12 +91,12 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
-      realmName: realmInfo.name,
+      realmName: getStructureName(realmInfo.structure),
       bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
     setIsInfinite(false);
-  }, [filteredResourcesForSelect, realmInfo.name, realmEntityId]);
+  }, [filteredResourcesForSelect, realmInfo, realmEntityId]);
 
   if (!realmEntityId || !realmInfo) {
     return <p>Realm data not available.</p>;
@@ -175,7 +176,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
-      realmName: realmInfo.name,
+      realmName: getStructureName(realmInfo.structure),
       bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
@@ -189,7 +190,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         <br />
       </div>
       <h4 className="mb-2">
-        [BETA] Automation for Realm {realmInfo.name} ({realmEntityId})
+        [BETA] Automation for Realm {getStructureName(realmInfo.structure)} ({realmEntityId})
       </h4>
 
       {/* Add pause checkbox */}

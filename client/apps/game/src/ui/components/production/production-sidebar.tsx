@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, RealmInfo, resources } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -45,7 +46,7 @@ const SidebarRealm = ({
       className={`px-2 py-1 rounded-lg cursor-pointer transition-colors ${isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-70"}`}
     >
       <div className="flex justify-between items-start">
-        <h3 className="text-xl font-bold mb-2">{realm.name}</h3>
+        <h3 className="text-xl font-bold mb-2">{getStructureName(realm.structure)}</h3>
         {/* {isCurrentStructure && <span className="text-xs bg-gold/30 text-white px-2 py-1 rounded">Current</span>} */}
         <div className="space-y-2">
           <div className="text-sm text-gold/80">

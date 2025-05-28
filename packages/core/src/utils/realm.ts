@@ -1,16 +1,16 @@
-import { Entity, getComponentValue } from "@dojoengine/recs";
-import { configManager, getAddressNameFromEntity, getEntityName, ResourceManager } from "..";
-import realmsJson from "../data/realms.json";
 import {
-  findResourceIdByTrait,
-  orders,
-  StructureType,
   ClientComponents,
+  findResourceIdByTrait,
   ID,
+  orders,
   RealmInfo,
   RealmInterface,
   RealmWithPosition,
+  StructureType,
 } from "@bibliothecadao/types";
+import { Entity, getComponentValue } from "@dojoengine/recs";
+import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
+import realmsJson from "../data/realms.json";
 import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
@@ -61,8 +61,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     const entity_id = structure.entity_id;
     const produced_resources = structure.resources_packed;
 
-    const name = getEntityName(structure.entity_id, components);
-
     const resources = unpackValue(BigInt(produced_resources));
 
     const resourceManager = new ResourceManager(components, entity_id);
@@ -71,7 +69,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       realmId: realm_id,
       entityId: entity_id,
       category: structure.category,
-      name,
       level,
       resources,
       order,
@@ -86,6 +83,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       owner: structure?.owner,
       ownerName: getAddressNameFromEntity(entity_id, components) || "",
       hasWonder: structure.metadata.has_wonder,
+      structure,
     };
   }
 }

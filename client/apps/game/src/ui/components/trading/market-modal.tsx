@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -172,7 +173,7 @@ export const MarketContent = () => {
               <SelectContent>
                 {playerStructures.map((structure, index) => (
                   <SelectItem key={index} value={structure.entityId.toString()}>
-                    {structure.name}
+                    {getStructureName(structure.structure)}
                   </SelectItem>
                 ))}
               </SelectContent>
