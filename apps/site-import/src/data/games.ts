@@ -70,7 +70,7 @@ export const games: Game[] = [
     isLive: true,
     studio: "Provable Games",
     links: {
-      homepage: "https://darkshuffle.dev/",
+      homepage: "https://darkshuffle.io/",
       discord: "https://discord.gg/uQnjZhZPfu",
       twitter: "https://twitter.com/await_0x",
     },
