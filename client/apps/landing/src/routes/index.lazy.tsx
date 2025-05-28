@@ -237,7 +237,7 @@ function Index() {
               const stats = collectionStats[index]?.data?.[0];
               const activeOrders = stats?.active_order_count ?? 0;
               const totalVolume = stats?.open_orders_total_wei
-                ? formatUnits(BigInt(stats.open_orders_total_wei), 18)
+                ? parseFloat(Number(formatUnits(BigInt(stats.open_orders_total_wei), 18)).toFixed(2))
                 : "0";
               const floorPrice = stats?.floor_price_wei ? formatUnits(BigInt(stats.floor_price_wei), 18) : "0";
               const MotionLink = motion(Link);
