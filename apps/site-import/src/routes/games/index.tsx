@@ -117,7 +117,7 @@ function GamesPage() {
                   <div className="absolute top-3 left-3">
                     <div className="flex items-center bg-card/80 backdrop-blur-sm px-2 py-1 rounded-full">
                       <motion.div
-                        className="w-2 h-2 rounded-full bg-positive mr-2"
+                        className="w-2 h-2 rounded-full bg-positive mr-2 bg-green-500"
                         animate={{ opacity: [1, 0.5, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
