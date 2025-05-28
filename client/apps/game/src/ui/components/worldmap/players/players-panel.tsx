@@ -53,7 +53,7 @@ export const PlayersPanel = ({
           const structure = getComponentValue(Structure, entityId);
           if (!structure) return undefined;
 
-          return getStructureName(structure);
+          return getStructureName(structure).name;
         })
         .filter((structure): structure is string => structure !== undefined);
 

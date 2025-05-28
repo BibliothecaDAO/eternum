@@ -317,7 +317,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       .map((structure) => ({
         ...structure,
         isFavorite: structure.entityId ? favorites.includes(structure.entityId) : false,
-        name: getStructureName(structure.structure),
+        name: getStructureName(structure.structure).name,
       }))
       .sort((a, b) => {
         const aFav = a.entityId ? Number(a.isFavorite) : 0;

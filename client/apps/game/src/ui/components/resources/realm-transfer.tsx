@@ -453,7 +453,7 @@ const RealmTransferBalance = memo(
           sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
           recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
           resources: [resource, maxAmount],
-          realmName: getStructureName(structure.structure),
+          realmName: getStructureName(structure.structure).name,
         };
         return existingIndex === -1
           ? [...prev, newCall]
@@ -469,7 +469,7 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">{getStructureName(structure.structure)}</div>
+            <div className="uppercase font-bold h4 truncate">{getStructureName(structure.structure).name}</div>
           </div>
         </div>
         <div className="w-full">
@@ -515,7 +515,7 @@ const RealmTransferBalance = memo(
                       sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
                       recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                       resources: [resource, clampedValue],
-                      realmName: getStructureName(structure.structure),
+                      realmName: getStructureName(structure.structure).name,
                     };
 
                     return existingIndex === -1

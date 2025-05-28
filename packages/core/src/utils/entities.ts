@@ -78,19 +78,20 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
 
 export const getStructureName = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
-  parentRealmPosition?: { col: number; row: number },
+  parentRealmContractPosition?: { col: number; row: number },
 ) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
-  if (cachedName) return cachedName;
+  let originalName = undefined;
 
-  if (!structure) return "";
   if (structure.base.category === StructureType.Realm) {
-    return getRealmName(structure);
+    originalName = getRealmName(structure);
+  } else if (structure.base.category === StructureType.Village && parentRealmContractPosition) {
+    originalName = getVillageName(structure, parentRealmContractPosition);
+  } else {
+    originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
   }
-  if (structure.base.category === StructureType.Village && parentRealmPosition) {
-    return getVillageName(structure, parentRealmPosition);
-  }
-  return `${StructureType[structure.base.category]} ${structure.entity_id}`;
+
+  return { name: cachedName || originalName, originalName };
 };
 
 export const getVillageName = (
@@ -111,6 +112,10 @@ export const getVillageName = (
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {
   localStorage.setItem(`entity-name-${entityId}`, name);
+};
+
+export const deleteEntityNameLocalStorage = (entityId: ID) => {
+  localStorage.removeItem(`entity-name-${entityId}`);
 };
 
 export const getEntityNameFromLocalStorage = (entityId: ID) => {

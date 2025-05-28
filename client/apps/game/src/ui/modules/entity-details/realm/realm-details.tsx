@@ -96,7 +96,7 @@ export const RealmVillageDetails = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h3 className="text-2xl font-bold">{getStructureName(structure.structure)}</h3>
+              <h3 className="text-2xl font-bold">{getStructureName(structure.structure).name}</h3>
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>

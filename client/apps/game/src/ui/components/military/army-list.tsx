@@ -59,7 +59,7 @@ export const EntityArmyList = ({
     return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
   }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
 
-  const name = useMemo(() => getStructureName(structure), [structure]);
+  const name = useMemo(() => getStructureName(structure).name, [structure]);
 
   return (
     <div className="military-panel-selector p-4">

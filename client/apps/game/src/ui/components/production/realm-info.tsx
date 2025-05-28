@@ -22,7 +22,7 @@ export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <h1>{getStructureName(realm.structure)} </h1>
+            <h1>{getStructureName(realm.structure).name} </h1>
             <CapacityInfo structureEntityId={realm.entityId} className="flex flex-row text-xl" />
           </div>
         </div>

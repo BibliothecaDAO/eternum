@@ -1,31 +1,8 @@
-import {
-  ClientComponents,
-  findResourceIdByTrait,
-  ID,
-  orders,
-  RealmInfo,
-  RealmInterface,
-  RealmWithPosition,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInfo, RealmInterface } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
 import realmsJson from "../data/realms.json";
 import { packValues, unpackValue } from "./packed-data";
-
-export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Structure } = components;
-  const structure = getComponentValue(Structure, entity);
-  if (structure?.base.category !== StructureType.Realm) return undefined;
-
-  return {
-    ...structure,
-    resources: unpackValue(BigInt(structure.resources_packed)),
-    position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
-    name: getRealmNameById(structure.metadata.realm_id),
-    owner: structure?.owner,
-  } as RealmWithPosition;
-};
 
 interface Attribute {
   trait_type: string;

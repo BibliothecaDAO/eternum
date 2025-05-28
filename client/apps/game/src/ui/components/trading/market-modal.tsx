@@ -173,7 +173,7 @@ export const MarketContent = () => {
               <SelectContent>
                 {playerStructures.map((structure, index) => (
                   <SelectItem key={index} value={structure.entityId.toString()}>
-                    {getStructureName(structure.structure)}
+                    {getStructureName(structure.structure).name}
                   </SelectItem>
                 ))}
               </SelectContent>

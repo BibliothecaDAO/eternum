@@ -125,7 +125,7 @@ export const StructureEntityDetail = memo(
     };
 
     const structureName = useMemo(() => {
-      return structure ? getStructureName(structure) : undefined;
+      return structure ? getStructureName(structure).name : undefined;
     }, [structure]);
 
     const resourcesProduced = useMemo(() => {
