@@ -895,9 +895,9 @@ function ChatModule() {
                 >
                   <button onClick={() => chatActions.setActiveTab(tab.id)} className="flex items-center gap-1">
                     <span className="text-sm truncate max-w-[100px]">{tab.name}</span>
-                    {tab.unreadCount > 0 && (
-                      <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
-                        {tab.unreadCount}
+                    {unreadMessages[tab?.recipientId || ""] > 0 && (
+                      <span className="ml-1 animate-pulse bg-red-500 text-white text-xxs px-2 bg-red/30 rounded-full">
+                        {unreadMessages[tab?.recipientId || ""]}
                       </span>
                     )}
                   </button>
