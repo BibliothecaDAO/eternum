@@ -145,6 +145,18 @@ export const TopLeftNavigation = memo(() => {
 
   const [selectOpen, setSelectOpen] = useState(false);
 
+  // Auto-focus search input when select opens
+  useEffect(() => {
+    if (selectOpen && searchInputRef.current) {
+      // Small delay to ensure the input is rendered
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [selectOpen]);
+
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
@@ -190,7 +202,14 @@ export const TopLeftNavigation = memo(() => {
                           });
                         }}
                         autoFocus={true}
-                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter" && filteredStructures.length > 0) {
+                            onSelectStructure(ID(filteredStructures[0].entityId));
+                            // close the select
+                            setSelectOpen(false);
+                          }
+                        }}
                         className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
                         onClick={(e) => e.stopPropagation()}
                         ref={searchInputRef}
