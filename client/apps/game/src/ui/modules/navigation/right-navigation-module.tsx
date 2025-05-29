@@ -9,7 +9,6 @@ import { BattleLogsTable } from "@/ui/components/events/battle-logs-table";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
-import { PlayerStructure } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -18,12 +17,13 @@ const EntityResourceTable = lazy(() =>
   import("@/ui/components/resources/entity-resource-table").then((module) => ({ default: module.EntityResourceTable })),
 );
 
-export const RightNavigationModule = ({ structures }: { structures: PlayerStructure[] }) => {
+export const RightNavigationModule = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const disableButtons = useUIStore((state) => state.disableButtons);
+  const structures = useUIStore((state) => state.playerStructures);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 

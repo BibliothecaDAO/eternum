@@ -76,6 +76,15 @@ export enum Direction {
   SOUTH_EAST,
 }
 
+export const DirectionName: Record<Direction, string> = {
+  [Direction.EAST]: "East",
+  [Direction.NORTH_EAST]: "North East",
+  [Direction.NORTH_WEST]: "North West",
+  [Direction.WEST]: "West",
+  [Direction.SOUTH_WEST]: "South West",
+  [Direction.SOUTH_EAST]: "South East",
+};
+
 // if row is even
 export const NEIGHBOR_OFFSETS_EVEN = [
   { i: 1, j: 0, direction: Direction.EAST },

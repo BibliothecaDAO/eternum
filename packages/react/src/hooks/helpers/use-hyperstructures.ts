@@ -8,7 +8,6 @@ import { ContractAddress, type HyperstructureInfo, type ID, type ResourcesIds } 
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { shortString } from "starknet";
 import { useDojo } from "../context";
 
 export type ProgressWithPercentage = {
@@ -25,14 +24,13 @@ export const useHyperstructures = (): HyperstructureInfo[] => {
     setup: { components },
   } = useDojo();
 
-  const { Structure, AddressName, Hyperstructure } = components;
+  const { Structure, Hyperstructure } = components;
 
   const hyperstructures = useEntityQuery([Has(Hyperstructure)]).map((hyperstructureEntityId) => {
     const hyperstructure = getComponentValue(Hyperstructure, hyperstructureEntityId);
     const structure = getComponentValue(Structure, hyperstructureEntityId);
     const owner = structure?.owner || 0n;
     const isOwner = ContractAddress(owner) === ContractAddress(account.address);
-    const entityName = getComponentValue(AddressName, hyperstructureEntityId);
     const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.hyperstructure_id, components) : "";
 
     if (!structure || !hyperstructure) return;
@@ -45,9 +43,6 @@ export const useHyperstructures = (): HyperstructureInfo[] => {
       owner,
       isOwner,
       ownerName,
-      name: entityName
-        ? shortString.decodeShortString(entityName.name.toString())
-        : `Hyperstructure ${hyperstructure.hyperstructure_id}`,
       access: hyperstructure.access,
     };
   });

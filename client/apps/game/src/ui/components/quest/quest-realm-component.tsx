@@ -1,4 +1,5 @@
 import Button from "@/ui/elements/button";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, Structure } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
@@ -80,7 +81,7 @@ export const QuestRealm = ({
       {!loadingQuests ? (
         <>
           <div className="flex flex-row items-center justify-between w-full">
-            <span className="font-semibold text-sm">{structureInfo?.name}</span>
+            <span className="font-semibold text-sm">{getStructureName(structureInfo.structure).name}</span>
             <div className="flex flex-row items-center gap-2">
               <div className={`px-2 py-1 rounded text-xxs font-bold ${getBadgeClass()}`}>{questStatus}</div>
             </div>

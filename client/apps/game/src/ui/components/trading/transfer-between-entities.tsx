@@ -12,6 +12,7 @@ import {
   computeTravelTime,
   configManager,
   getAddressName,
+  getEntityNameFromLocalStorage,
   getRealmNameById,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
@@ -254,13 +255,17 @@ export const TransferBetweenEntities = ({
 
   const entitiesListWithAccountNames = useMemo(() => {
     return entitiesList.map(({ entities, name }) => ({
-      entities: entities.map((entity) => ({
-        ...entity,
-        accountName: getAddressName(ContractAddress(entity.owner), components),
-        name: entity.realmId
-          ? getRealmNameById(entity.realmId)
-          : `${StructureType[entity.category]} ${entity.entityId}`,
-      })),
+      entities: entities.map((entity) => {
+        const entityName =
+          getEntityNameFromLocalStorage(entity.entityId) ||
+          (entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`);
+
+        return {
+          ...entity,
+          accountName: getAddressName(ContractAddress(entity.owner), components),
+          name: entityName,
+        };
+      }),
       name,
     }));
   }, [entitiesList]);

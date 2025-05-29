@@ -13,6 +13,7 @@ import {
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
+  getStructureName,
   LeaderboardManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
@@ -58,6 +59,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     return hyperstructures
       .map((hyperstructure) => ({
         ...hyperstructure,
+        name: getStructureName(hyperstructure.structure).name,
         isFavorite: favorites.includes(Number(hyperstructure.entity_id)),
       }))
       .sort((a, b) => Number(a.entity_id) - Number(b.entity_id));

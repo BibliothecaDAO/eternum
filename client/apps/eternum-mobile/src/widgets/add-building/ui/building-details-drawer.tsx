@@ -77,7 +77,10 @@ export const BuildingDetailsDrawer = ({
 
   // Get available locations based on realm position
   const availableLocations = useMemo(() => {
-    return generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, (tileManager?.getRealmLevel(entityId) as number + 1) || 1);
+    return generateHexPositions(
+      { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
+      (tileManager?.getRealmLevel(entityId) as number) + 1 || 1,
+    );
   }, []);
 
   // Get occupied locations from existing buildings

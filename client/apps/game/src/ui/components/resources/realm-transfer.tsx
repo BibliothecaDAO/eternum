@@ -8,6 +8,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   getEntityIdFromKeys,
+  getStructureName,
   getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
@@ -431,7 +432,7 @@ const RealmTransferBalance = memo(
           sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
           recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
           resources: [resource, maxAmount],
-          realmName: structure.name,
+          realmName: getStructureName(structure.structure).name,
         };
         return existingIndex === -1
           ? [...prev, newCall]
@@ -447,7 +448,7 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">{structure.name}</div>
+            <div className="uppercase font-bold h4 truncate">{getStructureName(structure.structure).name}</div>
           </div>
         </div>
         <div className="w-full">
@@ -461,7 +462,7 @@ const RealmTransferBalance = memo(
                 !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
               }`}
             >
-              {type === "send" ? "Your Donkeys:" : `${structure.name}'s Donkeys:`}{" "}
+              {type === "send" ? "Your Donkeys:" : `${getStructureName(structure.structure)}'s Donkeys:`}{" "}
               {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
               {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>
@@ -493,7 +494,7 @@ const RealmTransferBalance = memo(
                       sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
                       recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                       resources: [resource, clampedValue],
-                      realmName: structure.name,
+                      realmName: getStructureName(structure.structure).name,
                     };
 
                     return existingIndex === -1
