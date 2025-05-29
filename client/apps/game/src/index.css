@@ -152,6 +152,9 @@ body {
   text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
   @apply cursor-fancy text-gold;
 }
+.font-grotesk {
+  font-family: "Space Grotesk", sans-serif;
+}
 h1,
 h2,
 h3,
