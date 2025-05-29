@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { seasonPassAddress } from "@/config";
+import { marketplaceCollections } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
@@ -25,44 +25,38 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 
-export const Route = createLazyFileRoute("/season-passes")({
-  component: SeasonPasses,
+export const Route = createLazyFileRoute("/$collection")({
+  component: ManageCollectionRoute,
 });
 
-type ViewMode = "my" | "all";
-
-function SeasonPasses() {
+function ManageCollectionRoute() {
+  const { collection } = Route.useParams();
+  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
-  const [viewMode, setViewMode] = useState<ViewMode>("my");
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const [seasonPassTokenBalanceQuery] = useSuspenseQueries({
+  const [tokenBalanceQuery] = useSuspenseQueries({
     queries: [
       {
-        queryKey: ["seasonPassTokenBalance", address],
-        queryFn: () =>
-          address
-            ? fetchTokenBalancesWithMetadata(
-                seasonPassAddress,
-                address /*, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE*/,
-              )
-            : null,
+        queryKey: ["tokenBalance", collection, address],
+        queryFn: () => (address ? fetchTokenBalancesWithMetadata(collectionAddress, address) : null),
         refetchInterval: 8_000,
       },
     ],
   });
 
-  const getSeasonPassMetadataString = useCallback((pass: MergedNftData) => {
-    if (pass?.metadata) {
-      return pass.metadata;
+  const getMetadataString = useCallback((token: MergedNftData) => {
+    if (token?.metadata) {
+      return token.metadata;
     }
     return null;
   }, []);
@@ -70,17 +64,17 @@ function SeasonPasses() {
   const {
     selectedFilters,
     allTraits,
-    filteredData: filteredSeasonPasses,
+    filteredData: filteredTokens,
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<MergedNftData>(seasonPassTokenBalanceQuery.data, getSeasonPassMetadataString);
+  } = useTraitFiltering<MergedNftData>(tokenBalanceQuery.data, getMetadataString);
 
   // --- Pagination Logic ---
-  const totalPages = Math.ceil(filteredSeasonPasses.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredTokens.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedPasses = filteredSeasonPasses.slice(startIndex, endIndex);
+  const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
@@ -130,7 +124,7 @@ function SeasonPasses() {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
   }
 
-  const totalPasses = seasonPassTokenBalanceQuery.data?.length;
+  const totalTokens = tokenBalanceQuery.data?.length;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -146,17 +140,13 @@ function SeasonPasses() {
         )}
 
         {/* Page Title */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">
-          {viewMode === "my" ? "Your Season Passes" : "All Season Passes"}
-        </h2>
-        <p className="text-center text-muted-foreground mb-6">
-          {viewMode === "my" ? "View and manage your Season Pass NFTs." : "Browse all available Season Pass NFTs."}
-        </p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">Your {collectionName}</h2>
+        <p className="text-center text-muted-foreground mb-6">View and manage your {collectionName} NFTs</p>
 
         {/* Filter UI */}
         <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
           {isHeaderScrolled ? (
-            <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{"Your Season Passes"}</h4>
+            <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">Your {collectionName}</h4>
           ) : (
             <div></div>
           )}
@@ -185,21 +175,23 @@ function SeasonPasses() {
         <div className="flex-grow pt-0 px-2 pb-4">
           <div className="flex flex-col gap-2">
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-              {filteredSeasonPasses.length > 0 && (
+              {filteredTokens.length > 0 && (
                 <CollectionTokenGrid
-                  tokens={paginatedPasses}
+                  tokens={paginatedTokens}
                   setIsTransferOpen={handleTransferClick}
                   isCompactGrid={isCompactGrid}
                 />
               )}
 
-              {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && (
+              {filteredTokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
                 <div className="text-center py-6 text-muted-foreground">
-                  No Season Passes match the selected filters.
+                  No {collectionName} match the selected filters.
                 </div>
               )}
-              {totalPasses === 0 && (
-                <div className="text-center py-6 text-muted-foreground">You do not own any Season Pass NFTs yet.</div>
+              {totalTokens === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  You do not own any {collectionName} NFTs yet.
+                </div>
               )}
             </Suspense>
           </div>
@@ -249,12 +241,11 @@ function SeasonPasses() {
         )}
         {/* End Pagination Controls */}
 
-        {isTransferOpen && seasonPassTokenBalanceQuery.data && (
+        {isTransferOpen && tokenBalanceQuery.data && (
           <TransferSeasonPassDialog
             isOpen={isTransferOpen}
             setIsOpen={handleDialogClose}
-            seasonPassMints={seasonPassTokenBalanceQuery.data}
-            //seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
+            seasonPassMints={tokenBalanceQuery.data}
             initialSelectedTokenId={initialSelectedTokenId}
           />
         )}

@@ -17,11 +17,10 @@ import { Route as TradeCollectionRouteImport } from './routes/trade/$collection/
 
 // Create Virtual Routes
 
-const SeasonPassesLazyImport = createFileRoute('/season-passes')()
-const RealmsLazyImport = createFileRoute('/realms')()
 const MintLazyImport = createFileRoute('/mint')()
 const DataLazyImport = createFileRoute('/data')()
 const ClaimLazyImport = createFileRoute('/claim')()
+const CollectionLazyImport = createFileRoute('/$collection')()
 const IndexLazyImport = createFileRoute('/')()
 const TradeIndexLazyImport = createFileRoute('/trade/')()
 const TradeActivityLazyImport = createFileRoute('/trade/activity')()
@@ -31,18 +30,6 @@ const TradeCollectionActivityLazyImport = createFileRoute(
 )()
 
 // Create/Update Routes
-
-const SeasonPassesLazyRoute = SeasonPassesLazyImport.update({
-  id: '/season-passes',
-  path: '/season-passes',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/season-passes.lazy').then((d) => d.Route))
-
-const RealmsLazyRoute = RealmsLazyImport.update({
-  id: '/realms',
-  path: '/realms',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/realms.lazy').then((d) => d.Route))
 
 const MintLazyRoute = MintLazyImport.update({
   id: '/mint',
@@ -61,6 +48,12 @@ const ClaimLazyRoute = ClaimLazyImport.update({
   path: '/claim',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/claim.lazy').then((d) => d.Route))
+
+const CollectionLazyRoute = CollectionLazyImport.update({
+  id: '/$collection',
+  path: '/$collection',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/$collection.lazy').then((d) => d.Route))
 
 const IndexLazyRoute = IndexLazyImport.update({
   id: '/',
@@ -116,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
+    '/$collection': {
+      id: '/$collection'
+      path: '/$collection'
+      fullPath: '/$collection'
+      preLoaderRoute: typeof CollectionLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/claim': {
       id: '/claim'
       path: '/claim'
@@ -135,20 +135,6 @@ declare module '@tanstack/react-router' {
       path: '/mint'
       fullPath: '/mint'
       preLoaderRoute: typeof MintLazyImport
-      parentRoute: typeof rootRoute
-    }
-    '/realms': {
-      id: '/realms'
-      path: '/realms'
-      fullPath: '/realms'
-      preLoaderRoute: typeof RealmsLazyImport
-      parentRoute: typeof rootRoute
-    }
-    '/season-passes': {
-      id: '/season-passes'
-      path: '/season-passes'
-      fullPath: '/season-passes'
-      preLoaderRoute: typeof SeasonPassesLazyImport
       parentRoute: typeof rootRoute
     }
     '/trade/$collection': {
@@ -206,11 +192,10 @@ const TradeCollectionRouteRouteWithChildren =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
+  '/$collection': typeof CollectionLazyRoute
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
-  '/realms': typeof RealmsLazyRoute
-  '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade': typeof TradeIndexLazyRoute
@@ -220,11 +205,10 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
+  '/$collection': typeof CollectionLazyRoute
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
-  '/realms': typeof RealmsLazyRoute
-  '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade': typeof TradeIndexLazyRoute
   '/trade/$collection/activity': typeof TradeCollectionActivityLazyRoute
@@ -234,11 +218,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
+  '/$collection': typeof CollectionLazyRoute
   '/claim': typeof ClaimLazyRoute
   '/data': typeof DataLazyRoute
   '/mint': typeof MintLazyRoute
-  '/realms': typeof RealmsLazyRoute
-  '/season-passes': typeof SeasonPassesLazyRoute
   '/trade/$collection': typeof TradeCollectionRouteRouteWithChildren
   '/trade/activity': typeof TradeActivityLazyRoute
   '/trade/': typeof TradeIndexLazyRoute
@@ -250,11 +233,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$collection'
     | '/claim'
     | '/data'
     | '/mint'
-    | '/realms'
-    | '/season-passes'
     | '/trade/$collection'
     | '/trade/activity'
     | '/trade'
@@ -263,11 +245,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$collection'
     | '/claim'
     | '/data'
     | '/mint'
-    | '/realms'
-    | '/season-passes'
     | '/trade/activity'
     | '/trade'
     | '/trade/$collection/activity'
@@ -275,11 +256,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$collection'
     | '/claim'
     | '/data'
     | '/mint'
-    | '/realms'
-    | '/season-passes'
     | '/trade/$collection'
     | '/trade/activity'
     | '/trade/'
@@ -290,11 +270,10 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
+  CollectionLazyRoute: typeof CollectionLazyRoute
   ClaimLazyRoute: typeof ClaimLazyRoute
   DataLazyRoute: typeof DataLazyRoute
   MintLazyRoute: typeof MintLazyRoute
-  RealmsLazyRoute: typeof RealmsLazyRoute
-  SeasonPassesLazyRoute: typeof SeasonPassesLazyRoute
   TradeCollectionRouteRoute: typeof TradeCollectionRouteRouteWithChildren
   TradeActivityLazyRoute: typeof TradeActivityLazyRoute
   TradeIndexLazyRoute: typeof TradeIndexLazyRoute
@@ -302,11 +281,10 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
+  CollectionLazyRoute: CollectionLazyRoute,
   ClaimLazyRoute: ClaimLazyRoute,
   DataLazyRoute: DataLazyRoute,
   MintLazyRoute: MintLazyRoute,
-  RealmsLazyRoute: RealmsLazyRoute,
-  SeasonPassesLazyRoute: SeasonPassesLazyRoute,
   TradeCollectionRouteRoute: TradeCollectionRouteRouteWithChildren,
   TradeActivityLazyRoute: TradeActivityLazyRoute,
   TradeIndexLazyRoute: TradeIndexLazyRoute,
@@ -323,11 +301,10 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/$collection",
         "/claim",
         "/data",
         "/mint",
-        "/realms",
-        "/season-passes",
         "/trade/$collection",
         "/trade/activity",
         "/trade/"
@@ -335,6 +312,9 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.lazy.tsx"
+    },
+    "/$collection": {
+      "filePath": "$collection.lazy.tsx"
     },
     "/claim": {
       "filePath": "claim.lazy.tsx"
@@ -344,12 +324,6 @@ export const routeTree = rootRoute
     },
     "/mint": {
       "filePath": "mint.lazy.tsx"
-    },
-    "/realms": {
-      "filePath": "realms.lazy.tsx"
-    },
-    "/season-passes": {
-      "filePath": "season-passes.lazy.tsx"
     },
     "/trade/$collection": {
       "filePath": "trade/$collection/route.tsx",
