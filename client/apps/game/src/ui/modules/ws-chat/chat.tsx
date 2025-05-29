@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import "./App.css";
 import ChatClient from "./client/client";
 import LoginForm from "./components/chat/LoginForm";
@@ -92,9 +92,6 @@ function ChatModule() {
   // Online users state
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
-  // Add mobile detection state
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
-
   // Local loading state to be compatible with hooks expecting React.Dispatch
   const [_isLoadingMessagesLocal, _setIsLoadingMessagesLocal] = useState<boolean>(true);
 
@@ -111,15 +108,6 @@ function ChatModule() {
       return {};
     }
   });
-
-  const hasUnreadMessages = useMemo(() => {
-    // Only check for unread direct messages
-    return Object.entries(unreadMessages).some(([userId, count]) => {
-      // Only count unread messages from users (not rooms or global)
-      const isUser = [...onlineUsers, ...offlineUsers].some((user) => user?.id === userId);
-      return isUser && count > 0;
-    });
-  }, [unreadMessages, onlineUsers, offlineUsers]);
 
   // Update localStorage when unread messages change
   useEffect(() => {
@@ -303,28 +291,6 @@ function ChatModule() {
     }
   }, []); // Empty dependency array means this runs only once at mount
 
-  // Modify switchToGlobalChat function to check for existing global tab
-  const switchToGlobalChat = useCallback(() => {
-    const existingGlobalTab = tabs.find((tab) => tab.type === "global");
-    if (existingGlobalTab) {
-      chatActions.setActiveTab(existingGlobalTab.id);
-      return;
-    }
-
-    setIsInitialScrollComplete(false);
-    setShouldShowTransition(true);
-    chatActions.addTab({
-      type: "global",
-      name: "Game Chat",
-    });
-    setTimeout(() => {
-      chatActions.setIsLoadingMessages(false);
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
-    }, 200);
-  }, [chatActions, scrollToBottom, tabs]);
-
   // Modify the Global Chat button click handler
   const handleGlobalChatClick = useCallback(() => {
     const existingGlobalTab = tabs.find((tab) => tab.type === "global");
@@ -338,58 +304,6 @@ function ChatModule() {
     }
     setIsRoomsVisible(false);
   }, [chatActions, tabs]);
-
-  // Modify joinRoomFromSidebar function
-  const joinRoomFromSidebar = (roomId: string) => {
-    if (!chatClient) return;
-
-    setIsInitialScrollComplete(false);
-    setShouldShowTransition(true);
-    const roomName = availableRooms.find((room) => room.id === roomId)?.name;
-
-    // First join the socket.io room
-    chatClient.joinRoom(roomId);
-
-    // Then add the tab and request history
-    chatActions.addTab({
-      type: "room",
-      name: roomName || roomId,
-      roomId: roomId,
-    });
-
-    // Request room history immediately after joining
-    chatLogger.log(`Requesting room history for ${roomId} after join`);
-    chatClient.getRoomHistory(roomId);
-  };
-
-  // Modify selectRecipient function
-  const selectRecipient = useCallback(
-    (recipientId: string) => {
-      setIsInitialScrollComplete(false);
-      setShouldShowTransition(true);
-      const username = [...onlineUsers, ...offlineUsers].find((user) => user?.id === recipientId)?.username;
-      chatActions.addTab({
-        type: "direct",
-        name: username || recipientId,
-        recipientId: recipientId,
-      });
-
-      // Clear unread messages for this user and update localStorage
-      setUnreadMessages((prev) => {
-        const newState = {
-          ...prev,
-          [recipientId]: 0,
-        };
-        try {
-          localStorage.setItem("chat_unread_messages", JSON.stringify(newState));
-        } catch (error) {
-          console.error("Error saving unread messages to localStorage:", error);
-        }
-        return newState;
-      });
-    },
-    [chatClient, setUnreadMessages, chatActions, onlineUsers, offlineUsers],
-  );
 
   // Add effect to disable transition after initial load
   useEffect(() => {
@@ -548,30 +462,6 @@ function ChatModule() {
     // by creating a new client instance, which would also mean a new joinedRoomsRef effectively.
     // For now, let's keep the dependencies simple.
   }, [chatClient, availableRooms, chatClient?.socket?.connected]);
-
-  // Join a room
-  const joinRoom = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRoomId.trim() || !chatClient) return;
-
-    chatLogger.log(`Joining room from form: ${newRoomId}`);
-
-    // First join the socket.io room
-    chatClient.joinRoom(newRoomId);
-
-    // Then add the tab and request history
-    chatActions.addTab({
-      type: "room",
-      name: newRoomId,
-      roomId: newRoomId,
-    });
-
-    // Request room history immediately after joining
-    chatLogger.log(`Requesting room history for ${newRoomId} after join`);
-    chatClient.getRoomHistory(newRoomId);
-
-    setNewRoomId("");
-  };
 
   // Filter rooms based on search input
   const filteredRooms = useMemo(() => {
