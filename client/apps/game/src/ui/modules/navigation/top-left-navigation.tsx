@@ -66,6 +66,7 @@ export const TopLeftNavigation = memo(() => {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
@@ -179,11 +180,20 @@ export const TopLeftNavigation = memo(() => {
                         type="text"
                         placeholder="Search structures..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          // Maintain focus after state update
+                          requestAnimationFrame(() => {
+                            if (searchInputRef.current) {
+                              searchInputRef.current.focus();
+                            }
+                          });
+                        }}
                         autoFocus={true}
                         onKeyDown={(e) => e.stopPropagation()}
                         className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
                         onClick={(e) => e.stopPropagation()}
+                        ref={searchInputRef}
                       />
                       {searchTerm && (
                         <button
@@ -205,7 +215,7 @@ export const TopLeftNavigation = memo(() => {
                     </div>
                   ) : (
                     filteredStructures.map((structure, index) => (
-                      <div key={index} className="flex flex-row items-center">
+                      <div key={structure.entityId} className="flex flex-row items-center">
                         <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                           {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                         </button>
@@ -222,7 +232,7 @@ export const TopLeftNavigation = memo(() => {
                         </button>
                         <SelectItem
                           className="flex justify-between"
-                          key={index}
+                          key={structure.entityId}
                           value={structure.entityId?.toString() || ""}
                         >
                           <div className="self-center flex gap-4 text-xl">{structure.name}</div>
