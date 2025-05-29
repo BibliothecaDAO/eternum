@@ -6,7 +6,6 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
-  calculateDistance,
   calculateDonkeysNeeded,
   getEntityIdFromKeys,
   getStructureName,
@@ -80,18 +79,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     // Default case: return all player structures
     return playerStructures;
   }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
-
-  const structureDistances = useMemo(() => {
-    const distances: Record<number, number> = {};
-    if (!selectedStructure) return distances;
-    playerStructuresFiltered.forEach((structure) => {
-      distances[structure.structure.entity_id] = calculateDistance(
-        { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
-        { x: selectedStructure.base.coord_x, y: selectedStructure.base.coord_y },
-      );
-    });
-    return distances;
-  }, [playerStructuresFiltered, selectedStructure]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);
@@ -248,15 +235,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
         {/* Scrollable content area */}
         <div className="flex-grow overflow-y-auto pr-2">
-          <div className="text-xs text-gold/60 mb-2 italic">
-            Structures are sorted by distance (closest to furthest)
-          </div>
           {playerStructuresFiltered
-            .sort((a, b) => {
-              const distanceA = structureDistances[a.structure.entity_id] ?? 0;
-              const distanceB = structureDistances[b.structure.entity_id] ?? 0;
-              return distanceA - distanceB;
-            })
             .filter((structure) => {
               // First, skip if it's the structure itself, as no transfer row should be rendered.
               if (structure.structure.entity_id === selectedStructureEntityId) {
