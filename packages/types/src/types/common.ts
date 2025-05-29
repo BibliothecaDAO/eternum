@@ -88,7 +88,6 @@ export type HyperstructureInfo = {
   entity_id: ID;
   hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-  name: string;
   position: { x: number; y: number };
   owner: bigint;
   ownerName: string;
