@@ -346,20 +346,20 @@ function ChatModule() {
     setIsInitialScrollComplete(false);
     setShouldShowTransition(true);
     const roomName = availableRooms.find((room) => room.id === roomId)?.name;
+
+    // First join the socket.io room
+    chatClient.joinRoom(roomId);
+
+    // Then add the tab and request history
     chatActions.addTab({
       type: "room",
       name: roomName || roomId,
       roomId: roomId,
     });
 
-    // Then join the socket.io room
-    chatClient.joinRoom(roomId);
-
-    // Request room history after joining
-    setTimeout(() => {
-      chatLogger.log(`Requesting room history for ${roomId} after join`);
-      chatClient.getRoomHistory(roomId);
-    }, 100);
+    // Request room history immediately after joining
+    chatLogger.log(`Requesting room history for ${roomId} after join`);
+    chatClient.getRoomHistory(roomId);
   };
 
   // Modify selectRecipient function
@@ -555,26 +555,20 @@ function ChatModule() {
     if (!newRoomId.trim() || !chatClient) return;
 
     chatLogger.log(`Joining room from form: ${newRoomId}`);
+
+    // First join the socket.io room
+    chatClient.joinRoom(newRoomId);
+
+    // Then add the tab and request history
     chatActions.addTab({
       type: "room",
       name: newRoomId,
       roomId: newRoomId,
     });
 
-    // Clear unread messages for this new room
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [newRoomId]: 0,
-    }));
-
-    // Then join the socket.io room
-    chatClient.joinRoom(newRoomId);
-
-    // Request room history after joining
-    setTimeout(() => {
-      chatLogger.log(`Requesting room history for ${newRoomId} after join`);
-      chatClient.getRoomHistory(newRoomId);
-    }, 100);
+    // Request room history immediately after joining
+    chatLogger.log(`Requesting room history for ${newRoomId} after join`);
+    chatClient.getRoomHistory(newRoomId);
 
     setNewRoomId("");
   };
@@ -759,6 +753,27 @@ function ChatModule() {
   const onlineUsersCount = useMemo(() => {
     return filteredUsers.filter((user) => !(unreadMessages[user?.id] || 0)).length;
   }, [filteredUsers, unreadMessages]);
+
+  // Add effect to handle room message loading
+  useEffect(() => {
+    if (chatClient && activeTab && activeTab.type === "room" && activeTab.roomId) {
+      chatLogger.log(`Requesting room message history for ${activeTab.roomId}`);
+      _setIsLoadingMessagesLocal(true);
+
+      // Request room history
+      chatClient.getRoomHistory(activeTab.roomId);
+
+      // Set a safety timeout to clear loading state if no response
+      const safetyTimeout = setTimeout(() => {
+        _setIsLoadingMessagesLocal(false);
+      }, 5000);
+
+      return () => clearTimeout(safetyTimeout);
+    } else if (activeTab?.type !== "room") {
+      // Clear loading state for non-room tabs
+      _setIsLoadingMessagesLocal(false);
+    }
+  }, [chatClient, activeTab]);
 
   // If username is not set, show login form
   if (!isUsernameSet) {
