@@ -29,7 +29,7 @@ export const Route = createLazyFileRoute("/")({
 function Index() {
   const chain = import.meta.env.VITE_PUBLIC_CHAIN;
   const { address: accountAddress } = useAccount();
-  const { togglePass, isSelected } = useSelectedPassesStore();
+  const { togglePass, isSelected } = useSelectedPassesStore("home");
   const { totalPlayers, totalTroops, totalStructures, totalAgents, totalCreatedAgents, isLoading } = useData();
 
   // Fetch marketplace collection statistics
@@ -288,11 +288,17 @@ function Index() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-3xl font-bold">Your Realms</h2>
                   <Button asChild variant="outline">
-                    <Link to="/realms">Manage All</Link>
+                    <Link to="/$collection" params={{ collection: "realms" }}>
+                      Manage All
+                    </Link>
                   </Button>
                 </div>
                 {realms.data && (
-                  <CollectionTokenGrid tokens={realms.data.slice(0, 4) as MergedNftData[]} isCompactGrid={false} />
+                  <CollectionTokenGrid
+                    tokens={realms.data.slice(0, 4) as MergedNftData[]}
+                    isCompactGrid={false}
+                    pageId="home"
+                  />
                 )}
               </div>
 
@@ -301,13 +307,16 @@ function Index() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-3xl font-bold">Your Season Passes</h2>
                   <Button asChild variant="outline">
-                    <Link to="/season-passes">Manage All</Link>
+                    <Link to="/$collection" params={{ collection: "season-passes" }}>
+                      Manage All
+                    </Link>
                   </Button>
                 </div>
                 <CollectionTokenGrid
                   tokens={(seasonPasses.data?.slice(0, 4) ?? []) as MergedNftData[]}
                   isCompactGrid={false}
                   onToggleSelection={togglePass}
+                  pageId="home"
                 />
               </div>
             </div>
