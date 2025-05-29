@@ -96,7 +96,8 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
       set((state) => ({
         activeTabId: tabId,
         isMinimized: false,
-        isLoadingMessages: true,
+        // Only set loading state if we're switching to a different tab
+        isLoadingMessages: state.activeTabId !== tabId,
       }));
     },
     updateTabUnreadCount: (tabId, count) => {
