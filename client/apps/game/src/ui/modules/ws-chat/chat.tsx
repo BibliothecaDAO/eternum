@@ -292,8 +292,25 @@ function ChatModule() {
     }
   }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
 
-  // Modify switchToGlobalChat function
+  // Add effect to open Game Chat by default only once at initial load
+  useEffect(() => {
+    // Only add Game Chat tab if there are no tabs at all
+    if (tabs.length === 0) {
+      chatActions.addTab({
+        type: "global",
+        name: "Game Chat",
+      });
+    }
+  }, []); // Empty dependency array means this runs only once at mount
+
+  // Modify switchToGlobalChat function to check for existing global tab
   const switchToGlobalChat = useCallback(() => {
+    const existingGlobalTab = tabs.find((tab) => tab.type === "global");
+    if (existingGlobalTab) {
+      chatActions.setActiveTab(existingGlobalTab.id);
+      return;
+    }
+
     setIsInitialScrollComplete(false);
     setShouldShowTransition(true);
     chatActions.addTab({
@@ -306,7 +323,21 @@ function ChatModule() {
         scrollToBottom();
       }, 100);
     }, 200);
-  }, [chatActions, scrollToBottom]);
+  }, [chatActions, scrollToBottom, tabs]);
+
+  // Modify the Global Chat button click handler
+  const handleGlobalChatClick = useCallback(() => {
+    const existingGlobalTab = tabs.find((tab) => tab.type === "global");
+    if (existingGlobalTab) {
+      chatActions.setActiveTab(existingGlobalTab.id);
+    } else {
+      chatActions.addTab({
+        type: "global",
+        name: "Game Chat",
+      });
+    }
+    setIsRoomsVisible(false);
+  }, [chatActions, tabs]);
 
   // Modify joinRoomFromSidebar function
   const joinRoomFromSidebar = (roomId: string) => {
@@ -956,16 +987,7 @@ function ChatModule() {
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">
                   {/* Global Chat Option */}
-                  <button
-                    onClick={() => {
-                      chatActions.addTab({
-                        type: "global",
-                        name: "Game Chat",
-                      });
-                      setIsRoomsVisible(false);
-                    }}
-                    className="w-full px-2 py-1 text-left hover:bg-gold/20"
-                  >
+                  <button onClick={handleGlobalChatClick} className="w-full px-2 py-1 text-left hover:bg-gold/20">
                     <span className="text-sm">Game Chat</span>
                   </button>
 

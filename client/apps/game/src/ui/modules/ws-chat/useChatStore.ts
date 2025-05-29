@@ -54,22 +54,41 @@ export const useChatStore = create<ChatStoreState>((set, get) => ({
         id: `${tab.type}-${tab.type === "room" ? tab.roomId : tab.type === "direct" ? tab.recipientId : "global"}`,
         unreadCount: 0,
       };
-      set((state) => ({
-        tabs: [...state.tabs, newTab],
-        activeTabId: newTab.id,
-        isMinimized: false,
-        isLoadingMessages: true,
-      }));
+
+      set((state) => {
+        // Check if tab with same id already exists
+        const existingTab = state.tabs.find((t) => t.id === newTab.id);
+        if (existingTab) {
+          // If tab exists, just make it active
+          return {
+            activeTabId: existingTab.id,
+            isMinimized: false,
+            isLoadingMessages: true,
+          };
+        }
+
+        // If tab doesn't exist, add it
+        return {
+          tabs: [...state.tabs, newTab],
+          activeTabId: newTab.id,
+          isMinimized: false,
+          isLoadingMessages: true,
+        };
+      });
     },
     removeTab: (tabId) => {
       set((state) => {
         const newTabs = state.tabs.filter((tab) => tab.id !== tabId);
         const newActiveTabId =
           state.activeTabId === tabId ? (newTabs.length > 0 ? newTabs[0].id : null) : state.activeTabId;
+
+        // Only set loading state if we're switching to a new tab
+        const isLoading = state.activeTabId === tabId && newActiveTabId !== tabId;
+
         return {
           tabs: newTabs,
           activeTabId: newActiveTabId,
-          isLoadingMessages: true,
+          isLoadingMessages: isLoading,
         };
       });
     },
