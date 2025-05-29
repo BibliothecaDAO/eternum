@@ -4,6 +4,7 @@ import ChatClient from "./client/client";
 import LoginForm from "./components/chat/LoginForm";
 import MessageGroupComponent from "./components/chat/MessageGroup";
 import MessageInput from "./components/chat/MessageInput";
+import UserItem from "./components/chat/UserItem";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import CircleButton from "@/ui/elements/circle-button";
@@ -521,58 +522,35 @@ function ChatModule() {
     return filterRoomsBySearch(availableRooms, roomSearch);
   }, [availableRooms, roomSearch]);
 
-  // Filter users based on search input
-  const filteredUsers = useMemo(() => {
-    const users = filterUsersBySearch(onlineUsers, userSearch);
-    return users.sort((a, b) => {
-      const unreadA = (unreadMessages[a.id] || 0) > 0;
-      const unreadB = (unreadMessages[b.id] || 0) > 0;
-
-      if (unreadA && !unreadB) {
-        return -1; // A comes first
-      }
-      if (!unreadA && unreadB) {
-        return 1; // B comes first
-      }
-      // If both have or don't have unread, sort by username
-      return (a.username || a.id).localeCompare(b.username || b.id);
-    });
-  }, [onlineUsers, userSearch, unreadMessages]);
-
-  // Filter offline users based on search input
-  const filteredOfflineUsers = useMemo(() => {
-    const users = filterUsersBySearch(offlineUsers, userSearch);
-    return users.sort((a, b) => {
-      const unreadA = (unreadMessages[a.id] || 0) > 0;
-      const unreadB = (unreadMessages[b.id] || 0) > 0;
-
-      if (unreadA && !unreadB) {
-        return -1; // A comes first
-      }
-      if (!unreadA && unreadB) {
-        return 1; // B comes first
-      }
-      // If both have or don't have unread, sort by username
-      return (a.username || a.id).localeCompare(b.username || b.id);
-    });
-  }, [offlineUsers, userSearch, unreadMessages]);
-
-  // Add resize listener to detect mobile view
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    // Initial check
-    handleResize();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [pinnedUsers, setPinnedUsers] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("chat_pinned_users");
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error("Error reading pinned users from localStorage:", error);
+      return [];
+    }
+  });
+
+  // Update localStorage when pinned users change
+  useEffect(() => {
+    try {
+      localStorage.setItem("chat_pinned_users", JSON.stringify(pinnedUsers));
+    } catch (error) {
+      console.error("Error saving pinned users to localStorage:", error);
+    }
+  }, [pinnedUsers]);
+
+  const togglePinUser = useCallback((userId: string) => {
+    setPinnedUsers((prev) => {
+      if (prev.includes(userId)) {
+        return prev.filter((id) => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  }, []);
 
   // Add memoized calculation for total unread messages
   const totalUnreadMessages = useMemo(() => {
@@ -631,24 +609,90 @@ function ChatModule() {
     URL.revokeObjectURL(url);
   }, [filteredMessages, directMessageRecipientId, activeRoomId, onlineUsers, offlineUsers, availableRooms]);
 
-  // Add new memoized computations for user lists
+  // Modify the filtered users to include pinned users at the top
+  const filteredUsers = useMemo(() => {
+    const users = filterUsersBySearch(onlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const isPinnedA = pinnedUsers.includes(a.id);
+      const isPinnedB = pinnedUsers.includes(b.id);
+
+      if (isPinnedA && !isPinnedB) return -1;
+      if (!isPinnedA && isPinnedB) return 1;
+
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) return -1;
+      if (!unreadA && unreadB) return 1;
+
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [onlineUsers, userSearch, unreadMessages, pinnedUsers]);
+
+  // Modify the filtered offline users to include pinned users at the top
+  const filteredOfflineUsers = useMemo(() => {
+    const users = filterUsersBySearch(offlineUsers, userSearch);
+    return users.sort((a, b) => {
+      const isPinnedA = pinnedUsers.includes(a.id);
+      const isPinnedB = pinnedUsers.includes(b.id);
+
+      if (isPinnedA && !isPinnedB) return -1;
+      if (!isPinnedA && isPinnedB) return 1;
+
+      const unreadA = (unreadMessages[a.id] || 0) > 0;
+      const unreadB = (unreadMessages[b.id] || 0) > 0;
+
+      if (unreadA && !unreadB) return -1;
+      if (!unreadA && unreadB) return 1;
+
+      return (a.username || a.id).localeCompare(b.username || b.id);
+    });
+  }, [offlineUsers, userSearch, unreadMessages, pinnedUsers]);
+
+  // Update the usersWithUnreadMessages to include pinned users at the top
   const usersWithUnreadMessages = useMemo(() => {
     return [...filteredUsers, ...filteredOfflineUsers]
       .filter((user) => user && user?.id !== userId && (unreadMessages[user?.id] || 0) > 0)
-      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
-  }, [filteredUsers, filteredOfflineUsers, userId, unreadMessages]);
+      .sort((a, b) => {
+        const isPinnedA = pinnedUsers.includes(a?.id || "");
+        const isPinnedB = pinnedUsers.includes(b?.id || "");
 
+        if (isPinnedA && !isPinnedB) return -1;
+        if (!isPinnedA && isPinnedB) return 1;
+
+        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
+      });
+  }, [filteredUsers, filteredOfflineUsers, userId, unreadMessages, pinnedUsers]);
+
+  // Update the onlineUsersWithoutUnread to include pinned users at the top
   const onlineUsersWithoutUnread = useMemo(() => {
     return filteredUsers
       .filter((user) => user && user?.id !== userId && !(unreadMessages[user?.id] || 0))
-      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
-  }, [filteredUsers, userId, unreadMessages]);
+      .sort((a, b) => {
+        const isPinnedA = pinnedUsers.includes(a?.id || "");
+        const isPinnedB = pinnedUsers.includes(b?.id || "");
 
+        if (isPinnedA && !isPinnedB) return -1;
+        if (!isPinnedA && isPinnedB) return 1;
+
+        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
+      });
+  }, [filteredUsers, userId, unreadMessages, pinnedUsers]);
+
+  // Update the offlineUsersWithoutUnread to include pinned users at the top
   const offlineUsersWithoutUnread = useMemo(() => {
     return filteredOfflineUsers
       .filter((user) => !(unreadMessages[user?.id] || 0))
-      .sort((a, b) => (a?.username || a?.id).localeCompare(b?.username || b?.id));
-  }, [filteredOfflineUsers, unreadMessages]);
+      .sort((a, b) => {
+        const isPinnedA = pinnedUsers.includes(a?.id || "");
+        const isPinnedB = pinnedUsers.includes(b?.id || "");
+
+        if (isPinnedA && !isPinnedB) return -1;
+        if (!isPinnedA && isPinnedB) return 1;
+
+        return (a?.username || a?.id).localeCompare(b?.username || b?.id);
+      });
+  }, [filteredOfflineUsers, unreadMessages, pinnedUsers]);
 
   const onlineUsersCount = useMemo(() => {
     return filteredUsers.filter((user) => !(unreadMessages[user?.id] || 0)).length;
@@ -698,7 +742,7 @@ function ChatModule() {
       } ${isInputFocused ? "bg-black/60" : "bg-black/20"}`}
     >
       {/* Main Chat Area */}
-      <div className={`flex flex-col flex overflow-hidden w-[700px] max-w-[35vw]`}>
+      <div className={`flex flex-col flex overflow-hidden w-[800px] max-w-[45vw]`}>
         {/* Chat Header */}
         <div className=" flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
           <div className="flex items-center">
@@ -709,29 +753,14 @@ function ChatModule() {
                   setIsRoomsVisible(!isRoomsVisible);
                   setIsUsersVisible(false);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
+                className={`flex flex-col items-start gap-0.5 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
                   activeRoomId || (!activeRoomId && !directMessageRecipientId) ? "bg-gold/20 text-gold" : ""
                 }`}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
-                  />
-                </svg>
-                <span
-                  className={`truncate max-w-[150px] ${activeRoomId || (!activeRoomId && !directMessageRecipientId) ? "font-bold" : ""}`}
-                >
+                <span className="text-sm font-medium">Rooms</span>
+                <span className="text-xxs font-grotesk truncate max-w-[150px]">
                   {activeRoomId
-                    ? `Room: ${availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId}`
+                    ? availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId
                     : "Game Chat"}
                 </span>
               </button>
@@ -813,31 +842,16 @@ function ChatModule() {
                   setIsUsersVisible(!isUsersVisible);
                   setIsRoomsVisible(false);
                 }}
-                className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors ${
+                className={`flex flex-col items-start gap-0.5 px-2 py-1 text-gold/70 hover:text-gold transition-colors ${
                   directMessageRecipientId ? "bg-gold/20 text-gold" : ""
                 }`}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                <span className={`truncate max-w-[150px] ${directMessageRecipientId ? "font-bold" : ""}`}>
+                <span className="text-sm font-medium">DM</span>
+                <span className="text-xxs font-grotesk truncate max-w-[150px]">
                   {directMessageRecipientId
-                    ? `DM: ${
-                        [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
-                          ?.username || directMessageRecipientId
-                      }`
-                    : "Direct Messages"}
+                    ? [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
+                        ?.username || directMessageRecipientId
+                    : ""}
                 </span>
                 {totalUnreadMessages > 0 && (
                   <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
@@ -883,38 +897,16 @@ function ChatModule() {
                       <div>
                         <div className="px-2 py-1 text-xs font-medium text-gray-400">Unread Messages</div>
                         {usersWithUnreadMessages.map((user) => (
-                          <button
+                          <UserItem
                             key={user?.id}
-                            onClick={() => {
-                              selectRecipient(user?.id);
-                              setIsUsersVisible(false);
-                              setIsRoomsVisible(false);
-                            }}
-                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
-                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
-                            } ${offlineUsers.some((u) => u?.id === user?.id) ? "opacity-60" : ""}`}
-                          >
-                            <div
-                              className={`h-6 w-6 flex items-center justify-center text-sm ${
-                                offlineUsers.some((u) => u?.id === user?.id)
-                                  ? "bg-gradient-to-br from-gray-500/30 to-gray-600/30"
-                                  : "bg-gradient-to-br from-orange-500/30 to-orange-600/30"
-                              } mr-2 rounded`}
-                            >
-                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
-                            </div>
-                            <span
-                              className={`text-sm truncate ${offlineUsers.some((u) => u?.id === user?.id) ? "text-gray-400" : ""}`}
-                            >
-                              {user?.username || user?.id}
-                            </span>
-                            {!offlineUsers.some((u) => u?.id === user?.id) && (
-                              <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
-                            )}
-                            <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-                              {unreadMessages[user?.id]}
-                            </span>
-                          </button>
+                            user={user}
+                            isOffline={offlineUsers.some((u) => u?.id === user?.id)}
+                            unreadCount={unreadMessages[user?.id] || 0}
+                            isSelected={user?.id === directMessageRecipientId}
+                            isPinned={pinnedUsers.includes(user?.id)}
+                            onSelect={selectRecipient}
+                            onTogglePin={togglePinUser}
+                          />
                         ))}
                       </div>
                     )}
@@ -927,23 +919,16 @@ function ChatModule() {
                           <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsersCount}</span>
                         </div>
                         {onlineUsersWithoutUnread.map((user) => (
-                          <button
+                          <UserItem
                             key={user?.id}
-                            onClick={() => {
-                              selectRecipient(user?.id);
-                              setIsUsersVisible(false);
-                              setIsRoomsVisible(false);
-                            }}
-                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
-                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
-                            }`}
-                          >
-                            <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-orange-500/30 to-orange-600/30 mr-2 rounded">
-                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
-                            </div>
-                            <span className="text-sm truncate">{user?.username || user?.id}</span>
-                            <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
-                          </button>
+                            user={user}
+                            isOffline={false}
+                            unreadCount={0}
+                            isSelected={user?.id === directMessageRecipientId}
+                            isPinned={pinnedUsers.includes(user?.id)}
+                            onSelect={selectRecipient}
+                            onTogglePin={togglePinUser}
+                          />
                         ))}
                       </div>
                     )}
@@ -953,22 +938,16 @@ function ChatModule() {
                       <div>
                         <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
                         {offlineUsersWithoutUnread.map((user) => (
-                          <button
+                          <UserItem
                             key={user?.id}
-                            onClick={() => {
-                              selectRecipient(user?.id);
-                              setIsUsersVisible(false);
-                              setIsRoomsVisible(false);
-                            }}
-                            className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center opacity-60 ${
-                              user?.id === directMessageRecipientId ? "bg-gold/30" : ""
-                            }`}
-                          >
-                            <div className="h-6 w-6 flex items-center justify-center text-sm bg-gradient-to-br from-gray-500/30 to-gray-600/30 mr-2 rounded">
-                              {((user?.username || user?.id || "?").charAt(0) || "?").toUpperCase()}
-                            </div>
-                            <span className="text-sm truncate text-gray-400">{user?.username || user?.id}</span>
-                          </button>
+                            user={user}
+                            isOffline={true}
+                            unreadCount={0}
+                            isSelected={user?.id === directMessageRecipientId}
+                            isPinned={pinnedUsers.includes(user?.id)}
+                            onSelect={selectRecipient}
+                            onTogglePin={togglePinUser}
+                          />
                         ))}
                       </div>
                     )}
