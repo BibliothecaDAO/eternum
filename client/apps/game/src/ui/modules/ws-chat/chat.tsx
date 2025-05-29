@@ -852,19 +852,20 @@ function ChatModule() {
             {/* Active Tabs */}
             <div className="flex-1 flex overflow-x-auto">
               {tabs.map((tab) => (
-                <button
+                <div
                   key={tab.id}
-                  onClick={() => chatActions.setActiveTab(tab.id)}
                   className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
                     tab.id === activeTabId ? "bg-gold/20 text-gold" : ""
                   }`}
                 >
-                  <span className="text-sm truncate max-w-[100px]">{tab.name}</span>
-                  {tab.unreadCount > 0 && (
-                    <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
-                      {tab.unreadCount}
-                    </span>
-                  )}
+                  <button onClick={() => chatActions.setActiveTab(tab.id)} className="flex items-center gap-1">
+                    <span className="text-sm truncate max-w-[100px]">{tab.name}</span>
+                    {tab.unreadCount > 0 && (
+                      <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
+                        {tab.unreadCount}
+                      </span>
+                    )}
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -882,7 +883,7 @@ function ChatModule() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </button>
+                </div>
               ))}
             </div>
 

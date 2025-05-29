@@ -23,28 +23,29 @@ const UserItem: React.FC<UserItemProps> = ({
   onTogglePin,
 }) => {
   return (
-    <button
-      onClick={() => onSelect(user.id)}
+    <div
       className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${
         isSelected ? "bg-gold/30" : ""
       } ${isOffline ? "opacity-60" : ""}`}
     >
-      <div
-        className={`h-6 w-6 flex items-center justify-center text-sm ${
-          isOffline
-            ? "bg-gradient-to-br from-gray-500/30 to-gray-600/30"
-            : "bg-gradient-to-br from-orange-500/30 to-orange-600/30"
-        } mr-2 rounded`}
-      >
-        {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
-      </div>
-      <span className={`text-sm truncate ${isOffline ? "text-gray-400" : ""}`}>{user.username || user.id}</span>
-      {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>}
-      {unreadCount > 0 && (
-        <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
-          {unreadCount}
-        </span>
-      )}
+      <button onClick={() => onSelect(user.id)} className="flex items-center flex-1">
+        <div
+          className={`h-6 w-6 flex items-center justify-center text-sm ${
+            isOffline
+              ? "bg-gradient-to-br from-gray-500/30 to-gray-600/30"
+              : "bg-gradient-to-br from-orange-500/30 to-orange-600/30"
+          } mr-2 rounded`}
+        >
+          {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+        </div>
+        <span className={`text-sm truncate ${isOffline ? "text-gray-400" : ""}`}>{user.username || user.id}</span>
+        {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>}
+        {unreadCount > 0 && (
+          <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 py-0.5 bg-red/30 rounded-full">
+            {unreadCount}
+          </span>
+        )}
+      </button>
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -68,7 +69,7 @@ const UserItem: React.FC<UserItemProps> = ({
           />
         </svg>
       </button>
-    </button>
+    </div>
   );
 };
 
