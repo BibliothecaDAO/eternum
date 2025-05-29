@@ -44,8 +44,8 @@ function ChatModule() {
 
   const isExpanded = useChatStore((state) => state.isExpanded);
   const isMinimized = useChatStore((state) => state.isMinimized);
-  const activeRoomId = useChatStore((state) => state.activeRoomId);
-  const directMessageRecipientId = useChatStore((state) => state.directMessageRecipientId);
+  const activeTabId = useChatStore((state) => state.activeTabId);
+  const tabs = useChatStore((state) => state.tabs);
   const isStoreLoadingMessages = useChatStore((state) => state.isLoadingMessages);
   const chatActions = useChatStore((state) => state.actions);
 
@@ -237,10 +237,21 @@ function ChatModule() {
     [scrollToBottom],
   );
 
+  // Get active tab info
+  const activeTab = useMemo(() => {
+    return tabs.find((tab) => tab.id === activeTabId);
+  }, [tabs, activeTabId]);
+
   // Filter messages based on active tab
   const filteredMessages = useMemo(() => {
-    return filterMessages(messages, userId, directMessageRecipientId || "", activeRoomId || "");
-  }, [messages, userId, directMessageRecipientId, activeRoomId]);
+    if (!activeTab) return [];
+    return filterMessages(
+      messages,
+      userId,
+      activeTab.type === "direct" ? activeTab.recipientId || "" : "",
+      activeTab.type === "room" ? activeTab.roomId || "" : "",
+    );
+  }, [messages, userId, activeTab]);
 
   // Sort messages based on active tab
   const sortedMessages = useMemo(() => {
@@ -253,12 +264,12 @@ function ChatModule() {
   }, [sortedMessages]);
 
   useEffect(() => {
-    if (chatClient && directMessageRecipientId) {
-      chatLogger.log(`Requesting direct message history with ${directMessageRecipientId}`);
+    if (chatClient && activeTab && activeTab.type === "direct") {
+      chatLogger.log(`Requesting direct message history with ${activeTab.recipientId}`);
 
       // Use requestAnimationFrame to ensure UI updates before sending socket request
       window.requestAnimationFrame(() => {
-        chatClient.getDirectMessageHistory(directMessageRecipientId);
+        chatClient.getDirectMessageHistory(activeTab.recipientId || "");
       });
 
       // Set a safety timeout to clear loading state if no response
@@ -271,7 +282,7 @@ function ChatModule() {
       // No chat client, clear loading state
       chatActions.setIsLoadingMessages(false);
     }
-  }, [directMessageRecipientId]);
+  }, [chatClient, activeTab]);
 
   // Add effect to handle scroll when messages are loaded
   useEffect(() => {
@@ -283,13 +294,14 @@ function ChatModule() {
 
   // Modify switchToGlobalChat function
   const switchToGlobalChat = useCallback(() => {
-    setIsInitialScrollComplete(false); // Reset scroll state
-    setShouldShowTransition(true); // Enable transition
-    chatActions.switchToGlobalChat();
-    // Global messages should already be loaded, but we'll show the spinner briefly
+    setIsInitialScrollComplete(false);
+    setShouldShowTransition(true);
+    chatActions.addTab({
+      type: "global",
+      name: "Game Chat",
+    });
     setTimeout(() => {
       chatActions.setIsLoadingMessages(false);
-      // Add a small delay to ensure messages are rendered before scrolling
       setTimeout(() => {
         scrollToBottom();
       }, 100);
@@ -300,9 +312,14 @@ function ChatModule() {
   const joinRoomFromSidebar = (roomId: string) => {
     if (!chatClient) return;
 
-    setIsInitialScrollComplete(false); // Reset scroll state
-    setShouldShowTransition(true); // Enable transition
-    chatActions.selectRoom(roomId);
+    setIsInitialScrollComplete(false);
+    setShouldShowTransition(true);
+    const roomName = availableRooms.find((room) => room.id === roomId)?.name;
+    chatActions.addTab({
+      type: "room",
+      name: roomName || roomId,
+      roomId: roomId,
+    });
 
     // Then join the socket.io room
     chatClient.joinRoom(roomId);
@@ -317,10 +334,14 @@ function ChatModule() {
   // Modify selectRecipient function
   const selectRecipient = useCallback(
     (recipientId: string) => {
-      setIsInitialScrollComplete(false); // Reset scroll state
-      setShouldShowTransition(true); // Enable transition
-      // Show loading state immediately
-      chatActions.selectDirectMessageRecipient(recipientId);
+      setIsInitialScrollComplete(false);
+      setShouldShowTransition(true);
+      const username = [...onlineUsers, ...offlineUsers].find((user) => user?.id === recipientId)?.username;
+      chatActions.addTab({
+        type: "direct",
+        name: username || recipientId,
+        recipientId: recipientId,
+      });
 
       // Clear unread messages for this user and update localStorage
       setUnreadMessages((prev) => {
@@ -336,7 +357,7 @@ function ChatModule() {
         return newState;
       });
     },
-    [chatClient, setUnreadMessages, chatActions],
+    [chatClient, setUnreadMessages, chatActions, onlineUsers, offlineUsers],
   );
 
   // Add effect to disable transition after initial load
@@ -346,25 +367,25 @@ function ChatModule() {
     }
   }, [isInitialScrollComplete]);
 
-  // Send a message based on active tab
+  // Update message sending logic
   const handleSendMessage = useCallback(
     (message: string) => {
-      if (!chatClient) return;
+      if (!chatClient || !activeTab) return;
 
-      if (directMessageRecipientId) {
-        chatClient.sendDirectMessage(directMessageRecipientId, message);
+      if (activeTab.type === "direct" && activeTab.recipientId) {
+        chatClient.sendDirectMessage(activeTab.recipientId, message);
         // Add to our local messages for immediate feedback
         addMessage({
           id: Date.now().toString(),
           senderId: userId,
           senderUsername: username,
-          recipientId: directMessageRecipientId,
+          recipientId: activeTab.recipientId,
           message: message,
           timestamp: new Date(),
           type: "direct",
         });
-      } else if (activeRoomId) {
-        chatClient.sendRoomMessage(activeRoomId, message);
+      } else if (activeTab.type === "room" && activeTab.roomId) {
+        chatClient.sendRoomMessage(activeTab.roomId, message);
         // Add to our local messages for immediate feedback
         addMessage({
           id: Date.now().toString(),
@@ -373,7 +394,7 @@ function ChatModule() {
           message: message,
           timestamp: new Date(),
           type: "room",
-          roomId: activeRoomId,
+          roomId: activeTab.roomId,
         });
       } else {
         chatClient.sendGlobalMessage(message);
@@ -388,7 +409,7 @@ function ChatModule() {
         });
       }
     },
-    [chatClient, directMessageRecipientId, activeRoomId, userId, username, addMessage],
+    [chatClient, activeTab, userId, username, addMessage],
   );
 
   // Handle username submission
@@ -423,14 +444,20 @@ function ChatModule() {
   useDirectMessageEvents(
     chatClient,
     userId,
-    directMessageRecipientId || "",
+    activeTab && activeTab.type === "direct" ? activeTab.recipientId || "" : "",
     addMessage,
     setUnreadMessages,
     _setIsLoadingMessagesLocal, // Pass local setter to hooks
     setMessages,
   );
 
-  useRoomMessageEvents(chatClient, activeRoomId || "", addMessage, _setIsLoadingMessagesLocal, setMessages);
+  useRoomMessageEvents(
+    chatClient,
+    activeTab && activeTab.type === "room" ? activeTab.roomId || "" : "",
+    addMessage,
+    _setIsLoadingMessagesLocal,
+    setMessages,
+  );
 
   useGlobalMessageEvents(chatClient, addMessage, setMessages);
 
@@ -497,7 +524,11 @@ function ChatModule() {
     if (!newRoomId.trim() || !chatClient) return;
 
     chatLogger.log(`Joining room from form: ${newRoomId}`);
-    chatActions.selectRoom(newRoomId);
+    chatActions.addTab({
+      type: "room",
+      name: newRoomId,
+      roomId: newRoomId,
+    });
 
     // Clear unread messages for this new room
     setUnreadMessages((prev) => ({
@@ -588,12 +619,12 @@ function ChatModule() {
     const now = new Date();
     const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
     let chatType = "global";
-    if (directMessageRecipientId) {
-      const recipient = [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId);
-      chatType = `dm-${recipient?.username || directMessageRecipientId}`;
-    } else if (activeRoomId) {
-      const room = availableRooms.find((r) => r.id === activeRoomId);
-      chatType = `room-${room?.name || activeRoomId}`;
+    if (activeTab && activeTab.type === "direct") {
+      const recipient = [...onlineUsers, ...offlineUsers].find((user) => user?.id === activeTab.recipientId);
+      chatType = `dm-${recipient?.username || activeTab.recipientId}`;
+    } else if (activeTab && activeTab.type === "room") {
+      const room = availableRooms.find((r) => r.id === activeTab.roomId);
+      chatType = `room-${room?.name || activeTab.roomId}`;
     }
     const filename = `chat-${chatType}-${now.toISOString().split("T")[0]}-${timeStr}.txt`;
 
@@ -607,7 +638,7 @@ function ChatModule() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [filteredMessages, directMessageRecipientId, activeRoomId, onlineUsers, offlineUsers, availableRooms]);
+  }, [filteredMessages, activeTab, onlineUsers, offlineUsers, availableRooms]);
 
   // Modify the filtered users to include pinned users at the top
   const filteredUsers = useMemo(() => {
@@ -744,282 +775,341 @@ function ChatModule() {
       {/* Main Chat Area */}
       <div className={`flex flex-col flex overflow-hidden w-[800px] max-w-[45vw]`}>
         {/* Chat Header */}
-        <div className=" flex justify-between items-center flex-shrink-0 border-b border-gold/30 shadow-sm">
-          <div className="flex items-center">
-            {/* Room Selector Tab */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setIsRoomsVisible(!isRoomsVisible);
-                  setIsUsersVisible(false);
-                }}
-                className={`flex flex-col items-start gap-0.5 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
-                  activeRoomId || (!activeRoomId && !directMessageRecipientId) ? "bg-gold/20 text-gold" : ""
-                }`}
+        <div className="flex flex-col flex-shrink-0 border-b border-gold/30 shadow-sm">
+          {/* Tab Bar */}
+          <div className="flex items-center relative">
+            {/* Add Room Button */}
+            <button
+              onClick={() => {
+                setIsRoomsVisible(!isRoomsVisible);
+                setIsUsersVisible(false);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <span className="text-sm font-medium">Rooms</span>
-                <span className="text-xxs font-grotesk truncate max-w-[150px]">
-                  {activeRoomId
-                    ? availableRooms.find((room) => room.id === activeRoomId)?.name || activeRoomId
-                    : "Game Chat"}
-                </span>
-              </button>
-              {isRoomsVisible && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
-                  <div className="p-2 border-b border-gold/30">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search rooms..."
-                        value={roomSearch}
-                        onChange={(e) => setRoomSearch(e.target.value)}
-                        className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
-                      />
-                      {roomSearch && (
-                        <button
-                          onClick={() => setRoomSearch("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/70 hover:text-gold transition-colors"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {/* Global Chat Option */}
-                    <button
-                      onClick={() => {
-                        switchToGlobalChat();
-                        setIsRoomsVisible(false);
-                        setIsUsersVisible(false);
-                      }}
-                      className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
-                        !activeRoomId && !directMessageRecipientId ? "bg-gold/30" : ""
-                      }`}
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span className="text-sm">Room</span>
+            </button>
+
+            {/* Add DM Button */}
+            <button
+              onClick={() => {
+                setIsUsersVisible(!isUsersVisible);
+                setIsRoomsVisible(false);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span className="text-sm">DM</span>
+            </button>
+
+            {/* Active Tabs */}
+            <div className="flex-1 flex overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => chatActions.setActiveTab(tab.id)}
+                  className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
+                    tab.id === activeTabId ? "bg-gold/20 text-gold" : ""
+                  }`}
+                >
+                  <span className="text-sm truncate max-w-[100px]">{tab.name}</span>
+                  {tab.unreadCount > 0 && (
+                    <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
+                      {tab.unreadCount}
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      chatActions.removeTab(tab.id);
+                    }}
+                    className="ml-1 p-0.5 rounded hover:bg-gold/20 transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <span className="text-sm">Game Chat</span>
-                    </button>
-
-                    {/* Rooms */}
-                    {filteredRooms.map((room) => (
-                      <button
-                        key={room.id}
-                        onClick={() => {
-                          joinRoomFromSidebar(room.id);
-                          setIsRoomsVisible(false);
-                          setIsUsersVisible(false);
-                        }}
-                        className={`w-full px-2 py-1 text-left hover:bg-gold/20 ${
-                          room.id === activeRoomId ? "bg-gold/30" : ""
-                        }`}
-                      >
-                        <span className="text-sm">{room.name || room.id}</span>
-                        {room.userCount && (
-                          <span className="ml-2 text-xs bg-gold/20 px-1 rounded">{room.userCount}</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </button>
+              ))}
             </div>
 
-            {/* User Selector Tab */}
-            <div className="relative">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pr-2">
               <button
-                onClick={() => {
-                  setIsUsersVisible(!isUsersVisible);
-                  setIsRoomsVisible(false);
-                }}
-                className={`flex flex-col items-start gap-0.5 px-2 py-1 text-gold/70 hover:text-gold transition-colors ${
-                  directMessageRecipientId ? "bg-gold/20 text-gold" : ""
-                }`}
+                onClick={saveChatToText}
+                className="text-gold/70 hover:text-gold transition-colors p-1"
+                title="Save chat to text file"
               >
-                <span className="text-sm font-medium">DM</span>
-                <span className="text-xxs font-grotesk truncate max-w-[150px]">
-                  {directMessageRecipientId
-                    ? [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)
-                        ?.username || directMessageRecipientId
-                    : ""}
-                </span>
-                {totalUnreadMessages > 0 && (
-                  <span className="ml-1 animate-pulse bg-red-500 text-white text-xs font-bold px-2 bg-red/30 rounded-full">
-                    {totalUnreadMessages}
-                  </span>
-                )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
               </button>
-              {isUsersVisible && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
-                  <div className="p-2 border-b border-gold/30">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
-                      />
-                      {userSearch && (
-                        <button
-                          onClick={() => setUserSearch("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/70 hover:text-gold transition-colors"
+              <button
+                onClick={() => chatActions.toggleExpand()}
+                className="text-gold/70 hover:text-gold transition-colors p-1"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {isExpanded ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 3h6v6M9 3H3v6m12 12h6v-6M3 15v6h6"
+                    />
+                  )}
+                </svg>
+              </button>
+              <button
+                onClick={() => chatActions.setMinimized(true)}
+                className="text-gold/70 hover:text-gold transition-colors p-1"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Dropdowns */}
+            {isRoomsVisible && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
+                <div className="p-2 border-b border-gold/30">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search rooms..."
+                      value={roomSearch}
+                      onChange={(e) => setRoomSearch(e.target.value)}
+                      className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
+                    />
+                    {roomSearch && (
+                      <button
+                        onClick={() => setRoomSearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/70 hover:text-gold transition-colors"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {/* Users with unread messages */}
-                    {usersWithUnreadMessages.length > 0 && (
-                      <div>
-                        <div className="px-2 py-1 text-xs font-medium text-gray-400">Unread Messages</div>
-                        {usersWithUnreadMessages.map((user) => (
-                          <UserItem
-                            key={user?.id}
-                            user={user}
-                            isOffline={offlineUsers.some((u) => u?.id === user?.id)}
-                            unreadCount={unreadMessages[user?.id] || 0}
-                            isSelected={user?.id === directMessageRecipientId}
-                            isPinned={pinnedUsers.includes(user?.id)}
-                            onSelect={selectRecipient}
-                            onTogglePin={togglePinUser}
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
                           />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Online Users without unread messages */}
-                    {onlineUsersWithoutUnread.length > 0 && (
-                      <div>
-                        <div className="px-2 py-1 text-xs font-medium text-gray-400">
-                          Online Lords{" "}
-                          <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsersCount}</span>
-                        </div>
-                        {onlineUsersWithoutUnread.map((user) => (
-                          <UserItem
-                            key={user?.id}
-                            user={user}
-                            isOffline={false}
-                            unreadCount={0}
-                            isSelected={user?.id === directMessageRecipientId}
-                            isPinned={pinnedUsers.includes(user?.id)}
-                            onSelect={selectRecipient}
-                            onTogglePin={togglePinUser}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Offline Users without unread messages */}
-                    {offlineUsersWithoutUnread.length > 0 && (
-                      <div>
-                        <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
-                        {offlineUsersWithoutUnread.map((user) => (
-                          <UserItem
-                            key={user?.id}
-                            user={user}
-                            isOffline={true}
-                            unreadCount={0}
-                            isSelected={user?.id === directMessageRecipientId}
-                            isPinned={pinnedUsers.includes(user?.id)}
-                            onSelect={selectRecipient}
-                            onTogglePin={togglePinUser}
-                          />
-                        ))}
-                      </div>
+                        </svg>
+                      </button>
                     )}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {/* Global Chat Option */}
+                  <button
+                    onClick={() => {
+                      chatActions.addTab({
+                        type: "global",
+                        name: "Game Chat",
+                      });
+                      setIsRoomsVisible(false);
+                    }}
+                    className="w-full px-2 py-1 text-left hover:bg-gold/20"
+                  >
+                    <span className="text-sm">Game Chat</span>
+                  </button>
 
-          <div className="flex items-center gap-2 pr-2">
-            <button
-              onClick={saveChatToText}
-              className="text-gold/70 hover:text-gold transition-colors p-1"
-              title="Save chat to text file"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={() => chatActions.toggleExpand()}
-              className="text-gold/70 hover:text-gold transition-colors p-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {isExpanded ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 3h6v6M9 3H3v6m12 12h6v-6M3 15v6h6"
-                  />
-                )}
-              </svg>
-            </button>
-            <button
-              onClick={() => chatActions.setMinimized(true)}
-              className="text-gold/70 hover:text-gold transition-colors p-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                  {/* Rooms */}
+                  {filteredRooms.map((room) => (
+                    <button
+                      key={room.id}
+                      onClick={() => {
+                        chatActions.addTab({
+                          type: "room",
+                          name: room.name || room.id,
+                          roomId: room.id,
+                        });
+                        setIsRoomsVisible(false);
+                      }}
+                      className="w-full px-2 py-1 text-left hover:bg-gold/20"
+                    >
+                      <span className="text-sm">{room.name || room.id}</span>
+                      {room.userCount && <span className="ml-2 text-xs bg-gold/20 px-1 rounded">{room.userCount}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isUsersVisible && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-brown/95 border border-gold/30 rounded shadow-lg z-50">
+                <div className="p-2 border-b border-gold/30">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-2 py-1 bg-gold/20 focus:outline-none text-gold placeholder-gold/50 border border-gold/30 rounded text-sm"
+                    />
+                    {userSearch && (
+                      <button
+                        onClick={() => setUserSearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/70 hover:text-gold transition-colors"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {/* Users with unread messages */}
+                  {usersWithUnreadMessages.length > 0 && (
+                    <div>
+                      <div className="px-2 py-1 text-xs font-medium text-gray-400">Unread Messages</div>
+                      {usersWithUnreadMessages.map((user) => (
+                        <UserItem
+                          key={user?.id}
+                          user={user}
+                          isOffline={offlineUsers.some((u) => u?.id === user?.id)}
+                          unreadCount={unreadMessages[user?.id] || 0}
+                          isSelected={false}
+                          isPinned={pinnedUsers.includes(user?.id)}
+                          onSelect={(userId) => {
+                            const username = [...onlineUsers, ...offlineUsers].find((u) => u?.id === userId)?.username;
+                            chatActions.addTab({
+                              type: "direct",
+                              name: username || userId,
+                              recipientId: userId,
+                            });
+                            setIsUsersVisible(false);
+                          }}
+                          onTogglePin={togglePinUser}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Online Users without unread messages */}
+                  {onlineUsersWithoutUnread.length > 0 && (
+                    <div>
+                      <div className="px-2 py-1 text-xs font-medium text-gray-400">
+                        Online Lords{" "}
+                        <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsersCount}</span>
+                      </div>
+                      {onlineUsersWithoutUnread.map((user) => (
+                        <UserItem
+                          key={user?.id}
+                          user={user}
+                          isOffline={false}
+                          unreadCount={0}
+                          isSelected={false}
+                          isPinned={pinnedUsers.includes(user?.id)}
+                          onSelect={(userId) => {
+                            const username = [...onlineUsers, ...offlineUsers].find((u) => u?.id === userId)?.username;
+                            chatActions.addTab({
+                              type: "direct",
+                              name: username || userId,
+                              recipientId: userId,
+                            });
+                            setIsUsersVisible(false);
+                          }}
+                          onTogglePin={togglePinUser}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Offline Users without unread messages */}
+                  {offlineUsersWithoutUnread.length > 0 && (
+                    <div>
+                      <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
+                      {offlineUsersWithoutUnread.map((user) => (
+                        <UserItem
+                          key={user?.id}
+                          user={user}
+                          isOffline={true}
+                          unreadCount={0}
+                          isSelected={false}
+                          isPinned={pinnedUsers.includes(user?.id)}
+                          onSelect={(userId) => {
+                            const username = [...onlineUsers, ...offlineUsers].find((u) => u?.id === userId)?.username;
+                            chatActions.addTab({
+                              type: "direct",
+                              name: username || userId,
+                              recipientId: userId,
+                            });
+                            setIsUsersVisible(false);
+                          }}
+                          onTogglePin={togglePinUser}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1046,12 +1136,12 @@ function ChatModule() {
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                 />
               </svg>
-              {directMessageRecipientId ? (
+              {activeTab?.type === "direct" ? (
                 <p>No direct messages yet</p>
-              ) : activeRoomId ? (
+              ) : activeTab?.type === "room" ? (
                 <p>No messages yet in this room</p>
               ) : (
-                <p>No messages yet in Global Chat</p>
+                <p>Join a room to start chatting</p>
               )}
             </div>
           ) : (
@@ -1071,7 +1161,14 @@ function ChatModule() {
                       key={groupKey}
                       group={group}
                       userId={userId}
-                      selectRecipient={selectRecipient}
+                      selectRecipient={(userId) => {
+                        const username = [...onlineUsers, ...offlineUsers].find((u) => u?.id === userId)?.username;
+                        chatActions.addTab({
+                          type: "direct",
+                          name: username || userId,
+                          recipientId: userId,
+                        });
+                      }}
                     />
                   );
                 })}
@@ -1086,11 +1183,11 @@ function ChatModule() {
           onSendMessage={handleSendMessage}
           onFocusChange={setIsInputFocused}
           isRecipientOffline={
-            directMessageRecipientId ? offlineUsers.some((user) => user?.id === directMessageRecipientId) : false
+            activeTab?.type === "direct" ? offlineUsers.some((user) => user?.id === activeTab.recipientId) : false
           }
           recipientUsername={
-            directMessageRecipientId
-              ? [...onlineUsers, ...offlineUsers].find((user) => user?.id === directMessageRecipientId)?.username
+            activeTab?.type === "direct"
+              ? [...onlineUsers, ...offlineUsers].find((user) => user?.id === activeTab.recipientId)?.username
               : undefined
           }
         />
