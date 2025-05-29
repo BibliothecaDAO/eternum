@@ -267,7 +267,7 @@ export const TopLeftNavigation = memo(() => {
         {structureNameChange && selectedStructure.structure && (
           <NameChangePopup
             currentName={getStructureName(structureNameChange).name}
-            originalName={getStructureName(structureNameChange).name}
+            originalName={getStructureName(structureNameChange).originalName}
             onConfirm={(newName) => handleNameChange(structureNameChange.entity_id, newName)}
             onCancel={() => setStructureNameChange(null)}
             onDelete={() => handleNameDelete(structureNameChange.entity_id)}
