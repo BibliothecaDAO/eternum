@@ -180,6 +180,7 @@ function ChatModule() {
   // Auto-scroll when messages change
   useEffect(() => {
     console.log("Messages updated, triggering scroll");
+    chatActions.setIsLoadingMessages(false);
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
