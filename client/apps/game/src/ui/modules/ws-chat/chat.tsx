@@ -803,9 +803,9 @@ function ChatModule() {
             />
           </svg>
         </CircleButton>
-        {hasUnreadMessages && (
-          <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-red-500 border border-white bg-green pointer-events-none animate-pulse">
-            {" "}
+        {totalUnreadMessages > 0 && (
+          <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-red-500 bg-red/30 text-white text-xxs flex items-center justify-center">
+            {totalUnreadMessages}
           </span>
         )}
       </div>
@@ -814,12 +814,12 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col md:flex-row overflow-hidden bg-black/30 z-100 pointer-events-auto transition-all duration-300 ${
+      className={`flex flex-col md:flex-row bg-black/30 z-100 pointer-events-auto transition-all duration-300 ${
         isExpanded ? "h-[600px]" : "h-72"
       } ${isInputFocused ? "bg-black/60" : "bg-black/20"}`}
     >
       {/* Main Chat Area */}
-      <div className={`flex flex-col flex overflow-hidden w-[800px] max-w-[45vw]`}>
+      <div className={`flex flex-col flex w-[800px] max-w-[45vw]`}>
         {/* Chat Header */}
         <div className="flex flex-col flex-shrink-0 border-b border-gold/30 shadow-sm">
           {/* Tab Bar */}
@@ -850,7 +850,7 @@ function ChatModule() {
                 setIsUsersVisible(!isUsersVisible);
                 setIsRoomsVisible(false);
               }}
-              className="flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors relative"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -862,6 +862,11 @@ function ChatModule() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span className="text-sm">DM</span>
+              {totalUnreadMessages > 0 && (
+                <span className="absolute isolate -top-1 -right-1 block h-5 w-5 rounded-full bg-red-500 bg-red/30 text-white text-xxs flex items-center justify-center">
+                  {totalUnreadMessages}
+                </span>
+              )}
             </button>
 
             {/* Active Tabs */}
