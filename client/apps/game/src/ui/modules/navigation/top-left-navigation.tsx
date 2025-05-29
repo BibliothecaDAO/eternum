@@ -104,10 +104,20 @@ export const TopLeftNavigation = memo(() => {
   const filteredStructures = useMemo(() => {
     if (!searchTerm) return structuresWithFavorites;
     return structuresWithFavorites.filter((structure) =>
-      structure.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      structure.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "")
+        .includes(
+          searchTerm
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, ""),
+        ),
     );
   }, [structuresWithFavorites, searchTerm]);
-
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
       const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
