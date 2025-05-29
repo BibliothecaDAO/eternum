@@ -17,7 +17,7 @@ import { ContractAddress, ID, PlayerStructure, TickIds } from "@bibliothecadao/t
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import { Crown, EyeIcon, Landmark, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -52,6 +52,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address],
@@ -74,6 +76,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures]);
 
+  const filteredStructures = useMemo(() => {
+    if (!searchTerm) return structuresWithFavorites;
+    return structuresWithFavorites.filter((structure) =>
+      structure.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [structuresWithFavorites, searchTerm]);
+
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
       const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
@@ -94,6 +103,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       if (!structurePosition) return;
 
       goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
+      setSearchTerm(""); // Clear search when structure is selected
     },
     [isMapView, setup.components.Structure],
   );
@@ -119,20 +129,51 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className=" panel-wood bg-dark-wood -ml-2">
-                  {structuresWithFavorites.map((structure, index) => (
-                    <div key={index} className="flex flex-row items-center">
-                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
-                        {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
-                      </button>
-                      <SelectItem
-                        className="flex justify-between"
-                        key={index}
-                        value={structure.entityId?.toString() || ""}
-                      >
-                        <div className="self-center flex gap-4 text-xl">{structure.name}</div>
-                      </SelectItem>
+                  <div className="sticky top-0 p-2 bg-dark-wood border-b border-gold/20 z-50">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
+                      <input
+                        type="text"
+                        placeholder="Search structures..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSearchTerm("");
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
-                  ))}
+                  </div>
+                  {filteredStructures.length === 0 ? (
+                    <div className="p-4 text-center text-gold/60 text-sm">
+                      {searchTerm ? "No structures found" : "No structures available"}
+                    </div>
+                  ) : (
+                    filteredStructures.map((structure, index) => (
+                      <div key={index} className="flex flex-row items-center">
+                        <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
+                          {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
+                        </button>
+                        <SelectItem
+                          className="flex justify-between"
+                          key={index}
+                          value={structure.entityId?.toString() || ""}
+                        >
+                          <div className="self-center flex gap-4 text-xl">{structure.name}</div>
+                        </SelectItem>
+                      </div>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             ) : (

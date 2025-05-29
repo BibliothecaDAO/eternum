@@ -8669,7 +8669,7 @@
     },
     {
       "address": "0x1d490c9345ae1fc0c10c8fd69f6a9f31f893ba7486eae489b020eea1f8a8ef7",
-      "class_hash": "0x64626f16e087ecd08b5368229eb090a3e216e88663d84e6403ba10487b0db9c",
+      "class_hash": "0x2ecba685258cdbf21bb18757cf13865d24644c059274666ab1f14be6632472a",
       "abi": [
         {
           "type": "impl",
