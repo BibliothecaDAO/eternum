@@ -182,6 +182,7 @@ function CollectionPage() {
                 tokens={paginatedItems}
                 isCompactGrid={isCompactGrid}
                 onToggleSelection={togglePass}
+                pageId={`trade-${collection}`}
               />
             )}
 

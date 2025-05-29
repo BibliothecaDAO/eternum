@@ -17,6 +17,7 @@ import { marketplaceCollections } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
+import { useSelectedPassesStore } from "@/stores/selected-passes";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -77,6 +78,10 @@ function ManageCollectionRoute() {
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+
+  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
+    `collection-${collection}`,
+  );
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -180,6 +185,8 @@ function ManageCollectionRoute() {
                   tokens={paginatedTokens}
                   setIsTransferOpen={handleTransferClick}
                   isCompactGrid={isCompactGrid}
+                  onToggleSelection={togglePass}
+                  pageId={`collection-${collection}`}
                 />
               )}
 
@@ -197,6 +204,16 @@ function ManageCollectionRoute() {
           </div>
         </div>
 
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
+          <div className="container mx-auto flex gap-4">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" size="sm">
+                List {selectedPasses.length.toString()} items
+              </Button>
+            </div>
+          </div>
+        </div>
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <Pagination className=" pb-4 border-t border-gold/15">
