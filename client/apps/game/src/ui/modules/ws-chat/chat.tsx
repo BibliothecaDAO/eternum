@@ -291,7 +291,6 @@ function ChatModule() {
       scrollToBottom();
     }
   }, [isStoreLoadingMessages, filteredMessages.length, scrollToBottom]);
-
   // Add effect to open Game Chat by default only once at initial load
   useEffect(() => {
     // Only add Game Chat tab if there are no tabs at all
@@ -775,6 +774,21 @@ function ChatModule() {
     }
   }, [chatClient, activeTab]);
 
+  // Add ref for tabs container
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Add effect to scroll tabs container when tab changes
+  useEffect(() => {
+    if (tabsContainerRef.current && activeTab) {
+      // Find the active tab element
+      const activeTabElement = tabsContainerRef.current.querySelector(`[data-tab-id="${activeTab.id}"]`);
+      if (activeTabElement) {
+        // Scroll the active tab into view
+        activeTabElement.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "end" });
+      }
+    }
+  }, [activeTab, tabs]);
+
   // If username is not set, show login form
   if (!isUsernameSet) {
     return <LoginForm onLogin={handleLogin} />;
@@ -870,10 +884,11 @@ function ChatModule() {
             </button>
 
             {/* Active Tabs */}
-            <div className="flex-1 flex overflow-x-auto">
+            <div className="flex-1 flex overflow-x-auto scrollbar-none" ref={tabsContainerRef}>
               {tabs.map((tab) => (
                 <div
                   key={tab.id}
+                  data-tab-id={tab.id}
                   className={`flex items-center gap-1 px-2 py-1 text-gold/70 hover:text-gold transition-colors border-r border-gold/30 ${
                     tab.id === activeTabId ? "bg-gold/20 text-gold" : ""
                   }`}
