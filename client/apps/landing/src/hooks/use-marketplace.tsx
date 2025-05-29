@@ -1,12 +1,12 @@
 import { lordsAddress, marketplaceAddress } from "@/config";
-import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
+import { LordsAbi } from "@bibliothecadao/eternum";
 import {
   AcceptMarketplaceOrdersProps,
   CancelMarketplaceOrderProps,
   CreateMarketplaceOrderProps,
   EditMarketplaceOrderProps,
 } from "@bibliothecadao/types";
-import { useAccount, useContract, useReadContract, useSendTransaction } from "@starknet-react/core";
+import { useAccount, useContract } from "@starknet-react/core";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AccountInterface } from "starknet";
@@ -18,12 +18,11 @@ type AcceptOrdersParams = Omit<AcceptMarketplaceOrdersProps, "signer" | "marketp
 type CancelOrderParams = Omit<CancelMarketplaceOrderProps, "signer" | "marketplace_address">;
 type EditOrderParams = Omit<EditMarketplaceOrderProps, "signer" | "marketplace_address">;
 
-export const useMarketplace = ({ collectionAddress }: { collectionAddress?: string }) => {
+export const useMarketplace = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
   const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const [isEditingOrder, setIsEditingOrder] = useState(false);
-  const [isApprovingMarketplace, setIsApprovingMarketplace] = useState(false);
 
   const {
     setup: {
@@ -36,51 +35,18 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
     },
   } = useDojo();
 
-  const { account, address } = useAccount();
-
-  const { contract } = useContract({
-    abi: SeasonPassAbi,
-    address: collectionAddress as `0x${string}`,
-  });
+  const { account } = useAccount();
 
   const { contract: lordsContract } = useContract({
     abi: LordsAbi,
     address: lordsAddress as `0x${string}`,
   });
 
-  // improve
-  const { data: collectionApprovedForMarketplace } = useReadContract({
-    abi: SeasonPassAbi,
-    address: collectionAddress as `0x${string}`,
-    functionName: "is_approved_for_all",
-    args: [address as `0x${string}`, marketplaceAddress],
-    refetchInterval: 10000,
-  });
-
-  const { send, error } = useSendTransaction({
-    calls: contract && account ? [contract.populate("set_approval_for_all", [marketplaceAddress, 1n])] : undefined,
-  });
-
-  const approveMarketplace = async () => {
-    if (!account) throw new Error("Account not connected");
-    setIsApprovingMarketplace(true);
-    try {
-      await send();
-      toast.success("Marketplace approved successfully!");
-    } catch (error) {
-      console.error("Failed to approve marketplace:", error);
-      toast.error("Failed to approve marketplace. Please try again.");
-      throw error;
-    } finally {
-      setIsApprovingMarketplace(false);
-    }
-  };
-
   const listItem = async (params: ListItemParams) => {
     if (!account) throw new Error("Account not connected");
     setIsCreatingOrder(true);
     try {
-      await create_marketplace_order({
+      return await create_marketplace_order({
         price: params.price.toString(),
         expiration: params.expiration,
         token_id: params.token_id,
@@ -106,7 +72,6 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
     const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice]);
 
     try {
-      // accept order
       await accept_marketplace_orders(
         {
           order_ids: params.order_ids,
@@ -135,7 +100,6 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });
-      // Add success handling if needed
       toast.success("Order cancelled successfully!");
     } catch (error) {
       console.error("Failed to cancel order:", error);
@@ -150,17 +114,14 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
     if (!account) throw new Error("Account not connected");
     setIsEditingOrder(true);
     try {
-      await edit_marketplace_order({
+      return await edit_marketplace_order({
         order_id: params.order_id.toString(),
         new_price: params.new_price.toString(),
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });
-      // Add success handling if needed
-      toast.success("Order edited successfully!");
     } catch (error) {
       console.error("Failed to edit order:", error);
-      // Add error handling if needed
       toast.error("Failed to edit order. Please try again.");
     } finally {
       setIsEditingOrder(false);
@@ -172,13 +133,10 @@ export const useMarketplace = ({ collectionAddress }: { collectionAddress?: stri
     acceptOrders,
     cancelOrder,
     editOrder,
-    approveMarketplace,
-    collectionApprovedForMarketplace,
     isLoading: isCreatingOrder || isAcceptingOrder || isCancellingOrder || isEditingOrder,
     isCreatingOrder,
     isAcceptingOrder,
     isCancellingOrder,
     isEditingOrder,
-    isApprovingMarketplace,
   };
 };

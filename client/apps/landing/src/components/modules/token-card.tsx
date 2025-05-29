@@ -3,9 +3,9 @@ import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
-import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
+import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
-import { ArrowRightLeft, Check, Plus } from "lucide-react"; // Import the icon
+import { ArrowRightLeft, Check, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -13,8 +13,7 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 import { TokenDetailModal } from "./token-detail-modal";
 
 interface TokenCardProps {
-  pass: MergedNftData;
-  checkOwner?: boolean;
+  token: MergedNftData;
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
@@ -27,28 +26,22 @@ interface ListingDetails {
   expiration?: string;
 }
 
-export const TokenCard = ({
-  pass,
-  checkOwner = false,
-  isSelected = false,
-  onToggleSelection,
-  toggleNftSelection,
-}: TokenCardProps) => {
-  const { token_id, metadata, contract_address } = pass;
+export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
+  const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
-  const marketplaceActions = useMarketplace({ collectionAddress: contract_address });
+  const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  const isOwner = pass.account_address === trimAddress(accountAddress);
+  const isOwner = token.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
-    if (!pass.expiration) return;
+    if (!token.expiration) return;
 
-    const expirationTime = Number(pass.expiration) * 1000;
+    const expirationTime = Number(token.expiration) * 1000;
     const updateCountdown = () => {
       const now = Date.now();
       const diff = expirationTime - now;
@@ -71,7 +64,7 @@ export const TokenCard = ({
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [pass.expiration]);
+  }, [token.expiration]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,11 +79,11 @@ export const TokenCard = ({
   const { attributes, name, image } = metadata ?? {};
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && pass.best_price_hex !== null) {
+    if (token.expiration !== null && token.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, pass.best_price_hex]);
+  }, [token.expiration, token.best_price_hex]);
 
   return (
     <>
@@ -172,7 +165,7 @@ export const TokenCard = ({
             <div className="flex flex-col">
               {listingActive ? (
                 <div className="text-xl flex items-center gap-2 font-mono">
-                  {Number(formatUnits(BigInt(pass.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                  {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
                   <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
                 </div>
               ) : (
@@ -219,14 +212,14 @@ export const TokenCard = ({
         <TokenDetailModal
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
-          realmData={pass}
+          tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
           collection_id={collection?.id}
-          price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
-          orderId={pass.order_id?.toString() ?? undefined}
-          isListed={pass.expiration !== null}
-          expiration={pass.expiration ? Number(pass.expiration) : undefined}
+          price={token.best_price_hex ? BigInt(token.best_price_hex) : undefined}
+          orderId={token.order_id?.toString() ?? undefined}
+          isListed={token.expiration !== null}
+          expiration={token.expiration ? Number(token.expiration) : undefined}
         />
       )}
     </>

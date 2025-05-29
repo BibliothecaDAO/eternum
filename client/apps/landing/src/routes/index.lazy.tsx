@@ -306,7 +306,6 @@ function Index() {
                 </div>
                 <CollectionTokenGrid
                   tokens={(seasonPasses.data?.slice(0, 4) ?? []) as MergedNftData[]}
-                  checkOwner={true}
                   isCompactGrid={false}
                   onToggleSelection={togglePass}
                 />

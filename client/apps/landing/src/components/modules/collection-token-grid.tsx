@@ -17,8 +17,6 @@ interface TokenGridItem {
 interface CollectionTokenGridProps {
   tokens: MergedNftData[];
   setIsTransferOpen?: (tokenId?: string) => void;
-  checkOwner?: boolean;
-  hideTransferButton?: boolean;
   isCompactGrid?: boolean;
   onToggleSelection?: (pass: MergedNftData) => void;
 }
@@ -26,8 +24,6 @@ interface CollectionTokenGridProps {
 export const CollectionTokenGrid = ({
   tokens,
   setIsTransferOpen,
-  checkOwner,
-  hideTransferButton,
   isCompactGrid,
   onToggleSelection,
 }: CollectionTokenGridProps) => {
@@ -71,17 +67,16 @@ export const CollectionTokenGrid = ({
       <AnimatedGrid
         items={gridItems}
         renderItem={(item) => {
-          const pass = item.data;
-          if (!pass) return null;
-          const tokenId = pass.token_id;
+          const token = item.data;
+          if (!token) return null;
+          const tokenId = token.token_id;
 
           return (
             <TokenCard
               key={`${tokenId || ""}`}
-              pass={pass}
-              checkOwner={checkOwner}
+              token={token}
               isSelected={isSelected(tokenId.toString())}
-              onToggleSelection={() => onToggleSelection?.(pass)}
+              onToggleSelection={() => onToggleSelection?.(token)}
               toggleNftSelection={() => tokenId && setIsTransferOpen && setIsTransferOpen(tokenId.toString())}
             />
           );

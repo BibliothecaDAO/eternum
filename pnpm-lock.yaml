@@ -606,7 +606,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.13
+        version: 1.2.15
       eslint:
         specifier: ^9.20.1
         version: 9.26.0(jiti@2.4.2)
@@ -730,6 +730,9 @@ importers:
       storybook:
         specifier: ^8.3.2
         version: 8.6.12(bufferutil@4.0.9)(prettier@3.5.3)(utf-8-validate@5.0.10)
+      vaul:
+        specifier: ^1.1.2
+        version: 1.1.2(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       vite-plugin-vercel:
         specifier: ^9.0.3
         version: 9.0.5(encoding@0.1.13)(rollup@4.40.2)(vite@6.3.5(@types/node@22.7.5)(jiti@2.4.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.7.1))
@@ -818,7 +821,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.13
+        version: 1.2.15
 
   packages/core:
     dependencies:
@@ -5218,8 +5221,8 @@ packages:
   '@types/babel__traverse@7.20.7':
     resolution: {integrity: sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==}
 
-  '@types/bun@1.2.13':
-    resolution: {integrity: sha512-u6vXep/i9VBxoJl3GjZsl/BFIsvML8DfVDO0RYLEwtSZSp981kEO1V5NwRcO1CPJ7AmvpbnDCiMKo3JvbDEjAg==}
+  '@types/bun@1.2.15':
+    resolution: {integrity: sha512-U1ljPdBEphF0nw1MIk0hI7kPg7dFdPyM7EenHsp6W5loNHl7zqy6JQf/RKCgnUn2KDzUpkBwHPnEJEjII594bA==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -6071,8 +6074,8 @@ packages:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
     engines: {node: '>=6.14.2'}
 
-  bun-types@1.2.13:
-    resolution: {integrity: sha512-rRjA1T6n7wto4gxhAO/ErZEtOXyEZEmnIHQfl0Dt1QQSB4QV0iP6BZ9/YB5fZaHFQ2dwHFrmPaRQ9GGMX01k9Q==}
+  bun-types@1.2.15:
+    resolution: {integrity: sha512-NarRIaS+iOaQU1JPfyKhZm4AsUOrwUOqRNHY0XxI8GI8jYxiLXLcdjYMG9UKS+fwWasc1uw1htV9AX24dD+p4w==}
 
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
@@ -16546,9 +16549,9 @@ snapshots:
     dependencies:
       '@babel/types': 7.27.1
 
-  '@types/bun@1.2.13':
+  '@types/bun@1.2.15':
     dependencies:
-      bun-types: 1.2.13
+      bun-types: 1.2.15
 
   '@types/connect@3.4.38':
     dependencies:
@@ -18142,7 +18145,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  bun-types@1.2.13:
+  bun-types@1.2.15:
     dependencies:
       '@types/node': 20.17.46
 

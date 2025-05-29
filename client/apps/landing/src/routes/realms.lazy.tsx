@@ -171,7 +171,6 @@ function RealmsRoute() {
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
               {filteredSeasonPasses.length > 0 && (
                 <CollectionTokenGrid
-                  checkOwner={true}
                   tokens={paginatedPasses}
                   setIsTransferOpen={handleTransferClick}
                   isCompactGrid={isCompactGrid}

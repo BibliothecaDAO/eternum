@@ -180,8 +180,6 @@ function CollectionPage() {
             {filteredItems.length > 0 && (
               <CollectionTokenGrid
                 tokens={paginatedItems}
-                hideTransferButton={true}
-                checkOwner={true}
                 isCompactGrid={isCompactGrid}
                 onToggleSelection={togglePass}
               />

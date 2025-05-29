@@ -16,9 +16,7 @@ interface PurchaseDialogProps {
 export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) => {
   const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore();
   const totalPrice = getTotalPrice();
-  const { acceptOrders } = useMarketplace({
-    collectionAddress: selectedPasses[0]?.contract_address ?? undefined,
-  });
+  const { acceptOrders } = useMarketplace();
 
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
