@@ -23,7 +23,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ArrowBigDown, ArrowBigUp } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, Search, X } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
@@ -98,6 +98,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const [totalTransferResourceWeightKg, setTotalTransferResourceWeightKg] = useState(0);
   const [showBurnSection, setShowBurnSection] = useState(false);
   const [sortByDistance, setSortByDistance] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const totalNeededDonkeys = useMemo(
     () => calculateDonkeysNeeded(totalTransferResourceWeightKg),
@@ -259,6 +260,25 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               order structures by distance
             </label>
           </div>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
+            <input
+              type="text"
+              placeholder="Search structures..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-8 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
           <div className="text-xs text-gold/60 mb-2 italic">
             {sortByDistance
               ? "Structures are sorted by distance (closest to furthest)"
@@ -277,6 +297,11 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
             .filter((structure) => {
               // First, skip if it's the structure itself, as no transfer row should be rendered.
               if (structure.structure.entity_id === selectedStructureEntityId) {
+                return false;
+              }
+
+              // Filter by search term if provided
+              if (searchTerm && !structure.name.toLowerCase().includes(searchTerm.toLowerCase())) {
                 return false;
               }
 
