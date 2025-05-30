@@ -5,14 +5,12 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
-    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
-    WorldConfigUtilImpl,
+    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::hyperstructure::{HyperstructureGlobals};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
-    WeightStoreImpl,
+    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
@@ -55,9 +53,7 @@ pub impl iBridgeImpl of iBridgeTrait {
     ) {
         if caller != structure_owner {
             let (realm_systems_address, _) = world.dns(@"realm_systems").unwrap();
-            assert!(
-                caller == realm_systems_address, "Bridge: caller is not owner or realm systems"
-            );
+            assert!(caller == realm_systems_address, "Bridge: caller is not owner or realm systems");
         }
     }
 
@@ -70,34 +66,25 @@ pub impl iBridgeImpl of iBridgeTrait {
         let resource_bridge_config: ResourceBridgeConfig = WorldConfigUtilImpl::get_member(
             world, selector!("resource_bridge_config"),
         );
-        assert!(
-            resource_bridge_config.deposit_paused == false, "resource bridge deposit is paused"
-        );
+        assert!(resource_bridge_config.deposit_paused == false, "resource bridge deposit is paused");
     }
 
     fn assert_withdraw_not_paused(world: WorldStorage) {
         let resource_bridge_config: ResourceBridgeConfig = WorldConfigUtilImpl::get_member(
             world, selector!("resource_bridge_config"),
         );
-        assert!(
-            resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused"
-        );
+        assert!(resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused");
     }
 
     fn assert_resource_whitelisted(
         world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig,
     ) {
-        assert!(
-            resource_bridge_token_whitelist.resource_type.is_non_zero(),
-            "resource id not whitelisted"
-        );
+        assert!(resource_bridge_token_whitelist.resource_type.is_non_zero(), "resource id not whitelisted");
     }
 
     fn assert_no_deposit_troops_in_village(structure_category: u8, resource_type: u8) {
         if TroopResourceImpl::is_troop(resource_type) {
-            assert!(structure_category != StructureCategory::Village.into(),
-                "Troops can't be bridged into villages"
-            );  
+            assert!(structure_category != StructureCategory::Village.into(), "Troops can't be bridged into villages");
         }
     }
 
@@ -109,8 +96,7 @@ pub impl iBridgeImpl of iBridgeTrait {
 
     // Convert from the internal resource number system to the token's number system
     fn resource_amount_to_token_amount(token: ContractAddress, amount: u128) -> u256 {
-        let relative_amount: u256 = (amount.into() * Self::one_token(token))
-            / RESOURCE_PRECISION.into();
+        let relative_amount: u256 = (amount.into() * Self::one_token(token)) / RESOURCE_PRECISION.into();
         return relative_amount;
     }
 
@@ -124,10 +110,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         amount: u128,
         tx_type: BridgeTxType,
     ) -> u128 {
-        assert!(
-            from_structure_base.category == StructureCategory::Village.into(),
-            "Bridge: caller is not village"
-        );
+        assert!(from_structure_base.category == StructureCategory::Village.into(), "Bridge: caller is not village");
 
         let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
             world, selector!("res_bridge_fee_split_config"),
@@ -137,9 +120,7 @@ pub impl iBridgeImpl of iBridgeTrait {
             BridgeTxType::Withdrawal => { fee_split_config.realm_fee_wtdr_percent },
         };
         if realm_fee_percent.is_non_zero() {
-            let realm_fee_amount: u128 = Self::calculate_fees(amount.into(), realm_fee_percent)
-                .try_into()
-                .unwrap();
+            let realm_fee_amount: u128 = Self::calculate_fees(amount.into(), realm_fee_percent).try_into().unwrap();
             assert!(realm_fee_amount.is_non_zero(), "Bridge: amount too small to pay realm fees");
 
             let from_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
@@ -151,9 +132,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                 BridgeTxType::Deposit => {
                     // beam resources into the realm's resource arrivals. it costs 0 donkey and time
                     iResourceTransferImpl::portal_to_structure_arrivals_instant(
-                        ref world,
-                        realm_structure_id,
-                        array![(resource_type, realm_fee_amount)].span(),
+                        ref world, realm_structure_id, array![(resource_type, realm_fee_amount)].span(),
                     );
                 },
                 BridgeTxType::Withdrawal => {
@@ -164,9 +143,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                     let realm_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, realm_structure_id,
                     );
-                    let mut realm_structure_weight: Weight = WeightStoreImpl::retrieve(
-                        ref world, realm_structure_id
-                    );
+                    let mut realm_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_structure_id);
                     iResourceTransferImpl::structure_to_structure_delayed(
                         ref world,
                         from_structure_id,
@@ -190,11 +167,7 @@ pub impl iBridgeImpl of iBridgeTrait {
 
 
     fn send_bank_fees(
-        ref world: WorldStorage,
-        bank_structure_id: ID,
-        resource_type: u8,
-        amount: u128,
-        tx_type: BridgeTxType,
+        ref world: WorldStorage, bank_structure_id: ID, resource_type: u8, amount: u128, tx_type: BridgeTxType,
     ) -> u128 {
         let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
             world, selector!("res_bridge_fee_split_config"),
@@ -206,18 +179,14 @@ pub impl iBridgeImpl of iBridgeTrait {
             BridgeTxType::Withdrawal => { fee_split_config.realm_fee_wtdr_percent },
         };
         if bank_fee_percent.is_non_zero() {
-            let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_percent)
-                .try_into()
-                .unwrap();
+            let bank_fee_amount: u128 = Self::calculate_fees(amount.into(), bank_fee_percent).try_into().unwrap();
             assert!(bank_fee_amount.is_non_zero(), "Bridge: amount too small to pay bank fees");
             match tx_type {
                 BridgeTxType::Deposit => { panic!("Bridge: deposit through bank is not allowed"); },
                 BridgeTxType::Withdrawal => {
                     // beam resources into the bank's resource arrivals. it costs 0 donkey and time
                     iResourceTransferImpl::portal_to_structure_arrivals_instant(
-                        ref world,
-                        bank_structure_id,
-                        array![(resource_type, bank_fee_amount)].span(),
+                        ref world, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
                     );
                 },
             };
@@ -254,28 +223,20 @@ pub impl iBridgeImpl of iBridgeTrait {
             },
         };
         assert!(
-            velords_fee_amount.is_non_zero()
-                && season_pool_fee_amount.is_non_zero()
-                && client_fee_amount.is_non_zero(),
+            velords_fee_amount.is_non_zero() && season_pool_fee_amount.is_non_zero() && client_fee_amount.is_non_zero(),
             "Bridge: deposit amount too small to take fees",
         );
 
         // send fees to recipients
         if velords_fee_amount.is_non_zero() {
-            Self::transfer_or_mint(
-                token, fee_split_config.velords_fee_recipient, velords_fee_amount
-            );
+            Self::transfer_or_mint(token, fee_split_config.velords_fee_recipient, velords_fee_amount);
         }
         if season_pool_fee_amount.is_non_zero() {
-            Self::transfer_or_mint(
-                token, fee_split_config.season_pool_fee_recipient, season_pool_fee_amount
-            );
+            Self::transfer_or_mint(token, fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
         }
         if client_fee_amount.is_non_zero() {
             if client_fee_recipient.is_zero() {
-                Self::transfer_or_mint(
-                    token, fee_split_config.velords_fee_recipient, client_fee_amount
-                );
+                Self::transfer_or_mint(token, fee_split_config.velords_fee_recipient, client_fee_amount);
             } else {
                 Self::transfer_or_mint(token, client_fee_recipient, client_fee_amount);
             }
@@ -296,12 +257,7 @@ pub impl iBridgeImpl of iBridgeTrait {
             (100 - 0, 100), (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100),
         ];
         let non_troop_inefficiencies = array![
-            (100 - 25, 100),
-            (100 - 50, 100),
-            (100 - 70, 100),
-            (100 - 85, 100),
-            (100 - 95, 100),
-            (100 - 95, 100),
+            (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100), (100 - 95, 100),
         ];
         assert!(
             troop_inefficiencies.len() == non_troop_inefficiencies.len(),
