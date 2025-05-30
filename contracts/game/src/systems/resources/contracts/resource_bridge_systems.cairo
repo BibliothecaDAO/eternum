@@ -80,6 +80,11 @@ pub mod resource_bridge_systems {
             let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
+            // ensure no troops can be bridged into villages
+            iBridgeImpl::assert_no_deposit_troops_in_village(
+                to_structure_base.category, resource_bridge_token_whitelist.resource_type,
+            );
+
             // ensure caller is owner of to_structure_id
             let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
             to_structure_owner.assert_caller_owner();
