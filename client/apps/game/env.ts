@@ -55,6 +55,12 @@ const envSchema = z.object({
     .optional()
     .default("0")
     .transform((v) => Number(v)),
+
+  VITE_PUBLIC_SHOW_END_GAME_WARNING: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
 });
 
 let env: z.infer<typeof envSchema>;
