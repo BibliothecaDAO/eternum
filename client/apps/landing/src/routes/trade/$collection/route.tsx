@@ -4,8 +4,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { formatUnits } from "viem";
+import { env } from "../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
@@ -20,6 +21,9 @@ function TradeLayout() {
     queryFn: () => fetchCollectionStatistics(collectionAddress),
     refetchInterval: 30_000,
   });
+
+  const location = useLocation();
+  const isItemsTab = location.pathname === "/trade";
 
   const activeOrders = totals?.[0]?.active_order_count ?? 0;
   const totalWeiStr = BigInt(totals?.[0]?.open_orders_total_wei ?? 0);
@@ -69,6 +73,25 @@ function TradeLayout() {
             </Tabs>
           </div>
         </div>
+
+        {env.VITE_PUBLIC_SHOW_END_GAME_WARNING && isItemsTab && (
+          <div className="bg-blue-50/50 dark:bg-blue-950/30 py-6">
+            <div className="container mx-auto px-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center border border-blue-400">
+                    i
+                  </div>
+                  <h4 className="text-blue-800 dark:text-blue-300 font-medium text-base">Season Update</h4>
+                </div>
+                <p className="text-blue-700 dark:text-blue-400 text-base max-w-2xl mx-auto leading-relaxed">
+                  The current season is approaching its end. You can still play and collect achievements, but the game
+                  world will likely terminate within a week.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Child route content */}
         <Outlet />
