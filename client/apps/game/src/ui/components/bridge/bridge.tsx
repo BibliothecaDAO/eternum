@@ -40,11 +40,11 @@ type BridgeDirection = "in" | "out";
 // Efficiency data based on hyperstructures completed
 const efficiencyData = [
   { hyperstructures: 0, resourceEfficiency: 25, troopEfficiency: 0 },
-  { hyperstructures: 1, resourceEfficiency: 50, troopEfficiency: 0 },
-  { hyperstructures: 2, resourceEfficiency: 70, troopEfficiency: 0 },
-  { hyperstructures: 3, resourceEfficiency: 85, troopEfficiency: 0 },
-  { hyperstructures: 5, resourceEfficiency: 95, troopEfficiency: 0 },
-  { hyperstructures: 7, resourceEfficiency: 95, troopEfficiency: 0 },
+  { hyperstructures: 1, resourceEfficiency: 50, troopEfficiency: 25 },
+  { hyperstructures: 2, resourceEfficiency: 70, troopEfficiency: 50 },
+  { hyperstructures: 3, resourceEfficiency: 85, troopEfficiency: 70 },
+  { hyperstructures: 5, resourceEfficiency: 95, troopEfficiency: 85 },
+  { hyperstructures: 7, resourceEfficiency: 95, troopEfficiency: 95 },
 ];
 
 // Platform fee constants
@@ -268,7 +268,6 @@ export const Bridge = ({ structures }: BridgeProps) => {
       name: key,
       tokenAddress: value[1] as string,
     }))
-    .filter((resource) => !["knight", "paladin", "crossbowman"].includes(resource.name.toLowerCase()))
     .sort((a, b) => {
       // Make LORDS appear first
       if (a.name.toLowerCase() === "lords") return -1;
