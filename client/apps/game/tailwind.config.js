@@ -6,8 +6,8 @@ export default {
   theme: {
     extend: {
       textShadow: {
-        'glow-yellow-xs': '0 0 5px rgba(250, 204, 21, 0.7)', // yellow-400 with 70% opacity
-        'glow-brilliance-xs': '0 0 5px rgba(125, 255, 186, 0.7)', // brilliance (#7DFFBA) with 70% opacity
+        "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
+        "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
       },
       typography: ({ theme }) => ({
         pink: {
@@ -234,14 +234,14 @@ export default {
     require("@tailwindcss/typography"),
     plugin(function ({ addUtilities, theme, e }) {
       const textShadowUtilities = {
-        '.text-shadow-glow-yellow-xs': {
-          textShadow: theme('textShadow.glow-yellow-xs'),
+        ".text-shadow-glow-yellow-xs": {
+          textShadow: theme("textShadow.glow-yellow-xs"),
         },
-        '.text-shadow-glow-brilliance-xs': {
-          textShadow: theme('textShadow.glow-brilliance-xs'),
+        ".text-shadow-glow-brilliance-xs": {
+          textShadow: theme("textShadow.glow-brilliance-xs"),
         },
       };
-      addUtilities(textShadowUtilities, ['responsive', 'hover']);
+      addUtilities(textShadowUtilities, ["responsive", "hover"]);
 
       const newUtilities = {
         ".border-gradient": {
