@@ -1,11 +1,20 @@
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ResourceManager, configManager, divideByPrecision, getArmy } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  getArmyTotalCapacityInKg,
+  gramToKg,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/types";
-import { useState } from "react";
-import { TransferDirection } from "./transfer-troops-container";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { ActorType, ID, resources, ResourcesIds } from "@bibliothecadao/types";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { getActorTypes, TransferDirection } from "./help-container";
 
 // Define the Resource type to match what the system calls expect
 interface ResourceTransfer {
@@ -28,53 +37,86 @@ export const TransferResourcesContainer = ({
 }: TransferResourcesContainerProps) => {
   const {
     account: { account },
+    network: { toriiClient },
     setup: {
       systemCalls: {
         troop_structure_adjacent_transfer,
         structure_troop_adjacent_transfer,
         troop_troop_adjacent_transfer,
       },
-      components,
     },
   } = useDojo();
 
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
   const [resourceAmounts, setResourceAmounts] = useState<Record<number, number>>({});
+  const [selectedResourcesWeightKg, setSelectedResourcesWeightKg] = useState<number>(0);
+  const [actorTypes, setActorTypes] = useState<{
+    selected: ActorType;
+    target: ActorType;
+  } | null>(null);
 
-  // Get available resources for the selected entity
-  const availableResources = (() => {
-    const { currentDefaultTick } = getBlockTimestamp();
-    if (!selectedEntityId) return [];
-    const resourceManager = new ResourceManager(components, selectedEntityId);
-    return resources
-      .map(({ id }) => ({
-        resourceId: id,
-        amount: resourceManager.balanceWithProduction(currentDefaultTick, id).balance,
-      }))
-      .filter(({ amount }) => amount > 0);
-  })();
+  useEffect(() => {
+    // when transfer direction changes, reset the selected resources
+    setSelectedResources([]);
+    setResourceAmounts({});
+  }, [transferDirection]);
 
-  // Explorer capacity information
-  const explorerCapacity = (() => {
-    const armyInfo = getArmy(targetEntityId, ContractAddress(account.address), components);
-    const MAX_CAPACITY = armyInfo?.totalCapacity || 0;
-    const currentLoad = armyInfo?.weight || 0;
+  useEffect(() => {
+    const { selected, target } = getActorTypes(transferDirection);
+    setActorTypes({ selected, target });
+  }, [transferDirection]);
 
+  // Query for available resources
+  const { data: availableResourcesData, isLoading: isResourcesLoading } = useQuery({
+    queryKey: ["availableResources", String(selectedEntityId), String(actorTypes?.selected)],
+    queryFn: async () => {
+      if (!selectedEntityId || !actorTypes?.selected) return [];
+      const { currentDefaultTick } = getBlockTimestamp();
+      const { resources: resourcesData } =
+        actorTypes.selected === ActorType.Explorer
+          ? await getExplorerFromToriiClient(toriiClient, selectedEntityId)
+          : await getStructureFromToriiClient(toriiClient, selectedEntityId);
+      if (!resourcesData) return [];
+      return resources
+        .map(({ id }) => ({
+          resourceId: id,
+          amount: ResourceManager.balanceWithProduction(resourcesData, currentDefaultTick, id).balance,
+        }))
+        .filter(({ amount }) => amount > 0);
+    },
+    staleTime: 10000, // 10 seconds
+  });
+
+  // Query for explorer capacity
+  const { data: explorerCapacity, isLoading: isExplorerCapacityLoading } = useQuery({
+    queryKey: ["explorerCapacity", String(targetEntityId), String(actorTypes?.target)],
+    queryFn: async () => {
+      if (!targetEntityId || actorTypes?.target !== ActorType.Explorer) return null;
+      const { resources: resourcesData } = await getExplorerFromToriiClient(toriiClient, targetEntityId);
+      if (!resourcesData) return null;
+      const maxCapacity = getArmyTotalCapacityInKg(resourcesData);
+      const currentLoad = gramToKg(divideByPrecision(Number(resourcesData.weight.weight)));
+      return {
+        maxCapacityKg: maxCapacity,
+        currentLoadKg: currentLoad,
+        remainingCapacityKg: maxCapacity - currentLoad,
+      };
+    },
+    staleTime: 10000, // 10 seconds
+  });
+
+  const availableResources = availableResourcesData || [];
+  const availableCapacityKg = explorerCapacity ? explorerCapacity.remainingCapacityKg - selectedResourcesWeightKg : 0;
+
+  useEffect(() => {
     // Calculate weight of selected resources
-    const selectedResourcesWeight = Object.entries(resourceAmounts).reduce((total, [resourceId, amount]) => {
-      const weight = configManager.resourceWeightsKg[parseInt(resourceId)] || 0;
+    const selectedResourcesWeight = selectedResources.reduce((total, { resourceId, amount }) => {
+      const weight = configManager.resourceWeightsKg[resourceId] || 0;
       return total + amount * weight;
     }, 0);
-
-    return {
-      maxCapacity: MAX_CAPACITY,
-      currentLoad,
-      remainingCapacity: MAX_CAPACITY - currentLoad,
-      selectedResourcesWeight,
-      availableCapacity: MAX_CAPACITY - currentLoad - selectedResourcesWeight,
-    };
-  })();
+    setSelectedResourcesWeightKg(selectedResourcesWeight);
+  }, [selectedResources]);
 
   // Handle resource selection
   const toggleResourceSelection = (resource: ResourceTransfer) => {
@@ -93,12 +135,12 @@ export const TransferResourcesContainer = ({
       let defaultAmount = divideByPrecision(resource.amount);
 
       // If transferring to explorer, limit by available capacity
-      if (transferDirection === TransferDirection.StructureToExplorer) {
+      if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
         const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
         if (resourceWeight > 0) {
           // Only limit if resource has weight
           // Use explorerCapacity.availableCapacity which accounts for other selected resources
-          const maxPossibleAmountBasedOnCapacity = Math.floor(explorerCapacity.availableCapacity / resourceWeight);
+          const maxPossibleAmountBasedOnCapacity = Math.floor(availableCapacityKg / resourceWeight);
           defaultAmount = Math.min(defaultAmount, maxPossibleAmountBasedOnCapacity);
         }
       }
@@ -119,7 +161,8 @@ export const TransferResourcesContainer = ({
     let maxAmount = divideByPrecision(resource.amount);
 
     // If transferring to explorer, limit by remaining capacity
-    if (transferDirection === TransferDirection.StructureToExplorer) {
+    if (actorTypes?.target === ActorType.Explorer) {
+      if (!explorerCapacity) return;
       const resourceWeight = configManager.resourceWeightsKg[resourceId] || 0;
 
       // Calculate how much capacity is used by other selected resources
@@ -131,7 +174,7 @@ export const TransferResourcesContainer = ({
         }, 0);
 
       const availableForThisResource =
-        explorerCapacity.maxCapacity - explorerCapacity.currentLoad - otherResourcesWeight;
+        explorerCapacity.maxCapacityKg - explorerCapacity.currentLoadKg - otherResourcesWeight;
       const maxPossibleAmount = Math.floor(availableForThisResource / resourceWeight);
       maxAmount = Math.min(divideByPrecision(resource.amount), maxPossibleAmount);
     }
@@ -157,8 +200,8 @@ export const TransferResourcesContainer = ({
 
     // If transferring to explorer, we need to calculate how much of each resource we can add
     // based on weight constraints
-    if (transferDirection === TransferDirection.StructureToExplorer) {
-      let remainingCapacity = explorerCapacity.remainingCapacity;
+    if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+      let remainingCapacity = explorerCapacity.remainingCapacityKg;
 
       // Sort resources by weight (lightest first) to maximize the number of resources we can transfer
       const sortedResources = [...availableResources].sort((a, b) => {
@@ -249,14 +292,12 @@ export const TransferResourcesContainer = ({
 
   // Render explorer capacity information
   const renderExplorerCapacity = () => {
-    if (transferDirection !== TransferDirection.StructureToExplorer) {
+    if (actorTypes?.target !== ActorType.Explorer || !explorerCapacity) {
       return null;
     }
 
-    const currentLoadKg = explorerCapacity.currentLoad;
-    const maxCapacityKg = explorerCapacity.maxCapacity;
-    const selectedWeightKg = explorerCapacity.selectedResourcesWeight;
-    const availableCapacityKg = explorerCapacity.availableCapacity;
+    const currentLoadKg = explorerCapacity.currentLoadKg;
+    const maxCapacityKg = explorerCapacity.maxCapacityKg;
 
     let capacityPercentageForBar = 0;
     if (maxCapacityKg > 0) {
@@ -270,7 +311,7 @@ export const TransferResourcesContainer = ({
 
     let selectedPercentageForBar = 0;
     if (maxCapacityKg > 0) {
-      const rawSelectedRatio = (selectedWeightKg / maxCapacityKg) * 100;
+      const rawSelectedRatio = (selectedResourcesWeightKg / maxCapacityKg) * 100;
       // Selected part is capped by the remaining space in the bar after current load
       selectedPercentageForBar = Math.max(0, Math.min(rawSelectedRatio, 100 - capacityPercentageForBar));
     }
@@ -310,10 +351,12 @@ export const TransferResourcesContainer = ({
             <div
               className="absolute top-0 h-full bg-orange-500/70 flex items-center justify-center bg-green/30"
               style={{ width: `${selectedPercentageForBar}%`, left: `${capacityPercentageForBar}%` }}
-              title={`Selected: ${selectedWeightKg.toLocaleString()} kg`}
+              title={`Selected: ${selectedResourcesWeightKg.toLocaleString()} kg`}
             >
               {selectedPercentageForBar > 15 && (
-                <span className="text-xs text-white/90 truncate px-1">{selectedWeightKg.toLocaleString()} kg</span>
+                <span className="text-xs text-white/90 truncate px-1">
+                  {selectedResourcesWeightKg.toLocaleString()} kg
+                </span>
               )}
             </div>
             {/* Empty space indicator if not full */}
@@ -335,14 +378,16 @@ export const TransferResourcesContainer = ({
             </div>
             <div>
               <span className="text-orange-400/90">Selected:</span>
-              <span className="font-medium float-right text-white/90">{selectedWeightKg.toLocaleString()} kg</span>
+              <span className="font-medium float-right text-white/90">
+                {selectedResourcesWeightKg.toLocaleString()} kg
+              </span>
             </div>
             <div>
               <span className="text-gold/80">After Transfer:</span>
               <span
-                className={`font-medium float-right ${currentLoadKg + selectedWeightKg > maxCapacityKg ? "text-red-500" : "text-white/90"}`}
+                className={`font-medium float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-red-500" : "text-white/90"}`}
               >
-                {(currentLoadKg + selectedWeightKg).toLocaleString()} kg
+                {(currentLoadKg + selectedResourcesWeightKg).toLocaleString()} kg
               </span>
             </div>
             <div>
@@ -363,138 +408,147 @@ export const TransferResourcesContainer = ({
 
   return (
     <div className="flex flex-col h-full relative pb-32">
-      {/* Top section with capacity info */}
+      {isResourcesLoading || isExplorerCapacityLoading ? (
+        <LoadingAnimation />
+      ) : (
+        <>
+          {/* Top section with capacity info */}
 
-      {/* Add Select All / Unselect All buttons here */}
-      <div className="flex justify-end space-x-2 mb-3">
-        {transferDirection === TransferDirection.ExplorerToStructure && (
-          <Button
-            onClick={handleSelectAllResources}
-            variant="outline"
-            size="xs"
-            disabled={availableResources.length === 0}
-          >
-            Select All Available
-          </Button>
-        )}
-        <Button
-          onClick={handleUnselectAllResources}
-          variant="outline"
-          size="xs"
-          disabled={selectedResources.length === 0}
-        >
-          Unselect All
-        </Button>
-      </div>
-
-      {/* Scrollable resources section */}
-      <div className=" h-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="sticky top-0 z-10">
-          {transferDirection === TransferDirection.StructureToExplorer && renderExplorerCapacity()}
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 overflow-y-auto">
-          {availableResources.map((resource) => {
-            const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-            const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-            const displayAmount = divideByPrecision(resource.amount);
-
-            return (
-              <div
-                key={resource.resourceId}
-                className={`p-3 rounded-md border ${
-                  isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"
-                }`}
+          {/* Add Select All / Unselect All buttons here */}
+          <div className="flex justify-end space-x-2 mb-3">
+            {actorTypes?.target === ActorType.Structure && (
+              <Button
+                onClick={handleSelectAllResources}
+                variant="outline"
+                size="xs"
+                disabled={availableResources.length === 0}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
-                    <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
-                  </div>
-                  <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
-                  <button
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      isSelected ? "bg-red/50 hover:bg-red/70 text-red-300" : "bg-gold/10 hover:bg-gold/20 text-gold"
+                Select All Available
+              </Button>
+            )}
+            <Button
+              onClick={handleUnselectAllResources}
+              variant="outline"
+              size="xs"
+              disabled={selectedResources.length === 0}
+            >
+              Unselect All
+            </Button>
+          </div>
+
+          {/* Scrollable resources section */}
+          <div className=" h-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sticky top-0 z-10">
+              {actorTypes?.target === ActorType.Explorer && explorerCapacity && renderExplorerCapacity()}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 overflow-y-auto">
+              {availableResources.map((resource) => {
+                const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
+                const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+                const displayAmount = divideByPrecision(resource.amount);
+
+                return (
+                  <div
+                    key={resource.resourceId}
+                    className={`p-3 rounded-md border ${
+                      isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"
                     }`}
-                    onClick={() => toggleResourceSelection(resource)}
                   >
-                    {isSelected ? "Remove" : "Select"}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
-                </div>
-
-                {isSelected && (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-sm text-gold/80 mb-1">
-                      <label>Amount to Transfer:</label>
-                      <span>
-                        {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max={displayAmount}
-                        value={resourceAmounts[resource.resourceId] || 0}
-                        onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                        className="w-full accent-gold"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max={displayAmount}
-                        value={resourceAmounts[resource.resourceId] || 0}
-                        onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                        className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
-                      />
-                    </div>
-
-                    <div className="flex justify-between mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
+                        <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
+                      </div>
+                      <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
                       <button
-                        className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                        onClick={() => handleResourceAmountChange(resource.resourceId, 0)}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          isSelected
+                            ? "bg-red/50 hover:bg-red/70 text-red-300"
+                            : "bg-gold/10 hover:bg-gold/20 text-gold"
+                        }`}
+                        onClick={() => toggleResourceSelection(resource)}
                       >
-                        None
-                      </button>
-
-                      <button
-                        className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                        onClick={() => {
-                          // Let handleResourceAmountChange handle capacity limits
-                          handleResourceAmountChange(resource.resourceId, displayAmount);
-                        }}
-                      >
-                        Max
+                        {isSelected ? "Remove" : "Select"}
                       </button>
                     </div>
+
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
+                    </div>
+
+                    {isSelected && (
+                      <div className="mt-3">
+                        <div className="flex justify-between text-sm text-gold/80 mb-1">
+                          <label>Amount to Transfer:</label>
+                          <span>
+                            {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /
+                            {displayAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max={displayAmount}
+                            value={resourceAmounts[resource.resourceId] || 0}
+                            onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
+                            className="w-full accent-gold"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            max={displayAmount}
+                            value={resourceAmounts[resource.resourceId] || 0}
+                            onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
+                            className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
+                          />
+                        </div>
+
+                        <div className="flex justify-between mt-2">
+                          <button
+                            className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
+                            onClick={() => handleResourceAmountChange(resource.resourceId, 0)}
+                          >
+                            None
+                          </button>
+
+                          <button
+                            className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
+                            onClick={() => {
+                              // Let handleResourceAmountChange handle capacity limits
+                              handleResourceAmountChange(resource.resourceId, displayAmount);
+                            }}
+                          >
+                            Max
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Fixed position transfer button at the bottom */}
-      <div className="mt-10 mx-auto">
-        <Button
-          onClick={handleTransfer}
-          variant="gold"
-          disabled={
-            loading ||
-            selectedResources.length === 0 ||
-            selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
-          }
-          isLoading={loading}
-          className="w-full sm:w-auto"
-        >
-          {loading ? "Processing..." : "Transfer Resources"}
-        </Button>
-      </div>
+          {/* Fixed position transfer button at the bottom */}
+          <div className="mt-10 mx-auto">
+            <Button
+              onClick={handleTransfer}
+              variant="gold"
+              disabled={
+                loading ||
+                selectedResources.length === 0 ||
+                selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
+              }
+              isLoading={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading ? "Processing..." : "Transfer Resources"}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

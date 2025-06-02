@@ -1,11 +1,5 @@
-import {
-  type ClientComponents,
-  type ContractAddress,
-  type Player,
-  type PlayerInfo,
-  StructureType,
-} from "@bibliothecadao/types";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { type ClientComponents, type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
+import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getGuild } from "./guild";
 import { calculatePlayerSharePercentage } from "./leaderboard";
 
@@ -13,10 +7,19 @@ export const getPlayerInfo = (
   players: Player[],
   playerAddress: ContractAddress,
   playersByRank: [bigint, number][],
+  playerStructureCounts: Map<
+    ContractAddress,
+    {
+      banks: number;
+      mines: number;
+      realms: number;
+      hyperstructures: number;
+      villages: number;
+    }
+  >,
   components: ClientComponents,
 ): PlayerInfo[] => {
-  const { GuildMember, Hyperstructure, Structure } = components;
-
+  const { GuildMember, Structure } = components;
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
   const playerInfo = players
@@ -53,15 +56,11 @@ export const getPlayerInfo = (
       rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
       percentage: calculatePlayerSharePercentage(points, totalPoints),
       lords: 0,
-      realms: runQuery([
-        HasValue(Structure, {
-          owner: player.address,
-          category: StructureType.Realm,
-        }),
-      ]).size,
-      // todo: fix this if possible in efficient way
-      mines: 0,
-      hyperstructures: runQuery([Has(Hyperstructure), HasValue(Structure, { owner: player.address })]).size,
+      realms: playerStructureCounts.get(player.address)?.realms ?? 0,
+      mines: playerStructureCounts.get(player.address)?.mines ?? 0,
+      hyperstructures: playerStructureCounts.get(player.address)?.hyperstructures ?? 0,
+      villages: playerStructureCounts.get(player.address)?.villages ?? 0,
+      banks: playerStructureCounts.get(player.address)?.banks ?? 0,
       isAlive: player.isAlive,
       guildName: player.guildName || "",
       isUser: player.address === playerAddress,

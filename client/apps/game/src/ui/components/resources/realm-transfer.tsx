@@ -55,14 +55,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
+  const selectedStructure = useMemo(() => {
+    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedStructureEntityId)]));
+  }, [components.Structure, selectedStructureEntityId]);
+
   const playerStructuresFiltered = useMemo(() => {
     // For military resources, we need special handling
     if (isMilitaryResource(resource)) {
-      const selectedStructure = getComponentValue(
-        components.Structure,
-        getEntityIdFromKeys([BigInt(selectedStructureEntityId)]),
-      );
-
       // If the selected structure is a village, only show the connected realm
       if (selectedStructure?.category === StructureType.Village) {
         const realmEntityId = selectedStructure.metadata.village_realm;
@@ -78,7 +77,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     // Default case: return all player structures
     return playerStructures;
-  }, [components.Structure, playerStructures, selectedStructureEntityId, resource]);
+  }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);
@@ -381,10 +380,6 @@ const RealmTransferBalance = memo(
     const getSourceDonkeyBalance = useCallback(() => {
       return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
     }, [sourceResourceManager, tick]);
-
-    const getDestinationDonkeyBalance = useCallback(() => {
-      return destinationResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
-    }, [destinationResourceManager, tick]);
 
     const currentResourceBalanceBigInt = getSourceBalance();
 

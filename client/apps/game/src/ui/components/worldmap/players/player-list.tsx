@@ -4,6 +4,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
+import { LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { User } from "lucide-react";
@@ -33,15 +35,53 @@ export const PlayerList = ({
   removePlayerFromWhitelist,
   isLoading,
 }: PlayerListProps) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "rank",
     sort: "asc",
   });
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Calculate real-time points for all players including unregistered shareholder points
+  const playersWithRealTimePoints = useMemo(() => {
+    const leaderboardManager = LeaderboardManager.instance(components);
+
+    return players.map((player) => {
+      // Get only registered points to avoid double-counting
+      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(player.address));
+      const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+        ContractAddress(player.address),
+      );
+      const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+      return {
+        ...player,
+        registeredPoints,
+        totalPoints,
+        unregisteredShareholderPoints,
+        hasUnregisteredShareholderPoints: unregisteredShareholderPoints > 0,
+      };
+    });
+  }, [players, components]);
+
+  // Sort players by real-time total points and assign real-time ranks
+  const playersWithRealTimeRanks = useMemo(() => {
+    // First sort by total points to get real-time rankings
+    const sortedByPoints = [...playersWithRealTimePoints].sort((a, b) => b.totalPoints - a.totalPoints);
+
+    // Assign real-time ranks
+    return sortedByPoints.map((player, index) => ({
+      ...player,
+      realTimeRank: player.totalPoints > 0 ? index + 1 : Number.MAX_SAFE_INTEGER,
+    }));
+  }, [playersWithRealTimePoints]);
+
   const sortedPlayers = useMemo(() => {
     // First filter out system players
-    const filteredPlayers = players.filter(
+    const filteredPlayers = playersWithRealTimeRanks.filter(
       (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
     );
 
@@ -54,8 +94,15 @@ export const PlayerList = ({
         )
       : filteredPlayers;
 
-    return sortItems(searchFiltered, activeSort, { sortKey: "rank", sort: "asc" });
-  }, [players, activeSort, searchQuery]);
+    // For sorting, map rank to realTimeRank and points to totalPoints
+    const playersForSorting = searchFiltered.map((player) => ({
+      ...player,
+      rank: player.realTimeRank,
+      points: player.totalPoints,
+    }));
+
+    return sortItems(playersForSorting, activeSort, { sortKey: "rank", sort: "asc" });
+  }, [playersWithRealTimeRanks, activeSort, searchQuery]);
 
   return (
     <div className="flex flex-col h-full">
@@ -145,15 +192,27 @@ const PlayerRow = ({
   removePlayerFromWhitelist,
   isLoading,
 }: {
-  player: PlayerCustom;
+  player: PlayerCustom & {
+    registeredPoints: number;
+    totalPoints: number;
+    unregisteredShareholderPoints: number;
+    hasUnregisteredShareholderPoints: boolean;
+    realTimeRank: number;
+  };
   onClick: () => void;
   isGuildMaster: boolean;
   whitelistPlayer: (address: ContractAddress) => void;
   removePlayerFromWhitelist: (address: ContractAddress) => void;
   isLoading: boolean;
 }) => {
+  const {
+    setup: { components },
+  } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Use pre-calculated values from parent component
+  const { totalPoints, hasUnregisteredShareholderPoints, realTimeRank } = player;
 
   return (
     <div
@@ -167,11 +226,11 @@ const PlayerRow = ({
       <div className="grid grid-cols-12 w-full py-2 cursor-pointer items-center" onClick={onClick}>
         <p
           className={clsx("col-span-1 text-center font-medium", {
-            "text-red-400": player.rank === Number.MAX_SAFE_INTEGER,
-            italic: player.rank !== Number.MAX_SAFE_INTEGER,
+            "text-red-400": realTimeRank === Number.MAX_SAFE_INTEGER,
+            italic: realTimeRank !== Number.MAX_SAFE_INTEGER,
           })}
         >
-          {player.rank === Number.MAX_SAFE_INTEGER ? "☠️" : `#${player.rank}`}
+          {realTimeRank === Number.MAX_SAFE_INTEGER ? " - " : `#${realTimeRank}`}
         </p>
         <div className="col-span-2 flex items-center gap-1">
           <h6 className="truncate text-xs">{player.name}</h6>
@@ -185,15 +244,34 @@ const PlayerRow = ({
           {player.guild ? player.guild.name : "No Tribe"}
         </p>
         <p className="col-span-3 text-center font-medium">
-          {(player.realms || 0) + (player.mines || 0) + (player.hyperstructures || 0)}
+          {(player.banks || 0) +
+            (player.realms || 0) +
+            (player.mines || 0) +
+            (player.hyperstructures || 0) +
+            (player.villages || 0)}
         </p>
-        <p
-          className={clsx("col-span-2 text-center font-medium", {
-            "text-amber-300": player.points > 1000,
+        <div
+          className={clsx("col-span-2 text-center font-medium flex items-center justify-center gap-1", {
+            "text-amber-300": totalPoints > 1000 && !hasUnregisteredShareholderPoints, // Standard amber for high points
+            "text-order-brilliance font-bold text-shadow-glow-brilliance-xs": hasUnregisteredShareholderPoints, // Bright green 'brilliance' color with glow
           })}
         >
-          {currencyIntlFormat(player.points)}
-        </p>
+          <span>{currencyIntlFormat(totalPoints)}</span>
+          {hasUnregisteredShareholderPoints && (
+            <span
+              className="text-order-brilliance text-xs"
+              onMouseEnter={() =>
+                setTooltip({
+                  content: <div className="text-gold">Includes real-time hyperstructure shareholder points</div>,
+                  position: "top",
+                })
+              }
+              onMouseLeave={() => setTooltip(null)}
+            >
+              ⚡
+            </span>
+          )}
+        </div>
         <div className="col-span-2 text-center font-medium flex items-center justify-center gap-1">
           {currencyIntlFormat(player.lords)}
           <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" withTooltip={false} />

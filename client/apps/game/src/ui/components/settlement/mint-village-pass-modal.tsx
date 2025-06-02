@@ -395,6 +395,22 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           {currentStep === 1 && (
             <div>
               <h3 className="text-3xl font-bold text-gold mb-6 text-center">Step 1: Acquire Your Village Pass</h3>
+
+              {env.VITE_PUBLIC_SHOW_END_GAME_WARNING && (
+                <div className="mb-8 p-4 bg-red-900/20 border border-red-500 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center border border-red-400">
+                      i
+                    </div>
+                    <h4 className="text-red-400 font-semibold text-lg">Season Update</h4>
+                  </div>
+                  <p className="text-red-200 leading-relaxed">
+                    Before you buy a village, know the game is approaching its end state. You can play fully and collect
+                    achievements, but the game world will likely terminate within a week.
+                  </p>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-8 items-start mb-8">
                 {/* Right Column: Purchase and Selection - MOVED TO LEFT */}
                 <div className="space-y-6 md:order-1">

@@ -1,9 +1,32 @@
 import { TradeEvent } from "@/ui/components/trading/market-trading-history";
 import { ContractAddress, HexPosition, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { getChecksumAddress } from "starknet";
 import { env } from "../../env";
 
 export const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
+
+/**
+ * Properly formats an address by converting to bigint and padding to 64 hex characters
+ * This ensures consistent address formatting for database queries by:
+ * 1. Converting the input string to bigint (handles various formats)
+ * 2. Converting back to hex string (normalizes the format)
+ * 3. Padding with leading zeros to exactly 64 characters
+ * 4. Adding the 0x prefix
+ *
+ * Example: "0x1234" -> "0x0000000000000000000000000000000000000000000000000000000000001234"
+ */
+function formatAddressForQuery(address: string): string {
+  // Convert string to bigint to normalize it
+  const addressBigInt = BigInt(address);
+
+  // Convert back to hex string (without 0x prefix)
+  const hexString = addressBigInt.toString(16);
+
+  // Pad with leading zeros to make it 64 characters
+  const paddedHex = hexString.padStart(64, "0");
+
+  // Add 0x prefix back
+  return `0x${paddedHex}`;
+}
 
 // Define SQL queries separately for better maintainability
 const QUERIES = {
@@ -50,7 +73,7 @@ const QUERIES = {
   STRUCTURE_AND_EXPLORER_DETAILS: `
     SELECT
         s.owner AS owner_address,
-        GROUP_CONCAT(DISTINCT s.entity_id) AS structure_ids,
+        GROUP_CONCAT(DISTINCT s.entity_id || ':' || s.\`metadata.realm_id\`|| ':' || s.\`category\`) AS structure_ids,
         GROUP_CONCAT(
             CASE 
                 WHEN et.explorer_id IS NOT NULL 
@@ -58,6 +81,11 @@ const QUERIES = {
                 ELSE NULL 
             END
         ) AS explorer_ids,
+        COUNT(DISTINCT CASE WHEN s.category = 1 THEN s.entity_id END) as realms_count,
+        COUNT(DISTINCT CASE WHEN s.category = 2 THEN s.entity_id END) as hyperstructures_count,
+        COUNT(DISTINCT CASE WHEN s.category = 3 THEN s.entity_id END) as bank_count,
+        COUNT(DISTINCT CASE WHEN s.category = 4 THEN s.entity_id END) as mine_count,
+        COUNT(DISTINCT CASE WHEN s.category = 5 THEN s.entity_id END) as village_count,
         gm.guild_id,
         g.name AS guild_name,
         sos.name AS player_name
@@ -66,7 +94,7 @@ const QUERIES = {
     LEFT JOIN [s1_eternum-GuildMember] gm ON gm.member = s.owner
     LEFT JOIN [s1_eternum-Guild] g ON g.guild_id = gm.guild_id
     LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-    GROUP BY s.owner
+    GROUP BY s.owner 
   `,
 
   HYPERSTRUCTURES: `
@@ -128,6 +156,48 @@ const QUERIES = {
         AND
         \`base.coord_y\` = {coord_y};
   `,
+  BATTLE_LOGS: `
+    SELECT 
+        'ExplorerNewRaidEvent' as event_type,
+        explorer_id as attacker_id,
+        structure_id as defender_id,
+        explorer_owner_id as attacker_owner_id,
+        NULL as defender_owner_id,
+        NULL as winner_id,
+        NULL as max_reward,
+        success,
+        timestamp
+    FROM [s1_eternum-ExplorerNewRaidEvent]
+    {whereClause}
+    UNION ALL
+    SELECT 
+        'BattleEvent' as event_type,
+        attacker_id,
+        defender_id,
+        attacker_owner as attacker_owner_id,
+        defender_owner as defender_owner_id,
+        winner_id,
+        max_reward,
+        NULL as success,
+        timestamp
+    FROM [s1_eternum-BattleEvent]
+    {whereClause}
+    ORDER BY timestamp DESC
+  `,
+  PLAYER_STRUCTURES: `
+    SELECT 
+        \`base.coord_x\` as coord_x,
+        \`base.coord_y\` as coord_y,
+        category,
+        resources_packed,
+        entity_id,
+        \`metadata.realm_id\` as realm_id,
+        \`metadata.has_wonder\` as has_wonder,
+        \`base.level\` as level
+    FROM \`s1_eternum-Structure\`
+    WHERE owner = '{owner}'
+    ORDER BY category, entity_id;
+  `,
 };
 
 // API response types
@@ -176,7 +246,25 @@ export interface PlayersData {
   guild_name: string | null;
   player_name: string | null;
   owner_address: string;
+  realms_count: number;
+  hyperstructures_count: number;
+  bank_count: number;
+  mine_count: number;
+  village_count: number;
 }
+
+export interface BattleLogEvent {
+  event_type: "BattleEvent" | "ExplorerNewRaidEvent";
+  attacker_id: number;
+  defender_id: number;
+  attacker_owner_id: number;
+  defender_owner_id: number | null;
+  winner_id: number | null;
+  max_reward: string | number;
+  success: number | null;
+  timestamp: string;
+}
+
 export interface StructureDetails {
   internal_id: string; // Assuming internal_id might be non-numeric or large
   entity_id: number; // Assuming entity_id is numeric
@@ -196,6 +284,17 @@ export interface StructureDetails {
 export interface Hyperstructure {
   entity_id: number;
   hyperstructure_id: number;
+}
+
+export interface PlayerStructure {
+  coord_x: number;
+  coord_y: number;
+  category: number;
+  resources_packed: string;
+  entity_id: number;
+  realm_id: number | null;
+  has_wonder: boolean | null;
+  level: number;
 }
 
 export enum EventType {
@@ -236,8 +335,10 @@ export async function fetchRealmSettlements(): Promise<StructureLocation[]> {
  * Fetch structures by owner from the API
  */
 export async function fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
+  const formattedOwner = formatAddressForQuery(owner);
+
   const url = `${API_BASE_URL}?query=${encodeURIComponent(
-    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", getChecksumAddress(owner).toLowerCase()),
+    QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner),
   )}`;
   const response = await fetch(url);
 
@@ -364,11 +465,9 @@ export async function fetchHyperstructures(): Promise<Hyperstructure[]> {
 export async function fetchOtherStructures(
   owner: string,
 ): Promise<{ entityId: ID; owner: ContractAddress; category: StructureType; realmId: number }[]> {
-  // Ensure owner address is properly padded
-  const paddedOwner =
-    owner.startsWith("0x") && owner.length === 66 ? owner : owner.startsWith("0x") ? "0x0" + owner.substring(2) : owner;
+  const formattedOwner = formatAddressForQuery(owner);
 
-  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.OTHER_STRUCTURES.replace("{owner}", paddedOwner))}`;
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.OTHER_STRUCTURES.replace("{owner}", formattedOwner))}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -431,4 +530,35 @@ export async function fetchExplorerAddressOwner(entityId: ID): Promise<ContractA
     return null;
   }
   return data[0].address_owner;
+}
+
+export const fetchBattleLogs = async (afterTimestamp?: string): Promise<BattleLogEvent[]> => {
+  const whereClause = afterTimestamp ? `WHERE timestamp > '${afterTimestamp ? afterTimestamp : "0"}'` : "";
+
+  const query = QUERIES.BATTLE_LOGS.replaceAll("{whereClause}", whereClause);
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch battle logs: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+};
+
+/**
+ * Fetch player structures with coordinates, category, and resources_packed from the API
+ */
+export async function fetchPlayerStructures(owner: string): Promise<PlayerStructure[]> {
+  const formattedOwner = formatAddressForQuery(owner);
+
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.PLAYER_STRUCTURES.replace("{owner}", formattedOwner))}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch player structures: ${response.statusText}`);
+  }
+
+  return await response.json();
 }

@@ -53,10 +53,15 @@ export const NumberInput = ({
     <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
       {arrows && (
         <div
-          className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold/10 hover:bg-gold/30 "
+          className={clsx(
+            "flex items-center justify-center h-full px-1 border-r border-gold/10",
+            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
+          )}
           onClick={() => {
-            onChange(Math.max(value - step, min));
-            playClick();
+            if (!disabled) {
+              onChange(Math.max(value - step, min));
+              playClick();
+            }
           }}
         >
           <ArrowLeft className="fill-gold " width={"6px"} height={"8px"} />
@@ -98,10 +103,15 @@ export const NumberInput = ({
 
       {arrows && (
         <div
-          className="flex items-center justify-center h-full px-1 border-l cursor-pointer border-gold/10 hover:bg-gold/30"
+          className={clsx(
+            "flex items-center justify-center h-full px-1 border-l border-gold/10",
+            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
+          )}
           onClick={() => {
-            onChange(Math.min(value + step, max));
-            playClick();
+            if (!disabled) {
+              onChange(Math.min(value + step, max));
+              playClick();
+            }
           }}
         >
           <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />

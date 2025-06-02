@@ -17,7 +17,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
-import { Access, ContractAddress, MAX_NAME_LENGTH, ResourcesIds } from "@bibliothecadao/types";
+import { Access, ContractAddress, MAX_NAME_LENGTH, RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -142,36 +142,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
   };
 
-  const resourceElements = useMemo(() => {
-    if (progresses.percentage === 100) return;
-
-    const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
-
-    return Object.values(requiredAmounts).map(({ resource }) => {
-      const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-      const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-      const progress = {
-        percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
-        costNeeded: requiredAmount,
-        hyperstructure_entity_id: entity.entity_id,
-        resource_type: resource,
-        amount: currentAmount,
-      };
-
-      return (
-        <HyperstructureResourceChip
-          structureEntityId={structureEntityId}
-          setContributions={setNewContributions}
-          contributions={newContributions}
-          progress={progress}
-          key={resource}
-          resourceId={resource}
-          resetContributions={resetContributions}
-        />
-      );
-    });
-  }, [progresses, currentAmounts, newContributions, structureEntityId]);
-
   const canContribute = useMemo(() => {
     const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
     return (
@@ -186,14 +156,101 @@ export const HyperstructurePanel = ({ entity }: any) => {
     );
   }, [newContributions, structureEntityId]);
 
+  // Function to get the specific reason why user can't contribute
+  const getContributionRestrictionMessage = useMemo(() => {
+    if (progresses.percentage === 100) {
+      return null; // Construction is complete, no message needed
+    }
+
+    if (!hyperstructure?.initialized) {
+      return {
+        type: "warning",
+        message: "Hyperstructure must be initialized before contributions can be made",
+      };
+    }
+
+    if (!canContribute) {
+      const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
+
+      if (hyperstructure?.access === Access[Access.Private]) {
+        return {
+          type: "error",
+          message: "This hyperstructure is private - only the owner can contribute",
+        };
+      }
+
+      if (hyperstructure?.access === Access[Access.GuildOnly]) {
+        if (!playerGuild?.entityId || playerGuild.entityId === 0n) {
+          return {
+            type: "error",
+            message: "You must be in a tribe to contribute to this tribe-only hyperstructure",
+          };
+        }
+
+        if (hyperstructureOwnerGuild?.entityId !== playerGuild.entityId) {
+          return {
+            type: "error",
+            message: "This hyperstructure is tribe-only - you must be in the same tribe as the owner",
+          };
+        }
+      }
+    }
+
+    return null;
+  }, [canContribute, hyperstructure, progresses.percentage, entity?.owner, playerGuild, components]);
+
+  const resourceElements = useMemo(() => {
+    if (progresses.percentage === 100) return;
+
+    const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
+
+    return Object.values(requiredAmounts)
+      .sort((a, b) => {
+        // Sort by rarity, so that the least rare resources are at the top
+        const rarityA = RESOURCE_RARITY[a.resource] || Number.MAX_SAFE_INTEGER;
+        const rarityB = RESOURCE_RARITY[b.resource] || Number.MAX_SAFE_INTEGER;
+        return rarityA - rarityB;
+      })
+      .map(({ resource }) => {
+        const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+        const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+        const progress = {
+          percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
+          costNeeded: requiredAmount,
+          hyperstructure_entity_id: entity.entity_id,
+          resource_type: resource,
+          amount: currentAmount,
+        };
+
+        return (
+          <HyperstructureResourceChip
+            structureEntityId={structureEntityId}
+            setContributions={setNewContributions}
+            contributions={newContributions}
+            progress={progress}
+            key={resource}
+            resourceId={resource}
+            resetContributions={resetContributions}
+            disabled={!canContribute || !hyperstructure?.initialized}
+          />
+        );
+      });
+  }, [
+    progresses,
+    currentAmounts,
+    newContributions,
+    structureEntityId,
+    canContribute,
+    hyperstructure,
+    resetContributions,
+  ]);
+
   const myShares = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
       ContractAddress(account.address),
       entity.entity_id,
     );
   }, [updates, structureEntityId]);
-
-  console.log(myShares);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
@@ -394,7 +451,25 @@ export const HyperstructurePanel = ({ entity }: any) => {
         {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
-          <div className="relative">{resourceElements}</div>
+          <div className="relative">
+            {getContributionRestrictionMessage && (
+              <div
+                className={`mx-2 mt-2 mb-3 p-3 rounded-lg border-l-4 ${
+                  getContributionRestrictionMessage.type === "error" ? "border-gold text-gold" : "border-gold text-gold"
+                }`}
+              >
+                <div className="flex items-center">
+                  <div
+                    className={`w-2 h-2 rounded-full mr-2 ${
+                      getContributionRestrictionMessage.type === "error" ? "bg-red" : "bg-gold"
+                    }`}
+                  />
+                  <span className="text-sm font-medium">{getContributionRestrictionMessage.message}</span>
+                </div>
+              </div>
+            )}
+            {resourceElements}
+          </div>
         )}
       </div>
       {progresses.percentage !== 100 && (

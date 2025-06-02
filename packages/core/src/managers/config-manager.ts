@@ -592,6 +592,14 @@ export class ClientConfigManager {
     }, 10);
   }
 
+  getWorldStructureDefenseSlotsConfig() {
+    return {
+      [StructureType.FragmentMine]: 1,
+      [StructureType.Hyperstructure]: 4,
+      [StructureType.Bank]: 4,
+    };
+  }
+
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {

@@ -1,11 +1,14 @@
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
 import { GuildMembers } from "@/ui/components/worldmap/guilds/guild-members";
 import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
+import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { Tabs } from "@/ui/elements/tab";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -48,13 +51,58 @@ export const Social = () => {
   const players = usePlayers();
 
   useEffect(() => {
-    // update first time
-    LeaderboardManager.instance(components).updatePoints();
-    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
+    // update first time - initialize with interval on first call
+    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
+    manager.initialize();
+    setPlayersByRank(manager.playersByRank);
+  }, [components, setPlayersByRank]);
+
+  // Add periodic updates every 1 minute to refresh unregistered shareholder points
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const manager = LeaderboardManager.instance(components);
+      manager.updatePoints();
+      setPlayersByRank(manager.playersByRank);
+    }, LEADERBOARD_UPDATE_INTERVAL);
+
+    return () => clearInterval(interval);
   }, [components, setPlayersByRank]);
 
   useEffect(() => {
-    setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
+    const loadPlayerData = async () => {
+      // Create a Map to store address -> structure counts mapping (using bigint keys)
+      const playerStructureCountsMap = new Map<
+        bigint,
+        {
+          banks: number;
+          mines: number;
+          realms: number;
+          hyperstructures: number;
+          villages: number;
+        }
+      >();
+
+      const playerStore = usePlayerStore.getState();
+      const allPlayersData = await playerStore.getAllPlayersData();
+
+      if (allPlayersData) {
+        allPlayersData.forEach((playerData: PlayerDataTransformed) => {
+          playerStructureCountsMap.set(BigInt(playerData.ownerAddress), {
+            banks: playerData.bankCount ?? 0,
+            mines: playerData.mineCount ?? 0,
+            realms: playerData.realmsCount ?? 0,
+            hyperstructures: playerData.hyperstructuresCount ?? 0,
+            villages: playerData.villageCount ?? 0,
+          });
+        });
+      }
+
+      setPlayerInfo(
+        getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
+      );
+    };
+
+    loadPlayerData();
   }, [players, account.address, playersByRank, components, setPlayerInfo]);
 
   const hyperstructuresEntityIds = useMemo(() => {

@@ -82,6 +82,12 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(resource_bridge_token_whitelist.resource_type.is_non_zero(), "resource id not whitelisted");
     }
 
+    fn assert_no_deposit_troops_in_village(structure_category: u8, resource_type: u8) {
+        if TroopResourceImpl::is_troop(resource_type) {
+            assert!(structure_category != StructureCategory::Village.into(), "Troops can't be bridged into villages");
+        }
+    }
+
     // Convert from the token's number system to the internal resource number system
     fn token_amount_to_resource_amount(token: ContractAddress, amount: u256) -> u128 {
         let relative_amount: u256 = (amount * RESOURCE_PRECISION.into()) / Self::one_token(token);

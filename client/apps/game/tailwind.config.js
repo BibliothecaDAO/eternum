@@ -5,6 +5,10 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      textShadow: {
+        "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
+        "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
+      },
       typography: ({ theme }) => ({
         pink: {
           css: {
@@ -228,7 +232,17 @@ export default {
   ],
   plugins: [
     require("@tailwindcss/typography"),
-    plugin(function ({ addUtilities }) {
+    plugin(function ({ addUtilities, theme, e }) {
+      const textShadowUtilities = {
+        ".text-shadow-glow-yellow-xs": {
+          textShadow: theme("textShadow.glow-yellow-xs"),
+        },
+        ".text-shadow-glow-brilliance-xs": {
+          textShadow: theme("textShadow.glow-brilliance-xs"),
+        },
+      };
+      addUtilities(textShadowUtilities, ["responsive", "hover"]);
+
       const newUtilities = {
         ".border-gradient": {
           borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",

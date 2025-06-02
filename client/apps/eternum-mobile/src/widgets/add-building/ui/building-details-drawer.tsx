@@ -77,7 +77,10 @@ export const BuildingDetailsDrawer = ({
 
   // Get available locations based on realm position
   const availableLocations = useMemo(() => {
-    return generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, 1);
+    return generateHexPositions(
+      { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
+      (tileManager?.getRealmLevel(entityId) as number) + 1 || 1,
+    );
   }, []);
 
   // Get occupied locations from existing buildings
@@ -168,8 +171,8 @@ export const BuildingDetailsDrawer = ({
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-16 h-16 rounded-md overflow-hidden bg-white/10 flex items-center justify-center">
-              <img src={building.image} alt={building.name} className="w-full h-full object-cover" />
+            <div className="flex items-center justify-center w-16 h-16 overflow-hidden rounded-md bg-white/10">
+              <img src={building.image} alt={building.name} className="object-cover w-full h-full" />
             </div>
             <div>
               <DrawerTitle className="text-xl font-bold">{building.name}</DrawerTitle>
@@ -222,7 +225,7 @@ export const BuildingDetailsDrawer = ({
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-white/80">Population</h4>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-              <Users className="h-6 w-6 text-blue-400" />
+              <Users className="w-6 h-6 text-blue-400" />
               <div className="flex-1">
                 {population !== 0 && (
                   <div className="flex items-baseline gap-1">
@@ -231,7 +234,7 @@ export const BuildingDetailsDrawer = ({
                   </div>
                 )}
 
-                {capacity !== 0 && <div className="text-xs text-emerald-400 mt-1">+{capacity} max population</div>}
+                {capacity !== 0 && <div className="mt-1 text-xs text-emerald-400">+{capacity} max population</div>}
               </div>
             </div>
           </div>
@@ -241,7 +244,7 @@ export const BuildingDetailsDrawer = ({
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-white/80">Storage</h4>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <Warehouse className="h-6 w-6 text-amber-400" />
+                <Warehouse className="w-6 h-6 text-amber-400" />
                 <div className="flex-1">
                   <div className="flex items-baseline gap-1">
                     <span className="font-medium">Capacity</span>
@@ -257,10 +260,10 @@ export const BuildingDetailsDrawer = ({
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-white/80">Resource Consumption</h4>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <Clock className="h-6 w-6 text-red-400" />
+                <Clock className="w-6 h-6 text-red-400" />
                 <div className="flex-1">
                   <div className="font-medium">Consumes per second</div>
-                  <div className="mt-2 flex gap-3 items-center">
+                  <div className="flex items-center gap-3 mt-2">
                     {ongoingCost.map((costItem, index) => {
                       if (!costItem || costItem.resource === undefined) return null;
                       return (
@@ -329,7 +332,7 @@ export const BuildingDetailsDrawer = ({
             </div>
           </div>
 
-          {error && <div className="p-3 rounded-lg bg-red-500/10 text-red-400 text-sm">{error}</div>}
+          {error && <div className="p-3 text-sm text-red-400 rounded-lg bg-red-500/10">{error}</div>}
         </div>
 
         <DrawerFooter className="pt-2">
@@ -344,7 +347,7 @@ export const BuildingDetailsDrawer = ({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Placing Building...
                 </>
               ) : (

@@ -2,6 +2,7 @@ import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getGuildFromPlayerAddress } from "../utils";
+import { ClientConfigManager } from "./config-manager";
 
 interface ContractAddressAndAmount {
   key: false;
@@ -30,16 +31,29 @@ export class LeaderboardManager {
   public pointsPerGuild: Map<ContractAddress, number> = new Map();
   public guildsByRank: [ContractAddress, number][] = [];
 
-  constructor(private readonly components: ClientComponents) {}
+  // Hyperstructure unregistered shareholder points cache
+  private unregisteredShareholderPointsCache: Map<ContractAddress, number> = new Map();
+  private lastUnregisteredShareholderPointsUpdate: number = 0;
+  private readonly unregisteredShareholderPointsUpdateInterval: number;
 
-  public static instance(components: ClientComponents) {
+  constructor(
+    private readonly components: ClientComponents,
+    unregisteredShareholderPointsUpdateInterval: number = 60000,
+  ) {
+    this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
+    // Start the periodic update for unregistered shareholder points
+    this.startUnregisteredShareholderPointsUpdater();
+  }
+
+  public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager(components);
+      LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
     }
     return LeaderboardManager._instance;
   }
 
   public initialize() {
+    this.updateUnregisteredShareholderPointsCache();
     this.pointsPerPlayer = this.getPlayerPoints();
     this.pointsPerGuild = this.getGuildsPoints();
     this.playersByRank = this.getPlayersByRank();
@@ -47,7 +61,10 @@ export class LeaderboardManager {
   }
 
   public updatePoints() {
-    // Refresh player points
+    // Update unregistered shareholder points cache if needed
+    this.updateUnregisteredShareholderPointsCacheIfNeeded();
+
+    // Refresh player points (now includes cached unregistered shareholder points)
     this.pointsPerPlayer = this.getPlayerPoints();
 
     // Refresh guild points
@@ -58,6 +75,117 @@ export class LeaderboardManager {
 
     // Update player rankings
     this.playersByRank = this.getPlayersByRank();
+  }
+
+  /**
+   * Start periodic updater for unregistered shareholder points
+   */
+  private startUnregisteredShareholderPointsUpdater() {
+    // Don't immediately update in constructor - let initialize() or updatePoints() handle initial population
+    // this.updateUnregisteredShareholderPointsCache();
+    setInterval(() => {
+      this.updateUnregisteredShareholderPointsCache();
+    }, this.unregisteredShareholderPointsUpdateInterval);
+  }
+
+  /**
+   * Update unregistered shareholder points cache if enough time has passed
+   */
+  private updateUnregisteredShareholderPointsCacheIfNeeded() {
+    const now = Date.now();
+    // Always update if cache has never been populated (lastUnregisteredShareholderPointsUpdate === 0)
+    // or if the cache is empty (indicating it needs initial population)
+    // or if enough time has passed since last update
+    if (
+      this.lastUnregisteredShareholderPointsUpdate === 0 ||
+      this.unregisteredShareholderPointsCache.size === 0 ||
+      now - this.lastUnregisteredShareholderPointsUpdate >= this.unregisteredShareholderPointsUpdateInterval
+    ) {
+      this.updateUnregisteredShareholderPointsCache();
+    }
+  }
+
+  /**
+   * Calculate and cache all unregistered shareholder points at once for efficiency
+   */
+  private updateUnregisteredShareholderPointsCache() {
+    const configManager = ClientConfigManager.instance();
+    const pointsPrecision = 1_000_000;
+    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle / pointsPrecision; // Divide by precision
+    const seasonConfig = configManager.getSeasonConfig();
+
+    // Use season end time if season has ended, otherwise use current time
+    const currentTimestamp =
+      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 ? Number(seasonConfig.endAt) : Math.floor(Date.now() / 1000);
+
+    // Clear previous cache
+    this.unregisteredShareholderPointsCache.clear();
+
+    // Get all hyperstructures
+    const allHyperstructuresShareholders = runQuery([Has(this.components.HyperstructureShareholders)]);
+
+    for (const hyperstructureShareholdersEntityId of allHyperstructuresShareholders) {
+      const hyperstructureShareholders = getComponentValue(
+        this.components.HyperstructureShareholders,
+        hyperstructureShareholdersEntityId,
+      );
+      if (!hyperstructureShareholders) continue;
+
+      const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
+      const startTimestamp = Number(hyperstructureShareholders.start_at);
+      if (startTimestamp === 0) continue;
+      const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
+
+      // Aggregate shareholder percentages by player address to handle duplicates
+      const playerShareholderMap = new Map<ContractAddress, number>();
+
+      for (const share of shareholders) {
+        const playerAddress = ContractAddress(share.value[0].value);
+        const shareholderPercentage = Number(share.value[1].value) / 10_000; // Convert from basis points to decimal
+
+        // Add to existing percentage or set new percentage
+        const existingPercentage = playerShareholderMap.get(playerAddress) || 0;
+        playerShareholderMap.set(playerAddress, existingPercentage + shareholderPercentage);
+      }
+
+      // Calculate points for each unique player in this hyperstructure
+      for (const [playerAddress, totalShareholderPercentage] of playerShareholderMap) {
+        const hyperstructurePoints = Math.floor(pointsPerSecond * totalShareholderPercentage * timeElapsed);
+
+        // Add to player's total unregistered shareholder points
+        const currentPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+        this.unregisteredShareholderPointsCache.set(playerAddress, currentPoints + hyperstructurePoints);
+      }
+    }
+
+    this.lastUnregisteredShareholderPointsUpdate = Date.now();
+  }
+
+  /**
+   * Get cached unregistered shareholder points for a specific player
+   */
+  public getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress: ContractAddress): number {
+    this.updateUnregisteredShareholderPointsCacheIfNeeded();
+    return this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+  }
+
+  /**
+   * Get only the registered points for a specific player (without unregistered shareholder points)
+   */
+  public getPlayerRegisteredPoints(playerAddress: ContractAddress): number {
+    const registeredPoints = runQuery([Has(this.components.PlayerRegisteredPoints)]);
+
+    for (const entityId of registeredPoints) {
+      const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
+      if (!playerRegisteredPoints) continue;
+
+      if (ContractAddress(playerRegisteredPoints.address) === playerAddress) {
+        const pointsPrecision = 1_000_000n;
+        return Number(playerRegisteredPoints.registered_points / pointsPrecision);
+      }
+    }
+
+    return 0;
   }
 
   public getCurrentCoOwners(hyperstructureEntityId: ID):
@@ -83,20 +211,99 @@ export class LeaderboardManager {
     return { coOwners, timestamp: Number(hyperstructureShareholders.start_at) };
   }
 
+  /**
+   * Get detailed breakdown of hyperstructure shareholder points by hyperstructure
+   */
+  public getPlayerHyperstructurePointsBreakdown(playerAddress: ContractAddress): Array<{
+    hyperstructureId: ID;
+    shareholderPercentage: number;
+    pointsPerSecond: number;
+    timeElapsed: number;
+    totalPoints: number;
+  }> {
+    const configManager = ClientConfigManager.instance();
+    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle / 1_000_000;
+    const seasonConfig = configManager.getSeasonConfig();
+
+    // Use season end time if season has ended, otherwise use current time
+    const currentTimestamp =
+      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 ? Number(seasonConfig.endAt) : Math.floor(Date.now() / 1000);
+
+    const breakdown: Array<{
+      hyperstructureId: ID;
+      shareholderPercentage: number;
+      pointsPerSecond: number;
+      timeElapsed: number;
+      totalPoints: number;
+    }> = [];
+
+    const allHyperstructuresShareholders = runQuery([Has(this.components.HyperstructureShareholders)]);
+
+    for (const hyperstructureShareholdersEntityId of allHyperstructuresShareholders) {
+      const hyperstructureShareholders = getComponentValue(
+        this.components.HyperstructureShareholders,
+        hyperstructureShareholdersEntityId,
+      );
+      if (!hyperstructureShareholders) continue;
+
+      const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
+      const startTimestamp = Number(hyperstructureShareholders.start_at);
+
+      // Aggregate shareholder percentages for the specific player to handle duplicates
+      let totalShareholderPercentage = 0;
+
+      for (const share of shareholders) {
+        if (ContractAddress(share.value[0].value) === playerAddress) {
+          const shareholderPercentage = Number(share.value[1].value) / 10_000; // Convert from basis points to decimal
+          totalShareholderPercentage += shareholderPercentage;
+        }
+      }
+
+      // Skip if player has no shares in this hyperstructure
+      if (totalShareholderPercentage === 0) continue;
+
+      const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
+      const playerPointsPerSecond = pointsPerSecond * totalShareholderPercentage;
+      const totalPoints = Math.floor(playerPointsPerSecond * timeElapsed);
+
+      breakdown.push({
+        hyperstructureId: hyperstructureShareholders.hyperstructure_id,
+        shareholderPercentage: totalShareholderPercentage,
+        pointsPerSecond: playerPointsPerSecond,
+        timeElapsed,
+        totalPoints,
+      });
+    }
+
+    return breakdown;
+  }
+
   private getPlayerPoints(): Map<ContractAddress, number> {
     const pointsPerPlayer = new Map<ContractAddress, number>();
 
+    // Get registered points from on-chain data
     const registredPoints = runQuery([Has(this.components.PlayerRegisteredPoints)]);
 
     for (const entityId of registredPoints) {
       const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
-      console.log({ playerRegisteredPoints });
       if (!playerRegisteredPoints) continue;
 
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
-      const registeredPoints = Number(playerRegisteredPoints.registered_points);
+      const pointsPrecision = 1_000_000n;
+      const registeredPoints = Number(playerRegisteredPoints.registered_points / pointsPrecision);
 
-      pointsPerPlayer.set(playerAddress, registeredPoints);
+      // Add cached unregistered shareholder points to registered points
+      const unregisteredShareholderPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
+      const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+      pointsPerPlayer.set(playerAddress, totalPoints);
+    }
+
+    // Also add players who only have unregistered shareholder points but no registered points
+    for (const [playerAddress, unregisteredShareholderPoints] of this.unregisteredShareholderPointsCache) {
+      if (!pointsPerPlayer.has(playerAddress) && unregisteredShareholderPoints > 0) {
+        pointsPerPlayer.set(playerAddress, unregisteredShareholderPoints);
+      }
     }
 
     return pointsPerPlayer;
@@ -137,8 +344,6 @@ export class LeaderboardManager {
     const playerShare = shareholders.find(
       (share: ContractAddressAndAmount) => ContractAddress(share.value[0].value) === playerAddress,
     );
-
-    console.log({ shareholders, playerShare });
 
     return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
   }

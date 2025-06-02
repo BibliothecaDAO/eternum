@@ -21,6 +21,12 @@ const envSchema = z.object({
 
   VITE_PUBLIC_SLOT: z.string(),
   VITE_PUBLIC_GAME_TORII: z.string().url(),
+
+  VITE_PUBLIC_SHOW_END_GAME_WARNING: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
 });
 
 let env: z.infer<typeof envSchema>;

@@ -3,7 +3,7 @@ import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
+import { getAddressName, getGuildFromPlayerAddress, getRealmNameById, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -20,10 +20,17 @@ export interface ArmyEntityDetailProps {
   className?: string;
   compact?: boolean;
   maxInventory?: number;
+  showButtons?: boolean;
 }
 
 export const ArmyEntityDetail = memo(
-  ({ armyEntityId, className, compact = false, maxInventory = Infinity }: ArmyEntityDetailProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = false,
+    maxInventory = Infinity,
+    showButtons = false,
+  }: ArmyEntityDetailProps) => {
     const {
       network: { toriiClient },
       account: { account },
@@ -88,6 +95,10 @@ export const ArmyEntityDetail = memo(
         ? getAddressName(structure?.owner, components)
         : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
+      const structureOwnerName = structure?.metadata?.realm_id
+        ? getRealmNameById(structure.metadata.realm_id)
+        : structure?.entity_id.toString();
+
       return {
         stamina,
         maxStamina,
@@ -95,6 +106,7 @@ export const ArmyEntityDetail = memo(
         isAlly,
         addressName,
         isMine,
+        structureOwnerName: structureOwnerName,
       };
     }, [explorer, structure, components, userAddress, armyEntityId]);
 
@@ -162,17 +174,20 @@ export const ArmyEntityDetail = memo(
                 {" >"}
               </div>
             )}
+            {derivedData.structureOwnerName && (
+              <div className="text-xs text-gold/70 italic">Owner: {derivedData.structureOwnerName}</div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <div className={`px-2 py-1 rounded text-xs font-bold ${derivedData.isAlly ? "bg-green/20" : "bg-red/20"}`}>
               {derivedData.isAlly ? "Ally" : "Enemy"}
             </div>
-            {derivedData.addressName !== undefined && (
+            {derivedData.addressName !== undefined && showButtons && (
               <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
                 <MessageCircle />
               </button>
             )}
-            {derivedData.isMine && (
+            {derivedData.isMine && showButtons && (
               <button
                 onClick={handleDeleteExplorer}
                 className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${

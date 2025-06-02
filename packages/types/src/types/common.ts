@@ -12,6 +12,11 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 
+export enum ActorType {
+  Explorer = "explorer",
+  Structure = "structure",
+}
+
 export enum TileOccupier {
   None = 0,
   RealmRegularLevel1 = 1,
@@ -111,6 +116,7 @@ export type ArmyInfo = {
   weight: number;
   explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
+  hasAdjacentStructure: boolean;
 };
 
 export type Structure = {
@@ -583,6 +589,8 @@ export interface PlayerInfo {
   realms: number;
   mines: number;
   hyperstructures: number;
+  villages: number;
+  banks: number;
   isAlive: boolean;
   guildName: string;
 }
