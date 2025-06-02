@@ -6,6 +6,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  calculateDistance,
   calculateDonkeysNeeded,
   getEntityIdFromKeys,
   getStructureName,
@@ -23,7 +24,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ArrowBigDown, ArrowBigUp } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, Search, X } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
@@ -79,6 +80,17 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     // Default case: return all player structures
     return playerStructures;
   }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
+  const structureDistances = useMemo(() => {
+    const distances: Record<number, number> = {};
+    if (!selectedStructure) return distances;
+    playerStructuresFiltered.forEach((structure) => {
+      distances[structure.structure.entity_id] = calculateDistance(
+        { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
+        { x: selectedStructure.base.coord_x, y: selectedStructure.base.coord_y },
+      );
+    });
+    return distances;
+  }, [playerStructuresFiltered, selectedStructure]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [burnAmount, setBurnAmount] = useState(0);
@@ -86,6 +98,8 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const [type, setType] = useState<"send" | "receive">("send");
   const [totalTransferResourceWeightKg, setTotalTransferResourceWeightKg] = useState(0);
   const [showBurnSection, setShowBurnSection] = useState(false);
+  const [sortByDistance, setSortByDistance] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const totalNeededDonkeys = useMemo(
     () => calculateDonkeysNeeded(totalTransferResourceWeightKg),
@@ -235,10 +249,75 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
         {/* Scrollable content area */}
         <div className="flex-grow overflow-y-auto pr-2">
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              id="sortByDistance"
+              checked={sortByDistance}
+              onChange={(e) => setSortByDistance(e.target.checked)}
+              className="accent-gold"
+            />
+            <label htmlFor="sortByDistance" className="text-xs text-gold cursor-pointer">
+              order structures by distance
+            </label>
+          </div>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
+            <input
+              type="text"
+              placeholder="Search structures..."
+              value={searchTerm}
+              onKeyDown={(e) => e.stopPropagation()}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-8 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="text-xs text-gold/60 mb-2 italic">
+            {sortByDistance
+              ? "Structures are sorted by distance (closest to furthest)"
+              : "Structures are sorted by name"}
+          </div>
           {playerStructuresFiltered
+            .sort((a, b) => {
+              if (!sortByDistance) {
+                // sort by name
+                return a.name.localeCompare(b.name);
+              }
+              const distanceA = structureDistances[a.structure.entity_id] ?? 0;
+              const distanceB = structureDistances[b.structure.entity_id] ?? 0;
+              return distanceA - distanceB;
+            })
             .filter((structure) => {
               // First, skip if it's the structure itself, as no transfer row should be rendered.
               if (structure.structure.entity_id === selectedStructureEntityId) {
+                return false;
+              }
+
+              // Filter by search term if provided
+              if (
+                searchTerm &&
+                !structure.name
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/\u0300-\u036f/g, "")
+                  .replace(/[^a-z0-9]/g, "")
+                  .includes(
+                    searchTerm
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/\u0300-\u036f/g, "")
+                      .replace(/[^a-z0-9]/g, ""),
+                  )
+              ) {
                 return false;
               }
 
