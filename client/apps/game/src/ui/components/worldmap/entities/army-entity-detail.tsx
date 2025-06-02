@@ -117,7 +117,7 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
+    const { openChat, addTab, getUserIdByUsername } = useChatStore((state) => state.actions);
 
     const handleChatClick = () => {
       if (derivedData?.isMine) {
@@ -125,7 +125,11 @@ export const ArmyEntityDetail = memo(
       } else if (derivedData?.addressName) {
         const userId = getUserIdByUsername(derivedData.addressName);
         if (userId) {
-          selectDirectMessageRecipient(userId);
+          addTab({
+            type: "direct",
+            name: derivedData.addressName,
+            recipientId: userId,
+          });
           openChat();
         } else {
           // Show toast notification when user is not found

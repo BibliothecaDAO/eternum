@@ -106,7 +106,7 @@ export const StructureEntityDetail = memo(
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-    const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
+    const { openChat, addTab, getUserIdByUsername } = useChatStore((state) => state.actions);
 
     console.log("CHAT_DEBUG: addressName", addressName);
     const handleChatClick = () => {
@@ -116,7 +116,11 @@ export const StructureEntityDetail = memo(
         const userId = getUserIdByUsername(addressName || "");
 
         if (userId) {
-          selectDirectMessageRecipient(userId);
+          addTab({
+            type: "direct",
+            name: addressName || "",
+            recipientId: userId,
+          });
         }
       }
     };
