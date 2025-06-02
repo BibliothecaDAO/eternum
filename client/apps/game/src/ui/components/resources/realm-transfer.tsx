@@ -62,14 +62,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [components.Structure, selectedStructureEntityId]);
 
   const playerStructuresFiltered = useMemo(() => {
+    const playerStructuresWithName = playerStructures.map((structure) => ({
+      ...structure,
+      name: getStructureName(structure.structure).name,
+    }));
+
     // For military resources, we need special handling
     if (isMilitaryResource(resource)) {
       // If the selected structure is a village, only show the connected realm
       if (selectedStructure?.category === StructureType.Village) {
         const realmEntityId = selectedStructure.metadata.village_realm;
-        return playerStructures.filter((structure) => structure.structure.entity_id === realmEntityId);
+        return playerStructuresWithName.filter((structure) => structure.structure.entity_id === realmEntityId);
       } else {
-        return playerStructures.filter(
+        return playerStructuresWithName.filter(
           (structure) =>
             structure.category !== StructureType.Village ||
             structure.structure.metadata.village_realm === selectedStructureEntityId,
@@ -78,8 +83,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     }
 
     // Default case: return all player structures
-    return playerStructures;
+    return playerStructuresWithName;
   }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
+
   const structureDistances = useMemo(() => {
     const distances: Record<number, number> = {};
     if (!selectedStructure) return distances;
