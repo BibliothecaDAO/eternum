@@ -266,6 +266,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               type="text"
               placeholder="Search structures..."
               value={searchTerm}
+              onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-8 pr-8 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
             />
@@ -301,7 +302,21 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               }
 
               // Filter by search term if provided
-              if (searchTerm && !structure.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+              if (
+                searchTerm &&
+                !structure.name
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/\u0300-\u036f/g, "")
+                  .replace(/[^a-z0-9]/g, "")
+                  .includes(
+                    searchTerm
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/\u0300-\u036f/g, "")
+                      .replace(/[^a-z0-9]/g, ""),
+                  )
+              ) {
                 return false;
               }
 
