@@ -2,7 +2,7 @@ import { ClientComponents } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause, OrComposeClause } from "@dojoengine/sdk";
 import { Query, ToriiClient } from "@dojoengine/torii-wasm";
-import { getTileFromToriiEntity } from "../parser/tile";
+import { getTileFromToriiEntity } from "../../parser/torii-client/tile";
 
 export const getTilesFromToriiClient = async (
   toriiClient: ToriiClient,

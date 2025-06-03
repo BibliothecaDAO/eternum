@@ -1,8 +1,8 @@
 import { Direction, getNeighborHexes, ID, Steps } from "@bibliothecadao/types";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
-import { getStructureFromToriiEntity } from "../parser";
-import { getResourcesFromToriiEntity } from "../parser/resources";
+import { getStructureFromToriiEntity } from "../../parser/torii-client";
+import { getResourcesFromToriiEntity } from "../../parser/torii-client/resources";
 
 export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy

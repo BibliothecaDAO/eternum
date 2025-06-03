@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchSwapEvents } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
@@ -43,7 +43,7 @@ export const MarketTradingHistoryContent = memo(() => {
 
   useEffect(() => {
     setIsLoading(true);
-    fetchSwapEvents(playerStructures.map((structure) => structure.entityId)).then((events) => {
+    sqlApi.fetchSwapEvents(playerStructures.map((structure) => structure.entityId)).then((events) => {
       setTradeEvents(events);
       setIsLoading(false);
     });

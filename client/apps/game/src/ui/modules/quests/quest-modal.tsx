@@ -4,7 +4,7 @@ import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
+import { getQuestFromToriiClient } from "@bibliothecadao/torii";
 import { ClientComponents, ID } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useOwnedGamesWithScores } from "metagame-sdk";

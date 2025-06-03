@@ -13,7 +13,7 @@ import { Position } from "@/types/position";
 import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
-import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";

@@ -23,7 +23,6 @@ interface SettlementActions {
   fetchBankLocations: (components: ClientComponents) => void;
   fetchOccupiedLocations: (
     accountAddress: string | undefined,
-    components: ClientComponents,
     maxLayers: number,
     extraPlayerOccupiedLocations?: SettlementLocation[],
   ) => Promise<void>;
@@ -60,7 +59,7 @@ const useSettlementStore = create<SettlementState>((set, get) => ({
       const bankLocations = getBanksLocations(components);
       set({ bankLocations });
     },
-    fetchOccupiedLocations: async (accountAddress, components, maxLayers, extraPlayerOccupiedLocations = []) => {
+    fetchOccupiedLocations: async (accountAddress, maxLayers, extraPlayerOccupiedLocations = []) => {
       if (!accountAddress) {
         set({
           settledLocations: [...extraPlayerOccupiedLocations],
@@ -72,11 +71,7 @@ const useSettlementStore = create<SettlementState>((set, get) => ({
       const [allLocations, allLocationsMap] = generateSettlementLocations(maxLayers);
       set({ availableLocations: allLocations });
 
-      const occupiedLocations = await getOccupiedLocations(
-        ContractAddress(accountAddress),
-        components,
-        allLocationsMap,
-      );
+      const occupiedLocations = await getOccupiedLocations(ContractAddress(accountAddress), allLocationsMap);
       const locations = [...occupiedLocations, ...extraPlayerOccupiedLocations];
       set({ settledLocations: locations });
     },
@@ -94,11 +89,11 @@ const useSettlementStore = create<SettlementState>((set, get) => ({
       set({ pollingIntervalId: null, pollingTimeoutId: null });
 
       // Initial fetch
-      get().actions.fetchOccupiedLocations(accountAddress, components, maxLayers, extraPlayerOccupiedLocations);
+      get().actions.fetchOccupiedLocations(accountAddress, maxLayers, extraPlayerOccupiedLocations);
 
       const newIntervalId = setInterval(() => {
         console.log("Store: Polling occupied locations...");
-        get().actions.fetchOccupiedLocations(accountAddress, components, maxLayers, extraPlayerOccupiedLocations);
+        get().actions.fetchOccupiedLocations(accountAddress, maxLayers, extraPlayerOccupiedLocations);
       }, 5 * 1000);
 
       const newTimeoutId = setTimeout(

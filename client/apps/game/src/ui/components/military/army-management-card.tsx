@@ -16,7 +16,7 @@ import {
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getTilesFromToriiClient } from "@bibliothecadao/torii-client";
+import { getTilesFromToriiClient } from "@bibliothecadao/torii";
 import {
   ArmyInfo,
   Direction,

@@ -5,7 +5,7 @@ import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, getRealmNameById, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";

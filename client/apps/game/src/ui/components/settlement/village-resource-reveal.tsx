@@ -6,7 +6,7 @@ import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";

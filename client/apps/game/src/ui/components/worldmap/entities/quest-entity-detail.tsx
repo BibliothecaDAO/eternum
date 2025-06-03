@@ -1,7 +1,7 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
+import { getQuestFromToriiClient } from "@bibliothecadao/torii";
 import { ClientComponents, ID } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";

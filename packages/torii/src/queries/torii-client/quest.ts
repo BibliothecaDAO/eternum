@@ -4,7 +4,7 @@ import { ID } from "@bibliothecadao/types";
 import { ToriiClient } from "@dojoengine/torii-wasm";
 
 import { Query } from "@dojoengine/torii-wasm";
-import { getQuestFromToriiEntity } from "../parser/quest";
+import { getQuestFromToriiEntity } from "../../parser/torii-client/quest";
 
 export const getQuestFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
   const query: Query = {

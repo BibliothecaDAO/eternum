@@ -22,7 +22,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
+import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii";
 import { useComponentValue } from "@dojoengine/react";
 import { AlertCircleIcon, ArrowUpRightIcon, ChevronDownIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 

@@ -22,7 +22,7 @@ import {
   getExplorerFromToriiClient,
   getQuestFromToriiClient,
   getStructureFromToriiClient,
-} from "@bibliothecadao/torii-client";
+} from "@bibliothecadao/torii";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";

@@ -1,7 +1,7 @@
 {
-  "name": "@bibliothecadao/torii-client",
+  "name": "@bibliothecadao/torii",
   "version": "0.2.0",
-  "description": "Torii Client Queries for Eternum",
+  "description": "Torii Client and SQL Queries for Eternum",
   "license": "MIT",
   "author": "Loaf",
   "type": "module",

@@ -1,7 +1,7 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchOtherStructures } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -159,7 +159,7 @@ export const AutomationTransferTable: React.FC = () => {
   // Use React Query to fetch other structures with caching
   const { data: otherStructures = [] } = useQuery<EntityIdFormat[]>({
     queryKey: ["otherStructures", account.address],
-    queryFn: () => fetchOtherStructures(account.address),
+    queryFn: () => sqlApi.fetchOtherStructures(account.address),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
   });

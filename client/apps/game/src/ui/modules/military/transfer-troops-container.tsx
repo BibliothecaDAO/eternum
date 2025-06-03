@@ -11,7 +11,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
   DEFENSE_NAMES,
   getDirectionBetweenAdjacentHexes,
