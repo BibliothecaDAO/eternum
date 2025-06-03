@@ -693,7 +693,7 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col md:flex-row overflow-hidden bg-black/30 z-100 pointer-events-auto transition-all duration-300 ${
+      className={`flex flex-col md:flex-row overflow-hidden bg-black/30 hover:bg-black/60 z-100 pointer-events-auto transition-all duration-300 ${
         isExpanded ? "h-[600px]" : "h-72"
       } ${isInputFocused ? "bg-black/60" : "bg-black/20"}`}
     >
