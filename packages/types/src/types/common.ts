@@ -584,8 +584,6 @@ export interface PlayerInfo {
   address: bigint;
   name: string;
   points: number;
-  percentage: number;
-  lords: number;
   realms: number;
   mines: number;
   hyperstructures: number;

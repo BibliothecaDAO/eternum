@@ -14,7 +14,6 @@ import { Tabs } from "@/ui/elements/tab";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { Shapes, Users } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PlayerId } from "./player-id";
@@ -23,10 +22,7 @@ import { useSocialStore } from "./socialStore";
 export const Social = () => {
   const {
     account: { account },
-    setup: {
-      components,
-      systemCalls: { claim_construction_points, claim_share_points },
-    },
+    setup: { components },
   } = useDojo();
 
   const selectedTab = useSocialStore((state) => state.selectedTab);
@@ -37,9 +33,6 @@ export const Social = () => {
   const playerInfo = useSocialStore((state) => state.playerInfo);
   const setSelectedTab = useSocialStore((state) => state.setSelectedTab);
   const setIsExpanded = useSocialStore((state) => state.setIsExpanded);
-  const setIsRegisterLoading = useSocialStore((state) => state.setIsRegisterLoading);
-  const setIsSharePointsLoading = useSocialStore((state) => state.setIsSharePointsLoading);
-  const setIsUpdatePointsLoading = useSocialStore((state) => state.setIsUpdatePointsLoading);
   const setSelectedGuild = useSocialStore((state) => state.setSelectedGuild);
   const setSelectedPlayer = useSocialStore((state) => state.setSelectedPlayer);
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
@@ -104,49 +97,6 @@ export const Social = () => {
 
     loadPlayerData();
   }, [players, account.address, playersByRank, components, setPlayerInfo]);
-
-  const hyperstructuresEntityIds = useMemo(() => {
-    return Array.from(runQuery([Has(components.Hyperstructure)]))
-      .map((entity) => getComponentValue(components.Hyperstructure, entity))
-      .filter((hyperstructure) => hyperstructure !== undefined)
-      .map((hyperstructure) => hyperstructure.hyperstructure_id);
-  }, [components.Hyperstructure]);
-
-  const handleUpdatePoints = async () => {
-    setIsUpdatePointsLoading(true);
-    LeaderboardManager.instance(components).updatePoints();
-    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
-    setIsUpdatePointsLoading(false);
-  };
-
-  const claimConstructionPoints = async () => {
-    setIsRegisterLoading(true);
-    try {
-      await claim_construction_points({
-        signer: account,
-        hyperstructure_ids: hyperstructuresEntityIds,
-        player: ContractAddress(account.address),
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsRegisterLoading(false);
-    }
-  };
-
-  const claimSharePoints = async () => {
-    setIsSharePointsLoading(true);
-    try {
-      await claim_share_points({
-        signer: account,
-        hyperstructure_ids: hyperstructuresEntityIds,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSharePointsLoading(false);
-    }
-  };
 
   const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {
@@ -231,32 +181,6 @@ export const Social = () => {
               </Tabs.Tab>
             ))}
           </Tabs.List>
-
-          {/* <div className="flex justify-center gap-4 mt-1 mb-3 px-4">
-            <Button
-              isLoading={isRegisterLoading || isSharePointsLoading}
-              variant="gold"
-              onClick={() => {
-                claimConstructionPoints();
-                claimSharePoints();
-              }}
-              className="flex-1 flex justify-center items-center py-2"
-            >
-              Claim All Points
-            </Button>
-
-            <Button
-              isLoading={isUpdatePointsLoading}
-              variant="secondary"
-              onClick={handleUpdatePoints}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw size={14} />
-              Update
-            </Button>
-
-            <EndSeasonButton className="flex items-center" />
-          </div> */}
 
           <Tabs.Panels className="overflow-hidden flex-1">
             {tabs.map((tab) => (

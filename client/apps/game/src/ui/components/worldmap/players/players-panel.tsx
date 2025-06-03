@@ -111,15 +111,6 @@ export const PlayersPanel = ({
     }).finally(() => setIsLoading(false));
   };
 
-  const removePlayerFromWhitelist = (address: ContractAddress) => {
-    setIsLoading(true);
-    update_whitelist({
-      address,
-      whitelist: false,
-      signer: account,
-    }).finally(() => setIsLoading(false));
-  };
-
   const handleSearch = () => {
     setSearchTerm(inputValue);
   };
@@ -165,9 +156,7 @@ export const PlayersPanel = ({
         <PlayerList
           players={filteredPlayers}
           viewPlayerInfo={viewPlayerInfo}
-          isGuildMaster={userGuild?.isOwner ?? false}
           whitelistPlayer={whitelistPlayer}
-          removePlayerFromWhitelist={removePlayerFromWhitelist}
           isLoading={isLoading}
         />
       </div>
