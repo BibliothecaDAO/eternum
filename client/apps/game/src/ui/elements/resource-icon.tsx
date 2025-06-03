@@ -73,6 +73,7 @@ const Components: { [key: string]: Resource } = Object.freeze({
   PaladinT2: { component: <img src={`/images/resources/${ResourcesIds.PaladinT2}.png`} />, name: "Paladin T2" },
   PaladinT3: { component: <img src={`/images/resources/${ResourcesIds.PaladinT3}.png`} />, name: "Paladin T3" },
   Lords: { component: <img src={`/images/resources/${ResourcesIds.Lords}.png`} />, name: "Lords" },
+  Strk: { component: <img src={`/images/logos/strk.png`} className="object-contain scale-75" />, name: "Strk" },
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
 

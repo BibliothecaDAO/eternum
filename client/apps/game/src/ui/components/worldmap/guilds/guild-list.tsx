@@ -9,7 +9,10 @@ import { Globe, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface GuildCustom extends GuildInfo {
-  lords: number;
+  prize: {
+    lords: number;
+    strk: number;
+  };
   realms: number;
   mines: number;
   hyperstructures: number;
@@ -30,7 +33,7 @@ export const GuildListHeader = ({
       { label: "Rank", sortKey: "rank", className: "col-span-1 text-center" },
       { label: "Name", sortKey: "name", className: "col-span-2" },
       { label: "Members", sortKey: "memberCount", className: "col-span-2 text-center" },
-      { label: "Structures", sortKey: "structures", className: "col-span-3 text-center" },
+      { label: "Structures", sortKey: "structures", className: "col-span-2 text-center" },
       { label: "Points", sortKey: "points", className: "col-span-2 text-center" },
       {
         label: (
@@ -41,6 +44,16 @@ export const GuildListHeader = ({
         ),
         sortKey: "lords",
         className: "col-span-2 text-center",
+      },
+      {
+        label: (
+          <div className="flex flex-row w-full gap-1 items-center justify-center">
+            STRK
+            <ResourceIcon size="md" resource={"Strk"} className="w-5 h-5" />
+          </div>
+        ),
+        sortKey: "strk",
+        className: "col-span-1 text-center",
       },
     ];
   }, []);
@@ -93,30 +106,19 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
           <p className="truncate font-semibold text-gold/90">{guild.name}</p>
         </div>
         <p className="col-span-2 text-center font-medium px-1">{guild.memberCount}</p>
-        <p className="col-span-3 text-center font-medium px-1">
+        <p className="col-span-2 text-center font-medium px-1">
           {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
         </p>
         <p className="col-span-2 font-medium text-amber-200/90 px-1 text-center">{currencyIntlFormat(guild.points)}</p>
         <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1 justify-center">
-          {currencyIntlFormat(guild.lords)}
+          {currencyIntlFormat(guild.prize.lords)}
           <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" withTooltip={false} />
         </div>
+        <div className="col-span-1 font-medium text-gold/90 px-1 flex items-center gap-1 justify-center">
+          {currencyIntlFormat(guild.prize.strk)}
+          <ResourceIcon size="md" resource={"Strk"} className="w-4 h-4" withTooltip={false} />
+        </div>
       </div>
-
-      {/* <div className="flex items-center pr-2 min-w-[28px] justify-center">
-        {isHovered && !guild.isMember && (
-          <MessageCircle
-            className="w-4 h-4 text-gold/70 hover:text-gold cursor-pointer transition-colors"
-            onMouseEnter={() =>
-              setTooltip({
-                content: <div className="text-gold">Message tribe</div>,
-                position: "top",
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-          />
-        )}
-      </div> */}
     </div>
   );
 };
