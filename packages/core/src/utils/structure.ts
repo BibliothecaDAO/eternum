@@ -12,7 +12,6 @@ import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager } from "../managers";
-import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 
 export const getStructureAtPosition = (
@@ -48,13 +47,10 @@ const getStructureInfo = (
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
 
-  const name = getEntityName(structure.entity_id, components);
-
   return {
     entityId: structure.entity_id,
     structure,
     owner: structure.owner,
-    name,
     position: { x: structure.base.coord_x, y: structure.base.coord_y },
     isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,

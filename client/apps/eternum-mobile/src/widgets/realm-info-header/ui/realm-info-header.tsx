@@ -6,8 +6,9 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { FELT_CENTER, getLevelName, ResourcesIds } from "@bibliothecadao/types";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { FELT_CENTER, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { ChevronDown, Copy } from "lucide-react";
 import { useMemo } from "react";
 
@@ -78,7 +79,7 @@ export const RealmInfoHeader = () => {
               }}
             >
               <div className="flex items-center gap-2 text-4xl">
-                <span>{selectedRealm?.name || "Select Structure"}</span>
+                <span>{selectedRealm ? getStructureName(selectedRealm?.structure).name : "Select Structure"}</span>
                 <ChevronDown className="h-6 w-6" />
               </div>
             </SelectStructureDrawer>
