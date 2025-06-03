@@ -1,7 +1,6 @@
 import { type ClientComponents, type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getGuild } from "./guild";
-import { calculatePlayerSharePercentage } from "./leaderboard";
 
 export const getPlayerInfo = (
   players: Player[],
@@ -20,7 +19,6 @@ export const getPlayerInfo = (
   components: ClientComponents,
 ): PlayerInfo[] => {
   const { GuildMember, Structure } = components;
-  const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
   const playerInfo = players
     .map((player) => {
@@ -54,8 +52,6 @@ export const getPlayerInfo = (
       address: player.address,
       points,
       rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
-      percentage: calculatePlayerSharePercentage(points, totalPoints),
-      lords: 0,
       realms: playerStructureCounts.get(player.address)?.realms ?? 0,
       mines: playerStructureCounts.get(player.address)?.mines ?? 0,
       hyperstructures: playerStructureCounts.get(player.address)?.hyperstructures ?? 0,

@@ -1,12 +1,11 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { User } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -21,20 +20,11 @@ export interface PlayerCustom extends PlayerInfo {
 interface PlayerListProps {
   players: PlayerCustom[];
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
-  isGuildMaster: boolean;
   whitelistPlayer: (address: ContractAddress) => void;
-  removePlayerFromWhitelist: (address: ContractAddress) => void;
   isLoading: boolean;
 }
 
-export const PlayerList = ({
-  players,
-  viewPlayerInfo,
-  isGuildMaster,
-  whitelistPlayer,
-  removePlayerFromWhitelist,
-  isLoading,
-}: PlayerListProps) => {
+export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
   const {
     setup: { components },
   } = useDojo();
@@ -115,9 +105,7 @@ export const PlayerList = ({
               key={player.address}
               player={player}
               onClick={() => viewPlayerInfo(ContractAddress(player.address))}
-              isGuildMaster={isGuildMaster}
               whitelistPlayer={whitelistPlayer}
-              removePlayerFromWhitelist={removePlayerFromWhitelist}
               isLoading={isLoading}
             />
           ))
@@ -147,16 +135,6 @@ const PlayerListHeader = ({
       { label: "Tribe", sortKey: "guild.name", className: "col-span-2" },
       { label: "Structures", sortKey: "structures", className: "col-span-3 text-center" },
       { label: "Points", sortKey: "points", className: "col-span-2 text-center" },
-      {
-        label: (
-          <div className="flex flex-row w-full gap-1 items-center justify-center">
-            LORDS
-            <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />
-          </div>
-        ),
-        sortKey: "lords",
-        className: "col-span-2 text-center",
-      },
     ];
   }, []);
 
@@ -187,9 +165,7 @@ const PlayerListHeader = ({
 const PlayerRow = ({
   player,
   onClick,
-  isGuildMaster,
   whitelistPlayer,
-  removePlayerFromWhitelist,
   isLoading,
 }: {
   player: PlayerCustom & {
@@ -200,16 +176,10 @@ const PlayerRow = ({
     realTimeRank: number;
   };
   onClick: () => void;
-  isGuildMaster: boolean;
   whitelistPlayer: (address: ContractAddress) => void;
-  removePlayerFromWhitelist: (address: ContractAddress) => void;
   isLoading: boolean;
 }) => {
-  const {
-    setup: { components },
-  } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const [isHovered, setIsHovered] = useState(false);
 
   // Use pre-calculated values from parent component
   const { totalPoints, hasUnregisteredShareholderPoints, realTimeRank } = player;
@@ -220,8 +190,6 @@ const PlayerRow = ({
         "bg-gold/30 hover:bg-blueish/40  border border-gold/40": player.isUser,
         "hover:bg-gold/10 border border-transparent hover:border-gold/20": !player.isUser,
       })}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="grid grid-cols-12 w-full py-2 cursor-pointer items-center" onClick={onClick}>
         <p
@@ -272,10 +240,6 @@ const PlayerRow = ({
             </span>
           )}
         </div>
-        <div className="col-span-2 text-center font-medium flex items-center justify-center gap-1">
-          {currencyIntlFormat(player.lords)}
-          <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" withTooltip={false} />
-        </div>
       </div>
 
       <div className="flex items-center pr-2 min-w-[28px] justify-center">
@@ -298,59 +262,6 @@ const PlayerRow = ({
             onMouseLeave={() => setTooltip(null)}
           />
         )}
-        {/* {isGuildMaster && !player.isUser ? (
-          player.isInvited ? (
-            <Trash
-              onClick={() => {
-                removePlayerFromWhitelist(player.address);
-                setTooltip(null);
-              }}
-              className={clsx("w-5 h-5 fill-red-400/90 hover:fill-red-500/90 transition-all duration-200", {
-                "animate-pulse opacity-50 pointer-events-none": isLoading,
-                "cursor-pointer": !isLoading,
-              })}
-              onMouseEnter={() =>
-                setTooltip({
-                  content: <div className="text-red-400">Revoke tribe invitation</div>,
-                  position: "top",
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            />
-          ) : (
-            <Invite
-              onClick={() => {
-                whitelistPlayer(player.address);
-                setTooltip(null);
-              }}
-              className={clsx("w-5 h-5 fill-gold hover:fill-amber-400 transition-all duration-200", {
-                "animate-pulse opacity-50 pointer-events-none": isLoading,
-                "cursor-pointer": !isLoading,
-              })}
-              onMouseEnter={() =>
-                setTooltip({
-                  content: <div className="text-gold">Invite to tribe</div>,
-                  position: "top",
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            />
-          )
-        ) : (
-          isHovered &&
-          !player.isUser && (
-            <MessageCircle
-              className="w-4 h-4 text-gold/70 hover:text-gold cursor-pointer transition-colors"
-              onMouseEnter={() =>
-                setTooltip({
-                  content: <div className="text-gold">Message player</div>,
-                  position: "top",
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            />
-          )
-        )} */}
       </div>
     </div>
   );
