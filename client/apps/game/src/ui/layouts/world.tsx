@@ -106,9 +106,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const minigameStore = useMinigameStore.getState();
 
-  // uses recs so needs to be synced first
-  const playerStructures = useUIStore((state) => state.playerStructures);
-
   const { data: minigames } = useMiniGames({});
 
   const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
@@ -178,11 +175,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             </BottomRightContainer>
 
             <RightMiddleContainer>
-              <RightNavigationModule structures={playerStructures} />
+              <RightNavigationModule />
             </RightMiddleContainer>
 
             <TopLeftContainer>
-              <TopLeftNavigation structures={playerStructures} />
+              <TopLeftNavigation />
             </TopLeftContainer>
           </div>
 

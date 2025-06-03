@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { configManager, getRealmNameById, unpackValue } from "@bibliothecadao/eternum";
+import { configManager, getStructureName, unpackValue } from "@bibliothecadao/eternum";
 import { useAllRealms } from "@bibliothecadao/react";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -73,7 +73,7 @@ export const RealmProduction = () => {
       <div className="p-5 grid grid-cols-5 gap-4">
         {filteredRealms.map((realm, index) => (
           <div key={index} className="mb-5 panel-wood p-3 hover:opacity-70" onClick={() => handleRealmClick(realm)}>
-            <h5>{getRealmNameById(realm.metadata.realm_id)}</h5>
+            <h5>{getStructureName(realm).name}</h5>
 
             <div className="flex flex-row flex-wrap">
               {realm.resourcesProduced.map((resourceId) => (
