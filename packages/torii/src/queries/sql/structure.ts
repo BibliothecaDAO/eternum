@@ -1,6 +1,6 @@
 export const STRUCTURE_QUERIES = {
   STRUCTURES_BY_OWNER: `
-    SELECT \`base.coord_x\`, \`base.coord_y\`, entity_id, owner 
+    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
     WHERE owner == '{owner}';
   `,
@@ -12,7 +12,7 @@ export const STRUCTURE_QUERIES = {
   `,
 
   REALM_SETTLEMENTS: `
-    SELECT \`base.coord_x\`, \`base.coord_y\`, entity_id, owner 
+    SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
     WHERE category == 1;
   `,
@@ -34,6 +34,7 @@ export const STRUCTURE_QUERIES = {
         resources_packed
     FROM \`s1_eternum-Structure\`
     WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
+    LIMIT 1;
   `,
 
   PLAYER_STRUCTURES: `
@@ -49,6 +50,27 @@ export const STRUCTURE_QUERIES = {
     FROM \`s1_eternum-Structure\`
     WHERE owner = '{owner}'
     ORDER BY category, entity_id;
+  `,
+
+  FIRST_STRUCTURE: `
+    SELECT 
+        entity_id,
+        owner,
+        \`base.coord_x\` as coord_x,
+        \`base.coord_y\` as coord_y
+    FROM \`s1_eternum-Structure\`
+    LIMIT 1;
+  `,
+
+  SURROUNDING_WONDER_BONUS: `
+    SELECT entity_id
+    FROM \`s1_eternum-Structure\`
+    WHERE \`base.coord_x\` >= {minX} 
+      AND \`base.coord_x\` <= {maxX}
+      AND \`base.coord_y\` >= {minY} 
+      AND \`base.coord_y\` <= {maxY}
+      AND \`metadata.has_wonder\` = true
+    LIMIT 1;
   `,
 
   HYPERSTRUCTURES: `

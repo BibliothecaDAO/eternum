@@ -1,9 +1,9 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { currencyFormat } from "../../utils/utils";
 
-export const QuestReward = ({ quest }: { quest: ComponentValue<ClientComponents["QuestTile"]["schema"]> }) => {
+export const QuestReward = ({ quest }: { quest: QuestTileData }) => {
   if (!quest) return null;
 
   const reward = quest?.amount ?? 0;

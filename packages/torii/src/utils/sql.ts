@@ -37,14 +37,57 @@ export function buildApiUrl(baseUrl: string, query: string): string {
 }
 
 /**
- * Generic function to handle API responses with error checking
+ * Generic function to handle SQL API responses with error checking.
+ * SQL queries always return arrays, even for single row results.
+ *
+ * @template T The type of items in the array
+ * @param url The API URL to fetch from
+ * @param errorMessage Error message to throw if request fails
+ * @returns Promise resolving to an array of T items
+ * @throws Error if the request fails or response is not ok
  */
-export async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T> {
+export async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
   const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`${errorMessage}: ${response.statusText}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+
+  // Ensure the result is always an array (defensive programming)
+  if (!Array.isArray(result)) {
+    throw new Error(`${errorMessage}: Expected array response but got ${typeof result}`);
+  }
+
+  return result as T[];
+}
+
+/**
+ * Helper function to safely extract the first item from a SQL result array.
+ * Use this when you expect a single result from a SQL query.
+ *
+ * @template T The type of the item
+ * @param sqlResult Array result from SQL query
+ * @returns The first item or null if array is empty
+ */
+export function extractFirstOrNull<T>(sqlResult: T[]): T | null {
+  return sqlResult.length > 0 ? sqlResult[0] : null;
+}
+
+/**
+ * Helper function to safely extract the first item from a SQL result array.
+ * Use this when you expect a single result and want to throw if none found.
+ *
+ * @template T The type of the item
+ * @param sqlResult Array result from SQL query
+ * @param errorMessage Error message to throw if no items found
+ * @returns The first item
+ * @throws Error if array is empty
+ */
+export function extractFirstOrThrow<T>(sqlResult: T[], errorMessage: string): T {
+  if (sqlResult.length === 0) {
+    throw new Error(errorMessage);
+  }
+  return sqlResult[0];
 }

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { sqlApi } from "@/services/api";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
@@ -18,11 +19,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  getExplorerFromToriiClient,
-  getQuestFromToriiClient,
-  getStructureFromToriiClient,
-} from "@bibliothecadao/torii";
+import { getExplorerFromToriiClient, getStructureFromToriiClient, QuestTileData } from "@bibliothecadao/torii";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
@@ -351,9 +348,7 @@ const QuestInfo = memo(
       },
       network: { toriiClient },
     } = useDojo();
-    const [questTileEntity, setQuestTileEntity] = useState<
-      ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
-    >(undefined);
+    const [questTileEntity, setQuestTileEntity] = useState<QuestTileData | undefined>(undefined);
     const questCoords = path[path.length - 1].hex;
 
     useEffect(() => {
@@ -362,7 +357,7 @@ const QuestInfo = memo(
           Tile,
           getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
         );
-        const result = await getQuestFromToriiClient(toriiClient, targetEntity?.occupier_id || 0);
+        const result = await sqlApi.fetchQuest(targetEntity?.occupier_id || 0);
         if (result) {
           setQuestTileEntity(result);
         }

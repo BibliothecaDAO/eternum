@@ -23,7 +23,7 @@ export const useSyncPlayerStructures = () => {
         setFetchedStructures(
           structures.map((s) => ({
             entityId: s.entity_id,
-            position: { col: s["base.coord_x"], row: s["base.coord_y"] },
+            position: { col: s.coord_x, row: s.coord_y },
           })),
         );
       });

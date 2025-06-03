@@ -5,7 +5,7 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, ID, Resource } from "@bibliothecadao/types";
+import { ID, Resource } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const TRADES_PER_PAGE = 25;
@@ -14,9 +14,9 @@ export type TradeEvent = {
   type: EventType;
   event: {
     takerId: ID;
-    takerAddress: ContractAddress;
+    takerAddress: string;
     makerId: ID;
-    makerAddress: ContractAddress;
+    makerAddress: string;
     isYours: boolean;
     resourceGiven: Resource;
     resourceTaken: Resource;

@@ -1,9 +1,10 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
+import { sqlApi } from "@/services/api";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getQuestFromToriiClient } from "@bibliothecadao/torii";
-import { ClientComponents, ID } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { QuestReward } from "../../resources/quest-reward";
@@ -17,14 +18,13 @@ interface QuestEntityDetailProps {
 export const QuestEntityDetail = ({ questEntityId, compact = false, className }: QuestEntityDetailProps) => {
   const {
     setup: { components },
-    network: { toriiClient },
   } = useDojo();
 
-  const [quest, setQuest] = useState<ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined>(undefined);
+  const [quest, setQuest] = useState<QuestTileData | undefined>(undefined);
 
   useEffect(() => {
     const fetchQuest = async () => {
-      const result = await getQuestFromToriiClient(toriiClient, questEntityId);
+      const result = await sqlApi.fetchQuest(questEntityId);
       if (result) {
         setQuest(result);
       }

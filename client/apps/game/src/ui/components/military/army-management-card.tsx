@@ -1,3 +1,4 @@
+import { sqlApi } from "@/services/api";
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
@@ -16,7 +17,6 @@ import {
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getTilesFromToriiClient } from "@bibliothecadao/torii";
 import {
   ArmyInfo,
   Direction,
@@ -83,7 +83,6 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
 
 export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardSlot, onCancel }: ArmyCreateProps) => {
   const {
-    network: { toriiClient },
     setup: { components },
     account: { account },
   } = useDojo();
@@ -122,10 +121,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
       if (structure) {
         const coords = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
-        const tiles = await getTilesFromToriiClient(
-          toriiClient,
-          coords.map((coord) => ({ col: coord.col, row: coord.row })),
-        );
+        const tiles = await sqlApi.fetchTilesByCoords(coords.map((coord) => ({ col: coord.col, row: coord.row })));
         const freeTiles = tiles.filter((tile) => tile.occupier_id === 0);
         const freeDirections = freeTiles.map((tile) =>
           getDirectionBetweenAdjacentHexes(

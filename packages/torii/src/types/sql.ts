@@ -1,11 +1,11 @@
-import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
+import { Direction, HexPosition, ID } from "@bibliothecadao/types";
 
 // API response types
 export interface StructureLocation {
-  "base.coord_x": number;
-  "base.coord_y": number;
+  coord_x: number;
+  coord_y: number;
   entity_id: number;
-  owner: ContractAddress;
+  owner: string;
 }
 
 export interface TradeEvent {
@@ -13,8 +13,8 @@ export interface TradeEvent {
   event: {
     takerId: number;
     makerId: number;
-    makerAddress: bigint;
-    takerAddress: ContractAddress;
+    makerAddress: string;
+    takerAddress: string;
     isYours: boolean;
     resourceGiven: Resource;
     resourceTaken: Resource;
@@ -42,12 +42,12 @@ export interface RealmVillageSlot {
 }
 
 export interface TokenTransfer {
-  to_address: ContractAddress;
-  contract_address: ContractAddress;
+  to_address: string;
+  contract_address: string;
   token_id: string; // Assuming token_id might be large or non-numeric
   amount: string; // Assuming amount might be large
   executed_at: string; // ISO date string or similar
-  from_address: ContractAddress; // Added field
+  from_address: string; // Added field
   name: string;
   symbol: string;
 }
@@ -91,7 +91,7 @@ export interface StructureDetails {
   internal_created_at: string; // ISO date string or similar
   internal_updated_at: string; // ISO date string or similar
   resources_packed: string; // Assuming this is a packed format, represented as string initially
-  occupier_id: ContractAddress; // Added owner field aliased as occupier_id
+  occupier_id: ID; // Added owner field aliased as occupier_id
 }
 
 export interface Hyperstructure {
@@ -123,7 +123,78 @@ export interface SwapEventResponse {
   resource_price: string;
   buy: number;
   timestamp: string;
-  owner: ContractAddress;
+  owner: string;
+}
+
+// New types for torii-client functionality
+export interface QuestTileData {
+  id: number;
+  game_address: string;
+  coord_x: number;
+  coord_y: number;
+  level: number;
+  resource_type: number;
+  amount: string;
+  capacity: number;
+  participant_count: number;
+}
+
+export interface ExplorerData {
+  explorer_id: number;
+  owner: ID;
+  troop_category: number;
+  troop_tier: number;
+  troop_count: string;
+  max_stamina: string;
+  current_stamina: string;
+  last_refill_tick: string;
+  coord_x: number;
+  coord_y: number;
+  resource_id?: number;
+  resource_amount?: string;
+}
+
+export interface StructureWithResources {
+  entity_id: number;
+  owner: string;
+  "base.coord_x": number;
+  "base.coord_y": number;
+  "base.category": number;
+  "base.level": number;
+  "base.created_at": number;
+  "metadata.realm_id": number | null;
+  category: number;
+}
+
+export interface SimpleStructure {
+  entity_id: number;
+  owner: string;
+  "base.coord_x": number;
+  "base.coord_y": number;
+}
+
+export interface VillageSlotResult {
+  realmId: number;
+  entityId: number;
+  hasSlots: boolean;
+  availableSlots: VillageSlot[];
+  position: {
+    col: number;
+    row: number;
+  };
+}
+
+export interface VillageSlot {
+  value: Direction;
+  label: string;
+  coord: {
+    col: number;
+    row: number;
+  };
+}
+
+export interface AddressName {
+  name: string;
 }
 
 // Raw response types for queries that need transformation

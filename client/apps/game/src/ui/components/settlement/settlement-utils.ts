@@ -116,8 +116,8 @@ export const getOccupiedLocations = async (
   try {
     const settlements = await sqlApi.fetchRealmSettlements();
     const realmPositions = settlements.map((entity) => {
-      const x = entity["base.coord_x"];
-      const y = entity["base.coord_y"];
+      const x = entity.coord_x;
+      const y = entity.coord_y;
 
       // Use the improved reverse calculation function
       const location = locations_map.get(`${x},${y}`);
