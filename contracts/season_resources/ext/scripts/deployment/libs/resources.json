@@ -124,15 +124,45 @@
     "name": "Knight",
     "symbol": "KNIGHT"
   },
+  "KNIGHTT2": {
+    "id": 27,
+    "name": "Knight2",
+    "symbol": "KNIGHT2"
+  },
+  "KNIGHTT3": {
+    "id": 28,
+    "name": "Knight3",
+    "symbol": "KNIGHT3"
+  },
   "CROSSBOWMAN": {
     "id": 29,
     "name": "Crossbowman",
     "symbol": "CROSSBOWMAN"
   },
+  "CROSSBOWMANT2": {
+    "id": 30,
+    "name": "Crossbowman2",
+    "symbol": "CROSSBOWMAN2"
+  },
+  "CROSSBOWMANT3": {
+    "id": 31,
+    "name": "Crossbowman3",
+    "symbol": "CROSSBOWMAN3"
+  },
   "PALADIN": {
     "id": 32,
     "name": "Paladin",
     "symbol": "PALADIN"
+  },
+  "PALADINT2": {
+    "id": 33,
+    "name": "Paladin2",
+    "symbol": "PALADIN2"
+  },
+  "PALADINT3": {
+    "id": 34,
+    "name": "Paladin3",
+    "symbol": "PALADIN3"
   },
   "WHEAT": {
     "id": 35,
