@@ -267,7 +267,7 @@ export class SqlApi {
   }
 
   /**
-   * Fetch season ended information from the SQL database.
+   * Fetch season ended info from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
   async fetchSeasonEnded(): Promise<SeasonEnded | null> {
