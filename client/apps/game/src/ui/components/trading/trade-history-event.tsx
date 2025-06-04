@@ -3,7 +3,7 @@ import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { Resource, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
 import { TradeEvent } from "./market-trading-history";
 
 export enum EventType {
@@ -37,7 +37,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   }
 
   const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
-  const taker = getAddressName(trade.event.takerAddress, components);
+  const taker = getAddressName(ContractAddress(trade.event.takerAddress), components);
   const relativeTime = getRelativeTimeString(trade.event.eventTime);
   const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 

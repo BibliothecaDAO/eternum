@@ -1,6 +1,6 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
-import { PlayerStructure, fetchPlayerStructures } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
@@ -17,6 +17,7 @@ import {
   unpackValue,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { PlayerStructure } from "@bibliothecadao/torii";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -90,7 +91,7 @@ export const PlayerId = ({
       setError(null);
       setPlayerStructures([]); // Reset structures immediately when starting new fetch
       try {
-        const structures = await fetchPlayerStructures(toHexString(selectedPlayer));
+        const structures = await sqlApi.fetchPlayerStructures(toHexString(selectedPlayer));
         setPlayerStructures(structures);
       } catch (err) {
         console.error("Failed to fetch player structures:", err);

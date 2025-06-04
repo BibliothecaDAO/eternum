@@ -1,4 +1,4 @@
-import { fetchRealmSettlements } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
 import { Coord } from "@bibliothecadao/eternum";
 import {
@@ -111,14 +111,13 @@ export function generateSettlementLocations(
  */
 export const getOccupiedLocations = async (
   playerAddress: ContractAddress,
-  components: ClientComponents,
   locations_map: Map<string, { side: number; layer: number; point: number }>,
 ): Promise<SettlementLocation[]> => {
   try {
-    const settlements = await fetchRealmSettlements();
+    const settlements = await sqlApi.fetchRealmSettlements();
     const realmPositions = settlements.map((entity) => {
-      const x = entity["base.coord_x"];
-      const y = entity["base.coord_y"];
+      const x = entity.coord_x;
+      const y = entity.coord_y;
 
       // Use the improved reverse calculation function
       const location = locations_map.get(`${x},${y}`);

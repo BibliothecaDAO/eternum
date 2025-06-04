@@ -1,5 +1,5 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { fetchStructuresByOwner } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUIStore } from "../store/use-ui-store";
@@ -19,11 +19,11 @@ export const useSyncPlayerStructures = () => {
 
   useEffect(() => {
     const fetchStructures = () => {
-      fetchStructuresByOwner(account.account.address).then((structures) => {
+      sqlApi.fetchStructuresByOwner(account.account.address).then((structures) => {
         setFetchedStructures(
           structures.map((s) => ({
             entityId: s.entity_id,
-            position: { col: s["base.coord_x"], row: s["base.coord_y"] },
+            position: { col: s.coord_x, row: s.coord_y },
           })),
         );
       });

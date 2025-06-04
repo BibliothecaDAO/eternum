@@ -4,9 +4,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
-import { env } from "../../../env";
+import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,

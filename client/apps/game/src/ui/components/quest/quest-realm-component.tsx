@@ -1,6 +1,7 @@
 import Button from "@/ui/elements/button";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { QuestTileData } from "@bibliothecadao/torii";
 import { ArmyInfo, ClientComponents, Structure } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { GameScore } from "metagame-sdk";
@@ -122,7 +123,7 @@ interface CurrentQuestProps {
   explorerHasEnoughCapacity: boolean;
   realmExplorerStartedQuest?: boolean;
   gameAddress: string;
-  questTile: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
+  questTile: QuestTileData | undefined;
 }
 
 export const CurrentQuest = ({

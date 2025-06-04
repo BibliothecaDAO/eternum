@@ -1,12 +1,13 @@
 import { useSyncQuest } from "@/hooks/helpers/use-sync";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
+import { sqlApi } from "@/services/api";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
-import { ClientComponents, ID } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useOwnedGamesWithScores } from "metagame-sdk";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { InfoContainer } from "./info-container";
@@ -35,9 +36,7 @@ export const QuestModal = ({
     network: { toriiClient },
   } = useDojo();
   const [activeTab, setActiveTab] = useState<ModalTab>(ModalTab.Quest);
-  const [questTileEntity, setQuestTileEntity] = useState<
-    ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined
-  >(undefined);
+  const [questTileEntity, setQuestTileEntity] = useState<QuestTileData | undefined>(undefined);
   const [loadingQuestTile, setLoadingQuestTile] = useState(true);
   const setScores = useMinigameStore((state) => state.setScores);
 
@@ -46,7 +45,7 @@ export const QuestModal = ({
   useEffect(() => {
     const fetchQuest = async () => {
       const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-      const result = await getQuestFromToriiClient(toriiClient, targetEntity?.occupier_id || 0);
+      const result = await sqlApi.fetchQuest(targetEntity?.occupier_id || 0);
       if (result) {
         setQuestTileEntity(result);
       }

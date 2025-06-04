@@ -7,9 +7,10 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getArmy, getRemainingCapacityInKg, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGetQuestForExplorer } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useSubscribeScores } from "metagame-sdk";
 import { useMemo, useState } from "react";
@@ -22,7 +23,7 @@ export const QuestContainer = ({
 }: {
   explorerEntityId: ID;
   loadingQuests: boolean;
-  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
+  questTileEntity: QuestTileData | undefined;
 }) => {
   const {
     account: { account },

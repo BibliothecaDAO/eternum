@@ -1,7 +1,7 @@
+import { sqlApi } from "@/services/api";
 import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
-import { fetchGlobalStructureExplorerAndGuildDetails } from "../../services/api";
 
 export interface PlayerDataTransformed {
   explorerIds: string[];
@@ -60,7 +60,7 @@ export class PlayerDataStore {
   }
 
   private async fetchAndStoreData(): Promise<void> {
-    const result = await fetchGlobalStructureExplorerAndGuildDetails();
+    const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
     let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
       result.map((item) => {

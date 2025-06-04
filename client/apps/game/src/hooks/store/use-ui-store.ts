@@ -21,6 +21,8 @@ type TooltipType = {
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
+  seasonWinner: { address: ContractAddress; name: string; guildName: string } | null;
+  setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
   spectatorRealmEntityId: ID | null;
   setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
@@ -82,6 +84,9 @@ export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
     setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
+    seasonWinner: null,
+    setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
+      set({ seasonWinner: winner }),
     spectatorRealmEntityId: null,
     setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
