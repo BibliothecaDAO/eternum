@@ -24,7 +24,7 @@ function TradeLayout() {
 
   const location = useLocation();
   const isItemsTab = location.pathname === "/trade";
-
+  const isSeasonPass = collection === "season-passes";
   const activeOrders = totals?.[0]?.active_order_count ?? 0;
   const totalWeiStr = BigInt(totals?.[0]?.open_orders_total_wei ?? 0);
   const totalWei = formatUnits(totalWeiStr, 18);
@@ -59,11 +59,13 @@ function TradeLayout() {
           <div className="container mx-auto py-2">
             <Tabs defaultValue="items" className="w-full items-center flex justify-center">
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
-                <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                  <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
-                    Items
-                  </Link>
-                </TabsTrigger>
+                {!isSeasonPass && (
+                  <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
+                    <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
+                      Items
+                    </Link>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="activity" asChild>
                   <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
                     Activity
@@ -85,8 +87,7 @@ function TradeLayout() {
                   <h4 className="text-blue-800 dark:text-blue-300 font-medium text-base">Season Update</h4>
                 </div>
                 <p className="text-blue-700 dark:text-blue-400 text-base max-w-2xl mx-auto leading-relaxed">
-                  The current season is approaching its end. You can still play and collect achievements, but the game
-                  world will likely terminate within a week.
+                  The current season has ended and Season 1 Passes can no longer be used in Eternum.
                 </p>
               </div>
             </div>
