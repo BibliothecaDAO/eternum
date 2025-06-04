@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const formatTimeRemaining = (seconds: number): string => {
@@ -33,6 +34,7 @@ export const SeasonWinnerMessage = () => {
   }, [components]);
 
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -49,20 +51,29 @@ export const SeasonWinnerMessage = () => {
 
   const seasonWinner = useUIStore((state) => state.seasonWinner);
 
-  if (!seasonWinner) return null;
+  if (!seasonWinner || !isVisible) return null;
 
   return (
     <>
-      <div className="fixed left-1/2 transform -translate-x-1/2 z-50 w-[400px] md:w-[800px] top-[60px]">
-        <div className="my-4 py-4 px-6 border-4 border-gold-600/70 rounded-xl bg-slate-900/70 shadow-xl shadow-gold-500/20 text-center">
-          <div className="font-serif text-2xl md:text-3xl text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
-            the season is over.
+      <div className="fixed left-1/2 transform -translate-x-1/2 z-50 w-[360px] md:w-[500px] top-[20px] md:top-[40px]">
+        <div className="relative my-2 py-3 px-4 border border-gold-500/50 rounded-lg bg-slate-800/80 backdrop-blur-sm shadow-lg shadow-gold-500/10 text-center">
+          <button
+            onClick={() => setIsVisible(false)}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gold-300 transition-colors"
+            aria-label="Close message"
+          >
+            <X size={18} />
+          </button>
+          <div className="font-serif text-xl md:text-2xl text-amber-300 animate-pulse tracking-wide leading-snug uppercase">
+            Season Over!
             <br />
-            {seasonWinner.name} and the {seasonWinner.guildName} tribe have conquered eternum
+            <span className="text-lg md:text-xl">
+              {seasonWinner.name} &amp; the {seasonWinner.guildName} tribe conquered Eternum.
+            </span>
           </div>
-          <div className="mt-4 pt-4 border-t border-gold-600/30">
-            <div className="text-lg md:text-xl text-amber-300 font-semibold">Time remaining to bridge out:</div>
-            <div className="text-xl md:text-2xl text-red-400 font-bold mt-2">{formatTimeRemaining(timeRemaining)}</div>
+          <div className="mt-3 pt-3 border-t border-gold-600/20">
+            <div className="text-sm md:text-base text-amber-200 font-semibold">Time to bridge out:</div>
+            <div className="text-md md:text-lg text-red-400 font-bold mt-1">{formatTimeRemaining(timeRemaining)}</div>
           </div>
         </div>
       </div>
