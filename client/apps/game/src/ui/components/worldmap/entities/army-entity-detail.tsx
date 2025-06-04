@@ -3,7 +3,7 @@ import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getGuildFromPlayerAddress, getRealmNameById, StaminaManager } from "@bibliothecadao/eternum";
+import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -95,9 +95,7 @@ export const ArmyEntityDetail = memo(
         ? getAddressName(structure?.owner, components)
         : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
-      const structureOwnerName = structure?.metadata?.realm_id
-        ? getRealmNameById(structure.metadata.realm_id)
-        : structure?.entity_id.toString();
+      const structureOwnerName = structure ? getStructureName(structure).name : undefined;
 
       return {
         stamina,

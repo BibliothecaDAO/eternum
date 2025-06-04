@@ -88,7 +88,6 @@ export type HyperstructureInfo = {
   entity_id: ID;
   hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-  name: string;
   position: { x: number; y: number };
   owner: bigint;
   ownerName: string;
@@ -124,7 +123,6 @@ export type Structure = {
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   isMine: boolean;
   isMercenary: boolean;
-  name: string;
   category: StructureType;
   ownerName?: string;
   owner: ContractAddress;
@@ -184,7 +182,6 @@ export type PlayerStructure = {
   entityId: ID;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   position: Position;
-  name: string;
   category: StructureType;
   owner: ContractAddress;
 };
@@ -560,7 +557,6 @@ export interface RealmInfo {
   realmId: ID;
   entityId: ID;
   category: StructureType;
-  name: string;
   resources: ResourcesIds[];
   order: number;
   position: Position;
@@ -576,6 +572,7 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
 }
 
 export interface PlayerInfo {
@@ -584,8 +581,6 @@ export interface PlayerInfo {
   address: bigint;
   name: string;
   points: number;
-  percentage: number;
-  lords: number;
   realms: number;
   mines: number;
   hyperstructures: number;

@@ -1,20 +1,19 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { seasonPassAddress } from "@/config";
+import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
-import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
+import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
-import { ArrowRightLeft, Check, Plus } from "lucide-react"; // Import the icon
+import { ArrowRightLeft, Check, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-import { RealmDetailModal } from "./realm-detail-modal";
+import { TokenDetailModal } from "./token-detail-modal";
 
-interface SeasonPassCardProps {
-  pass: MergedNftData;
-  checkOwner?: boolean;
+interface TokenCardProps {
+  token: MergedNftData;
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
@@ -27,29 +26,22 @@ interface ListingDetails {
   expiration?: string;
 }
 
-const SEASON_PASS_COLLECTION_ID = 1;
-
-export const SeasonPassCard = ({
-  pass,
-  checkOwner = false,
-  isSelected = false,
-  onToggleSelection,
-  toggleNftSelection,
-}: SeasonPassCardProps) => {
-  const { token_id, metadata } = pass;
+export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
+  const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  const isOwner = pass.account_address === trimAddress(accountAddress);
-
+  const isOwner = token.account_address === trimAddress(accountAddress);
+  const collection = getCollectionByAddress(contract_address);
+  const collectionName = collection?.name;
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
-    if (!pass.expiration) return;
+    if (!token.expiration) return;
 
-    const expirationTime = Number(pass.expiration) * 1000;
+    const expirationTime = Number(token.expiration) * 1000;
     const updateCountdown = () => {
       const now = Date.now();
       const diff = expirationTime - now;
@@ -72,7 +64,7 @@ export const SeasonPassCard = ({
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [pass.expiration]);
+  }, [token.expiration]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,24 +78,12 @@ export const SeasonPassCard = ({
 
   const { attributes, name, image } = metadata ?? {};
 
-  // Prepare data for the modal (useMemo)
-  const modalData = useMemo(
-    () => ({
-      tokenId: token_id?.toString(),
-      contractAddress: seasonPassAddress,
-      name: name,
-      imageSrc: image || "",
-      attributes: attributes,
-    }),
-    [token_id, seasonPassAddress, name, image, attributes],
-  );
-
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && pass.best_price_hex !== null) {
+    if (token.expiration !== null && token.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, pass.best_price_hex]);
+  }, [token.expiration, token.best_price_hex]);
 
   return (
     <>
@@ -125,7 +105,7 @@ export const SeasonPassCard = ({
           )}
           <img
             src={image}
-            alt={name ?? "Season Pass"}
+            alt={name ?? "Token Image"}
             className={`w-full object-contain transition-all duration-200
               ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
           />
@@ -151,10 +131,10 @@ export const SeasonPassCard = ({
         <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <CardTitle className="items-center gap-2">
             <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-              Season 1 Pass
+              {collectionName}
             </div>
             <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{name || `Pass #${token_id}`}</h4>
+              <h4 className="text-xl truncate">{name || `#${token_id}`}</h4>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -185,7 +165,7 @@ export const SeasonPassCard = ({
             <div className="flex flex-col">
               {listingActive ? (
                 <div className="text-xl flex items-center gap-2 font-mono">
-                  {Number(formatUnits(BigInt(pass.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                  {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
                   <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
                 </div>
               ) : (
@@ -228,18 +208,20 @@ export const SeasonPassCard = ({
         </CardFooter>
       </Card>
 
-      <RealmDetailModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        realmData={pass}
-        isOwner={isOwner}
-        marketplaceActions={marketplaceActions}
-        collection_id={SEASON_PASS_COLLECTION_ID}
-        price={pass.best_price_hex ? BigInt(pass.best_price_hex) : undefined}
-        orderId={pass.order_id?.toString() ?? undefined}
-        isListed={pass.expiration !== null}
-        expiration={pass.expiration ? Number(pass.expiration) : undefined}
-      />
+      {collection?.id && (
+        <TokenDetailModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          tokenData={token}
+          isOwner={isOwner}
+          marketplaceActions={marketplaceActions}
+          collection_id={collection?.id}
+          price={token.best_price_hex ? BigInt(token.best_price_hex) : undefined}
+          orderId={token.order_id?.toString() ?? undefined}
+          isListed={token.expiration !== null}
+          expiration={token.expiration ? Number(token.expiration) : undefined}
+        />
+      )}
     </>
   );
 };

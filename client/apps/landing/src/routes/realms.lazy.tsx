@@ -13,31 +13,29 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { seasonPassAddress } from "@/config";
+import { realmsAddress } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
-import { displayAddress } from "@/lib/utils";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
+import { Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 
-export const Route = createLazyFileRoute("/season-passes")({
-  component: SeasonPasses,
+export const Route = createLazyFileRoute("/realms")({
+  component: RealmsRoute,
 });
 
 type ViewMode = "my" | "all";
 
-function SeasonPasses() {
+function RealmsRoute() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
-  const [controllerAddress] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("my");
 
   // --- Pagination State ---
@@ -47,11 +45,11 @@ function SeasonPasses() {
   const [seasonPassTokenBalanceQuery] = useSuspenseQueries({
     queries: [
       {
-        queryKey: ["seasonPassTokenBalance", address],
+        queryKey: ["realmsTokenBalance", address],
         queryFn: () =>
           address
             ? fetchTokenBalancesWithMetadata(
-                seasonPassAddress,
+                realmsAddress,
                 address /*, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE*/,
               )
             : null,
@@ -135,31 +133,17 @@ function SeasonPasses() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <>
-        {controllerAddress && (
-          <div className="text-xl py-4 flex items-center">
-            Minting to:{" "}
-            <Badge fontVariant="secondary" className="text-lg ml-4 py-1.5">
-              <img className="w-6 pr-2" src={connectors[2].icon as string} alt="Connector Icon" />
-              {displayAddress(controllerAddress)}
-            </Badge>
-          </div>
-        )}
-
         {/* Page Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">
-          {viewMode === "my" ? "Your Season Passes" : "All Season Passes"}
+          {viewMode === "my" ? "Your Realms" : "All Realms"}
         </h2>
         <p className="text-center text-muted-foreground mb-6">
-          {viewMode === "my" ? "View and manage your Season Pass NFTs." : "Browse all available Season Pass NFTs."}
+          {viewMode === "my" ? "View and manage your Realms NFTs." : "Browse all available Realms NFTs."}
         </p>
 
         {/* Filter UI */}
         <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
-          {isHeaderScrolled ? (
-            <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{"Your Season Passes"}</h4>
-          ) : (
-            <div></div>
-          )}
+          {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{"Your Realms"}</h4> : <div></div>}
 
           {/* Filter UI */}
           <div className="flex justify-end my-2 gap-4 px-4">
