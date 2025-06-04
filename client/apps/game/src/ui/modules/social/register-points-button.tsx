@@ -37,7 +37,9 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
 
   const hyperstructuresEntityIds = useMemo(() => {
     return hyperstructure_entities
-      .map((entity) => getComponentValue(components.Hyperstructure, entity)?.hyperstructure_id)
+      .map((entity) => getComponentValue(components.Hyperstructure, entity))
+      .filter((hyperstructure) => hyperstructure?.completed)
+      .map((hyperstructure) => hyperstructure?.hyperstructure_id)
       .filter((id) => id !== undefined);
   }, [hyperstructure_entities]);
 
