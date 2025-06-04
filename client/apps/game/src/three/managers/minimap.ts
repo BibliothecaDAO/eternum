@@ -680,8 +680,8 @@ class Minimap {
     this.hoveredHexCoords = { col, row };
 
     if (this.isDragging && this.lastMousePosition) {
-      const colShift = Math.round(event.clientX - this.lastMousePosition.x);
-      const rowShift = Math.round(event.clientY - this.lastMousePosition.y);
+      const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
+      const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
       this.mapCenter.col -= colShift;
       this.mapCenter.row -= rowShift;
 
