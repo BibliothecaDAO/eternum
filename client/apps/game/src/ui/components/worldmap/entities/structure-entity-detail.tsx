@@ -3,7 +3,7 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getRealmNameById,
+  getStructureName,
   getStructureTypeName,
   unpackValue,
 } from "@bibliothecadao/eternum";
@@ -13,7 +13,7 @@ import { Position } from "@/types/position";
 import { useChatStore } from "@/ui/modules/ws-chat/useChatStore";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
-import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
@@ -110,7 +110,7 @@ export const StructureEntityDetail = memo(
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-    const { openChat, selectDirectMessageRecipient, getUserIdByUsername } = useChatStore((state) => state.actions);
+    const { openChat, addTab, getUserIdByUsername } = useChatStore((state) => state.actions);
 
     const handleChatClick = () => {
       if (isMine) {
@@ -119,17 +119,17 @@ export const StructureEntityDetail = memo(
         const userId = getUserIdByUsername(addressName || "");
 
         if (userId) {
-          selectDirectMessageRecipient(userId);
+          addTab({
+            type: "direct",
+            name: addressName || "",
+            recipientId: userId,
+          });
         }
       }
     };
 
     const structureName = useMemo(() => {
-      if (structure?.base.category === StructureType.Realm) {
-        const realmName = getRealmNameById(structure?.metadata.realm_id);
-        return realmName;
-      }
-      return structure?.entity_id;
+      return structure ? getStructureName(structure).name : undefined;
     }, [structure]);
 
     const resourcesProduced = useMemo(() => {

@@ -1,10 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchAllTiles, type Tile } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { Position } from "@/types/position";
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
@@ -865,7 +865,7 @@ class Minimap {
   private async fetchTiles() {
     console.log("fetchTiles");
     try {
-      this.tiles = await fetchAllTiles().then((tiles) => {
+      this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
         return tiles.map((tile) => {
           const position = new Position({ x: tile.col, y: tile.row });
           const { x: col, y: row } = position.getNormalized();

@@ -1,8 +1,11 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/player-list";
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
+import { EndSeasonButton } from "@/ui/modules/social/end-season-button";
+import { RegisterPointsButton } from "@/ui/modules/social/register-points-button";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { getEntityName, getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, getStructureName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
@@ -31,6 +34,9 @@ export const PlayersPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const seasonWinner = useUIStore((state) => state.seasonWinner);
+
+  const isSeasonOver = Boolean(seasonWinner);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -53,8 +59,7 @@ export const PlayersPanel = ({
           const structure = getComponentValue(Structure, entityId);
           if (!structure) return undefined;
 
-          const structureName = getEntityName(structure.entity_id, components);
-          return structureName;
+          return getStructureName(structure).name;
         })
         .filter((structure): structure is string => structure !== undefined);
 
@@ -111,15 +116,6 @@ export const PlayersPanel = ({
     }).finally(() => setIsLoading(false));
   };
 
-  const removePlayerFromWhitelist = (address: ContractAddress) => {
-    setIsLoading(true);
-    update_whitelist({
-      address,
-      whitelist: false,
-      signer: account,
-    }).finally(() => setIsLoading(false));
-  };
-
   const handleSearch = () => {
     setSearchTerm(inputValue);
   };
@@ -153,21 +149,37 @@ export const PlayersPanel = ({
             </div>
           </div>
         )}
-        <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
-          <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed">
-            {" "}
-            SHOULD ANY LORD GATHER 9.6M POINTS, THEY GAIN THE ULTIMATE POWER TO <br></br> END THIS GAME
-          </p>
-        </div>
+        {!isSeasonOver ? (
+          <>
+            <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
+              <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
+                should any lord gather 9.6m points, they gain the ultimate power to <br /> end this game
+              </p>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <RegisterPointsButton className="flex-1" />
+              <EndSeasonButton className="flex-1" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
+              <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
+                the season is over. {seasonWinner?.name} and the {seasonWinner?.guildName} tribe have conquered eternum
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <RegisterPointsButton />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex-1 min-h-0">
         <PlayerList
           players={filteredPlayers}
           viewPlayerInfo={viewPlayerInfo}
-          isGuildMaster={userGuild?.isOwner ?? false}
           whitelistPlayer={whitelistPlayer}
-          removePlayerFromWhitelist={removePlayerFromWhitelist}
           isLoading={isLoading}
         />
       </div>

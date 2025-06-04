@@ -4,7 +4,7 @@ packages:
   - "client/apps/game"
   - "client/apps/balancing"
   - "client/apps/game-docs"
-  - "client/apps/torii-client"
+  - "client/apps/torii"
   - "client/apps/heavy-load"
   - "client/apps/eternum-mobile"
   - "config"

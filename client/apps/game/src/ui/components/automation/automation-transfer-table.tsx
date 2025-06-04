@@ -1,7 +1,7 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchOtherStructures } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -15,6 +15,7 @@ import {
   divideByPrecision,
   getAddressName,
   getBalance,
+  getEntityNameFromLocalStorage,
   getGuildFromPlayerAddress,
   getRealmNameById,
 } from "@bibliothecadao/eternum";
@@ -159,7 +160,7 @@ export const AutomationTransferTable: React.FC = () => {
   // Use React Query to fetch other structures with caching
   const { data: otherStructures = [] } = useQuery<EntityIdFormat[]>({
     queryKey: ["otherStructures", account.address],
-    queryFn: () => fetchOtherStructures(account.address),
+    queryFn: () => sqlApi.fetchOtherStructures(account.address),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
   });
@@ -364,13 +365,17 @@ export const AutomationTransferTable: React.FC = () => {
 
   const entitiesListWithAccountNames = useMemo(() => {
     return entitiesList.map(({ entities, name }) => ({
-      entities: entities.map((entity) => ({
-        ...entity,
-        accountName: getAddressName(ContractAddress(entity.owner), components),
-        name: entity.realmId
-          ? getRealmNameById(entity.realmId)
-          : `${StructureType[entity.category]} ${entity.entityId}`,
-      })),
+      entities: entities.map((entity) => {
+        const entityName =
+          getEntityNameFromLocalStorage(entity.entityId) ||
+          (entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`);
+
+        return {
+          ...entity,
+          accountName: getAddressName(ContractAddress(entity.owner), components),
+          name: entityName,
+        };
+      }),
       name,
       totalCount: entities.length, // Keep track of total count
     }));
@@ -379,13 +384,17 @@ export const AutomationTransferTable: React.FC = () => {
   // Create source entities list with account names (only player-owned)
   const sourceEntitiesListWithAccountNames = useMemo(() => {
     return sourceEntitiesList.map(({ entities, name }) => ({
-      entities: entities.map((entity) => ({
-        ...entity,
-        accountName: getAddressName(ContractAddress(entity.owner), components),
-        name: entity.realmId
-          ? getRealmNameById(entity.realmId)
-          : `${StructureType[entity.category]} ${entity.entityId}`,
-      })),
+      entities: entities.map((entity) => {
+        const entityName =
+          getEntityNameFromLocalStorage(entity.entityId) ||
+          (entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`);
+
+        return {
+          ...entity,
+          accountName: getAddressName(ContractAddress(entity.owner), components),
+          name: entityName,
+        };
+      }),
       name,
       totalCount: entities.length,
     }));

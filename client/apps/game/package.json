@@ -20,7 +20,7 @@
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
-    "@bibliothecadao/torii-client": "workspace:*",
+    "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",

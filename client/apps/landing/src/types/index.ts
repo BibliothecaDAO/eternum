@@ -41,4 +41,6 @@ export interface MergedNftData {
   order_owner?: string | null;
   best_price_hex?: bigint | null;
   token_id: string | number;
+  contract_address: string;
+  name?: string | null;
 }

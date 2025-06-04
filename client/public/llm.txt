@@ -672,6 +672,546 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
+file: docs/pages/overview/bridging.mdx
+meta: {}
+
+import { Callout } from "vocs/components";
+
+# Bridging in Materials
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/overview/controller.mdx
+meta: {}
+
+import { importantNote } from "@/components/styles";
+
+***
+
+title: Cartridge Controller description: Using the Cartridge Controller in Eternum
+
+***
+
+# Cartridge Controller
+
+The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
+via Session Keys. You must have a controller to play Eternum. To find out more about the controller, read their
+documentation [here](https://docs.cartridge.gg/controller/overview).
+
+<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+
+## Using the Controller in Eternum
+
+If you are playing with a Village, you can play Eternum purely using the controller, However, to use Season Passes and
+**$LORDS**, you will need to transfer them to your controller from Starknet using your ArgentX or Braavos wallet.
+
+To use the controller, you can either log in or sign up when starting Eternum. To create a controller, simply input a
+username and sign up.
+
+<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
+
+There are multiple ways to securely sign up:
+
+* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
+  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
+  or 1Password.
+* **Metamask**: Connect using your MetaMask wallet.
+* **Rabby**: Connect using your Rabby wallet.
+* **Discord**: Connect using your Discord account.
+* **Wallet Connect**: Connect using a wide range of wallets.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
+    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
+    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
+  </p>
+</div>
+
+Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
+session.
+
+## Transfer Season Pass to Controller
+
+Transfer a season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect your
+controller by selecting the controller icon located at the top of the page and select the passes to transfer.
+
+<div className="flex justify-center">
+  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
+</div>
+
+## Controller Key Features
+
+### Simple and Secure
+
+* Passwordless authentication using Passkeys for one-click onboarding
+* Self-custodial embedded wallets that put players in control
+* Built-in security features to protect player assets
+
+### Designed for Seamless Gameplay:
+
+* Session keys eliminate transaction popups during gameplay
+* Secure transaction delegation lets games submit actions on behalf of players
+* Free transactions through the Cartridge Paymaster so players focus on playing
+
+### Supported Platforms and Passkey Backup
+
+Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
+with a mobile device using the QR flow. For those without device authenticators, several password managers like
+Bitwarden (free), 1Password, and Dashlane support Passkeys.
+
+#### Backing Up Your Passkey
+
+* Apple devices: Passkeys are backed up along with your keychain in iCloud.
+
+* Android devices: Passkeys are backed up with your Google account.
+
+* Windows devices: Passkeys are created and managed as part of your Windows account.
+
+#### Using Controller Across Devices
+
+Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
+synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
+might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
+Multi-credential support is coming soon to enhance device compatibility.
+
+Should you have any issues with the controller or require support, you can join the Cartridge Discord
+[here](https://discord.gg/cartridge).
+
+
+
+---
+
+file: docs/pages/overview/disclaimer.mdx
+meta: {}
+
+import { formatNumberWithSpaces } from "@/utils/formatting";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { Callout } from "vocs/components";
+import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
+
+# Disclaimer and Risk Acknowledgment
+
+<Callout type="danger">
+  Important Disclaimer – Please Read Carefully <br />
+  By participating in Eternum, you fully acknowledge and accept the following terms and conditions.
+</Callout>
+
+## Immutable Contracts
+
+Eternum is governed entirely by **immutable** smart contracts. Once deployed, the game’s rules and mechanics **cannot be
+altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not** been
+audited. Players should fully understand the implications of interacting with the system and assess the risks involved.
+
+## Risk of Loss
+
+All transactions and gameplay actions in Eternum are **final**. There are no mechanisms for refunds, reversals, or
+compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
+financial impact incurred.
+
+A season of Eternum concludes when a single player achieves the required
+**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
+Victory Points and clicks the "End Season" button. At this point:
+
+### ⚠️ SEASON END CRITICAL INFORMATION
+
+When the season ends, **ALL in-game actions are DISABLED** except:
+
+* transfer materials
+* deposit resource arrivals
+* retrieve LP positions
+* cancel market orders
+* bridge materials out of the game
+
+1. **7-Days Withdrawal Window (starts immediately when "End Season" is clicked)**
+
+   * Starting from the exact moment the season ends, you have **7 days** to bridge out **ALL $LORDS** tokens and
+     bridgeable materials from your Realms' balance
+
+2. **After 7 Days**
+
+   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
+   * These assets **CANNOT** be recovered under any circumstances
+
+3. **Score Registration**
+   * Players have **4 days** to register their scores
+   * Registration is **MANDATORY** to be eligible for prizes
+   * While registration has a deadline, prize claiming does not
+
+Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
+
+## No Recourse
+
+By participating in Eternum, you waive all rights to claims or recourse against the developers, the DAO, or any other
+associated entities for any losses or disputes arising from your participation in the game.
+
+## Acknowledgment of Terms
+
+Participation in Eternum constitutes your agreement to these terms, as well as all other terms and conditions outlined
+in the game’s documentation.
+
+
+
+---
+
+file: docs/pages/overview/entry.mdx
+meta: {
+  "title": "Game Entry & Participation",
+  "description": "How to join and participate in Eternum seasons"
+}
+
+# Game Entry & Participation
+
+## Season Access
+
+### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
+
+Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
+Passes. Each Season Pass is unique to the Realm it was minted from and allows the Season Pass holder to initiate a
+settling transaction to enter the game. To do this, Lords must first transfer the Season Pass to their Cartridge Wallet.
+
+* Mint your pass [here](https://empire.realms.world/mint)
+
+### Non-Realm Holder Entry
+
+#### Marketplace
+
+Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
+[Season Pass Marketplace](https://empire.realms.world/trade), providing avenues for non-Realm holders to acquire Season
+Passes to participate in the game.
+
+#### Villages
+
+Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
+Eternum. Villages have some restrictions, but offer a low-cost taste of Eternum gameplay to newcomers while also acting
+as an avenue for established players to expand their production. Each Realm can support up to six surrounding Villages,
+allowing for up to 48,000 Villages in Season 1.
+
+For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
+our [Villages guide](/mechanics/realm-and-villages/villages).
+
+### Continuous Play
+
+As long as you maintain in-game Realm or Village ownership, you can actively participate without additional entry fees.
+Engage in the market using **$LORDS** tokens and enjoy uninterrupted gameplay until the end of the season.
+
+### Realm Control Mechanics
+
+⚔️ **Takeover System**
+
+Settled Realms can be conquered within a Season, transferring control to the conqueror. Gameplay rights are restored at
+the start of the next Season, as the Realm NFT owner will be able to mint a new Season Pass for the new Season.
+
+🛡️ **Village Security**
+
+Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
+lower-risk gameplay experience. Villages can still participate in most gameplay activities - producing resources,
+training troops, and engaging in trade - but at 50% the rate of Realms. This security, combined with their accessibility
+and limited progression path from Settlement to City, makes Villages perfect for new players looking to learn the game
+mechanics without the constant threat of conquest.
+
+
+
+---
+
+file: docs/pages/overview/introduction.mdx
+meta: {
+  "title": "Introduction to Eternum",
+  "description": "Understanding the World of Eternum"
+}
+
+# Welcome to Eternum
+
+<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
+
+## The Lords Have Arrived
+
+Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived upon the lands of Eternum,
+bearing the brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and
+untold riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets
+and unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and
+peril.
+
+## Establish Your Foothold
+
+In Eternum, your task begins by settling a Realm or Village—a seat of power from which your destiny unfolds. Select your
+strategic position upon the vast, unexplored, procedurally generated world map and secure vital materials to fuel your
+expansion. Grow your influence through shrewd economic choices, military strategy, and diplomatic maneuvering, nurturing
+your humble settlement into a mighty empire.
+
+Yet, strength alone is insufficient, for Eternum is fraught with dangers—bandits roam unchecked and rival Lords covet
+your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
+vigilant defense can your Realm flourish and endure.
+
+## Find Your Glory
+
+Scattered throughout Eternum are the foundations of ancient Hyperstructures—colossal relics from an ancient civilization
+far surpassing all known powers. Some unknown, cataclysmic event once destroyed all of these structures and plunged the
+land into darkness and disorder. Lords who successfully reclaim, rebuild, and control these Hyperstructures will assert
+their dominance over the vast continent, with one player eventually claiming ultimate victory.
+
+However, Eternum's expansive world offers glory beyond mere conquest; whether through trade mastery, military prowess,
+diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to greatness.
+
+## Core Pillars
+
+Eternum is built on three core pillars:
+
+* **Player‑Driven Economy** – Every resource harvested and trade executed originates from player choices. Collective
+  actions shape supply, demand, and market prices across Eternum.
+* **Strategic Depth** – Success hinges on efficient production, calculated territorial expansion, and well‑timed
+  military engagements. Foresight and adaptability separate thriving empires from conquered realms.
+* **Community Governance** – Power grows through tribes, alliances, and diplomatic pacts. Coordinated groups can tip
+  regional conflicts and shift the balance of power continent‑wide.
+
+## Game Features
+
+<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
+
+Eternum offers high-stakes gameplay across defined seasons, set on an infinite, procedurally generated hexagonal map.
+Players can pursue total victory or explore freely, with a focus on diplomacy, resource management, and tactical
+decisions.
+
+### Game Progression
+
+* **Early Game**: Establish your Realm, build infrastructure, and secure resources.
+* **Mid Game**: Expand influence, forge alliances, and develop military capabilities.
+* **End Game**: Engage in epic battles, large-scale diplomacy, and resource warfare.
+
+### Core Elements
+
+* **Seasons** – Freestanding campaigns with fresh rules and victory conditions; in-game assets can be bridged forward,
+  however, allowing committed Lords to carry hard‑won progress between chapters.
+* **World Map** – An infinite, procedurally generated hex grid dotted with Banks, Fragment Mines, and Hyperstructure
+  Foundations, facilitating exploration and conflict.
+* **Resources & Economy** – 22 tokenized resources—plus food, labor, donkeys, and troops—are traded with a player owned
+  and operated economy.
+* **Military Power** – Raise armies and battle strategically—considering stamina, troop tiers and biome effects, to
+  seize territory and capture the Realms of your rivals.
+* **Social Structure** – Forge tribes and alliances to pool resources, coordinate conquests, and shape regional politics
+  through diplomacy or decisive force.
+
+## Vision
+
+Explore our
+[detailed vision document](https://github.com/BibliothecaDAO/world-guide/blob/main/realms-world-guide-v1.0.0.pdf)
+
+## Eternum as a Platform
+
+Eternum lays the foundation for future development with open architecture, community extensions, and a focus on
+innovation. It serves as a benchmark for onchain gaming capabilities.
+
+
+
+---
+
+file: docs/pages/overview/links.mdx
+meta: {
+  "title": "Quick Links",
+  "description": "Essential links for Eternum"
+}
+
+# Quick Links
+
+## Play & Learn
+
+* [Play Eternum](https://eternum.realms.world/) - Start your journey
+* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
+* [Season Pass](https://empire.realms.world/) - Mint your season pass
+* [Season Pass Marketplace](https://element.market/starknet) - Buy your Season Pass on Element
+* [Realms Marketplace](https://market.realms.world/) Buy a Realm NFT
+
+## Community
+
+* [Realms World](https://realms.world/) - The DAO behind Eternum
+* [Discord](https://discord.gg/realmsworld) - Join our discord
+* [Twitter](https://x.com/LootRealms) - Follow the community
+* [Twitter](https://x.com/RealmsEternum) - Follow for Eternum updates
+
+
+
+---
+
+file: docs/pages/overview/lords.mdx
+meta: {}
+
+# $LORDS Token
+
+![LORDS Token](/images/resources/37.png)
+
+$LORDS is the native token of the Realms Autonomous World. It serves as the primary currency within the Eternum
+ecosystem, enabling economic activity and resource movement throughout the game.
+
+## Token Details
+
+* **Name**: LORDS
+* **Network**: Starknet
+* **Contract Address**:
+  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
+* **Total Supply**: 300,000,000 LORDS
+
+## $LORDS in Eternum
+
+* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
+  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
+
+* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
+  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
+
+## How to get $LORDS
+
+### In Eternum
+
+Within Eternum, Lords can obtain $LORDS through various methods:
+
+* Selling surplus materials through the in-game AMM or Orderbook
+* Defeating or negotiating with AI agents
+* Discovering special quest tiles scattered throughout the Eternum world
+* Achieving objectives in other Realms Ecosystem games
+
+### On Starknet
+
+Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
+
+#### Recommended Exchanges
+
+| Exchange                                                                          | Compatibility                     | Notes                                                                                                                             |
+| --------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) | ✅ Supports Cartridge Controller   | Swap directly with your game wallet                                                                                               |
+| [Avnu](https://app.avnu.fi/en/eth-lords)                                          | ❌ No Cartridge Controller support | Requires an [Argent](https://x.com/argentHQ) or [Braavos](https://x.com/myBraavos) wallet first, then transfer to your controller |
+
+#### Step-by-Step Guide
+
+For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
+
+1. Setting up a Braavos wallet
+2. Bridging ETH to Starknet via Orbiter
+3. Swapping ETH for STRK and LORDS
+4. Creating a Cartridge Controller (if needed)
+5. Transferring LORDS to your game wallet
+
+
+
+---
+
+file: docs/pages/overview/resource-addresses.mdx
+meta: {}
+
+import { ResourceAddresses } from "@/components/ResourceAddresses";
+
+# Resource Addresses
+
+<ResourceAddresses />
+
+
+
+---
+
+file: docs/pages/overview/world-physics.mdx
+meta: {}
+
+import { Biomes } from "@/components/Biomes";
+
+# 🌪️ World Physics
+
+<img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+In Eternum, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
+fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
+boundaries set by these protocols.
+
+## Seasons
+
+Welcome to Season 1. Eternum, in its current form, comes and goes in seasonal launches. Each season marks a special time
+of iteration and advancement in this new form of onchain gaming and may be likened to the movement of tides. Once a
+season launches, the tide flows out and the Lords arrive to build their castles in the sand. Nothing, not even the
+developers, can stop or alter the course of a season once launched, and players are free to take any action that the
+rules of the game allow. Once a Lord accumulates the requisite Victory Points, they unlock the ability to end the
+season—signalling the tide to come back in and put an end to the Lords' fun… until next season.
+
+## Time
+
+Time within a season is measured in Eternum Days, and each is precisely one hour in length. One day ends and the next
+begins at the top of every real-world hour.
+
+## Materials
+
+In the world of Eternum, everything holds tangible, tokenized value—be it food, labor, resources, troops, or even the
+trusty donkeys required for transport. These fungible tokens are generated within Eternum, but can be bridged in and out
+of the game through Realms or Banks and traded on external marketplaces. All materials have an associated weight, which
+determines the amount that can be stored and the number of donkeys required to move the goods from place to place.
+
+Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, ancient fragments,
+labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22 resources
+ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
+
+## Cost of Production
+
+With the exception of food, nothing in Eternum is produced for free; every unit of production demands an input—food,
+labor, resources, or some combination thereof. Lords must consider these costs and effectively balance trade to ensure
+they can survive the season.
+
+## Travel
+
+Transporting materials across the vast lands of Eternum takes time… and donkeys. Every transfer of materials between
+locations relies exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon
+completing their journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
+
+Moving tokenized troops through the donkey network may be fast, but to dominate your enemies and ensure security of your
+lands, troops must be deployed to an army. Once troops are deployed, they cannot be retokenized, and are doomed to their
+fate within this season of Eternum. Once troops are deployed to the world map, their mobility is governed by stamina,
+limiting the distance they can travel and the number of actions they can perform. Travelling between hexes or initiating
+an attack expends valuable stamina points, but they are partially replenished each Eternum Day.
+
+## Hexes
+
+Eternum unfolds across an infinite, procedurally-generated, hexagonal-tile world map. This represents the physical space
+of the world and defines spawn locations, biome distribution, and distances between Realms, Villages, and other world
+structures. This is the layer in which armies explore, fight, raid and capture, and is explorable in the 'World' view.
+
+Zooming in, each Realm or Village hex is broken up into smaller hexes which define the local area and building placement
+(hexes within hexes!). Here in the 'Local' view, Lords can plan out their building placement and closely manage their
+population, supply chain, and production.
+
+## Biomes
+
+Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
+terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
+Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
+
+<Biomes />
+
+## The Known World
+
+Initial scouting reports have revealed some key details about the world:
+
+* Six ancient Banks have been located, distributed evenly in a ring around the central point. These structures are
+  perfectly situated and designed to facilitate trade in this new world. Sufficiently prepared Lords may be able to
+  capture these lucrative structures, but will likely make themselves a target in the process.
+
+* An unknown number of Hyperstructure Foundations are scattered around the unexplored world. These are rare, key
+  locations that must be claimed by Lords in order to rebuild the ancient Hyperstructures that are critical to achieving
+  victory. They are more likely to be found in the central regions of the map, and as each subsequent Hyperstructure
+  Foundation is discovered, the likelihood of finding another one in the world diminishes.
+
+* Hundreds of mines are also strewn across the landscape. Prospectors have theorized that these mines are hotspots for
+  finding ancient fragments needed to reconstruct key sections of the Hyperstructures.
+
+* Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
+  arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
+
+* Mysterious hooded figures lurk in the mist, offering to play a strange card game with any who wish to try their luck.
+
+
+
+---
+
 file: docs/pages/mechanics/achievements.mdx
 meta: {}
 
@@ -1131,1187 +1671,291 @@ only have one defense slot to support a guard army.
 
 ---
 
-file: docs/pages/overview/bridging.mdx
+file: docs/pages/mechanics/military/armies.mdx
 meta: {}
 
-import { Callout } from "vocs/components";
-
-# Bridging in Materials
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/overview/controller.mdx
-meta: {}
-
-import { importantNote } from "@/components/styles";
-
-***
-
-title: Cartridge Controller description: Using the Cartridge Controller in Eternum
-
-***
-
-# Cartridge Controller
-
-The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
-via Session Keys. You must have a controller to play Eternum. To find out more about the controller, read their
-documentation [here](https://docs.cartridge.gg/controller/overview).
-
-<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
-
-## Using the Controller in Eternum
-
-If you are playing with a Village, you can play Eternum purely using the controller, However, to use Season Passes and
-**$LORDS**, you will need to transfer them to your controller from Starknet using your ArgentX or Braavos wallet.
-
-To use the controller, you can either log in or sign up when starting Eternum. To create a controller, simply input a
-username and sign up.
-
-<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
-
-There are multiple ways to securely sign up:
-
-* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
-  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
-  or 1Password.
-* **Metamask**: Connect using your MetaMask wallet.
-* **Rabby**: Connect using your Rabby wallet.
-* **Discord**: Connect using your Discord account.
-* **Wallet Connect**: Connect using a wide range of wallets.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
-    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
-    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
-  </p>
-</div>
-
-Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
-session.
-
-## Transfer Season Pass to Controller
-
-Transfer a season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect your
-controller by selecting the controller icon located at the top of the page and select the passes to transfer.
-
-<div className="flex justify-center">
-  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
-</div>
-
-## Controller Key Features
-
-### Simple and Secure
-
-* Passwordless authentication using Passkeys for one-click onboarding
-* Self-custodial embedded wallets that put players in control
-* Built-in security features to protect player assets
-
-### Designed for Seamless Gameplay:
-
-* Session keys eliminate transaction popups during gameplay
-* Secure transaction delegation lets games submit actions on behalf of players
-* Free transactions through the Cartridge Paymaster so players focus on playing
-
-### Supported Platforms and Passkey Backup
-
-Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
-with a mobile device using the QR flow. For those without device authenticators, several password managers like
-Bitwarden (free), 1Password, and Dashlane support Passkeys.
-
-#### Backing Up Your Passkey
-
-* Apple devices: Passkeys are backed up along with your keychain in iCloud.
-
-* Android devices: Passkeys are backed up with your Google account.
-
-* Windows devices: Passkeys are created and managed as part of your Windows account.
-
-#### Using Controller Across Devices
-
-Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
-synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
-might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
-Multi-credential support is coming soon to enhance device compatibility.
-
-Should you have any issues with the controller or require support, you can join the Cartridge Discord
-[here](https://discord.gg/cartridge).
-
-
-
----
-
-file: docs/pages/overview/disclaimer.mdx
-meta: {}
-
-import { formatNumberWithSpaces } from "@/utils/formatting";
+import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { Callout } from "vocs/components";
-import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
-
-# Disclaimer and Risk Acknowledgment
-
-<Callout type="danger">
-  Important Disclaimer – Please Read Carefully <br />
-  By participating in Eternum, you fully acknowledge and accept the following terms and conditions.
-</Callout>
-
-## Immutable Contracts
-
-Eternum is governed entirely by **immutable** smart contracts. Once deployed, the game’s rules and mechanics **cannot be
-altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not** been
-audited. Players should fully understand the implications of interacting with the system and assess the risks involved.
-
-## Risk of Loss
-
-All transactions and gameplay actions in Eternum are **final**. There are no mechanisms for refunds, reversals, or
-compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
-financial impact incurred.
-
-A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
-Victory Points and clicks the "End Season" button. At this point:
-
-### ⚠️ SEASON END CRITICAL INFORMATION
-
-When the season ends, **ALL in-game actions are DISABLED** except:
-
-* transfer materials
-* deposit resource arrivals
-* retrieve LP positions
-* cancel market orders
-* bridge materials out of the game
-
-1. **48-Hour Withdrawal Window (starts immediately when "End Season" is clicked)**
-
-   * Starting from the exact moment the season ends, you have **48 hours** to bridge out **ALL $LORDS** tokens and
-     bridgeable materials from your Realms' balance
-
-2. **After 48 Hours**
-
-   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
-   * These assets **CANNOT** be recovered under any circumstances
-
-3. **Score Registration**
-   * Players have **4 days** to register their scores
-   * Registration is **MANDATORY** to be eligible for prizes
-   * While registration has a deadline, prize claiming does not
-
-Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
-
-## No Recourse
-
-By participating in Eternum, you waive all rights to claims or recourse against the developers, the DAO, or any other
-associated entities for any losses or disputes arising from your participation in the game.
-
-## Acknowledgment of Terms
-
-Participation in Eternum constitutes your agreement to these terms, as well as all other terms and conditions outlined
-in the game’s documentation.
-
-
-
----
-
-file: docs/pages/overview/entry.mdx
-meta: {
-  "title": "Game Entry & Participation",
-  "description": "How to join and participate in Eternum seasons"
-}
-
-# Game Entry & Participation
-
-## Season Access
-
-### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
-
-Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
-Passes. Each Season Pass is unique to the Realm it was minted from and allows the Season Pass holder to initiate a
-settling transaction to enter the game. To do this, Lords must first transfer the Season Pass to their Cartridge Wallet.
-
-* Mint your pass [here](https://empire.realms.world/mint)
-
-### Non-Realm Holder Entry
-
-#### Marketplace
-
-Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
-[Season Pass Marketplace](https://empire.realms.world/trade), providing avenues for non-Realm holders to acquire Season
-Passes to participate in the game.
-
-#### Villages
-
-Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
-Eternum. Villages have some restrictions, but offer a low-cost taste of Eternum gameplay to newcomers while also acting
-as an avenue for established players to expand their production. Each Realm can support up to six surrounding Villages,
-allowing for up to 48,000 Villages in Season 1.
-
-For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
-our [Villages guide](/mechanics/realm-and-villages/villages).
-
-### Continuous Play
-
-As long as you maintain in-game Realm or Village ownership, you can actively participate without additional entry fees.
-Engage in the market using **$LORDS** tokens and enjoy uninterrupted gameplay until the end of the season.
-
-### Realm Control Mechanics
-
-⚔️ **Takeover System**
-
-Settled Realms can be conquered within a Season, transferring control to the conqueror. Gameplay rights are restored at
-the start of the next Season, as the Realm NFT owner will be able to mint a new Season Pass for the new Season.
-
-🛡️ **Village Security**
-
-Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
-lower-risk gameplay experience. Villages can still participate in most gameplay activities - producing resources,
-training troops, and engaging in trade - but at 50% the rate of Realms. This security, combined with their accessibility
-and limited progression path from Settlement to City, makes Villages perfect for new players looking to learn the game
-mechanics without the constant threat of conquest.
-
-
-
----
-
-file: docs/pages/overview/introduction.mdx
-meta: {
-  "title": "Introduction to Eternum",
-  "description": "Understanding the World of Eternum"
-}
-
-# Welcome to Eternum
-
-<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
-
-## The Lords Have Arrived
-
-Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived upon the lands of Eternum,
-bearing the brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and
-untold riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets
-and unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and
-peril.
-
-## Establish Your Foothold
-
-In Eternum, your task begins by settling a Realm or Village—a seat of power from which your destiny unfolds. Select your
-strategic position upon the vast, unexplored, procedurally generated world map and secure vital materials to fuel your
-expansion. Grow your influence through shrewd economic choices, military strategy, and diplomatic maneuvering, nurturing
-your humble settlement into a mighty empire.
-
-Yet, strength alone is insufficient, for Eternum is fraught with dangers—bandits roam unchecked and rival Lords covet
-your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
-vigilant defense can your Realm flourish and endure.
-
-## Find Your Glory
-
-Scattered throughout Eternum are the foundations of ancient Hyperstructures—colossal relics from an ancient civilization
-far surpassing all known powers. Some unknown, cataclysmic event once destroyed all of these structures and plunged the
-land into darkness and disorder. Lords who successfully reclaim, rebuild, and control these Hyperstructures will assert
-their dominance over the vast continent, with one player eventually claiming ultimate victory.
-
-However, Eternum's expansive world offers glory beyond mere conquest; whether through trade mastery, military prowess,
-diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to greatness.
-
-## Core Pillars
-
-Eternum is built on three core pillars:
-
-* **Player‑Driven Economy** – Every resource harvested and trade executed originates from player choices. Collective
-  actions shape supply, demand, and market prices across Eternum.
-* **Strategic Depth** – Success hinges on efficient production, calculated territorial expansion, and well‑timed
-  military engagements. Foresight and adaptability separate thriving empires from conquered realms.
-* **Community Governance** – Power grows through tribes, alliances, and diplomatic pacts. Coordinated groups can tip
-  regional conflicts and shift the balance of power continent‑wide.
-
-## Game Features
-
-<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
-
-Eternum offers high-stakes gameplay across defined seasons, set on an infinite, procedurally generated hexagonal map.
-Players can pursue total victory or explore freely, with a focus on diplomacy, resource management, and tactical
-decisions.
-
-### Game Progression
-
-* **Early Game**: Establish your Realm, build infrastructure, and secure resources.
-* **Mid Game**: Expand influence, forge alliances, and develop military capabilities.
-* **End Game**: Engage in epic battles, large-scale diplomacy, and resource warfare.
-
-### Core Elements
-
-* **Seasons** – Freestanding campaigns with fresh rules and victory conditions; in-game assets can be bridged forward,
-  however, allowing committed Lords to carry hard‑won progress between chapters.
-* **World Map** – An infinite, procedurally generated hex grid dotted with Banks, Fragment Mines, and Hyperstructure
-  Foundations, facilitating exploration and conflict.
-* **Resources & Economy** – 22 tokenized resources—plus food, labor, donkeys, and troops—are traded with a player owned
-  and operated economy.
-* **Military Power** – Raise armies and battle strategically—considering stamina, troop tiers and biome effects, to
-  seize territory and capture the Realms of your rivals.
-* **Social Structure** – Forge tribes and alliances to pool resources, coordinate conquests, and shape regional politics
-  through diplomacy or decisive force.
-
-## Vision
-
-Explore our
-[detailed vision document](https://github.com/BibliothecaDAO/world-guide/blob/main/realms-world-guide-v1.0.0.pdf)
-
-## Eternum as a Platform
-
-Eternum lays the foundation for future development with open architecture, community extensions, and a focus on
-innovation. It serves as a benchmark for onchain gaming capabilities.
-
-
-
----
-
-file: docs/pages/overview/links.mdx
-meta: {
-  "title": "Quick Links",
-  "description": "Essential links for Eternum"
-}
-
-# Quick Links
-
-## Play & Learn
-
-* [Play Eternum](https://eternum.realms.world/) - Start your journey
-* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
-* [Season Pass](https://empire.realms.world/) - Mint your season pass
-* [Season Pass Marketplace](https://element.market/starknet) - Buy your Season Pass on Element
-* [Realms Marketplace](https://market.realms.world/) Buy a Realm NFT
-
-## Community
-
-* [Realms World](https://realms.world/) - The DAO behind Eternum
-* [Discord](https://discord.gg/realmsworld) - Join our discord
-* [Twitter](https://x.com/LootRealms) - Follow the community
-* [Twitter](https://x.com/RealmsEternum) - Follow for Eternum updates
-
-
-
----
-
-file: docs/pages/overview/lords.mdx
-meta: {}
-
-# $LORDS Token
-
-![LORDS Token](/images/resources/37.png)
-
-$LORDS is the native token of the Realms Autonomous World. It serves as the primary currency within the Eternum
-ecosystem, enabling economic activity and resource movement throughout the game.
-
-## Token Details
-
-* **Name**: LORDS
-* **Network**: Starknet
-* **Contract Address**:
-  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
-* **Total Supply**: 300,000,000 LORDS
-
-## $LORDS in Eternum
-
-* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
-  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
-
-* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
-  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
-
-## How to get $LORDS
-
-### In Eternum
-
-Within Eternum, Lords can obtain $LORDS through various methods:
-
-* Selling surplus materials through the in-game AMM or Orderbook
-* Defeating or negotiating with AI agents
-* Discovering special quest tiles scattered throughout the Eternum world
-* Achieving objectives in other Realms Ecosystem games
-
-### On Starknet
-
-Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
-
-#### Recommended Exchanges
-
-| Exchange                                                                          | Compatibility                     | Notes                                                                                                                             |
-| --------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) | ✅ Supports Cartridge Controller   | Swap directly with your game wallet                                                                                               |
-| [Avnu](https://app.avnu.fi/en/eth-lords)                                          | ❌ No Cartridge Controller support | Requires an [Argent](https://x.com/argentHQ) or [Braavos](https://x.com/myBraavos) wallet first, then transfer to your controller |
-
-#### Step-by-Step Guide
-
-For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
-
-1. Setting up a Braavos wallet
-2. Bridging ETH to Starknet via Orbiter
-3. Swapping ETH for STRK and LORDS
-4. Creating a Cartridge Controller (if needed)
-5. Transferring LORDS to your game wallet
-
-
-
----
-
-file: docs/pages/overview/resource-addresses.mdx
-meta: {}
-
-import { ResourceAddresses } from "@/components/ResourceAddresses";
-
-# Resource Addresses
-
-<ResourceAddresses />
-
-
-
----
-
-file: docs/pages/overview/world-physics.mdx
-meta: {}
-
-import { Biomes } from "@/components/Biomes";
-
-# 🌪️ World Physics
-
-<img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-In Eternum, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
-fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
-boundaries set by these protocols.
-
-## Seasons
-
-Welcome to Season 1. Eternum, in its current form, comes and goes in seasonal launches. Each season marks a special time
-of iteration and advancement in this new form of onchain gaming and may be likened to the movement of tides. Once a
-season launches, the tide flows out and the Lords arrive to build their castles in the sand. Nothing, not even the
-developers, can stop or alter the course of a season once launched, and players are free to take any action that the
-rules of the game allow. Once a Lord accumulates the requisite Victory Points, they unlock the ability to end the
-season—signalling the tide to come back in and put an end to the Lords' fun… until next season.
-
-## Time
-
-Time within a season is measured in Eternum Days, and each is precisely one hour in length. One day ends and the next
-begins at the top of every real-world hour.
-
-## Materials
-
-In the world of Eternum, everything holds tangible, tokenized value—be it food, labor, resources, troops, or even the
-trusty donkeys required for transport. These fungible tokens are generated within Eternum, but can be bridged in and out
-of the game through Realms or Banks and traded on external marketplaces. All materials have an associated weight, which
-determines the amount that can be stored and the number of donkeys required to move the goods from place to place.
-
-Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, ancient fragments,
-labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22 resources
-ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
-
-## Cost of Production
-
-With the exception of food, nothing in Eternum is produced for free; every unit of production demands an input—food,
-labor, resources, or some combination thereof. Lords must consider these costs and effectively balance trade to ensure
-they can survive the season.
-
-## Travel
-
-Transporting materials across the vast lands of Eternum takes time… and donkeys. Every transfer of materials between
-locations relies exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon
-completing their journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
-
-Moving tokenized troops through the donkey network may be fast, but to dominate your enemies and ensure security of your
-lands, troops must be deployed to an army. Once troops are deployed, they cannot be retokenized, and are doomed to their
-fate within this season of Eternum. Once troops are deployed to the world map, their mobility is governed by stamina,
-limiting the distance they can travel and the number of actions they can perform. Travelling between hexes or initiating
-an attack expends valuable stamina points, but they are partially replenished each Eternum Day.
-
-## Hexes
-
-Eternum unfolds across an infinite, procedurally-generated, hexagonal-tile world map. This represents the physical space
-of the world and defines spawn locations, biome distribution, and distances between Realms, Villages, and other world
-structures. This is the layer in which armies explore, fight, raid and capture, and is explorable in the 'World' view.
-
-Zooming in, each Realm or Village hex is broken up into smaller hexes which define the local area and building placement
-(hexes within hexes!). Here in the 'Local' view, Lords can plan out their building placement and closely manage their
-population, supply chain, and production.
-
-## Biomes
-
-Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
-terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
-Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
-
-<Biomes />
-
-## The Known World
-
-Initial scouting reports have revealed some key details about the world:
-
-* Six ancient Banks have been located, distributed evenly in a ring around the central point. These structures are
-  perfectly situated and designed to facilitate trade in this new world. Sufficiently prepared Lords may be able to
-  capture these lucrative structures, but will likely make themselves a target in the process.
-
-* An unknown number of Hyperstructure Foundations are scattered around the unexplored world. These are rare, key
-  locations that must be claimed by Lords in order to rebuild the ancient Hyperstructures that are critical to achieving
-  victory. They are more likely to be found in the central regions of the map, and as each subsequent Hyperstructure
-  Foundation is discovered, the likelihood of finding another one in the world diminishes.
-
-* Hundreds of mines are also strewn across the landscape. Prospectors have theorized that these mines are hotspots for
-  finding ancient fragments needed to reconstruct key sections of the Hyperstructures.
-
-* Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
-  arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
-
-* Mysterious hooded figures lurk in the mist, offering to play a strange card game with any who wish to try their luck.
-
-
-
----
-
-file: docs/pages/mechanics/resources/automation.mdx
-meta: {}
-
-# Resource Automation
-
-Resource automation allows players to set up continuous production processes and automated transfers within their realms and between entities. This system helps manage resource generation and distribution efficiently without constant manual intervention.
-
-## Overview
-
-The automation system works by processing two types of "orders" that you define:
-
-1. **Production Orders**: Automate resource production within your realms
-2. **Transfer Orders**: Automate resource transfers between your entities (realms, villages, hyperstructures, etc.)
-
-Both types of orders specify what you want to automate, the method or conditions, target amounts or schedules, and priorities.
-
-**Key Features:**
-
-* **Order-Based**: Define specific production and transfer tasks.
-* **Priority System**: Control the sequence of execution for multiple orders.
-* **Multiple Automation Types**: Choose between production automation and transfer automation.
-* **Entity-Specific**: Automation is configured on a per-entity basis.
-* **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to function.
-* **10-Minute Cycles**: All automation is processed every 10 minutes.
-
-## How It Works
-
-The automation system periodically checks and processes active orders for each entity.
-
-1. **Processing Interval**: All orders are evaluated every 10 minutes.
-2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
-3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
-4. **Order Processing**: The system processes different order types:
-
-### Production Order Processing
-
-* **Balance Check**: Before executing, the system checks if the realm has sufficient input resources or labor.
-* **Recipe-Based Production**: Production follows predefined recipes from the game's configuration.
-* **Cycle Calculation**: Determines the maximum number of production cycles possible based on available inputs.
-* **Transaction**: If conditions are met, a blockchain transaction is initiated to perform the production.
-
-### Transfer Order Processing
-
-* **Schedule Check**: For recurring transfers, checks if enough time has passed since the last transfer.
-* **Threshold Check**: For conditional transfers, checks if resource levels meet the specified conditions.
-* **Resource Availability**: Verifies the source entity has sufficient resources for the transfer.
-* **Transaction**: If conditions are met, initiates a transfer transaction between entities.
-
-## Production Types
-
-There are three types of production automation:
-
-1. **Standard (Resource-to-Resource)**:
-   * Converts one or more input resources into a different output resource.
-   * Example: Using Wood and Stone to produce Tools.
-2. **Simple (Labor-to-Resource)**:
-   * Utilizes Labor from the realm to produce a specific resource.
-   * Example: Using Labor to harvest Food.
-3. **Resource-to-Labor**:
-   * Converts a specified resource into Labor for the realm.
-   * Example: Burning Food to generate Labor.
-
-## Production Order Modes
-
-Production orders can operate in two different modes:
-
-1. **Produce Once**:
-   * Produces resources until the target amount is reached, then stops.
-   * Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
-   * Can be set to "Infinite" to produce continuously without a limit.
-
-2. **Maintain Balance**:
-   * Keeps resource balance at the target level.
-   * Production triggers when balance drops below target minus buffer percentage.
-   * Example: Target 10,000 with 10% buffer = production starts when balance drops below 9,000.
-   * Useful for maintaining steady resource levels.
-
-## Transfer Types
-
-Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
-
-1. **Recurring Transfers**:
-   * Transfers resources at regular intervals.
-   * Minimum interval: 10 minutes (due to automation cycle).
-   * Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
-   * *\[GIF placeholder: Setting up a recurring transfer]*
-
-2. **Maintain Stock Transfers**:
-   * Transfers when the destination entity falls below a threshold.
-   * Example: Transfer 500 Wood to Village when it has less than 1,000 Wood.
-   * Helps keep important entities well-supplied.
-   * *\[GIF placeholder: Setting up a maintain stock transfer]*
-
-3. **Depletion Transfers**:
-   * Transfers when the source entity exceeds a threshold.
-   * Example: Transfer excess Stone when Realm has more than 5,000 Stone.
-   * Prevents resource overflow and distributes surplus.
-   * *\[GIF placeholder: Setting up a depletion transfer]*
-
-## Managing Automation Orders (UI)
-
-You can manage automation orders through the "Automation" tab within any entity's interface, or through the global "All Automations" view.
-
-### Production Automation
-
-Production automation is managed within individual realm interfaces.
-
-*\[GIF placeholder: Navigating to realm automation tab]*
-
-#### Adding a New Production Order
-
-1. Click the "Add New Automation" button.
-2. Configure the following:
-   * **Order Mode**:
-     * `Produce Once`: Produce up to target amount then stop
-     * `Maintain Balance`: Keep resource balance at target level
-   * **Production Type**:
-     * `Standard (Resource-based)`
-     * `Simple (Labor-based)`
-     * `Resource to Labor`
-   * **Priority (1-9)**:
-     * Set the execution priority. `1` is the highest priority, `9` is the lowest.
-   * **Resource to Produce / Resource Input for Labor**:
-     * Select the resource you want to produce or consume.
-     * The UI shows required input resources for Resource-to-Resource recipes.
-   * **Target Amount**:
-     * For "Produce Once": Set total quantity to produce, or check "Infinite" for continuous production.
-     * For "Maintain Balance": Set the balance level to maintain.
-   * **Buffer Percentage** (Maintain Balance only):
-     * Production starts when balance drops below target minus buffer percentage.
-3. Click "Add Automation".
-
-*\[GIF placeholder: Creating a production automation order]*
-
-### Transfer Automation
-
-Transfer automation allows you to move resources between any of your entities.
-
-*\[GIF placeholder: Accessing transfer automation]*
-
-#### Adding a New Transfer Order
-
-1. **Select Source Entity**:
-   * Choose entity type (Your Realms, Your Villages, etc.)
-   * Search and select the specific source entity
-
-2. **Configure Transfer**:
-   * **Transfer Mode**:
-     * `Recurring`: Transfer at regular intervals
-     * `Maintain Stock`: Transfer when destination is low
-     * `Depletion Transfer`: Transfer when source is high
-   * **Destination Entity**:
-     * Choose entity type and select specific destination
-   * **Resources to Transfer**:
-     * Add multiple resources with specific amounts
-   * **Schedule/Conditions**:
-     * For Recurring: Set interval in minutes (minimum 10 minutes)
-     * For conditional transfers: Set threshold amounts
-
-3. Click "Add Transfer Automation".
-
-*\[GIF placeholder: Creating a transfer automation order]*
-
-#### Transfer Interval Guidelines
-
-* **Minimum Interval**: 10 minutes (matches automation processing cycle)
-* **Common Intervals**:
-  * 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
-  * Custom intervals can be set in minutes
-* **Effective Timing**: Transfers occur when automation cycles align with your interval
-
-### Viewing and Managing Orders
-
-#### Individual Entity View
-
-Each entity shows its automation orders in a table with:
-
-* **Priority**: Order execution priority
-* **Mode**: "Once", "Maintain", or transfer mode ("Recurring", "Stock", "Depletion")
-* **Resource**: Visual representation of resource flow
-* **Target/Balance**: Target amounts or transfer schedules
-* **Produced**: Amount produced (production orders only)
-* **Type**: Order type (production or transfer)
-* **Actions**: Remove button
-
-*\[GIF placeholder: Viewing automation orders in entity interface]*
-
-#### Global Automation View
-
-The "All Automations" view shows orders from all entities:
-
-* **Realm Filter**: Filter by specific realm or view all
-* **Order Status**: Visual indicators for completed, paused, or active orders
-* **Countdown Timer**: Shows time until next automation cycle
-* **Bulk Actions**: Pause/resume or delete orders
-
-*\[GIF placeholder: Using the global automation view]*
-
-### Pausing Automation
-
-You can pause automation at different levels:
-
-1. **Individual Entity**: Pause all automation for a specific entity
-2. **Individual Order**: Remove specific orders
-3. **Global Control**: Manage all orders from the global view
-
-*\[GIF placeholder: Pausing and resuming automation]*
-
-## Important Considerations
-
-### General Requirements
-
-* **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser, automation will stop.
-* **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
-* **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a blockchain transaction, which incurs network transaction fees.
-* **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay before an order is executed or its results are visible.
-
-### Production Automation Considerations
-
-* **Resource Availability**: Production orders will only execute if the required input resources are available in the realm at the time of processing.
-* **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have valid recipes.
-* **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is full.
-
-### Transfer Automation Considerations
-
-* **Entity Ownership**: You can only set up transfers between entities you own.
-* **Transfer Timing**:
-  * Minimum effective interval is 10 minutes due to processing cycle
-  * Intervals shorter than 10 minutes will effectively transfer every 10 minutes
-  * Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
-* **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing time.
-* **Multiple Resources**: You can transfer multiple different resources in a single transfer order.
-* **Conditional Logic**: Maintain Stock and Depletion transfers check conditions each cycle and only transfer when thresholds are met.
-
-### Best Practices
-
-1. **Start Simple**: Begin with basic production orders or simple recurring transfers to understand the system.
-2. **Monitor Initially**: Watch your first few automation cycles to ensure orders work as expected.
-3. **Use Priorities**: Set appropriate priorities when you have multiple orders to control execution sequence.
-4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
-5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource distributions.
-
-*\[GIF placeholder: Monitoring automation performance and adjusting orders]*
-
-
-
----
-
-file: docs/pages/mechanics/resources/bridging.mdx
-meta: {}
-
-import { EfficiencyTable } from "@/components/EfficienyTable";
-
-# 🌀 Bridging (Portals)
-
-Portals provide Lords with the ability to bridge materials into and out of Eternum, connecting the in-game economy with
-the Starknet infrastructure layer. Portals are mysterious and unstable devices, so they tend to burn up most of the
-materials sent through. However, there is evidence that the power of the Hyperstructures can increase the stability of
-Portals throughout Eternum. As Lords manage to reestablish these mighty structures throughout the land, the efficiency
-of bridging in and out of Eternum improves for all.
-
-<EfficiencyTable />
-
-Each Realm comes equipped with a Portal. Realm Lords are able to bridge materials both into and out of their Realms
-directly. Villages, however, have more limited bridging capabilities—they can bridge materials out of Eternum, but not
-in. This is in line with their existing restrictions on receiving troops from external sources. They are also limited to
-utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
-tokens bridged out of the game.
-
-
-
----
-
-file: docs/pages/mechanics/resources/production.mdx
-meta: {}
-
-import {
-  StandardTroopProduction,
-  SimpleTroopProduction,
-  SimpleResourceProduction,
-  StandardResourceProduction,
-  LaborProduction,
-  DonkeyProduction,
-} from "@/components/ResourceProduction";
-
-# ⚒️ Production
-
-## Standard vs. Simple
-
-As is the case for building construction, Lords can choose between standard and simple production systems when deciding
-how they wish to produce their materials. This can be done by selecting the appropriate panel when making an order in
-the production screen.
-
-![Simple Mode Production](/gifs/labor-production.gif)
-
-*Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
-unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
-requirements to the production order upfront. The output is then produced at a given rate per second.*
-
-### Standard Mode
-
-The classic Eternum system—every resource and troop production order requires food and a combination of other resources
-as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
-
-### Simple Mode
-
-Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
-both time and resources—but it allows Lords to produce resources on their Realm or Village even if they don't have
-access to the input resources required in standard mode.
-
-## Materials Production
-
-### Food
-
-The rich and fertile lands of Eternum produce two staple food sources, Wheat and Fish. These are the only materials that
-can be produced without inputs, so once a Farm or Fishing Village has been constructed, they can produce food
-indefinitely.
-
-### Resources
-
-The 22 resources found in Eternum are the backbone of the world economy. Producing one resource requires the input of
-two other resources (standard mode), or labor (simple mode). Resources are also the main components in building
-construction, troop production and Hyperstructure contributions - so mastery of these assets is key to success and
-security.
-
-<SimpleResourceProduction />
-
-<StandardResourceProduction />
-
-### Labor
-
-Labor is a new mechanic in Season 1 that has been introduced to simplify and supplement gameplay. It is the primary
-input for buildings and production in simple mode, but is also required in standard mode for building construction,
-Realm upgrades and Hyperstructure contribution.
-
-Labor is produced by permanently burning resources in the central structure of a Realm or Village. This creates a steady
-stream of Labor at a fixed rate. Each of the 22 resources can be burned to produce Labor at varying efficiency,
-dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
-
-<LaborProduction />
-
-### Troops
-
-Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
-procure troops, either through production or purchase, to ensure they remain a relevant force throughout the game. In
-Season 1, two new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of
-the previous tier as input for production.
-
-Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
-mode.
-
-<SimpleTroopProduction />
-
-<StandardTroopProduction />
-
-### Donkeys
-
-The humble steeds that move all materials around Eternum must themselves be produced in a market building. Donkeys are
-one-time-use and consumed after a single journey, so Lords will need to procure a steady supply of donkeys, either
-through production or purchase, to ensure that they can sustain their supply chains, trade with other players, and buy
-and sell from the Banks. Since donkeys are the 'gas' of this onchain world, they consume $LORDS - the native token of
-the ecosystem - during production.
-
-<DonkeyProduction />
-
-
-
----
-
-file: docs/pages/mechanics/resources/resources.mdx
-meta: {}
-
-import RarityResourceTable from "@/components/RarityResourceTable";
-import ResourceIcon from "@/components/ResourceIcon";
-import TroopsLimitTable from "@/components/TroopsLimitTable";
-import { ResourcesIds } from "@bibliothecadao/types";
-
-# 🪵 Materials
-
-# Materials Overview
-
-Materials encompass all transportable assets in Eternum, including:
-
-* **Food**: Essential wheat and fish that fuel production and troop movement
-* **Resources**: The 22 distinct resource types that can be produced on Realms based on their metadata
-* **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
-* **Donkeys**: One-time-use transport units required for moving materials across the world
-* **Labor**: A special material that enables "simple mode" construction and production
-* **Ancient Fragments**: Rare materials found in-game that are critical for Hyperstructure construction
-
-While all materials can be transported, only specific resources can be produced by Realms based on their inherent
-properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
-
-## Resources
-
-Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
-ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
-out as ERC20 tokens.
-
-![Produce from building](/gifs/produce-from-building-click.gif)
-
-## Material Categories
-
-#### Material Tiers
-
-Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
-
-<RarityResourceTable />
-
-### Basic Materials
-
-#### Food
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
-
-  <ResourceIcon name="Fish" id={ResourcesIds.Fish} />
-</div>
-
-Food is the cornerstone of your realm's economy:
-
-* Produced without additional resource inputs
-* Required for most production chains
-* Essential for maintaining troops and construction
-
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
-
-### Strategic Materials
-
-#### Military
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
-
-  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
-
-  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
-</div>
-
-<TroopsLimitTable />
-
-Military units have unique properties:
-
-* They can be traded as resources
-* Cannot be converted back to tradeable form once deployed to an army
-* Once deployed, they can still be transferred between armies if they are located on adjacent hexes and are of the same
-  type and tier
-
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
-
-#### Transport (Donkeys)
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
-</div>
-
-Essential for logistics:
-
-* Required for transferring and trading materials
-* Consumed after a single use
-
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
-
-### Special Materials
-
-#### **$LORDS** Currency
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Lords" id={ResourcesIds.Lords} size="xl" />
-</div>
-
-**$LORDS** is Eternum's economic backbone:
-
-* Used as the currency for all market transactions
-* Bridgeable to external networks
-* Required to produce donkeys
-
-#### Labor
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
-</div>
-
-Labor is a fundamental production material:
-
-* New Season 1 mechanic
-* Can be produced by any Realm or Village
-* Introduces ‘simple mode’ which reduces the complexity of resource and troop production
-* Required to construct most buildings
-* Produced by burning resources, with rarer resources yielding more labor
-
-#### Ancient Fragments
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
-</div>
-
-Strategic end-game material:
-
-* Only found in world map Fragment Mines
-* Required to commence the construction of Hyperstructures
-* Cannot be produced
-
-
-
----
-
-file: docs/pages/mechanics/resources/storage.mdx
-meta: {}
-
-import { WeightTable } from "@/components/WeightTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { divideByPrecision } from "@/utils/resources";
-import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
 
-# 🏺 Storage System
+# ⚔️ Armies
 
-Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
-storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
-**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll need to
-construct storehouses to expand your storage capabilities.
+<img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
 
-## Material Weights
+In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
+interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
+engagement opportunities.
 
-Materials in Eternum have different weights that affect storage:
+Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
+the Realm / Village level as explained in the [Realms](/mechanics/realm-and-villages/realm) section. Each military
+building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
+**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
+view. The maximum size of an army is
+**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
 
-<WeightTable />
+### Field Armies
 
-## Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
+Field armies are used to project force on the world map, explore unknown territories, patrol borders, defend key areas,
+or march against your enemies. These armies are deployed onto one of the six hexes surrounding their parent Realm on the
+world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies
+occupy a hex and traverse the world map based on the conditions outlined in the World Map & Movement section.
 
-Expand your storage capacity to support your growing realm:
+Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
+left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
+any guard armies present.
 
-* **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage capacity.
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-explorer.gif" alt="Create Army" />
 
-* **Expansion**: Build additional storehouses to increase total storage.
+  <em>Flow to create field army in the client</em>
+</div>
 
-* **Danger**: When storage is full new production is wasted
+### Guard Armies
 
-## World Structure Storage
+Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
+view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
+opening up the Details tab.
 
-All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
-capacities are as follows:
+Unlike Realms and Villages, world structures have a static number of defence slots:
 
-| Structure Type | Storage Capacity                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
-| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
-| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
+<WorldStructureDefenseSlotsTable />
 
-## Storage Management Tips
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guard.gif" alt="Create Army" />
 
-> 💡 **Best Practices**
->
-> * Check storage levels regularly
-> * Build new storehouses before reaching capacity
-> * Pause production when storage is nearly full
-> * Plan material usage to maximize storage efficiency
+  <em>Flow to create guard in the client</em>
+</div>
+
+When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
+destroyed, the slot that it occupied becomes unavailable for reinforcement for
+**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
+the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
+cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
+structure on the worldmap, then right-clicking the target hex.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
+
+  <em>Attack field army with structure</em>
+</div>
 
 
 
 ---
 
-file: docs/pages/mechanics/resources/transfers-and-trade.mdx
+file: docs/pages/mechanics/military/damage.mdx
 meta: {}
 
+# 💥 Damage
+
+import { DamageCalculation } from "@/components/DamageCalculation";
+
+## Damage Overview
+
+Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
+the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
+Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
+troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
+numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+
+<DamageCalculation />
+
+
+
+---
+
+file: docs/pages/mechanics/military/raiding.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { RAIDABLE_RESOURCES } from "@bibliothecadao/types";
+import { resource } from "@/components/styles";
+import { RaidableResources } from "@/components/RaidableResources";
 import { importantNote } from "@/components/styles";
 
-# 📜 Transfers & Trade
+# 💰 Raiding
 
-## Transport
+Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
+first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
+the 'raid' action when attacking an enemy structure.
 
-### Transfers
+![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
 
-Throughout the season, Lords will face the need to transfer materials from place to place around the world map, whether
-it be to their own Realms and Villages, or other structures like Banks, Hyperstructures, and Fragment Mines. Lords have
-two primary options for initiating transfers:
+## Raid Requirements
 
-* **Detailed Transfer**: Players can use the comprehensive transfer menu accessible from the Trade tab. This allows
-  transfers of multiple types of materials simultaneously, to any structure on the map—including those belonging to
-  other players.
+Before attempting a raid, your army must meet the following requirements:
 
-![Detailed Transfer](/gifs/transfer-all.gif)
+* Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
+* Be adjacent to the target structure
+* Structure must contain raidable resources
 
-* **Quick Transfer**: Alternatively, Lords can swiftly transfer resources between their own structures using the
-  resources sidebar, ideal for managing internal logistics and maintaining supply chains.
+## Raidable Materials
 
-![Quick Transfer](/gifs/transfer-own.gif)
+Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
+during raids:
 
-### The Donkey Network
-
-When a transfer is initiated, donkeys travel through the invisible and immutable donkey network. This is the key
-infrastructure upon which all material transport takes place, facilitating trade between players and Banks. One donkey
-is capable of carrying up to 500 kg of materials, so the number of donkeys required for a transfer depends on the total
-weight of the materials being moved. Once a transfer is initiated, it cannot be cancelled, and the journey will take
-some time depending on the distance to the destination structure. Upon arrival, transferred materials and donkeys must
-be manually claimed via the 'Resource Arrivals' tab before they become available for use.
+<RaidableResources />
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    In Season 1, resource arrivals are restricted by 'gates' to assist in reducing the load that resource arrival
-    entities have on the game. As donkeys arrive at their destination bearing their various goods, they need to wait
-    until the start of a new Eternum Day for the structure's arrival gate to open before they can enter and be claimed
-    by the owning Lord. For example, if a transfer arrives at 2:56 p.m. the owner of the structure will only need to
-    wait until 3:00 p.m. for the transfer to become claimable, however if the transfer arrives at 3:02 p.m., the goods
-    won't be claimable until the next Eternum Day starts (4 p.m.).
-  </p>
+  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
 </div>
 
-## Banks & Marketplaces
+## Raid Success
 
-### Banks
+The success chance of a raid is determined by the following conditions:
 
-<div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
-  <img src="/images/buildings/construction/bank.png" alt="Bank Building" style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }} />
-</div>
+| Condition                                                                  | Raid Success Chance                           |
+| -------------------------------------------------------------------------- | --------------------------------------------- |
+| Raiding army's total damage \< **50%** of combined guard armies' damage    | **0%**                                        |
+| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
+| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
+| No guard armies present                                                    | **100%** (automatic success)                  |
 
-Six ancient Banks stand evenly distributed around, and equidistant from, the centre of the map.
+Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
+It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
+only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
 
-At the start of the game, each Bank is occupied by powerful groups of bandits. Lords who conquer a Bank become the
-beneficiary of any fees from the Automated Market Maker (AMM) trades that they facilitate. Although Banks collect fees
-independently, they collectively share liquidity, ensuring consistent and stable trading conditions throughout Eternum.
-Realms and Villages automatically utilize their nearest Bank when trading through the AMM.
+## Damage in Raids
 
-### AMM (Automated Market Maker)
+At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
+army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
+pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
+**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
 
-The Automated Market Maker (AMM) is a decentralized trading protocol facilitated by the six Banks, allowing for
-instantaneous and trustless trades 24/7—the DeFi of Eternum. Trades executed via the AMM automatically utilize the
-closest Bank, directing trade fees specifically to that Bank's owner. Lords can further benefit from the AMM by
-contributing materials and $LORDS to liquidity pools, earning a share of the fees generated from subsequent swaps. Lords
-should be aware of the relatively high fees for using the AMM and consider the Orderbook for other trading options
-first.
+Damage from a raiding action is calculated according to the following rules:
 
-### Orderbook
+* The raiding army troop total is split evenly across each guard army.
+* A standard combat damage calculation is then applied to each combat instance.
+* Each damage number is multiplied by the raid damage modifier before casualties are applied.
 
-Complementing the AMM, the Orderbook is a peer-to-peer marketplace, allowing Lords to place precise buy or sell orders
-at chosen quantities and prices. This traditional method of trading incurs lower fees and offers Lords strategic
-control, enabling them to manage market conditions to their advantage and set OTC orders for friends and allies.
+### Example:
+
+Consider **1000** raiders attacking a structure with two occupied guard slots:
+
+* Slot 1: **400** troops
+* Slot 2: **600** troops
+
+The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
+calculations result in the following:
+
+* Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
+* Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
+
+Applying the raid damage modifier, actual losses become:
+
+* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
+  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
+* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
+
+## Raid Outcomes
+
+After a raid attempt, one of two outcomes will occur:
+
+1. **Successful Raid**
+
+   * Resources are transferred to your army's inventory
+   * Resources are limited by your army's carrying capacity
+   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
+     combat damage)
+   * Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+2. **Failed Raid**
+   * No resources are stolen
+   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
+     normal combat damage)
+   * Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
+armies present. If no guard armies are present, the raid automatically succeeds.
+
+
+
+---
+
+file: docs/pages/mechanics/military/stamina-and-biomes.mdx
+meta: {}
+
+import { BiomeCombat } from "@/components/BiomeCombat";
+
+# ⚡ Stamina & Biome Effects
+
+## Stamina
+
+Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
+stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
+exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
+when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+
+### Attacking Army (the army initiating combat)
+
+Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
+additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
+stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
+of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
+
+### Defending Army (the army being attacked)
+
+Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
+incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
+have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
+stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
+armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
+
+## Biomes (Combat Effects)
+
+The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
+engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
+effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
+
+⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
+beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
+cover. Knights are equally advantaged, disadvantaged or not affected across all biome types.
+
+🏹 **Crossbowmen** benefit from open seas and unstable terrains (such as beaches and snow), where they can remain static
+and make the most of their ranged capabilities. However, they will be disadvantaged in flat, open terrain with no cover
+or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
+modifiers of the three troop types.
+
+🛡 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
+type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
+Crossbowmen, but are devastatingly effective in the right situations.
+
+**Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
+battling in an inhospitable environment.**
+
+<BiomeCombat />
+
+
+
+---
+
+file: docs/pages/mechanics/military/troop-tiers.mdx
+meta: {}
+
+import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
+import { MaxStaminaTable } from "@/components/TroopMovementTable";
+
+# 🛡️ Troop Tiers
+
+Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
+troops are more advanced, offering significantly increased combat strength and stamina.
+
+Higher-tier troops are produced by constructing specialized buildings that require rare resources and lower-tier troops
+as inputs:
+
+* Two T1 troops combine to produce one T2 troop
+* Two T2 troops combine to produce one T3 troop
+
+Each troop tier provides escalating advantages in terms of damage output and stamina.
+
+<TroopTiers />
+
+<TroopTierDamageStats />
+
+<MaxStaminaTable />
 
 
 
@@ -3017,6 +2661,670 @@ Key Notes:
 
 ---
 
+file: docs/pages/mechanics/resources/automation.mdx
+meta: {}
+
+# Resource Automation
+
+Resource automation allows players to set up continuous production processes and automated transfers within their realms
+and between entities. This system helps manage resource generation and distribution efficiently without constant manual
+intervention.
+
+## Overview
+
+The automation system works by processing two types of "orders" that you define:
+
+1. **Production Orders**: Automate resource production within your realms
+2. **Transfer Orders**: Automate resource transfers between your entities (realms, villages, hyperstructures, etc.)
+
+Both types of orders specify what you want to automate, the method or conditions, target amounts or schedules, and
+priorities.
+
+**Key Features:**
+
+* **Order-Based**: Define specific production and transfer tasks.
+* **Priority System**: Control the sequence of execution for multiple orders.
+* **Multiple Automation Types**: Choose between production automation and transfer automation.
+* **Entity-Specific**: Automation is configured on a per-entity basis.
+* **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
+  function.
+* **10-Minute Cycles**: All automation is processed every 10 minutes.
+
+## How It Works
+
+The automation system periodically checks and processes active orders for each entity.
+
+1. **Processing Interval**: All orders are evaluated every 10 minutes.
+2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
+3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
+4. **Order Processing**: The system processes different order types:
+
+### Production Order Processing
+
+* **Balance Check**: Before executing, the system checks if the realm has sufficient input resources or labor.
+* **Recipe-Based Production**: Production follows predefined recipes from the game's configuration.
+* **Cycle Calculation**: Determines the maximum number of production cycles possible based on available inputs.
+* **Transaction**: If conditions are met, a blockchain transaction is initiated to perform the production.
+
+### Transfer Order Processing
+
+* **Schedule Check**: For recurring transfers, checks if enough time has passed since the last transfer.
+* **Threshold Check**: For conditional transfers, checks if resource levels meet the specified conditions.
+* **Resource Availability**: Verifies the source entity has sufficient resources for the transfer.
+* **Transaction**: If conditions are met, initiates a transfer transaction between entities.
+
+## Production Types
+
+There are three types of production automation:
+
+1. **Standard (Resource-to-Resource)**:
+   * Converts one or more input resources into a different output resource.
+   * Example: Using Wood and Stone to produce Tools.
+2. **Simple (Labor-to-Resource)**:
+   * Utilizes Labor from the realm to produce a specific resource.
+   * Example: Using Labor to harvest Food.
+3. **Resource-to-Labor**:
+   * Converts a specified resource into Labor for the realm.
+   * Example: Burning Food to generate Labor.
+
+## Production Order Modes
+
+Production orders can operate in two different modes:
+
+1. **Produce Once**:
+
+   * Produces resources until the target amount is reached, then stops.
+   * Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
+   * Can be set to "Infinite" to produce continuously without a limit.
+
+2. **Maintain Balance**:
+   * Keeps resource balance at the target level.
+   * Production triggers when balance drops below target minus buffer percentage.
+   * Example: Target 10,000 with 10% buffer = production starts when balance drops below 9,000.
+   * Useful for maintaining steady resource levels.
+
+## Transfer Types
+
+Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
+
+1. **Recurring Transfers**:
+
+   * Transfers resources at regular intervals.
+   * Minimum interval: 10 minutes (due to automation cycle).
+   * Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
+   * *\[GIF placeholder: Setting up a recurring transfer]*
+
+2. **Maintain Stock Transfers**:
+
+   * Transfers when the destination entity falls below a threshold.
+   * Example: Transfer 500 Wood to Village when it has less than 1,000 Wood.
+   * Helps keep important entities well-supplied.
+   * *\[GIF placeholder: Setting up a maintain stock transfer]*
+
+3. **Depletion Transfers**:
+   * Transfers when the source entity exceeds a threshold.
+   * Example: Transfer excess Stone when Realm has more than 5,000 Stone.
+   * Prevents resource overflow and distributes surplus.
+   * *\[GIF placeholder: Setting up a depletion transfer]*
+
+## Managing Automation Orders (UI)
+
+You can manage automation orders through the "Automation" tab within any entity's interface, or through the global "All
+Automations" view.
+
+### Production Automation
+
+Production automation is managed within individual realm interfaces.
+
+*\[GIF placeholder: Navigating to realm automation tab]*
+
+#### Adding a New Production Order
+
+1. Click the "Add New Automation" button.
+2. Configure the following:
+   * **Order Mode**:
+     * `Produce Once`: Produce up to target amount then stop
+     * `Maintain Balance`: Keep resource balance at target level
+   * **Production Type**:
+     * `Standard (Resource-based)`
+     * `Simple (Labor-based)`
+     * `Resource to Labor`
+   * **Priority (1-9)**:
+     * Set the execution priority. `1` is the highest priority, `9` is the lowest.
+   * **Resource to Produce / Resource Input for Labor**:
+     * Select the resource you want to produce or consume.
+     * The UI shows required input resources for Resource-to-Resource recipes.
+   * **Target Amount**:
+     * For "Produce Once": Set total quantity to produce, or check "Infinite" for continuous production.
+     * For "Maintain Balance": Set the balance level to maintain.
+   * **Buffer Percentage** (Maintain Balance only):
+     * Production starts when balance drops below target minus buffer percentage.
+3. Click "Add Automation".
+
+*\[GIF placeholder: Creating a production automation order]*
+
+### Transfer Automation
+
+Transfer automation allows you to move resources between any of your entities.
+
+*\[GIF placeholder: Accessing transfer automation]*
+
+#### Adding a New Transfer Order
+
+1. **Select Source Entity**:
+   * Choose entity type (Your Realms, Your Villages, etc.)
+   * Search and select the specific source entity
+
+2. **Configure Transfer**:
+
+   * **Transfer Mode**:
+     * `Recurring`: Transfer at regular intervals
+     * `Maintain Stock`: Transfer when destination is low
+     * `Depletion Transfer`: Transfer when source is high
+   * **Destination Entity**:
+     * Choose entity type and select specific destination
+   * **Resources to Transfer**:
+     * Add multiple resources with specific amounts
+   * **Schedule/Conditions**:
+     * For Recurring: Set interval in minutes (minimum 10 minutes)
+     * For conditional transfers: Set threshold amounts
+
+3. Click "Add Transfer Automation".
+
+*\[GIF placeholder: Creating a transfer automation order]*
+
+#### Transfer Interval Guidelines
+
+* **Minimum Interval**: 10 minutes (matches automation processing cycle)
+* **Common Intervals**:
+  * 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
+  * Custom intervals can be set in minutes
+* **Effective Timing**: Transfers occur when automation cycles align with your interval
+
+### Viewing and Managing Orders
+
+#### Individual Entity View
+
+Each entity shows its automation orders in a table with:
+
+* **Priority**: Order execution priority
+* **Mode**: "Once", "Maintain", or transfer mode ("Recurring", "Stock", "Depletion")
+* **Resource**: Visual representation of resource flow
+* **Target/Balance**: Target amounts or transfer schedules
+* **Produced**: Amount produced (production orders only)
+* **Type**: Order type (production or transfer)
+* **Actions**: Remove button
+
+*\[GIF placeholder: Viewing automation orders in entity interface]*
+
+#### Global Automation View
+
+The "All Automations" view shows orders from all entities:
+
+* **Realm Filter**: Filter by specific realm or view all
+* **Order Status**: Visual indicators for completed, paused, or active orders
+* **Countdown Timer**: Shows time until next automation cycle
+* **Bulk Actions**: Pause/resume or delete orders
+
+*\[GIF placeholder: Using the global automation view]*
+
+### Pausing Automation
+
+You can pause automation at different levels:
+
+1. **Individual Entity**: Pause all automation for a specific entity
+2. **Individual Order**: Remove specific orders
+3. **Global Control**: Manage all orders from the global view
+
+*\[GIF placeholder: Pausing and resuming automation]*
+
+## Important Considerations
+
+### General Requirements
+
+* **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
+  automation will stop.
+* **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
+* **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
+  blockchain transaction, which incurs network transaction fees.
+* **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
+  before an order is executed or its results are visible.
+
+### Production Automation Considerations
+
+* **Resource Availability**: Production orders will only execute if the required input resources are available in the
+  realm at the time of processing.
+* **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have
+  valid recipes.
+* **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is
+  full.
+
+### Transfer Automation Considerations
+
+* **Entity Ownership**: You can only set up transfers between entities you own.
+* **Transfer Timing**:
+  * Minimum effective interval is 10 minutes due to processing cycle
+  * Intervals shorter than 10 minutes will effectively transfer every 10 minutes
+  * Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
+* **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
+  time.
+* **Multiple Resources**: You can transfer multiple different resources in a single transfer order.
+* **Conditional Logic**: Maintain Stock and Depletion transfers check conditions each cycle and only transfer when
+  thresholds are met.
+
+### Best Practices
+
+1. **Start Simple**: Begin with basic production orders or simple recurring transfers to understand the system.
+2. **Monitor Initially**: Watch your first few automation cycles to ensure orders work as expected.
+3. **Use Priorities**: Set appropriate priorities when you have multiple orders to control execution sequence.
+4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
+5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource
+   distributions.
+
+*\[GIF placeholder: Monitoring automation performance and adjusting orders]*
+
+
+
+---
+
+file: docs/pages/mechanics/resources/bridging.mdx
+meta: {}
+
+import { EfficiencyTable } from "@/components/EfficienyTable";
+
+# 🌀 Bridging (Portals)
+
+Portals provide Lords with the ability to bridge materials into and out of Eternum, connecting the in-game economy with
+the Starknet infrastructure layer. Portals are mysterious and unstable devices, so they tend to burn up most of the
+materials sent through. However, there is evidence that the power of the Hyperstructures can increase the stability of
+Portals throughout Eternum. As Lords manage to reestablish these mighty structures throughout the land, the efficiency
+of bridging in and out of Eternum improves for all.
+
+<EfficiencyTable />
+
+Each Realm comes equipped with a Portal. Realm Lords are able to bridge materials both into and out of their Realms
+directly. Villages, however, have more limited bridging capabilities—they can bridge materials out of Eternum, but not
+in. This is in line with their existing restrictions on receiving troops from external sources. They are also limited to
+utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
+tokens bridged out of the game.
+
+
+
+---
+
+file: docs/pages/mechanics/resources/production.mdx
+meta: {}
+
+import {
+  StandardTroopProduction,
+  SimpleTroopProduction,
+  SimpleResourceProduction,
+  StandardResourceProduction,
+  LaborProduction,
+  DonkeyProduction,
+} from "@/components/ResourceProduction";
+
+# ⚒️ Production
+
+## Standard vs. Simple
+
+As is the case for building construction, Lords can choose between standard and simple production systems when deciding
+how they wish to produce their materials. This can be done by selecting the appropriate panel when making an order in
+the production screen.
+
+![Simple Mode Production](/gifs/labor-production.gif)
+
+*Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
+unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
+requirements to the production order upfront. The output is then produced at a given rate per second.*
+
+### Standard Mode
+
+The classic Eternum system—every resource and troop production order requires food and a combination of other resources
+as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
+
+### Simple Mode
+
+Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
+both time and resources—but it allows Lords to produce resources on their Realm or Village even if they don't have
+access to the input resources required in standard mode.
+
+## Materials Production
+
+### Food
+
+The rich and fertile lands of Eternum produce two staple food sources, Wheat and Fish. These are the only materials that
+can be produced without inputs, so once a Farm or Fishing Village has been constructed, they can produce food
+indefinitely.
+
+### Resources
+
+The 22 resources found in Eternum are the backbone of the world economy. Producing one resource requires the input of
+two other resources (standard mode), or labor (simple mode). Resources are also the main components in building
+construction, troop production and Hyperstructure contributions - so mastery of these assets is key to success and
+security.
+
+<SimpleResourceProduction />
+
+<StandardResourceProduction />
+
+### Labor
+
+Labor is a new mechanic in Season 1 that has been introduced to simplify and supplement gameplay. It is the primary
+input for buildings and production in simple mode, but is also required in standard mode for building construction,
+Realm upgrades and Hyperstructure contribution.
+
+Labor is produced by permanently burning resources in the central structure of a Realm or Village. This creates a steady
+stream of Labor at a fixed rate. Each of the 22 resources can be burned to produce Labor at varying efficiency,
+dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
+
+<LaborProduction />
+
+### Troops
+
+Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
+procure troops, either through production or purchase, to ensure they remain a relevant force throughout the game. In
+Season 1, two new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of
+the previous tier as input for production.
+
+Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
+mode.
+
+<SimpleTroopProduction />
+
+<StandardTroopProduction />
+
+### Donkeys
+
+The humble steeds that move all materials around Eternum must themselves be produced in a market building. Donkeys are
+one-time-use and consumed after a single journey, so Lords will need to procure a steady supply of donkeys, either
+through production or purchase, to ensure that they can sustain their supply chains, trade with other players, and buy
+and sell from the Banks. Since donkeys are the 'gas' of this onchain world, they consume $LORDS - the native token of
+the ecosystem - during production.
+
+<DonkeyProduction />
+
+
+
+---
+
+file: docs/pages/mechanics/resources/resources.mdx
+meta: {}
+
+import RarityResourceTable from "@/components/RarityResourceTable";
+import ResourceIcon from "@/components/ResourceIcon";
+import TroopsLimitTable from "@/components/TroopsLimitTable";
+import { ResourcesIds } from "@bibliothecadao/types";
+
+# 🪵 Materials
+
+# Materials Overview
+
+Materials encompass all transportable assets in Eternum, including:
+
+* **Food**: Essential wheat and fish that fuel production and troop movement
+* **Resources**: The 22 distinct resource types that can be produced on Realms based on their metadata
+* **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
+* **Donkeys**: One-time-use transport units required for moving materials across the world
+* **Labor**: A special material that enables "simple mode" construction and production
+* **Ancient Fragments**: Rare materials found in-game that are critical for Hyperstructure construction
+
+While all materials can be transported, only specific resources can be produced by Realms based on their inherent
+properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
+
+## Resources
+
+Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
+ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
+out as ERC20 tokens.
+
+![Produce from building](/gifs/produce-from-building-click.gif)
+
+## Material Categories
+
+#### Material Tiers
+
+Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
+
+<RarityResourceTable />
+
+### Basic Materials
+
+#### Food
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
+
+  <ResourceIcon name="Fish" id={ResourcesIds.Fish} />
+</div>
+
+Food is the cornerstone of your realm's economy:
+
+* Produced without additional resource inputs
+* Required for most production chains
+* Essential for maintaining troops and construction
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+
+### Strategic Materials
+
+#### Military
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
+
+  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
+
+  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
+</div>
+
+<TroopsLimitTable />
+
+Military units have unique properties:
+
+* They can be traded as resources
+* Cannot be converted back to tradeable form once deployed to an army
+* Once deployed, they can still be transferred between armies if they are located on adjacent hexes and are of the same
+  type and tier
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+
+#### Transport (Donkeys)
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
+</div>
+
+Essential for logistics:
+
+* Required for transferring and trading materials
+* Consumed after a single use
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+
+### Special Materials
+
+#### **$LORDS** Currency
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Lords" id={ResourcesIds.Lords} size="xl" />
+</div>
+
+**$LORDS** is Eternum's economic backbone:
+
+* Used as the currency for all market transactions
+* Bridgeable to external networks
+* Required to produce donkeys
+
+#### Labor
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
+</div>
+
+Labor is a fundamental production material:
+
+* New Season 1 mechanic
+* Can be produced by any Realm or Village
+* Introduces ‘simple mode’ which reduces the complexity of resource and troop production
+* Required to construct most buildings
+* Produced by burning resources, with rarer resources yielding more labor
+
+#### Ancient Fragments
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
+</div>
+
+Strategic end-game material:
+
+* Only found in world map Fragment Mines
+* Required to commence the construction of Hyperstructures
+* Cannot be produced
+
+
+
+---
+
+file: docs/pages/mechanics/resources/storage.mdx
+meta: {}
+
+import { WeightTable } from "@/components/WeightTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { divideByPrecision } from "@/utils/resources";
+import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
+# 🏺 Storage System
+
+Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
+storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
+**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll need to
+construct storehouses to expand your storage capabilities.
+
+## Material Weights
+
+Materials in Eternum have different weights that affect storage:
+
+<WeightTable />
+
+## Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
+
+Expand your storage capacity to support your growing realm:
+
+* **Capacity**: Each storehouse adds
+  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage capacity.
+
+* **Expansion**: Build additional storehouses to increase total storage.
+
+* **Danger**: When storage is full new production is wasted
+
+## World Structure Storage
+
+All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
+capacities are as follows:
+
+| Structure Type | Storage Capacity                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
+| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
+| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
+
+## Storage Management Tips
+
+> 💡 **Best Practices**
+>
+> * Check storage levels regularly
+> * Build new storehouses before reaching capacity
+> * Pause production when storage is nearly full
+> * Plan material usage to maximize storage efficiency
+
+
+
+---
+
+file: docs/pages/mechanics/resources/transfers-and-trade.mdx
+meta: {}
+
+import { importantNote } from "@/components/styles";
+
+# 📜 Transfers & Trade
+
+## Transport
+
+### Transfers
+
+Throughout the season, Lords will face the need to transfer materials from place to place around the world map, whether
+it be to their own Realms and Villages, or other structures like Banks, Hyperstructures, and Fragment Mines. Lords have
+two primary options for initiating transfers:
+
+* **Detailed Transfer**: Players can use the comprehensive transfer menu accessible from the Trade tab. This allows
+  transfers of multiple types of materials simultaneously, to any structure on the map—including those belonging to
+  other players.
+
+![Detailed Transfer](/gifs/transfer-all.gif)
+
+* **Quick Transfer**: Alternatively, Lords can swiftly transfer resources between their own structures using the
+  resources sidebar, ideal for managing internal logistics and maintaining supply chains.
+
+![Quick Transfer](/gifs/transfer-own.gif)
+
+### The Donkey Network
+
+When a transfer is initiated, donkeys travel through the invisible and immutable donkey network. This is the key
+infrastructure upon which all material transport takes place, facilitating trade between players and Banks. One donkey
+is capable of carrying up to 500 kg of materials, so the number of donkeys required for a transfer depends on the total
+weight of the materials being moved. Once a transfer is initiated, it cannot be cancelled, and the journey will take
+some time depending on the distance to the destination structure. Upon arrival, transferred materials and donkeys must
+be manually claimed via the 'Resource Arrivals' tab before they become available for use.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    In Season 1, resource arrivals are restricted by 'gates' to assist in reducing the load that resource arrival
+    entities have on the game. As donkeys arrive at their destination bearing their various goods, they need to wait
+    until the start of a new Eternum Day for the structure's arrival gate to open before they can enter and be claimed
+    by the owning Lord. For example, if a transfer arrives at 2:56 p.m. the owner of the structure will only need to
+    wait until 3:00 p.m. for the transfer to become claimable, however if the transfer arrives at 3:02 p.m., the goods
+    won't be claimable until the next Eternum Day starts (4 p.m.).
+  </p>
+</div>
+
+## Banks & Marketplaces
+
+### Banks
+
+<div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
+  <img src="/images/buildings/construction/bank.png" alt="Bank Building" style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }} />
+</div>
+
+Six ancient Banks stand evenly distributed around, and equidistant from, the centre of the map.
+
+At the start of the game, each Bank is occupied by powerful groups of bandits. Lords who conquer a Bank become the
+beneficiary of any fees from the Automated Market Maker (AMM) trades that they facilitate. Although Banks collect fees
+independently, they collectively share liquidity, ensuring consistent and stable trading conditions throughout Eternum.
+Realms and Villages automatically utilize their nearest Bank when trading through the AMM.
+
+### AMM (Automated Market Maker)
+
+The Automated Market Maker (AMM) is a decentralized trading protocol facilitated by the six Banks, allowing for
+instantaneous and trustless trades 24/7—the DeFi of Eternum. Trades executed via the AMM automatically utilize the
+closest Bank, directing trade fees specifically to that Bank's owner. Lords can further benefit from the AMM by
+contributing materials and $LORDS to liquidity pools, earning a share of the fees generated from subsequent swaps. Lords
+should be aware of the relatively high fees for using the AMM and consider the Orderbook for other trading options
+first.
+
+### Orderbook
+
+Complementing the AMM, the Orderbook is a peer-to-peer marketplace, allowing Lords to place precise buy or sell orders
+at chosen quantities and prices. This traditional method of trading incurs lower fees and offers Lords strategic
+control, enabling them to manage market conditions to their advantage and set OTC orders for friends and allies.
+
+
+
+---
+
 file: docs/pages/mechanics/worldmap-movement/movement.mdx
 meta: {}
 
@@ -3132,294 +3440,4 @@ explained in more detail in the [Military section](/mechanics/military/stamina-a
 the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
 type differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/mechanics/worldmap-movement/movement) section below.
-
-
-
----
-
-file: docs/pages/mechanics/military/armies.mdx
-meta: {}
-
-import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { formatNumberWithCommas } from "@/utils/formatting";
-
-# ⚔️ Armies
-
-<img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
-interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
-engagement opportunities.
-
-Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
-the Realm / Village level as explained in the [Realms](/mechanics/realm-and-villages/realm) section. Each military
-building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
-view. The maximum size of an army is
-**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
-
-### Field Armies
-
-Field armies are used to project force on the world map, explore unknown territories, patrol borders, defend key areas,
-or march against your enemies. These armies are deployed onto one of the six hexes surrounding their parent Realm on the
-world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies
-occupy a hex and traverse the world map based on the conditions outlined in the World Map & Movement section.
-
-Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
-left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
-any guard armies present.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-explorer.gif" alt="Create Army" />
-
-  <em>Flow to create field army in the client</em>
-</div>
-
-### Guard Armies
-
-Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
-view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
-opening up the Details tab.
-
-Unlike Realms and Villages, world structures have a static number of defence slots:
-
-<WorldStructureDefenseSlotsTable />
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-guard.gif" alt="Create Army" />
-
-  <em>Flow to create guard in the client</em>
-</div>
-
-When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
-destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
-the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
-cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
-structure on the worldmap, then right-clicking the target hex.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
-
-  <em>Attack field army with structure</em>
-</div>
-
-
-
----
-
-file: docs/pages/mechanics/military/damage.mdx
-meta: {}
-
-# 💥 Damage
-
-import { DamageCalculation } from "@/components/DamageCalculation";
-
-## Damage Overview
-
-Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
-
-<DamageCalculation />
-
-
-
----
-
-file: docs/pages/mechanics/military/raiding.mdx
-meta: {}
-
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { RAIDABLE_RESOURCES } from "@bibliothecadao/types";
-import { resource } from "@/components/styles";
-import { RaidableResources } from "@/components/RaidableResources";
-import { importantNote } from "@/components/styles";
-
-# 💰 Raiding
-
-Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
-first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
-the 'raid' action when attacking an enemy structure.
-
-![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
-
-## Raid Requirements
-
-Before attempting a raid, your army must meet the following requirements:
-
-* Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
-* Be adjacent to the target structure
-* Structure must contain raidable resources
-
-## Raidable Materials
-
-Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
-during raids:
-
-<RaidableResources />
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
-</div>
-
-## Raid Success
-
-The success chance of a raid is determined by the following conditions:
-
-| Condition                                                                  | Raid Success Chance                           |
-| -------------------------------------------------------------------------- | --------------------------------------------- |
-| Raiding army's total damage \< **50%** of combined guard armies' damage    | **0%**                                        |
-| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
-| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
-| No guard armies present                                                    | **100%** (automatic success)                  |
-
-Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
-It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
-only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
-
-## Damage in Raids
-
-At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
-army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
-pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
-**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
-
-Damage from a raiding action is calculated according to the following rules:
-
-* The raiding army troop total is split evenly across each guard army.
-* A standard combat damage calculation is then applied to each combat instance.
-* Each damage number is multiplied by the raid damage modifier before casualties are applied.
-
-### Example:
-
-Consider **1000** raiders attacking a structure with two occupied guard slots:
-
-* Slot 1: **400** troops
-* Slot 2: **600** troops
-
-The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
-calculations result in the following:
-
-* Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
-* Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
-
-Applying the raid damage modifier, actual losses become:
-
-* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
-  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
-* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
-
-## Raid Outcomes
-
-After a raid attempt, one of two outcomes will occur:
-
-1. **Successful Raid**
-
-   * Resources are transferred to your army's inventory
-   * Resources are limited by your army's carrying capacity
-   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
-     combat damage)
-   * Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
-
-2. **Failed Raid**
-   * No resources are stolen
-   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
-     normal combat damage)
-   * Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
-
-The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
-armies present. If no guard armies are present, the raid automatically succeeds.
-
-
-
----
-
-file: docs/pages/mechanics/military/stamina-and-biomes.mdx
-meta: {}
-
-import { BiomeCombat } from "@/components/BiomeCombat";
-
-# ⚡ Stamina & Biome Effects
-
-## Stamina
-
-Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
-stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
-exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
-when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
-
-### Attacking Army (the army initiating combat)
-
-Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
-additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
-stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
-of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
-
-### Defending Army (the army being attacked)
-
-Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
-incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
-have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
-stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
-armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
-
-## Biomes (Combat Effects)
-
-The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
-engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
-effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
-
-⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
-beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
-cover. Knights are equally advantaged, disadvantaged or not affected across all biome types.
-
-🏹 **Crossbowmen** benefit from open seas and unstable terrains (such as beaches and snow), where they can remain static
-and make the most of their ranged capabilities. However, they will be disadvantaged in flat, open terrain with no cover
-or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
-modifiers of the three troop types.
-
-🛡 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
-water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
-type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
-Crossbowmen, but are devastatingly effective in the right situations.
-
-**Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
-battling in an inhospitable environment.**
-
-<BiomeCombat />
-
-
-
----
-
-file: docs/pages/mechanics/military/troop-tiers.mdx
-meta: {}
-
-import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
-import { MaxStaminaTable } from "@/components/TroopMovementTable";
-
-# 🛡️ Troop Tiers
-
-Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
-troops are more advanced, offering significantly increased combat strength and stamina.
-
-Higher-tier troops are produced by constructing specialized buildings that require rare resources and lower-tier troops
-as inputs:
-
-* Two T1 troops combine to produce one T2 troop
-* Two T2 troops combine to produce one T3 troop
-
-Each troop tier provides escalating advantages in terms of damage output and stamina.
-
-<TroopTiers />
-
-<TroopTierDamageStats />
-
-<MaxStaminaTable />
 

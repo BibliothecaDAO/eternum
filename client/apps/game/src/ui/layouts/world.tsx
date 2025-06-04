@@ -8,6 +8,7 @@ import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
+import { SeasonWinnerMessage } from "../components/season-winner-message";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -106,9 +107,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const minigameStore = useMinigameStore.getState();
 
-  // uses recs so needs to be synced first
-  const playerStructures = useUIStore((state) => state.playerStructures);
-
   const { data: minigames } = useMiniGames({});
 
   const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
@@ -132,6 +130,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       <StoreManagers />
       <StructureSynchronizerManager />
       <NotLoggedInMessage />
+      <SeasonWinnerMessage />
 
       {/* Main world layer */}
       <div
@@ -178,11 +177,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             </BottomRightContainer>
 
             <RightMiddleContainer>
-              <RightNavigationModule structures={playerStructures} />
+              <RightNavigationModule />
             </RightMiddleContainer>
 
             <TopLeftContainer>
-              <TopLeftNavigation structures={playerStructures} />
+              <TopLeftNavigation />
             </TopLeftContainer>
           </div>
 
