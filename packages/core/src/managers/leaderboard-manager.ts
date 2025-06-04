@@ -110,8 +110,7 @@ export class LeaderboardManager {
    */
   private updateUnregisteredShareholderPointsCache() {
     const configManager = ClientConfigManager.instance();
-    const pointsPrecision = 1_000_000;
-    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle / pointsPrecision; // Divide by precision
+    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle;
     const seasonConfig = configManager.getSeasonConfig();
 
     // Use season end time if season has ended, otherwise use current time
@@ -222,7 +221,7 @@ export class LeaderboardManager {
     totalPoints: number;
   }> {
     const configManager = ClientConfigManager.instance();
-    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle / 1_000_000;
+    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle;
     const seasonConfig = configManager.getSeasonConfig();
 
     // Use season end time if season has ended, otherwise use current time
