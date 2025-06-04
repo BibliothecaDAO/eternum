@@ -1,7 +1,8 @@
-import { fetchRealmVillageSlots, fetchTokenTransfers, RealmVillageSlot, TokenTransfer } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import Button from "@/ui/elements/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { useDojo } from "@bibliothecadao/react";
+import { RealmVillageSlot, TokenTransfer } from "@bibliothecadao/torii";
 import { Direction, getNeighborHexes, HexPosition, Steps } from "@bibliothecadao/types";
 import { ControllerConnector } from "@cartridge/connector";
 import { useAccount } from "@starknet-react/core";
@@ -202,7 +203,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const refetchAndSetPasses = async (): Promise<number> => {
     if (address) {
       try {
-        const tokenTransfers = await fetchTokenTransfers(getVillagePassAddress(), "0x" + BigInt(address).toString(16));
+        const tokenTransfers = await sqlApi.fetchTokenTransfers(
+          getVillagePassAddress(),
+          "0x" + BigInt(address).toString(16),
+        );
         const updatedPasses = tokenTransfers.map((a) => {
           return {
             ...a,
@@ -278,7 +282,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   useEffect(() => {
     const fetchData = async () => {
-      setAvailableVillages(await fetchRealmVillageSlots());
+      setAvailableVillages(await sqlApi.fetchRealmVillageSlots());
     };
     fetchData();
   }, [address]);

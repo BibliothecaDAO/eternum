@@ -5,7 +5,7 @@ import {
   getMarketFromTorii,
   getQuestsFromTorii,
 } from "@/dojo/queries";
-import { fetchHyperstructures } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
@@ -26,7 +26,7 @@ export const useSyncLeaderboard = () => {
     const syncState = async () => {
       setLoading(LoadingStateKey.Leaderboard, true);
 
-      const hyperstructureIds = await fetchHyperstructures();
+      const hyperstructureIds = await sqlApi.fetchHyperstructures();
 
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
@@ -68,7 +68,7 @@ export const useSyncHyperstructure = () => {
   useEffect(() => {
     const syncState = async () => {
       setLoading(LoadingStateKey.Hyperstructure, true);
-      const hyperstructureIds = await fetchHyperstructures();
+      const hyperstructureIds = await sqlApi.fetchHyperstructures();
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
         : getHyperstructureFromTorii(

@@ -1,10 +1,10 @@
-import { fetchExplorerAddressOwner } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, Resource, STEALABLE_RESOURCES, StructureType, Troops } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
@@ -106,7 +106,7 @@ export const AttackContainer = ({
           setTargetResources(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
         }
         if (explorer) {
-          const addressOwner = await fetchExplorerAddressOwner(targetTile.occupier_id);
+          const addressOwner = await sqlApi.fetchExplorerAddressOwner(targetTile.occupier_id);
           setTarget({
             info: [explorer.troops],
             id: targetTile?.occupier_id,

@@ -1,7 +1,7 @@
 import { ID } from "@bibliothecadao/types";
 // import { Entity } from "@dojoengine/recs"; // Will be removed
 import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
-import { getExplorerFromToriiEntity, getResourcesFromToriiEntity } from "../parser";
+import { getExplorerFromToriiEntity, getResourcesFromToriiEntity } from "../../parser/torii-client";
 
 export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
   const query: Query = {
