@@ -10,7 +10,6 @@ import {
   getBankStructuresFromTorii,
   getConfigFromTorii,
   getGuildsFromTorii,
-  getSeasonPrizeFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
 
@@ -195,12 +194,6 @@ export const initialSync = async (
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
-  setInitialSyncProgress(50);
-
-  start = performance.now();
-  await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
-  end = performance.now();
-  console.log("[sync] season prize query", end - start);
   setInitialSyncProgress(75);
 
   start = performance.now();

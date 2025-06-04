@@ -773,8 +773,8 @@ export class ClientConfigManager {
         return {
           // todo: need to fix this
           timeBetweenSharesChange: 0,
-          pointsPerCycle: Number(hyperstructureConfig?.points_per_second) ?? 0,
-          pointsForWin: Number(hyperstructureConfig?.points_for_win) ?? 0,
+          pointsPerCycle: (Number(hyperstructureConfig?.points_per_second) ?? 0) / 1_000_000,
+          pointsForWin: (Number(hyperstructureConfig?.points_for_win) ?? 0) / 1_000_000,
         };
       },
       {
