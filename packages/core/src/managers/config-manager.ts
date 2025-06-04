@@ -765,8 +765,8 @@ export class ClientConfigManager {
         return {
           // todo: need to fix this
           timeBetweenSharesChange: 0,
-          pointsPerCycle: Number(hyperstructureConfig?.points_per_second) ?? 0,
-          pointsForWin: Number(hyperstructureConfig?.points_for_win) ?? 0,
+          pointsPerCycle: (Number(hyperstructureConfig?.points_per_second) ?? 0) / 1_000_000,
+          pointsForWin: (Number(hyperstructureConfig?.points_for_win) ?? 0) / 1_000_000,
         };
       },
       {
@@ -920,23 +920,6 @@ export class ClientConfigManager {
     }, 0);
   }
 
-  getSeasonBridgeConfig() {
-    return this.getValueOrDefault(
-      () => {
-        const seasonConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.season_config;
-        return {
-          closeAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
-        };
-      },
-      {
-        closeAfterEndSeconds: 0n,
-      },
-    );
-  }
-
   getSeasonConfig() {
     return this.getValueOrDefault(
       () => {
@@ -945,17 +928,17 @@ export class ClientConfigManager {
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
         )?.season_config;
         return {
-          startSettlingAt: seasonConfig?.start_settling_at ?? 0n,
-          startMainAt: seasonConfig?.start_main_at ?? 0n,
-          endAt: seasonConfig?.end_at ?? 0n,
-          bridgeCloseAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
+          startSettlingAt: seasonConfig?.start_settling_at ?? 0,
+          startMainAt: seasonConfig?.start_main_at ?? 0,
+          endAt: seasonConfig?.end_at ?? 0,
+          bridgeCloseAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0,
         };
       },
       {
-        startSettlingAt: 0n,
-        startMainAt: 0n,
-        endAt: 0n,
-        bridgeCloseAfterEndSeconds: 0n,
+        startSettlingAt: 0,
+        startMainAt: 0,
+        endAt: 0,
+        bridgeCloseAfterEndSeconds: 0,
       },
     );
   }
