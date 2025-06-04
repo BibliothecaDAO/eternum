@@ -197,6 +197,11 @@ export interface AddressName {
   name: string;
 }
 
+export interface SeasonEnded {
+  winner_address: string;
+  timestamp: number;
+}
+
 // Raw response types for queries that need transformation
 export interface RawRealmVillageSlot {
   "connected_realm_coord.x": number;
