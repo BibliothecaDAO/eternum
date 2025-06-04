@@ -9,6 +9,7 @@ import {
   QuestTileData,
   RawRealmVillageSlot,
   RealmVillageSlot,
+  SeasonEnded,
   StructureDetails,
   StructureLocation,
   SwapEventResponse,
@@ -19,6 +20,7 @@ import {
 import { buildApiUrl, extractFirstOrNull, fetchWithErrorHandling, formatAddressForQuery } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { QUEST_QUERIES } from "./quest";
+import { SEASON_QUERIES } from "./season";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
@@ -262,5 +264,15 @@ export class SqlApi {
     const query = STRUCTURE_QUERIES.PLAYER_STRUCTURES.replace("{owner}", formattedOwner);
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<PlayerStructure>(url, "Failed to fetch player structures");
+  }
+
+  /**
+   * Fetch season ended information from the SQL database.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchSeasonEnded(): Promise<SeasonEnded | null> {
+    const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED);
+    const results = await fetchWithErrorHandling<SeasonEnded>(url, "Failed to fetch season ended");
+    return extractFirstOrNull(results);
   }
 }
