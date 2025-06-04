@@ -1,31 +1,8 @@
+import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInfo, RealmInterface } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { configManager, getAddressNameFromEntity, getEntityName, ResourceManager } from "..";
+import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
 import realmsJson from "../data/realms.json";
-import {
-  findResourceIdByTrait,
-  orders,
-  StructureType,
-  ClientComponents,
-  ID,
-  RealmInfo,
-  RealmInterface,
-  RealmWithPosition,
-} from "@bibliothecadao/types";
 import { packValues, unpackValue } from "./packed-data";
-
-export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Structure } = components;
-  const structure = getComponentValue(Structure, entity);
-  if (structure?.base.category !== StructureType.Realm) return undefined;
-
-  return {
-    ...structure,
-    resources: unpackValue(BigInt(structure.resources_packed)),
-    position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
-    name: getRealmNameById(structure.metadata.realm_id),
-    owner: structure?.owner,
-  } as RealmWithPosition;
-};
 
 interface Attribute {
   trait_type: string;
@@ -61,8 +38,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     const entity_id = structure.entity_id;
     const produced_resources = structure.resources_packed;
 
-    const name = getEntityName(structure.entity_id, components);
-
     const resources = unpackValue(BigInt(produced_resources));
 
     const resourceManager = new ResourceManager(components, entity_id);
@@ -71,7 +46,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       realmId: realm_id,
       entityId: entity_id,
       category: structure.category,
-      name,
       level,
       resources,
       order,
@@ -86,6 +60,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       owner: structure?.owner,
       ownerName: getAddressNameFromEntity(entity_id, components) || "",
       hasWonder: structure.metadata.has_wonder,
+      structure,
     };
   }
 }

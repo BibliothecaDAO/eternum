@@ -9,7 +9,7 @@ import {
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ResourceManager, getRealmNameById } from "..";
+import { ResourceManager, getStructureName } from "..";
 
 export type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -115,7 +115,7 @@ export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number
         if (trade.expires_at > currentBlockTimestamp) {
           return {
             makerName: shortString.decodeShortString(makerName?.toString() || ""),
-            originName: getRealmNameById(makerStructure?.metadata.realm_id || 0),
+            originName: makerStructure ? getStructureName(makerStructure).name : "",
             tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,

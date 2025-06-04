@@ -1,7 +1,7 @@
 {
   "seasonPass": "0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",
   "realms": "0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0",
-  "lords": "0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a",
+  "lords": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
   "villagePass": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
   "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
   "resources": {
@@ -37,3 +37,4 @@
     "LORDS": [37,"0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a"]
   }
 }
+

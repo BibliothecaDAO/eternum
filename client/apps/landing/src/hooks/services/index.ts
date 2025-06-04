@@ -1,3 +1,4 @@
+import { getCollectionByAddress } from "@/config";
 import { trimAddress } from "@/lib/utils";
 import { RealmMetadata } from "@/types";
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
@@ -33,6 +34,7 @@ export interface TokenTransfer {
 export interface ActiveMarketOrdersTotal {
   active_order_count: number;
   open_orders_total_wei: bigint | null; // SUM can return null if there are no rows
+  floor_price_wei: bigint | null;
 }
 
 export interface OpenOrderByPrice {
@@ -46,6 +48,7 @@ export interface OpenOrderByPrice {
   token_owner: string | null;
   order_owner: string | null;
   balance: string | null;
+  contract_address: string;
 }
 
 // Raw type for data fetched by fetchOpenOrdersByPrice
@@ -122,8 +125,15 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
 /**
  * Fetch totals for active market orders from the API
  */
-export async function fetchActiveMarketOrdersTotal(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
-  const query = QUERIES.ACTIVE_MARKET_ORDERS_TOTAL.replaceAll("{contractAddress}", contractAddress);
+export async function fetchCollectionStatistics(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+  const query = QUERIES.COLLECTION_STATISTICS.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
+    "{contractAddress}",
+    contractAddress,
+  );
   return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
 }
 
@@ -136,10 +146,15 @@ export async function fetchOpenOrdersByPrice(
   limit?: number,
   offset?: number,
 ): Promise<OpenOrderByPrice[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
   const query = QUERIES.OPEN_ORDERS_BY_PRICE.replaceAll("{contractAddress}", contractAddress)
     .replace("{limit}", limit?.toString() ?? "20")
     .replace("{offset}", offset?.toString() ?? "0")
-    .replace("{ownerAddress}", ownerAddress ?? "");
+    .replace("{ownerAddress}", ownerAddress ?? "")
+    .replace("{collectionId}", collectionId.toString());
   const rawData = await fetchSQL<any[]>(query);
   return rawData.map((item) => ({
     ...item,
@@ -149,6 +164,7 @@ export async function fetchOpenOrdersByPrice(
     token_owner: item.token_owner ?? null,
     order_owner: item.order_owner ?? null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    contract_address: contractAddress,
   }));
 }
 
@@ -193,6 +209,7 @@ interface RawTokenBalanceWithMetadata {
   expiration?: number;
   best_price_hex?: string; // Raw hex string for bigint
   metadata?: string; // Raw JSON string
+  order_id?: string;
 }
 
 export interface ActiveMarketOrder {
@@ -216,7 +233,13 @@ export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
 ): Promise<TokenBalanceWithToken[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+
   const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
+    .replace("{collectionId}", collectionId.toString())
     .replace("{accountAddress}", accountAddress)
     .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
@@ -230,6 +253,7 @@ export async function fetchTokenBalancesWithMetadata(
     expiration: item.expiration ?? null,
     best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    order_id: item.order_id ?? null,
   }));
 }
 
@@ -267,7 +291,10 @@ export async function fetchMarketOrderEvents(
   offset?: number,
 ): Promise<MarketOrderEvent[]> {
   const finalType = type === "sales" ? "Accepted" : type;
+  const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
+
   const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{collectionId}", collectionId?.toString())
     .replace("{limit}", limit?.toString() ?? "50")
     .replace("{offset}", offset?.toString() ?? "0")
     .replaceAll("{type}", finalType);

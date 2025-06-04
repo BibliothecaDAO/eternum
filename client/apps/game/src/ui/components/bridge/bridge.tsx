@@ -8,7 +8,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys, getStructureName } from "@bibliothecadao/eternum";
 import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   ID,
@@ -317,6 +317,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       .map((structure) => ({
         ...structure,
         isFavorite: structure.entityId ? favorites.includes(structure.entityId) : false,
+        name: getStructureName(structure.structure).name,
       }))
       .sort((a, b) => {
         const aFav = a.entityId ? Number(a.isFavorite) : 0;

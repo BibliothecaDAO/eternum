@@ -1,20 +1,24 @@
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { seasonPassAddress } from "@/config";
-import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
+import { marketplaceCollections } from "@/config";
+import { fetchCollectionStatistics } from "@/hooks/services";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { formatUnits } from "viem";
-import { env } from "../../../env";
+import { env } from "../../../../env";
 
-export const Route = createFileRoute("/trade")({
+export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
 });
 
 function TradeLayout() {
+  const { collection } = useParams({ from: "/trade/$collection" });
+  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { data: totals } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress],
-    queryFn: () => fetchActiveMarketOrdersTotal(seasonPassAddress),
+    queryKey: ["activeMarketOrdersTotal", collectionAddress],
+    queryFn: () => fetchCollectionStatistics(collectionAddress),
     refetchInterval: 30_000,
   });
 
@@ -25,17 +29,24 @@ function TradeLayout() {
   const totalWeiStr = BigInt(totals?.[0]?.open_orders_total_wei ?? 0);
   const totalWei = formatUnits(totalWeiStr, 18);
   const totalEth = totalWei ?? "0";
+  const floorPrice = totals?.[0]?.floor_price_wei ? formatUnits(BigInt(totals?.[0]?.floor_price_wei), 18) : "0";
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex flex-col h-full overflow-y-auto">
         <div className="text-center border-b py-6">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season 1 Pass Marketplace"}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">{collectionName + " Marketplace"}</h2>
           <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
             <span>
               <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings
             </span>
-            <span>•</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="flex items-center gap-1">
+              Floor Price{" "}
+              <span className="font-semibold text-foreground">{parseFloat(floorPrice).toLocaleString()}</span>{" "}
+              <ResourceIcon resource="Lords" size="sm" />
+            </span>
+            <Separator orientation="vertical" className="h-4" />
             <span className="flex items-center gap-1">
               Volume <span className="font-semibold text-foreground">{parseFloat(totalEth).toLocaleString()}</span>{" "}
               <ResourceIcon resource="Lords" size="sm" />
@@ -49,12 +60,12 @@ function TradeLayout() {
             <Tabs defaultValue="items" className="w-full items-center flex justify-center">
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                  <Link to="/trade" className="cursor-pointer">
+                  <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
                     Items
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger value="activity" asChild>
-                  <Link to="/trade/activity" className="cursor-pointer">
+                  <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
                     Activity
                   </Link>
                 </TabsTrigger>

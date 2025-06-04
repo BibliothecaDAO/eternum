@@ -1,5 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo } from "@bibliothecadao/types";
 import { ReactNode, useState } from "react";
 
@@ -38,7 +39,7 @@ export const SelectStructureDrawer = ({
               className="w-full justify-start"
               onClick={() => handleSelect(structure.entityId)}
             >
-              {structure.name}
+              {getStructureName(structure.structure).name}
             </Button>
           ))}
         </div>

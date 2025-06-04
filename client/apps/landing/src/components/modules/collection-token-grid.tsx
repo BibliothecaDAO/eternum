@@ -2,9 +2,9 @@ import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
 import { Crown } from "lucide-react";
 import { AnimatedGrid } from "./animated-grid";
-import { SeasonPassCard } from "./season-pass-card";
+import { TokenCard } from "./token-card";
 
-interface RealmGridItem {
+interface TokenGridItem {
   colSpan?: {
     sm?: number;
     md?: number;
@@ -14,26 +14,22 @@ interface RealmGridItem {
   data: MergedNftData;
 }
 
-interface SeasonPassRowProps {
-  seasonPasses: MergedNftData[];
-  setIsTransferOpen: (tokenId?: string) => void;
-  checkOwner?: boolean;
-  hideTransferButton?: boolean;
+interface CollectionTokenGridProps {
+  tokens: MergedNftData[];
+  setIsTransferOpen?: (tokenId?: string) => void;
   isCompactGrid?: boolean;
   onToggleSelection?: (pass: MergedNftData) => void;
 }
 
-export const SeasonPassesGrid = ({
-  seasonPasses,
+export const CollectionTokenGrid = ({
+  tokens,
   setIsTransferOpen,
-  checkOwner,
-  hideTransferButton,
   isCompactGrid,
   onToggleSelection,
-}: SeasonPassRowProps) => {
+}: CollectionTokenGridProps) => {
   const isSelected = useSelectedPassesStore((state) => state.isSelected);
 
-  if (!seasonPasses?.length) {
+  if (!tokens?.length) {
     return (
       <div className="relative flex flex-col items-center justify-center p-16 text-center space-y-8 min-h-[600px] rounded-xl border-2 border-dashed border-gray-200/70 bg-gradient-to-b from-gray-50/50 to-gray-100/50">
         <div className="absolute inset-0 overflow-hidden">
@@ -59,7 +55,7 @@ export const SeasonPassesGrid = ({
     );
   }
 
-  const gridItems: RealmGridItem[] = seasonPasses.map((pass) => ({
+  const gridItems: TokenGridItem[] = tokens.map((pass) => ({
     colSpan: isCompactGrid
       ? { sm: 6, md: 6, lg: 3, xl: 2 } // 2 items on sm, 3 on md, 4 on lg
       : { sm: 6, md: 6, lg: 4, xl: 3 }, // 2 items on sm, 3 on md, 3 on lg
@@ -71,18 +67,17 @@ export const SeasonPassesGrid = ({
       <AnimatedGrid
         items={gridItems}
         renderItem={(item) => {
-          const pass = item.data;
-          if (!pass) return null;
-          const tokenId = pass.token_id;
+          const token = item.data;
+          if (!token) return null;
+          const tokenId = token.token_id;
 
           return (
-            <SeasonPassCard
+            <TokenCard
               key={`${tokenId || ""}`}
-              pass={pass}
-              checkOwner={checkOwner}
+              token={token}
               isSelected={isSelected(tokenId.toString())}
-              onToggleSelection={() => onToggleSelection?.(pass)}
-              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId.toString())}
+              onToggleSelection={() => onToggleSelection?.(token)}
+              toggleNftSelection={() => tokenId && setIsTransferOpen && setIsTransferOpen(tokenId.toString())}
             />
           );
         }}

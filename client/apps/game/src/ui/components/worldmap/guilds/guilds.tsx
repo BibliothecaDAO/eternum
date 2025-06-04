@@ -1,6 +1,6 @@
 import { CreateGuildButton } from "@/ui/components/worldmap/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/components/worldmap/guilds/guild-list";
-import { PRIZE_POOL_GUILDS } from "@/ui/constants";
+import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import Button from "@/ui/elements/button";
 import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
@@ -117,7 +117,7 @@ export const Guilds = ({
         return {
           ...guild,
           rank,
-          lords: calculateGuildLordsPrize(rank, PRIZE_POOL_GUILDS),
+          prize: calculateGuildLordsPrize(rank, LORDS_PRIZE_POOL, STRK_PRIZE_POOL),
         };
       });
   }, [guilds, players, components]);
@@ -127,7 +127,6 @@ export const Guilds = ({
       sortItems(
         guildsWithStats.filter((guild) => {
           const nameMatch = guild.name.toLowerCase().startsWith(guildsGuildSearchTerm.toLowerCase());
-          console.log(guildInvites);
           if (guildsViewGuildInvites) {
             return (
               nameMatch &&
