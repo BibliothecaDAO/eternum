@@ -2,14 +2,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DepositResourceArrival } from "@/ui/components/resources/deposit-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, getStructureName } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";
-import { ResourceArrivalInfo } from "@bibliothecadao/types";
+import { ResourceArrivalInfo, Structure } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
-export const StructureArrivals = memo(({ structure }: { structure: any }) => {
+export const StructureArrivals = memo(({ structure }: { structure: Structure }) => {
   const { currentBlockTimestamp } = getBlockTimestamp();
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -39,6 +39,10 @@ export const StructureArrivals = memo(({ structure }: { structure: any }) => {
     return () => clearInterval(interval);
   }, [currentBlockTimestamp]);
 
+  const structureName = useMemo(() => {
+    return getStructureName(structure.structure).name;
+  }, [structure]);
+
   if (arrivals.length === 0) return null;
 
   return (
@@ -48,7 +52,7 @@ export const StructureArrivals = memo(({ structure }: { structure: any }) => {
         onClick={toggleStructure}
       >
         <div className="flex items-center">
-          <h6 className="">{structure.name}</h6>
+          <h6 className="">{structureName}</h6>
         </div>
         <div className="flex items-center gap-2">
           {readyArrivals > 0 && (
