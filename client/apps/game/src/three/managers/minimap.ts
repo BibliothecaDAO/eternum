@@ -33,7 +33,7 @@ const LABELS = {
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
-  MAX_ZOOM_RANGE: 600,
+  MAX_ZOOM_RANGE: 900,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   EXPANDED_MODIFIER: 0.5,
@@ -680,8 +680,8 @@ class Minimap {
     this.hoveredHexCoords = { col, row };
 
     if (this.isDragging && this.lastMousePosition) {
-      const colShift = Math.round(event.clientX - this.lastMousePosition.x);
-      const rowShift = Math.round(event.clientY - this.lastMousePosition.y);
+      const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
+      const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
       this.mapCenter.col -= colShift;
       this.mapCenter.row -= rowShift;
 
