@@ -48,76 +48,76 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    // await this.setupBank(account, provider);
+    await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    // await setWorldConfig(config);
-    // await this.sleepNonLocal();
+    await setWorldConfig(config);
+    await this.sleepNonLocal();
 
-    // await setWonderBonusConfig(config);
-    // await this.sleepNonLocal();
+    await setWonderBonusConfig(config);
+    await this.sleepNonLocal();
 
-    // await setAgentConfig(config);
-    // await this.sleepNonLocal();
+    await setAgentConfig(config);
+    await this.sleepNonLocal();
 
-    // await setVillageControllersConfig(config);
-    // await this.sleepNonLocal();
+    await setVillageControllersConfig(config);
+    await this.sleepNonLocal();
 
-    // await SetResourceFactoryConfig(config);
-    // await this.sleepNonLocal();
+    await SetResourceFactoryConfig(config);
+    await this.sleepNonLocal();
 
     await setResourceBridgeWhitelistConfig(config);
     await this.sleepNonLocal();
 
-    // await setTradeConfig(config);
-    // await this.sleepNonLocal();
+    await setTradeConfig(config);
+    await this.sleepNonLocal();
 
-    // await setStartingResourcesConfig(config);
-    // await this.sleepNonLocal();
+    await setStartingResourcesConfig(config);
+    await this.sleepNonLocal();
 
-    // await setSeasonConfig(config);
-    // await this.sleepNonLocal();
+    await setSeasonConfig(config);
+    await this.sleepNonLocal();
 
-    // await setVRFConfig(config);
-    // await this.sleepNonLocal();
+    await setVRFConfig(config);
+    await this.sleepNonLocal();
 
-    // await setResourceBridgeFeesConfig(config);
-    // await this.sleepNonLocal();
+    await setResourceBridgeFeesConfig(config);
+    await this.sleepNonLocal();
 
-    // await setBuildingConfig(config);
-    // await this.sleepNonLocal();
+    await setBuildingConfig(config);
+    await this.sleepNonLocal();
 
-    // await setWeightConfig(config);
-    // await this.sleepNonLocal();
+    await setWeightConfig(config);
+    await this.sleepNonLocal();
 
-    // await setBattleConfig(config);
-    // await this.sleepNonLocal();
+    await setBattleConfig(config);
+    await this.sleepNonLocal();
 
-    // await setTroopConfig(config);
-    // await this.sleepNonLocal();
+    await setTroopConfig(config);
+    await this.sleepNonLocal();
 
-    // await setRealmUpgradeConfig(config);
-    // await this.sleepNonLocal();
+    await setRealmUpgradeConfig(config);
+    await this.sleepNonLocal();
 
-    // await setStructureMaxLevelConfig(config);
-    // await this.sleepNonLocal();
+    await setStructureMaxLevelConfig(config);
+    await this.sleepNonLocal();
 
-    // await setupGlobals(config);
-    // await this.sleepNonLocal();
+    await setupGlobals(config);
+    await this.sleepNonLocal();
 
-    // await setCapacityConfig(config);
-    // await this.sleepNonLocal();
+    await setCapacityConfig(config);
+    await this.sleepNonLocal();
 
-    // await setSpeedConfig(config);
-    // await this.sleepNonLocal();
+    await setSpeedConfig(config);
+    await this.sleepNonLocal();
 
-    // await setHyperstructureConfig(config);
-    // await this.sleepNonLocal();
+    await setHyperstructureConfig(config);
+    await this.sleepNonLocal();
 
-    // await setSettlementConfig(config);
-    // await this.sleepNonLocal();
+    await setSettlementConfig(config);
+    await this.sleepNonLocal();
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
