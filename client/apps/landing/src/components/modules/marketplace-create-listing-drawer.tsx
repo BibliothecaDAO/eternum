@@ -1,4 +1,5 @@
 import { fetchActiveMarketOrders } from "@/hooks/services";
+import { useMarketplace } from "@/hooks/use-marketplace";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
 import { MergedNftData } from "@/types";
 import { useQuery } from "@tanstack/react-query";
@@ -27,16 +28,7 @@ interface CreateListingDrawerProps {
   name: string | null;
   isLoading: boolean;
   isSyncing: boolean;
-  marketplaceActions: {
-    isCreatingOrder: boolean;
-    listItem: (params: {
-      token_id: number;
-      collection_id: number;
-      price: bigint;
-      expiration: number;
-      cancel_order_id: bigint;
-    }) => Promise<{ execution_status: string }>;
-  };
+  marketplaceActions: ReturnType<typeof useMarketplace>;
 }
 
 // State for inputs

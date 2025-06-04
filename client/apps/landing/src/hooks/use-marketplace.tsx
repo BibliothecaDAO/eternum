@@ -42,11 +42,11 @@ export const useMarketplace = () => {
     address: lordsAddress as `0x${string}`,
   });
 
-  const listItem = async (params: ListItemParams) => {
+  const listItem = async (params: ListItemParams): Promise<{ execution_status: string } | undefined> => {
     if (!account) throw new Error("Account not connected");
     setIsCreatingOrder(true);
     try {
-      return await create_marketplace_order({
+      return (await create_marketplace_order({
         price: params.price.toString(),
         expiration: params.expiration,
         token_id: params.token_id,
@@ -54,8 +54,7 @@ export const useMarketplace = () => {
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
         cancel_order_id: params.cancel_order_id,
-      });
-      toast.success("Transaction confirmed! Syncing listing status...");
+      })) as { execution_status: string };
       // Add success handling if needed
     } catch (error) {
       console.error("Failed to list item:", error);
@@ -114,12 +113,12 @@ export const useMarketplace = () => {
     if (!account) throw new Error("Account not connected");
     setIsEditingOrder(true);
     try {
-      return await edit_marketplace_order({
+      return (await edit_marketplace_order({
         order_id: params.order_id.toString(),
         new_price: params.new_price.toString(),
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
-      });
+      })) as { execution_status: string };
     } catch (error) {
       console.error("Failed to edit order:", error);
       toast.error("Failed to edit order. Please try again.");
