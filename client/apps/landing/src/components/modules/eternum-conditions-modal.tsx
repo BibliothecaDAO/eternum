@@ -40,12 +40,12 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
       <section>
         <TypeH3>Did you know that Eternum is a fully onchain game with immutable contracts?</TypeH3> <br />
         <h2 className="font-bold text-xl">Important information:</h2>
-        <TypeP>Bridges out of the game permanently close 48 hours after victory.</TypeP>
+        <TypeP>Bridges out of the game permanently close 7 days after victory.</TypeP>
       </section>
 
       <section>
         <TypeP>
-          You bridge tokens in and out of the game. The game bridge is closed forever 48 hours after the game ends. Any
+          You bridge tokens in and out of the game. The game bridge is closed forever 7 days after the game ends. Any
           tokens left in the game at that time are permanently locked in the contract (aka burned).
         </TypeP>
       </section>
@@ -74,11 +74,11 @@ export function EternumConditionsModal({ open, onOpenChange }: EternumConditions
         <p>By participating in Eternum, you fully acknowledge and agree to the following terms and conditions:</p>{" "}
         <br />
         <h2 className="text-lg">
-          <strong>All Tokens Are Locked In Game Contract 48 hours after the game is won (Season End)</strong>
+          <strong>All Tokens Are Locked In Game Contract 7 days after the game is won (Season End)</strong>
         </h2>
         <p className="mt-4">
           A season of Eternum concludes when a single player achieves the required number of Victory Points and clicks
-          the "End Season" button. 48 hours after this point:
+          the "End Season" button. 7 days after this point:
         </p>
         <ul className="list-disc pl-6 mt-2">
           <li className="font-extrabold">
