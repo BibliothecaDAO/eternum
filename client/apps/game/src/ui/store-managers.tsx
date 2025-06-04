@@ -1,13 +1,13 @@
 import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
 const ResourceArrivalsStoreManager = () => {
@@ -169,22 +169,27 @@ const SeasonWinnerStoreManager = () => {
     setup: { components },
   } = useDojo();
   const setSeasonWinner = useUIStore((state) => state.setSeasonWinner);
-  const seasonWinnerEntities = useEntityQuery([Has(components.events.SeasonEnded)]);
+  const [seasonEnded, setSeasonEnded] = useState<SeasonEnded | null>(null);
 
   useEffect(() => {
-    if (seasonWinnerEntities.length === 1) {
-      const seasonWinner = getComponentValue(components.events.SeasonEnded, seasonWinnerEntities[0]);
-      if (seasonWinner) {
-        const addressName = getAddressName(seasonWinner.winner_address, components);
-        const guildName = getGuildFromPlayerAddress(seasonWinner.winner_address, components)?.name;
-        setSeasonWinner({
-          address: seasonWinner.winner_address,
-          name: addressName ?? "Unknown",
-          guildName: guildName ?? "Unknown",
-        });
-      }
+    const fetchSeasonEnded = async () => {
+      const seasonEnded = await sqlApi.fetchSeasonEnded();
+      setSeasonEnded(seasonEnded);
+    };
+    fetchSeasonEnded();
+  }, []);
+
+  useEffect(() => {
+    if (seasonEnded) {
+      const addressName = getAddressName(ContractAddress(seasonEnded.winner_address), components);
+      const guildName = getGuildFromPlayerAddress(ContractAddress(seasonEnded.winner_address), components)?.name;
+      setSeasonWinner({
+        address: ContractAddress(seasonEnded.winner_address),
+        name: addressName ?? "Unknown",
+        guildName: guildName ?? "Unknown",
+      });
     }
-  }, [seasonWinnerEntities, setSeasonWinner, components]);
+  }, [seasonEnded, setSeasonWinner, components]);
 
   return null;
 };
