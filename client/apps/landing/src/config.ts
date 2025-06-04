@@ -27,17 +27,17 @@ const COLLECTION_IDS = {
 const currentNetwork = import.meta.env.VITE_PUBLIC_CHAIN === "sepolia" ? "sepolia" : "mainnet";
 
 export const marketplaceCollections = {
-  "season-passes": {
-    address: seasonPassAddress,
-    id: COLLECTION_IDS[currentNetwork]["season-passes"],
-    name: "Season 1 Pass",
-    image: "/collections/season-1-pass.png",
-  },
   realms: {
     address: realmsAddress,
     id: COLLECTION_IDS[currentNetwork].realms,
     name: "Realms",
     image: "/collections/realms.png",
+  },
+  "season-passes": {
+    address: seasonPassAddress,
+    id: COLLECTION_IDS[currentNetwork]["season-passes"],
+    name: "Season 1 Pass",
+    image: "/collections/season-1-pass.png",
   },
 } as const;
 

@@ -109,12 +109,12 @@ export const useMarketplace = () => {
     if (!account) throw new Error("Account not connected");
     setIsEditingOrder(true);
     try {
-      return await edit_marketplace_order({
+      return (await edit_marketplace_order({
         order_id: params.order_id.toString(),
         new_price: params.new_price.toString(),
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
-      });
+      })) as { execution_status: string };
     } catch (error) {
       console.error("Failed to edit order:", error);
       toast.error("Failed to edit order. Please try again.");
