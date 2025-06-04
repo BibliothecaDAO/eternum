@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchOtherStructures } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
 import { getGuildMembersFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -27,7 +27,7 @@ export const TransferView = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const otherStructures = await fetchOtherStructures(account.address);
+      const otherStructures = await sqlApi.fetchOtherStructures(account.address);
       setOtherVillages(otherStructures.filter((a) => a.category === StructureType.Village));
       setOtherRealms(otherStructures.filter((a) => a.category === StructureType.Realm));
       setOtherHyperstructures(otherStructures.filter((a) => a.category === StructureType.Hyperstructure));

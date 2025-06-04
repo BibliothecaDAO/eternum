@@ -1,4 +1,3 @@
-export * from "../../../torii-client/src/queries/address";
 export * from "./action-paths";
 export * from "./army";
 export * from "./banks";

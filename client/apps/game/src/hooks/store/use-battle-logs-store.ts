@@ -1,4 +1,6 @@
-import { BattleLogEvent, fetchBattleLogs } from "@/services/api";
+import { sqlApi } from "@/services/api";
+import { BattleLogEvent } from "@bibliothecadao/torii";
+
 import { ResourcesIds } from "@bibliothecadao/types";
 import React from "react";
 import { create } from "zustand";
@@ -122,7 +124,7 @@ export const useBattleLogsStore = create<BattleLogsStore>()(
     fetchInitialBattleLogs: async () => {
       set({ isLoading: true, error: null });
       try {
-        const rawLogs = await fetchBattleLogs();
+        const rawLogs = await sqlApi.fetchBattleLogs();
         const processedLogs = rawLogs.map(processBattleLogEvent);
         // Sort by timestamp (most recent first)
         processedLogs.sort((a, b) => b.timestampMs - a.timestampMs);
@@ -151,7 +153,7 @@ export const useBattleLogsStore = create<BattleLogsStore>()(
 
       set({ isLoading: true, error: null });
       try {
-        const rawLogs = await fetchBattleLogs(lastFetchTimestamp || undefined);
+        const rawLogs = await sqlApi.fetchBattleLogs(lastFetchTimestamp || undefined);
         if (rawLogs.length === 0) {
           set({ isLoading: false });
           return;

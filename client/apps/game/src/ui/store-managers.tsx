@@ -2,9 +2,11 @@ import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAllArrivals, getEntityInfo } from "@bibliothecadao/eternum";
+import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../env";
 
@@ -162,6 +164,31 @@ const BattleLogsStoreManager = () => {
   return null;
 };
 
+const SeasonWinnerStoreManager = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const setSeasonWinner = useUIStore((state) => state.setSeasonWinner);
+  const seasonWinnerEntities = useEntityQuery([Has(components.events.SeasonEnded)]);
+
+  useEffect(() => {
+    if (seasonWinnerEntities.length === 1) {
+      const seasonWinner = getComponentValue(components.events.SeasonEnded, seasonWinnerEntities[0]);
+      if (seasonWinner) {
+        const addressName = getAddressName(seasonWinner.winner_address, components);
+        const guildName = getGuildFromPlayerAddress(seasonWinner.winner_address, components)?.name;
+        setSeasonWinner({
+          address: seasonWinner.winner_address,
+          name: addressName ?? "Unknown",
+          guildName: guildName ?? "Unknown",
+        });
+      }
+    }
+  }, [seasonWinnerEntities, setSeasonWinner, components]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
@@ -170,6 +197,7 @@ export const StoreManagers = () => {
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
       <BattleLogsStoreManager />
+      <SeasonWinnerStoreManager />
     </>
   );
 };

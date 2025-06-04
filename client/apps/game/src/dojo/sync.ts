@@ -1,7 +1,7 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
-import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { sqlApi } from "@/services/api";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -10,7 +10,6 @@ import {
   getBankStructuresFromTorii,
   getConfigFromTorii,
   getGuildsFromTorii,
-  getSeasonPrizeFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
 
@@ -33,7 +32,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   let isProcessing = false;
 
   const {
-    network: { contractComponents: components, world },
+    network: { world },
   } = setupResult;
 
   // Function to process the next item in the queue
@@ -179,12 +178,15 @@ export const initialSync = async (
   setInitialSyncProgress(10);
 
   // SPECTATOR REALM
-  const firstNonOwnedStructure = await getFirstStructureFromToriiClient(setup.network.toriiClient);
+  const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   if (firstNonOwnedStructure) {
-    state.setSpectatorRealmEntityId(firstNonOwnedStructure.entityId);
+    state.setSpectatorRealmEntityId(firstNonOwnedStructure.entity_id);
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
-      { entityId: firstNonOwnedStructure.entityId, position: firstNonOwnedStructure.position },
+      {
+        entityId: firstNonOwnedStructure.entity_id,
+        position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+      },
     ]);
     end = performance.now();
     console.log("[sync] first structure query", end - start);
@@ -195,12 +197,6 @@ export const initialSync = async (
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
-  setInitialSyncProgress(50);
-
-  start = performance.now();
-  await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
-  end = performance.now();
-  console.log("[sync] season prize query", end - start);
   setInitialSyncProgress(75);
 
   start = performance.now();

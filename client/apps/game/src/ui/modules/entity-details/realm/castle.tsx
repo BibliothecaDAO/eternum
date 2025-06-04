@@ -21,8 +21,8 @@ import {
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
+import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getSurroundingWonderBonusFromToriiClient } from "@bibliothecadao/torii-client";
 import { useComponentValue } from "@dojoengine/react";
 import { AlertCircleIcon, ArrowUpRightIcon, ChevronDownIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 
@@ -70,14 +70,10 @@ export const Castle = () => {
   useEffect(() => {
     const checkNearWonder = async () => {
       if (!structure) return;
-      const wonderStructureId = await getSurroundingWonderBonusFromToriiClient(
-        dojo.network.toriiClient,
-        WONDER_BONUS_DISTANCE,
-        {
-          col: structure.base.coord_x,
-          row: structure.base.coord_y,
-        },
-      );
+      const wonderStructureId = await sqlApi.fetchSurroundingWonderBonus(WONDER_BONUS_DISTANCE, {
+        col: structure.base.coord_x,
+        row: structure.base.coord_y,
+      });
       setWonderStructureId(wonderStructureId);
     };
     checkNearWonder();

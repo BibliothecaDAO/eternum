@@ -1,6 +1,6 @@
 // onload -> fetch single key entities
 
-import { HexPosition, ID, StructureType, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
@@ -103,6 +103,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-ResourceBridgeWhitelistConfig",
     "s1_eternum-StructureLevelConfig",
     "s1_eternum-SeasonPrize",
+    "s1_eternum-SeasonEnded",
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
@@ -135,29 +136,6 @@ export const getConfigFromTorii = async <S extends Schema>(
     [],
     configModels,
     EVENT_QUERY_LIMIT,
-    false,
-  );
-};
-
-export const getSeasonPrizeFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
-  const models = ["s1_eternum-SeasonPrize"];
-  return getEvents(
-    client,
-    components,
-    [],
-    models,
-    1,
-    {
-      Keys: {
-        keys: [WORLD_CONFIG_ID.toString()],
-        pattern_matching: "FixedLen",
-        models,
-      },
-    },
-    false,
     false,
   );
 };

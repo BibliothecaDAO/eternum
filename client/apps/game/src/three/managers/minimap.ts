@@ -1,10 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { fetchAllTiles, type Tile } from "@/services/api";
+import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { Position } from "@/types/position";
-import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
@@ -33,7 +33,7 @@ const LABELS = {
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
-  MAX_ZOOM_RANGE: 600,
+  MAX_ZOOM_RANGE: 900,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   EXPANDED_MODIFIER: 0.5,
@@ -680,8 +680,8 @@ class Minimap {
     this.hoveredHexCoords = { col, row };
 
     if (this.isDragging && this.lastMousePosition) {
-      const colShift = Math.round(event.clientX - this.lastMousePosition.x);
-      const rowShift = Math.round(event.clientY - this.lastMousePosition.y);
+      const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
+      const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
       this.mapCenter.col -= colShift;
       this.mapCenter.row -= rowShift;
 
@@ -865,7 +865,7 @@ class Minimap {
   private async fetchTiles() {
     console.log("fetchTiles");
     try {
-      this.tiles = await fetchAllTiles().then((tiles) => {
+      this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
         return tiles.map((tile) => {
           const position = new Position({ x: tile.col, y: tile.row });
           const { x: col, y: row } = position.getNormalized();

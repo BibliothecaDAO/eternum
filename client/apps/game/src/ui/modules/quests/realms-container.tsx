@@ -4,8 +4,9 @@ import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
 import { useGetQuests } from "@/ui/components/quest/quest-utils";
 import { getArmy, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 export const RealmsContainer = ({
@@ -15,7 +16,7 @@ export const RealmsContainer = ({
 }: {
   explorerEntityId: ID;
   loadingQuests: boolean;
-  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
+  questTileEntity: QuestTileData | undefined;
 }) => {
   const {
     account: { account },

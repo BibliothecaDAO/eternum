@@ -8,6 +8,7 @@ import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
+import { SeasonWinnerMessage } from "../components/season-winner-message";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -129,6 +130,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       <StoreManagers />
       <StructureSynchronizerManager />
       <NotLoggedInMessage />
+      <SeasonWinnerMessage />
 
       {/* Main world layer */}
       <div

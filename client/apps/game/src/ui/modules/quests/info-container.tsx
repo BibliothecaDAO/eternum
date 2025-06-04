@@ -2,8 +2,8 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { BuildingThumbs } from "@/ui/config";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { QuestTileData } from "@bibliothecadao/torii";
+import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 const formatAmount = (amount: number) => {
@@ -13,11 +13,7 @@ const formatAmount = (amount: number) => {
   }).format(amount);
 };
 
-export const InfoContainer = ({
-  questTileEntity,
-}: {
-  questTileEntity: ComponentValue<ClientComponents["QuestTile"]["schema"]> | undefined;
-}) => {
+export const InfoContainer = ({ questTileEntity }: { questTileEntity: QuestTileData | undefined }) => {
   const {
     setup: {
       components: { QuestLevels },

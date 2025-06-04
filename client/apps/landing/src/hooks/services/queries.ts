@@ -57,69 +57,100 @@ export const QUERIES = {
                 AND  x.from_address    = tt.to_address
           );
   `,
-  ACTIVE_MARKET_ORDERS_TOTAL: `
+  COLLECTION_STATISTICS: `
       /* ────────────────────────────────────────────────────────────────────────────
-      ❶  Count ACTIVE rows in marketplace‑MarketOrderModel
-      ❷  Decode each 0x‑hex price in marketplace‑MarketOrderEvent → integer
-      ❸  Return the two scalars as one record
+      ❶  Gather ACTIVE orders and count them
+      ❷  Decode each 0x-hex price in marketplace-MarketOrderEvent → integer (total volume)
+      ❸  Decode ACTIVE order prices → integer (floor price)
+      ❹  Return the scalars as one record
       ────────────────────────────────────────────────────────────────────────── */
     WITH
     /* ❶ ----------------------------------------------------------------------- */
+    active_orders AS (
+        SELECT mo."order.price" AS price_hex
+        FROM   "marketplace-MarketOrderModel" AS mo
+        JOIN   token_balances tb
+               ON  tb.contract_address = "{contractAddress}"
+               AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
+               /* normalise both addresses before comparing ---------- */
+               AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
+                   = ltrim(lower(replace(tb.account_address, "0x","")), "0")
+               AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+        WHERE  mo."order.active" = 1
+        AND    mo."order.collection_id" = {collectionId}
+        AND    mo."order.expiration" > strftime('%s','now')
+    ),
     total_active AS (
         SELECT COUNT(*) AS active_order_count
-        FROM   "marketplace-MarketOrderModel" AS mo
-         JOIN   token_balances tb
-           ON  tb.contract_address = "{contractAddress}"
-           AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
-           /* normalise both addresses before comparing ---------- */
-           AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
-               = ltrim(lower(replace(tb.account_address, "0x","")), "0")
-           AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
-   
-        WHERE  mo."order.active" = 1
-        AND    mo."order.expiration" > strftime('%s','now')
-        ),
+        FROM   active_orders
+    ),
 
     /* ❷ ----------------------------------------------------------------------- */
     accepted AS (                           -- only "Accepted" events
         SELECT "market_order.price" AS hex_price
         FROM   "marketplace-MarketOrderEvent"
-        WHERE  state = 'Accepted'           -- <- use single quotes for the literal
+        WHERE  state = 'Accepted'
+        AND    "market_order.collection_id" = {collectionId}
     ),
-
-    -- recursive hex‑string → integer
+    -- recursive hex-string → integer for accepted events
     digits(hex, pos, len, val) AS (
         SELECT lower(substr(hex_price, 3)),      -- strip leading 0x
-              1,
-              length(substr(hex_price, 3)),
-              0
+               1,
+               length(substr(hex_price, 3)),
+               0
         FROM   accepted
         UNION ALL
         SELECT hex,
-              pos + 1,
-              len,
-              val * 16 +
-              instr('0123456789abcdef', substr(hex, pos, 1)) - 1
+               pos + 1,
+               len,
+               val * 16 + instr('0123456789abcdef', substr(hex, pos, 1)) - 1
         FROM   digits
         WHERE  pos <= len
     ),
-    decoded AS (                                -- final value for each row
+    decoded AS (                                -- final value for each accepted row
         SELECT val AS wei
         FROM   digits
         WHERE  pos = len + 1
     ),
-
     total_volume AS (
         SELECT SUM(wei) AS open_orders_total_wei
         FROM   decoded
-    )
+    ),
 
     /* ❸ ----------------------------------------------------------------------- */
+    -- recursive hex-string → integer for ACTIVE order prices to compute floor
+    digits_active(hex, pos, len, val) AS (
+        SELECT lower(substr(price_hex, 3)),
+               1,
+               length(substr(price_hex, 3)),
+               0
+        FROM   active_orders
+        UNION ALL
+        SELECT hex,
+               pos + 1,
+               len,
+               val * 16 + instr('0123456789abcdef', substr(hex, pos, 1)) - 1
+        FROM   digits_active
+        WHERE  pos <= len
+    ),
+    decoded_active AS (
+        SELECT val AS wei
+        FROM   digits_active
+        WHERE  pos = len + 1
+    ),
+    floor_price AS (
+        SELECT MIN(wei) AS floor_price_wei
+        FROM   decoded_active
+    )
+
+    /* ❹ ----------------------------------------------------------------------- */
     SELECT
         total_active.active_order_count,
-        total_volume.open_orders_total_wei
+        total_volume.open_orders_total_wei,
+        floor_price.floor_price_wei
     FROM   total_active
-    CROSS  JOIN total_volume;
+    CROSS  JOIN total_volume
+    CROSS  JOIN floor_price;
   `,
   OPEN_ORDERS_BY_PRICE: `
     /* Paginated active orders query:
@@ -145,8 +176,10 @@ WITH limited_active_orders AS (
            AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
                = ltrim(lower(replace(tb.account_address, "0x","")), "0")
            AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+           AND tb.contract_address = "{contractAddress}"
     WHERE  mo."order.active" = 1
       AND  mo."order.expiration" > strftime('%s','now')
+      AND  mo."order.collection_id" = {collectionId}
       AND  ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     GROUP  BY token_id_hex
     )
@@ -158,6 +191,7 @@ WITH limited_active_orders AS (
         t.name,
         t.symbol,
         t.metadata,
+        t.contract_address,
         lao.token_owner AS account_address,
         lao.price_hex,
         lao.expiration,
@@ -165,9 +199,9 @@ WITH limited_active_orders AS (
         lao.order_id,
         lao.balance
     FROM limited_active_orders lao
-    LEFT JOIN (SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata FROM tokens GROUP BY token_id) t
-      ON t.token_id = substr(lao.token_id, instr(lao.token_id, ':') + 1)
-        AND t.contract_address = "{contractAddress}"
+    LEFT JOIN (SELECT id, token_id, name, symbol, contract_address, MAX(metadata) AS metadata FROM tokens GROUP BY id) t
+      ON t.id = lao.token_id
+      AND t.contract_address = "{contractAddress}"
     ORDER BY lao.price_hex IS NULL, lao.price_hex 
 
   `,
@@ -204,7 +238,7 @@ WITH limited_active_orders AS (
     JOIN tokens t
       ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
       AND t.contract_address = '{contractAddress}'
-    WHERE moe."market_order.collection_id" = 1
+    WHERE moe."market_order.collection_id" = '{collectionId}'
       AND (( '{type}' = 'all' OR '{type}' = '')
            OR ('{type}' = 'listings' AND moe.state <> 'Accepted')
            OR ('{type}' <> 'listings' AND moe.state = '{type}'))
@@ -224,7 +258,7 @@ WITH limited_active_orders AS (
     WHERE mo."order.active" = 1
       AND mo."order.owner" = '{accountAddress}'
       AND  mo."order.expiration" > strftime('%s','now')
-
+      AND  mo."order.collection_id" = {collectionId}
     GROUP BY token_id_hex
   )
   SELECT
