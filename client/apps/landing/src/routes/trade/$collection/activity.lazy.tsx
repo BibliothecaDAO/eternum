@@ -8,9 +8,10 @@ import { fetchMarketOrderEvents } from "@/hooks/services";
 import { formatRelativeTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
+import { AlertTriangle, Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { formatUnits } from "viem";
+import { env } from "../../../../env";
 
 export const Route = createLazyFileRoute("/trade/$collection/activity")({
   component: ActivityPage,
@@ -23,6 +24,9 @@ function ActivityPage() {
 
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+
+  const isSeasonPassEndSeason = collection === "season-passes" && env.VITE_PUBLIC_SHOW_END_GAME_WARNING;
+
   const { data: events, isLoading } = useQuery({
     queryKey: ["marketOrderEvents", collection, filterType],
     queryFn: () => fetchMarketOrderEvents(collectionAddress, filterType),
@@ -36,6 +40,13 @@ function ActivityPage() {
   };
   return (
     <>
+      {isSeasonPassEndSeason && (
+        <div className="text-lg border px-4 py-2 flex items-center gap-2 mt-2 mx-6">
+          <AlertTriangle className="w-4 h-4" />
+          <p>The current season has ended and Season 1 Passes can no longer be used in Eternum.</p>
+        </div>
+      )}
+
       <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
         {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">Activity</h4> : <div></div>}
         <div className="w-full flex justify-end gap-1 sm:gap-2 px-4 items-center">
