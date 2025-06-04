@@ -3,6 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
+import { NameChangePopup } from "@/ui/components/name-change-popup";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
 import { cn } from "@/ui/elements/lib/utils";
@@ -11,13 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, formatTime, getEntityInfo } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  deleteEntityNameLocalStorage,
+  formatTime,
+  getEntityInfo,
+  getStructureName,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ContractAddress, ID, PlayerStructure, TickIds } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ClientComponents, ContractAddress, ID, TickIds } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, Landmark, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -36,16 +44,21 @@ const structureIcons: Record<string, JSX.Element> = {
   ReadOnly: <EyeIcon />,
 };
 
-export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStructure[] }) => {
+export const TopLeftNavigation = memo(() => {
   const {
     setup,
     account: { account },
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
+    ClientComponents["Structure"]["schema"]
+  > | null>(null);
+  const structures = useUIStore((state) => state.playerStructures);
 
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  console.log({ structureEntityId });
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -53,36 +66,58 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   });
 
   const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address],
   );
 
-  const structure = useMemo(() => {
+  const selectedStructure = useMemo(() => {
     return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
   }, [structureEntityId, favorites, entityInfo]);
 
-  const structurePosition = useMemo(() => {
-    return new Position(structure?.position || { x: 0, y: 0 }).getNormalized();
-  }, [structure]);
+  const selectedStructurePosition = useMemo(() => {
+    return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
+  }, [selectedStructure]);
 
   const structuresWithFavorites = useMemo(() => {
     return structures
-      .map((structure) => ({
-        ...structure,
-        isFavorite: favorites.includes(structure.entityId),
-      }))
-      .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }, [favorites, structures]);
+      .map((structure) => {
+        const { name, originalName } = getStructureName(structure.structure);
+        return {
+          ...structure,
+          isFavorite: favorites.includes(structure.entityId),
+          name,
+          originalName,
+        };
+      })
+      .sort((a, b) => {
+        // First sort by favorite status
+        const favoriteCompare = Number(b.isFavorite) - Number(a.isFavorite);
+        if (favoriteCompare !== 0) return favoriteCompare;
+        // Then sort by name
+        return a.name.localeCompare(b.name);
+      });
+  }, [favorites, structures, structureNameChange]);
 
   const filteredStructures = useMemo(() => {
     if (!searchTerm) return structuresWithFavorites;
     return structuresWithFavorites.filter((structure) =>
-      structure.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      structure.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "")
+        .includes(
+          searchTerm
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, ""),
+        ),
     );
   }, [structuresWithFavorites, searchTerm]);
-
   const toggleFavorite = useCallback((entityId: number) => {
     setFavorites((prev) => {
       const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
@@ -108,6 +143,30 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     [isMapView, setup.components.Structure],
   );
 
+  const handleNameChange = useCallback((structureEntityId: ID, newName: string) => {
+    setEntityNameLocalStorage(structureEntityId, newName);
+    setStructureNameChange(null);
+  }, []);
+
+  const handleNameDelete = useCallback((structureEntityId: ID) => {
+    deleteEntityNameLocalStorage(structureEntityId);
+    setStructureNameChange(null);
+  }, []);
+
+  const [selectOpen, setSelectOpen] = useState(false);
+
+  // Auto-focus search input when select opens
+  useEffect(() => {
+    if (selectOpen && searchInputRef.current) {
+      // Small delay to ensure the input is rendered
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [selectOpen]);
+
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
@@ -116,16 +175,23 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 text-gold justify-center  text-center  relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 text-gold justify-center text-center relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
-            {structure.isMine ? (
+            {selectedStructure.isMine ? (
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(a: string) => {
                   onSelectStructure(ID(a));
                 }}
+                open={selectOpen}
+                onOpenChange={(open) => {
+                  setSelectOpen(open);
+                  if (!open) {
+                    setSearchTerm("");
+                  }
+                }}
               >
-                <SelectTrigger className="truncate ">
+                <SelectTrigger className="truncate">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent className=" panel-wood bg-dark-wood -ml-2">
@@ -136,9 +202,27 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                         type="text"
                         placeholder="Search structures..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          // Maintain focus after state update
+                          requestAnimationFrame(() => {
+                            if (searchInputRef.current) {
+                              searchInputRef.current.focus();
+                            }
+                          });
+                        }}
+                        autoFocus={true}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter" && filteredStructures.length > 0) {
+                            onSelectStructure(ID(filteredStructures[0].entityId));
+                            // close the select
+                            setSelectOpen(false);
+                          }
+                        }}
                         className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
                         onClick={(e) => e.stopPropagation()}
+                        ref={searchInputRef}
                       />
                       {searchTerm && (
                         <button
@@ -160,13 +244,24 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                     </div>
                   ) : (
                     filteredStructures.map((structure, index) => (
-                      <div key={index} className="flex flex-row items-center">
+                      <div key={structure.entityId} className="flex flex-row items-center">
                         <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                           {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                         </button>
+                        <button
+                          className="p-1"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectOpen(false);
+                            setStructureNameChange(structure.structure);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <SelectItem
                           className="flex justify-between"
-                          key={index}
+                          key={structure.entityId}
                           value={structure.entityId?.toString() || ""}
                         >
                           <div className="self-center flex gap-4 text-xl">{structure.name}</div>
@@ -182,10 +277,10 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                   <>
                     {!account || account.address === "0x0"
                       ? structureIcons.ReadOnly
-                      : structure.structureCategory
-                        ? structureIcons[structure.structureCategory]
+                      : selectedStructure.structureCategory
+                        ? structureIcons[selectedStructure.structureCategory]
                         : structureIcons.None}
-                    <span>{structure.name}</span>
+                    <span>{selectedStructure.structure ? getStructureName(selectedStructure.structure).name : ""}</span>
                   </>
                 </h5>
               </div>
@@ -195,10 +290,10 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         <div className="flex storage-selector  py-1 flex-col md:flex-row gap-1  ">
           <ViewOnMapIcon
             className={`self-center ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-            position={new Position(structurePosition)}
+            position={new Position(selectedStructurePosition)}
           />
           <CoordinateNavigationInput
-            position={new Position(structurePosition)}
+            position={new Position(selectedStructurePosition)}
             className={!isMapView ? "opacity-50 pointer-events-none" : ""}
           />
         </div>
@@ -216,7 +311,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               onClick={() =>
                 goToStructure(
                   structureEntityId,
-                  new Position({ x: structurePosition.x, y: structurePosition.y }),
+                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                   false,
                 )
               }
@@ -233,7 +328,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                   const checked = e.target.checked;
                   goToStructure(
                     structureEntityId,
-                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                     checked,
                   );
                 }}
@@ -242,7 +337,11 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             </label>
             <span
               onClick={() =>
-                goToStructure(structureEntityId, new Position({ x: structurePosition.x, y: structurePosition.y }), true)
+                goToStructure(
+                  structureEntityId,
+                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                  true,
+                )
               }
               className={cn("text-xs", isMapView && "text-gold font-bold")}
             >
@@ -252,6 +351,16 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
 
         <SecondaryMenuItems />
+
+        {structureNameChange && selectedStructure.structure && (
+          <NameChangePopup
+            currentName={getStructureName(structureNameChange).name}
+            originalName={getStructureName(structureNameChange).originalName}
+            onConfirm={(newName) => handleNameChange(structureNameChange.entity_id, newName)}
+            onCancel={() => setStructureNameChange(null)}
+            onDelete={() => handleNameDelete(structureNameChange.entity_id)}
+          />
+        )}
       </motion.div>
     </div>
   );
