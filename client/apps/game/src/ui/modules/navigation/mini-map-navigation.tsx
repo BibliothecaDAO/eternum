@@ -42,12 +42,6 @@ export const MiniMapNavigation = () => {
     const minimap = (window as any).minimapInstance;
     if (!minimap) return;
 
-    // Set to max distance before taking screenshot
-    //minimap.setMaxDistance();
-
-    // Center the map at 0,0
-    //minimap.centerAtOrigin();
-
     // Allow time for the minimap to update
     setTimeout(() => {
       if (!canvasRef.current) return;
@@ -60,19 +54,31 @@ export const MiniMapNavigation = () => {
     }, 200);
   };
 
+  // Handle window resize
   useEffect(() => {
-    if (canvasRef.current) {
-      canvasRef.current.width = isExpanded ? window.innerWidth * 0.6 : 350;
-      canvasRef.current.height = isExpanded ? window.innerHeight * 0.6 : 175;
+    const handleResize = () => {
+      if (canvasRef.current) {
+        canvasRef.current.width = isExpanded ? window.innerWidth : 350;
+        canvasRef.current.height = isExpanded ? window.innerHeight : 175;
 
-      const resizeEvent = new CustomEvent("canvasResized", {
-        detail: {
-          width: canvasRef.current.width,
-          height: canvasRef.current.height,
-        },
-      });
-      canvasRef.current.dispatchEvent(resizeEvent);
-    }
+        const resizeEvent = new CustomEvent("canvasResized", {
+          detail: {
+            width: canvasRef.current.width,
+            height: canvasRef.current.height,
+          },
+        });
+        canvasRef.current.dispatchEvent(resizeEvent);
+      }
+    };
+
+    // Initial size setup
+    handleResize();
+
+    // Add resize listener
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", handleResize);
   }, [isExpanded]);
 
   // Sync with minimap on component mount
@@ -144,11 +150,10 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] text-xxs pointer-events-auto flex flex-col self-end panel-wood panel-wood-corners relative ${
-        isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
+      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood panel-wood-corners relative ${
+        isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : ""
       }`}
     >
-      {/* <EventStream hideChat={false} /> */}
       {showMinimap && (
         <>
           <div className="flex flex-wrap p-1 justify-center gap-2 bg-black/70 border-b border-amber-900/50">
@@ -170,10 +175,9 @@ export const MiniMapNavigation = () => {
                     id={`toggle-${entity.id}`}
                     checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
                     onChange={(e) => handleToggle(entity.id, e.target.checked)}
-                    className="sr-only peer" // Hidden but accessible
+                    className="sr-only peer"
                   />
                   <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
-                    {/* Custom checkbox */}
                     <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
                       {visibilityStates[entity.id as keyof typeof visibilityStates] && (
                         <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
