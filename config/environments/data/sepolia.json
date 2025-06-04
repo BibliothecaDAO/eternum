@@ -11337,7 +11337,7 @@
         },
         {
           "address": "0xebc386d5a2b76188512987b037eba74053e646da9dcec72a27d296daf17b99",
-          "class_hash": "0x39550ae29bb7a2d432f3ead56e683fb4dc039802d66260c9c17dcbee06a39b7",
+          "class_hash": "0x3629dd6b4df1fb13a15b56d298b906e88995ed3899a2d342f37e6fe7cd8479a",
           "abi": [
             {
               "type": "impl",
@@ -11567,6 +11567,22 @@
                   ],
                   "outputs": [],
                   "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "structure_burn",
+                  "inputs": [
+                    {
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -11697,6 +11713,7 @@
             "troop_structure_adjacent_transfer",
             "structure_troop_adjacent_transfer",
             "troop_burn",
+            "structure_burn",
             "upgrade"
           ]
         },
