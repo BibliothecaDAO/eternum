@@ -29,12 +29,11 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
-  const { playerPoints, percentageOfPoints } = useMemo(() => {
-    const playersByRank = LeaderboardManager.instance(setup.components).playersByRank;
-    const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
-    const playerPoints = player?.[1] ?? 0;
+  const { registeredPoints, percentageOfPoints } = useMemo(() => {
+    const leaderboardManager = LeaderboardManager.instance(setup.components);
+    const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
-    return { playerPoints, percentageOfPoints: Math.min((playerPoints / pointsForWin) * 100, 100) };
+    return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };
   }, [structureEntityId, currentBlockTimestamp]);
 
   const hasReachedFinalPoints = useMemo(() => {
@@ -70,9 +69,9 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
             content: (
               <span className="flex flex-col whitespace-nowrap pointer-events-none">
                 <span className="flex justify-center">
-                  {playerPoints.toLocaleString()} / {pointsForWin.toLocaleString()}
+                  {registeredPoints.toLocaleString()} / {pointsForWin.toLocaleString()}
                 </span>
-                {!hasReachedFinalPoints && <span>Not enough points to end the season</span>}
+                {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
                 {isSeasonOver && <span>Season is already over</span>}
               </span>
             ),

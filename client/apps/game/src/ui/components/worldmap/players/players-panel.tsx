@@ -3,6 +3,7 @@ import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/playe
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { EndSeasonButton } from "@/ui/modules/social/end-season-button";
+import { RegisterPointsButton } from "@/ui/modules/social/register-points-button";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getEntityName, getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -165,16 +166,22 @@ export const PlayersPanel = ({
                 should any lord gather 9.6m points, they gain the ultimate power to <br /> end this game
               </p>
             </div>
-            <EndSeasonButton />
+            <div className="flex gap-2 justify-center">
+              <RegisterPointsButton className="flex-1" />
+              <EndSeasonButton className="flex-1" />
+            </div>
           </>
         ) : (
-          <div>
+          <>
             <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
               <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
                 the season is over. {seasonWinner?.name} and the {seasonWinner?.guildName} tribe have conquered eternum
               </p>
             </div>
-          </div>
+            <div className="flex justify-center">
+              <RegisterPointsButton />
+            </div>
+          </>
         )}
       </div>
 
