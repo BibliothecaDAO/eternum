@@ -19,7 +19,7 @@ import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useSuspenseQueries } from "@tanstack/react-query";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { formatUnits } from "viem";
@@ -32,6 +32,7 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 
 function CollectionPage() {
   const { collection } = Route.useParams();
+  const navigate = useNavigate();
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,6 +114,13 @@ function CollectionPage() {
   const debouncedSweepCount = useDebounce(sweepCount, 200);
 
   const isSeasonPassEndSeason = collection === "season-passes" && env.VITE_PUBLIC_SHOW_END_GAME_WARNING;
+
+  // Auto-redirect to activity tab if season has ended for season passes
+  useEffect(() => {
+    if (isSeasonPassEndSeason) {
+      navigate({ to: `/trade/$collection/activity`, params: { collection } });
+    }
+  }, [isSeasonPassEndSeason, navigate, collection]);
 
   // Update effect to use debounced value
   useEffect(() => {
