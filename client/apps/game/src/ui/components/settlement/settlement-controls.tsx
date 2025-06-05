@@ -75,56 +75,6 @@ export const SettlementControls = ({
   );
 };
 
-interface SettlementInfoPanelProps {
-  selectedLocation: SettlementLocation | null;
-  selectedCoords: { x: number; y: number } | null;
-}
-
-/**
- * Settlement info panel component - displays information about the selected location
- */
-export const SettlementInfoPanel = ({ selectedLocation, selectedCoords }: SettlementInfoPanelProps) => {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-gold/30  w-full transition-all duration-300 hover:border-gold/50">
-      {selectedLocation ? (
-        <div className="text-center w-full py-2">
-          <div className="flex justify-center items-center gap-4 text-gold">
-            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
-              <div className="text-xs text-gold/70 uppercase tracking-wider">X</div>
-              <div className="text-xl font-bold">{selectedCoords?.x}</div>
-            </div>
-            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
-              <div className="text-xs text-gold/70 uppercase tracking-wider">Y</div>
-              <div className="text-xl font-bold">{selectedCoords?.y}</div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-xl font-semibold text-gold flex items-center">
-            <svg
-              className="w-6 h-6 mr-2 text-gold/70 animate-pulse"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Click on the map to select a location for your realm
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 interface ConfirmButtonProps {
   selectedLocation: SettlementLocation | null;
   onConfirm: () => void;
