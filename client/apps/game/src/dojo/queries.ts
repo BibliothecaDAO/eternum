@@ -3,7 +3,7 @@
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { getEntities, getEvents } from "@dojoengine/state";
+import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
@@ -333,29 +333,6 @@ export const getBankStructuresFromTorii = async <S extends Schema>(
     [],
     ["s1_eternum-Structure"],
     EVENT_QUERY_LIMIT,
-    false,
-  );
-};
-
-export const getMarketEventsFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
-  const marketEventModels = ["s1_eternum-AcceptOrder", "s1_eternum-SwapEvent", "s1_eternum-LiquidityEvent"];
-  return getEvents(
-    client,
-    components,
-    [],
-    marketEventModels,
-    EVENT_QUERY_LIMIT,
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "VariableLen",
-        models: [],
-      },
-    },
-    false,
     false,
   );
 };

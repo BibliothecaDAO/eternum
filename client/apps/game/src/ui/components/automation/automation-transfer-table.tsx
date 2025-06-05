@@ -33,7 +33,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LucideArrowRight } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
-export type EntityIdFormat = {
+type EntityIdFormat = {
   entityId: ID;
   realmId: ID;
   category: StructureType;

@@ -317,5 +317,3 @@ export const AllAutomationsTable: React.FC = () => {
     </div>
   );
 };
-
-export default AllAutomationsTable;

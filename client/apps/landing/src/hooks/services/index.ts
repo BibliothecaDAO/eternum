@@ -1,35 +1,8 @@
 import { getCollectionByAddress } from "@/config";
 import { trimAddress } from "@/lib/utils";
 import { RealmMetadata } from "@/types";
-import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
 import { QUERIES } from "./queries";
-
-export interface StructureLocation {
-  "base.coord_x": number;
-  "base.coord_y": number;
-  owner: ContractAddress;
-}
-
-type DirectionString = "East" | "NorthEast" | "NorthWest" | "West" | "SouthWest" | "SouthEast";
-
-export interface RealmVillageSlot {
-  connected_realm_coord: HexPosition;
-  connected_realm_entity_id: ID;
-  connected_realm_id: ID;
-  directions_left: Array<Partial<Record<DirectionString, []>>>;
-}
-
-export interface TokenTransfer {
-  to_address: ContractAddress;
-  contract_address: ContractAddress;
-  token_id: string; // Assuming token_id might be large or non-numeric
-  amount: string; // Assuming amount might be large
-  executed_at: string; // ISO date string or similar
-  from_address: ContractAddress;
-  name: string;
-  symbol: string;
-}
 
 export interface ActiveMarketOrdersTotal {
   active_order_count: number;
@@ -66,12 +39,6 @@ interface RawOpenOrderByPrice {
   // Any other fields spread by ...item that are part of OpenOrderByPrice
 }
 
-export interface TokenBalance {
-  token_id: string;
-  balance: string;
-  contract_address: string;
-}
-
 export interface SeasonPassRealm {
   token_id: string;
   balance: string;
@@ -79,47 +46,6 @@ export interface SeasonPassRealm {
   season_pass_balance: string | null;
   metadata: RealmMetadata | null;
   account_address: string;
-}
-
-/**
- * Fetch settlement structures from the API
- */
-export async function fetchRealmSettlements(): Promise<StructureLocation[]> {
-  return await fetchSQL<StructureLocation[]>(QUERIES.REALM_SETTLEMENTS);
-}
-
-// Raw type for data fetched by fetchRealmVillageSlots
-interface RawRealmVillageSlot {
-  "connected_realm_coord.x": number;
-  "connected_realm_coord.y": number;
-  connected_realm_entity_id: ID;
-  connected_realm_id: ID;
-  directions_left: string; // Raw JSON string
-}
-
-/**
- * Fetch village slots from the API
- */
-export async function fetchRealmVillageSlots(): Promise<RealmVillageSlot[]> {
-  const rawData = await fetchSQL<RawRealmVillageSlot[]>(QUERIES.REALM_VILLAGE_SLOTS);
-
-  return rawData.map((item) => ({
-    connected_realm_coord: { col: item["connected_realm_coord.x"], row: item["connected_realm_coord.y"] },
-    connected_realm_entity_id: item.connected_realm_entity_id,
-    connected_realm_id: item.connected_realm_id,
-    directions_left: JSON.parse(item.directions_left || "[]"),
-  }));
-}
-
-/**
- * Fetch token transfers for a specific contract and recipient from the API
- */
-export async function fetchTokenTransfers(contractAddress: string, recipientAddress: string): Promise<TokenTransfer[]> {
-  const query = QUERIES.TOKEN_TRANSFERS.replace("{contractAddress}", contractAddress).replace(
-    "{recipientAddress}",
-    recipientAddress,
-  );
-  return await fetchSQL<TokenTransfer[]>(query);
 }
 
 /**
@@ -186,7 +112,7 @@ export async function fetchSeasonPassRealmsByAddress(
   }));
 }
 
-export interface TokenBalanceWithToken {
+interface TokenBalanceWithToken {
   token_id: string;
   balance: string;
   contract_address: string;
@@ -212,7 +138,7 @@ interface RawTokenBalanceWithMetadata {
   order_id?: string;
 }
 
-export interface ActiveMarketOrder {
+interface ActiveMarketOrder {
   order_id: string;
   token_id: string;
   price: string;
@@ -261,7 +187,7 @@ export async function fetchTokenBalancesWithMetadata(
   }));
 }
 
-export interface MarketOrderEvent {
+interface MarketOrderEvent {
   event_id: string;
   state: string;
   token_id: string;
@@ -369,7 +295,7 @@ export async function fetchTotalTransactions(): Promise<number> {
   return rawData[0].total_rows;
 }
 
-export interface SeasonConfig {
+interface SeasonConfig {
   start_settling_at: number;
   start_main_at: number;
   end_at: number;
@@ -377,7 +303,7 @@ export interface SeasonConfig {
   registration_grace_seconds: number;
 }
 
-export interface SeasonDay {
+interface SeasonDay {
   day: number;
   dayString: string;
 }

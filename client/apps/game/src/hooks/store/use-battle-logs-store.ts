@@ -2,11 +2,10 @@ import { sqlApi } from "@/services/api";
 import { BattleLogEvent } from "@bibliothecadao/torii";
 
 import { ResourcesIds } from "@bibliothecadao/types";
-import React from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
-export interface ParsedReward {
+interface ParsedReward {
   resourceId: ResourcesIds;
   amount: string;
 }
@@ -242,24 +241,3 @@ export const useBattleLogsLoading = () => useBattleLogsStore((state) => state.is
  * Hook to get error state
  */
 export const useBattleLogsError = () => useBattleLogsStore((state) => state.error);
-
-/**
- * Hook to get the latest N battle logs
- */
-export const useLatestBattleLogs = (limit: number = 50) => {
-  const battleLogs = useBattleLogsStore((state) => state.battleLogs);
-  return React.useMemo(() => battleLogs.slice(0, limit), [battleLogs, limit]);
-};
-
-/**
- * Hook to get battle logs filtered by a specific player
- */
-export const useBattleLogsByPlayer = (playerOwnerId: number | null) => {
-  const battleLogs = useBattleLogsStore((state) => state.battleLogs);
-  return React.useMemo(() => {
-    if (!playerOwnerId) return [];
-    return battleLogs.filter(
-      (log) => log.attacker_owner_id === playerOwnerId || log.defender_owner_id === playerOwnerId,
-    );
-  }, [battleLogs, playerOwnerId]);
-};

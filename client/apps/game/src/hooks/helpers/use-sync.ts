@@ -1,10 +1,4 @@
-import {
-  getGuildsFromTorii,
-  getHyperstructureFromTorii,
-  getMarketEventsFromTorii,
-  getMarketFromTorii,
-  getQuestsFromTorii,
-} from "@/dojo/queries";
+import { getGuildsFromTorii, getHyperstructureFromTorii, getMarketFromTorii, getQuestsFromTorii } from "@/dojo/queries";
 import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
@@ -117,38 +111,6 @@ export const useSyncMarket = () => {
       setSubscription(Subscription.Market, true);
       setIsSyncing(false);
       setLoading(LoadingStateKey.Market, false);
-    };
-    syncState();
-  }, [contractComponents]);
-
-  return { isSyncing };
-};
-
-export const useSyncMarketHistory = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.MarketHistory, true);
-      const marketHistoryPromise = subscriptions[Subscription.MarketHistory]
-        ? Promise.resolve()
-        : getMarketEventsFromTorii(toriiClient, contractComponents.events as any);
-
-      const start = performance.now();
-      await Promise.all([marketHistoryPromise]);
-      const end = performance.now();
-      console.log("[sync] market history query", end - start);
-
-      setSubscription(Subscription.MarketHistory, true);
-      setLoading(LoadingStateKey.MarketHistory, false);
-      setIsSyncing(false);
     };
     syncState();
   }, [contractComponents]);
