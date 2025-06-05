@@ -1,4 +1,5 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { formatNumber } from "@/components/ui/utils/utils";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -85,7 +86,9 @@ function CollectionsPage() {
                   <div className="flex space-x-3 justify-between items-center">
                     <div>
                       <span className="text-muted-foreground mr-1.5">Floor:</span>
-                      <span className="font-medium text-lg text-gold">{floorPrice} Lords</span>
+                      <span className="font-medium text-lg text-gold">
+                        {formatNumber(parseInt(floorPrice), 2).toLocaleString()} Lords
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground mr-1.5">Listed:</span>
@@ -93,7 +96,7 @@ function CollectionsPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground mr-1.5">Volume:</span>
-                      <span className="font-medium text-lg text-gold">{totalVolume} Lords</span>
+                      <span className="font-medium text-lg text-gold">{totalVolume.toLocaleString()} Lords</span>
                     </div>
                   </div>
                 </div>
