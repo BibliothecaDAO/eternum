@@ -1,0 +1,13 @@
+{
+"version": 2,
+"rewrites": [
+    {
+    "source": "/trade/:collection*",
+    "destination": "/index.html"
+    },
+    {
+    "source": "/(.*)",
+    "destination": "/index.html"
+    }
+]
+}
