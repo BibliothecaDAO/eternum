@@ -66,7 +66,7 @@ function CollectionsPage() {
           const floorPrice = stats?.floor_price_wei ? formatUnits(BigInt(stats.floor_price_wei), 18) : "0";
           const MotionLink = motion(Link);
           const commonProps = {
-            className: `relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border `,
+            className: `relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40`,
             style: { backgroundImage: `url('${collection.image}')` },
           };
           return (
@@ -77,8 +77,8 @@ function CollectionsPage() {
               whileHover={{ scale: 1.03 }}
               {...commonProps}
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/100 rounded-lg"></div>
-              <div className="absolute inset-0  flex flex-col items-start justify-end p-4">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 rounded-lg"></div>
+              <div className="absolute inset-0 bg-black bg-opacity-10 flex flex-col items-start justify-end p-4">
                 <div className="capitalize font-bold text-xl text-gold font-serif">
                   {collection.name.replace(/-/g, " ")}
                 </div>
