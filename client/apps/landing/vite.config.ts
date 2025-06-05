@@ -33,11 +33,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, "index.html"),
-          trade: resolve(__dirname, "trade/index.html"),
-          seasonPasses: resolve(__dirname, "season-passes/index.html"),
-          mint: resolve(__dirname, "mint/index.html"),
-          claim: resolve(__dirname, "claim/index.html"),
-          data: resolve(__dirname, "data/index.html"),
         },
       },
     },
