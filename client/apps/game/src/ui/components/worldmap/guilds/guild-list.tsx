@@ -8,7 +8,7 @@ import clsx from "clsx";
 import { Globe, Lock } from "lucide-react";
 import { useMemo, useState } from "react";
 
-export interface GuildCustom extends GuildInfo {
+interface GuildCustom extends GuildInfo {
   prize: {
     lords: number;
     strk: number;

@@ -11,13 +11,12 @@ import { useEffect, useState } from "react";
 import { CombatContainer } from "./combat-container";
 import { RaidContainer } from "./raid-container";
 
-export enum AttackType {
+enum AttackType {
   Combat,
   Raid,
 }
 
 export enum TargetType {
-  Village,
   Structure,
   Army,
 }
@@ -32,7 +31,7 @@ export type AttackTarget = {
 };
 
 // Function to order resources according to STEALABLE_RESOURCES order
-export function orderResourcesByPriority(resourceBalances: Resource[]): Resource[] {
+function orderResourcesByPriority(resourceBalances: Resource[]): Resource[] {
   const orderedResources: Resource[] = [];
 
   STEALABLE_RESOURCES.forEach((resourceId) => {

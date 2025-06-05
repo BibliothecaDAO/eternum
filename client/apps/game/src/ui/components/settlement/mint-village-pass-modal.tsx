@@ -47,7 +47,7 @@ interface RarityTier {
   color: string; // Tailwind color classes for background/border
 }
 
-export enum ResourceTier {
+enum ResourceTier {
   Common = "Common",
   Uncommon = "Uncommon",
   Rare = "Rare",

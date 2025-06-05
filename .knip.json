@@ -4,13 +4,9 @@
 
     "**/*.js",
     "**/vitest**",
-    "client/apps/game/src/setupTests.ts",
 
     "packages/**",
 
-    "**/**__test__**/**",
-    "**/**__tests__**/**",
-    "client/apps/game/src/setup-tests.ts",
 
     "client/apps/landing/src/routeTree.gen.ts",
     "client/apps/landing/src/components/ui/**",
@@ -20,13 +16,17 @@
     "client/apps/game-docs/vocs.config.ts",
     "client/apps/game-docs/docs/**",
     "client/apps/game-docs/vocs.config.ts",
-
-    "client/apps/game/src/ui/modules/chat/**",
-
+    "client/apps/game-docs/vite-plugin-llm-txt.mjs",
     "client/apps/game-docs/env.ts",
+
+    "client/apps/game/src/setupTests.ts",
+    "client/apps/game/src/setup-tests.ts",
+
+    "client/apps/bot/index.ts",
 
     "client/apps/eternum-mobile/**",
 
+    "gg-xyz/**",
     "config/**",
     "contracts/**",
 

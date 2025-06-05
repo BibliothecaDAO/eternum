@@ -515,13 +515,4 @@ function generatePersona(seed: number): Persona {
 }
 
 // Export for potential use in other modules (optional)
-export { generateName, generatePersona, SeededRandom };
-export type {
-  BehavioralTendencies,
-  CommunicationStyle,
-  CoreMotivation,
-  FactionAffinityTendencies,
-  InitialSkillBias,
-  NumericTraits,
-  Persona,
-};
+export { generatePersona };

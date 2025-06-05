@@ -51,7 +51,7 @@ export const MarketModal = () => {
   return <ModalContainer>{isSyncing ? <LoadingAnimation /> : <MarketContent />}</ModalContainer>;
 };
 
-export const MarketContent = () => {
+const MarketContent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const playerStructures = useUIStore((state) => state.playerStructures);

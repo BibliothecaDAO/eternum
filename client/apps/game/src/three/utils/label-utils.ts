@@ -210,7 +210,7 @@ export const LABEL_STYLES = {
 };
 
 // Helper to clean text with null characters
-export const cleanText = (text?: string) => {
+const cleanText = (text?: string) => {
   if (!text) return "";
   // Convert to string, filter out null characters, then trim whitespace
   return text
@@ -222,7 +222,7 @@ export const cleanText = (text?: string) => {
 };
 
 // Guild badge color utilities
-export const getGuildColorSet = (guildName: string) => {
+const getGuildColorSet = (guildName: string) => {
   const cleanedName = cleanText(guildName);
 
   // Different gradient combinations based on first letter
@@ -253,7 +253,7 @@ export const getGuildColorSet = (guildName: string) => {
 };
 
 // Create owner display components (name + guild badge)
-export interface OwnerDisplayOptions {
+interface OwnerDisplayOptions {
   owner: {
     address: bigint;
     ownerName?: string;
@@ -391,7 +391,7 @@ export const createContentContainer = (cameraView: CameraView) => {
 };
 
 // Create common label base with shared properties
-export interface LabelBaseOptions {
+interface LabelBaseOptions {
   isMine: boolean;
   isAlly?: boolean;
   textColor?: string;

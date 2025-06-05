@@ -952,5 +952,3 @@ export const BattleLogsTable: React.FC = () => {
     </div>
   );
 };
-
-export default BattleLogsTable;

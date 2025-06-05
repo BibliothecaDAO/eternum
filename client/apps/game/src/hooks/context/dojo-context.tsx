@@ -16,7 +16,7 @@ import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { useSpectatorModeClick } from "../helpers/use-navigate";
 
-export const NULL_ACCOUNT = {
+const NULL_ACCOUNT = {
   address: "0x0",
   privateKey: "0x0",
 } as const;

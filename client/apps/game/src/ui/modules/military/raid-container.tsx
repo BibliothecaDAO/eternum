@@ -28,7 +28,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { AttackTarget } from "./attack-container";
+import { AttackTarget, TargetType } from "./attack-container";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
 
@@ -36,11 +36,6 @@ enum RaidOutcome {
   Success = "Success",
   Failure = "Failure",
   Chance = "Chance",
-}
-
-enum TargetType {
-  Village,
-  Structure,
 }
 
 export const RaidContainer = ({

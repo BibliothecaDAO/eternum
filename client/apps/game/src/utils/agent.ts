@@ -27,11 +27,7 @@ enum SpecialAgentType {
 // This means if the roll is 0-11 (inclusive), a special agent is considered.
 const SPECIAL_AGENT_ROLL_THRESHOLD = 75;
 
-export const determineSpecialAgentType = (
-  troopTier: TroopTier,
-  troopType: TroopType,
-  entityId: number,
-): SpecialAgentType => {
+const determineSpecialAgentType = (troopTier: TroopTier, troopType: TroopType, entityId: number): SpecialAgentType => {
   if (troopTier !== TroopTier.T3) return SpecialAgentType.None;
 
   const specialCharacterRoll = ((entityId * 9301 + 49297) % 233280) % 100;

@@ -8,29 +8,6 @@ export type RealmMetadata = {
   }[];
 };
 
-export type SeasonPassMint = {
-  node: {
-    __typename?: "Token__Balance";
-    tokenMetadata: {
-      __typename: "ERC721__Token";
-      tokenId: string;
-      metadataDescription: string;
-      imagePath: string;
-      contractAddress: string;
-      metadata: string;
-    };
-  };
-} | null;
-
-export interface MarketOrder {
-  active: boolean;
-  token_id: string;
-  collection_id: string;
-  owner: string;
-  price: string;
-  expiration: string;
-}
-
 export interface MergedNftData {
   metadata: RealmMetadata | null;
   minPrice?: bigint | null;
