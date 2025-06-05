@@ -2,7 +2,15 @@
 "version": 2,
 "rewrites": [
     {
-    "source": "/trade/:collection*",
+    "source": "/trade/:collection/:path*",
+    "destination": "/index.html"
+    },
+    {
+    "source": "/trade/:collection",
+    "destination": "/index.html"
+    },
+    {
+    "source": "/trade",
     "destination": "/index.html"
     },
     {
