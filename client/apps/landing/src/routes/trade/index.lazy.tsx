@@ -1,4 +1,5 @@
 import { FullPageLoader } from "@/components/modules/full-page-loader";
+import { formatNumber } from "@/components/ui/utils/utils";
 import { marketplaceCollections } from "@/config";
 import { fetchCollectionStatistics } from "@/hooks/services";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -65,7 +66,7 @@ function CollectionsPage() {
           const floorPrice = stats?.floor_price_wei ? formatUnits(BigInt(stats.floor_price_wei), 18) : "0";
           const MotionLink = motion(Link);
           const commonProps = {
-            className: `relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40`,
+            className: `relative min-h-[300px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border `,
             style: { backgroundImage: `url('${collection.image}')` },
           };
           return (
@@ -76,8 +77,8 @@ function CollectionsPage() {
               whileHover={{ scale: 1.03 }}
               {...commonProps}
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 rounded-lg"></div>
-              <div className="absolute inset-0 bg-black bg-opacity-10 flex flex-col items-start justify-end p-4">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/100 rounded-lg"></div>
+              <div className="absolute inset-0  flex flex-col items-start justify-end p-4">
                 <div className="capitalize font-bold text-xl text-gold font-serif">
                   {collection.name.replace(/-/g, " ")}
                 </div>
@@ -85,7 +86,9 @@ function CollectionsPage() {
                   <div className="flex space-x-3 justify-between items-center">
                     <div>
                       <span className="text-muted-foreground mr-1.5">Floor:</span>
-                      <span className="font-medium text-lg text-gold">{floorPrice} Lords</span>
+                      <span className="font-medium text-lg text-gold">
+                        {formatNumber(parseInt(floorPrice), 2).toLocaleString()} Lords
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground mr-1.5">Listed:</span>
@@ -93,7 +96,7 @@ function CollectionsPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground mr-1.5">Volume:</span>
-                      <span className="font-medium text-lg text-gold">{totalVolume} Lords</span>
+                      <span className="font-medium text-lg text-gold">{totalVolume.toLocaleString()} Lords</span>
                     </div>
                   </div>
                 </div>
