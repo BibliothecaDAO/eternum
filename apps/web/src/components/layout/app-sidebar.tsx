@@ -12,7 +12,6 @@ import {
   BookOpen,
   Castle,
   ClipboardPen,
-  Earth,
   ExternalLink,
   HandCoins,
   Newspaper,
@@ -39,22 +38,6 @@ const data = {
           title: "Eternum Season Passes",
           target: "_blank",
           url: "https://empire.realms.world/season-passes",
-        },
-      ],
-    },
-    {
-      title: "World",
-      url: "/coming-soon",
-      isActive: false,
-      icon: Earth,
-      items: [
-        {
-          title: "Beasts",
-          url: "/coming-soon",
-        },
-        {
-          title: "Banners",
-          url: "/coming-soon",
         },
       ],
     },
@@ -85,16 +68,6 @@ const data = {
       title: "Claims",
       url: "/realms/claims",
       icon: HandCoins,
-      items: [
-        {
-          title: "Realms Emissions",
-          url: "/realms/claims",
-        },
-        /*{
-          title: "Legacy Claims",
-          url: "#",
-        },*/
-      ],
     },
   ],
 
@@ -123,10 +96,6 @@ const data = {
         {
           title: "List",
           url: "/proposal/list",
-        },
-        {
-          title: "Create",
-          url: "/coming-soon",
         },
       ],
     },
@@ -167,22 +136,17 @@ const data = {
       items: [
         {
           title: "Realms.World",
-          url: "#",
+          url: "https://realmsworld.notion.site/",
         },
         {
           title: "Eternum",
-          url: "#",
+          url: "https://eternum-docs.realms.world/",
         },
         {
           title: "Developer",
-          url: "#",
+          url: "https://eternum-docs.realms.world/development",
         },
       ],
-    },
-    {
-      title: "Blog",
-      url: "https://realms.world/blog",
-      icon: Newspaper,
     },
   ],
 };

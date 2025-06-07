@@ -1,8 +1,6 @@
 "use client";
 
-import { ChevronRight  } from "lucide-react";
-import type {LucideIcon} from "lucide-react";
-
+import type { LucideIcon } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,6 +17,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 
 export function NavMain({
   items,
@@ -58,7 +57,9 @@ export function NavMain({
                   >
                     {item.title}
                   </Link>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  {item.items && (
+                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  )}
                 </SidebarMenuButton>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -66,7 +67,10 @@ export function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link to={subItem.url} activeProps={{ className: `text-sidebar-ring` }}>
+                        <Link
+                          to={subItem.url}
+                          activeProps={{ className: `text-sidebar-ring` }}
+                        >
                           <span>{subItem.title}</span>
                         </Link>
                       </SidebarMenuSubButton>

@@ -29,8 +29,8 @@ function RouteComponent() {
     args: [],
   });
   return (
-    <div className="container p-6">
-      <div className="flex flex-col gap-4">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold">veLords Dashboard</h1>
@@ -40,12 +40,12 @@ function RouteComponent() {
             {error && <p className="text-red-500">{error.message}</p>}
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-5">
-          <div className="col-span-2 flex flex-col gap-4">
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="flex flex-col gap-6 lg:col-span-4">
             <StakeLords />
             <VelordsRewards />
           </div>
-          <div className="col-span-3">
+          <div className="lg:col-span-8">
             <VeLordsRewardsChart
               totalSupply={
                 totalSupply

@@ -59,20 +59,20 @@ export function Header() {
       <div className="h-(--header-height) flex w-full gap-2">
         <div
           className={
-            `${open ? "w-(--sidebar-width)" : "w-(--sidebar-width-icon)"}` +
+            `${open ? "sm:w-(--sidebar-width) w-16 px-1" : "w-(--sidebar-width-icon)"}` +
             " flex items-center justify-center border-r"
           }
         >
           <Link to="/">
             <RWLogo
               className={
-                `${open ? "w-20" : "w-10"}` +
+                `${open ? "w-full sm:w-20" : "w-10"}` +
                 " h-auto transition-[width,height] duration-300"
               }
             />
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-between px-4">
+        <div className="flex flex-1 items-center justify-between px-1.5 sm:px-4">
           <div className="flex items-center justify-between gap-2">
             <SidebarTrigger className="-ml-1" />
             <ModeToggle />

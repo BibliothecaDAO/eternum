@@ -212,6 +212,7 @@
 ::-webkit-scrollbar,
 .table-scroll::-webkit-scrollbar {
   width: 0.3em;
+  height: 0.3em;
 }
 
 ::-webkit-scrollbar-track,
@@ -222,4 +223,21 @@
 ::-webkit-scrollbar-thumb,
 .table-scroll::-webkit-scrollbar-thumb {
   @apply bg-black dark:bg-white/70;
+  border-radius: 0.15em;
+}
+
+::-webkit-scrollbar:horizontal,
+.table-scroll::-webkit-scrollbar:horizontal {
+  height: 0.3em;
+}
+
+::-webkit-scrollbar-track:horizontal,
+.table-scroll::-webkit-scrollbar-track:horizontal {
+  box-shadow: inset 0 0 6px rgba(187, 182, 182, 0.3);
+}
+
+::-webkit-scrollbar-thumb:horizontal,
+.table-scroll::-webkit-scrollbar-thumb:horizontal {
+  @apply bg-black dark:bg-white/70;
+  border-radius: 0.15em;
 }

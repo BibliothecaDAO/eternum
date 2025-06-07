@@ -34,48 +34,51 @@ export const ProposalListItem = ({
   const isActive = proposal.max_end * 1000 > Date.now();
 
   return (
-    <div className="mx-4 flex items-center border-b py-[14px] last:border-b-0">
+    <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4">
       <Link
         to={`/proposal/$id`}
         params={{ id: proposal.proposal_id.toString() }}
-        className="mr-4 w-0 flex-auto"
+        className="min-w-0 flex-1"
       >
-        <div className="flex space-x-2">
-          <div className="mb-1 items-center leading-6 md:flex md:min-w-0">
-            <h4 className="my-0 text-lg font-semibold">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <h4 className="line-clamp-2 text-lg font-semibold">
               {proposal.metadata?.title ?? `Proposal #${proposal.id}`}
             </h4>
+            <div className="text-muted-foreground text-sm">
+              {getProposalId(proposal)} by{" "}
+              {name || shortenAddress(proposal.author.id)}
+            </div>
           </div>
-        </div>
-        <div className="mr-4 inline">
-          {getProposalId(proposal)} by{" "}
-          {name || shortenAddress(proposal.author.id)}
-        </div>
-        <div className="text-muted-foreground inline space-x-4">
-          <span>{proposal.vote_count} voters</span>
-          <span>{proposal.scores_total} votes</span>
-          <span>
-            {formatDistanceToNow(proposal.max_end * 1000)}{" "}
-            {isActive ? "left" : "ago"}
-          </span>
+
+          <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <span>{proposal.vote_count} voters</span>
+            <span>{proposal.scores_total} votes</span>
+            <span>
+              {formatDistanceToNow(proposal.max_end * 1000)}{" "}
+              {isActive ? "left" : "ago"}
+            </span>
+          </div>
         </div>
       </Link>
 
       {isActive ? (
-        <ProposalVoteAction proposal={proposal} />
+        <div className="flex-shrink-0">
+          <ProposalVoteAction proposal={proposal} />
+        </div>
       ) : (
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-shrink-0 flex-col items-end gap-2">
           <Progress
             value={
               (Number(proposal.scores_1) / Number(proposal.scores_total)) * 100
             }
             max={Number(proposal.scores_total)}
-            className="w-30 bg-red-500/60"
+            className="w-full bg-red-500/60 sm:w-32"
             indicatorColor="bg-green-500"
           />
 
-          <div>
-            <div className="text-muted-foreground flex w-full items-center justify-end gap-2 text-sm">
+          <div className="text-muted-foreground text-sm">
+            <div className="flex items-center gap-2">
               {voteChoice == 4 ? (
                 ""
               ) : voteChoice === 1 ? (

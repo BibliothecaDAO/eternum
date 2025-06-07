@@ -29,7 +29,6 @@ interface ClaimTransaction {
 
 export const ClaimRewards = () => {
   const { address } = useAccount();
-  const lordsPerWeek = 49;
   const pastLordsClaimsQuery = useQuery(
     getRealmsLordsClaimsQueryOptions({ address: address as string }),
   );
@@ -37,15 +36,6 @@ export const ClaimRewards = () => {
   /*const [claimTransactions, setClaimTransactions] = useState<
     ClaimTransaction[]
   >([]);*/
-
-  const { data: realmsBalance } = useReadContract({
-    address: CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
-    abi: ERC721,
-    functionName: "balance_of",
-    enabled: !!address,
-    args: address ? [address] : undefined,
-    refetchInterval: 10000,
-  });
 
   const { balance, isSubmitting, claimRewards } = useL2RealmsClaims();
 
@@ -66,114 +56,49 @@ export const ClaimRewards = () => {
   };
   const explorer = useExplorer();
 
-  const totalLordsEarnedPerWeek = Number(realmsBalance ?? 0) * lordsPerWeek;
-
   return (
     <div className="flex flex-col gap-6 p-6">
-      <h1 className="text-2xl font-bold">Realms Claims Dashboard</h1>
-
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
+      <h1 className="text-2xl font-bold">Past Realms Claims Dashboard</h1>
+      <div className="grid gap-6 sm:grid-cols-3">
+        {/* Claim Rewards Section */}
+        <Card className="relative overflow-hidden">
           <CardHeader>
-            <CardTitle>Your Realms on Starknet</CardTitle>
+            <CardTitle>Claim Rewards</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-2">
-              <span className="mr-2 text-4xl font-bold">
-                {Number(realmsBalance ?? 0)}
-              </span>
-            </div>
-            <div className="text-muted-foreground flex flex-col gap-2 text-sm">
-              <span>
-                Realms must be bridged to Starknet and delegated in order to
-                receive rewards
-              </span>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <LordsIcon className="w-9" />
+                <span className="text-3xl font-bold">
+                  {balance && formatNumber(Number(formatEther(balance)))}
+                </span>{" "}
+                claimable
+              </div>
+
+              <Button
+                onClick={handleClaimRewards}
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                Claim Lords
+              </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Rewards Information Section */}
-        <Card>
+        {/* Rewards Info Section */}
+        <Card className="relativeoverflow-hidden">
           <CardHeader>
-            <CardTitle>Rewards Information</CardTitle>
+            <CardTitle>Lords Rewards have ended!</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-2 flex items-center gap-2">
-              <LordsIcon className="w-9" />
-              <span className="text-4xl font-bold">{lordsPerWeek}</span>/ week
-            </div>
-            <span className="text-muted-foreground text-sm">
-              Streamed per block
-            </span>
-          </CardContent>
-        </Card>
-
-        {/* Total Lords Earned Per Week Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Lords Earned Per Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <LordsIcon className="w-9" />
-              <span className="text-4xl font-bold">
-                {formatNumber(totalLordsEarnedPerWeek)}
-              </span>
-            </div>
+            The Realms DAO voted to end weekly Lords Rewards in{" "}
+            <a href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposal/53">
+              BIP-80 and the Lords have now been directed to game rewards for
+              Eterenum seasons
+            </a>
           </CardContent>
         </Card>
       </div>
-
-      {/* Claim Rewards Section */}
-      <Card className="relative w-1/3 overflow-hidden">
-        {totalLordsEarnedPerWeek > 0 && (
-          <Confetti
-            colors={[
-              "#f6c297",
-              "#f8d0a8",
-              "#f4b688",
-              "#f7c8a0",
-              "#f5c09f",
-              "#f9d8b0",
-              "#f3ae80",
-              "#f2a670",
-              "#f1b080",
-              "#f0c0a0",
-              "#f8e0c0",
-              "#f6b090",
-            ]}
-            opacity={0.5}
-            width={400} // Adjust width as needed
-            height={200} // Adjust height as needed
-            numberOfPieces={100}
-            recycle={true}
-            gravity={0.055}
-          />
-        )}
-        <CardHeader>
-          <CardTitle>Claim Rewards</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <LordsIcon className="w-9" />
-              <span className="text-3xl font-bold">
-                {balance && formatNumber(Number(formatEther(balance)))}
-              </span>{" "}
-              claimable
-            </div>
-
-            <Button
-              onClick={handleClaimRewards}
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              Claim Lords
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Past Claim Transactions Table */}
       <Card>
         <CardHeader>

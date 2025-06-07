@@ -82,72 +82,71 @@ export function VeLordsRewardsChart({
   return (
     <Card>
       <CardHeader>Lords Rewards per Week</CardHeader>
-      <CardContent>
-        <ChartContainer
-          config={chartConfig}
-          className="max-h-[800px] min-h-[200px] w-full"
-        >
-          <BarChart data={parsedData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="week"
-              label={{
-                value: "Week Starting",
-                position: "insideBottomLeft",
-                offset: -5,
-              }}
-            />
-            <YAxis
+
+      <ChartContainer
+        config={chartConfig}
+        className="max-h-[800px] w-full overflow-x-auto"
+      >
+        <BarChart data={parsedData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="week"
+            label={{
+              value: "Week Starting",
+              position: "insideBottomLeft",
+              offset: -5,
+            }}
+          />
+          <YAxis
+            yAxisId="amount"
+            label={{
+              value: "Total Lords Rewards",
+              angle: -90,
+              position: "insideLeft",
+              offset: 18,
+            }}
+          />
+          <YAxis
+            yAxisId="apy"
+            orientation="right"
+            dataKey="apy"
+            label={{
+              value: "% APY (4 year lock)",
+              angle: -90,
+              position: "outside",
+              offset: 25,
+            }}
+          />
+          {/*<ChartTooltip content={<ChartTooltipContent />} />*/}
+          <ChartLegend content={<ChartLegendContent />} />
+
+          {/* Stacked bars for each source */}
+          {Object.keys(sourceColors).map((source, index) => (
+            <Bar
+              key={source}
+              dataKey={`amounts.${source}`}
+              stackId="rewards"
               yAxisId="amount"
-              label={{
-                value: "Total Lords Rewards",
-                angle: -90,
-                position: "insideLeft",
-                offset: 18,
-              }}
+              fill={sourceColors[source as keyof typeof sourceColors]}
+              stroke={sourceColors[source as keyof typeof sourceColors]}
+              radius={
+                index === Object.keys(sourceColors).length - 1
+                  ? [4, 4, 0, 0]
+                  : [0, 0, 0, 0]
+              }
             />
-            <YAxis
-              yAxisId="apy"
-              orientation="right"
-              dataKey="apy"
-              label={{
-                value: "% APY (4 year lock)",
-                angle: -90,
-                position: "outside",
-                offset: 25,
-              }}
-            />
-            {/*<ChartTooltip content={<ChartTooltipContent />} />*/}
-            <ChartLegend content={<ChartLegendContent />} />
+          ))}
 
-            {/* Stacked bars for each source */}
-            {Object.keys(sourceColors).map((source, index) => (
-              <Bar
-                key={source}
-                dataKey={`amounts.${source}`}
-                stackId="rewards"
-                yAxisId="amount"
-                fill={sourceColors[source as keyof typeof sourceColors]}
-                stroke={sourceColors[source as keyof typeof sourceColors]}
-                radius={
-                  index === Object.keys(sourceColors).length - 1
-                    ? [4, 4, 0, 0]
-                    : [0, 0, 0, 0]
-                }
-              />
-            ))}
-
-            <Line
-              dataKey="apy"
-              type="monotone"
-              yAxisId="apy"
-              stroke="var(--color-apy)"
-              fill="var(--color-apy)"
-              activeDot={{ r: 8 }}
-            />
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
+          <Line
+            dataKey="apy"
+            type="monotone"
+            yAxisId="apy"
+            stroke="var(--color-apy)"
+            fill="var(--color-apy)"
+            activeDot={{ r: 8 }}
+          />
+        </BarChart>
+      </ChartContainer>
     </Card>
   );
 }
