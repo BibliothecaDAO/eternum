@@ -284,8 +284,12 @@ WITH limited_active_orders AS (
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
   DONKEY_BURN: `
-  SELECT amount
-  FROM "s1_eternum-BurnDonkey"
+    SELECT 
+        json_extract(data, '$.amount') as amount
+    FROM 
+        event_messages_historical 
+    WHERE 
+        model_id = '0x4a1aac57c8cb6ec732bd40283fd1a892987d708a6b8a7d3a4dd65da6f0e7700'
   `,
   TOTAL_GUILDS: `SELECT
     COUNT(*) AS total_guilds
