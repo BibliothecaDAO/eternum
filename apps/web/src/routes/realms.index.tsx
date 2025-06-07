@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import BridgeIcon from "@/components/icons/bridge.svg?react";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
+import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount } from "@starknet-react/core";
 import {
@@ -18,7 +19,6 @@ import {
 import { HandCoins } from "lucide-react";
 
 import { CollectionAddresses } from "@realms-world/constants";
-import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 
 export class RealmsNotFoundError extends Error {}
 
@@ -62,7 +62,7 @@ function RealmsComponent() {
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery?.data
+  const l2Realms = l2RealmsQuery?.data;
   if (!address) {
     return <div>Connect Starknet Wallet to view your Realms</div>;
   }
@@ -77,11 +77,11 @@ function RealmsComponent() {
         </Link>
         <Link to={`/realms/claims`}>
           <Button variant={"outline"} size="lg" className="rounded px-3">
-            <HandCoins /> Claim Lords Rewards
+            <HandCoins /> Claim Lords
           </Button>
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:p-4">
         {l2Realms?.length
           ? l2Realms.map((realm) => {
               return (

@@ -41,7 +41,7 @@ export const VelordsRewards = () => {
 
   return (
     <Card className="relative overflow-hidden">
-      {lordsClaimable && Number(lordsClaimable) > 0 && (
+      {lordsClaimable && Number(lordsClaimable) > 0 ? (
         <Confetti
           colors={[
             "#f6c297",
@@ -64,7 +64,7 @@ export const VelordsRewards = () => {
           recycle={true}
           gravity={0.055}
         />
-      )}
+      ) : null}
       <CardHeader>
         <CardTitle>Your Claimable Lords</CardTitle>
       </CardHeader>

@@ -1,9 +1,9 @@
 import type { ColorMode } from "@cartridge/controller";
-//import { getStarknet } from "@starknet-io/get-starknet-core";
 import type { Chain } from "@starknet-react/chains";
 import React from "react";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import ControllerConnector from "@cartridge/connector/controller";
+import { getStarknet } from "@starknet-io/get-starknet-core";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import {
   argent,
@@ -66,7 +66,7 @@ const cartridgeController =
 
 const getConnectors = () => {
   // For Metamask
-  //getStarknet();
+  // getStarknet();
   const connectors = [
     new InjectedConnector({ options: { id: "okxwallet" } }),
     new InjectedConnector({ options: { id: "bitkeep" } }),

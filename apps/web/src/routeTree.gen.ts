@@ -15,7 +15,6 @@ import { Route as IndexImport } from './routes/index'
 import { Route as VelordsIndexImport } from './routes/velords.index'
 import { Route as RealmsIndexImport } from './routes/realms.index'
 import { Route as ComingSoonIndexImport } from './routes/coming-soon.index'
-import { Route as VelordsClaimImport } from './routes/velords.claim'
 import { Route as RealmsClaimsImport } from './routes/realms.claims'
 import { Route as RealmsBridgeImport } from './routes/realms.bridge'
 import { Route as ProposalListImport } from './routes/proposal.list'
@@ -46,12 +45,6 @@ const RealmsIndexRoute = RealmsIndexImport.update({
 const ComingSoonIndexRoute = ComingSoonIndexImport.update({
   id: '/coming-soon/',
   path: '/coming-soon/',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const VelordsClaimRoute = VelordsClaimImport.update({
-  id: '/velords/claim',
-  path: '/velords/claim',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -144,13 +137,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RealmsClaimsImport
       parentRoute: typeof rootRoute
     }
-    '/velords/claim': {
-      id: '/velords/claim'
-      path: '/velords/claim'
-      fullPath: '/velords/claim'
-      preLoaderRoute: typeof VelordsClaimImport
-      parentRoute: typeof rootRoute
-    }
     '/coming-soon/': {
       id: '/coming-soon/'
       path: '/coming-soon'
@@ -185,7 +171,6 @@ export interface FileRoutesByFullPath {
   '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
-  '/velords/claim': typeof VelordsClaimRoute
   '/coming-soon': typeof ComingSoonIndexRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
@@ -199,7 +184,6 @@ export interface FileRoutesByTo {
   '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
-  '/velords/claim': typeof VelordsClaimRoute
   '/coming-soon': typeof ComingSoonIndexRoute
   '/realms': typeof RealmsIndexRoute
   '/velords': typeof VelordsIndexRoute
@@ -214,7 +198,6 @@ export interface FileRoutesById {
   '/proposal/list': typeof ProposalListRoute
   '/realms/bridge': typeof RealmsBridgeRoute
   '/realms/claims': typeof RealmsClaimsRoute
-  '/velords/claim': typeof VelordsClaimRoute
   '/coming-soon/': typeof ComingSoonIndexRoute
   '/realms/': typeof RealmsIndexRoute
   '/velords/': typeof VelordsIndexRoute
@@ -230,7 +213,6 @@ export interface FileRouteTypes {
     | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
-    | '/velords/claim'
     | '/coming-soon'
     | '/realms'
     | '/velords'
@@ -243,7 +225,6 @@ export interface FileRouteTypes {
     | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
-    | '/velords/claim'
     | '/coming-soon'
     | '/realms'
     | '/velords'
@@ -256,7 +237,6 @@ export interface FileRouteTypes {
     | '/proposal/list'
     | '/realms/bridge'
     | '/realms/claims'
-    | '/velords/claim'
     | '/coming-soon/'
     | '/realms/'
     | '/velords/'
@@ -271,7 +251,6 @@ export interface RootRouteChildren {
   ProposalListRoute: typeof ProposalListRoute
   RealmsBridgeRoute: typeof RealmsBridgeRoute
   RealmsClaimsRoute: typeof RealmsClaimsRoute
-  VelordsClaimRoute: typeof VelordsClaimRoute
   ComingSoonIndexRoute: typeof ComingSoonIndexRoute
   RealmsIndexRoute: typeof RealmsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
@@ -285,7 +264,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProposalListRoute: ProposalListRoute,
   RealmsBridgeRoute: RealmsBridgeRoute,
   RealmsClaimsRoute: RealmsClaimsRoute,
-  VelordsClaimRoute: VelordsClaimRoute,
   ComingSoonIndexRoute: ComingSoonIndexRoute,
   RealmsIndexRoute: RealmsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
@@ -308,7 +286,6 @@ export const routeTree = rootRoute
         "/proposal/list",
         "/realms/bridge",
         "/realms/claims",
-        "/velords/claim",
         "/coming-soon/",
         "/realms/",
         "/velords/"
@@ -334,9 +311,6 @@ export const routeTree = rootRoute
     },
     "/realms/claims": {
       "filePath": "realms.claims.tsx"
-    },
-    "/velords/claim": {
-      "filePath": "velords.claim.tsx"
     },
     "/coming-soon/": {
       "filePath": "coming-soon.index.tsx"

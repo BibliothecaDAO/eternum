@@ -1,12 +1,14 @@
-import { ResourceIcon } from "@/components/ui/resource-icon";
 import type { TokenMetadataAttribute } from "@/types/ark";
+// Assuming you're using a tooltip library
+import { Button } from "@/components/ui/button";
+import { ResourceIcon } from "@/components/ui/resource-icon";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"; // Assuming you're using a tooltip library
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function RealmResources({
   traits,
@@ -15,20 +17,21 @@ export default function RealmResources({
 }) {
   const resources = traits.filter((trait) => trait.trait_type === "Resource");
   const hiddenCount = resources.length - 4;
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex items-center gap-2">
-      {resources.slice(0, 4).map((resource, index) => (
+      {resources.slice(0, isMobile ? 2 : 4).map((resource, index) => (
         <div
           key={index}
-          className="flex items-center gap-2 rounded-lg bg-secondary p-2"
+          className="bg-secondary flex items-center gap-2 rounded-lg p-2"
         >
           {resource.value && (
             <ResourceIcon size="md" resource={resource.value} />
           )}
         </div>
       ))}
-      {resources.length > 4 && (
+      {resources.length > (isMobile ? 2 : 4) && (
         <>
           <TooltipProvider>
             <Tooltip>

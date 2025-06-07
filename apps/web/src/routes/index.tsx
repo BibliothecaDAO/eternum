@@ -16,11 +16,11 @@ function IndexComponent() {
     return <LoginCard />;
   }
   return (
-    <div className="flex flex-col gap-4 p-4 px-8">
+    <div className="flex flex-col gap-4 p-4 sm:px-8">
       {/* Dashboard Statistics */}
       <div className="mb-4">
-        <div className="flex justify-between">
-          <h1 className="mb-2 text-2xl font-bold">Dashboard</h1>
+        <div className="mb-2 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
           <EthereumConnect />
         </div>
         <Suspense fallback={<HomepageSkeleton />}>

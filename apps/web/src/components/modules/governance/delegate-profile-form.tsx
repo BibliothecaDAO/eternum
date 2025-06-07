@@ -120,7 +120,7 @@ export function DelegateProfileForm({
                   type="multiple"
                   variant="outline"
                   size="sm"
-                  className="grid grid-cols-4 justify-start lg:grid-cols-6"
+                  className="grid grid-cols-2 justify-start sm:grid-cols-4 lg:grid-cols-6"
                 >
                   {interests.map(({ value, label }) => (
                     <ToggleGroupItem

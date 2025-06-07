@@ -40,8 +40,8 @@ function RouteComponent() {
       }}
     >
       <SidebarInset>
-        <div className="container p-6">
-          <h1 className="pl-4 text-2xl font-semibold">Proposals</h1>
+        <div className="container p-4 sm:p-8">
+          <h1 className="text-2xl font-semibold">Proposals</h1>
           <Suspense fallback={<ProposalListSkeleton />}>
             <ProposalList limit={20} delegateId={currentDelegate?.user} />
           </Suspense>
@@ -80,26 +80,24 @@ function ProposalListSkeleton() {
         {Array.from({ length: 10 }).map((_, index) => (
           <div
             key={index}
-            className="mx-4 flex items-center border-b py-[14px]"
+            className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4"
           >
-            <div className="mr-4 w-0 flex-auto">
-              <div className="flex space-x-2">
-                <div className="mb-1 items-center leading-6 md:flex md:min-w-0">
-                  <Skeleton className="h-6 w-64" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
+                  <Skeleton className="h-6 w-full max-w-[400px]" />
+                  <Skeleton className="h-4 w-48" />
                 </div>
-              </div>
-              <div className="mr-4">
-                <Skeleton className="inline-block h-4 w-24 align-middle" />
-              </div>
-              <div className="text-muted-foreground space-x-4">
-                <Skeleton className="mx-1 inline-block h-4 w-20 align-middle" />
-                <Skeleton className="mx-1 inline-block h-4 w-20 align-middle" />
-                <Skeleton className="mx-1 inline-block h-4 w-32 align-middle" />
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
-              <Skeleton className="w-30 h-4 rounded-full" />
+            <div className="flex flex-shrink-0 flex-col items-end gap-2">
+              <Skeleton className="h-4 w-full rounded-full sm:w-32" />
               <Skeleton className="h-4 w-36" />
             </div>
           </div>

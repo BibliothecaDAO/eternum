@@ -42,12 +42,7 @@ import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import {
-  CollectionAddresses,
-  LORDS,
-  SnapshotSpaceAddresses,
-  StakingAddresses,
-} from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/constants";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -167,7 +162,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Button>
               </Link>
               <a
-                href="https://market.realms.world/"
+                href="https://empire.realms.world/trade/realms"
                 target="_blank"
                 className="flex-1"
               >
@@ -304,8 +299,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         No Delegate Selected
                       </h3>
                       <p className="text-muted-foreground mb-4 text-sm">
-                        Delegate your Realms to participate in governance and
-                        earn $LORDS emissions
+                        Delegate your Realms to participate in governance
                       </p>
                       <Link to={`/delegate/list`}>
                         <Button className="w-full">Choose a Delegate</Button>
@@ -357,9 +351,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </Button>
             </Link>
           </CardHeader>
-          <Suspense fallback={<div className="p-6">Loading proposals...</div>}>
-            <ProposalList delegateId={currentDelegate?.user} />
-          </Suspense>
+          <CardContent>
+            <Suspense fallback={<div>Loading proposals...</div>}>
+              <ProposalList delegateId={currentDelegate?.user} />
+            </Suspense>
+          </CardContent>
         </Card>
 
         {/* Realms Grid */}
@@ -377,7 +373,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                   {accountTokens
                     ?.slice(0, 5)
                     .map((realm: any) => (
@@ -418,7 +414,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   Visit the marketplace to acquire your first Realm
                 </p>
                 <a
-                  href="https://market.realms.world/"
+                  href="https://empire.realms.world/trade/realms"
                   target="_blank"
                   className="mt-4 inline-block"
                 >
