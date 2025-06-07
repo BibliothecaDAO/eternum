@@ -107,10 +107,17 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     args: [address],
   });
 
-  // Prepare the function to send the claim rewards transaction.
-  const { sendAsync: claimAllRewards, isPending: claimIsSubmitting } =
+  // Prepare the functions to send claim rewards transactions.
+  const {
+    sendAsync: claimVeLordsRewards,
+    isPending: claimVeLordsIsSubmitting,
+  } = useSendTransaction({
+    calls: claimCall ?? [],
+  });
+
+  const { sendAsync: claimRealmsRewards, isPending: claimRealmsIsSubmitting } =
     useSendTransaction({
-      calls: [...(claimCall ?? []), ...l2RealmsClaimCall],
+      calls: l2RealmsClaimCall,
     });
 
   return (
@@ -273,13 +280,30 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Link>
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
+            <CardFooter className="flex gap-2 pt-0">
               <Button
-                onClick={() => claimAllRewards()}
-                className="w-full"
-                disabled={claimIsSubmitting}
+                onClick={() => claimRealmsRewards()}
+                className="flex-1"
+                disabled={
+                  claimRealmsIsSubmitting ||
+                  !l2RealmsBalance ||
+                  l2RealmsBalance === 0n
+                }
+                variant="outline"
               >
-                {claimIsSubmitting ? "Claiming..." : "Claim All Rewards"}
+                {claimRealmsIsSubmitting ? "Claiming..." : "Claim Realms"}
+              </Button>
+              <Button
+                onClick={() => claimVeLordsRewards()}
+                className="flex-1"
+                disabled={
+                  claimVeLordsIsSubmitting ||
+                  !lordsClaimable ||
+                  lordsClaimable === 0n
+                }
+                variant="outline"
+              >
+                {claimVeLordsIsSubmitting ? "Claiming..." : "Claim veLords"}
               </Button>
             </CardFooter>
           </Card>
