@@ -20,10 +20,10 @@ import {
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
-import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
-import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
+import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
+import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import {
   formatAddress,
   formatNumber,
@@ -120,199 +120,317 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-10">
-        {/* Realms Count */}
-        <div className="mb-4">
-          <h2 className="mb-2 text-xl font-semibold">Your Assets</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Realms</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="flex w-full justify-between gap-2">
-                  <span className="text-3xl">
-                    <Suspense fallback={<div>Loading...</div>}>
+      <div className="space-y-8">
+        {/* Assets Section */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Realms Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Realms</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">
+                    <Suspense
+                      fallback={
+                        <div className="text-muted-foreground">Loading...</div>
+                      }
+                    >
                       {l1UsersRealms?.collections?.[0]?.ownership?.tokenCount ??
                         0}
                     </Suspense>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    on <EthereumIcon className="h-6 w-6" /> Ethereum
-                  </span>
-                </p>
-                <p className="flex justify-between gap-2">
-                  <span className="text-3xl">
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <EthereumIcon className="h-4 w-4" />
+                    Ethereum
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">
                     {accountTokens.length}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    on <StarknetIcon className="h-6 w-6" /> Starknet
-                  </span>
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Link to={`/realms/bridge`}>
-                  <Button variant="outline" size={"sm"}>
-                    <BridgeIcon className="!h-5 !w-5" /> Bridge
-                  </Button>
-                </Link>
-                <a href="https://market.realms.world/" target="__blank">
-                  <Button variant="outline" size={"sm"}>
-                    <Gavel /> Marketplace
-                  </Button>
-                </a>
-              </CardFooter>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LordsIcon className="w-8" />
-                  Lords
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="flex w-full justify-between gap-2">
-                  <span className="text-3xl">
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <StarknetIcon className="h-4 w-4" />
+                    Starknet
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex gap-2 pt-4">
+              <Link to={`/realms/bridge`} className="flex-1">
+                <Button variant="outline" size="sm" className="w-full">
+                  <BridgeIcon className="mr-2 h-4 w-4" />
+                  Bridge
+                </Button>
+              </Link>
+              <a
+                href="https://market.realms.world/"
+                target="_blank"
+                className="flex-1"
+              >
+                <Button variant="outline" size="sm" className="w-full">
+                  <Gavel className="mr-2 h-4 w-4" />
+                  Market
+                </Button>
+              </a>
+            </CardFooter>
+          </Card>
+
+          {/* Lords Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <LordsIcon className="h-6 w-6" />
+                Lords
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">
                     {formatNumber(Number(l1Balance?.formatted ?? 0))}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    on <EthereumIcon className="h-6 w-6" /> Ethereum
-                  </span>
-                </p>
-                <p className="flex justify-between gap-2">
-                  <span className="text-3xl">
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <EthereumIcon className="h-4 w-4" />
+                    Ethereum
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">
                     {formatNumber(Number(starknetBalance?.formatted))}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    on <StarknetIcon className="h-6 w-6" /> Starknet
-                  </span>
-                </p>
-                <p className="flex justify-between gap-2">
-                  <span className="text-3xl">
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <StarknetIcon className="h-4 w-4" />
+                    Starknet
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">
                     {formatNumber(
                       Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0))),
                     )}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    staked for veLords
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Claimable Lords */}
-        <div className="mb-4 md:w-1/2">
-          <h2 className="mb-2 text-xl font-semibold">Your Claims</h2>
-          <Card>
-            <CardContent className="flex flex-col gap-2 pt-6">
-              <Link to={`/realms/claims`}>
-                <Badge className="flex justify-between gap-2 rounded">
-                  <span className="flex text-3xl">
-                    <LordsIcon className="mr-2 w-6" />
-                    {l2RealmsBalance
-                      ? formatNumber(Number(formatEther(l2RealmsBalance)))
-                      : 0}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    Realms Emissions
-                  </span>
-                </Badge>
-              </Link>
-              <Link to={`/velords`}>
-                <Badge className="flex justify-between gap-2 rounded">
-                  <span className="flex text-3xl">
-                    <LordsIcon className="mr-2 w-6" />
-                    {lordsClaimable
-                      ? formatNumber(Number(formatEther(lordsClaimable)))
-                      : 0}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    from veLords staking
-                  </span>
-                </Badge>
-              </Link>
+                  </div>
+                  <div className="text-muted-foreground text-sm">
+                    Staked (veLords)
+                  </div>
+                </div>
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button
-                onClick={() => claimAllRewards()}
-                variant={"outline"}
-                size={"sm"}
-              >
-                Claim All
-              </Button>
-            </CardFooter>
           </Card>
         </div>
 
-        {/* Delegate Profile */}
-        <div>
-          <h2 className="mb-2 text-xl font-semibold">Your Delegate</h2>
-          <div className="flex flex-col gap-4">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* Claims Section */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Available Claims</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <Link to={`/realms/claims`}>
+                  <div className="hover:bg-muted/50 group rounded-lg border p-4 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <LordsIcon className="h-6 w-6" />
+                        <div>
+                          <div className="font-semibold">Realms Emissions</div>
+                          <div className="text-muted-foreground text-sm">
+                            Claim your realm rewards
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {l2RealmsBalance
+                          ? formatNumber(Number(formatEther(l2RealmsBalance)))
+                          : 0}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link to={`/velords`}>
+                  <div className="hover:bg-muted/50 group rounded-lg border p-4 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <LordsIcon className="h-6 w-6" />
+                        <div>
+                          <div className="font-semibold">veLords Rewards</div>
+                          <div className="text-muted-foreground text-sm">
+                            Staking rewards available
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {lordsClaimable
+                          ? formatNumber(Number(formatEther(lordsClaimable)))
+                          : 0}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Button
+                onClick={() => claimAllRewards()}
+                className="w-full"
+                disabled={claimIsSubmitting}
+              >
+                {claimIsSubmitting ? "Claiming..." : "Claim All Rewards"}
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Delegate Section */}
+          <div className="space-y-4">
             <Suspense fallback={<DelegateCardSkeleton />}>
               {!currentDelegate ||
               (currentDelegate.user && BigInt(currentDelegate.user) == 0n) ? (
                 <Card>
-                  <CardHeader className="text-2xl">
-                    No delegate selected
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Governance</CardTitle>
                   </CardHeader>
-
-                  <CardContent>
-                    You must delegate your Realms for governance in order to
-                    vote on proposals and receive $LORDS emissions
+                  <CardContent className="p-6">
+                    <div className="text-center">
+                      <h3 className="mb-2 text-lg font-semibold">
+                        No Delegate Selected
+                      </h3>
+                      <p className="text-muted-foreground mb-4 text-sm">
+                        Delegate your Realms to participate in governance and
+                        earn $LORDS emissions
+                      </p>
+                      <Link to={`/delegate/list`}>
+                        <Button className="w-full">Choose a Delegate</Button>
+                      </Link>
+                    </div>
                   </CardContent>
-                  <CardFooter>
-                    <Link to={`/delegate/list`}>
-                      <Button>Choose a Delegate</Button>
-                    </Link>
-                  </CardFooter>
                 </Card>
               ) : (
-                <DelegateCard delegate={currentDelegate} />
+                <DelegateCard
+                  delegate={{
+                    user: currentDelegate.user,
+                    delegateProfile: currentDelegate.delegateProfile
+                      ? {
+                          twitter:
+                            currentDelegate.delegateProfile.twitter ||
+                            undefined,
+                          github:
+                            currentDelegate.delegateProfile.github || undefined,
+                          telegram:
+                            currentDelegate.delegateProfile.telegram ||
+                            undefined,
+                          discord:
+                            currentDelegate.delegateProfile.discord ||
+                            undefined,
+                          interests:
+                            currentDelegate.delegateProfile.interests ||
+                            undefined,
+                          statement:
+                            currentDelegate.delegateProfile.statement ||
+                            undefined,
+                        }
+                      : undefined,
+                    delegatedVotes: currentDelegate.delegatedVotes,
+                    id: currentDelegate.id,
+                  }}
+                />
               )}
             </Suspense>
           </div>
         </div>
 
-        {/* Recent Proposals */}
-        <div className="mb-4">
-          <h2 className="mb-2 text-xl font-semibold">Recent Proposals</h2>
-          <Card>
-            <Suspense fallback={<div>Loading...</div>}>
-              <ProposalList delegateId={currentDelegate?.user} />
-            </Suspense>
-          </Card>
-          <div className="mt-2 flex justify-end">
+        {/* Proposals Section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
+            <CardTitle className="text-lg">Recent Proposals</CardTitle>
             <Link to={`/proposal/list`}>
-              <Button variant="outline" size={"sm"}>
+              <Button variant="outline" size="sm">
                 View All
               </Button>
             </Link>
-          </div>
-        </div>
-      </div>
-      {/* Realms Grid */}
-      <div className="my-12">
-        <h2 className="mb-2 text-xl font-semibold">Your Realms</h2>
-        {accountTokens?.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {accountTokens?.slice(0, 5)
-              .map((realm) => (
-                <RealmCard key={realm.token_id} token={realm} isGrid={true} />
-              ))}
+          </CardHeader>
+          <Suspense fallback={<div className="p-6">Loading proposals...</div>}>
+            <ProposalList delegateId={currentDelegate?.user} />
+          </Suspense>
+        </Card>
+
+        {/* Realms Grid */}
+        <div>
+          {accountTokens?.length > 0 ? (
             <Card>
-              <Link to={`/realms`} className="h-full">
-                <CardContent className="hover:bg-muted flex h-full flex-col items-center justify-center">
-                  <Plus className="h-16 w-16" />
-                  View All
-                </CardContent>
-              </Link>
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <CardTitle className="text-lg">Your Realms</CardTitle>
+                {accountTokens?.length > 5 && (
+                  <Link to={`/realms`}>
+                    <Button variant="outline" size="sm">
+                      View All ({accountTokens.length})
+                    </Button>
+                  </Link>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                  {accountTokens
+                    ?.slice(0, 5)
+                    .map((realm: any) => (
+                      <RealmCard
+                        key={realm.token_id}
+                        token={realm}
+                        isGrid={true}
+                      />
+                    ))}
+                  {accountTokens.length > 5 && (
+                    <Card className="flex items-center justify-center">
+                      <Link
+                        to={`/realms`}
+                        className="flex h-full w-full items-center justify-center p-6"
+                      >
+                        <div className="text-center">
+                          <Plus className="text-muted-foreground mx-auto h-8 w-8" />
+                          <div className="text-muted-foreground mt-2 text-sm">
+                            +{accountTokens.length - 5} more
+                          </div>
+                        </div>
+                      </Link>
+                    </Card>
+                  )}
+                </div>
+              </CardContent>
             </Card>
-          </div>
-        ) : (
-          <div>No Realms Found in wallet</div>
-        )}
+          ) : (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Your Realms</CardTitle>
+              </CardHeader>
+              <CardContent className="p-12 text-center">
+                <div className="text-muted-foreground text-lg">
+                  No Realms found in your wallet
+                </div>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Visit the marketplace to acquire your first Realm
+                </p>
+                <a
+                  href="https://market.realms.world/"
+                  target="_blank"
+                  className="mt-4 inline-block"
+                >
+                  <Button>
+                    <Gavel className="mr-2 h-4 w-4" />
+                    Browse Marketplace
+                  </Button>
+                </a>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </>
   );
