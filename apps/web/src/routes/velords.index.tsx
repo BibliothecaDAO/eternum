@@ -28,32 +28,51 @@ function RouteComponent() {
     functionName: "total_supply",
     args: [],
   });
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold">veLords Dashboard</h1>
-            <p className="text-muted-foreground text-sm">
-              Stake $LORDS in the Lordship Protocol
-            </p>
-            {error && <p className="text-red-500">{error.message}</p>}
-          </div>
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        {/* Header Section */}
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            veLords Dashboard
+          </h1>
+          <p className="text-muted-foreground text-base sm:text-lg">
+            Stake $LORDS in the Lordship Protocol
+          </p>
+          {error && (
+            <div className="bg-destructive/10 rounded-md p-3">
+              <p className="text-destructive text-sm font-medium">
+                {error.message}
+              </p>
+            </div>
+          )}
         </div>
-        <div className="grid gap-6 lg:grid-cols-12">
-          <div className="flex flex-col gap-6 lg:col-span-4">
-            <StakeLords />
-            <VelordsRewards />
+
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
+          {/* Left Column - Staking Controls */}
+          <div className="space-y-6 xl:col-span-2">
+            <div className="bg-card rounded-lg border">
+              <StakeLords />
+            </div>
+            <div className="bg-card rounded-lg border">
+              <VelordsRewards />
+            </div>
           </div>
-          <div className="lg:col-span-8">
-            <VeLordsRewardsChart
-              totalSupply={
-                totalSupply
-                  ? Number(formatEther(totalSupply as bigint))
-                  : undefined
-              }
-              data={veLordsBurns}
-            />
+
+          {/* Right Column - Chart */}
+          <div className="xl:col-span-3">
+            <div className="bg-card rounded-lg border p-6">
+              <VeLordsRewardsChart
+                totalSupply={
+                  totalSupply
+                    ? Number(formatEther(totalSupply as bigint))
+                    : undefined
+                }
+                data={veLordsBurns}
+              />
+            </div>
           </div>
         </div>
       </div>
