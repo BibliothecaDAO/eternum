@@ -11,7 +11,7 @@ export interface DataCardProps {
   backgroundImage?: string;
 }
 
-export const DataCard = ({ title, value, description, icon, backgroundImage }: DataCardProps) => {
+const DataCard = ({ title, value, description, icon, backgroundImage }: DataCardProps) => {
   return (
     <Card className="w-full relative overflow-hidden h-full">
       {backgroundImage && (

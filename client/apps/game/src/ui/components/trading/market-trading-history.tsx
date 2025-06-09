@@ -28,7 +28,7 @@ export const MarketTradingHistory = () => {
   return <MarketTradingHistoryContent />;
 };
 
-export const MarketTradingHistoryContent = memo(() => {
+const MarketTradingHistoryContent = memo(() => {
   const {
     account: {
       account: { address },

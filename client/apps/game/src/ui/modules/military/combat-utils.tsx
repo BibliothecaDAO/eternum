@@ -39,7 +39,7 @@ export const formatBiomeBonus = (bonus: number) => {
 };
 
 // Compact version of formatTypeAndBonuses for tight layouts (multi-guard view)
-export const formatTypeAndBonusesCompact = (
+const formatTypeAndBonusesCompact = (
   category: TroopType,
   tier: TroopTier,
   biomeBonus: number,
