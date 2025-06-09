@@ -1,13 +1,10 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import { ReactComponent as MessageSvg } from "@/assets/icons/common/message.svg";
 import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { useChatStore } from "@/ui/modules/chat/use-chat-store";
-import { getMessageKey } from "@/ui/modules/chat/utils";
 import {
   LeaderboardManager,
   getAddressName,
@@ -21,42 +18,6 @@ import { PlayerStructure } from "@bibliothecadao/torii";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-// Define a type guard to filter out undefined structures
-function isStructureDefined<T>(value: T | undefined): value is T {
-  return value !== undefined;
-}
-
-export const MessageIcon = ({
-  playerName,
-  selectedPlayer,
-}: {
-  playerName: string | undefined;
-  selectedPlayer: ContractAddress;
-}) => {
-  const {
-    account: { account },
-  } = useDojo();
-  const addTab = useChatStore((state) => state.addTab);
-
-  const handleClick = () => {
-    if (!playerName) return;
-    addTab({
-      name: playerName,
-      key: getMessageKey(account.address, selectedPlayer),
-      address: toHexString(selectedPlayer),
-      displayed: true,
-      lastSeen: new Date(),
-    });
-  };
-
-  return (
-    <MessageSvg
-      onClick={handleClick}
-      className="h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all cursor-pointer"
-    />
-  );
-};
 
 export const PlayerId = ({
   selectedPlayer,

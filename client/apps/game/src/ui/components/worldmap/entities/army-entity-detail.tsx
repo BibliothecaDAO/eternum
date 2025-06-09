@@ -15,7 +15,7 @@ import { TroopChip } from "../../military/troop-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "../armies/army-warning";
 
-export interface ArmyEntityDetailProps {
+interface ArmyEntityDetailProps {
   armyEntityId: ID;
   className?: string;
   compact?: boolean;

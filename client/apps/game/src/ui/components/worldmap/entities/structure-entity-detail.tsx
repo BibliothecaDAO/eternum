@@ -23,7 +23,7 @@ import { InventoryResources } from "../../resources/inventory-resources";
 import { RealmResourcesIO } from "../../resources/realm-resources-io";
 import { ImmunityTimer } from "../structures/immunity-timer";
 
-export interface StructureEntityDetailProps {
+interface StructureEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   compact?: boolean;
