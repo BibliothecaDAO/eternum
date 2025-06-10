@@ -126,7 +126,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       animateRotate: true,
       animateScale: true,
       duration: isMobile ? 1500 : 2000,
-      easing: 'easeOutBounce'
+      easing: 'easeOutQuart'
     },
     onHover: (event, activeElements) => {
       const target = event.native?.target as HTMLElement;
