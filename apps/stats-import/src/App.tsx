@@ -3,6 +3,7 @@ import './App.css';
 import PriceHeader from './components/PriceHeader';
 import RevenueChart from './components/RevenueChart';
 import FeeTable from './components/FeeTable';
+import Rewards from './components/Rewards';
 import { RevenueData, LordsApiResponse } from './types';
 
 function App(): React.JSX.Element {
@@ -111,10 +112,9 @@ function App(): React.JSX.Element {
         );
       case 'rewards':
         return (
-          <div className="rewards-content">
-            <h2>Rewards</h2>
-            <p>Rewards content coming soon...</p>
-          </div>
+          <Rewards 
+            lordsPrice={lordsPrice}
+          />
         );
       default:
         return null;

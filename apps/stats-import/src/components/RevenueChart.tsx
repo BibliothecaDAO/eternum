@@ -10,7 +10,12 @@ import {
 import { Doughnut } from 'react-chartjs-2';
 import { RevenueChartProps, ColorScheme } from '../types';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Register Chart.js components - this must be done before any chart usage
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+);
 
 const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, totalLords }) => {
   const chartRef = useRef<ChartJS<'doughnut'> | null>(null);

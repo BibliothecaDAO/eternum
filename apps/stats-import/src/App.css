@@ -963,4 +963,417 @@ tr:hover {
     .legend-item-right {
         align-self: center;
     }
+}
+
+/* Rewards Styles */
+.rewards-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.rewards-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+}
+
+.reward-type-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: rgba(40, 30, 20, 0.5);
+    color: #dfc296;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.reward-type-btn:hover {
+    background: rgba(240, 176, 96, 0.1);
+    color: #f0b060;
+    transform: translateY(-1px);
+}
+
+.reward-type-btn.active {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.2), rgba(240, 176, 96, 0.1));
+    color: #f0b060;
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    box-shadow: 0 4px 12px rgba(240, 176, 96, 0.1);
+}
+
+.rewards-placeholder {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(40, 30, 20, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid #4d3923;
+}
+
+.rewards-placeholder h3 {
+    font-size: 2rem;
+    color: #f0b060;
+    margin-bottom: 1rem;
+}
+
+.rewards-placeholder p {
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+/* Victory Prizes Styles */
+.victory-prizes {
+    background: rgba(40, 30, 20, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid #4d3923;
+    overflow: hidden;
+}
+
+.victory-header {
+    padding: 2rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.victory-title h3 {
+    font-size: 1.5rem;
+    color: #f0b060;
+    margin-bottom: 0.5rem;
+}
+
+.victory-subtitle {
+    color: #dfc296;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.victory-summary {
+    display: flex;
+    gap: 1rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.1), rgba(240, 176, 96, 0.05));
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    min-width: 140px;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+}
+
+.summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.25rem;
+}
+
+.summary-usd {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.7;
+}
+
+.victory-controls {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-container {
+    flex: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f9fafb;
+    font-size: 0.9rem;
+}
+
+.search-input::placeholder {
+    color: #dfc296;
+    opacity: 0.6;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: rgba(240, 176, 96, 0.4);
+    box-shadow: 0 0 0 2px rgba(240, 176, 96, 0.1);
+}
+
+.sort-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sort-select {
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f9fafb;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.sort-order-btn {
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f0b060;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+}
+
+.sort-order-btn:hover {
+    background: rgba(240, 176, 96, 0.1);
+}
+
+.players-table {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    background: rgba(50, 35, 25, 0.5);
+    border-bottom: 1px solid #4d3923;
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(77, 57, 35, 0.5);
+    transition: background-color 0.3s ease;
+}
+
+.player-row:hover {
+    background: rgba(50, 35, 25, 0.3);
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.player-name {
+    font-weight: bold;
+    color: #f9fafb;
+    font-size: 1rem;
+}
+
+.player-address {
+    font-family: monospace;
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.player-stats {
+    color: #dfc296;
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.tribe-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.tribe-name {
+    font-weight: bold;
+    color: #f9fafb;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.owner-badge {
+    font-size: 0.8rem;
+}
+
+.tribe-rank {
+    color: #f0b060;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.tribe-prize {
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.player-rewards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reward-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.reward-amount {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 0.9rem;
+}
+
+.reward-usd {
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.reward-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.breakdown-label {
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+.breakdown-value {
+    color: #f9fafb;
+    font-weight: 500;
+}
+
+.breakdown-item.owner-bonus {
+    background: rgba(240, 176, 96, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin: 0.1rem 0;
+}
+
+.loading-state, .error-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(240, 176, 96, 0.2);
+    border-top: 3px solid #f0b060;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    color: #ef4444;
+}
+
+/* Responsive Design for Rewards */
+@media (max-width: 1024px) {
+    .victory-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .victory-summary {
+        align-self: stretch;
+    }
+    
+    .table-header,
+    .player-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .player-row {
+        padding: 1rem;
+        border: 1px solid rgba(77, 57, 35, 0.5);
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        background: rgba(50, 35, 25, 0.3);
+    }
+    
+    .table-header {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .rewards-nav {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .reward-type-btn {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .victory-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .sort-controls {
+        justify-content: center;
+    }
+    
+    .victory-summary {
+        flex-direction: column;
+    }
 } 
