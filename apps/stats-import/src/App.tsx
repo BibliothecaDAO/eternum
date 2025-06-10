@@ -6,6 +6,7 @@ import FeeTable from './components/FeeTable';
 import { RevenueData, LordsApiResponse } from './types';
 
 function App(): React.JSX.Element {
+  const [activeTab, setActiveTab] = useState<'revenue' | 'rewards'>('revenue');
   const [lordsPrice, setLordsPrice] = useState<number>(0);
   const [priceChange, setPriceChange] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -91,6 +92,35 @@ function App(): React.JSX.Element {
 
   const totalLords: number = revenueData.reduce((sum, item) => sum + item.amount, 0);
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'revenue':
+        return (
+          <>
+            <RevenueChart 
+              revenueData={revenueData}
+              lordsPrice={lordsPrice}
+              totalLords={totalLords}
+            />
+            
+            <FeeTable 
+              revenueData={revenueData}
+              lordsPrice={lordsPrice}
+            />
+          </>
+        );
+      case 'rewards':
+        return (
+          <div className="rewards-content">
+            <h2>Rewards</h2>
+            <p>Rewards content coming soon...</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="App">
       <PriceHeader 
@@ -102,16 +132,28 @@ function App(): React.JSX.Element {
         totalLords={totalLords}
       />
       
-      <RevenueChart 
-        revenueData={revenueData}
-        lordsPrice={lordsPrice}
-        totalLords={totalLords}
-      />
+      <div className="tab-navigation">
+        <button
+          className={`tab-button ${activeTab === 'revenue' ? 'active' : ''}`}
+          onClick={() => setActiveTab('revenue')}
+          aria-label="View revenue analytics"
+        >
+          <span className="tab-icon">📊</span>
+          <span className="tab-text">Revenue</span>
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'rewards' ? 'active' : ''}`}
+          onClick={() => setActiveTab('rewards')}
+          aria-label="View rewards information"
+        >
+          <span className="tab-icon">🏆</span>
+          <span className="tab-text">Rewards</span>
+        </button>
+      </div>
       
-      <FeeTable 
-        revenueData={revenueData}
-        lordsPrice={lordsPrice}
-      />
+      <div className="tab-content">
+        {renderTabContent()}
+      </div>
     </div>
   );
 }

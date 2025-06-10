@@ -10,10 +10,202 @@ body {
     touch-action: manipulation;
 }
 
+/* Tab Navigation Styles */
+.tab-navigation {
+    max-width: 1400px;
+    margin: 0 auto 2rem auto;
+    display: flex;
+    gap: 0.25rem;
+    background: linear-gradient(145deg, rgba(50, 35, 25, 0.8), rgba(35, 25, 15, 0.9));
+    border-radius: 1rem;
+    padding: 0.75rem 2rem;
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(240, 176, 96, 0.1);
+    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+.tab-navigation::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.05), transparent);
+    border-radius: 1rem;
+    pointer-events: none;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 1.25rem 2rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #dfc296;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    z-index: 1;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.15), rgba(240, 176, 96, 0.08));
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0.75rem;
+    transform: scale(0.95);
+}
+
+.tab-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(240, 176, 96, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.tab-button:hover::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.tab-button:hover::after {
+    width: 120px;
+    height: 120px;
+}
+
+.tab-button:hover {
+    color: #f0b060;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(240, 176, 96, 0.2);
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.25), rgba(240, 176, 96, 0.15));
+    color: #f0b060;
+    border: 1px solid rgba(240, 176, 96, 0.4);
+    box-shadow: 0 6px 20px rgba(240, 176, 96, 0.15), inset 0 1px 0 rgba(240, 176, 96, 0.3);
+    transform: translateY(-1px);
+}
+
+.tab-button.active::before {
+    opacity: 0;
+}
+
+.tab-button.active::after {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(240, 176, 96, 0.1) 0%, transparent 70%);
+}
+
+.tab-icon {
+    font-size: 1.2rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.tab-button:hover .tab-icon {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(240, 176, 96, 0.3));
+}
+
+.tab-button.active .tab-icon {
+    transform: scale(1.05);
+    filter: drop-shadow(0 3px 6px rgba(240, 176, 96, 0.4));
+}
+
+.tab-text {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-button:focus {
+    outline: 2px solid rgba(240, 176, 96, 0.5);
+    outline-offset: 2px;
+}
+
+.tab-button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.tab-content {
+    width: 100%;
+}
+
+.rewards-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    border-radius: 0.75rem;
+    background-color: rgba(40, 30, 20, 0.5);
+    border: 1px solid #4d3923;
+    text-align: center;
+}
+
+.rewards-content h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 1rem;
+    border: none;
+    padding: 0;
+}
+
+.rewards-content p {
+    font-size: 1.1rem;
+    color: #dfc296;
+    opacity: 0.8;
+}
+
 /* Mobile-first responsive padding */
 @media (max-width: 480px) {
     body {
         padding: 10px;
+    }
+    
+    .tab-navigation {
+        margin: 0 auto 1rem auto;
+        padding: 0.5rem 0.75rem;
+        gap: 0.125rem;
+    }
+    
+    .tab-button {
+        padding: 1rem 0.75rem;
+        font-size: 0.9rem;
+        gap: 0.5rem;
+        flex-direction: column;
+    }
+    
+    .tab-icon {
+        font-size: 1rem;
+    }
+    
+    .tab-text {
+        font-size: 0.8rem;
     }
 }
 
@@ -516,6 +708,20 @@ tr:hover {
 
 /* Mobile styles */
 @media (max-width: 768px) {
+    .tab-navigation {
+        padding: 0.625rem 1rem;
+        gap: 0.2rem;
+    }
+    
+    .tab-button {
+        padding: 1rem 1.5rem;
+        gap: 0.5rem;
+    }
+    
+    .tab-icon {
+        font-size: 1.1rem;
+    }
+    
     .price-header {
         padding: 1rem;
         margin: 0.5rem auto 1.5rem auto;

@@ -71,7 +71,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
 
   // Responsive brand title
   const getBrandTitle = (): string => {
-    return isMobile ? 'Eternum Revenue' : 'Eternum Revenue Dashboard';
+    return isMobile ? 'Eternum Stats' : 'Eternum Stats Dashboard';
   };
 
   // Responsive brand subtitle
