@@ -1,2 +1,3 @@
-# eternum-stats
-Dashboard to track Loot Realms: Eternum stats
+# eternum-revenue
+
+dashboard to monitor eternum S1 revenue
