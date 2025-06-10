@@ -9,43 +9,45 @@ import { RevenueData, LordsApiResponse } from './types';
 function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'revenue' | 'rewards'>('revenue');
   const [lordsPrice, setLordsPrice] = useState<number>(0);
+  const [strkPrice, setStrkPrice] = useState<number>(0);
   const [priceChange, setPriceChange] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchLordsPrice = async (): Promise<void> => {
+  const fetchPrices = async (): Promise<void> => {
     try {
       setLoading(true);
       setPriceError(null);
       
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true'
+        'https://api.coingecko.com/api/v3/simple/price?ids=lords,starknet&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true'
       );
       const data: LordsApiResponse = await response.json();
       
-      if (data.lords) {
+      if (data.lords && data.starknet) {
         setLordsPrice(data.lords.usd);
+        setStrkPrice(data.starknet.usd);
         setPriceChange(data.lords.usd_24h_change);
         setLastUpdated(new Date(data.lords.last_updated_at * 1000));
       } else {
-        throw new Error('LORDS price data not found');
+        throw new Error('Price data not found');
       }
     } catch (error) {
-      console.error('Error fetching LORDS price:', error);
+      console.error('Error fetching prices:', error);
       setPriceError('Failed to load price data');
-      // Fallback to $0.02 if API fails
+      // Fallback values if API fails
       setLordsPrice(0.02);
+      setStrkPrice(1.15);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLordsPrice();
+    fetchPrices();
     
-    // Refresh price every 5 minutes
-    const interval = setInterval(fetchLordsPrice, 5 * 60 * 1000);
+    // Refresh prices every 5 minutes
+    const interval = setInterval(fetchPrices, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, []);
@@ -114,6 +116,7 @@ function App(): React.JSX.Element {
         return (
           <Rewards 
             lordsPrice={lordsPrice}
+            strkPrice={strkPrice}
           />
         );
       default:

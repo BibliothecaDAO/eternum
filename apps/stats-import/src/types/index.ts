@@ -40,6 +40,11 @@ export interface LordsApiResponse {
     usd_24h_change: number;
     last_updated_at: number;
   };
+  starknet: {
+    usd: number;
+    usd_24h_change: number;
+    last_updated_at: number;
+  };
 }
 
 // Rewards types
@@ -106,4 +111,5 @@ export interface EternumSocialData {
 
 export interface RewardsProps {
   lordsPrice: number;
+  strkPrice: number;
 } 

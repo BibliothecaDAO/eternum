@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { EternumSocialData, Player, RewardsProps } from '../types';
 
-const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
+const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [eternumData, setEternumData] = useState<EternumSocialData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
     }).format(amount);
   };
 
-  const formatUSD = (lords: number): string => {
+  const formatLordsUSD = (lords: number): string => {
     const usdValue = lords * lordsPrice;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -56,6 +56,15 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
       maximumFractionDigits: 2,
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const formatStrkUSD = (strk: number): string => {
+    const usdValue = strk * strkPrice;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(usdValue);
   };
 
   const formatAddress = (address: string): string => {
@@ -267,7 +276,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
                     </div>
                     <div className="calc-step highlight">
                       <span className="step-label">Alice's Final Reward:</span>
-                      <span className="step-value">3,150 LORDS + 525 STRK</span>
+                      <span className="step-value">3,150 LORDS ({formatLordsUSD(3150)}) + 525 STRK ({formatStrkUSD(525)})</span>
                     </div>
                   </div>
                 </div>
@@ -341,11 +350,12 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
             <div className="summary-card">
               <div className="summary-label">Total LORDS</div>
               <div className="summary-value">{formatLords(totalRewards.totalLords)}</div>
-              <div className="summary-usd">{formatUSD(totalRewards.totalLords)}</div>
+              <div className="summary-usd">{formatLordsUSD(totalRewards.totalLords)}</div>
             </div>
             <div className="summary-card">
               <div className="summary-label">Total STRK</div>
               <div className="summary-value">{formatStark(totalRewards.totalStrk)}</div>
+              <div className="summary-usd">{formatStrkUSD(totalRewards.totalStrk)}</div>
             </div>
           </div>
         </div>
@@ -406,21 +416,21 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
                 <div className="tribe-info">
                   <div className="tribe-name">
                     {player.tribeName}
-                    {player.isOwner && <span className="owner-badge">👑</span>}
                   </div>
                   <div className="tribe-rank">Rank #{player.tribeRank}</div>
                   <div className="tribe-prize">
-                    Tribe Pool: {formatLords(player.tribePrize.lords)} LORDS / {formatStark(player.tribePrize.strk)} STRK
+                    Tribe Pool: {formatLords(player.tribePrize.lords)} LORDS ({formatLordsUSD(player.tribePrize.lords)}) / {formatStark(player.tribePrize.strk)} STRK ({formatStrkUSD(player.tribePrize.strk)})
                   </div>
                 </div>
                 
                 <div className="player-rewards">
                   <div className="reward-item">
                     <span className="reward-amount">{formatLords(player.totalLordsReward)} LORDS</span>
-                    <span className="reward-usd">{formatUSD(player.totalLordsReward)}</span>
+                    <span className="reward-usd">{formatLordsUSD(player.totalLordsReward)}</span>
                   </div>
                   <div className="reward-item">
                     <span className="reward-amount">{formatStark(player.totalStrkReward)} STRK</span>
+                    <span className="reward-usd">{formatStrkUSD(player.totalStrkReward)}</span>
                   </div>
                 </div>
                 
@@ -428,19 +438,19 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
                   <div className="breakdown-item">
                     <span className="breakdown-label">Member Share:</span>
                     <span className="breakdown-value">
-                      {formatLords(player.rewards.memberShare)} LORDS / {formatStark(player.rewards.memberShareStrk)} STRK
+                      {formatLords(player.rewards.memberShare)} LORDS ({formatLordsUSD(player.rewards.memberShare)}) / {formatStark(player.rewards.memberShareStrk)} STRK ({formatStrkUSD(player.rewards.memberShareStrk)})
                     </span>
                   </div>
                   {player.isOwner && (
                     <div className="breakdown-item owner-bonus">
                       <span className="breakdown-label">Owner Bonus:</span>
                       <span className="breakdown-value">
-                        {formatLords(player.rewards.ownerBonus)} LORDS / {formatStark(player.rewards.ownerBonusStrk)} STRK
+                        {formatLords(player.rewards.ownerBonus)} LORDS ({formatLordsUSD(player.rewards.ownerBonus)}) / {formatStark(player.rewards.ownerBonusStrk)} STRK ({formatStrkUSD(player.rewards.ownerBonusStrk)})
                       </span>
                     </div>
                   )}
                   <div className="breakdown-item">
-                    <span className="breakdown-label">Points Share:</span>
+                    <span className="breakdown-label">Tribe Points Share:</span>
                     <span className="breakdown-value">{(player.pointsShare * 100).toFixed(2)}%</span>
                   </div>
                 </div>
