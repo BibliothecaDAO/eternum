@@ -9,6 +9,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showCalculations, setShowCalculations] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchEternumData = async () => {
@@ -149,6 +150,135 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
     return totals;
   };
 
+  const renderCalculationExplanation = () => {
+    if (!eternumData) return null;
+
+    return (
+      <div className="calculation-explanation">
+        <div className="calculation-header">
+          <button
+            className="calculation-toggle"
+            onClick={() => setShowCalculations(!showCalculations)}
+            aria-expanded={showCalculations}
+          >
+            <span className="calculation-icon">{showCalculations ? '📊' : '🧮'}</span>
+            <span className="calculation-title">How Victory Prizes Are Calculated</span>
+            <span className="calculation-arrow">{showCalculations ? '▼' : '▶'}</span>
+          </button>
+        </div>
+        
+        {showCalculations && (
+          <div className="calculation-content">
+            <div className="calculation-grid">
+              <div className="calculation-card">
+                <div className="calc-card-header">
+                  <span className="calc-icon">🏆</span>
+                  <h4>Tribe Prize Pools</h4>
+                </div>
+                <div className="calc-card-content">
+                  <p>Each tribe receives a prize pool based on their final ranking:</p>
+                  <ul className="calc-list">
+                    <li>1st Place: 30% of total prize pool</li>
+                    <li>2nd Place: 18% of total prize pool</li>
+                    <li>3rd Place: 12% of total prize pool</li>
+                    <li>4th Place: 9% of total prize pool</li>
+                    <li>5th Place: 7% of total prize pool</li>
+                    <li>6th Place: 6% of total prize pool</li>
+                    <li>7th & 8th Place: 5% each of total prize pool</li>
+                    <li>9th & 10th Place: 4% each of total prize pool</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="calculation-card">
+                <div className="calc-card-header">
+                  <span className="calc-icon">👥</span>
+                  <h4>Member Share Distribution</h4>
+                </div>
+                <div className="calc-card-content">
+                  <p>70% of each tribe's prize pool is distributed among members based on their contribution:</p>
+                  <div className="calc-formula">
+                    <div className="formula-line">
+                      <span className="formula-label">Member Share =</span>
+                      <span className="formula-value">(Player Points ÷ Total Tribe Points) × 70% × Tribe Prize</span>
+                    </div>
+                  </div>
+                  <p className="calc-note">Your reward is proportional to your points contribution to the tribe's success.</p>
+                </div>
+              </div>
+
+              <div className="calculation-card">
+                <div className="calc-card-header">
+                  <span className="calc-icon">👑</span>
+                  <h4>Tribe Owner Bonus</h4>
+                </div>
+                <div className="calc-card-content">
+                  <p>Tribe owners receive an additional 30% bonus on top of their member share:</p>
+                  <div className="calc-formula">
+                    <div className="formula-line">
+                      <span className="formula-label">Owner Bonus =</span>
+                      <span className="formula-value">30% × Tribe Prize Pool</span>
+                    </div>
+                    <div className="formula-line">
+                      <span className="formula-label">Total Owner Reward =</span>
+                      <span className="formula-value">Member Share + Owner Bonus</span>
+                    </div>
+                  </div>
+                  <p className="calc-note">Owners can distribute this bonus to themselves or other tribe members.</p>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="calculation-example">
+              <div className="example-header">
+                <span className="example-icon">💡</span>
+                <h4>Example Calculation</h4>
+              </div>
+              <div className="example-content">
+                <div className="example-scenario">
+                  <p><strong>Scenario:</strong> Player "Alice" in the #1 ranked tribe "FOCG BOIS"</p>
+                  <div className="example-data">
+                    <div className="data-row">
+                      <span className="data-label">Tribe Prize Pool:</span>
+                      <span className="data-value">90,000 LORDS + 15,000 STRK</span>
+                    </div>
+                    <div className="data-row">
+                      <span className="data-label">Alice's Points:</span>
+                      <span className="data-value">500,000 points</span>
+                    </div>
+                    <div className="data-row">
+                      <span className="data-label">Total Tribe Points:</span>
+                      <span className="data-value">10,000,000 points</span>
+                    </div>
+                    <div className="data-row">
+                      <span className="data-label">Alice's Share:</span>
+                      <span className="data-value">500,000 ÷ 10,000,000 = 5%</span>
+                    </div>
+                  </div>
+                  <div className="example-calculation">
+                    <div className="calc-step">
+                      <span className="step-label">Member Pool (70%):</span>
+                      <span className="step-value">63,000 LORDS + 10,500 STRK</span>
+                    </div>
+                    <div className="calc-step">
+                      <span className="step-label">Alice's Member Share:</span>
+                      <span className="step-value">5% × 63,000 = 3,150 LORDS</span>
+                    </div>
+                    <div className="calc-step highlight">
+                      <span className="step-label">Alice's Final Reward:</span>
+                      <span className="step-value">3,150 LORDS + 525 STRK</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderRewardTypeContent = () => {
     switch (selectedRewardType) {
       case 'victory':
@@ -203,7 +333,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
           <div className="victory-title">
             <h3>🏆 Victory Prizes Distribution</h3>
             <p className="victory-subtitle">
-              Season rewards for {eternumData.gameInfo.totalPlayers.toLocaleString()} players across {eternumData.gameInfo.totalTribes} tribes
+              Season 1 rewards for {eternumData.gameInfo.totalPlayers.toLocaleString()} players across {eternumData.gameInfo.totalTribes} tribes
             </p>
           </div>
           
@@ -219,6 +349,8 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice }) => {
             </div>
           </div>
         </div>
+
+        {renderCalculationExplanation()}
 
         <div className="victory-controls">
           <div className="search-container">
