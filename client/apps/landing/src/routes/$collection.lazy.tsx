@@ -241,6 +241,11 @@ function ManageCollectionRoute() {
                   isSyncing={false}
                   marketplaceActions={marketplaceActions}
                 />
+                {selectedPasses.length > 0 && (
+                  <Button variant={"ghost"} onClick={() => clearSelection()}>
+                    Clear
+                  </Button>
+                )}
               </div>
             </div>
           </div>

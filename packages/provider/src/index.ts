@@ -2671,17 +2671,17 @@ export class EternumProvider extends EnhancedDojoProvider {
       return {
         contractAddress: marketplace_address.toString(),
         entrypoint: "create",
-        calldata: [token.token_id, token.collection_id, token.price, token.expiration],
+        calldata: [token.token_id, token.collection_id, token.price.toString(), token.expiration],
       };
     });
 
     // Extract cancel order IDs and create cancel entrypoint calls
     const cancelCalls = tokens
-      .filter((token) => token.cancel_order_id !== null)
+      .filter((token) => token.cancel_order_id !== null && token.cancel_order_id !== undefined)
       .map((token) => ({
         contractAddress: marketplace_address.toString(),
         entrypoint: "cancel",
-        calldata: [token.cancel_order_id!],
+        calldata: [token.cancel_order_id!.toString()],
       }));
 
     // Combine cancel calls with create calls
