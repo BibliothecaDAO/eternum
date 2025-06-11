@@ -845,6 +845,59 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
 
   return (
     <div className="rewards-container">
+      <div className="season-totals-banner">
+        <div className="season-totals-content">
+          <div className="season-totals-header">
+            <div className="season-icon">🏆</div>
+            <div className="season-title">
+              <h2>Eternum Season 1 Total Rewards</h2>
+              <p className="season-subtitle">Complete prize pool distribution across all reward categories</p>
+            </div>
+          </div>
+          
+          <div className="season-totals-grid">
+            <div className="total-card lords-card">
+              <div className="total-icon">
+                <img src="/Lords.svg" alt="LORDS Token" className="lords-icon" />
+              </div>
+              <div className="total-info">
+                <div className="total-amount">1,000,000</div>
+                <div className="total-token">LORDS</div>
+                <div className="total-usd">{formatLordsUSD(1000000)}</div>
+              </div>
+            </div>
+            
+            <div className="total-divider">
+              <div className="divider-line"></div>
+              <div className="divider-text">+</div>
+              <div className="divider-line"></div>
+            </div>
+            
+            <div className="total-card strk-card">
+              <div className="total-icon">
+                <img src="/strk.png" alt="STRK Token" className="strk-icon" />
+              </div>
+              <div className="total-info">
+                <div className="total-amount">100,000</div>
+                <div className="total-token">STRK</div>
+                <div className="total-usd">{formatStrkUSD(100000)}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="season-breakdown">
+            <div className="breakdown-item">
+              <span className="breakdown-category">🏆 Victory Prizes</span>
+              <span className="breakdown-description">Distributed based on tribe rankings and player contributions</span>
+            </div>
+            <div className="breakdown-item">
+              <span className="breakdown-category">🎮 Achievement Rewards</span>
+              <span className="breakdown-description">300K LORDS for cartridge achievements, 25K STRK for Nexus-6 achievement</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div className="rewards-nav">
         <button
           className={`reward-type-btn ${selectedRewardType === 'victory' ? 'active' : ''}`}

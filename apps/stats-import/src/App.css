@@ -2326,7 +2326,6 @@ tr:hover {
     color: #f0b060;
     position: absolute;
     left: 0;
-    font-weight: bold;
 }
 
 .methodology strong {
@@ -2572,5 +2571,381 @@ tr:hover {
     
     .scenarios-intro {
         font-size: 1rem;
+    }
+}
+
+/* Season Totals Banner Styles */
+.season-totals-banner {
+    max-width: 1200px;
+    margin: 0 auto 2rem auto;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.15), rgba(240, 176, 96, 0.08));
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(240, 176, 96, 0.2);
+    position: relative;
+}
+
+.season-totals-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.05), transparent);
+    pointer-events: none;
+}
+
+.season-totals-content {
+    padding: 1.5rem 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.season-totals-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    justify-content: center;
+}
+
+.season-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(240, 176, 96, 0.3));
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        filter: drop-shadow(0 4px 8px rgba(240, 176, 96, 0.3));
+    }
+    to {
+        filter: drop-shadow(0 6px 12px rgba(240, 176, 96, 0.5));
+    }
+}
+
+.season-title h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin: 0 0 0.25rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
+}
+
+.season-subtitle {
+    color: #dfc296;
+    font-size: 0.95rem;
+    margin: 0;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.season-totals-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.total-card {
+    background: linear-gradient(135deg, rgba(50, 35, 25, 0.8), rgba(35, 25, 15, 0.9));
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 240px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.total-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.total-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(240, 176, 96, 0.25);
+    border-color: rgba(240, 176, 96, 0.5);
+}
+
+.total-card:hover::before {
+    opacity: 1;
+}
+
+.lords-card {
+    border-color: rgba(240, 176, 96, 0.4);
+}
+
+.strk-card {
+    border-color: rgba(90, 114, 158, 0.4);
+}
+
+.total-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: transform 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lords-icon {
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s ease;
+}
+
+.strk-icon {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s ease;
+}
+
+.total-card:hover .total-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.total-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.total-amount {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #f9fafb;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.total-token {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f0b060;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.total-usd {
+    font-size: 0.85rem;
+    color: #dfc296;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.total-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 1rem;
+}
+
+.divider-line {
+    height: 2px;
+    width: 30px;
+    background: linear-gradient(90deg, transparent, rgba(240, 176, 96, 0.5), transparent);
+}
+
+.divider-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f0b060;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.season-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.season-breakdown .breakdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: rgba(30, 20, 10, 0.4);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(240, 176, 96, 0.15);
+    transition: all 0.3s ease;
+}
+
+.season-breakdown .breakdown-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(240, 176, 96, 0.3);
+    background: rgba(30, 20, 10, 0.6);
+}
+
+.breakdown-category {
+    font-weight: 600;
+    color: #f0b060;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.breakdown-description {
+    color: #dfc296;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
+/* Responsive Design for Season Totals Banner */
+@media (max-width: 1024px) {
+    .season-totals-content {
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .season-totals-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+        margin-bottom: 1.25rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.6rem;
+    }
+    
+    .season-totals-grid {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .total-card {
+        min-width: auto;
+        width: 100%;
+        max-width: 350px;
+        padding: 1rem 1.25rem;
+    }
+    
+    .total-divider {
+        transform: rotate(90deg);
+        margin: 0;
+    }
+    
+    .season-breakdown {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .season-totals-banner {
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .season-totals-content {
+        padding: 1rem 1.25rem;
+    }
+    
+    .season-icon {
+        font-size: 1.75rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.4rem;
+    }
+    
+    .season-subtitle {
+        font-size: 0.85rem;
+    }
+    
+    .total-card {
+        padding: 0.875rem 1rem;
+        min-width: auto;
+    }
+    
+    .total-amount {
+        font-size: 1.4rem;
+    }
+    
+    .lords-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+    
+    .strk-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .season-totals-content {
+        padding: 0.75rem 1rem;
+    }
+    
+    .season-icon {
+        font-size: 1.5rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.25rem;
+    }
+    
+    .season-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .total-card {
+        padding: 0.75rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .total-amount {
+        font-size: 1.25rem;
+    }
+    
+    .lords-icon {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .strk-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    .season-breakdown .breakdown-item {
+        padding: 0.5rem;
+    }
+    
+    .breakdown-category {
+        font-size: 0.8rem;
+    }
+    
+    .breakdown-description {
+        font-size: 0.75rem;
     }
 } 
