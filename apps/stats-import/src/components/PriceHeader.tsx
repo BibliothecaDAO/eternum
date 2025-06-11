@@ -117,11 +117,6 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
         {lastUpdated && (
           <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
         )}
-        {!isMobile && (
-          <div className="total-revenue">
-            Total Revenue: ≈ ${calculateTotalUSD()} USD
-          </div>
-        )}
         {error && (
           <div className="error">{error}</div>
         )}
