@@ -72,6 +72,15 @@ function App(): React.JSX.Element {
       breakdown: 'Core bridge infrastructure fees'
     },
     {
+      category: 'Daydreams Agent Prize Pool',
+      description: 'Portion of the prize pool planned for AI agent rewards',
+      amount: 250000,
+      percentage: 31.2,
+      address: '0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5',
+      source: 'Portion of the prize pool planned for AI agent rewards',
+      breakdown: 'Distributed to veLORDS stakers'
+    },
+    {
       category: 'Bridge Fees',
       description: 'Bridge commissions and distributions',
       amount: 55282,

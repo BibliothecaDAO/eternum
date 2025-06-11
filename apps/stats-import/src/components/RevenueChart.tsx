@@ -48,6 +48,11 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       hover: 'rgba(223, 194, 150, 1)'
     },
     {
+      background: 'rgba(90, 114, 158, 0.9)',
+      border: '#5a729e',
+      hover: 'rgba(90, 114, 158, 1)'
+    },
+    {
       background: 'rgba(192, 192, 192, 0.9)',
       border: '#c0c0c0',
       hover: 'rgba(192, 192, 192, 1)'

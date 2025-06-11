@@ -40,7 +40,7 @@ const FeeTable: React.FC<FeeTableProps> = ({ revenueData, lordsPrice }) => {
 
   return (
     <div className="container">
-      <h1>Fee Collection Summary</h1>
+      <h1>Revenue Breakdown</h1>
       <div className="table-wrapper">
         <table>
           <thead>

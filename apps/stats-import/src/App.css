@@ -500,10 +500,14 @@ h1 {
 }
 
 .legend-color.color-2 {
-    background-color: #c0c0c0;
+    background-color: #5a729e;
 }
 
 .legend-color.color-3 {
+    background-color: #c0c0c0;
+}
+
+.legend-color.color-4 {
     background-color: #a67c00;
 }
 
