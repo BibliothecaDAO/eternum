@@ -238,7 +238,21 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           >
             <span className="calculation-icon">{showCalculations ? '📊' : '🧮'}</span>
             <span className="calculation-title">How Victory Prizes Are Calculated</span>
-            <span className="calculation-arrow">{showCalculations ? '▼' : '▶'}</span>
+            <span className="calculation-arrow">
+              <svg 
+                width="12" 
+                height="12" 
+                viewBox="0 0 12 12"
+              >
+                <path 
+                  d="M4 2L8 6L4 10" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  fill="none" 
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
           </button>
         </div>
         
