@@ -59,7 +59,37 @@ const FeeTable: React.FC<FeeTableProps> = ({ revenueData, lordsPrice }) => {
                   <div className="fee-description">{item.description}</div>
                 </td>
                 <td>
-                  {formatAddress(item.address)}
+                  {item.address === 'No specific address' || item.address === 'Multiple wallets' ? (
+                    <span className="address">{item.address}</span>
+                  ) : (
+                    <a 
+                      href={`https://starkscan.co/contract/${item.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="address-link"
+                      style={{
+                        color: '#f0b060',
+                        textDecoration: 'none',
+                        fontFamily: "'Monaco', 'Menlo', monospace",
+                        fontSize: '0.75rem',
+                        background: 'rgba(240, 176, 96, 0.1)',
+                        padding: '0.5rem',
+                        borderRadius: '0.25rem',
+                        border: '1px solid rgba(240, 176, 96, 0.2)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(240, 176, 96, 0.2)';
+                        e.currentTarget.style.borderColor = 'rgba(240, 176, 96, 0.3)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(240, 176, 96, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(240, 176, 96, 0.2)';
+                      }}
+                    >
+                      {`${item.address.slice(0, 6)}...${item.address.slice(-4)}`}
+                    </a>
+                  )}
                 </td>
                 <td className="amount">
                   {item.amount.toLocaleString()}

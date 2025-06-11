@@ -7,6 +7,11 @@ import Rewards from './components/Rewards';
 import SeasonPassValue from './components/SeasonPassValue';
 import { RevenueData, LordsApiResponse } from './types';
 
+const DAYDREAMS_AGENTS_KILLED = 1019;
+const AVG_LORDS_PER_AGENT = 22.5;
+const DAYDREAMS_AGENTS_LORDS = DAYDREAMS_AGENTS_KILLED * AVG_LORDS_PER_AGENT;
+const AMOUNT_LEFT_IN_BRIDGE_CONTRACT = 151412;
+
 function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'revenue' | 'rewards' | 'seasonpass'>('revenue');
   const [lordsPrice, setLordsPrice] = useState<number>(0);
@@ -65,21 +70,21 @@ function App(): React.JSX.Element {
     },
     {
       category: 'Donkey Network Fees',
-      description: 'Main bridge infrastructure operations',
-      amount: 162482,
+      description: 'Main bridge infrastructure operations + allocated agent rewards',
+      amount: AMOUNT_LEFT_IN_BRIDGE_CONTRACT + DAYDREAMS_AGENTS_LORDS,
       percentage: 29.2,
       address: '0x01d490c9345ae1fc0c10c8fd69f6a9f31f893ba7486eae489b020eea1f8a8ef7',
-      source: 'Bridge operations + remaining LORDS tokens',
-      breakdown: 'Core bridge infrastructure fees'
+      source: 'Donkey Network Fees + remaining LORDS tokens',
+      breakdown: `${AMOUNT_LEFT_IN_BRIDGE_CONTRACT.toLocaleString()} LORDS left in the bridge contract + ${DAYDREAMS_AGENTS_LORDS.toLocaleString()} LORDS retrieved from Daydreams agents (${DAYDREAMS_AGENTS_KILLED} agents killed × ${AVG_LORDS_PER_AGENT} avg LORDS per agent)`
     },
     {
       category: 'Daydreams Agent Prize Pool',
-      description: 'Portion of the prize pool planned for AI agent rewards',
-      amount: 250000,
+      description: 'Remaining portion of the prize pool after agent rewards allocation',
+      amount: 250000 - DAYDREAMS_AGENTS_LORDS,
       percentage: 31.2,
-      address: '0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5',
-      source: 'Portion of the prize pool planned for AI agent rewards',
-      breakdown: 'Distributed to veLORDS stakers'
+      address: 'No specific address',
+      source: 'Prize pool minus allocated agent rewards',
+      breakdown: `Distributed to veLORDS stakers after deducting ${DAYDREAMS_AGENTS_LORDS.toLocaleString()} LORDS for agent rewards`
     },
     {
       category: 'Bridge Fees',

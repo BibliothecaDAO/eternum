@@ -22,6 +22,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isSmallMobile, setIsSmallMobile] = useState<boolean>(false);
+  const [isTooltipVisible, setIsTooltipVisible] = useState<boolean>(false);
 
   // Hook to detect screen size
   useEffect(() => {
@@ -145,8 +146,10 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       }
       if (activeElements.length > 0) {
         setHoveredSegment(activeElements[0].index);
+        setIsTooltipVisible(true);
       } else {
         setHoveredSegment(null);
+        setIsTooltipVisible(false);
       }
     },
     // Enhanced touch/mobile interaction
@@ -235,7 +238,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
         <div className="chart-wrapper">
           <div className="chart-canvas-wrapper">
             <Doughnut ref={chartRef} data={data} options={options} />
-            <div className="center-text">
+            <div className="center-text" style={{ opacity: isTooltipVisible ? 0 : 1, transition: 'opacity 0.2s ease' }}>
               <div className="total-amount">{getTotalDisplayValue()}</div>
               <div className="total-label">{getTotalLabel()}</div>
               <div className="total-usd">{getTotalUSDDisplay()}</div>

@@ -569,6 +569,27 @@ table {
     min-width: 800px; /* Ensures table doesn't get too cramped on mobile */
 }
 
+/* Fee Table Column Widths */
+.table-wrapper table th:nth-child(1),
+.table-wrapper table td:nth-child(1) {
+    width: 20%;
+}
+
+.table-wrapper table th:nth-child(2),
+.table-wrapper table td:nth-child(2) {
+    width: 25%;
+}
+
+.table-wrapper table th:nth-child(3),
+.table-wrapper table td:nth-child(3) {
+    width: 20%;
+}
+
+.table-wrapper table th:nth-child(4),
+.table-wrapper table td:nth-child(4) {
+    width: 35%;
+}
+
 thead {
     background-color: rgba(40, 30, 20, 0.7);
 }
@@ -627,6 +648,35 @@ tr:hover {
     text-align: center;
     font-style: italic;
     color: #f0b060;
+}
+
+.address-link {
+    color: #f0b060 !important;
+    text-decoration: none;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.75rem;
+    background: rgba(240, 176, 96, 0.1);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    transition: all 0.3s ease;
+    display: inline-block;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.address-link:hover {
+    background: rgba(240, 176, 96, 0.2);
+    border-color: rgba(240, 176, 96, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(240, 176, 96, 0.15);
+}
+
+.address-link:focus {
+    outline: 2px solid rgba(240, 176, 96, 0.5);
+    outline-offset: 2px;
 }
 
 .amount {
