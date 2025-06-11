@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import PriceHeader from './components/PriceHeader';
-import RevenueChart from './components/RevenueChart';
-import FeeTable from './components/FeeTable';
-import Rewards from './components/Rewards';
-import SeasonPassValue from './components/SeasonPassValue';
+import RevenuePage from './pages/RevenuePage';
+import RewardsPage from './pages/RewardsPage';
+import SeasonPassPage from './pages/SeasonPassPage';
 import { RevenueData, LordsApiResponse } from './types';
 
 const DAYDREAMS_AGENTS_KILLED = 1019;
@@ -13,7 +13,7 @@ const DAYDREAMS_AGENTS_LORDS = DAYDREAMS_AGENTS_KILLED * AVG_LORDS_PER_AGENT;
 const AMOUNT_LEFT_IN_BRIDGE_CONTRACT = 151412;
 
 function App(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<'revenue' | 'rewards' | 'seasonpass'>('revenue');
+  const location = useLocation();
   const [lordsPrice, setLordsPrice] = useState<number>(0);
   const [strkPrice, setStrkPrice] = useState<number>(0);
   const [priceChange, setPriceChange] = useState<number | null>(null);
@@ -110,39 +110,11 @@ function App(): React.JSX.Element {
 
   const totalLords: number = revenueData.reduce((sum, item) => sum + item.amount, 0);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'revenue':
-        return (
-          <>
-            <RevenueChart 
-              revenueData={revenueData}
-              lordsPrice={lordsPrice}
-              totalLords={totalLords}
-            />
-            
-            <FeeTable 
-              revenueData={revenueData}
-              lordsPrice={lordsPrice}
-            />
-          </>
-        );
-      case 'rewards':
-        return (
-          <Rewards 
-            lordsPrice={lordsPrice}
-            strkPrice={strkPrice}
-          />
-        );
-      case 'seasonpass':
-        return (
-          <SeasonPassValue 
-            lordsPrice={lordsPrice}
-          />
-        );
-      default:
-        return null;
-    }
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path === '/rewards') return 'rewards';
+    if (path === '/seasonpass') return 'seasonpass';
+    return 'revenue';
   };
 
   return (
@@ -157,34 +129,54 @@ function App(): React.JSX.Element {
       />
       
       <div className="tab-navigation">
-        <button
-          className={`tab-button ${activeTab === 'revenue' ? 'active' : ''}`}
-          onClick={() => setActiveTab('revenue')}
+        <Link
+          to="/"
+          className={`tab-button ${getCurrentTab() === 'revenue' ? 'active' : ''}`}
           aria-label="View revenue analytics"
         >
           <span className="tab-icon">📊</span>
           <span className="tab-text">Revenue</span>
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'seasonpass' ? 'active' : ''}`}
-          onClick={() => setActiveTab('seasonpass')}
+        </Link>
+        <Link
+          to="/seasonpass"
+          className={`tab-button ${getCurrentTab() === 'seasonpass' ? 'active' : ''}`}
           aria-label="View season pass value analysis"
         >
           <span className="tab-icon">🎫</span>
           <span className="tab-text">Season Pass</span>
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'rewards' ? 'active' : ''}`}
-          onClick={() => setActiveTab('rewards')}
+        </Link>
+        <Link
+          to="/rewards"
+          className={`tab-button ${getCurrentTab() === 'rewards' ? 'active' : ''}`}
           aria-label="View rewards information"
         >
           <span className="tab-icon">🏆</span>
           <span className="tab-text">Rewards</span>
-        </button>
+        </Link>
       </div>
       
       <div className="tab-content">
-        {renderTabContent()}
+        <Routes>
+          <Route path="/" element={
+            <RevenuePage
+              revenueData={revenueData}
+              lordsPrice={lordsPrice}
+              totalLords={totalLords}
+            />
+          } />
+          <Route path="/rewards" element={
+            <RewardsPage
+              lordsPrice={lordsPrice}
+              strkPrice={strkPrice}
+            />
+          } />
+          <Route path="/seasonpass" element={
+            <SeasonPassPage
+              lordsPrice={lordsPrice}
+            />
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </div>
   );
