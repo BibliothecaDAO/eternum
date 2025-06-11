@@ -19,7 +19,7 @@ import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Separator } from "../ui/separator";
-import { CreateListingDrawer } from "./marketplace-create-listing-drawer";
+import { CreateListingsDrawer } from "./marketplace-create-listings-drawer";
 import { EditListingDrawer } from "./marketplace-edit-listing-drawer";
 
 // Marketplace fee percentage
@@ -34,7 +34,6 @@ interface TokenDetailModalProps {
   marketplaceActions: ReturnType<typeof useMarketplace>;
   // Listing details passed from RealmCard
   isListed: boolean;
-  collection_id: number;
   price?: bigint;
   orderId?: string;
   expiration?: number; // Added: Expiration timestamp (seconds)
@@ -49,15 +48,14 @@ export const TokenDetailModal = ({
   isListed,
   price,
   orderId,
-  collection_id,
   expiration, // Added
 }: TokenDetailModalProps) => {
   const { name, image, attributes } = tokenData.metadata ?? {};
-  const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
+  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
 
   const { data: activeMarketOrder } = useQuery({
     queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, tokenData.token_id.toString()),
+    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
     refetchInterval: 30_000,
     enabled: isOpen,
   });
@@ -223,13 +221,10 @@ export const TokenDetailModal = ({
           </Button>
         </div>
       ) : (
-        <CreateListingDrawer
-          image={image ?? ""}
-          name={name ?? ""}
+        <CreateListingsDrawer
           isLoading={isLoading}
           isSyncing={isSyncing}
           tokens={[tokenData]}
-          collection_id={collection_id}
           marketplaceActions={marketplaceActions}
         />
       )}

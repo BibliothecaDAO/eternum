@@ -2664,28 +2664,33 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async create_marketplace_order(props: SystemProps.CreateMarketplaceOrderProps) {
-    const { token_id, collection_id, price, expiration, signer, cancel_order_id } = props;
+  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<Result> {
+    const { tokens, signer, marketplace_address } = props;
 
-    let calls = [
-      {
-        contractAddress: props.marketplace_address.toString(),
+    const calls = tokens.map((token) => {
+      return {
+        contractAddress: marketplace_address.toString(),
         entrypoint: "create",
-        calldata: [token_id, collection_id, price, expiration],
-      },
-    ];
+        calldata: [token.token_id, token.collection_id, token.price, token.expiration],
+      };
+    });
 
-    if (cancel_order_id) {
-      calls = [
-        {
-          contractAddress: props.marketplace_address.toString(),
-          entrypoint: "cancel",
-          calldata: [cancel_order_id],
-        },
-        ...calls,
-      ];
+    // Extract cancel order IDs and create cancel entrypoint calls
+    const cancelCalls = tokens
+      .filter((token) => token.cancel_order_id !== null)
+      .map((token) => ({
+        contractAddress: marketplace_address.toString(),
+        entrypoint: "cancel",
+        calldata: [token.cancel_order_id!],
+      }));
+
+    // Combine cancel calls with create calls
+    const allCalls = [...cancelCalls, ...calls];
+    const result = await this.executeAndCheckTransaction(signer, allCalls);
+    if (!result) {
+      throw new Error("Transaction failed - no result returned");
     }
-    return await this.executeAndCheckTransaction(signer, calls);
+    return result;
   }
 
   /**
@@ -2741,16 +2746,20 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps) {
+  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<Result> {
     const { order_id, new_price, signer } = props;
 
-    const call = this.createProviderCall(signer, {
+    const call = {
       contractAddress: props.marketplace_address.toString(),
       entrypoint: "edit",
       calldata: [order_id, new_price],
-    });
+    };
 
-    return await this.promiseQueue.enqueue(call);
+    const result = await this.executeAndCheckTransaction(signer, [call]);
+    if (!result) {
+      throw new Error("Transaction failed - no result returned");
+    }
+    return result;
   }
 
   public async set_quest_games(props: SystemProps.SetQuestGamesProps) {

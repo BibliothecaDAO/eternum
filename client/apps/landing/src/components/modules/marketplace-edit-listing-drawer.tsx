@@ -51,7 +51,7 @@ export const EditListingDrawer: React.FC<EditListingDrawerProps> = ({
         new_price: priceInWei,
       });
 
-      if (tx?.execution_status === "SUCCEEDED") {
+      if (tx) {
         setOpen(false);
       }
     } catch (error) {

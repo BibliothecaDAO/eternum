@@ -1,3 +1,4 @@
+import { getCollectionByAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
@@ -21,11 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 2.5;
 
-interface CreateListingDrawerProps {
+// Function to extract unique contract addresses
+
+interface CreateListingsDrawerProps {
   tokens: MergedNftData[];
-  collection_id: number; // Refactor for multiple collections
-  image: string;
-  name: string | null;
   isLoading: boolean;
   isSyncing: boolean;
   marketplaceActions: ReturnType<typeof useMarketplace>;
@@ -41,27 +41,25 @@ const durationOptions = {
 };
 type DurationKey = keyof typeof durationOptions;
 
-export const CreateListingDrawer: React.FC<CreateListingDrawerProps> = ({
-  image,
-  name,
+export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
   tokens,
-  collection_id,
   isLoading,
   isSyncing,
   marketplaceActions,
 }) => {
   const [open, setOpen] = useState(false);
+  const [tokenPrices, setTokenPrices] = useState<Record<string, string>>({});
 
-  const { collectionApprovedForMarketplace, isApprovingMarketplace, handleApproveMarketplace } = useMarketplaceApproval(
-    tokens[0].contract_address,
-  );
+  const selectedCollectionAddresses = [...new Set(tokens.map((token) => token.contract_address))];
+
+  const { collectionApprovedForMarketplace, isApprovingMarketplace, handleApproveMarketplace } =
+    useMarketplaceApproval(selectedCollectionAddresses);
 
   const calculateExpirationTimestamp = (durationKey: DurationKey): number => {
     const nowInSeconds = Math.floor(Date.now() / 1000);
     return nowInSeconds + durationOptions[durationKey];
   };
 
-  const [listPrice, setListPrice] = useState("");
   const [selectedDuration, setSelectedDuration] = useState<DurationKey>("7days");
   const [listExpiration, setListExpiration] = useState<number>(() => calculateExpirationTimestamp("7days"));
 
@@ -73,45 +71,60 @@ export const CreateListingDrawer: React.FC<CreateListingDrawerProps> = ({
   };
 
   const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrders", tokens[0].contract_address, tokens[0].token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(tokens[0].contract_address, tokens[0].token_id.toString()),
+    queryKey: ["activeMarketOrders", tokens?.[0]?.contract_address, tokens.map((t) => t.token_id.toString())],
+    queryFn: () =>
+      fetchActiveMarketOrders(
+        tokens?.[0]?.contract_address, //needs to be changed for multipl collections
+        tokens.map((t) => t.token_id.toString()),
+      ),
     refetchInterval: 30_000,
   });
 
-  // --- Action Handlers ---
-  const handleListItem = async () => {
-    if (/*!contractAddress || */ !listPrice) return; // Basic validation
-    const priceInWei = BigInt(parseFloat(listPrice) * 1e18); // Convert price to wei (assuming 18 decimals for LORDS)
+  // Handler for price change
+  const handlePriceChange = (tokenId: string, price: string) => {
+    setTokenPrices((prev) => ({
+      ...prev,
+      [tokenId]: price,
+    }));
+  };
 
+  const handleBulkList = async () => {
     try {
-      await marketplaceActions.listItem({
-        token_id: parseInt(tokens[0].token_id.toString()), // Convert to string to match expected type
-        collection_id, // Placeholder: Use actual collection ID if available/needed
-        price: priceInWei,
-        expiration: listExpiration,
-        cancel_order_id: activeMarketOrder?.[0]?.order_id ? BigInt(activeMarketOrder[0].order_id) : BigInt(0),
+      const tokensToProcess = tokens.filter((token) => tokenPrices[token.token_id.toString()]);
+      console.log(tokensToProcess);
+      if (tokensToProcess.length === 0) return;
+
+      await marketplaceActions.listItems({
+        tokens: tokensToProcess.map((token) => {
+          const existingOrder = activeMarketOrder?.find((order) => {
+            return order.token_id.toString() === token.token_id.toString();
+          });
+          return {
+            token_id: parseInt(token.token_id.toString()),
+            collection_id: getCollectionByAddress(token.contract_address.toString())?.id ?? 0,
+            price: BigInt(parseFloat(tokenPrices[token.token_id.toString()]) * 1e18),
+            expiration: listExpiration,
+            cancel_order_id: existingOrder?.order_id ? BigInt(existingOrder.order_id) : null,
+          };
+        }),
       });
-
       setOpen(false);
-
-      //setIsSyncing(true);
     } catch (error) {
-      console.error("Failed to list item:", error);
-      //setIsSyncing(false);
+      console.error("Failed to list items:", error);
     }
   };
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="cta" className="w-full mt-2">
-          List Item
+        <Button disabled={tokens.length === 0} variant="cta" className="w-full">
+          List {tokens.length <= 1 ? "Item" : `${tokens.length} Items`}
         </Button>
       </DrawerTrigger>
       <DrawerContent className="text-gold">
         <div className="container mx-auto max-w-5xl">
           <DrawerHeader>
-            <DrawerTitle className="text-gold font-semibold text-2xl">List Item</DrawerTitle>
+            <DrawerTitle className="text-gold font-semibold text-2xl">List Items</DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
             <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs text-muted-foreground uppercase">
@@ -120,49 +133,54 @@ export const CreateListingDrawer: React.FC<CreateListingDrawerProps> = ({
               <div>Fee</div>
               <div className="justify-self-end col-span-2">List Price</div>
             </div>
-            <div className="grid grid-cols-6 gap-2 items-center py-2 ">
-              <div className="flex items-center gap-2 col-span-2">
-                <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
-                <span className="truncate max-w-[80px]">{name}</span>
+            {tokens.map((token) => (
+              <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
+                <div className="flex items-center gap-2 col-span-2">
+                  <img src={token.metadata?.image} alt={token.metadata?.name ?? "Token"} className="w-8 h-8 rounded" />
+                  <span className="truncate max-w-[80px]">{token.metadata?.name}</span>
+                </div>
+                <div className="text-sm">{/* Floor price here, e.g. */}-</div>
+                <div className="text-xs">
+                  {tokenPrices[token.token_id.toString()] && parseFloat(tokenPrices[token.token_id.toString()]) > 0
+                    ? (
+                        (parseFloat(tokenPrices[token.token_id.toString()]) * MARKETPLACE_FEE_PERCENT) /
+                        100
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })
+                    : "--"}
+                  <span className="ml-1">LORDS</span>
+                </div>
+                <div className="justify-self-end relative col-span-2">
+                  <Input
+                    id={`list-price-${token.token_id}`}
+                    value={tokenPrices[token.token_id.toString()] || ""}
+                    onChange={(e) => handlePriceChange(token.token_id.toString(), e.target.value)}
+                    placeholder="0"
+                    disabled={isLoading || isSyncing}
+                    className="w-full max-w-36"
+                  />
+                  <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                </div>
               </div>
-              <div className="text-sm">{/* Floor price here, e.g. */}-</div>
-              <div className="text-xs">
-                {listPrice && parseFloat(listPrice) > 0
-                  ? ((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
-                    })
-                  : "--"}
-                <span className="ml-1">LORDS</span>
-              </div>
-              <div className="justify-self-end relative col-span-2">
-                <Input
-                  id="list-price"
-                  value={listPrice}
-                  onChange={(e) => setListPrice(e.target.value)}
-                  placeholder="0"
-                  disabled={isLoading || isSyncing}
-                  className="w-full max-w-36"
-                />
-                <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
-              </div>
-            </div>
+            ))}
             {/* Proceeds below the table */}
-            <div className=" mb-1 flex justify-between border-t py-3 font-semibold">
-              <span>You receive: </span>
+            <div className="mb-1 flex justify-between border-t py-3 font-semibold">
+              <span>Total proceeds: </span>
               <div>
-                {listPrice
-                  ? parseFloat(listPrice) > 0 &&
-                    ((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString("en-US", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
-                    })
-                  : 0}
+                {Object.values(tokenPrices)
+                  .reduce((total, price) => {
+                    if (!price || parseFloat(price) <= 0) return total;
+                    return total + (parseFloat(price) * (100 - MARKETPLACE_FEE_PERCENT)) / 100;
+                  }, 0)
+                  .toLocaleString("en-US", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })}
                 <span className="ml-3">LORDS</span>
               </div>
             </div>
-
-            {/* Action Buttons */}
           </div>
           <DrawerFooter>
             <div>
@@ -208,10 +226,19 @@ export const CreateListingDrawer: React.FC<CreateListingDrawerProps> = ({
                   ) : (
                     <Button
                       variant={"cta"}
-                      onClick={handleListItem}
-                      disabled={isLoading || isSyncing || !listPrice || marketplaceActions.isCreatingOrder}
+                      onClick={handleBulkList}
+                      disabled={
+                        isLoading ||
+                        isSyncing ||
+                        tokens.some((token) => !tokenPrices[token.token_id.toString()]) ||
+                        marketplaceActions.isCreatingOrder
+                      }
                     >
-                      {marketplaceActions.isCreatingOrder ? "Listing..." : !listPrice ? "Set price" : "Confirm Listing"}
+                      {marketplaceActions.isCreatingOrder
+                        ? "Listing..."
+                        : tokens.some((token) => !tokenPrices[token.token_id.toString()])
+                          ? "Set prices"
+                          : "List All Items"}
                     </Button>
                   )}
                 </div>
