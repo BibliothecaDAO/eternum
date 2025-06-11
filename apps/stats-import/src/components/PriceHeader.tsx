@@ -76,7 +76,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
 
   // Responsive brand subtitle
   const getBrandSubtitle = (): string => {
-    return isMobile ? 'Season 1 Analytics' : 'Season 1 LORDS Collection Analytics';
+    return isMobile ? 'Season 1 Analytics' : 'Eternum Season 1 Analytics';
   };
 
   return (
