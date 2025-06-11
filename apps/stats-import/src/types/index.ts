@@ -112,4 +112,29 @@ export interface EternumSocialData {
 export interface RewardsProps {
   lordsPrice: number;
   strkPrice: number;
+}
+
+// Achievement types
+export interface AchievementPlayer {
+  address: string;
+  earnings: number;
+  timestamp: number;
+  completeds: string[];
+}
+
+export interface CartridgeReward {
+  address: string;
+  earnings: number;
+  lordsReward: number;
+  percentage: number;
+}
+
+export interface DaydreamsReward {
+  address: string;
+  strkReward: number;
+}
+
+// Known addresses mapping type
+export interface KnownAddresses {
+  [key: string]: string;
 } 

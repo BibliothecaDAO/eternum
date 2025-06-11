@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { EternumSocialData, Player, RewardsProps } from '../types';
+import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses } from '../types';
 
 const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [eternumData, setEternumData] = useState<EternumSocialData | null>(null);
+  const [achievementsData, setAchievementsData] = useState<AchievementPlayer[] | null>(null);
+  const [knownAddresses, setKnownAddresses] = useState<KnownAddresses | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams'>('victory');
@@ -12,27 +14,37 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [showCalculations, setShowCalculations] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchEternumData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch('/data/eternum-social-export.json');
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch eternum data');
+        const [eternumResponse, achievementsResponse, knownAddressesResponse] = await Promise.all([
+          fetch('/data/eternum-social-export.json'),
+          fetch('/data/achievements-eternum-s1.json'),
+          fetch('/data/known-addresses.json')
+        ]);
+        
+        if (!eternumResponse.ok || !achievementsResponse.ok || !knownAddressesResponse.ok) {
+          throw new Error('Failed to fetch data');
         }
         
-        const data: EternumSocialData = await response.json();
-        setEternumData(data);
+        const eternumData: EternumSocialData = await eternumResponse.json();
+        const achievementsData: AchievementPlayer[] = await achievementsResponse.json();
+        const knownAddressesData: KnownAddresses = await knownAddressesResponse.json();
+        
+        setEternumData(eternumData);
+        setAchievementsData(achievementsData);
+        setKnownAddresses(knownAddressesData);
       } catch (err) {
-        console.error('Error fetching eternum data:', err);
+        console.error('Error fetching data:', err);
         setError('Failed to load rewards data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEternumData();
+    fetchData();
   }, []);
 
   const formatLords = (amount: number): string => {
@@ -69,6 +81,60 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
 
   const formatAddress = (address: string): string => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const getPlayerName = (address: string): string | null => {
+    if (!knownAddresses) return null;
+    
+    try {
+      // Convert hex address to bigint string
+      const addressBigInt = BigInt(address).toString();
+      return knownAddresses[addressBigInt] || null;
+    } catch (error) {
+      console.warn('Error converting address to bigint:', address, error);
+      return null;
+    }
+  };
+
+  const getDisplayName = (address: string): string => {
+    const playerName = getPlayerName(address);
+    return playerName || formatAddress(address);
+  };
+
+  const calculateCartridgeRewards = (): CartridgeReward[] => {
+    if (!achievementsData) return [];
+
+    // Calculate total earnings across all players
+    const totalEarnings = achievementsData.reduce((sum, player) => sum + player.earnings, 0);
+    const totalPayout = 300000; // 300,000 LORDS
+
+    return achievementsData.map(player => ({
+      address: player.address,
+      earnings: player.earnings,
+      percentage: (player.earnings / totalEarnings) * 100,
+      lordsReward: (player.earnings / totalEarnings) * totalPayout
+    }));
+  };
+
+  const calculateDaydreamsRewards = (): DaydreamsReward[] => {
+    if (!achievementsData) return [];
+
+    const NEXUS_SIX_ID = '0x4e455855535f534958';
+    const totalPayout = 25000; // 25,000 STRK
+
+    // Find all players who completed the NEXUS_SIX achievement
+    const qualifiedPlayers = achievementsData.filter(player => 
+      player.completeds.includes(NEXUS_SIX_ID)
+    );
+
+    if (qualifiedPlayers.length === 0) return [];
+
+    const rewardPerPlayer = totalPayout / qualifiedPlayers.length;
+
+    return qualifiedPlayers.map(player => ({
+      address: player.address,
+      strkReward: rewardPerPlayer
+    }));
   };
 
   const getAllPlayers = (): (Player & { tribeName: string; tribeRank: number; tribePrize: { lords: number; strk: number } })[] => {
@@ -293,22 +359,323 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
       case 'victory':
         return renderVictoryPrizes();
       case 'cartridge':
-        return (
-          <div className="rewards-placeholder">
-            <h3>🎮 Cartridge Achievement Prizes</h3>
-            <p>Coming soon...</p>
-          </div>
-        );
+        return renderCartridgePrizes();
       case 'daydreams':
-        return (
-          <div className="rewards-placeholder">
-            <h3>🤖 Daydreams Agents Prizes</h3>
-            <p>Coming soon...</p>
-          </div>
-        );
+        return renderDaydreamsPrizes();
       default:
         return null;
     }
+  };
+
+  const renderCartridgePrizes = () => {
+    if (loading) {
+      return (
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading cartridge achievement prizes...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="error-state">
+          <p className="error-message">{error}</p>
+        </div>
+      );
+    }
+
+    if (!achievementsData) {
+      return <div className="error-state">No achievements data available</div>;
+    }
+
+    const cartridgeRewards = calculateCartridgeRewards();
+    const filteredRewards = cartridgeRewards.filter(reward => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      const playerName = getPlayerName(reward.address);
+      return reward.address.toLowerCase().includes(search) || 
+             (playerName && playerName.toLowerCase().includes(search));
+    });
+
+    // Sort the rewards
+    filteredRewards.sort((a, b) => {
+      let aValue: number | string;
+      let bValue: number | string;
+
+      switch (sortBy) {
+        case 'lords':
+          aValue = a.lordsReward;
+          bValue = b.lordsReward;
+          break;
+        case 'points':
+          aValue = a.earnings;
+          bValue = b.earnings;
+          break;
+        case 'name':
+          aValue = getDisplayName(a.address).toLowerCase();
+          bValue = getDisplayName(b.address).toLowerCase();
+          break;
+        default:
+          aValue = a.lordsReward;
+          bValue = b.lordsReward;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+    return (
+      <div className="cartridge-prizes">
+        <div className="cartridge-header">
+          <div className="cartridge-title">
+            <h3>🎮 Cartridge Achievement Prizes</h3>
+            <p className="cartridge-subtitle">
+              300,000 LORDS distributed based on achievement points earned by {cartridgeRewards.length} players
+            </p>
+          </div>
+          
+          <div className="cartridge-summary">
+            <div className="summary-card">
+              <div className="summary-label">Total Prize Pool</div>
+              <div className="summary-value">300,000 LORDS</div>
+              <div className="summary-usd">{formatLordsUSD(300000)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="cartridge-controls">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search by player name or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
+          <div className="sort-controls">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'lords' | 'strk' | 'points' | 'name')}
+              className="sort-select"
+            >
+              <option value="lords">Sort by LORDS</option>
+              <option value="points">Sort by Points</option>
+              <option value="name">Sort by Name</option>
+            </select>
+            
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="sort-order-btn"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+        </div>
+
+        <div className="cartridge-table">
+          <div className="table-header">
+            <div className="header-player">Player</div>
+            <div className="header-points">Achievement Points</div>
+            <div className="header-percentage">Share %</div>
+            <div className="header-rewards">LORDS Reward</div>
+          </div>
+          
+          <div className="table-body">
+            {filteredRewards.map((reward, index) => (
+              <div key={`${reward.address}-${index}`} className="player-row">
+                <div className="player-info">
+                  {getPlayerName(reward.address) ? (
+                    <>
+                      <div className="player-name">{getPlayerName(reward.address)}</div>
+                      <div className="player-address">{reward.address}</div>
+                    </>
+                  ) : (
+                    <div className="player-address-only">{reward.address}</div>
+                  )}
+                </div>
+                
+                <div className="points-info">
+                  <div className="points-value">{reward.earnings.toLocaleString()}</div>
+                  <div className="points-label">points</div>
+                </div>
+                
+                <div className="percentage-info">
+                  <div className="percentage-value">{reward.percentage.toFixed(4)}%</div>
+                </div>
+                
+                <div className="reward-info">
+                  <div className="reward-amount">{formatLords(reward.lordsReward)} LORDS</div>
+                  <div className="reward-usd">{formatLordsUSD(reward.lordsReward)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDaydreamsPrizes = () => {
+    if (loading) {
+      return (
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading daydreams agent prizes...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="error-state">
+          <p className="error-message">{error}</p>
+        </div>
+      );
+    }
+
+    if (!achievementsData) {
+      return <div className="error-state">No achievements data available</div>;
+    }
+
+    const daydreamsRewards = calculateDaydreamsRewards();
+    const filteredRewards = daydreamsRewards.filter(reward => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      const playerName = getPlayerName(reward.address);
+      return reward.address.toLowerCase().includes(search) || 
+             (playerName && playerName.toLowerCase().includes(search));
+    });
+
+    // Sort the rewards
+    filteredRewards.sort((a, b) => {
+      let aValue: number | string;
+      let bValue: number | string;
+
+      switch (sortBy) {
+        case 'strk':
+          aValue = a.strkReward;
+          bValue = b.strkReward;
+          break;
+        case 'name':
+          aValue = getDisplayName(a.address).toLowerCase();
+          bValue = getDisplayName(b.address).toLowerCase();
+          break;
+        default:
+          aValue = a.strkReward;
+          bValue = b.strkReward;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+    return (
+      <div className="daydreams-prizes">
+        <div className="daydreams-header">
+          <div className="daydreams-title">
+            <h3>🤖 Daydreams Agent Slayer Prizes</h3>
+            <p className="daydreams-subtitle">
+              25,000 STRK equally distributed among {daydreamsRewards.length} players who completed the NEXUS-6 achievement (killed 10 AI agents)
+            </p>
+          </div>
+          
+          <div className="daydreams-summary">
+            <div className="summary-card">
+              <div className="summary-label">Total Prize Pool</div>
+              <div className="summary-value">25,000 STRK</div>
+              <div className="summary-usd">{formatStrkUSD(25000)}</div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-label">Per Player</div>
+              <div className="summary-value">{daydreamsRewards.length > 0 ? formatStark(daydreamsRewards[0].strkReward) : '0'} STRK</div>
+              <div className="summary-usd">{daydreamsRewards.length > 0 ? formatStrkUSD(daydreamsRewards[0].strkReward) : '$0'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="daydreams-controls">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search by player name or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
+          <div className="sort-controls">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'lords' | 'strk' | 'points' | 'name')}
+              className="sort-select"
+            >
+              <option value="strk">Sort by STRK</option>
+              <option value="name">Sort by Name</option>
+            </select>
+            
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="sort-order-btn"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+        </div>
+
+        <div className="daydreams-table">
+          <div className="table-header">
+            <div className="header-player">Player</div>
+            <div className="header-achievement">Achievement</div>
+            <div className="header-rewards">STRK Reward</div>
+          </div>
+          
+          <div className="table-body">
+            {filteredRewards.map((reward, index) => (
+              <div key={`${reward.address}-${index}`} className="player-row">
+                <div className="player-info">
+                  {getPlayerName(reward.address) ? (
+                    <>
+                      <div className="player-name">{getPlayerName(reward.address)}</div>
+                      <div className="player-address">{reward.address}</div>
+                    </>
+                  ) : (
+                    <div className="player-address-only">{reward.address}</div>
+                  )}
+                </div>
+                
+                <div className="achievement-info">
+                  <div className="achievement-name">🤖 NEXUS-6</div>
+                  <div className="achievement-description">Killed 10 AI Agents</div>
+                </div>
+                
+                <div className="reward-info">
+                  <div className="reward-amount">{formatStark(reward.strkReward)} STRK</div>
+                  <div className="reward-usd">{formatStrkUSD(reward.strkReward)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderVictoryPrizes = () => {
