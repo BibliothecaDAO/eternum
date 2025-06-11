@@ -2049,4 +2049,473 @@ tr:hover {
     .player-address-only {
         font-size: 0.8rem;
     }
+}
+
+/* Season Pass Value Analysis Styles */
+.season-pass-analysis {
+    margin-top: 1.5rem;
+}
+
+.analysis-header {
+    margin-bottom: 2rem;
+}
+
+.header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: rgba(40, 30, 20, 0.7);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: #f0b060;
+}
+
+.stat-card.primary {
+    background: rgba(240, 176, 96, 0.1);
+    border-color: #f0b060;
+}
+
+.stat-card.secondary {
+    background: rgba(223, 194, 150, 0.1);
+    border-color: #dfc296;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #dfc296;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.5rem;
+}
+
+.stat-subtitle {
+    font-size: 0.8rem;
+    color: #f9fafb;
+    opacity: 0.8;
+}
+
+.marketplace-summary {
+    margin-bottom: 3rem;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.analysis-card {
+    background: rgba(30, 20, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.analysis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.analysis-card.highlight {
+    border-color: #f0b060;
+    background: rgba(240, 176, 96, 0.05);
+}
+
+.card-header {
+    background: rgba(40, 30, 20, 0.9);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #4d3923;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: #f0b060;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.metric-row.major {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(240, 176, 96, 0.2);
+    margin-bottom: 1.5rem;
+}
+
+.metric-label {
+    color: #dfc296;
+    font-weight: 500;
+    flex: 1;
+    min-width: 120px;
+}
+
+.metric-value {
+    color: #f9fafb;
+    font-weight: 600;
+    text-align: right;
+    flex: 1;
+    min-width: 150px;
+}
+
+.metric-usd {
+    display: block;
+    font-size: 0.85rem;
+    color: #f0b060;
+    font-weight: 400;
+    margin-top: 0.25rem;
+}
+
+.value-explanation {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(223, 194, 150, 0.2);
+}
+
+.value-explanation p {
+    color: #dfc296;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.value-highlight {
+    background: rgba(240, 176, 96, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid #f0b060;
+    font-weight: 600;
+    color: #f9fafb !important;
+}
+
+.breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(223, 194, 150, 0.1);
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: #dfc296;
+    font-size: 0.9rem;
+}
+
+.breakdown-item span:last-child {
+    color: #f0b060;
+    font-weight: 600;
+}
+
+.methodology {
+    background: rgba(20, 15, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.methodology h4 {
+    color: #f0b060;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.methodology ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.methodology li {
+    color: #dfc296;
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.5;
+}
+
+.methodology li::before {
+    content: "•";
+    color: #f0b060;
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.methodology strong {
+    color: #f9fafb;
+}
+
+/* Scenarios Section */
+.scenarios-section {
+    margin-bottom: 3rem;
+}
+
+.scenarios-section h3 {
+    color: #f0b060;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    border-left: 3px solid #f0b060;
+    padding-left: 0.75rem;
+}
+
+.scenarios-intro {
+    color: #dfc296;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.scenarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.scenario-card {
+    background: rgba(30, 20, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.scenario-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.scenario-card.highlight {
+    border-color: #f0b060;
+    background: rgba(240, 176, 96, 0.05);
+}
+
+.scenario-header {
+    background: rgba(40, 30, 20, 0.9);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.scenario-header h4 {
+    margin: 0;
+    color: #f0b060;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.scenario-count {
+    background: rgba(240, 176, 96, 0.2);
+    color: #f0b060;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.scenario-content {
+    padding: 1.5rem;
+}
+
+.scenario-value {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(223, 194, 150, 0.2);
+}
+
+.value-lords {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f9fafb;
+    margin-bottom: 0.5rem;
+}
+
+.value-usd {
+    font-size: 1.1rem;
+    color: #f0b060;
+    font-weight: 600;
+}
+
+.scenario-description {
+    color: #dfc296;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.scenario-explanation {
+    color: #f9fafb;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+/* Key Insights Section */
+.key-insights {
+    margin-bottom: 3rem;
+}
+
+.insight-item {
+    color: #dfc296;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(223, 194, 150, 0.1);
+    line-height: 1.5;
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+}
+
+.insight-item strong {
+    color: #f0b060;
+}
+
+/* Responsive Design for Season Pass Analysis */
+@media (max-width: 1024px) {
+    .header-stats {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .scenarios-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .scenarios-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .card-content {
+        padding: 1rem;
+    }
+    
+    .metric-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .metric-value {
+        text-align: left;
+        margin-top: 0.5rem;
+    }
+    
+    .scenario-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .value-lords {
+        font-size: 1.3rem;
+    }
+    
+    .methodology {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .season-pass-analysis {
+        margin-top: 1rem;
+    }
+    
+    .analysis-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .header-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 0.75rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1rem;
+    }
+    
+    .scenario-content {
+        padding: 1rem;
+    }
+    
+    .scenarios-section h3 {
+        font-size: 1.1rem;
+    }
+    
+    .scenarios-intro {
+        font-size: 1rem;
+    }
 } 

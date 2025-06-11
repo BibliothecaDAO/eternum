@@ -4,10 +4,11 @@ import PriceHeader from './components/PriceHeader';
 import RevenueChart from './components/RevenueChart';
 import FeeTable from './components/FeeTable';
 import Rewards from './components/Rewards';
+import SeasonPassValue from './components/SeasonPassValue';
 import { RevenueData, LordsApiResponse } from './types';
 
 function App(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<'revenue' | 'rewards'>('revenue');
+  const [activeTab, setActiveTab] = useState<'revenue' | 'rewards' | 'seasonpass'>('revenue');
   const [lordsPrice, setLordsPrice] = useState<number>(0);
   const [strkPrice, setStrkPrice] = useState<number>(0);
   const [priceChange, setPriceChange] = useState<number | null>(null);
@@ -128,6 +129,12 @@ function App(): React.JSX.Element {
             strkPrice={strkPrice}
           />
         );
+      case 'seasonpass':
+        return (
+          <SeasonPassValue 
+            lordsPrice={lordsPrice}
+          />
+        );
       default:
         return null;
     }
@@ -152,6 +159,14 @@ function App(): React.JSX.Element {
         >
           <span className="tab-icon">📊</span>
           <span className="tab-text">Revenue</span>
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'seasonpass' ? 'active' : ''}`}
+          onClick={() => setActiveTab('seasonpass')}
+          aria-label="View season pass value analysis"
+        >
+          <span className="tab-icon">🎫</span>
+          <span className="tab-text">Season Pass</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'rewards' ? 'active' : ''}`}
