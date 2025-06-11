@@ -1802,6 +1802,7 @@ tr:hover {
     color: #dfc296;
     opacity: 0.8;
     line-height: 1.5;
+    text-align: left;
 }
 
 .cartridge-summary,

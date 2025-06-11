@@ -723,7 +723,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           <div className="victory-title">
             <h3>🏆 Victory Prizes Distribution</h3>
             <p className="victory-subtitle">
-              Season 1 rewards for {eternumData.gameInfo.totalPlayers.toLocaleString()} players across {eternumData.gameInfo.totalTribes} tribes
+              Season 1 rewards for players across {eternumData.gameInfo.totalTribes} tribes
             </p>
           </div>
           
