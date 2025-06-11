@@ -231,7 +231,7 @@ const SeasonPassValue: React.FC<SeasonPassValueProps> = ({ lordsPrice }) => {
         </div>
 
         <div className="scenarios-section">
-          <h3>📊 Value Creation Scenarios</h3>
+          <h3>📊 Value Creation Estimation</h3>
           <p className="scenarios-intro">
             All season passes were provided <strong>free</strong> to Realms NFT holders. 
             Here are different scenarios to estimate the total value created for Realms NFT holders using the average price of the marketplace sales:
