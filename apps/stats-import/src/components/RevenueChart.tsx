@@ -23,6 +23,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isSmallMobile, setIsSmallMobile] = useState<boolean>(false);
   const [isTooltipVisible, setIsTooltipVisible] = useState<boolean>(false);
+  const tooltipTimeoutRef = useRef<number | null>(null);
 
   // Hook to detect screen size
   useEffect(() => {
@@ -35,6 +36,15 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
   }, []);
 
   const colors: ColorScheme[] = [
@@ -144,14 +154,25 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       if (target) {
         target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
       }
+      
+      // Clear any existing timeout
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+        tooltipTimeoutRef.current = null;
+      }
+      
       if (activeElements.length > 0) {
         setHoveredSegment(activeElements[0].index);
         setIsTooltipVisible(true);
       } else {
         setHoveredSegment(null);
-        setIsTooltipVisible(false);
+        // Add a small delay before hiding to prevent flicker
+        tooltipTimeoutRef.current = window.setTimeout(() => {
+          setIsTooltipVisible(false);
+        }, 50);
       }
     },
+
     // Enhanced touch/mobile interaction
     interaction: {
       intersect: !isMobile, // Allow easier touch interaction on mobile
@@ -236,9 +257,28 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       
       <div className="chart-container">
         <div className="chart-wrapper">
-          <div className="chart-canvas-wrapper">
+          <div 
+            className="chart-canvas-wrapper"
+            onMouseLeave={() => {
+              // Clear any existing timeout
+              if (tooltipTimeoutRef.current) {
+                clearTimeout(tooltipTimeoutRef.current);
+                tooltipTimeoutRef.current = null;
+              }
+              // Reset tooltip state when mouse leaves the chart area
+              setHoveredSegment(null);
+              setIsTooltipVisible(false);
+            }}
+          >
             <Doughnut ref={chartRef} data={data} options={options} />
-            <div className="center-text" style={{ opacity: isTooltipVisible ? 0 : 1, transition: 'opacity 0.2s ease' }}>
+            <div 
+              className="center-text"
+              style={{
+                opacity: isTooltipVisible ? 0.2 : 1,
+                transition: 'opacity 0.2s ease-in-out',
+                zIndex: 1
+              }}
+            >
               <div className="total-amount">{getTotalDisplayValue()}</div>
               <div className="total-label">{getTotalLabel()}</div>
               <div className="total-usd">{getTotalUSDDisplay()}</div>
