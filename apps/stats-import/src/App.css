@@ -465,10 +465,14 @@ h1 {
 }
 
 .legend-item:nth-child(3) {
-    border-left: 4px solid #c0c0c0;
+    border-left: 4px solid #5a729e;
 }
 
 .legend-item:nth-child(4) {
+    border-left: 4px solid #c0c0c0;
+}
+
+.legend-item:nth-child(5) {
     border-left: 4px solid #a67c00;
 }
 
