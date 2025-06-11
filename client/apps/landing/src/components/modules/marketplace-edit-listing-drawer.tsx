@@ -1,3 +1,4 @@
+import { useMarketplace } from "@/hooks/use-marketplace";
 import { ArrowLeft } from "lucide-react";
 import React, { useState } from "react";
 import { formatUnits } from "viem";
@@ -24,10 +25,7 @@ interface EditListingDrawerProps {
   isSyncing: boolean;
   orderId: string;
   expiration: number | null;
-  marketplaceActions: {
-    editOrder: (params: { order_id: bigint; new_price: bigint }) => Promise<{ execution_status: string }>;
-    isEditingOrder: boolean;
-  };
+  marketplaceActions: ReturnType<typeof useMarketplace>;
 }
 
 export const EditListingDrawer: React.FC<EditListingDrawerProps> = ({
@@ -53,7 +51,7 @@ export const EditListingDrawer: React.FC<EditListingDrawerProps> = ({
         new_price: priceInWei,
       });
 
-      if (tx?.execution_status === "SUCCEEDED") {
+      if (tx) {
         setOpen(false);
       }
     } catch (error) {

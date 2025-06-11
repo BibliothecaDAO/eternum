@@ -1,5 +1,6 @@
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
+import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceCollections } from "@/config";
 import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
@@ -40,7 +42,7 @@ function ManageCollectionRoute() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
-
+  const marketplaceActions = useMarketplace();
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
@@ -78,6 +80,7 @@ function ManageCollectionRoute() {
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const [isListDialogOpen, setIsListDialogOpen] = useState(false);
 
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
     `collection-${collection}`,
@@ -208,9 +211,37 @@ function ManageCollectionRoute() {
         <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
           <div className="container mx-auto flex gap-4">
             <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm">
-                List {selectedPasses.length.toString()} items
-              </Button>
+              <div className="flex items-center gap-4">
+                {selectedPasses.length > 0 /*&& sweepCount === 0 && !debouncedSweepCount*/ && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      {selectedPasses.slice(0, 3).map((pass) => {
+                        const metadata = pass.metadata;
+                        const image = metadata?.image;
+                        return (
+                          <div
+                            key={pass.token_id}
+                            className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
+                          >
+                            <img src={image} alt={`Item #${pass.token_id}`} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {selectedPasses.length > 3 && (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        +{selectedPasses.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                )}
+                <CreateListingsDrawer
+                  tokens={selectedPasses}
+                  isLoading={false}
+                  isSyncing={false}
+                  marketplaceActions={marketplaceActions}
+                />
+              </div>
             </div>
           </div>
         </div>
