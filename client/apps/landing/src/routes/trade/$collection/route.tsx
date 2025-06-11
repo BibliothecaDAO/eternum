@@ -17,7 +17,7 @@ function TradeLayout() {
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { data: totals } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", collectionAddress],
+    queryKey: ["collectionStatistics", collectionAddress],
     queryFn: () => fetchCollectionStatistics(collectionAddress),
     refetchInterval: 30_000,
   });

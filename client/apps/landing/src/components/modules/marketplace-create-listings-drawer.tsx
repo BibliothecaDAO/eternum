@@ -4,7 +4,7 @@ import { useMarketplace } from "@/hooks/use-marketplace";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
 import { MergedNftData } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Minus, Plus } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {
@@ -49,6 +49,9 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [tokenPrices, setTokenPrices] = useState<Record<string, string>>({});
+  const [incrementAmount, setIncrementAmount] = useState("250");
+  const [showIncrementInput, setShowIncrementInput] = useState(false);
+  const [hasUsedIncrement, setHasUsedIncrement] = useState(false);
 
   const selectedCollectionAddresses = [...new Set(tokens.map((token) => token.contract_address))];
 
@@ -88,6 +91,20 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
     }));
   };
 
+  const handleIncrement = (isIncrement: boolean) => {
+    const amount = parseFloat(incrementAmount) || 0;
+    const newPrices: Record<string, string> = {};
+
+    tokens.forEach((token) => {
+      const currentPrice = parseFloat(tokenPrices[token.token_id.toString()] || "0");
+      const newPrice = isIncrement ? currentPrice + amount : Math.max(0, currentPrice - amount);
+      newPrices[token.token_id.toString()] = newPrice.toString();
+    });
+
+    setTokenPrices(newPrices);
+    setHasUsedIncrement(true);
+  };
+
   const handleBulkList = async () => {
     try {
       const tokensToProcess = tokens.filter((token) => tokenPrices[token.token_id.toString()]);
@@ -123,48 +140,111 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
       </DrawerTrigger>
       <DrawerContent className="text-gold">
         <div className="container mx-auto max-w-5xl">
-          <DrawerHeader>
+          <DrawerHeader className="flex justify-between items-center">
             <DrawerTitle className="text-gold font-semibold text-2xl">List Items</DrawerTitle>
+            <div className="flex items-center gap-2">
+              <span className="uppercase text-xs mr-4">Set All to</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPrices: Record<string, string> = {};
+                  tokens.forEach((token) => {
+                    if (token.collection_floor_price) {
+                      newPrices[token.token_id.toString()] = token.collection_floor_price.toString();
+                    }
+                  });
+                  setTokenPrices(newPrices);
+                }}
+              >
+                Floor Price
+              </Button>
+            </div>
           </DrawerHeader>
-          <div className="flex flex-col gap-2 p-3 bg-background/50 border-t">
+          <div className="flex flex-col gap-2 p-3">
             <div className="grid grid-cols-6 gap-2 border-b pb-2 text-xs text-muted-foreground uppercase">
               <div className="col-span-2">Item</div>
               <div>Floor</div>
               <div>Fee</div>
-              <div className="justify-self-end col-span-2">List Price</div>
-            </div>
-            {tokens.map((token) => (
-              <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
-                <div className="flex items-center gap-2 col-span-2">
-                  <img src={token.metadata?.image} alt={token.metadata?.name ?? "Token"} className="w-8 h-8 rounded" />
-                  <span className="truncate max-w-[80px]">{token.metadata?.name}</span>
-                </div>
-                <div className="text-sm">{/* Floor price here, e.g. */}-</div>
-                <div className="text-xs">
-                  {tokenPrices[token.token_id.toString()] && parseFloat(tokenPrices[token.token_id.toString()]) > 0
-                    ? (
-                        (parseFloat(tokenPrices[token.token_id.toString()]) * MARKETPLACE_FEE_PERCENT) /
-                        100
-                      ).toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })
-                    : "--"}
-                  <span className="ml-1">LORDS</span>
-                </div>
-                <div className="justify-self-end relative col-span-2">
-                  <Input
-                    id={`list-price-${token.token_id}`}
-                    value={tokenPrices[token.token_id.toString()] || ""}
-                    onChange={(e) => handlePriceChange(token.token_id.toString(), e.target.value)}
-                    placeholder="0"
+              <div className="justify-self-end col-span-2">
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleIncrement(false)}
                     disabled={isLoading || isSyncing}
-                    className="w-full max-w-36"
-                  />
-                  <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  {hasUsedIncrement &&
+                    (showIncrementInput ? (
+                      <Input
+                        type="number"
+                        value={incrementAmount}
+                        onChange={(e) => setIncrementAmount(e.target.value)}
+                        className="w-24 text-lg"
+                        onBlur={() => setShowIncrementInput(false)}
+                        autoFocus
+                      />
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="text-lg"
+                        size="sm"
+                        onClick={() => setShowIncrementInput(true)}
+                      >
+                        {incrementAmount}
+                      </Button>
+                    ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleIncrement(true)}
+                    disabled={isLoading || isSyncing}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            ))}
+            </div>
+            <div className="flex flex-col gap-2 overflow-y-auto max-h-[60vH]">
+              {tokens.map((token) => (
+                <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
+                  <div className="flex items-center gap-2 col-span-2">
+                    <img
+                      src={token.metadata?.image}
+                      alt={token.metadata?.name ?? "Token"}
+                      className="w-8 h-8 rounded"
+                    />
+                    <span className="truncate max-w-[120px]">{token.metadata?.name}</span>
+                  </div>
+                  <div className="text-xs">{token.collection_floor_price?.toLocaleString()} LORDS</div>
+                  <div className="text-xs">
+                    {tokenPrices[token.token_id.toString()] && parseFloat(tokenPrices[token.token_id.toString()]) > 0
+                      ? (
+                          (parseFloat(tokenPrices[token.token_id.toString()]) * MARKETPLACE_FEE_PERCENT) /
+                          100
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })
+                      : "--"}
+                    <span className="ml-1">LORDS</span>
+                  </div>
+                  <div className="justify-self-end relative col-span-2">
+                    <Input
+                      id={`list-price-${token.token_id}`}
+                      value={tokenPrices[token.token_id.toString()] || ""}
+                      onChange={(e) => handlePriceChange(token.token_id.toString(), e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading || isSyncing}
+                      className="w-full max-w-36"
+                    />
+                    <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                  </div>
+                </div>
+              ))}
+            </div>
             {/* Proceeds below the table */}
             <div className="mb-1 flex justify-between border-t py-3 font-semibold">
               <span>Total proceeds: </span>

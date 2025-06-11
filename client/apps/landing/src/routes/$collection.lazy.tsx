@@ -15,7 +15,7 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceCollections } from "@/config";
-import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
@@ -23,10 +23,11 @@ import { useSelectedPassesStore } from "@/stores/selected-passes";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
   component: ManageCollectionRoute,
@@ -56,6 +57,11 @@ function ManageCollectionRoute() {
       },
     ],
   });
+  const { data: collectionStats } = useQuery({
+    queryKey: ["collectionStatistics", collectionAddress],
+    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    refetchInterval: 60_000,
+  });
 
   const getMetadataString = useCallback((token: MergedNftData) => {
     if (token?.metadata) {
@@ -64,6 +70,16 @@ function ManageCollectionRoute() {
     return null;
   }, []);
 
+  const tokensWithFloorPrice = useMemo(() => {
+    if (!tokenBalanceQuery.data || !collectionStats?.[0]?.floor_price_wei) return tokenBalanceQuery.data;
+
+    const floorPrice = formatUnits(BigInt(collectionStats?.[0]?.floor_price_wei), 18);
+    return tokenBalanceQuery.data.map((token) => ({
+      ...token,
+      collection_floor_price: floorPrice,
+    }));
+  }, [tokenBalanceQuery.data, collectionStats]);
+
   const {
     selectedFilters,
     allTraits,
@@ -71,7 +87,7 @@ function ManageCollectionRoute() {
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<MergedNftData>(tokenBalanceQuery.data, getMetadataString);
+  } = useTraitFiltering<MergedNftData>(tokensWithFloorPrice, getMetadataString);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredTokens.length / ITEMS_PER_PAGE);
