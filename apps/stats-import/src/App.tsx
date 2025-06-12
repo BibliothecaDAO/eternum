@@ -7,6 +7,8 @@ import RewardsPage from './pages/RewardsPage';
 import SeasonPassPage from './pages/SeasonPassPage';
 import { RevenueData, LordsApiResponse } from './types';
 
+const VILLAGES_SOLD = 1156;
+const VILLAGE_PRICE_USD = 5;
 const DAYDREAMS_AGENTS_KILLED = 1019;
 const AVG_LORDS_PER_AGENT = 22.5;
 const DAYDREAMS_AGENTS_LORDS = DAYDREAMS_AGENTS_KILLED * AVG_LORDS_PER_AGENT;
@@ -58,15 +60,18 @@ function App(): React.JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
+  const villageRevenueUSD = VILLAGES_SOLD * VILLAGE_PRICE_USD;
+  const villageRevenueLords = lordsPrice > 0 ? villageRevenueUSD / lordsPrice : 0;
+
   const revenueData: RevenueData[] = [
     {
       category: 'Village Passes',
       description: 'Direct village NFT sales revenue',
-      amount: 316000,
+      amount: villageRevenueLords,
       percentage: 56.8,
       address: 'No specific address',
-      source: 'Paid in USD: $6,320 (1,264 villages × $5 each)',
-      breakdown: `Equivalent to 316,000 LORDS at $${lordsPrice.toFixed(6)} per token`
+      source: `Paid in USD: $${villageRevenueUSD.toLocaleString()} (${VILLAGES_SOLD.toLocaleString()} villages × $${VILLAGE_PRICE_USD} each)`,
+      breakdown: `Equivalent to ${villageRevenueLords.toLocaleString()} LORDS at $${lordsPrice.toFixed(6)} per token`
     },
     {
       category: 'Donkey Network Fees',
