@@ -10084,20 +10084,6 @@
       "tribeEntityId": null
     },
     {
-      "address": "0x0",
-      "name": "The Vanguard",
-      "rank": 9007199254740991,
-      "points": 0,
-      "realms": 0,
-      "mines": 193,
-      "hyperstructures": 72,
-      "villages": 0,
-      "banks": 0,
-      "isAlive": false,
-      "tribeName": null,
-      "tribeEntityId": null
-    },
-    {
       "address": "0x3dcc1ffd8e9059d072a0b6573b9a3121c617082b12fba9dc5692d949eb304ff",
       "name": "satoo",
       "rank": 16,
