@@ -147,10 +147,14 @@ interface ActiveMarketOrder {
   collection_id: number;
 }
 
-export async function fetchActiveMarketOrders(contractAddress: string, tokenId: string): Promise<ActiveMarketOrder[]> {
-  const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{contractAddress}", contractAddress).replace(
-    "{tokenId}",
-    tokenId,
+export async function fetchActiveMarketOrders(
+  contractAddress: string,
+  tokenIds: string[],
+): Promise<ActiveMarketOrder[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{collectionId}", collectionId?.toString() ?? "0").replace(
+    "{tokenIds}",
+    tokenIds.map((id) => `'${id}'`).join(","),
   );
   return await fetchSQL<ActiveMarketOrder[]>(query);
 }

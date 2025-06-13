@@ -1,5 +1,6 @@
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
+import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
 import { Button } from "@/components/ui/button";
@@ -14,17 +15,19 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceCollections } from "@/config";
-import { fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hooks/services";
+import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 
 import { MergedNftData } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
   component: ManageCollectionRoute,
@@ -40,7 +43,7 @@ function ManageCollectionRoute() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
-
+  const marketplaceActions = useMarketplace();
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
@@ -54,6 +57,11 @@ function ManageCollectionRoute() {
       },
     ],
   });
+  const { data: collectionStats } = useQuery({
+    queryKey: ["collectionStatistics", collectionAddress],
+    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    refetchInterval: 60_000,
+  });
 
   const getMetadataString = useCallback((token: MergedNftData) => {
     if (token?.metadata) {
@@ -62,6 +70,16 @@ function ManageCollectionRoute() {
     return null;
   }, []);
 
+  const tokensWithFloorPrice = useMemo(() => {
+    if (!tokenBalanceQuery.data || !collectionStats?.[0]?.floor_price_wei) return tokenBalanceQuery.data;
+
+    const floorPrice = formatUnits(BigInt(collectionStats?.[0]?.floor_price_wei), 18);
+    return tokenBalanceQuery.data.map((token) => ({
+      ...token,
+      collection_floor_price: floorPrice,
+    }));
+  }, [tokenBalanceQuery.data, collectionStats]);
+
   const {
     selectedFilters,
     allTraits,
@@ -69,7 +87,7 @@ function ManageCollectionRoute() {
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<MergedNftData>(tokenBalanceQuery.data, getMetadataString);
+  } = useTraitFiltering<MergedNftData>(tokensWithFloorPrice, getMetadataString);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredTokens.length / ITEMS_PER_PAGE);
@@ -78,6 +96,7 @@ function ManageCollectionRoute() {
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const [isListDialogOpen, setIsListDialogOpen] = useState(false);
 
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
     `collection-${collection}`,
@@ -208,9 +227,42 @@ function ManageCollectionRoute() {
         <div className="sticky bottom-0 left-0 right-0 bg-background border-t py-2 px-4 shadow-lg">
           <div className="container mx-auto flex gap-4">
             <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm">
-                List {selectedPasses.length.toString()} items
-              </Button>
+              <div className="flex items-center gap-4">
+                {selectedPasses.length > 0 /*&& sweepCount === 0 && !debouncedSweepCount*/ && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      {selectedPasses.slice(0, 3).map((pass) => {
+                        const metadata = pass.metadata;
+                        const image = metadata?.image;
+                        return (
+                          <div
+                            key={pass.token_id}
+                            className="relative w-10 h-10 rounded-full border-2 border-background overflow-hidden"
+                          >
+                            <img src={image} alt={`Item #${pass.token_id}`} className="w-full h-full object-cover" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {selectedPasses.length > 3 && (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        +{selectedPasses.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                )}
+                <CreateListingsDrawer
+                  tokens={selectedPasses}
+                  isLoading={false}
+                  isSyncing={false}
+                  marketplaceActions={marketplaceActions}
+                />
+                {selectedPasses.length > 0 && (
+                  <Button variant={"ghost"} onClick={() => clearSelection()}>
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -299,8 +299,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.create_village(props);
   };
 
-  const create_marketplace_order = async (props: SystemProps.CreateMarketplaceOrderProps): Promise<Result> => {
-    return await provider.create_marketplace_order(props);
+  const create_marketplace_orders = async (props: SystemProps.CreateMarketplaceOrdersProps): Promise<Result> => {
+    return await provider.create_marketplace_orders(props);
   };
 
   const accept_marketplace_order = async (
@@ -429,7 +429,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
 
-    create_marketplace_order: withAuth(create_marketplace_order),
+    create_marketplace_orders: withAuth(create_marketplace_orders),
     accept_marketplace_orders: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),
     edit_marketplace_order: withAuth(edit_marketplace_order),
