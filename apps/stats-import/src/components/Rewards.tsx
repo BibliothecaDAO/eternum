@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses } from '../types';
 
+const padAddress = (address: string): string => {
+  const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
+  return `0x${cleanAddress.padStart(64, '0')}`;
+};
+
 const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [eternumData, setEternumData] = useState<EternumSocialData | null>(null);
   const [achievementsData, setAchievementsData] = useState<AchievementPlayer[] | null>(null);
@@ -32,9 +37,25 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         const eternumData: EternumSocialData = await eternumResponse.json();
         const achievementsData: AchievementPlayer[] = await achievementsResponse.json();
         const knownAddressesData: KnownAddresses = await knownAddressesResponse.json();
-        
+
+        // Pad addresses in eternumData
+        eternumData.tribes = eternumData.tribes.map(tribe => ({
+          ...tribe,
+          members: tribe.members.map(member => ({
+            ...member,
+            address: padAddress(member.address)
+          }))
+        }));
+
+        // Pad addresses in achievementsData
+        const paddedAchievementsData = achievementsData.map(player => ({
+          ...player,
+          address: padAddress(player.address)
+        }));
+
+    
         setEternumData(eternumData);
-        setAchievementsData(achievementsData);
+        setAchievementsData(paddedAchievementsData);
         setKnownAddresses(knownAddressesData);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -85,7 +106,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
 
   const getPlayerName = (address: string): string | null => {
     if (!knownAddresses) return null;
-    
+
     try {
       // Convert hex address to bigint string
       const addressBigInt = BigInt(address).toString();
