@@ -41,7 +41,7 @@ const envSchema = z.object({
   // Social
   VITE_SOCIAL_LINK: z.string().url().optional().default(""),
 
-  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("eternum-mobile.realms.world"),
+  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("m.eternum.realms.world"),
 
   // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
