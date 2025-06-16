@@ -111,7 +111,9 @@ function ActivityPage() {
                       {events.map((event) => {
                         const metadata = event.metadata;
                         const image = metadata?.image || "";
-                        const price = event.price ? formatUnits(BigInt(event.price), 18) : "0";
+                        const price = event.price
+                          ? parseFloat(Number(formatUnits(BigInt(event.price), 18)).toFixed(2)).toLocaleString()
+                          : "0";
                         const displayStatus = getDisplayStatus(event.state);
 
                         // Set status color based on state
