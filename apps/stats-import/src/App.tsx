@@ -6,6 +6,7 @@ import RevenuePage from './pages/RevenuePage';
 import RewardsPage from './pages/RewardsPage';
 import SeasonPassPage from './pages/SeasonPassPage';
 import { RevenueData, LordsApiResponse } from './types';
+import { Analytics } from "@vercel/analytics/react"
 
 const VILLAGES_SOLD = 1156;
 const VILLAGE_PRICE_USD = 5;
@@ -183,6 +184,7 @@ function App(): React.JSX.Element {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+      <Analytics />
     </div>
   );
 }
