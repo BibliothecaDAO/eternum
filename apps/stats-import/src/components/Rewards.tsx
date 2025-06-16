@@ -8,8 +8,9 @@ const padAddress = (address: string): string => {
 
 const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [eternumData, setEternumData] = useState<EternumSocialData | null>(null);
-  const [achievementsData, setAchievementsData] = useState<AchievementPlayer[] | null>(null);
+  const [cartridgePoints, setCartridgePoints] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [knownAddresses, setKnownAddresses] = useState<KnownAddresses | null>(null);
+  const [nexus6Players, setNexus6Players] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams'>('victory');
@@ -24,19 +25,21 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         setLoading(true);
         setError(null);
         
-        const [eternumResponse, achievementsResponse, knownAddressesResponse] = await Promise.all([
+        const [eternumResponse, cartridgeResponse, knownAddressesResponse, nexus6Response] = await Promise.all([
           fetch('/data/eternum-social-export.json'),
-          fetch('/data/achievements-eternum-s1.json'),
-          fetch('/data/known-addresses.json')
+          fetch('/data/cartridge-points.json'),
+          fetch('/data/known-addresses.json'),
+          fetch('/data/nexus-6-players.json')
         ]);
         
-        if (!eternumResponse.ok || !achievementsResponse.ok || !knownAddressesResponse.ok) {
+        if (!eternumResponse.ok || !cartridgeResponse.ok || !knownAddressesResponse.ok || !nexus6Response.ok) {
           throw new Error('Failed to fetch data');
         }
         
         const eternumData: EternumSocialData = await eternumResponse.json();
-        const achievementsData: AchievementPlayer[] = await achievementsResponse.json();
+        const cartridgeData: { player_id: string; total_points: number }[] = await cartridgeResponse.json();
         const knownAddressesData: KnownAddresses = await knownAddressesResponse.json();
+        const nexus6Data: { player_id: string; total_points: number }[] = await nexus6Response.json();
 
         // Pad addresses in eternumData
         eternumData.tribes = eternumData.tribes.map(tribe => ({
@@ -47,16 +50,22 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           }))
         }));
 
-        // Pad addresses in achievementsData
-        const paddedAchievementsData = achievementsData.map(player => ({
+        // Pad addresses in cartridgeData
+        const paddedCartridgeData = cartridgeData.map(player => ({
           ...player,
-          address: padAddress(player.address)
+          player_id: padAddress(player.player_id)
         }));
 
+        // Pad addresses in nexus6Data
+        const paddedNexus6Data = nexus6Data.map(player => ({
+          ...player,
+          player_id: padAddress(player.player_id)
+        }));
     
         setEternumData(eternumData);
-        setAchievementsData(paddedAchievementsData);
+        setCartridgePoints(paddedCartridgeData);
         setKnownAddresses(knownAddressesData);
+        setNexus6Players(paddedNexus6Data);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load rewards data');
@@ -123,37 +132,28 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   };
 
   const calculateCartridgeRewards = (): CartridgeReward[] => {
-    if (!achievementsData) return [];
+    if (!cartridgePoints) return [];
 
-    // Calculate total earnings across all players
-    const totalEarnings = achievementsData.reduce((sum, player) => sum + player.earnings, 0);
+    // Calculate total points across all players
+    const totalPoints = cartridgePoints.reduce((sum, player) => sum + player.total_points, 0);
     const totalPayout = 300000; // 300,000 LORDS
 
-    return achievementsData.map(player => ({
-      address: player.address,
-      earnings: player.earnings,
-      percentage: (player.earnings / totalEarnings) * 100,
-      lordsReward: (player.earnings / totalEarnings) * totalPayout
+    return cartridgePoints.map(player => ({
+      address: player.player_id,
+      earnings: player.total_points,
+      percentage: (player.total_points / totalPoints) * 100,
+      lordsReward: (player.total_points / totalPoints) * totalPayout
     }));
   };
 
   const calculateDaydreamsRewards = (): DaydreamsReward[] => {
-    if (!achievementsData) return [];
+    if (!nexus6Players) return [];
 
-    const NEXUS_SIX_ID = '0x4e455855535f534958';
     const totalPayout = 25000; // 25,000 STRK
+    const rewardPerPlayer = totalPayout / nexus6Players.length;
 
-    // Find all players who completed the NEXUS_SIX achievement
-    const qualifiedPlayers = achievementsData.filter(player => 
-      player.completeds.includes(NEXUS_SIX_ID)
-    );
-
-    if (qualifiedPlayers.length === 0) return [];
-
-    const rewardPerPlayer = totalPayout / qualifiedPlayers.length;
-
-    return qualifiedPlayers.map(player => ({
-      address: player.address,
+    return nexus6Players.map(player => ({
+      address: player.player_id,
       strkReward: rewardPerPlayer
     }));
   };
@@ -420,8 +420,8 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
       );
     }
 
-    if (!achievementsData) {
-      return <div className="error-state">No achievements data available</div>;
+    if (!cartridgePoints) {
+      return <div className="error-state">No cartridge points data available</div>;
     }
 
     const cartridgeRewards = calculateCartridgeRewards();
@@ -578,8 +578,8 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
       );
     }
 
-    if (!achievementsData) {
-      return <div className="error-state">No achievements data available</div>;
+    if (!nexus6Players) {
+      return <div className="error-state">No nexus-6 players data available</div>;
     }
 
     const daydreamsRewards = calculateDaydreamsRewards();
