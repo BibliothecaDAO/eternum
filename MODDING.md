@@ -55,6 +55,22 @@ To run the game locally:
 
 4. Run `pnpm run dev` to start the development server.
 
+### Connecting to Sepolia
+
+To run the client locally while connecting to the Sepolia testnet, update your `.env.local` with these values:
+
+```
+VITE_PUBLIC_NODE_URL=https://api.cartridge.gg/x/starknet/sepolia
+VITE_PUBLIC_TORII=https://api.cartridge.gg/x/eternum-sepolia-interim/torii
+```
+
+This will allow you to interact with the Sepolia version of the game while developing locally.
+
+> **Note**: The Torii node URL often changes. If you encounter connection issues:
+>
+> 1. Check if the Torii URL is accessible in your browser
+> 2. Contact the team on Discord if the current URL is not working
+
 ## Design and Architecture
 
 ### Basic Concepts
