@@ -96,8 +96,16 @@ pub impl ProductionImpl of ProductionTrait {
 
 
     #[inline(always)]
-    fn increase_output_amout_left(ref self: Production, amount: u128) {
+    fn increase_output_amout_left(
+        ref self: Production,
+        ref resource: SingleResource,
+        ref structure_weight: Weight,
+        unit_weight: u128,
+        amount: u128,
+    ) {
+        assert!(self.building_count > 0, "Eternum: no building");
         self.output_amount_left += amount;
+        resource.add_weight(amount, ref structure_weight, unit_weight);
     }
 
     #[inline(always)]
@@ -227,7 +235,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let produced_labor_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produced_labor_amount,
         );
-        from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
+        from_labor_resource_production
+            .increase_output_amout_left(
+                ref from_labor_resource, ref from_entity_weight, labor_resource_weight_grams, produced_labor_amount,
+            );
         from_labor_resource.production = from_labor_resource_production;
         from_labor_resource.store(ref world);
 
@@ -283,7 +294,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let produced_resource_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produced_resource_amount,
         );
-        produced_resource_production.increase_output_amout_left(produced_resource_amount);
+        produced_resource_production
+            .increase_output_amout_left(
+                ref produced_resource, ref from_entity_weight, resource_weight_grams, produced_resource_amount,
+            );
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
 
@@ -347,7 +361,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produceable_amount,
         );
-        produced_resource_production.increase_output_amout_left(produceable_amount);
+        produced_resource_production
+            .increase_output_amout_left(
+                ref produced_resource, ref from_entity_weight, produced_resource_weight_grams, produceable_amount,
+            );
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
 

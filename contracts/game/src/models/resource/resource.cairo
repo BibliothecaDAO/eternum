@@ -78,8 +78,9 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
 
                 // add the produced amount to the resource balance
                 if harvest_amount.is_non_zero() {
-                    let unit_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
-                    resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
+                    // unit weight == 0 because it is added when resource was produced
+                    // inside `increase_output_amout_left`
+                    resource.add(harvest_amount, ref entity_weight, 0);
                 }
 
                 // commit entity resource and weight
@@ -135,6 +136,18 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         // todo add event here to show amount burnt
     }
 
+
+    fn add_weight(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
+        let (max_storable, resource_total_weight) = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
+
+        assert!(max_storable == amount, "Eternum: Trying to add more weight than the entity can hold");
+        entity_weight.add(resource_total_weight);
+    }
+
+    fn remove_weight(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
+        let mut total_weight: u128 = unit_weight * amount;
+        entity_weight.deduct(total_weight);
+    }
 
     fn add(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) -> u128 {
         // todo: increase capacity with storehouse buildings

@@ -80,7 +80,10 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true,
         );
         let mut shards_resource_production: Production = shards_resource.production;
-        shards_resource_production.increase_output_amout_left(shards_reward_amount);
+        shards_resource_production
+            .increase_output_amout_left(
+                ref shards_resource, ref structure_weight, shards_weight_grams, shards_reward_amount,
+            );
         shards_resource.production = shards_resource_production;
         shards_resource.store(ref world);
 

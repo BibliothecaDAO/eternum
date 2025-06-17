@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{all_resource_ids, is_bank};
+use s1_eternum::constants::{is_bank};
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
