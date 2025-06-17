@@ -97,37 +97,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     }
 
     #[inline(always)]
-    fn structure_weight_regularize(ref world: WorldStorage, from_structure_ids: Array<ID>) {
-        let all_resources: Array<u8> = all_resource_ids();
-        for structure_id in from_structure_ids {
-            // ensure structure has an owner
-            let structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
-            assert!(structure_owner.is_non_zero(), "structure has no owner");
-
-            // ensure structure weight capacity is not zero
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-            assert!(structure_weight.capacity.is_non_zero(), "structure weight capacity is zero");
-
-            let mut new_total_weight: u128 = 0;
-            for i in 0..all_resources.len() {
-                let resource_type: u8 = *all_resources.at(i);
-                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
-
-                // we use false here so that production is excluded
-                let mut structure_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, false,
-                );
-                new_total_weight += structure_resource.balance * resource_weight_grams;
-            };
-
-            if new_total_weight <= structure_weight.capacity {
-                structure_weight.weight = new_total_weight;
-                structure_weight.store(ref world, structure_id);
-            }
-        }
-    }
-
-    #[inline(always)]
     fn troop_to_structure_instant(
         ref world: WorldStorage,
         from_troop_id: ID,

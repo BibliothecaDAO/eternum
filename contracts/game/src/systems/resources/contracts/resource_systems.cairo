@@ -17,7 +17,6 @@ pub trait IResourceSystems<T> {
     );
     fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
     fn structure_burn(ref self: T, structure_id: ID, resources: Span<(u8, u128)>);
-    fn structure_regularize_weight(ref self: T, structure_ids: Array<ID>);
 }
 
 #[dojo::contract]
@@ -405,15 +404,6 @@ pub mod resource_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
-        }
-
-        fn structure_regularize_weight(ref self: ContractState, structure_ids: Array<ID>) {
-            let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
-
-            assert!(structure_ids.len() != 0, "structure_ids is empty");
-            // regularize weight
-            iResourceTransferImpl::structure_weight_regularize(ref world, structure_ids);
         }
 
         fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
