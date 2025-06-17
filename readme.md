@@ -10,50 +10,53 @@
 
 # Realms: Eternum
 
-Eternum has been designed to be a foundational game for Realms World. It will freely evolve and grow as the game and
-world age. Think of it as a living, breathing digital ecosystem, constantly inviting endless exploration. It's both a
-game and an open platform.
+Eternum is the foundational game for Realms World - a living digital ecosystem that evolves through player interaction.
+It serves as both a game and an open platform.
 
 ### Eternum as a Game
 
-A unique, high-stakes game played over seasons. Players can pursue total victory or freely explore their own path,
-unconstrained by predetermined objectives.
+A high-stakes game played in seasons where players forge their own path to victory. On an infinite hexagonal map,
+players:
 
-In Eternum, players forge alliances across an infinite hexagonal procedurally generated map during fully onchain,
-immutable seasons. They build resource stockpiles, train troops, trade, and strategically cooperate or deceive to
-achieve victory in this world of diplomacy, resource management, and tactical decision-making.
+- Build resource stockpiles
+- Train troops
+- Explore the map
+- Trade resources
+- Form alliances
+- Compete for dominance
 
-Entry is via a Season pass minted off the original Loot Realms NFTs. Using $LORDS, players trade in a free market within
-the world and on Starknet to gain competitive advantages. The open nature of the design allows players to extend the
-game world and introduce their own features if they choose.
+Access requires a Season Pass minted from Loot Realms NFTs. Players use $LORDS tokens to trade in the game's free market
+on Starknet.
 
 ### Eternum as a Platform
 
-Eternum lays a robust scaffold on which to build higher-level structures and games. It establishes key functional
-systems in the Core layer while introducing fungible resources, serving as a foundation for future development and
-expansion.
+Eternum provides the core infrastructure for building games and applications. It includes:
+
+- Core functional systems
+- Fungible resource framework
+- Extensible architecture
 
 <details>
-<summary> Click to expand</summary>
+<summary>Click to expand</summary>
 
 ### Open World Philosophy
 
-Emphasizing the concept of a truly Autonomous World is pivotal. In our vision, it must embody two key characteristics:
-radical openness and persistence. But what exactly does this entail? Let's delve into both theoretical and mechanical
-perspectives.
+Eternum is built as an Autonomous World with two core principles:
 
-From a theoretical standpoint, radical openness signifies an inclusive world accessible to everyone. This openness
-transcends traditional barriers - there are no gatekeepers, no singular entities exerting control. Instead, it's a space
-where anyone can contribute, build, and actively participate without restrictions.
+1. Radical Openness
 
-Mechanically, radical openness is reflected in the flexibility and adaptability of the world's underlying structures.
-The contracts that define this world are not rigid; they are designed to be extended, forked, and maintained by anyone
-with the willingness and capability to do so.
+- No gatekeepers or central control
+- Anyone can build and contribute
+- Open source and extensible
 
-Envision Eternum as akin to the original cellular structure in a primordial soup. Over time, this basic form dissolves,
-giving rise to a more complex organism. Eternum is the genesis, the starting point from which an intricate and expansive
-world emerges, constantly evolving and reshaping itself in response to the contributions and interactions of its
-inhabitants.
+2. Persistence
+
+- Fully onchain game state
+- Immutable seasons
+- Player-driven evolution
+
+The platform is designed to be forked and extended by the community, serving as the foundation for an expanding
+ecosystem of games and applications.
 
 </details>
 
@@ -70,8 +73,54 @@ inhabitants.
   - Season Resources contracts
 - [Packages](./packages) - Shared libraries
   - [Core](./packages/core) - Eternum SDK
+  - [Provider](./packages/provider) - Game contract interactions
   - [React](./packages/react) - React hooks and components
+  - [Torii](./packages/torii) - On-chain data querying
+  - [Types](./packages/types) - Type definitions
 - [Config](./config) - Configuration and deployment scripts
+
+## Eternum Packages Overview
+
+The Eternum ecosystem is composed of several core packages, each serving a specific role in the development and
+operation of the game and platform:
+
+### Core (`@bibliothecadao/eternum`)
+
+The foundation of the Eternum SDK, providing essential building blocks for applications on Starknet & Dojo. Includes the
+main provider implementation, core data structures, utility functions (such as hex map and resource management), and
+specialized managers for game logic. Enables seamless blockchain integration and protocol interaction.
+
+### Provider (`@bibliothecadao/provider`)
+
+A comprehensive, type-safe interface for interacting with Eternum game contracts. Manages all game transactions (army,
+battle, trading, guild, structure, resource, and quest operations), contract calls, and event handling. Features a smart
+promise queue that batches and optimizes transaction execution for performance and reliability.
+
+### React (`@bibliothecadao/react`)
+
+A collection of shared React hooks and stores designed for Eternum game applications. Provides easy access to game
+state, player data, and contract interactions within React components. Simplifies frontend development by offering hooks
+for realms, resources, and player-owned data, ensuring smooth integration with the Eternum backend.
+
+### Torii (`@bibliothecadao/torii`)
+
+Enables advanced querying of on-chain Eternum data. Supports both gRPC-based queries (via the torii-client) and direct
+SQL queries (via the sql folder), allowing developers to fetch, filter, and aggregate game data efficiently. Ideal for
+analytics, dashboards, and any application requiring rich data access.
+
+### Types (`@bibliothecadao/types`)
+
+A centralized collection of type definitions and constants used throughout the Eternum ecosystem. Ensures type safety
+and consistency across all packages, covering entities, resources, transactions, and system properties. Essential for
+maintaining a robust and reliable codebase.
+
+| Package  | Description                                                                          |
+| -------- | ------------------------------------------------------------------------------------ |
+| Core     | Foundation for Eternum apps: provider, data structures, utilities, and managers.     |
+| Provider | Type-safe interface for all game contract interactions and transaction management.   |
+| React    | Shared React hooks and stores for easy frontend integration with Eternum game state. |
+| Torii    | Advanced on-chain data querying via gRPC and SQL for analytics and dashboards.       |
+| Types    | Centralized type definitions and constants for consistency and type safety.          |
 
 ## Prerequisites
 
