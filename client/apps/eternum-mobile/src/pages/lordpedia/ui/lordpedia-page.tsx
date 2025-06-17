@@ -55,8 +55,6 @@ export function LordpediaPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
-        <div className="flex items-center justify-between p-2"></div>
-
         {/* Section Tabs */}
         <SectionTabs sections={tabSections} activeSection={activeSection} onSectionChange={handleSectionChange} />
       </div>

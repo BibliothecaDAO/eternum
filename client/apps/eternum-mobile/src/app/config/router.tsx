@@ -1,5 +1,7 @@
 import { ChatPage } from "@/pages/chat";
+import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
+import { LordpediaPage } from "@/pages/lordpedia";
 import { RealmPage } from "@/pages/realm";
 import { SettingsPage } from "@/pages/settings";
 import { TradePage } from "@/pages/trade";
@@ -34,9 +36,21 @@ const indexRoute = createRoute({
   beforeLoad: async () => {
     const { isAuthenticated } = useAuth.getState();
     if (isAuthenticated) {
-      throw redirect({ to: ROUTES.REALM });
+      throw redirect({ to: ROUTES.HOME });
     }
   },
+});
+
+const homeRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.HOME,
+  component: HomePage,
+});
+
+const lordpediaRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.LORDPEDIA,
+  component: LordpediaPage,
 });
 
 const realmRoute = createRoute({
@@ -79,7 +93,7 @@ const notFoundRoute = createRoute({
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  protectedLayoutRoute.addChildren([realmRoute, settingsRoute, tradeRoute, chatRoute]),
+  protectedLayoutRoute.addChildren([homeRoute, lordpediaRoute, realmRoute, settingsRoute, tradeRoute, chatRoute]),
   notFoundRoute,
 ]);
 
