@@ -7,7 +7,7 @@ export const Footer = () => {
   const currentPath = matches.at(-1)?.pathname;
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg safe-area-pb">
+    <nav className="fixed bottom-2 left-2 right-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg safe-area-pb">
       <div className="flex justify-center items-center h-16 px-4 gap-2">
         <Link
           to={ROUTES.HOME}
