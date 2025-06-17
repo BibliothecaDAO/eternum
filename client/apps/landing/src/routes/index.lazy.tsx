@@ -140,7 +140,7 @@ function Index() {
               className="text-lg px-8 py-6 relative overflow-hidden group"
               onClick={() =>
                 (window.location.href =
-                  chain === "sepolia" ? "https://next-eternum.realms.world" : "https://eternum.realms.world")
+                  chain === "sepolia" ? "https://dev.eternum.realms.world" : "https://eternum.realms.world")
               }
             >
               <motion.div

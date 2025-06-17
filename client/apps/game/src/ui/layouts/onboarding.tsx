@@ -42,7 +42,7 @@ interface SeasonPassButtonProps {
 }
 
 export const mintUrl =
-  env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://next-empire.realms.world/";
+  env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://dev.empire.realms.world/";
 
 const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
 
