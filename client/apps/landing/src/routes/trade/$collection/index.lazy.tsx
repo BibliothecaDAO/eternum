@@ -105,7 +105,9 @@ function CollectionPage() {
   }, [originalClearAllFilters]);
 
   const [isCompactGrid, setIsCompactGrid] = useState(true);
-  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore();
+  const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
+    "$collection" + collection,
+  );
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const [sweepCount, setSweepCount] = useState(0);
@@ -200,6 +202,7 @@ function CollectionPage() {
                     tokens={paginatedItems}
                     isCompactGrid={isCompactGrid}
                     onToggleSelection={togglePass}
+                    pageId={`$collection${collection}`}
                   />
                 )}
 

@@ -47,7 +47,7 @@ export enum TransactionType {
   SET_ADDRESS_NAME = "set_address_name",
   UPGRADE_LEVEL = "upgrade_level",
   CANCEL_ORDER = "cancel_order",
-  CREATE_MARKETPLACE_ORDER = "create_marketplace_order",
+  CREATE_MARKETPLACE_ORDERS = "create_marketplace_orders",
   ACCEPT_MARKETPLACE_ORDER = "accept_marketplace_order",
   CANCEL_MARKETPLACE_ORDER = "cancel_marketplace_order",
   EDIT_MARKETPLACE_ORDER = "edit_marketplace_order",

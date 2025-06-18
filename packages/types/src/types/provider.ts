@@ -905,14 +905,16 @@ export interface StructureTroopAdjacentTransferProps extends SystemSigner {
   resources: Resource[];
 }
 
-export interface CreateMarketplaceOrderProps {
+export interface CreateMarketplaceOrdersProps {
   marketplace_address: num.BigNumberish;
-  token_id: number;
-  collection_id: number;
-  price: num.BigNumberish;
-  expiration: number;
+  tokens: {
+    token_id: number;
+    collection_id: number;
+    price: num.BigNumberish;
+    expiration: number;
+    cancel_order_id?: num.BigNumberish | null;
+  }[];
   signer: AccountInterface;
-  cancel_order_id?: num.BigNumberish;
 }
 
 export interface AcceptMarketplaceOrdersProps {

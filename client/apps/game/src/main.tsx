@@ -121,7 +121,7 @@ async function init() {
             <Button
               variant="gold"
               className="w-full sm:w-auto"
-              onClick={() => window.open("https://eternum-docs.realms.world/", "_blank")}
+              onClick={() => window.open("https://docs.eternum.realms.world/", "_blank")}
             >
               Docs
             </Button>

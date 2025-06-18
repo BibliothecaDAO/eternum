@@ -51,7 +51,7 @@ export const EditListingDrawer: React.FC<EditListingDrawerProps> = ({
         new_price: priceInWei,
       });
 
-      if (tx?.execution_status === "SUCCEEDED") {
+      if (tx) {
         setOpen(false);
       }
     } catch (error) {
@@ -81,7 +81,7 @@ export const EditListingDrawer: React.FC<EditListingDrawerProps> = ({
             <div className="grid grid-cols-6 gap-2 items-center py-2">
               <div className="flex items-center gap-2 col-span-2">
                 <img src={image} alt={name ?? "Realm"} className="w-8 h-8 rounded" />
-                <span className="truncate max-w-[80px]">{name}</span>
+                <span className="truncate max-w-[120px]">{name}</span>
               </div>
               <div className="text-sm">
                 {price

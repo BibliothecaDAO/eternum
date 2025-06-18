@@ -14,7 +14,7 @@ interface PurchaseDialogProps {
 }
 
 export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) => {
-  const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore();
+  const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore("marketplace-sweep-dialog");
   const totalPrice = getTotalPrice();
   const { acceptOrders } = useMarketplace();
 

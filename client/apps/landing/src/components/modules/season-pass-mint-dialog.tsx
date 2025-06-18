@@ -63,7 +63,10 @@ export default function SeasonPassMintDialog({
             </TypeH2>
             {isMintSuccess && (
               <div className="mb-4 text-center text-sm">
-                Your season passes have now been minted - see them at <Link to="/season-passes">Passes</Link>
+                Your season passes have now been minted - see them at{" "}
+                <Link to="/$collection" params={{ collection: "season-passes" }}>
+                  Passes
+                </Link>
               </div>
             )}
           </div>
@@ -101,7 +104,9 @@ export default function SeasonPassMintDialog({
                   <Button
                     className="mx-auto mt-8"
                     onClick={() => {
-                      mint && mint(realm_ids, address);
+                      if (mint) {
+                        mint(realm_ids, address);
+                      }
                     }}
                     disabled={!address}
                     variant="cta"
