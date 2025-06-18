@@ -1,5 +1,5 @@
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 

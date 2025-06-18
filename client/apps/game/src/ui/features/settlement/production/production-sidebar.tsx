@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, RealmInfo, resources } from "@bibliothecadao/types";

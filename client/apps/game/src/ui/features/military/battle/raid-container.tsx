@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";

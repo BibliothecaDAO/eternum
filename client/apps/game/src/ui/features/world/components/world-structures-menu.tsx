@@ -1,13 +1,16 @@
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { Position } from "@/types/position";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { DisplayedAccess, HyperstructurePanel } from "@/ui/features/infrastructure/hyperstructures/hyperstructure-panel";
+import Button from "@/ui/design-system/atoms/button";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
+import {
+  DisplayedAccess,
+  HyperstructurePanel,
+} from "@/ui/features/infrastructure/hyperstructures/hyperstructure-panel";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import Button from "@/ui/elements/button";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import TextInput from "@/ui/elements/text-input";
-import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   getEntityIdFromKeys,

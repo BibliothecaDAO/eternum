@@ -1,4 +1,4 @@
-import { ResourceCost } from "@/ui/elements/resource-cost";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";

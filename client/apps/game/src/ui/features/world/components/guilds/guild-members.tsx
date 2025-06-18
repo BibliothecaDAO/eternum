@@ -1,5 +1,5 @@
-import Button from "@/ui/elements/button";
-import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import Button from "@/ui/design-system/atoms/button";
+import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { useSocialStore } from "@/ui/features/social/components/socialStore";
 import { GuildMemberList } from "@/ui/features/world/components/guilds/guild-member-list";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";

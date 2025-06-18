@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Headline } from "@/ui/elements/headline";
-import { BuildingType, CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
+import { Headline } from "@/ui/design-system/molecules/headline";
 import { configManager } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 
 export const Transfers = () => {
   return (

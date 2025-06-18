@@ -1,11 +1,11 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import Button from "@/ui/elements/button";
-import { cn } from "@/ui/elements/lib/utils";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
 import { divideByPrecision, getEntityIdFromKeys, getStructureName } from "@bibliothecadao/eternum";

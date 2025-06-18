@@ -1,5 +1,5 @@
-import Button from "@/ui/elements/button";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import Button from "@/ui/design-system/atoms/button";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

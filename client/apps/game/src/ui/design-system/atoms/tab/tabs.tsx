@@ -1,9 +1,9 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import { Tab } from "@/ui/elements/tab/tab";
-import { TabList } from "@/ui/elements/tab/tab-list";
-import { TabPanel } from "@/ui/elements/tab/tab-panel";
-import { TabPanels } from "@/ui/elements/tab/tab-panels";
-import { TabProvider } from "@/ui/elements/tab/tab-provider";
+import { Tab } from "@/ui/design-system/atoms/tab/tab";
+import { TabList } from "@/ui/design-system/atoms/tab/tab-list";
+import { TabPanel } from "@/ui/design-system/atoms/tab/tab-panel";
+import { TabPanels } from "@/ui/design-system/atoms/tab/tab-panels";
+import { TabProvider } from "@/ui/design-system/atoms/tab/tab-provider";
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";

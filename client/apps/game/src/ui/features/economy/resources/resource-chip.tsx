@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,

@@ -1,5 +1,5 @@
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";

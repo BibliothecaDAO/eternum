@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { RealmResourcesIO } from "@/ui/features/economy/resources/realm-resources-io";
-import Button from "@/ui/elements/button";
-import { ResourceCost } from "@/ui/elements/resource-cost";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import {
   configManager,
   divideByPrecision,

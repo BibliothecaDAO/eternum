@@ -1,8 +1,8 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/elements/button";
-import { Checkbox } from "@/ui/elements/checkbox";
-import { Headline } from "@/ui/elements/headline";
-import TextInput from "@/ui/elements/text-input";
+import Button from "@/ui/design-system/atoms/button";
+import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { Headline } from "@/ui/design-system/molecules/headline";
 import { TravelInfo } from "@/ui/features/economy/resources/travel-info";
 import { SelectEntityFromList } from "@/ui/features/economy/trading/select-entity-from-list";
 import { SelectResources } from "@/ui/features/economy/trading/select-resources";

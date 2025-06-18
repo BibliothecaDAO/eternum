@@ -1,5 +1,5 @@
-import { TabContext } from "@/ui/elements/tab/tab-provider";
-import { VARIANTS } from "@/ui/elements/tab/tabs";
+import { TabContext } from "@/ui/design-system/atoms/tab/tab-provider";
+import { VARIANTS } from "@/ui/design-system/atoms/tab/tabs";
 import { Tab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ComponentProps } from "react";

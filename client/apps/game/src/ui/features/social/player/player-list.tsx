@@ -1,7 +1,7 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { SortButton, SortInterface } from "@/ui/elements/sort-button";
-import { SortPanel } from "@/ui/elements/sort-panel";
+import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

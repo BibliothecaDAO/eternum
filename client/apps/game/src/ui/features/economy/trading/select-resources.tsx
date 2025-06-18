@@ -1,8 +1,8 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/elements/button";
-import ListSelect from "@/ui/elements/list-select";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceCost } from "@/ui/elements/resource-cost";
+import Button from "@/ui/design-system/atoms/button";
+import ListSelect from "@/ui/design-system/atoms/list-select";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   canTransferMilitaryResources,
@@ -10,8 +10,8 @@ import {
   getBalance,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const SelectResources = ({

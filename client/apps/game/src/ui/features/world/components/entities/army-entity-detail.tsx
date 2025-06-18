@@ -1,5 +1,7 @@
-import { ArmyCapacity } from "@/ui/elements/army-capacity";
-import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
+import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
+import { InventoryResources } from "@/ui/features/economy/resources/inventory-resources";
+import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { useChatStore } from "@/ui/features/social/chat/useChatStore";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -11,8 +13,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { TroopChip } from "@/ui/features/military/components/troop-chip";
-import { InventoryResources } from "@/ui/features/economy/resources/inventory-resources";
 import { ArmyWarning } from "../armies/army-warning";
 
 interface ArmyEntityDetailProps {

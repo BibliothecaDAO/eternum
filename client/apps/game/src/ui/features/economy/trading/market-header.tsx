@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { CooldownTimer, DefenseTroop } from "@/ui/features/military/components/structure-defence";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";

@@ -1,5 +1,5 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";

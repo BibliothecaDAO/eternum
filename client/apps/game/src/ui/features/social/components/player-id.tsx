@@ -1,10 +1,10 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@/types/position";
-import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
+import Button from "@/ui/design-system/atoms/button";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { RealmResourcesIO } from "@/ui/features/economy/resources/realm-resources-io";
-import Button from "@/ui/elements/button";
-import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import {
   LeaderboardManager,
   getAddressName,

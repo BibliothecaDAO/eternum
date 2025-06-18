@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Headline } from "@/ui/elements/headline";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { memo } from "react";
 import { StructureArrivals } from "../resources/resource-arrival";

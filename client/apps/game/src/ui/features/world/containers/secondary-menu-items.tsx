@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
-import CircleButton from "@/ui/elements/circle-button";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 import { rewards, settings } from "@/ui/features/world/components/config";
 import { Controller } from "@/ui/modules/controller/controller";

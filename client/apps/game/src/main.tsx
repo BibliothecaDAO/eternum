@@ -22,7 +22,7 @@ import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
 import { IS_MOBILE } from "./ui/config";
-import Button from "./ui/elements/button";
+import Button from "./ui/design-system/atoms/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";

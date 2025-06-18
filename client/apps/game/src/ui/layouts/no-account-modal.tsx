@@ -1,6 +1,6 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { ModalContainer } from "@/ui/shared";
 
 export const NoAccountModal = () => {

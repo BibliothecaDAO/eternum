@@ -1,7 +1,7 @@
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import TextInput from "@/ui/elements/text-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useMemo, useRef, useState } from "react";

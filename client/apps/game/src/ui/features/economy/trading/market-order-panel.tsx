@@ -1,8 +1,8 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/elements/button";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {

@@ -1,6 +1,6 @@
-import Button from "@/ui/elements/button";
-import { ResourceCost } from "@/ui/elements/resource-cost";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
 import { TravelInfo } from "@/ui/features/economy/resources/travel-info";
 import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";

@@ -1,12 +1,12 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Headline } from "@/ui/elements/headline";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ResourceCost } from "@/ui/elements/resource-cost";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Tabs } from "@/ui/elements/tab";
+import { Tabs } from "@/ui/design-system/atoms/tab";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

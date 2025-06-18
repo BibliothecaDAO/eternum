@@ -6,9 +6,9 @@ import {
   useBattleLogsStore,
 } from "@/hooks/store/use-battle-logs-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
-import Button from "@/ui/elements/button";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { findResourceById, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   ChevronLeft,

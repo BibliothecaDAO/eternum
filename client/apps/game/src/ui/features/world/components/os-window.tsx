@@ -1,4 +1,4 @@
-import { SecondaryPopup } from "@/ui/elements/secondary-popup";
+import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { motion } from "framer-motion";
 import { ExpandableOSInterface, OSInterface } from "./config";
 

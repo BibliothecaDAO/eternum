@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { QuestReward } from "@/ui/features/economy/resources/quest-reward";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";

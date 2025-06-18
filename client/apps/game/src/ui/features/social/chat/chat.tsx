@@ -7,7 +7,7 @@ import MessageInput from "./components/chat/MessageInput";
 import UserItem from "./components/chat/UserItem";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import CircleButton from "@/ui/elements/circle-button";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
 import {
   chatLogger,
   useConnectionEvents,

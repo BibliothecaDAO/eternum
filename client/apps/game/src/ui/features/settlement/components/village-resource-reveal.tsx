@@ -1,9 +1,9 @@
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import Button from "@/ui/elements/button";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import Button from "@/ui/design-system/atoms/button";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getEntityIdFromKeys, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

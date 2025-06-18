@@ -1,4 +1,4 @@
-import { Tabs } from "@/ui/elements/tab";
+import { Tabs } from "@/ui/design-system/atoms/tab";
 import AddLiquidity from "@/ui/features/economy/banking/add-liquidity";
 import { LiquidityTable } from "@/ui/features/economy/banking/liquidity-table";
 import { ResourceSwap } from "@/ui/features/economy/banking/swap";

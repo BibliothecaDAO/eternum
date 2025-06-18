@@ -5,10 +5,10 @@ import {
   TransferMode,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
-import Button from "@/ui/elements/button";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import Button from "@/ui/design-system/atoms/button";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";

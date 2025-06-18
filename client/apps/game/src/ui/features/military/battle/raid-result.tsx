@@ -1,7 +1,7 @@
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

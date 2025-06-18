@@ -1,9 +1,9 @@
 import { env } from "@/../env";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import TwitterShareButton from "@/ui/elements/twitter-share-button";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { BiomeInfoPanel } from "@/ui/features/world/components/biome-info-panel";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";

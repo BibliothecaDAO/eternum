@@ -1,6 +1,6 @@
 import { sqlApi } from "@/services/api";
-import Button from "@/ui/elements/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import Button from "@/ui/design-system/atoms/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ModalContainer } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { RealmVillageSlot, TokenTransfer } from "@bibliothecadao/torii";
@@ -11,8 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { SettlementMinimap } from "./settlement-minimap";
 import { VillageResourceReveal } from "./village-resource-reveal";
 
-import { cn } from "@/ui/elements/lib/utils";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getVillagePassAddress } from "@/utils/addresses";
 import { ArrowRightIcon } from "lucide-react";
 import RealmJson from "../../../../../../../public/jsons/realms.json";

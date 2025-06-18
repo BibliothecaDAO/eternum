@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { ID } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { memo } from "react";

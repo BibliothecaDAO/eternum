@@ -1,4 +1,4 @@
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { HelpContainer } from "@/ui/features/military/components/help-container";
 import { ModalContainer } from "@/ui/shared";
 import { ActorType, ID } from "@bibliothecadao/types";

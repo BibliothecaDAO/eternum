@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { SelectResource } from "@/ui/elements/select-resource";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { configManager, getStructureName, unpackValue } from "@bibliothecadao/eternum";
 import { useAllRealms } from "@bibliothecadao/react";
 import { ResourcesIds } from "@bibliothecadao/types";

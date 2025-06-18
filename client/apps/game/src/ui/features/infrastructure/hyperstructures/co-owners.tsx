@@ -1,11 +1,11 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { NumberInput } from "@/ui/elements/number-input";
-import { SelectAddress } from "@/ui/elements/select-address";
-import { SortButton, SortInterface } from "@/ui/elements/sort-button";
-import { SortPanel } from "@/ui/elements/sort-panel";
+import Button from "@/ui/design-system/atoms/button";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import { SelectAddress } from "@/ui/design-system/molecules/select-address";
+import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
 import { getAddressName, getStructure } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";

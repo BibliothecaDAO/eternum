@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { ResourceCost } from "@/ui/elements/resource-cost";
+import Button from "@/ui/design-system/atoms/button";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
 import { LiquidityResourceRow } from "@/ui/features/economy/banking/liquidity-resource-row";
 import { LiquidityTableHeader } from "@/ui/features/economy/banking/liquidity-table";

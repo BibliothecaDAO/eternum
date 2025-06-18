@@ -1,11 +1,11 @@
 import { sqlApi } from "@/services/api";
 import { Position as PositionInterface } from "@/types/position";
-import Button from "@/ui/elements/button";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import TextInput from "@/ui/elements/text-input";
-import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

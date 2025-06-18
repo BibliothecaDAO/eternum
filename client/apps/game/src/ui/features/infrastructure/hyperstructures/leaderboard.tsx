@@ -1,6 +1,6 @@
-import Button from "@/ui/elements/button";
-import { SortButton, SortInterface } from "@/ui/elements/sort-button";
-import { SortPanel } from "@/ui/elements/sort-panel";
+import Button from "@/ui/design-system/atoms/button";
+import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getAddressName, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";

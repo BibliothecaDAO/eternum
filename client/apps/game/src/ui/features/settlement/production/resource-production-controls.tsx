@@ -1,7 +1,7 @@
-import Button from "@/ui/elements/button";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Tabs } from "@/ui/elements/tab";
+import Button from "@/ui/design-system/atoms/button";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { Tabs } from "@/ui/design-system/atoms/tab";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";

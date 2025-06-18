@@ -1,6 +1,6 @@
-import { Headline } from "@/ui/elements/headline";
-import { ResourceCost } from "@/ui/elements/resource-cost";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { findResourceById, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 

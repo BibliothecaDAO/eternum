@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 
 interface PWAUpdatePopupProps {
   onUpdate: () => void;

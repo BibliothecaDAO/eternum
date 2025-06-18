@@ -6,7 +6,7 @@ import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-nav
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
 import {
   getUnusedSeasonPasses,

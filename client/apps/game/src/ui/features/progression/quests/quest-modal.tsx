@@ -1,7 +1,7 @@
 import { useSyncQuest } from "@/hooks/helpers/use-sync";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { sqlApi } from "@/services/api";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
 import { getEntityIdFromKeys, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

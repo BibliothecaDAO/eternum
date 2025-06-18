@@ -1,6 +1,6 @@
 import { ReactComponent as CaretDown } from "@/assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
-import TextInput from "@/ui/elements/text-input";
+import TextInput from "@/ui/design-system/atoms/text-input";
 import { Listbox, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { Fragment, ReactNode, useMemo, useRef, useState } from "react";

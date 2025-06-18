@@ -1,5 +1,6 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ResourceChip } from "@/ui/features/economy/resources/resource-chip";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getEntityIdFromKeys, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
@@ -7,7 +8,6 @@ import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao
 import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
-import { ResourceChip } from "@/ui/features/economy/resources/resource-chip";
 
 export const BuildingsList = ({
   realm,

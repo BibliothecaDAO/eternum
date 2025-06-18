@@ -1,4 +1,4 @@
-import { Headline } from "@/ui/elements/headline";
+import { Headline } from "@/ui/design-system/molecules/headline";
 import { ExplorationTable } from "@/ui/features/progression";
 
 export const TheMap = () => {

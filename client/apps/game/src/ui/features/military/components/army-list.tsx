@@ -1,8 +1,8 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { Headline } from "@/ui/elements/headline";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import Button from "@/ui/design-system/atoms/button";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ArmyChip } from "@/ui/features/military/components/army-chip";
 import { ArmyCreate } from "@/ui/features/military/components/army-management-card";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";

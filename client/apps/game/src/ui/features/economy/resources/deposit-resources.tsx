@@ -1,5 +1,5 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { ResourceArrivalManager } from "@bibliothecadao/eternum";

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import TextInput from "@/ui/elements/text-input";
+import Button from "@/ui/design-system/atoms/button";
+import TextInput from "@/ui/design-system/atoms/text-input";
 import { EndSeasonButton, RegisterPointsButton } from "@/ui/features/social";
 import { PlayerCustom, PlayerList } from "@/ui/features/world/components/players/player-list";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";

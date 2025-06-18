@@ -28,26 +28,28 @@ const ActionInstructions = lazy(() =>
 );
 
 const BlankOverlayContainer = lazy(() =>
-  import("../containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
+  import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
 const EntitiesInfoLabel = lazy(() =>
   import("../features/world/components/entities/entities-label").then((module) => ({
     default: module.EntitiesLabel,
   })),
 );
-const TopCenterContainer = lazy(() => import("../containers/top-center-container"));
+const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
-  import("../containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
+  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
 );
-const LeftMiddleContainer = lazy(() => import("../containers/left-middle-container"));
-const RightMiddleContainer = lazy(() => import("../containers/right-middle-container"));
-const TopLeftContainer = lazy(() => import("../containers/top-left-container"));
-const Tooltip = lazy(() => import("../elements/tooltip").then((module) => ({ default: module.Tooltip })));
+const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
+const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
+const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
+const Tooltip = lazy(() =>
+  import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
+);
 const TopMiddleNavigation = lazy(() =>
   import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
 );
 const BottomMiddleContainer = lazy(() =>
-  import("../containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
+  import("../shared/containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
 );
 const LeftNavigationModule = lazy(() =>
   import("../features/world/containers/left-navigation-module").then((module) => ({

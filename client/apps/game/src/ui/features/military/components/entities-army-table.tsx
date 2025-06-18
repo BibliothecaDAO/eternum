@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { Headline } from "@/ui/elements/headline";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ArmyChip, battleSimulation } from "@/ui/features";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";

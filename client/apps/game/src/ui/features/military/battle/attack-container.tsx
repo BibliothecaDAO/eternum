@@ -1,5 +1,5 @@
 import { sqlApi } from "@/services/api";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";

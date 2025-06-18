@@ -1,7 +1,7 @@
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { CurrentQuest } from "@/ui/features/progression/quests/quest-realm-component";
 import { useGetQuests } from "@/ui/features/progression/quests/quest-utils";
 import { currencyFormat } from "@/ui/utils/utils";

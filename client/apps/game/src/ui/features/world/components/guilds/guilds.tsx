@@ -1,7 +1,7 @@
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
-import Button from "@/ui/elements/button";
-import { SortInterface } from "@/ui/elements/sort-button";
-import TextInput from "@/ui/elements/text-input";
+import Button from "@/ui/design-system/atoms/button";
+import { SortInterface } from "@/ui/design-system/atoms/sort-button";
+import TextInput from "@/ui/design-system/atoms/text-input";
 import { useSocialStore } from "@/ui/features/social/components/socialStore";
 import { CreateGuildButton } from "@/ui/features/social/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/features/social/guilds/guild-list";

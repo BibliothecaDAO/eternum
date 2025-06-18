@@ -1,5 +1,5 @@
-import Button from "@/ui/elements/button";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import Button from "@/ui/design-system/atoms/button";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";

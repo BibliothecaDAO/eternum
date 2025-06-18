@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
-import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
-import { Headline } from "@/ui/elements/headline";
-import { ResourceCost } from "@/ui/elements/resource-cost";
-import { StaminaResourceCost } from "@/ui/elements/stamina-resource-cost";
+import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
+import { Headline } from "@/ui/design-system/molecules/headline";
+import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { StaminaResourceCost } from "@/ui/design-system/molecules/stamina-resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ActionPath,

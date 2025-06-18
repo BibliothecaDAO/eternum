@@ -1,4 +1,4 @@
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
 import { X } from "lucide-react";
 import React, { useState } from "react";
 

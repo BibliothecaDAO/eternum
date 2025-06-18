@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { SortButton, SortInterface } from "@/ui/elements/sort-button";
-import { SortPanel } from "@/ui/elements/sort-panel";
+import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";

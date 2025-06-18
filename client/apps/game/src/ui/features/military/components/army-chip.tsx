@@ -1,11 +1,11 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { ArmyCapacity } from "@/ui/elements/army-capacity";
-import Button from "@/ui/elements/button";
-import CircleButton from "@/ui/elements/circle-button";
-import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
+import Button from "@/ui/design-system/atoms/button";
+import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { ArmyManagementCard, HelpModal, InventoryResources, TroopChip } from "@/ui/features";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";

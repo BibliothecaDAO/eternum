@@ -2,17 +2,17 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement/components/settle-realm-component";
-import Button from "@/ui/elements/button";
-import { TermsOfService } from "@/ui/layouts/terms-of-service";
+import Button from "@/ui/design-system/atoms/button";
 import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression/onboarding/steps";
+import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement/components/settle-realm-component";
+import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
 
 interface OnboardingOverlayProps {
   controller?: boolean;

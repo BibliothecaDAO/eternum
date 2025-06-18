@@ -1,4 +1,4 @@
-import { Headline } from "@/ui/elements/headline";
+import { Headline } from "@/ui/design-system/molecules/headline";
 
 export const Guilds = () => {
   return (

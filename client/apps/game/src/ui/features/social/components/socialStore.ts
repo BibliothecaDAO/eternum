@@ -1,4 +1,4 @@
-import { SortInterface } from "@/ui/elements/sort-button"; // Assuming SortInterface is exported from here
+import { SortInterface } from "@/ui/design-system/atoms/sort-button"; // Assuming SortInterface is exported from here
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { create } from "zustand";
 

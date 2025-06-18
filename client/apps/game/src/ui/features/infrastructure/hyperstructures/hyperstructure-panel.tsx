@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import TextInput from "@/ui/elements/text-input";
+import Button from "@/ui/design-system/atoms/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import TextInput from "@/ui/design-system/atoms/text-input";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HyperstructureDetails } from "@/ui/features/infrastructure/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/features/infrastructure/hyperstructures/hyperstructure-resource-chip";
 import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";

@@ -1,7 +1,7 @@
-import { NumberInput } from "@/ui/elements/number-input";
-import { SelectBiome } from "@/ui/elements/select-biome";
-import { SelectTier } from "@/ui/elements/select-tier";
-import { SelectTroop } from "@/ui/elements/select-troop";
+import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { SelectBiome } from "@/ui/design-system/molecules/select-biome";
+import { SelectTier } from "@/ui/design-system/molecules/select-tier";
+import { SelectTroop } from "@/ui/design-system/molecules/select-troop";
 import { formatTypeAndBonuses, getStaminaDisplay } from "@/ui/features/military/battle/combat-utils";
 import {
   CombatParameters,

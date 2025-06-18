@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { Checkbox } from "@/ui/elements/checkbox";
-import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { SelectResource } from "@/ui/elements/select-resource";
+import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/features/economy/trading/trade-history-event";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, Resource } from "@bibliothecadao/types";

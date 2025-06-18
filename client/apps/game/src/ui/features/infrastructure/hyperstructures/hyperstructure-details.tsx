@@ -1,4 +1,4 @@
-import { Tabs } from "@/ui/elements/tab";
+import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
