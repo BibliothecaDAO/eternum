@@ -21,8 +21,8 @@ export const QUERIES = {
       mo."order.collection_id" AS collection_id
     FROM "marketplace-MarketOrderModel" AS mo
     WHERE mo."order.active" = 1
-      AND mo."order.collection_id" = 1  
-      AND mo."order.token_id" = '{tokenId}'
+      AND mo."order.collection_id" = {collectionId}  
+      AND mo."order.token_id" IN ({tokenIds})
     ORDER BY mo."order.price" ASC
   `,
   TOKEN_TRANSFERS: `

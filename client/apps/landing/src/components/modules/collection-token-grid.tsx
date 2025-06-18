@@ -19,6 +19,7 @@ interface CollectionTokenGridProps {
   setIsTransferOpen?: (tokenId?: string) => void;
   isCompactGrid?: boolean;
   onToggleSelection?: (pass: MergedNftData) => void;
+  pageId: string;
 }
 
 export const CollectionTokenGrid = ({
@@ -26,8 +27,9 @@ export const CollectionTokenGrid = ({
   setIsTransferOpen,
   isCompactGrid,
   onToggleSelection,
+  pageId,
 }: CollectionTokenGridProps) => {
-  const isSelected = useSelectedPassesStore((state) => state.isSelected);
+  const isSelected = useSelectedPassesStore(pageId).isSelected;
 
   if (!tokens?.length) {
     return (

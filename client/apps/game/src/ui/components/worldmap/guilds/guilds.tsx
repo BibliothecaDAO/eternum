@@ -6,10 +6,15 @@ import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
 import { useSocialStore } from "@/ui/modules/social/socialStore";
 import { sortItems } from "@/ui/utils/utils";
-import { calculateGuildLordsPrize, getGuildFromPlayerAddress, LeaderboardManager } from "@bibliothecadao/eternum";
+import {
+  calculateGuildLordsPrize,
+  getGuildFromPlayerAddress,
+  LeaderboardManager,
+  toHexString,
+} from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Guilds = ({
@@ -143,6 +148,139 @@ export const Guilds = ({
     [guildsWithStats, guildsGuildSearchTerm, guildInvites, guildsViewGuildInvites, guildsActiveSort],
   );
 
+  const generateSocialData = () => {
+    const leaderboardManager = LeaderboardManager.instance(components);
+
+    const socialData = {
+      timestamp: new Date().toISOString(),
+      gameInfo: {
+        totalPlayers: players.length,
+        totalTribes: guilds.length,
+      },
+      tribes: guildsWithStats.map((guild) => {
+        // For each guild, we need to get the members from the existing player data
+        // since we can't call hooks inside this function
+        const guildPlayers = players.filter((player) => {
+          const playerGuild = getGuildFromPlayerAddress(player.address, components);
+          return playerGuild?.entityId === guild.entityId;
+        });
+
+        // Find tribe owner - the owner's address matches the guild's entityId
+        const owner = guildPlayers.find((player) => player.address === guild.entityId);
+
+        // Calculate total tribe points for prize distribution
+        const totalTribePoints = guildPlayers.reduce((sum, player) => {
+          const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
+          const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+            player.address,
+          );
+          return sum + registeredPoints + unregisteredShareholderPoints;
+        }, 0);
+
+        // Get detailed member info with points and prize calculations
+        const membersWithPoints = guildPlayers.map((player) => {
+          const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
+          const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+            player.address,
+          );
+          const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+          // Calculate prize distribution
+          const isOwner = player.address === guild.entityId;
+          const pointsShare = totalTribePoints > 0 ? totalPoints / totalTribePoints : 0;
+
+          // Owner gets 30% + their share of the remaining 70%
+          // Non-owners get their share of the 70%
+          const ownerBonus = isOwner ? 0.3 : 0;
+          const memberShare = pointsShare * 0.7;
+          const totalShare = ownerBonus + memberShare;
+
+          const lordsReward = guild.prize.lords * totalShare;
+          const strkReward = guild.prize.strk * totalShare;
+
+          return {
+            address: toHexString(player.address),
+            name: player.name,
+            isOwner: isOwner,
+            points: totalPoints,
+            pointsShare: pointsShare,
+            realms: player.realms || 0,
+            mines: player.mines || 0,
+            hyperstructures: player.hyperstructures || 0,
+            villages: player.villages || 0,
+            banks: player.banks || 0,
+            totalLordsReward: lordsReward,
+            totalStrkReward: strkReward,
+            rewards: {
+              lords: lordsReward,
+              strk: strkReward,
+              ownerBonus: isOwner ? guild.prize.lords * 0.3 : 0,
+              ownerBonusStrk: isOwner ? guild.prize.strk * 0.3 : 0,
+              memberShare: guild.prize.lords * memberShare,
+              memberShareStrk: guild.prize.strk * memberShare,
+            },
+          };
+        });
+
+        return {
+          entityId: toHexString(guild.entityId),
+          name: guild.name,
+          rank: guild.rank,
+          isPublic: guild.isPublic,
+          totalPoints: guild.points,
+          totalRealms: guild.realms,
+          totalMines: guild.mines,
+          totalHyperstructures: guild.hyperstructures,
+          memberCount: guild.memberCount,
+          prize: guild.prize,
+          owner: {
+            address: owner ? toHexString(owner.address) : null,
+            name: owner?.name || "Unknown",
+          },
+          members: membersWithPoints,
+        };
+      }),
+      players: players.map((player) => {
+        const guild = getGuildFromPlayerAddress(player.address, components);
+        const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(player.address);
+        const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
+          player.address,
+        );
+        const totalPoints = registeredPoints + unregisteredShareholderPoints;
+
+        return {
+          address: toHexString(player.address),
+          name: player.name,
+          rank: player.rank,
+          points: totalPoints,
+          realms: player.realms || 0,
+          mines: player.mines || 0,
+          hyperstructures: player.hyperstructures || 0,
+          villages: player.villages || 0,
+          banks: player.banks || 0,
+          isAlive: player.isAlive,
+          tribeName: guild?.name || null,
+          tribeEntityId: guild ? toHexString(guild.entityId) : null,
+        };
+      }),
+    };
+
+    return socialData;
+  };
+
+  const downloadSocialData = () => {
+    const socialData = generateSocialData();
+    const blob = new Blob([JSON.stringify(socialData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `eternum-social-data-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCreateGuild = async (guildName: string, isPublic: boolean) => {
     setIsLoading(true);
     try {
@@ -178,9 +316,20 @@ export const Guilds = ({
     <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
       <div className="flex flex-col space-y-4 mb-4">
         <div className="flex flex-row gap-4 justify-between">
-          <Button onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
-            {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
+              {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={downloadSocialData}
+              className="flex items-center gap-2"
+              title="Download social data as JSON"
+            >
+              <Download className="w-4 h-4" />
+              Export Data
+            </Button>
+          </div>
           {playerGuild?.entityId ? (
             <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)}>
               Tribe {playerGuild.name}

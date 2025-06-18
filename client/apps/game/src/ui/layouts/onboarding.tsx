@@ -350,7 +350,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://eternum-docs.realms.world/"
+            href="https://docs.eternum.realms.world/"
             target="_blank"
             rel="noopener noreferrer"
           >

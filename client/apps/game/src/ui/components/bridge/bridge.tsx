@@ -123,7 +123,7 @@ const EfficiencyInfo = ({
   // Mock function for "More Info" link
   const handleMoreInfoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.open("https://eternum-docs.realms.world/mechanics/resources/bridging", "_blank");
+    window.open("https://docs.eternum.realms.world/mechanics/resources/bridging", "_blank");
   };
 
   return (
