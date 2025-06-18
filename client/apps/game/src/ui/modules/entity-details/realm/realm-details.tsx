@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/components/hints/hint-modal";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { Tabs } from "@/ui/elements/tab";
 import { Buildings } from "@/ui/modules/entity-details/realm/buildings";

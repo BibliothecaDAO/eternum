@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ProductionModal } from "@/ui/components/production/production-modal";
-import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { RealmResourcesIO } from "@/ui/features/economy/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import {

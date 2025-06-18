@@ -8,6 +8,7 @@ import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
@@ -20,7 +21,6 @@ import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
-import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { IS_MOBILE } from "./ui/config";
 import Button from "./ui/elements/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";

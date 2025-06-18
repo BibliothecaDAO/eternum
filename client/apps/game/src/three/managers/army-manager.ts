@@ -4,7 +4,7 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
-import { COLORS } from "@/ui/components/settlement/settlement-constants";
+import { COLORS } from "@/ui/features/settlement/components/settlement-constants";
 import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import CircleButton from "@/ui/elements/circle-button";
-import { HintModal } from "../components/hints/hint-modal";
+import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 import { BuildingThumbs } from "../config";
 
 type HintModalButtonProps = {

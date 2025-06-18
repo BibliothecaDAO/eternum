@@ -1,7 +1,7 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { ModalContainer } from "../components/modal-container";
+import { ModalContainer } from "@/ui/shared";
 
 export const NoAccountModal = () => {
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);

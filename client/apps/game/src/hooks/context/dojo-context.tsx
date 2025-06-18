@@ -5,7 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
-import { SpectateButton } from "@/ui/modules/onboarding/steps";
+import { SpectateButton } from "@/ui/features/progression/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
