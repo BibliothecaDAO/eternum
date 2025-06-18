@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { sqlApi } from "@/services/api";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { ArmyCreate } from "@/ui/components/military/army-management-card";
@@ -7,11 +8,12 @@ import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ArmyManager, getStructureName } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
-import { ClientComponents, StructureType } from "@bibliothecadao/types";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { Guard } from "@bibliothecadao/torii";
+import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { PlusIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StructureDefence } from "./structure-defence";
 
 export const EntityArmyList = ({
@@ -21,16 +23,23 @@ export const EntityArmyList = ({
 }) => {
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const [guards, setGuards] = useState<Guard[]>([]);
 
   const explorers = useExplorersByStructure({
     structureEntityId: structure?.entity_id || 0,
   });
 
-  const guards = useGuardsByStructure({
-    structureEntityId: structure?.entity_id || 0,
-  });
-
   const { currentBlockTimestamp } = useBlockTimestamp();
+
+  useEffect(() => {
+    // need to fetch directly from sql because there's an issue with the recs update
+    const fetchGuards = async () => {
+      const guards = await sqlApi.fetchGuardsByStructure(structure?.entity_id || 0);
+      setGuards(guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n));
+    };
+
+    fetchGuards();
+  }, [structure]);
 
   const cooldownSlots = useMemo(() => {
     const slotsTimeLeft: { slot: number; timeLeft: number }[] = [];
@@ -47,10 +56,6 @@ export const EntityArmyList = ({
   const totalExplorersCount = useMemo(() => {
     return explorers.length;
   }, [explorers]);
-
-  const totalGuards = useMemo(() => {
-    return guards.filter((guard) => guard.troops.count > 0n).length;
-  }, [guards]);
 
   const isRealmOrVillage = structure.category === StructureType.Realm || structure.category === StructureType.Village;
 
@@ -80,7 +85,7 @@ export const EntityArmyList = ({
         <div className="text-center">
           <h6>Guards</h6>
           <h5>
-            {totalGuards} / {structure.base.troop_max_guard_count}
+            {guards.length} / {structure.base.troop_max_guard_count}
           </h5>
         </div>
       </div>
@@ -143,7 +148,7 @@ export const EntityArmyList = ({
           maxDefenses={structure.base.troop_max_guard_count}
           troops={guards.map((army) => ({
             slot: army.slot,
-            troops: army.troops,
+            troops: army.troops! as Troops,
           }))}
           cooldownSlots={cooldownSlots}
         />

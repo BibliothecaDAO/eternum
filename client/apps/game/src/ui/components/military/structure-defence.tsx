@@ -239,6 +239,9 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                           isExplorer={false}
                           guardSlot={index}
                           onCancel={() => setExpandedSlot(null)}
+                          onSuccess={() => {
+                            setExpandedSlot(null);
+                          }}
                         />
                       </div>
                     )}

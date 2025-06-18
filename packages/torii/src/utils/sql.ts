@@ -91,3 +91,28 @@ export function extractFirstOrThrow<T>(sqlResult: T[], errorMessage: string): T 
   }
   return sqlResult[0];
 }
+
+/**
+ * Helper function to safely convert hex string to BigInt.
+ * Handles null values, zero values, and invalid hex strings gracefully.
+ *
+ * @param hex The hex string to convert (can be null)
+ * @returns BigInt value or 0n if hex is null/zero/invalid
+ *
+ * @example
+ * hexToBigInt("0x1234") // returns 4660n
+ * hexToBigInt("0x0") // returns 0n
+ * hexToBigInt("0x0000000000000000000000000000000000000000000000000000000000000000") // returns 0n
+ * hexToBigInt(null) // returns 0n
+ * hexToBigInt("invalid") // returns 0n
+ */
+export function hexToBigInt(hex: string | null): bigint {
+  if (!hex || hex === "0x0" || hex === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+    return 0n;
+  }
+  try {
+    return BigInt(hex);
+  } catch {
+    return 0n;
+  }
+}
