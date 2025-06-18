@@ -2,6 +2,7 @@ import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.s
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourcesIds } from "@bibliothecadao/types";
+import { Map } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // Define entity types for the toggle controls
@@ -20,6 +21,7 @@ export const MiniMapNavigation = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const showMinimap = useUIStore((state) => state.showMinimap);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [visibilityStates, setVisibilityStates] = useState({
     realms: true,
     armies: true,
@@ -30,8 +32,29 @@ export const MiniMapNavigation = () => {
   });
 
   const toggleExpand = () => {
+    if (isMinimized) {
+      setIsMinimized(false);
+    }
     setIsExpanded(!isExpanded);
     setTooltip(null);
+  };
+
+  const toggleMinimize = () => {
+    if (isExpanded) {
+      setIsExpanded(false);
+    }
+    setIsMinimized(!isMinimized);
+    setTooltip(null);
+
+    // Notify minimap instance of minimize state change
+    const minimap = (window as any).minimapInstance;
+    if (minimap) {
+      if (!isMinimized) {
+        minimap.setMinimized(true);
+      } else {
+        minimap.setMinimized(false);
+      }
+    }
   };
 
   // Handle screenshot
@@ -58,8 +81,21 @@ export const MiniMapNavigation = () => {
   useEffect(() => {
     const handleResize = () => {
       if (canvasRef.current) {
-        canvasRef.current.width = isExpanded ? window.innerWidth : 350;
-        canvasRef.current.height = isExpanded ? window.innerHeight : 175;
+        let width, height;
+
+        if (isMinimized) {
+          width = 80;
+          height = 40;
+        } else if (isExpanded) {
+          width = window.innerWidth;
+          height = window.innerHeight;
+        } else {
+          width = 350;
+          height = 175;
+        }
+
+        canvasRef.current.width = width;
+        canvasRef.current.height = height;
 
         const resizeEvent = new CustomEvent("canvasResized", {
           detail: {
@@ -79,7 +115,7 @@ export const MiniMapNavigation = () => {
 
     // Cleanup
     return () => window.removeEventListener("resize", handleResize);
-  }, [isExpanded]);
+  }, [isExpanded, isMinimized]);
 
   // Sync with minimap on component mount
   useEffect(() => {
@@ -148,70 +184,80 @@ export const MiniMapNavigation = () => {
     }
   };
 
+  // Handle clicking on minimized minimap to restore
+  const handleMinimizedClick = () => {
+    if (isMinimized) {
+      toggleMinimize();
+    }
+  };
+
   return (
     <div
-      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood panel-wood-corners relative ${
+      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood panel-wood-corners relative transition-all duration-300 ${
         isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : ""
-      }`}
+      } ${isMinimized ? "!w-20 !h-10 cursor-pointer hover:opacity-80" : ""}`}
+      onClick={isMinimized ? handleMinimizedClick : undefined}
     >
       {showMinimap && (
         <>
-          <div className="flex flex-wrap p-1 justify-center gap-2 bg-black/70 border-b border-amber-900/50">
-            {ENTITY_TOGGLES.map((entity) => (
-              <div
-                key={entity.id}
-                className="flex items-center gap-1"
-                onMouseEnter={() =>
-                  setTooltip({
-                    content: `Toggle ${entity.label}`,
-                    position: "top",
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-              >
-                <div className="relative inline-block">
-                  <input
-                    type="checkbox"
-                    id={`toggle-${entity.id}`}
-                    checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
-                    onChange={(e) => handleToggle(entity.id, e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
-                    <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
-                      {visibilityStates[entity.id as keyof typeof visibilityStates] && (
-                        <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#FFF"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-3 h-3 drop-shadow-md"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <img
-                      src={entity.imagePath}
-                      alt={entity.label}
-                      className={`w-4 h-4 mr-1 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+          {!isMinimized && (
+            <div className="flex flex-wrap p-1 justify-center gap-2 bg-black/70 border-b border-amber-900/50">
+              {ENTITY_TOGGLES.map((entity) => (
+                <div
+                  key={entity.id}
+                  className="flex items-center gap-1"
+                  onMouseEnter={() =>
+                    setTooltip({
+                      content: `Toggle ${entity.label}`,
+                      position: "top",
+                    })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  <div className="relative inline-block">
+                    <input
+                      type="checkbox"
+                      id={`toggle-${entity.id}`}
+                      checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
+                      onChange={(e) => handleToggle(entity.id, e.target.checked)}
+                      className="sr-only peer"
                     />
-                    {isExpanded && (
-                      <span
-                        className={`text-white text-opacity-90 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
-                      >
-                        {entity.label}
-                      </span>
-                    )}
-                  </label>
+                    <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
+                      <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
+                        {visibilityStates[entity.id as keyof typeof visibilityStates] && (
+                          <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#FFF"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="w-3 h-3 drop-shadow-md"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <img
+                        src={entity.imagePath}
+                        alt={entity.label}
+                        className={`w-4 h-4 mr-1 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                      />
+                      {isExpanded && (
+                        <span
+                          className={`text-white text-opacity-90 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                        >
+                          {entity.label}
+                        </span>
+                      )}
+                    </label>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="absolute right-2 top-2 flex items-center gap-2 z-10">
             {isExpanded && (
@@ -246,26 +292,63 @@ export const MiniMapNavigation = () => {
                 </svg>
               </div>
             )}
+            {!isMinimized && (
+              <>
+                <div
+                  onClick={toggleMinimize}
+                  className="cursor-pointer hover:opacity-80"
+                  onMouseEnter={() => setTooltip({ content: "Minimize Minimap", position: "top" })}
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      d="M6 12L18 12"
+                      stroke="#E0AF65"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div
+                  onClick={toggleExpand}
+                  className="cursor-pointer hover:opacity-80"
+                  onMouseEnter={() =>
+                    setTooltip({ content: isExpanded ? "Collapse Minimap" : "Expand Minimap", position: "top" })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+                </div>
+              </>
+            )}
+          </div>
+
+          {isMinimized && (
             <div
-              onClick={toggleExpand}
-              className="cursor-pointer hover:opacity-80"
-              onMouseEnter={() =>
-                setTooltip({ content: isExpanded ? "Collapse Minimap" : "Expand Minimap", position: "top" })
-              }
+              className="absolute inset-0 flex items-center justify-center bg-black/80 rounded border border-amber-600/50"
+              onMouseEnter={() => setTooltip({ content: "Click to restore minimap", position: "top" })}
               onMouseLeave={() => setTooltip(null)}
             >
-              {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+              <Map className="w-4 h-4" />
             </div>
-          </div>
+          )}
         </>
       )}
 
       <canvas
         ref={canvasRef}
         id="minimap"
-        width="350"
-        height="175"
-        className={`${showMinimap ? "block" : "hidden"}  ${isExpanded ? "" : ""}`}
+        width={isMinimized ? "80" : isExpanded ? window.innerWidth : "350"}
+        height={isMinimized ? "40" : isExpanded ? window.innerHeight : "175"}
+        className={`${showMinimap ? "block" : "hidden"} transition-all duration-300 ${isMinimized ? "opacity-40 hover:opacity-60" : ""}`}
         style={{
           backgroundColor: isExpanded ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.7)",
           zIndex: 2,
