@@ -1,4 +1,4 @@
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, ResourcesIds, TroopType } from "@bibliothecadao/types";
 

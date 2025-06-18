@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/design-system/atoms/button";
+import { Button } from "@/ui/design-system/atoms";
 import { useMemo, useRef, useState } from "react";
 
 export const TermsOfService = () => {

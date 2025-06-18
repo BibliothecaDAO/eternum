@@ -1,7 +1,7 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/design-system/atoms/button";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { Button } from "@/ui/design-system/atoms";
+import { ResourceIcon } from "@/ui/design-system/molecules";
 import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources/travel-info";

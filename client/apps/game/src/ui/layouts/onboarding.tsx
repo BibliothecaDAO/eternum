@@ -2,7 +2,7 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/design-system/atoms/button";
+import { Button } from "@/ui/design-system/atoms";
 import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression/onboarding/steps";
 import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement/components/settle-realm-component";

@@ -1,8 +1,6 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
-import Button from "@/ui/design-system/atoms/button";
-import ListSelect from "@/ui/design-system/atoms/list-select";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
+import { ResourceCost } from "@/ui/design-system/molecules";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   canTransferMilitaryResources,

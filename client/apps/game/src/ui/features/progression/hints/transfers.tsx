@@ -1,5 +1,5 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Headline } from "@/ui/design-system/molecules/headline";
+import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { BuildingType, CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 

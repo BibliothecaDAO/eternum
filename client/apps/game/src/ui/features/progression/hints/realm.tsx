@@ -1,5 +1,4 @@
-import { Headline } from "@/ui/design-system/molecules/headline";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { Headline, ResourceCost } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { LEVEL_DESCRIPTIONS, RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
 import { useMemo } from "react";

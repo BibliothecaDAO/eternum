@@ -1,7 +1,5 @@
-import Button from "@/ui/design-system/atoms/button";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { SelectResource } from "@/ui/design-system/molecules/select-resource";
+import { Button, NumberInput } from "@/ui/design-system/atoms";
+import { ResourceIcon, SelectResource } from "@/ui/design-system/molecules";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";

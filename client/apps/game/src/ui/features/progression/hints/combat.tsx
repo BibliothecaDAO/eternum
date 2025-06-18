@@ -1,4 +1,4 @@
-import { Headline } from "@/ui/design-system/molecules/headline";
+import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 
 export const Combat = () => {
