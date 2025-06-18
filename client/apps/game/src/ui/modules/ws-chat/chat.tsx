@@ -847,12 +847,6 @@ function ChatModule() {
                 </svg>
               </button>
               <button
-                onClick={() => chatActions.toggleExpand()}
-                className="text-gold/70 hover:text-gold transition-colors p-1"
-              >
-                {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
-              </button>
-              <button
                 onClick={() => chatActions.setMinimized(true)}
                 className="text-gold/70 hover:text-gold transition-colors p-1"
               >
@@ -866,6 +860,12 @@ function ChatModule() {
                 >
                   <path d="M6 12L18 12" stroke="#E0AF65" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+              </button>
+              <button
+                onClick={() => chatActions.toggleExpand()}
+                className="text-gold/70 hover:text-gold transition-colors p-1"
+              >
+                {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
               </button>
             </div>
 

@@ -202,99 +202,98 @@ export const MiniMapNavigation = () => {
       {showMinimap && (
         <>
           {!isMinimized && (
-            <div className="flex flex-wrap p-1 justify-start gap-2 bg-black/70 border-b border-amber-900/50">
-              {ENTITY_TOGGLES.map((entity) => (
-                <div
-                  key={entity.id}
-                  className="flex items-center gap-1"
-                  onMouseEnter={() =>
-                    setTooltip({
-                      content: `Toggle ${entity.label}`,
-                      position: "top",
-                    })
-                  }
-                  onMouseLeave={() => setTooltip(null)}
-                >
-                  <div className="relative inline-block">
-                    <input
-                      type="checkbox"
-                      id={`toggle-${entity.id}`}
-                      checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
-                      onChange={(e) => handleToggle(entity.id, e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
-                      <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
-                        {visibilityStates[entity.id as keyof typeof visibilityStates] && (
-                          <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#FFF"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="w-3 h-3 drop-shadow-md"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <img
-                        src={entity.imagePath}
-                        alt={entity.label}
-                        className={`w-4 h-4 mr-1 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+            <div className="flex flex-wrap p-1 justify-between items-center gap-2 bg-black/70 border-b border-amber-900/50">
+              <div className="flex flex-wrap justify-start gap-2">
+                {ENTITY_TOGGLES.map((entity) => (
+                  <div
+                    key={entity.id}
+                    className="flex items-center gap-1"
+                    onMouseEnter={() =>
+                      setTooltip({
+                        content: `Toggle ${entity.label}`,
+                        position: "top",
+                      })
+                    }
+                    onMouseLeave={() => setTooltip(null)}
+                  >
+                    <div className="relative inline-block">
+                      <input
+                        type="checkbox"
+                        id={`toggle-${entity.id}`}
+                        checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
+                        onChange={(e) => handleToggle(entity.id, e.target.checked)}
+                        className="sr-only peer"
                       />
-                      {isExpanded && (
-                        <span
-                          className={`text-white text-opacity-90 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
-                        >
-                          {entity.label}
-                        </span>
-                      )}
-                    </label>
+                      <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
+                        <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
+                          {visibilityStates[entity.id as keyof typeof visibilityStates] && (
+                            <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#FFF"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-3 h-3 drop-shadow-md"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <img
+                          src={entity.imagePath}
+                          alt={entity.label}
+                          className={`w-4 h-4 mr-1 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                        />
+                        {isExpanded && (
+                          <span
+                            className={`text-white text-opacity-90 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                          >
+                            {entity.label}
+                          </span>
+                        )}
+                      </label>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="absolute right-2 top-2 flex items-center gap-2 z-10">
-            {isExpanded && (
-              <div
-                onClick={handleScreenshot}
-                className="cursor-pointer hover:opacity-80"
-                onMouseEnter={() => setTooltip({ content: "Save World Map", position: "top" })}
-                onMouseLeave={() => setTooltip(null)}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4"
-                >
-                  <path
-                    d="M12 16L12 8M12 16L8 12M12 16L16 12"
-                    stroke="#E0AF65"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M3 15L3 16C3 18.2091 4.79086 20 7 20L17 20C19.2091 20 21 18.2091 21 16L21 15"
-                    stroke="#E0AF65"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                ))}
               </div>
-            )}
-            {!isMinimized && (
-              <>
+
+              {/* Control Buttons */}
+              <div className="flex items-center gap-2">
+                {isExpanded && (
+                  <div
+                    onClick={handleScreenshot}
+                    className="cursor-pointer hover:opacity-80"
+                    onMouseEnter={() => setTooltip({ content: "Save World Map", position: "top" })}
+                    onMouseLeave={() => setTooltip(null)}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4"
+                    >
+                      <path
+                        d="M12 16L12 8M12 16L8 12M12 16L16 12"
+                        stroke="#E0AF65"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M3 15L3 16C3 18.2091 4.79086 20 7 20L17 20C19.2091 20 21 18.2091 21 16L21 15"
+                        stroke="#E0AF65"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                )}
                 <div
                   onClick={toggleMinimize}
                   className="cursor-pointer hover:opacity-80"
@@ -328,9 +327,9 @@ export const MiniMapNavigation = () => {
                 >
                   {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
 
           {isMinimized && (
             <div
