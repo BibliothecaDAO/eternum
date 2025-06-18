@@ -39,7 +39,7 @@ export const EntityArmyList = ({
       const guards = await sqlApi.fetchGuardsByStructure(structure.entity_id);
       return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
     },
-    refetchInterval: 10000, // 10 seconds
+    staleTime: 10000, // 10 seconds
   });
 
   useEffect(() => {
