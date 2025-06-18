@@ -12,6 +12,7 @@ import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";
 import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
+import { useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { StructureDefence } from "./structure-defence";
@@ -31,15 +32,21 @@ export const EntityArmyList = ({
 
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  useEffect(() => {
-    // need to fetch directly from sql because there's an issue with the recs update
-    const fetchGuards = async () => {
-      const guards = await sqlApi.fetchGuardsByStructure(structure?.entity_id || 0);
-      setGuards(guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n));
-    };
+  const { data: guardsData, isLoading: isLoadingGuards } = useQuery({
+    queryKey: ["guards", String(structure?.entity_id)],
+    queryFn: async () => {
+      if (!structure?.entity_id) return [];
+      const guards = await sqlApi.fetchGuardsByStructure(structure.entity_id);
+      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+    },
+    refetchInterval: 10000, // 10 seconds
+  });
 
-    fetchGuards();
-  }, [structure]);
+  useEffect(() => {
+    if (guardsData) {
+      setGuards(guardsData);
+    }
+  }, [guardsData]);
 
   const cooldownSlots = useMemo(() => {
     const slotsTimeLeft: { slot: number; timeLeft: number }[] = [];
