@@ -1,6 +1,7 @@
 import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import CircleButton from "@/ui/elements/circle-button";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Map } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -84,7 +85,7 @@ export const MiniMapNavigation = () => {
         let width, height;
 
         if (isMinimized) {
-          width = 80;
+          width = 40;
           height = 40;
         } else if (isExpanded) {
           width = window.innerWidth;
@@ -193,15 +194,15 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood panel-wood-corners relative transition-all duration-300 ${
+      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood relative transition-all duration-300 ${
         isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : ""
-      } ${isMinimized ? "!w-20 !h-10 cursor-pointer hover:opacity-80" : ""}`}
+      } ${isMinimized ? "cursor-pointer fixed bottom-2 right-2" : ""}`}
       onClick={isMinimized ? handleMinimizedClick : undefined}
     >
       {showMinimap && (
         <>
           {!isMinimized && (
-            <div className="flex flex-wrap p-1 justify-center gap-2 bg-black/70 border-b border-amber-900/50">
+            <div className="flex flex-wrap p-1 justify-start gap-2 bg-black/70 border-b border-amber-900/50">
               {ENTITY_TOGGLES.map((entity) => (
                 <div
                   key={entity.id}
@@ -337,7 +338,14 @@ export const MiniMapNavigation = () => {
               onMouseEnter={() => setTooltip({ content: "Click to restore minimap", position: "top" })}
               onMouseLeave={() => setTooltip(null)}
             >
-              <Map className="w-4 h-4" />
+              <CircleButton
+                onClick={handleMinimizedClick}
+                size="lg"
+                label="Click to restore minimap"
+                tooltipLocation="top"
+              >
+                <Map className="h-6 w-6" />
+              </CircleButton>
             </div>
           )}
         </>
@@ -346,8 +354,8 @@ export const MiniMapNavigation = () => {
       <canvas
         ref={canvasRef}
         id="minimap"
-        width={isMinimized ? "80" : isExpanded ? window.innerWidth : "350"}
-        height={isMinimized ? "40" : isExpanded ? window.innerHeight : "175"}
+        width={isExpanded ? window.innerWidth : "350"}
+        height={isExpanded ? window.innerHeight : "175"}
         className={`${showMinimap ? "block" : "hidden"} transition-all duration-300 ${isMinimized ? "opacity-40 hover:opacity-60" : ""}`}
         style={{
           backgroundColor: isExpanded ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.7)",
