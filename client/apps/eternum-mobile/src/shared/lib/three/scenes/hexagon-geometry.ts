@@ -3,16 +3,32 @@ import { HEX_SIZE } from "./utils";
 
 export const createHexagonShape = (radius: number) => {
   const shape = new THREE.Shape();
-  for (let i = 0; i < 6; i++) {
-    // Adjust the angle to start the first point at the top
-    const angle = (Math.PI / 3) * i - Math.PI / 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    if (i === 0) {
-      shape.moveTo(x, y);
-    } else {
-      shape.lineTo(x, y);
-    }
+
+  // For isometric-like hexagon: width = height * 1.6, tile side length = height / 2
+  // radius parameter represents the height/2, so height = radius * 2
+  const height = radius * 2;
+  const width = height * 1.6;
+  const sideLength = height / 2;
+
+  // Calculate the horizontal radius (half width)
+  const horizontalRadius = width / 2;
+
+  // Create hexagon points with isometric proportions
+  // Top and bottom points use the original radius (height/2)
+  // Side points use the horizontal radius (width/2)
+  const points = [
+    { x: 0, y: radius }, // Top
+    { x: horizontalRadius, y: sideLength / 2 }, // Top-right
+    { x: horizontalRadius, y: -sideLength / 2 }, // Bottom-right
+    { x: 0, y: -radius }, // Bottom
+    { x: -horizontalRadius, y: -sideLength / 2 }, // Bottom-left
+    { x: -horizontalRadius, y: sideLength / 2 }, // Top-left
+  ];
+
+  // Create the shape
+  shape.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    shape.lineTo(points[i].x, points[i].y);
   }
   shape.closePath();
 

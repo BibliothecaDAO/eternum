@@ -100,7 +100,7 @@ export class HexagonMap {
       this.instanceMesh.dispose();
     }
 
-    const hexagonShape = createHexagonShape(HEX_SIZE * 0.9); // 0.9 scale for gaps
+    const hexagonShape = createHexagonShape(HEX_SIZE * 0.98); // 0.9 scale for gaps
     const hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
     const hexagonMaterial = new THREE.MeshLambertMaterial({
       color: 0xffffff, // White base color, will be overridden by instance colors

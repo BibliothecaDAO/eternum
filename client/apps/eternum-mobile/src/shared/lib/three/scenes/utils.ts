@@ -8,11 +8,16 @@ export interface HexPosition {
 export const HEX_SIZE = 1;
 
 export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
-  const hexRadius = HEX_SIZE;
+  const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const hexWidth = hexHeight * 1.6; // width = height * 1.6
+  const sideLength = hexHeight / 2; // tile side length = height / 2
+
+  // For isometric hexagons, we need different spacing calculations
+  // Vertical distance between row centers
+  const vertDist = hexHeight * 0.75; // This remains similar for proper row spacing
+  // Horizontal distance between column centers
+  const horizDist = hexWidth; // Adjusted for the wider hexagons
 
   const col = hexCoords.col;
   const row = hexCoords.row;
@@ -24,11 +29,16 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {
-  const hexRadius = HEX_SIZE;
+  const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const hexWidth = hexHeight * 1.6; // width = height * 1.6
+  const sideLength = hexHeight / 2; // tile side length = height / 2
+
+  // For isometric hexagons, we need different spacing calculations
+  // Vertical distance between row centers
+  const vertDist = hexHeight * 0.75; // This remains similar for proper row spacing
+  // Horizontal distance between column centers
+  const horizDist = hexWidth; // Adjusted for the wider hexagons
 
   const row = Math.round(worldPosition.z / vertDist);
   const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
