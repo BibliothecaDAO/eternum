@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { SCENE_COLORS } from "../constants";
+import { BaseScene } from "./base-scene";
+import { HexagonMap } from "./hexagon-map";
 
-export class WorldmapScene {
+export class WorldmapScene implements BaseScene {
   private scene: THREE.Scene;
+  private hexagonMap!: HexagonMap;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -10,28 +12,12 @@ export class WorldmapScene {
   }
 
   private createScene(): void {
-    this.addDummyObjects();
     this.addLighting();
+    this.createHexagonMap();
   }
 
-  private addDummyObjects(): void {
-    const colors = SCENE_COLORS.worldmap;
-
-    // Create ground plane
-    const planeGeometry = new THREE.PlaneGeometry(20, 20);
-    const planeMaterial = new THREE.MeshLambertMaterial({ color: colors.plane });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-    plane.receiveShadow = true;
-    this.scene.add(plane);
-
-    // Create box
-    const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-    const boxMaterial = new THREE.MeshLambertMaterial({ color: colors.box });
-    const box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.set(0, 1, 0);
-    box.castShadow = true;
-    this.scene.add(box);
+  private createHexagonMap(): void {
+    this.hexagonMap = new HexagonMap(this.scene);
   }
 
   private addLighting(): void {
@@ -50,7 +36,22 @@ export class WorldmapScene {
     return this.scene;
   }
 
+  public getHexagonMap(): HexagonMap {
+    return this.hexagonMap;
+  }
+
+  public update(camera: THREE.Camera): void {
+    // Update chunk loading based on camera position
+    this.hexagonMap.updateChunkLoading(camera.position);
+  }
+
+  public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
+    this.hexagonMap.handleClick(mouse, camera);
+  }
+
   public dispose(): void {
+    this.hexagonMap.dispose();
+
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         object.geometry.dispose();

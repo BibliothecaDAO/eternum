@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG, SCENE_COLORS } from "./constants";
+import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants";
+import { BaseScene } from "./scenes/base-scene";
+import { GenericScene } from "./scenes/generic-scene";
 import { WorldmapScene } from "./scenes/worldmap-scene";
 
 export class GameRenderer {
@@ -9,15 +11,17 @@ export class GameRenderer {
   private renderer: THREE.WebGLRenderer;
   private currentScene: string;
   private scenes: Map<string, THREE.Scene>;
-  private sceneInstances: Map<string, any>; // Store scene class instances
+  private sceneInstances: Map<string, BaseScene>; // Store scene class instances
   private controls: OrbitControls;
   private animationId: number | null = null;
   private isDisposed = false;
+  private mouse: THREE.Vector2;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scenes = new Map();
     this.sceneInstances = new Map();
     this.currentScene = "worldmap";
+    this.mouse = new THREE.Vector2();
 
     // Initialize Three.js components
     this.scene = new THREE.Scene();
@@ -34,11 +38,45 @@ export class GameRenderer {
       this.setupCamera();
       this.setupControls();
       this.setupLighting();
+      this.setupEventListeners(canvas);
       this.createDefaultScenes();
       this.switchScene(this.currentScene);
     } catch (error) {
       console.error("Failed to initialize GameRenderer:", error);
       throw error;
+    }
+  }
+
+  private setupEventListeners(canvas: HTMLCanvasElement): void {
+    // Handle click events
+    canvas.addEventListener("click", (event) => this.handleClick(event));
+    canvas.addEventListener("touchend", (event) => this.handleTouch(event));
+  }
+
+  private handleClick(event: MouseEvent): void {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.processClick();
+  }
+
+  private handleTouch(event: TouchEvent): void {
+    if (event.changedTouches.length > 0) {
+      const touch = event.changedTouches[0];
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+      this.processClick();
+    }
+  }
+
+  private processClick(): void {
+    // Handle click for current scene
+    const currentSceneInstance = this.sceneInstances.get(this.currentScene);
+    if (currentSceneInstance && currentSceneInstance.handleClick) {
+      currentSceneInstance.handleClick(this.mouse, this.camera);
     }
   }
 
@@ -78,7 +116,16 @@ export class GameRenderer {
 
     this.controls.addEventListener("change", () => {
       this.render();
+      this.updateCurrentScene();
     });
+  }
+
+  private updateCurrentScene(): void {
+    // Update current scene - scene handles its own logic
+    const currentSceneInstance = this.sceneInstances.get(this.currentScene);
+    if (currentSceneInstance) {
+      currentSceneInstance.update(this.camera);
+    }
   }
 
   private setupLighting(): void {
@@ -100,46 +147,18 @@ export class GameRenderer {
   }
 
   public createScene(sceneId: string): void {
+    let sceneInstance: BaseScene;
+
     if (sceneId === "worldmap") {
       // Use the dedicated WorldmapScene class
-      const worldmapScene = new WorldmapScene();
-      this.scenes.set(sceneId, worldmapScene.getScene());
-      this.sceneInstances.set(sceneId, worldmapScene);
+      sceneInstance = new WorldmapScene();
     } else {
-      // Use the generic scene creation for other scenes
-      const scene = new THREE.Scene();
-      this.addDummyObjects(scene, sceneId);
-      this.scenes.set(sceneId, scene);
+      // Use the generic scene for other scenes
+      sceneInstance = new GenericScene(sceneId);
     }
-  }
 
-  private addDummyObjects(scene: THREE.Scene, sceneId: string): void {
-    const colors = SCENE_COLORS[sceneId as keyof typeof SCENE_COLORS] || SCENE_COLORS.worldmap;
-
-    // Create ground plane
-    const planeGeometry = new THREE.PlaneGeometry(20, 20);
-    const planeMaterial = new THREE.MeshLambertMaterial({ color: colors.plane });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-    plane.receiveShadow = true;
-    scene.add(plane);
-
-    // Create box
-    const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-    const boxMaterial = new THREE.MeshLambertMaterial({ color: colors.box });
-    const box = new THREE.Mesh(boxGeometry, boxMaterial);
-    box.position.set(0, 1, 0);
-    box.castShadow = true;
-    scene.add(box);
-
-    // Add lighting to scene
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
+    this.scenes.set(sceneId, sceneInstance.getScene());
+    this.sceneInstances.set(sceneId, sceneInstance);
   }
 
   public switchScene(sceneId: string): void {
@@ -215,9 +234,7 @@ export class GameRenderer {
 
     // Dispose of scene instances
     this.sceneInstances.forEach((sceneInstance) => {
-      if (sceneInstance && typeof sceneInstance.dispose === "function") {
-        sceneInstance.dispose();
-      }
+      sceneInstance.dispose();
     });
 
     // Dispose of Three.js resources
