@@ -1,7 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { useSocialStore } from "@/ui/features/social";
-import { GuildMemberList } from "@/ui/features/world/components/guilds/guild-member-list";
+import { GuildMemberList, useSocialStore } from "@/ui/features/social";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, useGuildMembers, useGuildWhitelist } from "@bibliothecadao/react";

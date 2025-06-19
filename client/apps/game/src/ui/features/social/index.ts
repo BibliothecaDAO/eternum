@@ -18,7 +18,7 @@ export { Guilds } from "./guilds/guilds";
 
 // Player Interactions
 export { PlayerId } from "./components/player-id";
-export { PlayerList } from "./player/player-list";
+export { PlayerList, type PlayerCustom } from "./player/player-list";
 export { PlayersPanel } from "./player/players-panel";
 
 // Social Components

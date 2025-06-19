@@ -19,18 +19,6 @@ export { EntitiesLabel } from "./components/entities/entities-label";
 export { QuestEntityDetail } from "./components/entities/quest-entity-detail";
 export { StructureEntityDetail } from "./components/entities/structure-entity-detail";
 
-// Guilds
-export { CreateGuildButton } from "./components/guilds/create-guild-button";
-export { GuildInviteList } from "./components/guilds/guild-invites-list";
-export { GuildListHeader, GuildRow } from "./components/guilds/guild-list";
-export { GuildMemberList } from "./components/guilds/guild-member-list";
-export { GuildMembers } from "./components/guilds/guild-members";
-export { Guilds } from "./components/guilds/guilds";
-
-// Players
-export { PlayerList } from "./components/players/player-list";
-export { PlayersPanel } from "./components/players/players-panel";
-
 // Structures
 export { ImmunityTimer } from "./components/structures/immunity-timer";
 

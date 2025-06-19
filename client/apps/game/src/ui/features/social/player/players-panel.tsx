@@ -1,8 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { EndSeasonButton, RegisterPointsButton } from "@/ui/features/social";
-import { PlayerCustom, PlayerList } from "@/ui/features/world/components/players/player-list";
+import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, getStructureName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
