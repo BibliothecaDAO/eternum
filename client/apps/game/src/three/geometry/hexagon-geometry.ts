@@ -1,4 +1,4 @@
-import { HEX_SIZE } from "@/three/scenes/constants";
+import { HEX_SIZE } from "@/three/constants/scene-constants";
 import * as THREE from "three";
 
 export const createHexagonShape = (radius: number) => {

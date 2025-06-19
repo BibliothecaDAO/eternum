@@ -17,9 +17,9 @@ import {
   useRoomEvents,
   useRoomMessageEvents,
   useUserEvents,
-} from "./hooks/useSocketEvents";
+} from "./hooks/use-socket-events";
 import { Message, Room } from "./types";
-import { useChatStore } from "./useChatStore";
+import { useChatStore } from "./use-chat-store";
 import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./utils/filter-utils";
 import { groupMessagesBySender } from "./utils/message-utils";
 import { generateUserCredentials, initialToken, initialUserId } from "./utils/user-credentials";

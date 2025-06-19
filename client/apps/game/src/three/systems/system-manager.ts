@@ -14,8 +14,7 @@ import {
 } from "@bibliothecadao/types";
 import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { loggedInAccount } from "../helpers/utils";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../constants/scene-constants";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
@@ -24,6 +23,7 @@ import {
   type StructureSystemUpdate,
   type TileSystemUpdate,
 } from "../types";
+import { loggedInAccount } from "../utils/utils";
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,

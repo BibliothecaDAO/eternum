@@ -1,16 +1,16 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
-import { isAddressEqualToAccount } from "@/three/helpers/utils";
+import { GUIManager } from "@/three/utils/gui-manager";
+import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
-import { COLORS } from "@/ui/features/settlement/components/settlement-constants";
+import { COLORS } from "@/ui/features/settlement/constants";
 import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { findShortestPath } from "../helpers/pathfinding";
+import { findShortestPath } from "../utils/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import {

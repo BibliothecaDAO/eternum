@@ -1,4 +1,4 @@
-import { GUIManager } from "@/three/helpers/gui-manager";
+import { GUIManager } from "@/three/utils/gui-manager";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";

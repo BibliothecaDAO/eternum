@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type ChatClient from "../client/client";
 import { Message, Room, User } from "../types";
-import { useChatStore } from "../useChatStore";
+import { useChatStore } from "../use-chat-store";
 
 // Configurable chat logging utility
 export const chatLogger = {

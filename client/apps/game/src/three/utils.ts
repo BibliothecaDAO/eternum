@@ -1,7 +1,7 @@
 import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { HEX_SIZE } from "./scenes/constants";
+import { HEX_SIZE } from "./constants/scene-constants";
 
 export const hashCoordinates = (x: number, y: number): number => {
   // Simple hash function to generate a deterministic value between 0 and 1

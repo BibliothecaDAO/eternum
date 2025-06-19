@@ -1,14 +1,14 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
-import { LocationManager } from "@/three/helpers/location-manager";
-import { gltfLoader } from "@/three/helpers/utils";
+import { HEX_SIZE, biomeModelPaths } from "@/three/constants/scene-constants";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { type SceneManager } from "@/three/scene-manager";
-import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
+import { GUIManager } from "@/three/utils/gui-manager";
+import { LocationManager } from "@/three/utils/location-manager";
+import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";

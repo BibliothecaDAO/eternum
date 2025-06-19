@@ -3,10 +3,10 @@ import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { tracks } from "../helpers/use-music";
-import { BuildModeStore, createBuildModeStoreSlice } from "./_build-mode-store";
-import { createPopupsSlice, PopupsStore } from "./_popups-store";
-import { createThreeStoreSlice, ThreeStore } from "./_three-store";
+import { BuildModeStore, createBuildModeStoreSlice } from "./use-build-mode-store";
+import { createPopupsSlice, PopupsStore } from "./use-popups-store";
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
+import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipType = {

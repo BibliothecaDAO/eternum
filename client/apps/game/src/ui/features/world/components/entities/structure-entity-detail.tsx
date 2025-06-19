@@ -10,7 +10,7 @@ import {
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position } from "@/types/position";
-import { useChatStore } from "@/ui/features/social/chat/useChatStore";
+import { useChatStore } from "@/ui/features/social/chat/use-chat-store";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";

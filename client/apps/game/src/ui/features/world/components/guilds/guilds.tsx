@@ -2,7 +2,7 @@ import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { useSocialStore } from "@/ui/features/social/components/socialStore";
+import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { CreateGuildButton } from "@/ui/features/social/guilds/create-guild-button";
 import { GuildListHeader, GuildRow } from "@/ui/features/social/guilds/guild-list";
 import { sortItems } from "@/ui/utils/utils";

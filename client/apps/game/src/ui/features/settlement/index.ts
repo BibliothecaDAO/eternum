@@ -11,10 +11,9 @@ export { SettlementMinimapModal } from "./components/settlement-minimap-modal";
 export { VillageResourceReveal } from "./components/village-resource-reveal";
 
 // Settlement State & Utils
-export * from "./components/settlement-constants";
-export * from "./components/settlement-types";
-export * from "./components/settlement-utils";
-export { default as settlementStore } from "./components/settlementStore";
+export * from "./constants";
+export * from "./utils";
+export { default as settlementStore } from "@/hooks/store/use-settlement-store";
 export { useCanvasInteractions } from "./components/use-canvas-interactions";
 export { useSettlementState } from "./components/use-settlement-state";
 

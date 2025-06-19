@@ -1,4 +1,4 @@
-import { SettlementLocation } from "@/ui/features";
+import { SettlementLocation } from "../utils/settlement-types";
 import { ModalContainer } from "@/ui/shared";
 import { SettlementMinimap } from "./settlement-minimap";
 

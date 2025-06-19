@@ -14,7 +14,7 @@ import {
   SeasonPassRealm,
 } from "@/ui/features/settlement/components/settle-realm-component";
 import { SettlementMinimapModal } from "@/ui/features/settlement/components/settlement-minimap-modal";
-import { SettlementLocation } from "@/ui/features/settlement/components/settlement-types";
+import { SettlementLocation } from "@/ui/features/settlement/utils";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";

@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
+import { GUIManager } from "@/three/utils/gui-manager";
 import { Navigator } from "@/three/managers/navigator";
 import { SceneManager } from "@/three/scene-manager";
 import * as THREE from "three";

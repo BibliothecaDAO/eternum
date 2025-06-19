@@ -1,13 +1,13 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
+import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
@@ -40,8 +40,6 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
-import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import {
   BUILDINGS_CATEGORIES_TYPES,
   BUILDINGS_GROUPS,
@@ -52,7 +50,9 @@ import {
   castleLevelToRealmCastle,
   hyperstructureStageToModel,
   structureTypeToBuildingType,
-} from "./constants";
+} from "../constants/scene-constants";
+import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
+import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const loader = gltfLoader;
 

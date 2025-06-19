@@ -1,7 +1,7 @@
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
-import { SettlementLocation } from "./settlement-types";
-import useSettlementStore from "./settlementStore";
+import { SettlementLocation } from "../utils/settlement-types";
+import useSettlementStore from "@/hooks/store/use-settlement-store";
 
 /**
  * Custom hook for managing settlement state using Zustand

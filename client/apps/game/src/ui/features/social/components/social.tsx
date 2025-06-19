@@ -17,7 +17,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PlayerId } from "./player-id";
-import { useSocialStore } from "./socialStore";
+import { useSocialStore } from "./use-social-store";
 
 export const Social = () => {
   const {

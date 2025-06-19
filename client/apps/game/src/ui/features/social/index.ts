@@ -3,9 +3,9 @@
 
 // Chat System
 export { default as Chat } from "./chat/chat";
-export * from "./chat/hooks/useSocketEvents";
+export * from "./chat/hooks/use-socket-events";
 export * from "./chat/types";
-export { useChatStore } from "./chat/useChatStore";
+export { useChatStore } from "./chat/use-chat-store";
 export * from "./chat/utils";
 
 // Guild Management
@@ -25,4 +25,4 @@ export { PlayersPanel } from "./player/players-panel";
 export { EndSeasonButton } from "./components/end-season-button";
 export { RegisterPointsButton } from "./components/register-points-button";
 export { Social } from "./components/social";
-export { useSocialStore } from "./components/socialStore";
+export { useSocialStore } from "./components/use-social-store";

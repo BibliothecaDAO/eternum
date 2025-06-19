@@ -10,7 +10,7 @@ import ReactDOM from "react-dom/client";
 
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
-import { dojoConfig } from "../dojoConfig";
+import { dojoConfig } from "../dojo-config";
 import { env } from "../env";
 import App from "./app";
 import { initialSync } from "./dojo/sync";

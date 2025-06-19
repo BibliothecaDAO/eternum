@@ -1,8 +1,8 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
+import { StructureModelPaths } from "@/three/constants/scene-constants";
 import InstancedModel from "@/three/managers/instanced-model";
-import { StructureModelPaths } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";

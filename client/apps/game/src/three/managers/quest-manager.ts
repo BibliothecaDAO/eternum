@@ -3,13 +3,13 @@ import { Position } from "@/types/position";
 import { FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { gltfLoader } from "../helpers/utils";
-import { QuestModelPaths } from "../scenes/constants";
+import { QuestModelPaths } from "../constants/scene-constants";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createContentContainer, createLabelBase, transitionManager } from "../utils/label-utils";
+import { gltfLoader } from "../utils/utils";
 const MAX_INSTANCES = 1000;
 
 const ICONS = {

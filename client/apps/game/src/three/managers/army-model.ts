@@ -1,5 +1,5 @@
-import { gltfLoader } from "@/three/helpers/utils";
 import { CameraView } from "@/three/scenes/hexagon-scene";
+import { gltfLoader } from "@/three/utils/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
@@ -13,8 +13,8 @@ import {
   MAX_INSTANCES,
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
-} from "../constants/army.constants";
-import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army.types";
+} from "../constants/army-constants";
+import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
 import { transitionManager } from "../utils/label-utils";
 

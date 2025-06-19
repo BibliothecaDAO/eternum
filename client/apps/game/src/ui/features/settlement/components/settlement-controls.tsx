@@ -1,5 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
-import { SettlementLocation } from "./settlement-types";
+import { SettlementLocation } from "../utils/settlement-types";
 
 interface CoordinateInputProps {
   value: number | string;

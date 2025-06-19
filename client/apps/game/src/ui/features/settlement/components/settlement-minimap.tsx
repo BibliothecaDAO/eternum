@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { SettlementCanvas } from "./settlement-canvas";
-import { BANK_ICON_PATH } from "./settlement-constants";
+import { BANK_ICON_PATH } from "../constants";
 import { ConfirmButton, SettlementControls } from "./settlement-controls";
-import { SettlementMinimapProps } from "./settlement-types";
+import { SettlementMinimapProps } from "../utils/settlement-types";
 import { useCanvasInteractions } from "./use-canvas-interactions";
 import { useSettlementState } from "./use-settlement-state";
 

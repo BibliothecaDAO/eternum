@@ -5,7 +5,7 @@ import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { SettlementLocation } from "@/ui/features";
+import { SettlementLocation } from "../utils/settlement-types";
 import { SettlementMinimapModal } from "@/ui/features/settlement/components/settlement-minimap-modal";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getSeasonPassAddress } from "@/utils/addresses";

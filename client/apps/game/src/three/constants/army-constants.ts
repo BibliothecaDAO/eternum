@@ -1,5 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { ModelType } from "../types/army.types";
+import { ModelType } from "../types/army";
 
 export const MAX_INSTANCES = 1000;
 export const ANIMATION_STATE_IDLE = 0;

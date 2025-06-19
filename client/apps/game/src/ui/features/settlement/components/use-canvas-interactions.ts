@@ -7,9 +7,9 @@ import {
   MIN_ZOOM_RANGE,
   MINIMAP_HEIGHT,
   MINIMAP_WIDTH,
-} from "./settlement-constants";
-import { MapViewState, SettlementLocation } from "./settlement-types";
-import { normalizedToContractCoords } from "./settlement-utils";
+} from "../constants";
+import { MapViewState, SettlementLocation } from "../utils/settlement-types";
+import { normalizedToContractCoords } from "../utils/settlement-utils";
 
 interface CanvasInteractionsProps {
   availableLocations: SettlementLocation[];
