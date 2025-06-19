@@ -13,7 +13,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [nexus6Players, setNexus6Players] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams'>('victory');
+  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'cosmetic'>('victory');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -397,6 +397,8 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         return renderCartridgePrizes();
       case 'daydreams':
         return renderDaydreamsPrizes();
+      case 'cosmetic':
+        return renderCosmeticRewards();
       default:
         return null;
     }
@@ -713,6 +715,29 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
     );
   };
 
+  const renderCosmeticRewards = () => {
+    return (
+      <div className="cosmetic-prizes">
+        <div className="cosmetic-header">
+          <div className="cosmetic-title">
+            <h3>🎨 S1 Cosmetic Rewards</h3>
+            <p className="cosmetic-subtitle">
+              Special cosmetic rewards for Season 1 participants
+            </p>
+          </div>
+        </div>
+
+        <div className="coming-soon-container">
+          <div className="coming-soon-content">
+            <div className="coming-soon-icon">🎨</div>
+            <h3>Coming Soon</h3>
+            <p>Cosmetic reward details will be announced soon.</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderVictoryPrizes = () => {
     if (loading) {
       return (
@@ -937,6 +962,13 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           onClick={() => setSelectedRewardType('daydreams')}
         >
           🤖 Daydreams Agents
+        </button>
+        <button
+          className={`reward-type-btn ${selectedRewardType === 'cosmetic' ? 'active' : ''}`}
+          onClick={() => setSelectedRewardType('cosmetic')}
+          title="Coming Soon"
+        >
+          🎨 S1 Cosmetic Reward
         </button>
       </div>
       
