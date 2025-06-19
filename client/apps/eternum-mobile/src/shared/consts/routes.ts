@@ -6,4 +6,5 @@ export const ROUTES = {
   SETTINGS: "/settings",
   TRADE: "/trade",
   CHAT: "/chat",
+  WORLDMAP: "/worldmap",
 } as const;

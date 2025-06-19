@@ -20,7 +20,7 @@ const appIcons: AppIcon[] = [
     id: "worldmap",
     name: "World Map",
     icon: "/images/icons/worldmap.png",
-    route: ROUTES.HOME, // dummy
+    route: ROUTES.WORLDMAP,
   },
   {
     id: "armies",
