@@ -12,6 +12,10 @@ export class HexagonMap {
   private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
 
+  // Chunk loading optimization
+  private lastChunkX: number = -999;
+  private lastChunkZ: number = -999;
+
   // Map constants
   private static readonly MAP_SIZE = 20; // 20x20 hexagons total
   private static readonly CHUNK_LOAD_RADIUS = 1; // Load chunks within this radius
@@ -34,6 +38,10 @@ export class HexagonMap {
     // Load initial chunks (center area)
     const centerChunkX = Math.floor(HexagonMap.MAP_SIZE / 2 / HexagonMap.CHUNK_SIZE);
     const centerChunkZ = Math.floor(HexagonMap.MAP_SIZE / 2 / HexagonMap.CHUNK_SIZE);
+
+    // Set initial chunk position
+    this.lastChunkX = centerChunkX;
+    this.lastChunkZ = centerChunkZ;
 
     this.updateVisibleHexes(centerChunkX, centerChunkZ);
   }
@@ -84,8 +92,6 @@ export class HexagonMap {
         }
       }
     }
-
-    console.log(`Loaded chunk: ${chunkX},${chunkZ}`);
   }
 
   private renderHexes(): void {
@@ -94,10 +100,10 @@ export class HexagonMap {
       this.instanceMesh.dispose();
     }
 
-    const hexagonShape = createHexagonShape(HEX_SIZE);
+    const hexagonShape = createHexagonShape(HEX_SIZE * 0.9); // 0.9 scale for gaps
     const hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
     const hexagonMaterial = new THREE.MeshLambertMaterial({
-      color: 0x4a90e2,
+      color: 0xffffff, // White base color, will be overridden by instance colors
       transparent: true,
       opacity: 0.8,
     });
@@ -108,16 +114,30 @@ export class HexagonMap {
 
     this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, hexagonMaterial, instanceCount);
 
+    // Set up per-instance colors
+    this.instanceMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
+
     let index = 0;
     this.visibleHexes.forEach((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
       const position = getWorldPositionForHex({ col, row });
+
+      // Simple positioning without random offsets
       this.dummy.position.set(position.x, 0.1, position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
       this.instanceMesh!.setMatrixAt(index, this.dummy.matrix);
+
+      // Set default blue color for each instance
+      this.instanceMesh!.setColorAt(index, new THREE.Color(0x4a90e2));
+
       index++;
     });
+
+    // Update instance colors
+    if (this.instanceMesh!.instanceColor) {
+      this.instanceMesh!.instanceColor.needsUpdate = true;
+    }
 
     this.scene.add(this.instanceMesh);
   }
@@ -131,8 +151,13 @@ export class HexagonMap {
     const chunkX = Math.floor(hexCol / HexagonMap.CHUNK_SIZE);
     const chunkZ = Math.floor(hexRow / HexagonMap.CHUNK_SIZE);
 
-    // Update visible hexes around camera
-    this.updateVisibleHexes(chunkX, chunkZ);
+    // Only update if we've moved to a different chunk
+    if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ) {
+      console.log(`Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})`);
+      this.updateVisibleHexes(chunkX, chunkZ);
+      this.lastChunkX = chunkX;
+      this.lastChunkZ = chunkZ;
+    }
   }
 
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
@@ -164,13 +189,19 @@ export class HexagonMap {
   private showClickFeedback(instanceId: number): void {
     if (!this.instanceMesh) return;
 
-    // Create a temporary highlight effect
-    const originalColor = (this.instanceMesh.material as THREE.MeshLambertMaterial).color.getHex();
-    (this.instanceMesh.material as THREE.MeshLambertMaterial).color.setHex(0xff6b6b);
+    // Change color of only the clicked instance
+    const originalColor = new THREE.Color();
+    this.instanceMesh.getColorAt(instanceId, originalColor);
 
+    // Set clicked instance to red
+    this.instanceMesh.setColorAt(instanceId, new THREE.Color(0xff6b6b));
+    this.instanceMesh.instanceColor!.needsUpdate = true;
+
+    // Restore original color after 200ms
     setTimeout(() => {
       if (this.instanceMesh) {
-        (this.instanceMesh.material as THREE.MeshLambertMaterial).color.setHex(originalColor);
+        this.instanceMesh.setColorAt(instanceId, originalColor);
+        this.instanceMesh.instanceColor!.needsUpdate = true;
       }
     }, 200);
   }
