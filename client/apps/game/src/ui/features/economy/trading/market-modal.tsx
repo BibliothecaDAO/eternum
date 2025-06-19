@@ -28,9 +28,7 @@ const MarketOrderPanel = lazy(() =>
   import("@/ui/features/economy/trading").then((module) => ({ default: module.MarketOrderPanel })),
 );
 
-const BankPanel = lazy(() =>
-  import("@/ui/features/economy/banking").then((module) => ({ default: module.BankList })),
-);
+const BankPanel = lazy(() => import("@/ui/features/economy/banking").then((module) => ({ default: module.BankList })));
 
 const MarketTradingHistory = lazy(() =>
   import("@/ui/features/economy/trading").then((module) => ({
