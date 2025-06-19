@@ -3,8 +3,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { HyperstructureDetails } from "@/ui/features/infrastructure/hyperstructures/hyperstructure-details";
-import { HyperstructureResourceChip } from "@/ui/features/infrastructure/hyperstructures/hyperstructure-resource-chip";
+import { HyperstructureDetails, HyperstructureResourceChip } from "@/ui/features/world";
 import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   configManager,

@@ -40,3 +40,11 @@ export { OSWindow } from "./components/os-window";
 
 // Biome System
 export { BiomeInfoPanel } from "./components/biome-info-panel";
+
+// Hyperstructures
+export { CoOwners } from "./components/hyperstructures/co-owners";
+export { HyperstructureDetails } from "./components/hyperstructures/hyperstructure-details";
+export { HyperstructurePanel } from "./components/hyperstructures/hyperstructure-panel";
+export { HyperstructureResourceChip } from "./components/hyperstructures/hyperstructure-resource-chip";
+export { Leaderboard } from "./components/hyperstructures/leaderboard";
+export * from "./components/hyperstructures/types";

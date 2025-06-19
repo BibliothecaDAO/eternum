@@ -5,12 +5,12 @@ import TextInput from "@/ui/design-system/atoms/text-input";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import {
   DisplayedAccess,
   HyperstructurePanel,
-} from "@/ui/features/infrastructure/hyperstructures/hyperstructure-panel";
-import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+} from "@/ui/features/world/components/hyperstructures/hyperstructure-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   getEntityIdFromKeys,
