@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG, SCENE_COLORS } from "./constants";
+import { WorldmapScene } from "./scenes/worldmap-scene";
 
 export class GameRenderer {
   private scene: THREE.Scene;
@@ -8,13 +9,15 @@ export class GameRenderer {
   private renderer: THREE.WebGLRenderer;
   private currentScene: string;
   private scenes: Map<string, THREE.Scene>;
+  private sceneInstances: Map<string, any>; // Store scene class instances
   private controls: OrbitControls;
   private animationId: number | null = null;
   private isDisposed = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scenes = new Map();
-    this.currentScene = "overview";
+    this.sceneInstances = new Map();
+    this.currentScene = "worldmap";
 
     // Initialize Three.js components
     this.scene = new THREE.Scene();
@@ -91,19 +94,27 @@ export class GameRenderer {
   }
 
   private createDefaultScenes(): void {
-    this.createScene("overview");
+    this.createScene("worldmap");
     this.createScene("detail");
     this.createScene("test");
   }
 
   public createScene(sceneId: string): void {
-    const scene = new THREE.Scene();
-    this.addDummyObjects(scene, sceneId);
-    this.scenes.set(sceneId, scene);
+    if (sceneId === "worldmap") {
+      // Use the dedicated WorldmapScene class
+      const worldmapScene = new WorldmapScene();
+      this.scenes.set(sceneId, worldmapScene.getScene());
+      this.sceneInstances.set(sceneId, worldmapScene);
+    } else {
+      // Use the generic scene creation for other scenes
+      const scene = new THREE.Scene();
+      this.addDummyObjects(scene, sceneId);
+      this.scenes.set(sceneId, scene);
+    }
   }
 
   private addDummyObjects(scene: THREE.Scene, sceneId: string): void {
-    const colors = SCENE_COLORS[sceneId as keyof typeof SCENE_COLORS] || SCENE_COLORS.overview;
+    const colors = SCENE_COLORS[sceneId as keyof typeof SCENE_COLORS] || SCENE_COLORS.worldmap;
 
     // Create ground plane
     const planeGeometry = new THREE.PlaneGeometry(20, 20);
@@ -201,6 +212,13 @@ export class GameRenderer {
   public dispose(): void {
     this.isDisposed = true;
     this.stopRenderLoop();
+
+    // Dispose of scene instances
+    this.sceneInstances.forEach((sceneInstance) => {
+      if (sceneInstance && typeof sceneInstance.dispose === "function") {
+        sceneInstance.dispose();
+      }
+    });
 
     // Dispose of Three.js resources
     this.scenes.forEach((scene) => {

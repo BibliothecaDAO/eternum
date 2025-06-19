@@ -3,7 +3,7 @@ import { SceneControls } from "./scene-controls";
 import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 
 export function WorldmapPage() {
-  const [currentScene, setCurrentScene] = useState("overview");
+  const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
 
   const handleSceneChange = (sceneId: string) => {

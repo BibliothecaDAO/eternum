@@ -69,7 +69,7 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(({ onSce
   };
 
   const getCurrentScene = () => {
-    return rendererRef.current?.getCurrentScene() || "overview";
+    return rendererRef.current?.getCurrentScene() || "worldmap";
   };
 
   const getAvailableScenes = () => {

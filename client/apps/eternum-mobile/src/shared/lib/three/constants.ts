@@ -2,8 +2,8 @@ import type { CameraConfig, ControlsConfig, SceneConfig } from "./types";
 
 export const DEFAULT_SCENES: SceneConfig[] = [
   {
-    id: "overview",
-    name: "World Overview",
+    id: "worldmap",
+    name: "World Map",
     description: "Large world overview with ground plane",
   },
   {
@@ -49,7 +49,7 @@ export const CONTROLS_CONFIG: ControlsConfig = {
 };
 
 export const SCENE_COLORS = {
-  overview: {
+  worldmap: {
     plane: 0x808080, // Gray
     box: 0x4a90e2, // Blue
   },
