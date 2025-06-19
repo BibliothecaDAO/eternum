@@ -29,6 +29,7 @@
     "@starknet-react/core": "catalog:",
     "@tanstack/react-router": "^1.74.0",
     "@tanstack/router-devtools": "^1.74.0",
+    "@types/three": "^0.163.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^1.2.1",
     "lodash": "^4.17.21",
@@ -39,6 +40,7 @@
     "starknet": "catalog:",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.166.0",
     "vaul": "^1.1.2",
     "wouter": "^2.12.1",
     "zustand": "^4.5.2"
