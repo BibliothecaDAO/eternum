@@ -6,7 +6,7 @@ import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { ArmyManagementCard, HelpModal, InventoryResources, TroopChip } from "@/ui/features";
+import { InventoryResources } from "@/ui/features/economy/resources";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -14,6 +14,9 @@ import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { ArmyManagementCard } from "./army-management-card";
+import { HelpModal } from "./help-modal";
+import { TroopChip } from "./troop-chip";
 
 export const NavigateToPositionIcon = ({
   position,

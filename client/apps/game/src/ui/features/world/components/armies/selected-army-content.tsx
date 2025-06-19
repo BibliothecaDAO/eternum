@@ -1,8 +1,8 @@
+import { ArmyChip } from "@/ui/features/military";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ArmyChip } from "@/ui/features/military/components/army-chip";
 import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) => {

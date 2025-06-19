@@ -3,9 +3,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { Headline } from "@/ui/design-system/molecules/headline";
-import { TravelInfo } from "@/ui/features/economy/resources/travel-info";
-import { SelectEntityFromList } from "@/ui/features/economy/trading/select-entity-from-list";
-import { SelectResources } from "@/ui/features/economy/trading/select-resources";
+import { TravelInfo } from "@/ui/features/economy/resources";
+import { SelectEntityFromList, SelectResources } from "@/ui/features/economy/trading";
 import { ToggleComponent } from "@/ui/shared";
 import { calculateArrivalTime, formatArrivalTime, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {

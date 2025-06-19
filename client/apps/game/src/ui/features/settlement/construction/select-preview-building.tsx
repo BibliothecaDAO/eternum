@@ -6,7 +6,7 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+import { HintSection } from "@/ui/features/progression";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

@@ -5,7 +5,7 @@ import { getProducedResource, RealmInfo as RealmInfoType, ResourcesIds } from "@
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AutomationTable } from "@/ui/features/infrastructure/automation/automation-table";
+import { AutomationTable } from "@/ui/features/infrastructure";
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
 import { RealmInfo } from "./realm-info";

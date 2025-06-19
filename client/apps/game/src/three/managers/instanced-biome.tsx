@@ -1,4 +1,4 @@
-import { PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants/scene-constants";
+import { PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { LAND_NAME } from "@/three/managers/instanced-model";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";

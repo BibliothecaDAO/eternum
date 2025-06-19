@@ -1,7 +1,5 @@
 import { Tabs } from "@/ui/design-system/atoms";
-import AddLiquidity from "@/ui/features/economy/banking/add-liquidity";
-import { LiquidityTable } from "@/ui/features/economy/banking/liquidity-table";
-import { ResourceSwap } from "@/ui/features/economy/banking/swap";
+import { AddLiquidity, LiquidityTable, Swap as ResourceSwap } from "@/ui/features/economy/banking";
 import { ID } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 

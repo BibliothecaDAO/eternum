@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants/scene-constants";
+import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
 import { gltfLoader } from "@/three/utils/utils";
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";

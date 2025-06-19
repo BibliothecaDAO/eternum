@@ -71,7 +71,7 @@ const MiniMapNavigation = lazy(() =>
 );
 
 const RealmTransferManager = lazy(() =>
-  import("../features/economy/resources/realm-transfer-manager").then((module) => ({
+  import("../features/economy/resources").then((module) => ({
     default: module.RealmTransferManager,
   })),
 );

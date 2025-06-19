@@ -1,5 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
-import { QuestReward } from "@/ui/features/economy/resources/quest-reward";
+import { QuestReward } from "@/ui/features/economy/resources";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";

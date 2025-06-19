@@ -1,10 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
-import { LiquidityResourceRow } from "@/ui/features/economy/banking/liquidity-resource-row";
-import { LiquidityTableHeader } from "@/ui/features/economy/banking/liquidity-table";
-import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
+import { ConfirmationPopup, LiquidityResourceRow, LiquidityTableHeader, ResourceBar } from "@/ui/features/economy/banking";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   divideByPrecision,

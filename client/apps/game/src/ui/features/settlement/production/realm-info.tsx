@@ -1,4 +1,4 @@
-import { CapacityInfo } from "@/ui/features/world/containers/capacity-info";
+import { CapacityInfo } from "@/ui/features/world";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
 import { memo } from "react";

@@ -1,5 +1,5 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { HelpContainer } from "@/ui/features/military/components/help-container";
+import { HelpContainer } from "../components/help-container";
 import { ModalContainer } from "@/ui/shared";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { Suspense, useState } from "react";

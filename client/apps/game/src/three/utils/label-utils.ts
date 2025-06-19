@@ -1,5 +1,5 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
-import { COLORS } from "@/ui/features/settlement/constants";
+import { COLORS } from "@/ui/features/settlement";
 import { TroopTier } from "@bibliothecadao/types";
 
 // In-memory database for managing label transitions

@@ -1,4 +1,4 @@
-import { HEX_SIZE } from "@/three/constants/scene-constants";
+import { HEX_SIZE } from "@/three/constants";
 import { createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";

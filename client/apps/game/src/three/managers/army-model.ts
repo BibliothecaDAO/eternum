@@ -13,10 +13,10 @@ import {
   MAX_INSTANCES,
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
-} from "../constants/army-constants";
+} from "../constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
-import { transitionManager } from "../utils/label-utils";
+import { transitionManager } from "../utils/";
 
 export class ArmyModel {
   // Core properties

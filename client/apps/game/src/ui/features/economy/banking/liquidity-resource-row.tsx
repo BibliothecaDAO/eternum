@@ -1,8 +1,8 @@
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
-import { TravelInfo } from "@/ui/features/economy/resources/travel-info";
+import { ConfirmationPopup } from "@/ui/features/economy/banking";
+import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   MarketManager,

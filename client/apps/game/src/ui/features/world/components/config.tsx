@@ -1,4 +1,4 @@
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+import { HintSection } from "@/ui/features/progression";
 
 type OSWindows =
   | "World Structures"

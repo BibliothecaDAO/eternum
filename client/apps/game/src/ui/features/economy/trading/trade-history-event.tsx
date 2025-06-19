@@ -3,13 +3,8 @@ import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { TradeEvent } from "@bibliothecadao/torii";
 import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
-import { TradeEvent } from "./market-trading-history";
-
-export enum EventType {
-  SWAP = "AMM Swap",
-  ORDERBOOK = "Orderbook",
-}
 
 export const TradeHistoryRowHeader = () => {
   const headers = ["Time", "Type", "Taker", "Trade", "Price"];

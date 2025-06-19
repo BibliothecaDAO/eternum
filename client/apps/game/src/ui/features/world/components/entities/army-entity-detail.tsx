@@ -1,8 +1,8 @@
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
-import { InventoryResources } from "@/ui/features/economy/resources/inventory-resources";
-import { TroopChip } from "@/ui/features/military/components/troop-chip";
-import { useChatStore } from "@/ui/features/social/chat/use-chat-store";
+import { InventoryResources } from "@/ui/features/economy/resources";
+import { TroopChip } from "@/ui/features/military";
+import { useChatStore } from "@/ui/features/social";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";

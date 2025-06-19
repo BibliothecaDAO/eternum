@@ -7,14 +7,8 @@ import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
-import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
-import {
-  getUnusedSeasonPasses,
-  queryRealmCount,
-  SeasonPassRealm,
-} from "@/ui/features/settlement/components/settle-realm-component";
-import { SettlementMinimapModal } from "@/ui/features/settlement/components/settlement-minimap-modal";
-import { SettlementLocation } from "@/ui/features/settlement/utils";
+import { MintVillagePassModal, SettlementLocation, SettlementMinimapModal } from "@/ui/features/settlement";
+import { getUnusedSeasonPasses, queryRealmCount, SeasonPassRealm } from "@/ui/features/settlement";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";

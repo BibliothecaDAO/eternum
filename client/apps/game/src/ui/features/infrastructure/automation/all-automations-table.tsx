@@ -9,7 +9,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { ProductionModal } from "@/ui/features/settlement";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { ArrowRightIcon, CheckIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-react";

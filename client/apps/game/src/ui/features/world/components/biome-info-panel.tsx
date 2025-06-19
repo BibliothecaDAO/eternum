@@ -1,4 +1,4 @@
-import { formatBiomeBonus } from "@/ui/features/military/battle/combat-utils";
+import { formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
 

@@ -19,31 +19,31 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { MarketHeader } from "./market-header";
 
 const MarketResourceSidebar = lazy(() =>
-  import("@/ui/features/economy/trading/market-resource-sidebar").then((module) => ({
+  import("@/ui/features/economy/trading").then((module) => ({
     default: module.MarketResourceSidebar,
   })),
 );
 
 const MarketOrderPanel = lazy(() =>
-  import("./market-order-panel").then((module) => ({ default: module.MarketOrderPanel })),
+  import("@/ui/features/economy/trading").then((module) => ({ default: module.MarketOrderPanel })),
 );
 
 const BankPanel = lazy(() =>
-  import("@/ui/features/economy/banking/bank-list").then((module) => ({ default: module.BankPanel })),
+  import("@/ui/features/economy/banking").then((module) => ({ default: module.BankList })),
 );
 
 const MarketTradingHistory = lazy(() =>
-  import("@/ui/features/economy/trading/market-trading-history").then((module) => ({
+  import("@/ui/features/economy/trading").then((module) => ({
     default: module.MarketTradingHistory,
   })),
 );
 
 const RealmProduction = lazy(() =>
-  import("@/ui/features/economy/trading/realm-production").then((module) => ({ default: module.RealmProduction })),
+  import("@/ui/features/economy/trading").then((module) => ({ default: module.RealmProduction })),
 );
 
 const TransferView = lazy(() =>
-  import("@/ui/features/economy/trading/transfer-view").then((module) => ({ default: module.TransferView })),
+  import("@/ui/features/economy/trading").then((module) => ({ default: module.TransferView })),
 );
 
 export const MarketModal = () => {

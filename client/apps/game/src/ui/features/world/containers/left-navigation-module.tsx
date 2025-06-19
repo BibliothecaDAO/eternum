@@ -3,8 +3,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { AllResourceArrivals, construction, MarketModal, military, trade, worldStructures } from "@/ui/features";
-import ChatModule from "@/ui/features/social/chat/chat";
+import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
+import { Chat as ChatModule } from "@/ui/features/social";
+import { construction, military, trade, worldStructures } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -15,9 +16,9 @@ import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
 );
-const Military = lazy(() => import("@/ui/features/military/military").then((module) => ({ default: module.Military })));
+const Military = lazy(() => import("@/ui/features/military").then((module) => ({ default: module.Military })));
 const SelectPreviewBuildingMenu = lazy(() =>
-  import("@/ui/features/settlement/construction/select-preview-building").then((module) => ({
+  import("@/ui/features/settlement").then((module) => ({
     default: module.SelectPreviewBuildingMenu,
   })),
 );

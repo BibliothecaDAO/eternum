@@ -1,4 +1,4 @@
-import { ResourceChip } from "@/ui/features/economy/resources/resource-chip";
+import { ResourceChip } from "@/ui/features/economy/resources";
 
 import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { DepositResources } from "@/ui/features/economy/resources/deposit-resources";
+import { DepositResources } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, getStructureName } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { OSWindow } from "@/ui/features/world/components/os-window";
+import { OSWindow } from "@/ui/features/world";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

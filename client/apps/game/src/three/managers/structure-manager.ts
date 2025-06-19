@@ -1,5 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { StructureModelPaths } from "@/three/constants/scene-constants";
+import { StructureModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
@@ -10,12 +10,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import {
-  createContentContainer,
-  createLabelBase,
-  createOwnerDisplayElement,
-  transitionManager,
-} from "../utils/label-utils";
+import { createContentContainer, createLabelBase, createOwnerDisplayElement, transitionManager } from "../utils/";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;

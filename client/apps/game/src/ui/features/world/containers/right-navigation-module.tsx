@@ -3,18 +3,15 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { AllAutomationsTable } from "@/ui/features/infrastructure/automation/all-automations-table";
-import { AutomationTransferTable } from "@/ui/features/infrastructure/automation/automation-transfer-table";
-import { TransferModal } from "@/ui/features/infrastructure/automation/transfer-modal";
-import { Bridge } from "@/ui/features/infrastructure/bridge/bridge";
-import { BattleLogsTable } from "@/ui/features/military/components/battle-logs-table";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
+import { BattleLogsTable } from "@/ui/features/military";
+import { ProductionModal } from "@/ui/features/settlement";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 
 const EntityResourceTable = lazy(() =>
-  import("@/ui/features/economy/resources/entity-resource-table").then((module) => ({
+  import("@/ui/features/economy/resources").then((module) => ({
     default: module.EntityResourceTable,
   })),
 );

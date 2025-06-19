@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { SecondaryMenuItems } from "@/ui/features/world/containers/secondary-menu-items";
+import { SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

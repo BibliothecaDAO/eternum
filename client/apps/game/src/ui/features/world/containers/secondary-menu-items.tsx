@@ -2,15 +2,15 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { HintModal } from "@/ui/features/progression/hints/hint-modal";
-import { rewards, settings } from "@/ui/features/world/components/config";
+import { HintModal } from "@/ui/features/progression";
+import { rewards, settings } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
-import { social } from "@/ui/features/world/components/config";
+import { social } from "@/ui/features/world";
 import { useCallback, useMemo } from "react";
 
 export const SecondaryMenuItems = () => {

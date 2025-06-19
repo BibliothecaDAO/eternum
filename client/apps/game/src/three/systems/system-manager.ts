@@ -1,4 +1,5 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { divideByPrecision, getHyperstructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -14,7 +15,6 @@ import {
 } from "@bibliothecadao/types";
 import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../constants/scene-constants";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,

@@ -7,7 +7,7 @@ import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
-import { QuestReward } from "@/ui/features/economy/resources/quest-reward";
+import { QuestReward } from "@/ui/features/economy/resources";
 
 interface QuestEntityDetailProps {
   questEntityId: ID;

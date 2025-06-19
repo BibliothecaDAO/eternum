@@ -1,33 +1,21 @@
 // Settlement Feature - Settlement management, building, production
 // This feature handles all settlement-related functionality
 
-// Settlement Management
+// Settlement Management - Exports used externally
 export { MintVillagePassModal } from "./components/mint-village-pass-modal";
-
-export { SettlementCanvas } from "./components/settlement-canvas";
-export { SettlementControls } from "./components/settlement-controls";
-export { SettlementMinimap } from "./components/settlement-minimap";
+export { getUnusedSeasonPasses, queryRealmCount, SeasonPassRealm } from "./components/settle-realm-component";
 export { SettlementMinimapModal } from "./components/settlement-minimap-modal";
-export { VillageResourceReveal } from "./components/village-resource-reveal";
 
-// Settlement State & Utils
+// Settlement State & Utils - Exports used externally
 export * from "./constants";
 export * from "./utils";
-export { default as settlementStore } from "@/hooks/store/use-settlement-store";
-export { useCanvasInteractions } from "./components/use-canvas-interactions";
-export { useSettlementState } from "./components/use-settlement-state";
 
-// Construction System
-export { SelectPreviewBuildingMenu } from "./construction/select-preview-building";
+// Settlement Types & Utils - Exports used externally
+export type { SettlementLocation } from "./utils/settlement-types";
+export { generateSettlementLocations, getBanksLocations, getOccupiedLocations } from "./utils/settlement-utils";
 
-// Production System
-export { BuildingsList } from "./production/buildings-list";
-export { LaborProductionControls } from "./production/labor-production-controls";
-export { LaborResourcesPanel } from "./production/labor-resources-panel";
-export { ProductionBody } from "./production/production-body";
-export { ProductionControls } from "./production/production-controls";
+// Construction System - Exports used externally
+export { BuildingInfo, ResourceInfo, SelectPreviewBuildingMenu } from "./construction/select-preview-building";
+
+// Production System - Exports used externally
 export { ProductionModal } from "./production/production-modal";
-export { ProductionSidebar } from "./production/production-sidebar";
-export { RawResourcesPanel } from "./production/raw-resources-panel";
-export { RealmInfo } from "./production/realm-info";
-export { ResourceProductionControls } from "./production/resource-production-controls";

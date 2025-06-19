@@ -3,26 +3,12 @@ import { sqlApi } from "@/services/api";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
-import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/features/economy/trading/trade-history-event";
+import { TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/features/economy/trading";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, Resource } from "@bibliothecadao/types";
+import { TradeEvent } from "@bibliothecadao/torii";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const TRADES_PER_PAGE = 25;
-
-export type TradeEvent = {
-  type: EventType;
-  event: {
-    takerId: ID;
-    takerAddress: string;
-    makerId: ID;
-    makerAddress: string;
-    isYours: boolean;
-    resourceGiven: Resource;
-    resourceTaken: Resource;
-    eventTime: Date;
-  };
-};
 
 export const MarketTradingHistory = () => {
   return <MarketTradingHistoryContent />;

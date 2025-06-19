@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LiquidityResourceRow } from "@/ui/features/economy/banking/liquidity-resource-row";
+import { LiquidityResourceRow } from "@/ui/features/economy/banking";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";

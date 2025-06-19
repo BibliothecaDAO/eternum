@@ -4,7 +4,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { BiomeInfoPanel } from "@/ui/features/world/components/biome-info-panel";
+import { BiomeInfoPanel } from "@/ui/features/world";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";

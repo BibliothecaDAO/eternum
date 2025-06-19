@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourceWeight } from "@/ui/features/economy/resources/travel-info";
+import { ResourceWeight } from "@/ui/features/economy/resources";
 import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { BuildingType } from "@bibliothecadao/types";

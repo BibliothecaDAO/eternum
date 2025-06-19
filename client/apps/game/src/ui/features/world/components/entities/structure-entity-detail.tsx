@@ -10,7 +10,7 @@ import {
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position } from "@/types/position";
-import { useChatStore } from "@/ui/features/social/chat/use-chat-store";
+import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
@@ -18,9 +18,8 @@ import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
 import { memo, useMemo } from "react";
-import { CompactDefenseDisplay } from "@/ui/features/military/components/compact-defense-display";
-import { InventoryResources } from "@/ui/features/economy/resources/inventory-resources";
-import { RealmResourcesIO } from "@/ui/features/economy/resources/realm-resources-io";
+import { CompactDefenseDisplay } from "@/ui/features/military";
+import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
 import { ImmunityTimer } from "../structures/immunity-timer";
 
 interface StructureEntityDetailProps {

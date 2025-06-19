@@ -3,9 +3,8 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
-import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression/onboarding/steps";
-import { MintVillagePassModal } from "@/ui/features/settlement/components/mint-village-pass-modal";
-import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement/components/settle-realm-component";
+import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
+import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";

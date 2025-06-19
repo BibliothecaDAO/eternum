@@ -1,7 +1,6 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { QuestRealm } from "@/ui/features/progression/quests/quest-realm-component";
-import { useGetQuests } from "@/ui/features/progression/quests/quest-utils";
+import { QuestRealm, useGetQuests } from "@/ui/features/progression";
 import { getArmy, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";

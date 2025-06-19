@@ -1,9 +1,9 @@
-import { GUIManager } from "@/three/utils/gui-manager";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
+import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import throttle from "lodash/throttle";
@@ -26,7 +26,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
-import { transitionDB } from "./utils/label-utils";
+import { transitionDB } from "./utils/";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;

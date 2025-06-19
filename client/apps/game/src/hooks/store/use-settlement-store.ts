@@ -1,8 +1,12 @@
 import { Position } from "@/types/position";
+import {
+  generateSettlementLocations,
+  getBanksLocations,
+  getOccupiedLocations,
+  SettlementLocation,
+} from "@/ui/features/settlement";
 import { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { create } from "zustand";
-import { SettlementLocation } from "../../ui/features/settlement/utils/settlement-types";
-import { generateSettlementLocations, getBanksLocations, getOccupiedLocations } from "../../ui/features/settlement/utils/settlement-utils";
 
 interface SettlementState {
   selectedLocation: SettlementLocation | null;

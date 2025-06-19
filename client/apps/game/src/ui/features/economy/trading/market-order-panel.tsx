@@ -3,7 +3,7 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ConfirmationPopup } from "@/ui/features/economy/banking/confirmation-popup";
+import { ConfirmationPopup } from "@/ui/features/economy/banking";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,

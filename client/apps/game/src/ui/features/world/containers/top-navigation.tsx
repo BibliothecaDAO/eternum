@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Social } from "@/ui/features/social/components/social";
+import { Social } from "@/ui/features/social";
 import { SettingsWindow } from "@/ui/modules/settings/settings";
 import { memo } from "react";
 

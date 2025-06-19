@@ -3,7 +3,7 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { SpectateButton } from "@/ui/features/progression/onboarding/steps";
+import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";

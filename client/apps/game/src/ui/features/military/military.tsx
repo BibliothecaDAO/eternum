@@ -1,5 +1,5 @@
-import { ArmyList } from "@/ui/features/military/components/army-list";
-import { EntitiesArmyTable } from "@/ui/features/military/components/entities-army-table";
+import { ArmyList } from "./components/army-list";
+import { EntitiesArmyTable } from "./components/entities-army-table";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";

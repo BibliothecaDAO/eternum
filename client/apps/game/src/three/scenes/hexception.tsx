@@ -1,5 +1,16 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  BUILDINGS_CATEGORIES_TYPES,
+  BUILDINGS_GROUPS,
+  HEX_SIZE,
+  MinesMaterialsParams,
+  WONDER_REALM,
+  buildingModelPaths,
+  castleLevelToRealmCastle,
+  hyperstructureStageToModel,
+  structureTypeToBuildingType,
+} from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
@@ -40,17 +51,6 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import {
-  BUILDINGS_CATEGORIES_TYPES,
-  BUILDINGS_GROUPS,
-  HEX_SIZE,
-  MinesMaterialsParams,
-  WONDER_REALM,
-  buildingModelPaths,
-  castleLevelToRealmCastle,
-  hyperstructureStageToModel,
-  structureTypeToBuildingType,
-} from "../constants/scene-constants";
 import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 

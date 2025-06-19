@@ -3,8 +3,8 @@ import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@/types/position";
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { RealmResourcesIO } from "@/ui/features/economy/resources/realm-resources-io";
-import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
+import { RealmResourcesIO } from "@/ui/features/economy/resources";
+import { NavigateToPositionIcon } from "@/ui/features/military";
 import {
   LeaderboardManager,
   getAddressName,

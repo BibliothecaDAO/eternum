@@ -1,4 +1,4 @@
-import { HEX_SIZE } from "@/three/constants/scene-constants";
+import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
