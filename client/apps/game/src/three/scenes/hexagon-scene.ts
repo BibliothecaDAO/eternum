@@ -1,14 +1,13 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
-import { LocationManager } from "@/three/helpers/location-manager";
-import { gltfLoader } from "@/three/helpers/utils";
+import { HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { type SceneManager } from "@/three/scene-manager";
-import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
+import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
+import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -20,7 +19,6 @@ import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
-import { transitionDB } from "../utils/label-utils";
 
 export enum CameraView {
   Close = 1,

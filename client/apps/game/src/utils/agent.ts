@@ -1,6 +1,6 @@
-import { ModelType } from "@/three/types/army.types";
+import { ModelType } from "@/three/types/army";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { generatePersona } from "./generate_persona";
+import { generatePersona } from "./generate-persona";
 
 // Define agent models for clarity
 const AGENT_YP_MODEL = ModelType.AgentYP;
