@@ -81,7 +81,6 @@
     "starknet": "catalog:",
     "starknet-types-07": "workspace:*",
     "starknetkit": "2.10.4",
-    "starkweb": "^0.0.21",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "catalog:",

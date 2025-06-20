@@ -1,7 +1,7 @@
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
+import tsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   server: {
@@ -11,9 +11,11 @@ export default defineConfig({
     tsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
-    tanstackStart(),
+    tanstackStart({
+      target: "vercel",
+    }),
     svgr({
-        include: "**/*.svg?react",
-      }),
+      include: "**/*.svg?react",
+    }),
   ],
 });
