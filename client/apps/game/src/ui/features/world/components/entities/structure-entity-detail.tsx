@@ -10,6 +10,8 @@ import {
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position } from "@/types/position";
+import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
+import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
@@ -18,8 +20,6 @@ import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
 import { memo, useMemo } from "react";
-import { CompactDefenseDisplay } from "@/ui/features/military";
-import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
 import { ImmunityTimer } from "../structures/immunity-timer";
 
 interface StructureEntityDetailProps {
@@ -109,7 +109,9 @@ export const StructureEntityDetail = memo(
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
 
-    const { openChat, addTab, getUserIdByUsername } = useChatStore((state) => state.actions);
+    const openChat = useChatStore((state) => state.actions.openChat);
+    const addTab = useChatStore((state) => state.actions.addTab);
+    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
 
     const handleChatClick = () => {
       if (isMine) {

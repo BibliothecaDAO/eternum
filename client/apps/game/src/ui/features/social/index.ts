@@ -2,7 +2,7 @@
 // This feature handles all social systems and multiplayer interactions
 
 // Chat System - Exports used externally
-export { default as Chat } from "./chat/chat";
+export { ChatModule } from "./chat/chat";
 export * from "./chat/hooks/use-socket-events";
 export * from "./chat/types";
 export { useChatStore } from "./chat/use-chat-store";

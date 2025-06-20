@@ -24,7 +24,7 @@ import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesB
 import { groupMessagesBySender } from "./utils/message-utils";
 import { generateUserCredentials, initialToken, initialUserId } from "./utils/user-credentials";
 
-function ChatModule() {
+export function ChatModule() {
   // User state
   const [userId, setUserId] = useState<string>(initialUserId);
   const [userToken, setUserToken] = useState<string>(initialToken);
@@ -49,11 +49,8 @@ function ChatModule() {
   const isStoreLoadingMessages = useChatStore((state) => state.isLoadingMessages);
   const chatActions = useChatStore((state) => state.actions);
 
-  const { onlineUsers, offlineUsers, isLoadingUsers } = useChatStore((state) => ({
-    onlineUsers: state.onlineUsers,
-    offlineUsers: state.offlineUsers,
-    isLoadingUsers: state.isLoadingUsers,
-  }));
+  const onlineUsers = useChatStore((state) => state.onlineUsers);
+  const offlineUsers = useChatStore((state) => state.offlineUsers);
 
   // Chat client instance
   const chatClient = useMemo(() => {
@@ -1144,5 +1141,3 @@ function ChatModule() {
     </div>
   );
 }
-
-export default ChatModule;

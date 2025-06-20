@@ -266,12 +266,10 @@ export const useGlobalMessageEvents = (
 
 // Hook for handling user-related events
 export const useUserEvents = (chatClient: ChatClient | null) => {
-  const { onlineUsers, offlineUsers, actions, setIsLoadingUsers } = useChatStore((state) => ({
-    onlineUsers: state.onlineUsers,
-    offlineUsers: state.offlineUsers,
-    actions: state.actions,
-    setIsLoadingUsers: state.actions.setIsLoadingUsers,
-  }));
+  const onlineUsers = useChatStore((state) => state.onlineUsers);
+  const offlineUsers = useChatStore((state) => state.offlineUsers);
+  const actions = useChatStore((state) => state.actions);
+  const setIsLoadingUsers = useChatStore((state) => state.actions.setIsLoadingUsers);
 
   useEffect(() => {
     chatLogger.log("Setting up user event handlers");
@@ -437,11 +435,9 @@ export const useInitialDataEvents = (
   setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>,
   setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
-  const { setIsLoadingUsers, setOnlineUsers, setOfflineUsers } = useChatStore((state) => ({
-    setIsLoadingUsers: state.actions.setIsLoadingUsers,
-    setOnlineUsers: state.actions.setOnlineUsers,
-    setOfflineUsers: state.actions.setOfflineUsers,
-  }));
+  const setIsLoadingUsers = useChatStore((state) => state.actions.setIsLoadingUsers);
+  const setOnlineUsers = useChatStore((state) => state.actions.setOnlineUsers);
+  const setOfflineUsers = useChatStore((state) => state.actions.setOfflineUsers);
 
   useEffect(() => {
     chatLogger.log("Setting up initialData event handlers");

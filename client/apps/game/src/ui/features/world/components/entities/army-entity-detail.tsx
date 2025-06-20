@@ -122,7 +122,9 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    const { openChat, addTab, getUserIdByUsername } = useChatStore((state) => state.actions);
+    const openChat = useChatStore((state) => state.actions.openChat);
+    const addTab = useChatStore((state) => state.actions.addTab);
+    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
 
     const handleChatClick = () => {
       if (derivedData?.isMine) {

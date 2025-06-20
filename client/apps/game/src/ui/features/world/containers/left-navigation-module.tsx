@@ -4,6 +4,7 @@ import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
+import { ChatModule } from "@/ui/features/social";
 import { construction, military, trade, worldStructures } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
@@ -270,7 +271,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       <div className="flex">
         {/* <Chat /> */}
-        {/* <ChatModule /> */}
+        <ChatModule />
       </div>
     </div>
   );
