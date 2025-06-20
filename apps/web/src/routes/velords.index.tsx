@@ -3,6 +3,8 @@ import { VeLords } from "@/abi/L2/VeLords";
 import { VelordsRewards } from "@/components/modules/velords/claim-rewards";
 import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
 import { StakeLords } from "@/components/modules/velords/stake-lords";
+import { Card, CardContent } from "@/components/ui/card";
+import { useVelordsData } from "@/hooks/use-velords-data";
 import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useReadContract } from "@starknet-react/core";
@@ -28,6 +30,7 @@ function RouteComponent() {
     functionName: "total_supply",
     args: [],
   });
+  // const { lordsLocked } = useVelordsData();
 
   return (
     <div className="bg-background min-h-screen">

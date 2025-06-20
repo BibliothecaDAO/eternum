@@ -19,7 +19,7 @@ import {
 } from "@/lib/getDelegates";
 import { auth } from "@/utils/auth";
 import { authClient } from "@/utils/auth-client";
-import { formatNumber } from "@/utils/utils";
+import { formatNumber, shortenAddress } from "@/utils/utils";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -70,7 +70,7 @@ function RouteComponent() {
       <SidebarInset>
         <div className="container mx-auto p-8">
           <h1 className="mb-4 text-2xl font-semibold">
-            Your Profile {session?.user.id}
+            Your Profile {shortenAddress(session?.user.id)}
           </h1>
           {!isLoading && (
             <Card className="mb-8">

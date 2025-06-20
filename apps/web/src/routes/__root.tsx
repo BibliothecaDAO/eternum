@@ -3,7 +3,7 @@ import { Header } from "@/components/layout/header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 //import { StarknetProvider } from "@/providers/starknet";
 import { ThemeProvider } from "@/providers/theme";
-import appCss from "@/styles/app.css?url";
+import appCss from "@/styles.css?url";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   createRootRouteWithContext,
@@ -90,7 +90,7 @@ function RootComponent() {
     appName: "Realms.World",
     projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",
     chains: [env.VITE_PUBLIC_CHAIN === "sepolia" ? sepolia : mainnet],
-    ssr: true,
+    ssr: false,
   });
   return (
     <html lang="en">
@@ -110,18 +110,18 @@ function RootComponent() {
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>
               <WagmiProvider config={config}>
-                <SidebarProvider className="flex h-full flex-col">
-                  <Header />
-                  <div className="flex min-h-0 flex-1">
-                    <AppSidebar />
-                    <SidebarInset className="min-h-auto overflow-auto">
-                      <RainbowKitProvider>
+                <RainbowKitProvider>
+                  <SidebarProvider className="flex h-full flex-col">
+                    <Header />
+                    <div className="flex min-h-0 flex-1">
+                      <AppSidebar />
+                      <SidebarInset className="min-h-auto overflow-auto">
                         <Outlet />
-                      </RainbowKitProvider>
-                    </SidebarInset>
-                  </div>
-                  <Toaster />
-                </SidebarProvider>
+                      </SidebarInset>
+                    </div>
+                    <Toaster />
+                  </SidebarProvider>
+                </RainbowKitProvider>
               </WagmiProvider>
             </StarknetProvider>
           </ThemeProvider>

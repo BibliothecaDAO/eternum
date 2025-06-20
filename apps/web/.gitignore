@@ -7,8 +7,8 @@ yarn.lock
 .cache
 .vercel
 .output
-.vinxi
-
+.tanstack
+.nitro
 /build/
 /api/
 /server/build
