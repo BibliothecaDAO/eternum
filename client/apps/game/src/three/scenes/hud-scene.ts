@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
 import { Navigator } from "@/three/managers/navigator";
 import { SceneManager } from "@/three/scene-manager";
+import { GUIManager } from "@/three/utils/";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 

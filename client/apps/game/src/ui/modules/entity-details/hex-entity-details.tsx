@@ -1,9 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
-import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
-import { ArmyEntityDetail } from "@/ui/components/worldmap/entities/army-entity-detail";
-import { QuestEntityDetail } from "@/ui/components/worldmap/entities/quest-entity-detail";
-import { StructureEntityDetail } from "@/ui/components/worldmap/entities/structure-entity-detail";
+import { BiomeInfoPanel, ArmyEntityDetail, QuestEntityDetail, StructureEntityDetail } from "@/ui/features/world";
 import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";

@@ -2,7 +2,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useProvider } from "@starknet-react/core";
 import { initMetagame, MetagameClient, MetagameProvider as MetagameProviderSDK } from "metagame-sdk";
 import { ReactNode, useEffect, useState } from "react";
-import { dojoConfig } from "../../../dojoConfig";
+import { dojoConfig } from "../../../dojo-config";
 
 export const MetagameProvider = ({ children }: { children: ReactNode }) => {
   const {

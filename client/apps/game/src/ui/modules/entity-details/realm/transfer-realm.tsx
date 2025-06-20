@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
-import TextInput from "@/ui/elements/text-input";
+import Button from "@/ui/design-system/atoms/button";
+import TextInput from "@/ui/design-system/atoms/text-input";
 import { displayAddress } from "@/ui/utils/utils";
 import { useCartridgeAddress, useDebounce, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
