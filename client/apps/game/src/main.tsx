@@ -7,6 +7,7 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { initSentry, Sentry } from "./sentry";
 
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
@@ -37,6 +38,9 @@ declare global {
 window.Buffer = Buffer;
 
 async function init() {
+  // Initialize Sentry for error reporting
+  initSentry();
+
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
@@ -173,7 +177,16 @@ async function init() {
       },
       onError: (error: any) => {
         console.error("System call error:", error);
-        // Handle other types of errors if needed
+        
+        // Report to Sentry
+        Sentry.withScope((scope) => {
+          scope.setTag("errorType", "systemCall");
+          scope.setContext("errorContext", { 
+            message: "Dojo system call error",
+            setupPhase: "post-setup"
+          });
+          Sentry.captureException(error);
+        });
       },
     },
   );

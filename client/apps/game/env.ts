@@ -61,6 +61,9 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+
+  // Sentry
+  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 });
 
 let env: z.infer<typeof envSchema>;
