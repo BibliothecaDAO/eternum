@@ -62,8 +62,9 @@ const envSchema = z.object({
     .optional()
     .default("false"),
 
-  // Sentry
-  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  // PostHog
+  VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 });
 
 let env: z.infer<typeof envSchema>;

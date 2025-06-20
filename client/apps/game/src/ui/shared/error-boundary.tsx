@@ -1,4 +1,4 @@
-import { Sentry } from "@/sentry";
+import { captureError } from "@/posthog";
 import React, { Component, ReactNode } from "react";
 
 interface Props {
@@ -23,11 +23,11 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     
-    // Send to Sentry
-    Sentry.withScope((scope) => {
-      scope.setTag("errorBoundary", true);
-      scope.setContext("errorInfo", errorInfo);
-      Sentry.captureException(error);
+    // Send to PostHog
+    captureError(error, {
+      error_boundary: true,
+      component_stack: errorInfo.componentStack,
+      error_info: errorInfo,
     });
   }
 

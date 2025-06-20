@@ -22,7 +22,7 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
-    "@sentry/react": "^8.0.0",
+    "posthog-js": "^1.160.0",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
     "@dojoengine/sdk": "catalog:",
@@ -59,7 +59,6 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "@sentry/vite-plugin": "^2.0.0",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.11.10",
     "@types/platform": "^1.3.6",
