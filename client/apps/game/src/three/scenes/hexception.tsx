@@ -1,17 +1,28 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  BUILDINGS_CATEGORIES_TYPES,
+  BUILDINGS_GROUPS,
+  HEX_SIZE,
+  MinesMaterialsParams,
+  WONDER_REALM,
+  buildingModelPaths,
+  castleLevelToRealmCastle,
+  hyperstructureStageToModel,
+  structureTypeToBuildingType,
+} from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
+import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
@@ -42,17 +53,6 @@ import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
-import {
-  BUILDINGS_CATEGORIES_TYPES,
-  BUILDINGS_GROUPS,
-  HEX_SIZE,
-  MinesMaterialsParams,
-  WONDER_REALM,
-  buildingModelPaths,
-  castleLevelToRealmCastle,
-  hyperstructureStageToModel,
-  structureTypeToBuildingType,
-} from "./constants";
 
 const loader = gltfLoader;
 
