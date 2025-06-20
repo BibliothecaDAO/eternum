@@ -1,8 +1,8 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/components/hints/hint-modal";
-import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { Tabs } from "@/ui/elements/tab";
+import { Tabs } from "@/ui/design-system/atoms/tab";
+import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
+import { HintSection } from "@/ui/features/progression";
 import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";

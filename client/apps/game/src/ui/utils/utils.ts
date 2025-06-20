@@ -1,4 +1,4 @@
-import { SortInterface } from "@/ui/elements/sort-button";
+import { SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, toHexString } from "@bibliothecadao/eternum";
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";

@@ -30,7 +30,9 @@
     "config/**",
     "contracts/**",
 
-    "**/global.d.ts"
+    "**/global.d.ts",
 
+    "client/apps/game/src/ui/features/social/chat/chat.tsx:1148:8",
+    "client/apps/game/src/ui/features/social/index.ts:5:20"
   ]
 }

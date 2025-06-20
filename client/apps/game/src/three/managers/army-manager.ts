@@ -1,25 +1,25 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { GUIManager } from "@/three/helpers/gui-manager";
-import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { GUIManager } from "@/three/utils/";
+import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { Position } from "@/types/position";
-import { COLORS } from "@/ui/components/settlement/settlement-constants";
+import { COLORS } from "@/ui/features/settlement";
 import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import {
   createContentContainer,
   createLabelBase,
   createOwnerDisplayElement,
+  findShortestPath,
   LABEL_STYLES,
   TIERS_TO_STARS,
-} from "../utils/label-utils";
+} from "../utils/";
 import { FXManager } from "./fx-manager";
 
 const myColor = new THREE.Color(0, 1.5, 0);
