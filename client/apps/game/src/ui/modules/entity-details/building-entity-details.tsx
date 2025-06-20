@@ -1,9 +1,9 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
-import { ProductionModal } from "@/ui/components/production/production-modal";
-import Button from "@/ui/elements/button";
+import Button from "@/ui/design-system/atoms/button";
+import { BuildingInfo, ResourceInfo } from "@/ui/features/settlement";
+import { ProductionModal } from "@/ui/features/settlement";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
