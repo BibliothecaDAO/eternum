@@ -90,7 +90,9 @@
     "knip": "npx knip --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",
     "lint:fix": "pnpm --recursive run lint:fix",
-    "test": "pnpm --recursive run test"
+    "test": "pnpm --recursive run test",
+    "summary:weekly": "node scripts/generate-weekly-summary.js",
+    "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js"
   },
   "dependencies": {
     "@cartridge/connector": "catalog:",
