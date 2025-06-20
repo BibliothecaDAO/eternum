@@ -3,7 +3,7 @@ import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { Map } from "lucide-react";
+import { Map as MapIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // Define entity types for the toggle controls
@@ -279,14 +279,14 @@ export const MiniMapNavigation = () => {
                     >
                       <path
                         d="M12 16L12 8M12 16L8 12M12 16L16 12"
-                        stroke="#E0AF65"
+                        stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       <path
                         d="M3 15L3 16C3 18.2091 4.79086 20 7 20L17 20C19.2091 20 21 18.2091 21 16L21 15"
-                        stroke="#E0AF65"
+                        stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -310,7 +310,7 @@ export const MiniMapNavigation = () => {
                   >
                     <path
                       d="M6 12L18 12"
-                      stroke="#E0AF65"
+                      stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -343,7 +343,7 @@ export const MiniMapNavigation = () => {
                 label="Click to restore minimap"
                 tooltipLocation="top"
               >
-                <Map className="h-6 w-6" />
+                <MapIcon className="h-6 w-6" />
               </CircleButton>
             </div>
           )}
@@ -353,12 +353,12 @@ export const MiniMapNavigation = () => {
       <canvas
         ref={canvasRef}
         id="minimap"
-        width={isExpanded ? window.innerWidth : "350"}
-        height={isExpanded ? window.innerHeight : "175"}
-        className={`${showMinimap ? "block" : "hidden"} transition-all duration-300 ${isMinimized ? "opacity-40 hover:opacity-60" : ""}`}
+        className={`${showMinimap ? "block" : "hidden"} ${isMinimized ? "opacity-40 hover:opacity-60" : ""}`}
         style={{
-          backgroundColor: isExpanded ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.7)",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
           zIndex: 2,
+          width: isMinimized ? "40px" : isExpanded ? "100vw" : "350px",
+          height: isMinimized ? "40px" : isExpanded ? "100vh" : "175px",
         }}
       />
     </div>
