@@ -110,7 +110,7 @@ jobs:
 
             Focus on stability and developer experience since these packages are foundational to all Eternum applications.
 
-          allowed_tools: "Bash(pnpm run build:packages),Bash(pnpm run format),Bash(pnpm run knip)"
+          allowed_tools: "Bash(pnpm run build:packages),Bash(pnpm run format),Bash(pnpm run knip),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
 
           custom_instructions: |
             You are reviewing shared TypeScript packages for Eternum that are consumed by:
