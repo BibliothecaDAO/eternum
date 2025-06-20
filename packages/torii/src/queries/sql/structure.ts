@@ -114,4 +114,35 @@ export const STRUCTURE_QUERIES = {
     LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
     GROUP BY s.owner
   `,
+
+  GUARDS_BY_STRUCTURE: `
+    SELECT 
+        entity_id,
+        \`troop_guards.delta.category\` as delta_category,
+        \`troop_guards.delta.tier\` as delta_tier,
+        \`troop_guards.delta.count\` as delta_count,
+        \`troop_guards.delta.stamina.amount\` as delta_stamina_amount,
+        \`troop_guards.delta.stamina.updated_tick\` as delta_stamina_updated_tick,
+        \`troop_guards.charlie.category\` as charlie_category,
+        \`troop_guards.charlie.tier\` as charlie_tier,
+        \`troop_guards.charlie.count\` as charlie_count,
+        \`troop_guards.charlie.stamina.amount\` as charlie_stamina_amount,
+        \`troop_guards.charlie.stamina.updated_tick\` as charlie_stamina_updated_tick,
+        \`troop_guards.bravo.category\` as bravo_category,
+        \`troop_guards.bravo.tier\` as bravo_tier,
+        \`troop_guards.bravo.count\` as bravo_count,
+        \`troop_guards.bravo.stamina.amount\` as bravo_stamina_amount,
+        \`troop_guards.bravo.stamina.updated_tick\` as bravo_stamina_updated_tick,
+        \`troop_guards.alpha.category\` as alpha_category,
+        \`troop_guards.alpha.tier\` as alpha_tier,
+        \`troop_guards.alpha.count\` as alpha_count,
+        \`troop_guards.alpha.stamina.amount\` as alpha_stamina_amount,
+        \`troop_guards.alpha.stamina.updated_tick\` as alpha_stamina_updated_tick,
+        \`troop_guards.delta_destroyed_tick\` as delta_destroyed_tick,
+        \`troop_guards.charlie_destroyed_tick\` as charlie_destroyed_tick,
+        \`troop_guards.bravo_destroyed_tick\` as bravo_destroyed_tick,
+        \`troop_guards.alpha_destroyed_tick\` as alpha_destroyed_tick
+    FROM \`s1_eternum-Structure\`
+    WHERE entity_id = {entityId};
+  `,
 } as const;
