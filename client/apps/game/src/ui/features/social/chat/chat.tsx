@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import "./App.css";
+import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
+import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import ChatClient from "./client/client";
 import LoginForm from "./components/chat/LoginForm";
 import MessageGroupComponent from "./components/chat/MessageGroup";
@@ -818,46 +820,27 @@ export function ChatModule() {
                 title="Save chat to text file"
               >
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4"
                 >
                   <path
+                    d="M12 16L12 8M12 16L8 12M12 16L16 12"
+                    stroke="#E0AF65"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                   />
-                </svg>
-              </button>
-              <button
-                onClick={() => chatActions.toggleExpand()}
-                className="text-gold/70 hover:text-gold transition-colors p-1"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  {isExpanded ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 3h6v6M9 3H3v6m12 12h6v-6M3 15v6h6"
-                    />
-                  )}
+                  <path
+                    d="M3 15L3 16C3 18.2091 4.79086 20 7 20L17 20C19.2091 20 21 18.2091 21 16L21 15"
+                    stroke="#E0AF65"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </button>
               <button
@@ -865,14 +848,21 @@ export function ChatModule() {
                 className="text-gold/70 hover:text-gold transition-colors p-1"
               >
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path d="M6 12L18 12" stroke="#E0AF65" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+              </button>
+              <button
+                onClick={() => chatActions.toggleExpand()}
+                className="text-gold/70 hover:text-gold transition-colors p-1"
+              >
+                {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
               </button>
             </div>
 
