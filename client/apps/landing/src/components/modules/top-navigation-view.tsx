@@ -51,7 +51,7 @@ export const TopNavigationView = ({
           variant="cta"
           onClick={() => {
             window.open(
-              chain === "sepolia" ? "https://next-eternum.realms.world" : "https://eternum.realms.world",
+              chain === "sepolia" ? "https://dev.eternum.realms.world" : "https://eternum.realms.world",
               "_blank",
             );
           }}
