@@ -1,7 +1,7 @@
 import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import CircleButton from "@/ui/elements/circle-button";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Map } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
