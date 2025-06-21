@@ -147,53 +147,53 @@ jobs:
 
           custom_instructions: |
             You are reviewing Cairo smart contracts for Eternum, a blockchain gaming project using Dojo framework on Starknet.
-            
+
             ## Key Context:
             - Eternum is a resource management and strategy game with realms, armies, and trading
             - Uses $LORDS token for in-game economy
             - Seasonal gameplay with immutable on-chain state
             - Multi-environment deployment (local, sepolia, mainnet)
-            
+
             ## Critical Review Focus:
             - Economic exploits and infinite resource generation
             - Game balance and fair play mechanics
             - Resource integrity and double-spending prevention
             - Proper Dojo component/system patterns
             - Gas optimization for complex game operations
-            
+
             ## Documentation Updates via MCP
-            
+
             If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
-            
+
             **Documentation Areas to Consider:**
-            
+
             **Contract Documentation:**
             - Update contract-specific READMEs if architecture changes
             - Update deployment instructions if new contracts are added
             - Update configuration documentation if new environments are supported
-            
+
             **Game Documentation:**
             - client/apps/game-docs/docs/pages/development/contracts.mdx for contract changes
             - Update game mechanics documentation if contract logic changes affect gameplay
             - client/apps/game-docs/docs/components/ for new game constants or mechanics
-            
+
             **Main Documentation:**
             - readme.md if contract deployment process changes  
             - CLAUDE.md if contract development workflow changes
-            
+
             **How to Create Documentation PR using MCP:**
-            
+
             1. Use mcp__github__create_branch to create a new documentation branch:
                - Branch name: "docs/update-contracts-[feature-name]"
                - Base branch: "next"
-            
+
             2. Use file editing tools to update the necessary documentation files
-            
+
             3. Use mcp__github__create_pull_request to create the documentation PR:
                - Title: "docs: Update contract documentation for [feature]"
                - Body: "Updates documentation to reflect contract changes in PR #[original-pr-number]"
                - Target branch: "next"
-            
+
             **Available MCP Tools for Documentation:**
             - mcp__github__create_branch
             - mcp__github__create_pull_request

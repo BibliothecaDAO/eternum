@@ -86,11 +86,13 @@ IMPORTANT: Before creating a PR, YOU MUST:
 6. **Create PR**: Always create pull requests FROM your branch TO `next` branch
 
 **If you find yourself on `next` with uncommitted changes:**
+
 - Create an appropriate branch: `git checkout -b fix/move-from-next` (or feature/, refactor/, etc.)
 - Your changes will move with you to the new branch
 - Then follow steps 4-6 above
 
 **NEVER:**
+
 - Work directly on `next` branch
 - Create PRs to `main` (always target `next`)
 - Push commits directly to `next`

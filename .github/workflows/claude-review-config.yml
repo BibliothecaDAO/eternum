@@ -169,54 +169,54 @@ jobs:
 
           custom_instructions: |
             You are reviewing infrastructure and configuration for Eternum, a blockchain gaming project with complex multi-environment deployment:
-            
+
             ## Critical Infrastructure Components:
             - **Dojo Framework**: Cairo smart contracts with custom deployment scripts
             - **Multi-Network**: Local (Katana), Sepolia testnet, Mainnet (Starknet)
             - **Indexing**: Torii for blockchain data indexing and querying
             - **Monorepo**: pnpm workspaces with multiple apps and packages
             - **Real-time**: WebSocket connections for live game data
-            
+
             ## Security Priorities:
             - Deployment wallet security and key management
             - Environment isolation and secret management
             - Smart contract deployment safety
             - API key and service account security
-            
+
             ## Documentation Updates via MCP
-            
+
             If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
-            
+
             **Documentation Areas to Consider:**
-            
+
             **Infrastructure Documentation:**
             - config/README.md for configuration changes
             - Update deployment sections in main readme.md
             - CLAUDE.md for development workflow changes
-            
+
             **Environment Documentation:**
             - Update setup instructions for new environment requirements
             - Update .env.sample files for new environment variables
             - Document new deployment procedures or script changes
-            
+
             **Developer Documentation:**
             - client/apps/game-docs/docs/pages/development/ for infrastructure changes
             - Update local development setup instructions
             - Document new scripts or configuration requirements
-            
+
             **How to Create Documentation PR using MCP:**
-            
+
             1. Use mcp__github__create_branch to create a new documentation branch:
                - Branch name: "docs/update-infrastructure-[change-type]"
                - Base branch: "next"
-            
+
             2. Use file editing tools to update the necessary documentation files
-            
+
             3. Use mcp__github__create_pull_request to create the documentation PR:
                - Title: "docs: Update infrastructure documentation"
                - Body: "Updates documentation to reflect infrastructure changes in PR #[original-pr-number]"
                - Target branch: "next"
-            
+
             **Available MCP Tools for Documentation:**
             - mcp__github__create_branch
             - mcp__github__create_pull_request

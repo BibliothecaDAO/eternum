@@ -22,7 +22,3 @@ and updating.
 ```
 pnpm run build --watch
 ```
-
-### Examples
-
-To run the example which has the linked packages:

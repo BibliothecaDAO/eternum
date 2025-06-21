@@ -4,7 +4,8 @@ This directory contains utility scripts for the Eternum project.
 
 ## Weekly Summary Generator
 
-The weekly summary generator (`generate-weekly-summary.js`) creates comprehensive markdown summaries of repository activity over specified time periods.
+The weekly summary generator (`generate-weekly-summary.js`) creates comprehensive markdown summaries of repository
+activity over specified time periods.
 
 ### Features
 
@@ -101,6 +102,7 @@ This summary can be used for:
 ### Dependencies
 
 The script uses only Node.js built-ins:
+
 - `child_process` for git commands
 - `fs` for file operations
 - `path` for path manipulation
