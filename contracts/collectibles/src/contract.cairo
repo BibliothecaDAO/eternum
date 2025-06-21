@@ -6,7 +6,8 @@ use starknet::ContractAddress;
 #[starknet::interface]
 trait ERC721MintBurnTrait<TState> {
     fn burn(ref self: TState, token_id: u256);
-    fn safe_mint(ref self: TState, recipient: ContractAddress, token_id: u256, attributes_raw: u128);
+    fn safe_mint(ref self: TState, recipient: ContractAddress, attributes_raw: u128);
+    fn safe_mint_many(ref self: TState, recipient: ContractAddress, attributes_and_counts: Span<(u128, u16)>);
 }
 
 #[starknet::interface]
@@ -20,8 +21,8 @@ trait IRealmsCollectibleMetadata<TState> {
     // trait_type_id is a number from 0 to 15 (128/8 = 16)
     // trait_value_id is a number 1 to 255 (u8)
 
-    fn set_default_ipfs_cid(ref self: TState, ipfs_cid: ByteArray);
-    fn set_attrs_raw_to_ipfs_cid(ref self: TState, attrs_raw: u128, ipfs_cid: ByteArray);
+    fn set_default_ipfs_cid(ref self: TState, ipfs_cid: ByteArray, overwrite: bool);
+    fn set_attrs_raw_to_ipfs_cid(ref self: TState, attrs_raw: u128, ipfs_cid: ByteArray, overwrite: bool);
 
     fn set_trait_type_name(ref self: TState, trait_type_id: u8, name: ByteArray, overwrite: bool);
     fn set_trait_value_name(ref self: TState, trait_type_id: u8, trait_value_id: u8, name: ByteArray, overwrite: bool);
@@ -176,6 +177,7 @@ mod RealmsCollectible {
 
     #[storage]
     struct Storage {
+        counter: u128,
         token_id_to_attrs_raw: Map<u256, u128>,
         default_ipfs_cid: ByteArray,
         attrs_raw_to_ipfs_cid: Map<u128, ByteArray>,
@@ -290,6 +292,8 @@ mod RealmsCollectible {
             auth: ContractAddress,
         ) {
             let mut contract_state = self.get_contract_mut();
+            // attempt to unlock token and check if token is locked
+            contract_state.token_unlock(token_id);
             assert!(!contract_state.token_is_locked(token_id), "RealmsCollectible: Token is locked");
             contract_state.erc721_enumerable.before_update(to, token_id);
         }
@@ -324,26 +328,69 @@ mod RealmsCollectible {
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
         }
 
-        fn safe_mint(ref self: ContractState, recipient: ContractAddress, token_id: u256, attributes_raw: u128) {
+        fn safe_mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {
             self.accesscontrol.assert_only_role(MINTER_ROLE);
-            if attributes_raw != 0 {
-                self.token_id_to_attrs_raw.entry(token_id).write(attributes_raw);
+
+            // increment counter
+            let token_id = self.counter.read() + 1;
+            self.counter.write(token_id);
+
+            // set attributes raw
+            assert!(attributes_raw != 0, "RealmsCollectible: Attributes raw must be non-zero");
+
+            // ensure ipfs image is already set for those attributes
+            let ipfs_cid = self.attrs_raw_to_ipfs_cid.entry(attributes_raw).read();
+            assert!(ipfs_cid != "", "RealmsCollectible: IPFS CID not set for those attributes");
+
+            self.token_id_to_attrs_raw.entry(token_id.into()).write(attributes_raw);
+
+            // mint token
+            self.erc721.safe_mint(recipient, token_id.into(), array![].span());
+        }
+
+
+        fn safe_mint_many(
+            ref self: ContractState, recipient: ContractAddress, mut attributes_and_counts: Span<(u128, u16)>,
+        ) {
+            while attributes_and_counts.len() > 0 {
+                let (attributes_raw, count) = attributes_and_counts.pop_front().unwrap();
+                let (attributes_raw, count) = (*attributes_raw, *count);
+                for _ in 0..count {
+                    self.safe_mint(recipient, attributes_raw);
+                }
             }
-            self.erc721.safe_mint(recipient, token_id, array![].span());
         }
     }
 
 
     #[abi(embed_v0)]
     impl RealmsCollectibleMetadataImpl of IRealmsCollectibleMetadata<ContractState> {
-        fn set_default_ipfs_cid(ref self: ContractState, ipfs_cid: ByteArray) {
+        fn set_default_ipfs_cid(ref self: ContractState, ipfs_cid: ByteArray, overwrite: bool) {
             self.accesscontrol.assert_only_role(METADATA_UPDATER_ROLE);
+
+            let current_ipfs_cid = self.default_ipfs_cid.read();
+            if current_ipfs_cid != "" {
+                if current_ipfs_cid == ipfs_cid {
+                    return;
+                } else {
+                    assert!(overwrite, "RealmsCollectible: Default IPFS CID already exists");
+                }
+            }
             self.default_ipfs_cid.write(format!("{}", ipfs_cid));
             self.emit(DefaultIPFSCIDUpdated { ipfs_cid, timestamp: starknet::get_block_timestamp() });
         }
 
-        fn set_attrs_raw_to_ipfs_cid(ref self: ContractState, attrs_raw: u128, ipfs_cid: ByteArray) {
+        fn set_attrs_raw_to_ipfs_cid(ref self: ContractState, attrs_raw: u128, ipfs_cid: ByteArray, overwrite: bool) {
             self.accesscontrol.assert_only_role(METADATA_UPDATER_ROLE);
+
+            let current_ipfs_cid = self.attrs_raw_to_ipfs_cid.entry(attrs_raw).read();
+            if current_ipfs_cid != "" {
+                if current_ipfs_cid == ipfs_cid {
+                    return;
+                } else {
+                    assert!(overwrite, "RealmsCollectible: Attrs raw to IPFS CID already exists");
+                }
+            }
             self.attrs_raw_to_ipfs_cid.entry(attrs_raw).write(format!("{}", ipfs_cid));
             self.emit(AttrsRawToIPFSCIDUpdated { attrs_raw, ipfs_cid, timestamp: starknet::get_block_timestamp() });
         }
@@ -351,14 +398,16 @@ mod RealmsCollectible {
         fn set_trait_type_name(ref self: ContractState, trait_type_id: u8, name: ByteArray, overwrite: bool) {
             self.accesscontrol.assert_only_role(METADATA_UPDATER_ROLE);
             assert!(trait_type_id < 16, "RealmsCollectible: Trait type id must be a value between 0 and 15");
-            if !overwrite {
-                assert!(
-                    self.trait_type_to_name.entry(trait_type_id).read() == "",
-                    "RealmsCollectible: Trait type name already exists",
-                );
+
+            let current_name = self.trait_type_to_name.entry(trait_type_id).read();
+            if current_name != "" {
+                if current_name == name {
+                    return;
+                } else {
+                    assert!(overwrite, "RealmsCollectible: Trait type name already exists");
+                }
             }
             self.trait_type_to_name.entry(trait_type_id).write(format!("{}", name));
-
             self
                 .emit(
                     TraitTypeUpdated {
@@ -373,14 +422,17 @@ mod RealmsCollectible {
             self.accesscontrol.assert_only_role(METADATA_UPDATER_ROLE);
             assert!(trait_type_id < 16, "RealmsCollectible: Trait type id must be a value between 0 and 15");
             assert!(trait_value_id > 0, "RealmsCollectible: Trait value id must be a value between 1 and 255");
-            if !overwrite {
-                assert!(
-                    self.trait_value_to_name.entry((trait_type_id, trait_value_id)).read() == "",
-                    "RealmsCollectible: Trait value name already exists",
-                );
-            }
-            self.trait_value_to_name.entry((trait_type_id, trait_value_id)).write(format!("{}", name));
 
+            let current_name = self.trait_value_to_name.entry((trait_type_id, trait_value_id)).read();
+            if current_name != "" {
+                if current_name == name {
+                    return;
+                } else {
+                    assert!(overwrite, "RealmsCollectible: Trait value name already exists");
+                }
+            }
+
+            self.trait_value_to_name.entry((trait_type_id, trait_value_id)).write(format!("{}", name));
             self
                 .emit(
                     TraitValueUpdated {
@@ -423,7 +475,10 @@ mod RealmsCollectible {
                         .trait_value_to_name
                         .entry((i.try_into().unwrap(), trait_value))
                         .read();
-                    attrs_data.append((trait_type_name, trait_value_name));
+                    // Only add trait if both type and value names are defined
+                    if trait_type_name != "" && trait_value_name != "" {
+                        attrs_data.append((trait_type_name, trait_value_name));
+                    }
                 }
             };
 
@@ -454,28 +509,30 @@ mod RealmsCollectible {
                 );
         }
 
+        // Note: this function can be called by anyone and is also
+        // used internally in ERC721HooksImpl::before_update
         fn token_unlock(ref self: ContractState, token_id: u256) {
-            // Ensure token exists and caller is the owner
-            self.erc721._require_owned(token_id);
-            let caller = starknet::get_caller_address();
-            let owner = self.erc721._owner_of(token_id);
-            assert!(caller == owner, "RealmsCollectible: Caller is not owner");
-
+            // return early if token is not locked
             let (lock_id, _) = self.token_lock.entry(token_id).read();
-            assert!(lock_id != 0, "RealmsCollectible: Token is not locked");
+            if lock_id == 0 {
+                return;
+            }
 
             let unlock_at = self.lock_state.entry(lock_id).read();
-            assert!(unlock_at > 0, "RealmsCollectible: Lock is not active");
-            assert!(unlock_at <= starknet::get_block_timestamp(), "RealmsCollectible: Lock is not expired");
-
-            self.token_lock.entry(token_id).write((0, 0));
-
-            self
-                .emit(
-                    TokenLockStateUpdated {
-                        token_id, lock_id, lock_state: LockState::Inactive, timestamp: starknet::get_block_timestamp(),
-                    },
-                );
+            let now = starknet::get_block_timestamp();
+            if now >= unlock_at {
+                // unlock token
+                self.token_lock.entry(token_id).write((0, 0));
+                self
+                    .emit(
+                        TokenLockStateUpdated {
+                            token_id,
+                            lock_id,
+                            lock_state: LockState::Inactive,
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
+            }
         }
 
         fn token_lock_state(self: @ContractState, token_id: u256) -> (felt252, felt252) {
@@ -495,7 +552,7 @@ mod RealmsCollectible {
         fn lock_state_update(ref self: ContractState, lock_id: felt252, unlock_at: u64) {
             self.accesscontrol.assert_only_role(LOCKER_ROLE);
 
-            assert!(unlock_at >= starknet::get_block_timestamp(), "RealmsCollectible: Unlock at must be in the future");
+            assert!(unlock_at > starknet::get_block_timestamp(), "RealmsCollectible: Unlock at must be in the future");
 
             assert!(lock_id != 0, "RealmsCollectible: Lock id is zero");
             self.lock_state.entry(lock_id).write(unlock_at);

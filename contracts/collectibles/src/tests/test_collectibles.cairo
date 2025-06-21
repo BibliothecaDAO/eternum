@@ -75,6 +75,29 @@ mod tests {
     const UNLOCK_TIMESTAMP: u64 = 1000000;
     const EXPIRED_TIMESTAMP: u64 = 100;
 
+    // Helper function to set up basic attributes with IPFS CID
+    fn setup_basic_attributes(
+        contract: ContractAddress, metadata_updater: ContractAddress, attributes: u128, ipfs_cid: ByteArray,
+    ) {
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+        start_cheat_caller_address(contract, metadata_updater);
+        metadata.set_attrs_raw_to_ipfs_cid(attributes, ipfs_cid, false);
+        stop_cheat_caller_address(contract);
+    }
+
+    // Helper function to set up multiple attributes with IPFS CIDs
+    fn setup_multiple_attributes(
+        contract: ContractAddress, metadata_updater: ContractAddress, mut attributes_and_cids: Array<(u128, ByteArray)>,
+    ) {
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+        start_cheat_caller_address(contract, metadata_updater);
+        while attributes_and_cids.len() > 0 {
+            let (attrs, cid) = attributes_and_cids.pop_front().unwrap();
+            metadata.set_attrs_raw_to_ipfs_cid(attrs, cid, false);
+        };
+        stop_cheat_caller_address(contract);
+    }
+
     fn COLLECTIBLES_CONTRACT() -> ContractAddress {
         let collectibles_class = declare("RealmsCollectible").unwrap().contract_class();
 
@@ -138,13 +161,18 @@ mod tests {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // Mint token with empty attributes
+        // Setup attributes and IPFS CID
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
+        // Mint token with attributes
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Verify ownership
@@ -153,16 +181,49 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected: "RealmsCollectible: Attributes raw must be non-zero")]
+    fn test_mint_zero_attributes_fails() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Try to mint with zero attributes (should fail)
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, 0_u128);
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: IPFS CID not set for those attributes")]
+    fn test_mint_without_ipfs_cid_fails() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Try to mint without setting IPFS CID first (should fail)
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, 0x01_u128);
+    }
+
+    #[test]
     #[should_panic(expected: 'Caller is missing role')]
     fn test_mint_unauthorized() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
+        // Setup attributes
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
         // Try to mint without MINTER_ROLE
         start_cheat_caller_address(contract, alice);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
     }
 
     #[test]
@@ -170,13 +231,17 @@ mod tests {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // First mint a token
+        // Setup and mint a token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Verify token exists
@@ -198,12 +263,16 @@ mod tests {
         let alice = ALICE();
         let bob = BOB();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // First mint a token
+        // Setup and mint a token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Try to burn when not owner
@@ -217,13 +286,17 @@ mod tests {
         let alice = ALICE();
         let bob = BOB();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // Mint token to Alice
+        // Setup and mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Transfer from Alice to Bob
@@ -251,7 +324,7 @@ mod tests {
         let ipfs_cid = "QmDefaultCID123";
 
         start_cheat_caller_address(contract, metadata_updater);
-        metadata.set_default_ipfs_cid(ipfs_cid);
+        metadata.set_default_ipfs_cid(ipfs_cid, false);
         stop_cheat_caller_address(contract);
         // Test by checking if a token without specific metadata uses default
     // This would be tested when getting metadata for a token
@@ -266,7 +339,7 @@ mod tests {
         let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
 
         start_cheat_caller_address(contract, alice);
-        metadata.set_default_ipfs_cid("QmDefaultCID123");
+        metadata.set_default_ipfs_cid("QmDefaultCID123", false);
     }
 
     #[test]
@@ -280,7 +353,123 @@ mod tests {
         let ipfs_cid = "QmSpecificCID456";
 
         start_cheat_caller_address(contract, metadata_updater);
-        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, ipfs_cid);
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, ipfs_cid, false);
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Default IPFS CID already exists")]
+    fn test_set_default_ipfs_cid_overwrite_false_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID
+        metadata.set_default_ipfs_cid("QmFirstCID123", false);
+
+        // Try to set different IPFS CID with overwrite=false (should panic)
+        metadata.set_default_ipfs_cid("QmSecondCID456", false);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_default_ipfs_cid_overwrite_true_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID
+        metadata.set_default_ipfs_cid("QmFirstCID123", false);
+
+        // Set different IPFS CID with overwrite=true (should succeed)
+        metadata.set_default_ipfs_cid("QmSecondCID456", true);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_default_ipfs_cid_same_value_returns_early() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID
+        metadata.set_default_ipfs_cid("QmSameCID123", false);
+
+        // Set same IPFS CID again (should return early without error)
+        metadata.set_default_ipfs_cid("QmSameCID123", false);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Attrs raw to IPFS CID already exists")]
+    fn test_set_attrs_raw_to_ipfs_cid_overwrite_false_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let attrs_raw: u128 = 0x12345678;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID for these attributes
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmFirstCID123", false);
+
+        // Try to set different IPFS CID with overwrite=false (should panic)
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmSecondCID456", false);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_attrs_raw_to_ipfs_cid_overwrite_true_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let attrs_raw: u128 = 0x12345678;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID for these attributes
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmFirstCID123", false);
+
+        // Set different IPFS CID with overwrite=true (should succeed)
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmSecondCID456", true);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_attrs_raw_to_ipfs_cid_same_value_returns_early() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let attrs_raw: u128 = 0x12345678;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial IPFS CID for these attributes
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmSameCID123", false);
+
+        // Set same IPFS CID again (should return early without error)
+        metadata.set_attrs_raw_to_ipfs_cid(attrs_raw, "QmSameCID123", false);
+
         stop_cheat_caller_address(contract);
     }
 
@@ -437,15 +626,18 @@ mod tests {
         let alice = ALICE();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
-        let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token and create lock
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Create lock state with future unlock time
@@ -478,14 +670,18 @@ mod tests {
         let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Create lock state
@@ -506,6 +702,7 @@ mod tests {
         let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
@@ -513,8 +710,11 @@ mod tests {
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Alice approves Bob for this token
@@ -540,6 +740,7 @@ mod tests {
         let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
@@ -547,8 +748,11 @@ mod tests {
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Alice approves Bob as operator for all tokens
@@ -573,14 +777,18 @@ mod tests {
         let alice = ALICE();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Create expired lock
@@ -598,16 +806,21 @@ mod tests {
     fn test_token_unlock() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
+        let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint and lock token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Create lock and lock token
@@ -620,9 +833,10 @@ mod tests {
         lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
         stop_cheat_caller_address(contract);
 
-        // Wait for lock to expire and unlock as owner
+        // Wait for lock to expire and unlock as Bob
         start_cheat_block_timestamp(contract, 1500); // After unlock time
-        start_cheat_caller_address(contract, alice);
+        // Bob can unlock the token once it's expired (anyone can call token_unlock)
+        start_cheat_caller_address(contract, bob);
         lock.token_unlock(TOKEN_ID_1);
         stop_cheat_caller_address(contract);
         stop_cheat_block_timestamp(contract);
@@ -636,116 +850,50 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: "RealmsCollectible: Caller is not owner")]
-    fn test_token_unlock_unauthorized() {
-        let contract = COLLECTIBLES_CONTRACT();
-        let alice = ALICE();
-        let bob = BOB();
-        let minter = MINTER();
-        let locker = LOCKER();
-
-        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
-        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
-        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
-
-        // Setup: mint and lock token
-        start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
-        stop_cheat_caller_address(contract);
-
-        // Create lock and lock token as Alice
-        start_cheat_block_timestamp(contract, 500);
-        start_cheat_caller_address(contract, locker);
-        lock_admin.lock_state_update(LOCK_ID_1, 1000);
-        stop_cheat_caller_address(contract);
-
-        start_cheat_caller_address(contract, alice);
-        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
-        stop_cheat_caller_address(contract);
-
-        // Wait for lock to expire
-        start_cheat_block_timestamp(contract, 1500);
-
-        // Try to unlock as Bob (not owner)
-        start_cheat_caller_address(contract, bob);
-        lock.token_unlock(TOKEN_ID_1);
-    }
-
-    #[test]
-    #[should_panic(expected: "RealmsCollectible: Caller is not owner")]
-    fn test_token_unlock_with_approval_fails() {
-        let contract = COLLECTIBLES_CONTRACT();
-        let alice = ALICE();
-        let bob = BOB();
-        let minter = MINTER();
-        let locker = LOCKER();
-
-        let erc721 = IERC721Dispatcher { contract_address: contract };
-        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
-        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
-        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
-
-        // Setup: mint token to Alice
-        start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
-        stop_cheat_caller_address(contract);
-
-        // Alice approves Bob for this token
-        start_cheat_caller_address(contract, alice);
-        erc721.approve(bob, TOKEN_ID_1);
-        stop_cheat_caller_address(contract);
-
-        // Create lock and lock token as Alice
-        start_cheat_block_timestamp(contract, 500);
-        start_cheat_caller_address(contract, locker);
-        lock_admin.lock_state_update(LOCK_ID_1, 1000);
-        stop_cheat_caller_address(contract);
-
-        start_cheat_caller_address(contract, alice);
-        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
-        stop_cheat_caller_address(contract);
-
-        // Wait for lock to expire - Bob cannot unlock even though approved (owner-only policy)
-        start_cheat_block_timestamp(contract, 1500);
-        start_cheat_caller_address(contract, bob);
-        lock.token_unlock(TOKEN_ID_1);
-    }
-
-    #[test]
-    #[should_panic(expected: "RealmsCollectible: Token is not locked")]
     fn test_token_unlock_not_locked() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token (but don't lock it)
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
-        // Try to unlock non-locked token as owner
+        // Try to unlock non-locked token (should return early without error)
         start_cheat_caller_address(contract, alice);
         lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is still not locked
+        assert!(!lock.token_is_locked(TOKEN_ID_1), "Token should not be locked");
     }
 
     #[test]
-    #[should_panic(expected: "RealmsCollectible: Lock is not expired")]
     fn test_token_unlock_not_expired() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint and lock token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         start_cheat_block_timestamp(contract, 500);
@@ -757,10 +905,15 @@ mod tests {
         lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
         stop_cheat_caller_address(contract);
 
-        // Try to unlock before expiration as owner
+        // Try to unlock before expiration - should return early without unlocking
         start_cheat_block_timestamp(contract, 800); // Before unlock time of 1000
         start_cheat_caller_address(contract, alice);
         lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is still locked
+        assert!(lock.token_is_locked(TOKEN_ID_1), "Token should still be locked");
+        stop_cheat_block_timestamp(contract);
     }
 
     #[test]
@@ -771,6 +924,7 @@ mod tests {
         let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
@@ -778,8 +932,11 @@ mod tests {
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Lock the token
@@ -797,6 +954,65 @@ mod tests {
         erc721.transfer_from(alice, bob, TOKEN_ID_1);
     }
 
+    #[test]
+    fn test_transfer_automatically_unlocks_expired_lock() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let bob = BOB();
+        let minter = MINTER();
+        let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
+        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
+
+        // Setup: mint token to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, attributes);
+        stop_cheat_caller_address(contract);
+
+        // Lock the token with expiration at timestamp 1000
+        start_cheat_block_timestamp(contract, 500);
+        start_cheat_caller_address(contract, locker);
+        lock_admin.lock_state_update(LOCK_ID_1, 1000);
+        stop_cheat_caller_address(contract);
+
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is initially locked
+        assert!(lock.token_is_locked(TOKEN_ID_1), "Token should be locked initially");
+
+        // Wait for lock to expire
+        start_cheat_block_timestamp(contract, 1500); // After unlock time of 1000
+
+        // Transfer should automatically unlock the expired lock and succeed
+        start_cheat_caller_address(contract, alice);
+        erc721.transfer_from(alice, bob, TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify transfer succeeded
+        assert!(erc721.owner_of(TOKEN_ID_1) == bob, "Transfer should have succeeded");
+        assert!(erc721.balance_of(alice) == 0, "Alice should have 0 tokens");
+        assert!(erc721.balance_of(bob) == 1, "Bob should have 1 token");
+
+        // Verify token is no longer locked after automatic unlock during transfer
+        assert!(!lock.token_is_locked(TOKEN_ID_1), "Token should be automatically unlocked after transfer");
+
+        // Verify lock state was reset
+        let (lock_id, lock_tx_hash) = lock.token_lock_state(TOKEN_ID_1);
+        assert!(lock_id == 0, "Lock ID should be reset to 0");
+        assert!(lock_tx_hash == 0, "Lock tx hash should be reset to 0");
+
+        stop_cheat_block_timestamp(contract);
+    }
+
     // =====================================
     // ENUMERABLE FUNCTIONALITY TESTS
     // =====================================
@@ -807,16 +1023,20 @@ mod tests {
         let alice = ALICE();
         let bob = BOB();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let enumerable = ERC721EnumerableTransferAmountTraitDispatcher { contract_address: contract };
 
-        // Mint 3 tokens to Alice
+        // Setup and mint 3 tokens to Alice
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
-        mint_burn.safe_mint(alice, TOKEN_ID_2, 0_u128);
-        mint_burn.safe_mint(alice, TOKEN_ID_3, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
+        mint_burn.safe_mint(alice, attributes);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Verify Alice has 3 tokens
@@ -910,7 +1130,7 @@ mod tests {
         start_cheat_caller_address(contract, metadata_updater);
 
         // Set default IPFS CID
-        metadata.set_default_ipfs_cid("QmDefaultCID123");
+        metadata.set_default_ipfs_cid("QmDefaultCID123", false);
 
         // Set trait types
         metadata.set_trait_type_name(0, "Rarity", false);
@@ -924,12 +1144,15 @@ mod tests {
 
         stop_cheat_caller_address(contract);
 
-        // Mint a token
+        // Setup and mint a token with attributes
+        let attributes = 0x00000000000000000000000000000101_u128; // rarity=1, element=1
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTokenCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
-        // Get token URI (should work even with empty metadata)
+        // Get token URI (should work with the metadata)
         let token_uri = erc721_metadata.token_uri(TOKEN_ID_1);
         assert!(token_uri.len() > 0, "Token URI should not be empty");
     }
@@ -941,15 +1164,19 @@ mod tests {
         let bob = BOB();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
-        // Mint tokens to different owners
+        // Setup attributes and mint tokens to different owners
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
-        mint_burn.safe_mint(bob, TOKEN_ID_2, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
+        mint_burn.safe_mint(bob, attributes);
         stop_cheat_caller_address(contract);
 
         // Create multiple lock states
@@ -998,21 +1225,25 @@ mod tests {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // Mint token without setting any metadata
+        // Mint token with minimal attributes (but not zero)
+        let attributes = 0x00000000000000000000000000000001_u128; // minimal valid attributes
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmMinimalCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
         stop_cheat_caller_address(contract);
 
         // Get metadata - should handle gracefully
         let raw_metadata = metadata.get_metadata_raw(TOKEN_ID_1);
-        assert!(raw_metadata == 0, "Empty metadata should be 0");
+        assert!(raw_metadata == attributes, "Metadata should match what was set");
 
         let json_metadata = metadata.get_metadata_json(TOKEN_ID_1);
-        assert!(json_metadata.len() > 0, "JSON metadata should not be empty even without traits");
+        assert!(json_metadata.len() > 0, "JSON metadata should not be empty");
     }
 
     #[test]
@@ -1023,17 +1254,21 @@ mod tests {
         let charlie = CHARLIE();
         let minter = MINTER();
         let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
 
-        let erc721 = IERC721Dispatcher { contract_address: contract };
+        // let erc721 = IERC721Dispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
         let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
 
         // Setup: mint tokens to different owners
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
-        mint_burn.safe_mint(bob, TOKEN_ID_2, 0_u128);
-        mint_burn.safe_mint(charlie, TOKEN_ID_3, 0_u128);
+        mint_burn.safe_mint(alice, attributes);
+        mint_burn.safe_mint(bob, attributes);
+        mint_burn.safe_mint(charlie, attributes);
         stop_cheat_caller_address(contract);
 
         // Create lock state
@@ -1089,6 +1324,7 @@ mod tests {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
@@ -1097,9 +1333,12 @@ mod tests {
         // u128 packs 16 bytes, each trait_type is 1 byte
         let attributes_raw: u128 = 0x00000000000000000000000000000305;
 
+        // Setup IPFS CID for these attributes
+        setup_basic_attributes(contract, metadata_updater, attributes_raw, "QmAttributesCID");
+
         // Mint token with specific attributes
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, attributes_raw);
+        mint_burn.safe_mint(alice, attributes_raw);
         stop_cheat_caller_address(contract);
 
         // Verify attributes were stored correctly
@@ -1155,9 +1394,13 @@ mod tests {
         // Create attributes for a Legendary Fire Mighty Northern Realms token
         // Byte layout: [region=1, power=3, element=1, rarity=5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         let attributes_raw: u128 = 0x00000000000000000000000001030105;
+
+        // Setup IPFS CID for these attributes
+        setup_basic_attributes(contract, metadata_updater, attributes_raw, "QmComplexCID");
+
         // Mint token with these attributes
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, attributes_raw);
+        mint_burn.safe_mint(alice, attributes_raw);
         stop_cheat_caller_address(contract);
 
         // Get and verify individual trait names
@@ -1188,23 +1431,26 @@ mod tests {
 
         // Set default IPFS CID
         start_cheat_caller_address(contract, metadata_updater);
-        metadata.set_default_ipfs_cid("QmDefaultImageCID123");
+        metadata.set_default_ipfs_cid("QmDefaultImageCID123", false);
 
         // Set specific IPFS CID for legendary items
         let legendary_attributes: u128 = 0x00000000000000000000000000000005; // rarity = 5 (legendary)
-        metadata.set_attrs_raw_to_ipfs_cid(legendary_attributes, "QmLegendaryImageCID456");
+        metadata.set_attrs_raw_to_ipfs_cid(legendary_attributes, "QmLegendaryImageCID456", false);
 
         stop_cheat_caller_address(contract);
 
-        // Mint a common token (should use default IPFS)
+        // Setup IPFS CIDs for different attributes
         let common_attributes: u128 = 0x00000000000000000000000000000001; // rarity = 1 (common)
+        setup_basic_attributes(contract, metadata_updater, common_attributes, "QmCommonImageCID789");
+
+        // Mint a common token
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, common_attributes);
+        mint_burn.safe_mint(alice, common_attributes);
         stop_cheat_caller_address(contract);
 
-        // Mint a legendary token (should use specific IPFS)
+        // Mint a legendary token
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_2, legendary_attributes);
+        mint_burn.safe_mint(alice, legendary_attributes);
         stop_cheat_caller_address(contract);
 
         // Both should have different JSON metadata due to different IPFS CIDs
@@ -1242,8 +1488,11 @@ mod tests {
         // Values:    [255][0][0][0][0][0][0][0][0][0][7][0][0][0][0][3]
         let sparse_attributes: u128 = 0xFF000000000000000000070000000003;
 
+        // Setup IPFS CID for sparse attributes
+        setup_basic_attributes(contract, metadata_updater, sparse_attributes, "QmSparseCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, sparse_attributes);
+        mint_burn.safe_mint(alice, sparse_attributes);
         stop_cheat_caller_address(contract);
 
         // Verify sparse attributes are stored correctly
@@ -1260,35 +1509,40 @@ mod tests {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
         let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
 
         let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
 
-        // Mint token with no attributes
+        // Mint token with minimal attributes (since zero is not allowed)
+        let minimal_attributes: u128 = 0x00000000000000000000000000000001;
+        setup_basic_attributes(contract, metadata_updater, minimal_attributes, "QmMinimalCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, 0_u128);
+        mint_burn.safe_mint(alice, minimal_attributes);
         stop_cheat_caller_address(contract);
 
         // Mint token with all 16 bytes filled
         let full_attributes: u128 = 0x0F0E0D0C0B0A09080706050403020101;
+        setup_basic_attributes(contract, metadata_updater, full_attributes, "QmFullCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_2, full_attributes);
+        mint_burn.safe_mint(alice, full_attributes);
         stop_cheat_caller_address(contract);
 
         // Compare metadata
-        let empty_raw = metadata.get_metadata_raw(TOKEN_ID_1);
+        let minimal_raw = metadata.get_metadata_raw(TOKEN_ID_1);
         let full_raw = metadata.get_metadata_raw(TOKEN_ID_2);
 
-        assert!(empty_raw == 0, "Empty attributes should be 0");
+        assert!(minimal_raw == minimal_attributes, "Minimal attributes should match");
         assert!(full_raw == full_attributes, "Full attributes should match");
 
-        // Both should generate JSON (though empty will have no traits)
-        let empty_json = metadata.get_metadata_json(TOKEN_ID_1);
+        // Both should generate JSON
+        let minimal_json = metadata.get_metadata_json(TOKEN_ID_1);
         let full_json = metadata.get_metadata_json(TOKEN_ID_2);
 
-        assert!(empty_json.len() > 0, "Empty JSON should still have structure");
+        assert!(minimal_json.len() > 0, "Minimal JSON should still have structure");
         assert!(full_json.len() > 0, "Full JSON should have content");
-        assert!(full_json.len() > empty_json.len(), "Full JSON should be longer");
     }
 
     #[test]
@@ -1304,15 +1558,17 @@ mod tests {
 
         // Set up metadata system
         start_cheat_caller_address(contract, metadata_updater);
-        metadata.set_default_ipfs_cid("QmTestCID");
+        metadata.set_default_ipfs_cid("QmTestCID", false);
         metadata.set_trait_type_name(0, "Type", false);
         metadata.set_trait_value_name(0, 1, "Warrior", false);
         stop_cheat_caller_address(contract);
 
         // Mint token with warrior attributes
         let warrior_attributes: u128 = 0x00000000000000000000000000000001;
+        setup_basic_attributes(contract, metadata_updater, warrior_attributes, "QmWarriorCID");
+
         start_cheat_caller_address(contract, minter);
-        mint_burn.safe_mint(alice, TOKEN_ID_1, warrior_attributes);
+        mint_burn.safe_mint(alice, warrior_attributes);
         stop_cheat_caller_address(contract);
 
         // Get token URI through ERC721 interface
@@ -1321,5 +1577,588 @@ mod tests {
 
         // Should be base64 encoded JSON with data: prefix
         assert!(token_uri.len() > 20, "Token URI should be substantial length");
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Trait type name already exists")]
+    fn test_set_trait_type_name_overwrite_false_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 5;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait type name
+        metadata.set_trait_type_name(trait_type_id, "First Name", false);
+
+        // Try to set different trait type name with overwrite=false (should panic)
+        metadata.set_trait_type_name(trait_type_id, "Second Name", false);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_trait_type_name_overwrite_true_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 5;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait type name
+        metadata.set_trait_type_name(trait_type_id, "First Name", false);
+
+        // Set different trait type name with overwrite=true (should succeed)
+        metadata.set_trait_type_name(trait_type_id, "Second Name", true);
+
+        stop_cheat_caller_address(contract);
+
+        // Verify the name was overwritten
+        let retrieved_name = metadata.get_trait_type_name(trait_type_id);
+        assert!(retrieved_name == "Second Name", "Trait type name not overwritten");
+    }
+
+    #[test]
+    fn test_set_trait_type_name_same_value_returns_early() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 5;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait type name
+        metadata.set_trait_type_name(trait_type_id, "Same Name", false);
+
+        // Set same trait type name again (should return early without error)
+        metadata.set_trait_type_name(trait_type_id, "Same Name", false);
+
+        stop_cheat_caller_address(contract);
+
+        // Verify the name is still set correctly
+        let retrieved_name = metadata.get_trait_type_name(trait_type_id);
+        assert!(retrieved_name == "Same Name", "Trait type name should be unchanged");
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Trait value name already exists")]
+    fn test_set_trait_value_name_overwrite_false_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 3;
+        let trait_value_id: u8 = 10;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait value name
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "First Value", false);
+
+        // Try to set different trait value name with overwrite=false (should panic)
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "Second Value", false);
+
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_set_trait_value_name_overwrite_true_with_existing_different() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 3;
+        let trait_value_id: u8 = 10;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait value name
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "First Value", false);
+
+        // Set different trait value name with overwrite=true (should succeed)
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "Second Value", true);
+
+        stop_cheat_caller_address(contract);
+
+        // Verify the name was overwritten
+        let retrieved_name = metadata.get_trait_value_name(trait_type_id, trait_value_id);
+        assert!(retrieved_name == "Second Value", "Trait value name not overwritten");
+    }
+
+    #[test]
+    fn test_set_trait_value_name_same_value_returns_early() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let metadata_updater = METADATA_UPDATER();
+
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        let trait_type_id: u8 = 3;
+        let trait_value_id: u8 = 10;
+
+        start_cheat_caller_address(contract, metadata_updater);
+
+        // Set initial trait value name
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "Same Value", false);
+
+        // Set same trait value name again (should return early without error)
+        metadata.set_trait_value_name(trait_type_id, trait_value_id, "Same Value", false);
+
+        stop_cheat_caller_address(contract);
+
+        // Verify the name is still set correctly
+        let retrieved_name = metadata.get_trait_value_name(trait_type_id, trait_value_id);
+        assert!(retrieved_name == "Same Value", "Trait value name should be unchanged");
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Unlock at must be in the future")]
+    fn test_lock_state_update_past_timestamp() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let locker = LOCKER();
+
+        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
+
+        // Set current time to 1000
+        start_cheat_block_timestamp(contract, 1000);
+
+        start_cheat_caller_address(contract, locker);
+        // Try to create lock that expires in the past (500 < 1000)
+        lock_admin.lock_state_update(LOCK_ID_1, 500);
+
+        stop_cheat_caller_address(contract);
+        stop_cheat_block_timestamp(contract);
+    }
+
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Lock is not active")]
+    fn test_token_lock_nonexistent_lock_id() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
+
+        // Setup: mint token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, attributes);
+        stop_cheat_caller_address(contract);
+
+        // Try to lock with non-existent lock_id (lock state was never created)
+        let nonexistent_lock_id = 'nonexistent_lock';
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, nonexistent_lock_id);
+        stop_cheat_caller_address(contract);
+    }
+
+    #[test]
+    fn test_lock_expiration_boundary_exactly_at_expiration() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
+        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
+
+        // Setup: mint token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, attributes);
+        stop_cheat_caller_address(contract);
+
+        // Create lock that expires at timestamp 1000
+        start_cheat_block_timestamp(contract, 500);
+        start_cheat_caller_address(contract, locker);
+        lock_admin.lock_state_update(LOCK_ID_1, 1000);
+        stop_cheat_caller_address(contract);
+
+        // Lock the token
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Test exactly at expiration time (1000)
+        start_cheat_block_timestamp(contract, 1000);
+
+        // At exactly expiration time, lock should be unlockable
+        start_cheat_caller_address(contract, alice);
+        lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is unlocked
+        assert!(!lock.token_is_locked(TOKEN_ID_1), "Token should be unlocked at expiration time");
+
+        stop_cheat_block_timestamp(contract);
+    }
+
+    #[test]
+    fn test_lock_expiration_boundary_one_second_before() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
+        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
+
+        // Setup: mint token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, attributes);
+        stop_cheat_caller_address(contract);
+
+        // Create lock that expires at timestamp 1000
+        start_cheat_block_timestamp(contract, 500);
+        start_cheat_caller_address(contract, locker);
+        lock_admin.lock_state_update(LOCK_ID_1, 1000);
+        stop_cheat_caller_address(contract);
+
+        // Lock the token
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Test one second before expiration (999 < 1000)
+        start_cheat_block_timestamp(contract, 999);
+
+        // One second before expiration, lock should still be active
+        start_cheat_caller_address(contract, alice);
+        lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is still locked (unlock should return early)
+        assert!(lock.token_is_locked(TOKEN_ID_1), "Token should still be locked before expiration");
+
+        stop_cheat_block_timestamp(contract);
+    }
+
+    #[test]
+    fn test_multiple_sequential_locks_on_same_token() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let locker = LOCKER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let lock_admin = IRealmsCollectibleLockAdminDispatcher { contract_address: contract };
+        let lock = IRealmsCollectibleLockDispatcher { contract_address: contract };
+
+        // Setup: mint token
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID");
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint(alice, attributes);
+        stop_cheat_caller_address(contract);
+
+        // Create multiple lock states
+        start_cheat_caller_address(contract, locker);
+        lock_admin.lock_state_update(LOCK_ID_1, 1000); // First lock expires at 1000
+        lock_admin.lock_state_update(LOCK_ID_2, 2000); // Second lock expires at 2000
+        stop_cheat_caller_address(contract);
+
+        // === FIRST LOCK ===
+        start_cheat_block_timestamp(contract, 500);
+
+        // Lock token with first lock
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, LOCK_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify first lock is active
+        assert!(lock.token_is_locked(TOKEN_ID_1), "Token should be locked with first lock");
+        let (current_lock_id, _) = lock.token_lock_state(TOKEN_ID_1);
+        assert!(current_lock_id == LOCK_ID_1, "Should be locked with first lock ID");
+
+        // Wait for first lock to expire and unlock
+        start_cheat_block_timestamp(contract, 1500);
+        start_cheat_caller_address(contract, alice);
+        lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is unlocked
+        assert!(!lock.token_is_locked(TOKEN_ID_1), "Token should be unlocked after first lock expires");
+
+        // === SECOND LOCK ===
+        // Lock token with second lock (reusing same token)
+        start_cheat_caller_address(contract, alice);
+        lock.token_lock(TOKEN_ID_1, LOCK_ID_2);
+        stop_cheat_caller_address(contract);
+
+        // Verify second lock is active
+        assert!(lock.token_is_locked(TOKEN_ID_1), "Token should be locked with second lock");
+        let (current_lock_id, _) = lock.token_lock_state(TOKEN_ID_1);
+        assert!(current_lock_id == LOCK_ID_2, "Should be locked with second lock ID");
+
+        // Wait for second lock to expire and unlock
+        start_cheat_block_timestamp(contract, 2500);
+        start_cheat_caller_address(contract, alice);
+        lock.token_unlock(TOKEN_ID_1);
+        stop_cheat_caller_address(contract);
+
+        // Verify token is finally unlocked
+        assert!(!lock.token_is_locked(TOKEN_ID_1), "Token should be unlocked after second lock expires");
+        let (final_lock_id, final_tx_hash) = lock.token_lock_state(TOKEN_ID_1);
+        assert!(final_lock_id == 0, "Final lock ID should be 0");
+        assert!(final_tx_hash == 0, "Final tx hash should be 0");
+
+        stop_cheat_block_timestamp(contract);
+    }
+
+    // =====================================
+    // SAFE_MINT_MANY FUNCTIONALITY TESTS
+    // =====================================
+
+    #[test]
+    fn test_safe_mint_many_basic() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        // Setup IPFS CIDs for different attributes
+        let attrs1 = 0x00000000000000000000000000000001_u128;
+        let attrs2 = 0x00000000000000000000000000000002_u128;
+        setup_multiple_attributes(
+            contract, metadata_updater, array![(attrs1, "QmRarity1CID"), (attrs2, "QmRarity2CID")],
+        );
+
+        // Prepare attributes and counts:
+        // - 2 tokens with attributes 0x01 (rarity=1)
+        // - 3 tokens with attributes 0x02 (rarity=2)
+        let attributes_and_counts = array![
+            (attrs1, 2_u16), // 2 tokens with rarity=1
+            (attrs2, 3_u16) // 3 tokens with rarity=2
+        ];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+        stop_cheat_caller_address(contract);
+
+        // Verify Alice has 5 tokens total (2 + 3)
+        assert!(erc721.balance_of(alice) == 5, "Alice should have 5 tokens");
+
+        // Verify token ownership and attributes
+        assert!(erc721.owner_of(TOKEN_ID_1) == alice, "Alice should own token 1");
+        assert!(erc721.owner_of(TOKEN_ID_2) == alice, "Alice should own token 2");
+        assert!(erc721.owner_of(TOKEN_ID_3) == alice, "Alice should own token 3");
+        assert!(erc721.owner_of(4) == alice, "Alice should own token 4");
+        assert!(erc721.owner_of(5) == alice, "Alice should own token 5");
+
+        // Verify attributes are set correctly
+        // First 2 tokens should have rarity=1
+        assert!(metadata.get_metadata_raw(TOKEN_ID_1) == attrs1, "Token 1 should have rarity=1");
+        assert!(metadata.get_metadata_raw(TOKEN_ID_2) == attrs1, "Token 2 should have rarity=1");
+
+        // Next 3 tokens should have rarity=2
+        assert!(metadata.get_metadata_raw(TOKEN_ID_3) == attrs2, "Token 3 should have rarity=2");
+        assert!(metadata.get_metadata_raw(4) == attrs2, "Token 4 should have rarity=2");
+        assert!(metadata.get_metadata_raw(5) == attrs2, "Token 5 should have rarity=2");
+    }
+
+    #[test]
+    #[should_panic(expected: 'Caller is missing role')]
+    fn test_safe_mint_many_unauthorized() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let metadata_updater = METADATA_UPDATER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Setup attributes
+        let attributes = 0x00000000000000000000000000000001_u128;
+        setup_basic_attributes(contract, metadata_updater, attributes, "QmTestCID123");
+
+        let attributes_and_counts = array![(attributes, 1_u16)];
+
+        // Try to mint without MINTER_ROLE
+        start_cheat_caller_address(contract, alice);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+    }
+
+    #[test]
+    fn test_safe_mint_many_empty_span() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        let empty_attributes: Array<(u128, u16)> = array![];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, empty_attributes.span());
+        stop_cheat_caller_address(contract);
+
+        // Should not mint any tokens
+        assert!(erc721.balance_of(alice) == 0, "Alice should have 0 tokens");
+    }
+
+    #[test]
+    fn test_safe_mint_many_zero_counts() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Setup IPFS CIDs for attributes
+        let attrs2 = 0x00000000000000000000000000000002_u128;
+        let attrs4 = 0x00000000000000000000000000000004_u128;
+        setup_multiple_attributes(contract, metadata_updater, array![(attrs2, "QmCID2"), (attrs4, "QmCID4")]);
+
+        // Include some zero counts mixed with valid counts
+        let attributes_and_counts = array![
+            (attrs2, 0_u16), // 0 tokens - should skip
+            (attrs2, 2_u16), // 2 tokens - should mint
+            (attrs4, 0_u16), // 0 tokens - should skip
+            (attrs4, 1_u16) // 1 token - should mint
+        ];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+        stop_cheat_caller_address(contract);
+
+        // Should mint 3 tokens total (0 + 2 + 0 + 1)
+        assert!(erc721.balance_of(alice) == 3, "Alice should have 3 tokens");
+
+        // Verify the attributes of minted tokens
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+        assert!(metadata.get_metadata_raw(TOKEN_ID_1) == attrs2, "Token 1 should have attributes 0x02");
+        assert!(metadata.get_metadata_raw(TOKEN_ID_2) == attrs2, "Token 2 should have attributes 0x02");
+        assert!(metadata.get_metadata_raw(TOKEN_ID_3) == attrs4, "Token 3 should have attributes 0x04");
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: Attributes raw must be non-zero")]
+    fn test_safe_mint_many_zero_attributes_fails() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Try to mint with zero attributes (should fail)
+        let attributes_and_counts = array![(0_u128, 1_u16)];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+    }
+
+    #[test]
+    #[should_panic(expected: "RealmsCollectible: IPFS CID not set for those attributes")]
+    fn test_safe_mint_many_missing_ipfs_cid_fails() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Try to mint without setting IPFS CID first (should fail)
+        let attributes_and_counts = array![(0x01_u128, 1_u16)];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+    }
+
+    #[test]
+    fn test_safe_mint_many_large_counts() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+
+        // Setup IPFS CIDs for attributes
+        let attrs1 = 0x00000000000000000000000000000001_u128;
+        let attrs2 = 0x00000000000000000000000000000002_u128;
+        setup_multiple_attributes(contract, metadata_updater, array![(attrs1, "QmCID1"), (attrs2, "QmCID2")]);
+
+        // Mint larger quantities
+        let attributes_and_counts = array![(attrs1, 10_u16), // 10 tokens
+        (attrs2, 25_u16) // 25 tokens
+        ];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+        stop_cheat_caller_address(contract);
+
+        // Should mint 35 tokens total
+        assert!(erc721.balance_of(alice) == 35, "Alice should have 35 tokens");
+
+        // Verify a few tokens have correct attributes
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+        assert!(metadata.get_metadata_raw(TOKEN_ID_1) == attrs1, "Token 1 should have attributes 0x01");
+        assert!(metadata.get_metadata_raw(10) == attrs1, "Token 10 should have attributes 0x01");
+        assert!(metadata.get_metadata_raw(11) == attrs2, "Token 11 should have attributes 0x02");
+        assert!(metadata.get_metadata_raw(35) == attrs2, "Token 35 should have attributes 0x02");
+    }
+
+    #[test]
+    fn test_safe_mint_many_complex_attributes() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let minter = MINTER();
+        let metadata_updater = METADATA_UPDATER();
+
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+
+        // Complex attributes with multiple trait values set
+        let legendary_attrs: u128 = 0xFF000000000000000000070000000005; // Complex attributes
+        let common_attrs: u128 = 0x00000000000000000000000000000001; // Simple attributes
+
+        setup_multiple_attributes(
+            contract, metadata_updater, array![(legendary_attrs, "QmLegendaryCID"), (common_attrs, "QmCommonCID")],
+        );
+
+        let attributes_and_counts = array![(legendary_attrs, 2_u16), (common_attrs, 1_u16)];
+
+        start_cheat_caller_address(contract, minter);
+        mint_burn.safe_mint_many(alice, attributes_and_counts.span());
+        stop_cheat_caller_address(contract);
+
+        // Verify total balance
+        assert!(erc721.balance_of(alice) == 3, "Alice should have 3 tokens");
+
+        // Verify complex attributes are preserved
+        assert!(metadata.get_metadata_raw(TOKEN_ID_1) == legendary_attrs, "Token 1 should have legendary attributes");
+        assert!(metadata.get_metadata_raw(TOKEN_ID_2) == legendary_attrs, "Token 2 should have legendary attributes");
+        assert!(metadata.get_metadata_raw(TOKEN_ID_3) == common_attrs, "Token 3 should have common attributes");
     }
 }
