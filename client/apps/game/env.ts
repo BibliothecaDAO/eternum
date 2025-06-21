@@ -61,6 +61,10 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+
+  // PostHog
+  VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 });
 
 let env: z.infer<typeof envSchema>;
