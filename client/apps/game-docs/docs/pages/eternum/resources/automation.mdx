@@ -1,0 +1,257 @@
+# Resource Automation
+
+Resource automation allows players to set up continuous production processes and automated transfers within their realms
+and between entities. This system helps manage resource generation and distribution efficiently without constant manual
+intervention.
+
+## Overview
+
+The automation system works by processing two types of "orders" that you define:
+
+1. **Production Orders**: Automate resource production within your realms
+2. **Transfer Orders**: Automate resource transfers between your entities (realms, villages, hyperstructures, etc.)
+
+Both types of orders specify what you want to automate, the method or conditions, target amounts or schedules, and
+priorities.
+
+**Key Features:**
+
+- **Order-Based**: Define specific production and transfer tasks.
+- **Priority System**: Control the sequence of execution for multiple orders.
+- **Multiple Automation Types**: Choose between production automation and transfer automation.
+- **Entity-Specific**: Automation is configured on a per-entity basis.
+- **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
+  function.
+- **10-Minute Cycles**: All automation is processed every 10 minutes.
+
+## How It Works
+
+The automation system periodically checks and processes active orders for each entity.
+
+1. **Processing Interval**: All orders are evaluated every 10 minutes.
+2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
+3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
+4. **Order Processing**: The system processes different order types:
+
+### Production Order Processing
+
+- **Balance Check**: Before executing, the system checks if the realm has sufficient input resources or labor.
+- **Recipe-Based Production**: Production follows predefined recipes from the game's configuration.
+- **Cycle Calculation**: Determines the maximum number of production cycles possible based on available inputs.
+- **Transaction**: If conditions are met, a blockchain transaction is initiated to perform the production.
+
+### Transfer Order Processing
+
+- **Schedule Check**: For recurring transfers, checks if enough time has passed since the last transfer.
+- **Threshold Check**: For conditional transfers, checks if resource levels meet the specified conditions.
+- **Resource Availability**: Verifies the source entity has sufficient resources for the transfer.
+- **Transaction**: If conditions are met, initiates a transfer transaction between entities.
+
+## Production Types
+
+There are three types of production automation:
+
+1. **Standard (Resource-to-Resource)**:
+   - Converts one or more input resources into a different output resource.
+   - Example: Using Wood and Stone to produce Tools.
+2. **Simple (Labor-to-Resource)**:
+   - Utilizes Labor from the realm to produce a specific resource.
+   - Example: Using Labor to harvest Food.
+3. **Resource-to-Labor**:
+   - Converts a specified resource into Labor for the realm.
+   - Example: Burning Food to generate Labor.
+
+## Production Order Modes
+
+Production orders can operate in two different modes:
+
+1. **Produce Once**:
+
+   - Produces resources until the target amount is reached, then stops.
+   - Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
+   - Can be set to "Infinite" to produce continuously without a limit.
+
+2. **Maintain Balance**:
+   - Keeps resource balance at the target level.
+   - Production triggers when balance drops below target minus buffer percentage.
+   - Example: Target 10,000 with 10% buffer = production starts when balance drops below 9,000.
+   - Useful for maintaining steady resource levels.
+
+## Transfer Types
+
+Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
+
+1. **Recurring Transfers**:
+
+   - Transfers resources at regular intervals.
+   - Minimum interval: 10 minutes (due to automation cycle).
+   - Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
+   - _[GIF placeholder: Setting up a recurring transfer]_
+
+2. **Maintain Stock Transfers**:
+
+   - Transfers when the destination entity falls below a threshold.
+   - Example: Transfer 500 Wood to Village when it has less than 1,000 Wood.
+   - Helps keep important entities well-supplied.
+   - _[GIF placeholder: Setting up a maintain stock transfer]_
+
+3. **Depletion Transfers**:
+   - Transfers when the source entity exceeds a threshold.
+   - Example: Transfer excess Stone when Realm has more than 5,000 Stone.
+   - Prevents resource overflow and distributes surplus.
+   - _[GIF placeholder: Setting up a depletion transfer]_
+
+## Managing Automation Orders (UI)
+
+You can manage automation orders through the "Automation" tab within any entity's interface, or through the global "All
+Automations" view.
+
+### Production Automation
+
+Production automation is managed within individual realm interfaces.
+
+_[GIF placeholder: Navigating to realm automation tab]_
+
+#### Adding a New Production Order
+
+1. Click the "Add New Automation" button.
+2. Configure the following:
+   - **Order Mode**:
+     - `Produce Once`: Produce up to target amount then stop
+     - `Maintain Balance`: Keep resource balance at target level
+   - **Production Type**:
+     - `Standard (Resource-based)`
+     - `Simple (Labor-based)`
+     - `Resource to Labor`
+   - **Priority (1-9)**:
+     - Set the execution priority. `1` is the highest priority, `9` is the lowest.
+   - **Resource to Produce / Resource Input for Labor**:
+     - Select the resource you want to produce or consume.
+     - The UI shows required input resources for Resource-to-Resource recipes.
+   - **Target Amount**:
+     - For "Produce Once": Set total quantity to produce, or check "Infinite" for continuous production.
+     - For "Maintain Balance": Set the balance level to maintain.
+   - **Buffer Percentage** (Maintain Balance only):
+     - Production starts when balance drops below target minus buffer percentage.
+3. Click "Add Automation".
+
+_[GIF placeholder: Creating a production automation order]_
+
+### Transfer Automation
+
+Transfer automation allows you to move resources between any of your entities.
+
+_[GIF placeholder: Accessing transfer automation]_
+
+#### Adding a New Transfer Order
+
+1. **Select Source Entity**:
+   - Choose entity type (Your Realms, Your Villages, etc.)
+   - Search and select the specific source entity
+2. **Configure Transfer**:
+
+   - **Transfer Mode**:
+     - `Recurring`: Transfer at regular intervals
+     - `Maintain Stock`: Transfer when destination is low
+     - `Depletion Transfer`: Transfer when source is high
+   - **Destination Entity**:
+     - Choose entity type and select specific destination
+   - **Resources to Transfer**:
+     - Add multiple resources with specific amounts
+   - **Schedule/Conditions**:
+     - For Recurring: Set interval in minutes (minimum 10 minutes)
+     - For conditional transfers: Set threshold amounts
+
+3. Click "Add Transfer Automation".
+
+_[GIF placeholder: Creating a transfer automation order]_
+
+#### Transfer Interval Guidelines
+
+- **Minimum Interval**: 10 minutes (matches automation processing cycle)
+- **Common Intervals**:
+  - 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
+  - Custom intervals can be set in minutes
+- **Effective Timing**: Transfers occur when automation cycles align with your interval
+
+### Viewing and Managing Orders
+
+#### Individual Entity View
+
+Each entity shows its automation orders in a table with:
+
+- **Priority**: Order execution priority
+- **Mode**: "Once", "Maintain", or transfer mode ("Recurring", "Stock", "Depletion")
+- **Resource**: Visual representation of resource flow
+- **Target/Balance**: Target amounts or transfer schedules
+- **Produced**: Amount produced (production orders only)
+- **Type**: Order type (production or transfer)
+- **Actions**: Remove button
+
+_[GIF placeholder: Viewing automation orders in entity interface]_
+
+#### Global Automation View
+
+The "All Automations" view shows orders from all entities:
+
+- **Realm Filter**: Filter by specific realm or view all
+- **Order Status**: Visual indicators for completed, paused, or active orders
+- **Countdown Timer**: Shows time until next automation cycle
+- **Bulk Actions**: Pause/resume or delete orders
+
+_[GIF placeholder: Using the global automation view]_
+
+### Pausing Automation
+
+You can pause automation at different levels:
+
+1. **Individual Entity**: Pause all automation for a specific entity
+2. **Individual Order**: Remove specific orders
+3. **Global Control**: Manage all orders from the global view
+
+_[GIF placeholder: Pausing and resuming automation]_
+
+## Important Considerations
+
+### General Requirements
+
+- **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
+  automation will stop.
+- **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
+- **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
+  blockchain transaction, which incurs network transaction fees.
+- **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
+  before an order is executed or its results are visible.
+
+### Production Automation Considerations
+
+- **Resource Availability**: Production orders will only execute if the required input resources are available in the
+  realm at the time of processing.
+- **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have
+  valid recipes.
+- **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is
+  full.
+
+### Transfer Automation Considerations
+
+- **Entity Ownership**: You can only set up transfers between entities you own.
+- **Transfer Timing**:
+  - Minimum effective interval is 10 minutes due to processing cycle
+  - Intervals shorter than 10 minutes will effectively transfer every 10 minutes
+  - Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
+- **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
+  time.
+- **Multiple Resources**: You can transfer multiple different resources in a single transfer order.
+- **Conditional Logic**: Maintain Stock and Depletion transfers check conditions each cycle and only transfer when
+  thresholds are met.
+
+### Best Practices
+
+1. **Start Simple**: Begin with basic production orders or simple recurring transfers to understand the system.
+2. **Monitor Initially**: Watch your first few automation cycles to ensure orders work as expected.
+3. **Use Priorities**: Set appropriate priorities when you have multiple orders to control execution sequence.
+4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
+5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource
+   distributions.
+
+_[GIF placeholder: Monitoring automation performance and adjusting orders]_

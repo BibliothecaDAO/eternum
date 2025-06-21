@@ -1,0 +1,519 @@
+import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
+# 🪓 Buildings
+
+## Standard vs. Simple
+
+Blitz offers two building systems. Lords can switch between standard and simple building modes at any time by
+clicking the toggle at the top of the construction tab.
+
+![Simple Mode Production](/gifs/simple-mode.gif)
+
+Note: Some buildings only require food to construct. Farms and Resource Buildings have the same
+construction cost in both standard and simple building modes.
+
+### Standard Mode
+
+This is the classic building experience. Construction requires a combination of labor and a particular set of resources
+as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
+is far more efficient overall. This building mode is generally designed for those with multiple Realms
+working with economies of scale.
+
+### Simple Mode
+
+This mode allows players to utilize Labor as the singular input for construction. Simple
+mode greatly improves accessibility and simplifies gameplay overall, but is much less efficient in both time and
+materials. This would be the preferred system for players with smaller holdings and limited access to a variety of
+resources.
+
+## Placement & Population
+
+### Placement
+
+The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm,
+provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the
+upgrade level (i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+Most buildings can be constructed in either simple or standard mode, which toggled at the top of the construction tab.
+
+![Building Placement](/gifs/construction.gif)
+
+### Population
+
+Population is the total population utilised by the currently constructed production buildings on a Realm,
+while the population capacity is the maximum available population with which to construct production buildings. Worker
+Huts can be built to increase population capacity, while all other buildings require population capacity to be available
+in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
+construct their desired production buildings.
+
+## Building Types
+
+### The Keep
+
+Settling any Realm will automatically construct a structure in the centre of your buildable hexes, known as
+the Keep. This structure represents your seat of power and the central point of governance, and facilitates key
+functions such as Realm upgrades and Labor production. This building cannot be destroyed and provides a baseline
+population capacity of 5.
+
+<BuildingCard
+  title="Labor Camp"
+  image="/images/buildings/construction/castleZero.png"
+  buildingType={25}
+  description={[
+    "Produces Labor resource",
+    "Provides a baseline population capacity of 5",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
+### Resource Buildings
+
+There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
+buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
+have the same requirements in simple and standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BuildingCard 
+  title="Lumber Camp" 
+  image="/images/buildings/construction/lumber_mill.png" 
+  buildingType={5} 
+  description={[
+    "Produces Wood resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes"
+  ]}
+/>
+
+<BuildingCard
+  title="Stone Quarry"
+  image="/images/buildings/construction/mine.png"
+  buildingType={3}
+  description={[
+    "Produces Stone resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Coal Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={4}
+  description={[
+    "Produces Coal resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Copper Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={6}
+  description={[
+    "Produces Copper resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Obsidian Flows"
+  image="/images/buildings/construction/mine.png"
+  buildingType={8}
+  description={[
+    "Produces Obsidian resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Silver Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={10}
+  description={[
+    "Produces Silver resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ironwood Grove"
+  image="/images/buildings/construction/lumber_mill.png"
+  buildingType={7}
+  description={[
+    "Produces Ironwood resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Cold Iron Foundry"
+  image="/images/buildings/construction/forge.png"
+  buildingType={13}
+  description={[
+    "Produces Cold Iron resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Gold Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={9}
+  description={[
+    "Produces Gold resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Hartwood Sanctuary"
+  image="/images/buildings/construction/lumber_mill.png"
+  buildingType={17}
+  description={[
+    "Produces Hartwood resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Diamond Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={16}
+  description={[
+    "Produces Diamond resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Sapphire Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={22}
+  description={[
+    "Produces Sapphire resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ruby Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={15}
+  description={[
+    "Produces Ruby resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Deep Crystal Cave"
+  image="/images/buildings/construction/mine.png"
+  buildingType={14}
+  description={[
+    "Produces Deep Crystal resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ignium Harvester"
+  image="/images/buildings/construction/forge.png"
+  buildingType={18}
+  description={[
+    "Produces Ignium resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ethereal Silica Harvester"
+  image="/images/buildings/construction/mine.png"
+  buildingType={23}
+  description={[
+    "Produces Ethereal Silica resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="True Ice Harvester"
+  image="/images/buildings/construction/mine.png"
+  buildingType={20}
+  description={[
+    "Produces True Ice resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Twilight Quartz Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={19}
+  description={[
+    "Produces Twilight Quartz resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Alchemical Workshop"
+  image="/images/buildings/construction/forge.png"
+  buildingType={12}
+  description={[
+    "Produces Alchemical Silver resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Adamantine Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={21}
+  description={[
+    "Produces Adamantine resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Mithral Forge"
+  image="/images/buildings/construction/forge.png"
+  buildingType={11}
+  description={[
+    "Produces Mithral resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Dragonhide Harvester"
+  image="/images/buildings/construction/dragonhide.png"
+  buildingType={24}
+  description={[
+    "Produces Dragonhide resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, population
+capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+varying costs and population requirements:
+
+[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
+increase (Storehouse)]
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BuildingCard 
+  title="Worker's Hut" 
+  image="/images/buildings/construction/workers_hut.png" 
+  buildingType={1} 
+  description={[
+    "Increases population capacity by 5",
+    "Available in both simple and standard building modes"
+  ]}
+/>
+
+<BuildingCard
+  title="Storehouse"
+  image="/images/buildings/construction/storehouse.png"
+  buildingType={2}
+  description={[
+    "Increases storage capacity by {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )} kg for each material",
+    "Requires 2 population to be constructed",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Market"
+  image="/images/buildings/construction/market.png"
+  buildingType={27}
+  description={[
+    "Produces Donkeys for transportation",
+    "Requires 3 population to be constructed",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Farm"
+  image="/images/buildings/construction/farm.png"
+  buildingType={37}
+  description={[
+    "Produces Wheat (food) resource",
+    "Requires 1 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard 
+  title="Fishing Village" 
+  image="/images/buildings/construction/fishing_village.png" 
+  buildingType={38} 
+  description={[
+    "Produces Fish (food) resource",
+    "Requires 1 population to be constructed",
+    "Same construction cost in both simple and standard modes"
+  ]}
+/>
+</div>
+
+### Military Buildings
+
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
+available for construction in standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BuildingCard 
+  title="Footman Barracks (T1)" 
+  image="/images/buildings/construction/barracks.png" 
+  buildingType={28} 
+  description={[
+    "Produces T1 Footman units",
+    "Requires 3 population to be constructed",
+    "Available in both simple and standard building modes"
+  ]}
+/>
+
+<BuildingCard
+  title="Knight Quarters (T2)"
+  image="/images/buildings/construction/barracks.png"
+  buildingType={29}
+  description={[
+    "Produces T2 Knight units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode",
+  ]}
+/>
+
+<BuildingCard
+  title="Guardian Sanctum (T3)"
+  image="/images/buildings/construction/barracks.png"
+  buildingType={30}
+  description={[
+    "Produces T3 Royal Guardian units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode",
+  ]}
+/>
+
+<BuildingCard
+  title="Archery Range (T1)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={31}
+  description={[
+    "Produces T1 Archer units",
+    "Requires 3 population to be constructed",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Crossbow Garrison (T2)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={32}
+  description={[
+    "Produces T2 Crossbowman units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode",
+  ]}
+/>
+
+<BuildingCard
+  title="Hunting Den (T3)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={33}
+  description={[
+    "Produces T3 Beast Hunter units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode",
+  ]}
+/>
+
+<BuildingCard
+  title="Horseman Stables (T1)"
+  image="/images/buildings/construction/stable.png"
+  buildingType={34}
+  description={[
+    "Produces T1 Horseman units",
+    "Requires 3 population to be constructed",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Paladin Sanctuary (T2)"
+  image="/images/buildings/construction/stable.png"
+  buildingType={35}
+  description={[
+    "Produces T2 Paladin units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode",
+  ]}
+/>
+
+<BuildingCard 
+  title="Dragon Pit (T3)" 
+  image="/images/buildings/construction/stable.png" 
+  buildingType={36} 
+  description={[
+    "Produces T3 Dragon Rider units",
+    "Requires 3 population to be constructed",
+    "Only available in standard building mode"
+  ]}
+/>
+</div>
+
+### Same Building Cost Increase
+
+Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
+using the following formula:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (N-1)²)
+```
+
+Where:
+
+- **Base Cost** is the initial cost of the building (from the tables above)
+- **N** is the number of the same buildings already constructed
+
+For example, if you build a second building of the same type (N=2), the cost will be:
+
+```
+Cost = Base Cost + (Base Cost × 0.5 × (2-1)²)
+     = Base Cost + (Base Cost × 0.5 × 1)
+     = Base Cost × 1.5
+```
+
+Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Stone Quarry after a
+Lumber Camp (both being resource buildings) would not be subject to this cost increase.
