@@ -110,55 +110,43 @@ jobs:
 
             Focus on stability and developer experience since these packages are foundational to all Eternum applications.
 
-            ## Issue Creation for Small Fixes
+            ## Inline PR Comments for Package Improvements
 
-            If you identify small, specific issues that can be easily fixed (such as):
+            When you identify specific improvements during package review, provide **inline comments** on the relevant lines with:
+
+            **For API & Architecture Issues:**
             - Missing TypeScript type exports or improvements
+            - API consistency improvements across packages
+            - Breaking change implications
+            - Cross-package compatibility issues
+
+            **For Quality & Performance Issues:**
             - Performance optimizations in core functions
-            - API consistency improvements
             - Missing error handling or validation
-            - Documentation improvements (JSDoc, README examples)
+            - Documentation improvements (JSDoc, examples)
             - Dead code or unused dependencies
             - Build configuration optimizations
             - Test coverage gaps
-            - Package.json metadata improvements
 
-            Create GitHub issues using mcp__github__create_issue with:
+            **Comment Format:**
+            ```
+            📦 **[Package] [Type] Suggestion:** Brief description
 
-            **Title Format:** `[Packages] [Package]: [Type]: Brief description`
+            **Current Issue:** What could be improved in this package
+            **Suggested Change:** Specific TypeScript code suggestion
+            **Impact:** Developer experience/performance/type safety benefit
+            **Breaking Change Risk:** Yes/No - impact on consuming applications
+
+            **Example Implementation:**
+            ```typescript
+            // Suggested TypeScript code change here
+            ```
+
             **Examples:**
-            - `[Packages] Core: Types: Export missing interfaces for hex calculations`
-            - `[Packages] Provider: Performance: Cache frequently used contract calls`
-            - `[Packages] React: API: Standardize hook return types across components`
-            - `[Packages] Torii: Docs: Add usage examples for SQL query functions`
-
-            **Issue Body Template:**
-            ```
-            ## Description
-            [Brief description of the issue and why it should be fixed]
-
-            ## Package
-            Package: `@bibliothecadao/[package-name]`
-            File: `packages/[package]/src/path/to/file.ts`
-
-            ## Suggested Fix
-            [Specific suggestion for how to fix it]
-
-            ## Impact
-            [Brief explanation of the benefit - developer experience, performance, type safety, etc.]
-
-            ## Breaking Change Assessment
-            [Specify if this would be a breaking change and impact on consuming applications]
-
-            @claude please fix this issue
-            ```
-
-            **Labels to Apply:**
-            - `packages` (for package issues)
-            - Package-specific: `core`, `provider`, `react`, `torii`, `types`, `dojo`
-            - Type-specific: `api`, `performance`, `types`, `documentation`, `testing`
-            - Priority: `low-priority` or `med-priority`
-            - `good first issue` (for simple fixes)
+            - `📦 **Core Types Suggestion:** Export missing interface for better type safety`
+            - `📦 **Provider Performance Suggestion:** Cache contract calls to reduce redundant requests`
+            - `📦 **React API Suggestion:** Standardize hook return types for consistency`
+            - `📦 **Torii Documentation Suggestion:** Add JSDoc examples for SQL query usage`
 
           allowed_tools: "Bash(pnpm run build:packages),Bash(pnpm run format),Bash(pnpm run knip),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
 

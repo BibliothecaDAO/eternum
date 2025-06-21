@@ -105,54 +105,43 @@ jobs:
 
             CRITICAL: Pay special attention to economic exploits, game balance, and resource integrity.
 
-            ## Issue Creation for Small Fixes
+            ## Inline PR Comments for Security & Optimization Suggestions
 
-            If you identify small, specific issues that can be easily fixed (such as):
+            When you identify specific improvements during contract review, provide **inline comments** on the relevant lines with:
+
+            **For Critical Issues (Security/Economic):**
             - Missing input validation or bounds checking
+            - Economic exploit vulnerabilities
+            - Game balance issues
+            - Access control problems
+            - State consistency issues
+
+            **For Optimization & Quality Issues:**
             - Gas optimization opportunities
             - Code documentation improvements
-            - Unused imports or dead code
+            - Test coverage gaps
             - Function naming improvements
-            - Simple refactoring opportunities
-            - Missing error messages
-            - Test coverage gaps for specific functions
             - Configuration inconsistencies
 
-            Create GitHub issues using mcp__github__create_issue with:
+            **Comment Format:**
+            ```
+            🚨 **[SECURITY/CRITICAL]** or 💡 **[Type] Suggestion:** Brief description
 
-            **Title Format:** `[Contracts] [Type]: Brief description`
+            **Current Issue:** What vulnerability or improvement area exists
+            **Suggested Change:** Specific Cairo code suggestion
+            **Impact:** Security/gas/maintainability benefit
+            **Game Balance Impact:** (if applicable)
+
+            **Example Implementation:**
+            ```cairo
+            // Suggested Cairo code change here
+            ```
+
             **Examples:**
-            - `[Contracts] Security: Add bounds checking to resource transfer function`
-            - `[Contracts] Gas: Optimize storage reads in army movement system`
-            - `[Contracts] Docs: Add documentation for complex battle calculations`
-            - `[Contracts] Test: Add unit tests for quest completion validation`
-
-            **Issue Body Template:**
-            ```
-            ## Description
-            [Brief description of the issue and why it should be fixed]
-
-            ## Location
-            File: `contracts/game/src/path/to/file.cairo`
-            Function/System: `function_name` or `SystemName`
-
-            ## Suggested Fix
-            [Specific suggestion for how to fix it]
-
-            ## Impact
-            [Brief explanation of the benefit - security, gas efficiency, maintainability, etc.]
-
-            ## Security/Game Balance Impact
-            [If applicable, explain any security or game balance implications]
-
-            @claude please fix this issue
-            ```
-
-            **Labels to Apply:**
-            - `contracts` (for contract issues)
-            - `good first issue` (for simple fixes)
-            - Type-specific: `security`, `gas-optimization`, `documentation`, `testing`, etc.
-            - Priority: `low-priority`, `med-priority`, or `high-priority` (for security issues)
+            - `🚨 **SECURITY:** Add bounds checking to prevent resource overflow`
+            - `💡 **Gas Optimization:** Cache storage reads to reduce gas usage`
+            - `💡 **Documentation:** Add inline docs for complex economic calculations`
+            - `🚨 **CRITICAL:** Validate army ownership before movement`
 
           allowed_tools: "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
 
