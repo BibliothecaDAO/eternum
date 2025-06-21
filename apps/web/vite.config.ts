@@ -18,4 +18,11 @@ export default defineConfig({
       include: "**/*.svg?react",
     }),
   ],
+  optimizeDeps: {
+    force: false,
+    include: ["@noble/ciphers"],
+  },
+  ssr: {
+    noExternal: ["@noble/ciphers", "lossless-json"],
+  },
 });
