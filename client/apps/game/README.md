@@ -12,7 +12,7 @@ To run the game locally:
    - `VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"`
 3. Run `pnpm run dev` to start the development server
 
-## 🏗️ Architecture
+## 🏗️ Game Architecture
 
 ```
 src/ui/
