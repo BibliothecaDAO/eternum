@@ -92,7 +92,11 @@
     "lint:fix": "pnpm --recursive run lint:fix",
     "test": "pnpm --recursive run test",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
-    "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js"
+    "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
+    "images:analyze": "node scripts/analyze-images.js",
+    "images:compress": "node scripts/compress-images-with-sharp.js",
+    "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
+    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp"
   },
   "dependencies": {
     "@cartridge/connector": "catalog:",
