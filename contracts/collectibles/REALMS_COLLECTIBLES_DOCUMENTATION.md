@@ -1,6 +1,7 @@
 # Realms Collectibles Smart Contract - Comprehensive Technical Documentation
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Architecture Deep Dive](#architecture-deep-dive)
 3. [Attribute System Technical Details](#attribute-system-technical-details)
@@ -17,23 +18,31 @@
 
 ## Overview
 
-The **Realms Collectibles** system is a sophisticated ERC721 NFT contract built on Starknet that implements advanced on-chain metadata management with extreme gas efficiency. This contract is designed for high-throughput gaming applications, collectible trading platforms, and any use case requiring complex trait systems with dynamic locking mechanisms.
+The **Realms Collectibles** system is a sophisticated ERC721 NFT contract built on Starknet that implements advanced
+on-chain metadata management with extreme gas efficiency. This contract is designed for high-throughput gaming
+applications, collectible trading platforms, and any use case requiring complex trait systems with dynamic locking
+mechanisms.
 
 ### Core Innovation Points
 
-**1. Packed Attribute System**: Stores 16 different trait types in a single `u128` value, reducing storage costs by ~95% compared to traditional mapping-based approaches.
+**1. Packed Attribute System**: Stores 16 different trait types in a single `u128` value, reducing storage costs by ~95%
+compared to traditional mapping-based approaches.
 
-**2. Time-Based Token Locking**: Implements a two-tier locking system allowing both administrative control and user autonomy over token transferability.
+**2. Time-Based Token Locking**: Implements a two-tier locking system allowing both administrative control and user
+autonomy over token transferability.
 
-**3. Dynamic Metadata Generation**: Generates OpenSea-compatible JSON metadata entirely on-chain, eliminating dependency on external metadata servers.
+**3. Dynamic Metadata Generation**: Generates OpenSea-compatible JSON metadata entirely on-chain, eliminating dependency
+on external metadata servers.
 
-**4. Role-Based Access Control**: Implements granular permissions allowing different actors to perform specific operations without compromising security.
+**4. Role-Based Access Control**: Implements granular permissions allowing different actors to perform specific
+operations without compromising security.
 
-**5. Gas-Efficient Design**: Every operation is optimized for minimal gas consumption while maintaining full functionality.
+**5. Gas-Efficient Design**: Every operation is optimized for minimal gas consumption while maintaining full
+functionality.
 
 ### Key Benefits
 
-- **Storage Efficiency**: 16 traits stored in 16 bytes (u128) instead of 16 separate storage slots 
+- **Storage Efficiency**: 16 traits stored in 16 bytes (u128) instead of 16 separate storage slots
 - **On-Chain Metadata**: No dependency on external APIs or IPFS for basic metadata
 - **Flexible Locking**: Supports complex gaming mechanics like staking, tournaments, and season locks
 - **Upgradeability**: Safe upgrade patterns with role-based access control
@@ -81,24 +90,28 @@ The **Realms Collectibles** system is a sophisticated ERC721 NFT contract built 
 ### Component Responsibilities
 
 #### 1. ERC721 Foundation Layer
+
 - **Standard Compliance**: Full ERC721 implementation with OpenZeppelin components
 - **Enumerable Extension**: Efficient token enumeration and batch operations
 - **Hook Integration**: Custom transfer hooks for lock enforcement
 - **Metadata Interface**: Dynamic token URI generation
 
 #### 2. Attribute System Layer
+
 - **Bit Manipulation**: Efficient packing/unpacking of 16 trait types
 - **Type Safety**: Validation of trait type and value ranges
 - **Name Resolution**: Human-readable trait and value names
 - **JSON Generation**: Real-time metadata compilation
 
 #### 3. Locking Mechanism Layer
+
 - **State Management**: Global lock definitions and token-specific assignments
 - **Access Control**: Owner-only lock/unlock operations
 - **Time Validation**: Automatic expiration handling
 - **Transfer Prevention**: Hook-based transfer blocking
 
 #### 4. Access Control Layer
+
 - **Role-Based Permissions**: Fine-grained operation control
 - **Multi-Role Support**: Users can have multiple roles
 - **Admin Hierarchy**: Secure role grant/revoke mechanisms
@@ -110,7 +123,9 @@ The **Realms Collectibles** system is a sophisticated ERC721 NFT contract built 
 
 ### Bit Packing Architecture
 
-The attribute system uses a single `u128` (128-bit) value to store 16 different trait types, where each trait occupies exactly 8 bits (1 byte). This allows for 256 possible values per trait type (0-255), where 0 represents "no trait present". so it is really 1 - 255 for each trait type.
+The attribute system uses a single `u128` (128-bit) value to store 16 different trait types, where each trait occupies
+exactly 8 bits (1 byte). This allows for 256 possible values per trait type (0-255), where 0 represents "no trait
+present". so it is really 1 - 255 for each trait type.
 
 #### Memory Layout Visualization
 
@@ -139,14 +154,14 @@ The contract uses an unpacking function that converts the packed `u128` into an 
 fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
     let mut result = array![];
     let mut remaining = packed;
-    
+
     // Extract each byte from least significant to most significant
     for i in 0..16 {
         let byte_value = (remaining & 0xFF) as u8;  // Get lowest 8 bits
         result.append(byte_value);
         remaining = remaining >> 8;  // Shift right by 8 bits
     }
-    
+
     result
 }
 ```
@@ -154,6 +169,7 @@ fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
 #### Trait Type and Value System
 
 **Trait Types (0-15)**: Define categories of attributes
+
 - Type 0: Rarity (Common, Rare, Legendary, etc.)
 - Type 1: Element (Fire, Water, Earth, Air, etc.)
 - Type 2: Power Level (Weak, Strong, Mighty, etc.)
@@ -161,6 +177,7 @@ fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
 - Types 4-15: Application-specific categories
 
 **Trait Values (1-255)**: Define specific values within each type
+
 - Value 0: Reserved for "no trait present"
 - Values 1-255: Actual trait values e.g. 1 = "Common", 2 = "Rare", 3 = "Legendary", etc. all for type 0 (Rarity)
 - Each trait type can have up to 255 different values
@@ -168,6 +185,7 @@ fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
 #### Storage Efficiency Analysis
 
 **Traditional Approach**:
+
 ```cairo
 // 16 separate storage slots
 trait_0: Map<u256, u8>,  // 16 bytes per token
@@ -177,6 +195,7 @@ trait_1: Map<u256, u8>,  // 16 bytes per token
 ```
 
 **Packed Approach**:
+
 ```cairo
 // Single storage slot
 token_id_to_attrs_raw: Map<u256, u128>,  // 16 bytes per token
@@ -204,7 +223,8 @@ The metadata generation follows a sophisticated pipeline:
 
 ### Two-Tier Lock Architecture
 
-The locking system implements a sophisticated two-tier approach that separates **lock definitions** from **token assignments**, providing both administrative control and user autonomy.
+The locking system implements a sophisticated two-tier approach that separates **lock definitions** from **token
+assignments**, providing both administrative control and user autonomy.
 
 #### Tier 1: Global Lock States (Administrative)
 
@@ -221,6 +241,7 @@ lock_state['governance_vote_1'] = 1703980800;    // Dec 31, 2023
 ```
 
 **Key Properties**:
+
 - **Reusable**: One lock state can be applied to multiple tokens
 - **Centrally Managed**: Only `LOCKER_ROLE` can create/modify
 - **Time-Based**: All locks have specific expiration timestamps
@@ -241,6 +262,7 @@ token_lock[1003] = (0, 0);                                // Token 1003 unlocked
 ```
 
 **Key Properties**:
+
 - **Owner-Only Control**: Only token owner can lock/unlock their tokens
 - **Selective Application**: Owners choose which locks to apply
 - **Transaction Tracking**: Each lock records the transaction hash
@@ -262,20 +284,22 @@ assert!(unlock_at >= starknet::get_block_timestamp(), "Must be future timestamp"
 assert!(lock_id != 0, "Lock ID cannot be zero");
 
 // Event emission
-self.emit(LockStateUpdated { 
-    lock_id, 
-    unlock_at, 
-    timestamp: starknet::get_block_timestamp() 
+self.emit(LockStateUpdated {
+    lock_id,
+    unlock_at,
+    timestamp: starknet::get_block_timestamp()
 });
 ```
 
 **Administrative Capabilities**:
+
 - Create new lock states with unique identifiers
 - Update existing lock timestamps (can only extend, not shorten)
 - Set lock expiration times for future dates
 - Track all lock state changes through events
 
 **Security Considerations**:
+
 - `LOCKER_ROLE` can modify lock states even after tokens are locked
 - This is by design for emergency situations (e.g., extending tournament durations)
 - Requires trusted multi-sig management for `LOCKER_ROLE`
@@ -300,12 +324,14 @@ self.token_lock.entry(token_id).write((lock_id, tx_hash));
 ```
 
 **Locking Process**:
+
 1. **Ownership Check**: Verify caller owns the token
 2. **Lock Validation**: Ensure lock state exists and is active
 3. **Assignment**: Link token to lock with transaction hash
 4. **Event Emission**: Record lock application
 
 **Important Restrictions**:
+
 - Only token owners can lock their tokens (not approved operators)
 - Cannot lock with expired or non-existent lock states
 - Cannot lock already locked tokens (must unlock first)
@@ -333,6 +359,7 @@ self.token_lock.entry(token_id).write((0, 0));
 ```
 
 **Unlocking Process**:
+
 1. **Ownership Check**: Verify caller owns the token
 2. **Lock Existence**: Ensure token is actually locked
 3. **Expiration Check**: Verify lock has expired
@@ -359,6 +386,7 @@ impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
 ```
 
 **Hook Integration**:
+
 - **Universal Coverage**: Prevents all transfer types (transfer, transferFrom, safeTransfer)
 - **Mint/Burn Safety**: Only blocks transfers, not minting or burning
 - **Lock Checking**: Uses efficient `token_is_locked()` function
@@ -367,6 +395,7 @@ impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
 ### Lock State Query Functions
 
 #### `token_is_locked(token_id: u256) -> bool`
+
 ```cairo
 fn token_is_locked(self: @ContractState, token_id: u256) -> bool {
     let (lock_id, _) = self.token_lock.entry(token_id).read();
@@ -375,6 +404,7 @@ fn token_is_locked(self: @ContractState, token_id: u256) -> bool {
 ```
 
 #### `token_lock_state(token_id: u256) -> (felt252, felt252)`
+
 ```cairo
 fn token_lock_state(self: @ContractState, token_id: u256) -> (felt252, felt252) {
     self.token_lock.entry(token_id).read()  // Returns (lock_id, tx_hash)
@@ -386,6 +416,7 @@ fn token_lock_state(self: @ContractState, token_id: u256) -> (felt252, felt252) 
 #### Gaming Scenarios
 
 **1. Tournament Participation**
+
 ```cairo
 // Admin creates tournament lock
 lock_admin.lock_state_update('world_championship_2024', 1735689600);
@@ -398,6 +429,7 @@ lock.token_lock(character_nft_id, 'world_championship_2024');
 ```
 
 **2. Staking for Rewards**
+
 ```cairo
 // Admin creates staking pool
 lock_admin.lock_state_update('staking_pool_q1_2024', 1706659200);
@@ -410,6 +442,7 @@ lock.token_lock(collectible_id, 'staking_pool_q1_2024');
 ```
 
 **3. Governance Voting**
+
 ```cairo
 // Admin creates voting period
 lock_admin.lock_state_update('dao_proposal_vote_15', 1704067200);
@@ -426,13 +459,13 @@ lock.token_lock(governance_token_id, 'dao_proposal_vote_15');
 
 ### Role Hierarchy
 
-| Role | Permissions | Purpose |
-|------|------------|---------|
-| `DEFAULT_ADMIN_ROLE` | Grant/revoke all roles | System administration |
-| `MINTER_ROLE` | Mint new tokens with attributes | Token creation |
-| `METADATA_UPDATER_ROLE` | Update trait names and IPFS mappings | Metadata management |
-| `LOCKER_ROLE` | Create and manage lock states | Lock administration |
-| `UPGRADER_ROLE` | Upgrade contract implementation | Contract evolution |
+| Role                    | Permissions                          | Purpose               |
+| ----------------------- | ------------------------------------ | --------------------- |
+| `DEFAULT_ADMIN_ROLE`    | Grant/revoke all roles               | System administration |
+| `MINTER_ROLE`           | Mint new tokens with attributes      | Token creation        |
+| `METADATA_UPDATER_ROLE` | Update trait names and IPFS mappings | Metadata management   |
+| `LOCKER_ROLE`           | Create and manage lock states        | Lock administration   |
+| `UPGRADER_ROLE`         | Upgrade contract implementation      | Contract evolution    |
 
 ### Permission Matrix
 
@@ -452,8 +485,6 @@ lock.token_lock(governance_token_id, 'dao_proposal_vote_15');
 └─────────────────────────┴─────────┴──────────────┴─────────┴──────────┴─────────────┘
 ```
 
-
-
 ## 📊 Metadata Generation
 
 ### JSON Metadata Structure
@@ -469,7 +500,7 @@ The contract generates OpenSea-compatible metadata that follows the standard for
       "value": "Legendary"
     },
     {
-      "trait_type": "Element", 
+      "trait_type": "Element",
       "value": "Fire"
     },
     {
@@ -492,10 +523,10 @@ The contract generates OpenSea-compatible metadata that follows the standard for
 fn get_metadata_json(self: @ContractState, token_id: u256) -> ByteArray {
     // 1. Get packed attributes from storage
     let attrs_raw: u128 = self.token_id_to_attrs_raw.entry(token_id).read();
-    
+
     // 2. Unpack into individual bytes
     let mut attrs_arr: Array<u8> = unpack_u128_to_bytes_full(attrs_raw);
-    
+
     // attrs_arr now contains [byte0, byte1, byte2, ..., byte15]
     // where byte_i corresponds to trait_type_i
 }
@@ -512,6 +543,7 @@ if ipfs_cid == "" {
 ```
 
 **Image Resolution Logic**:
+
 - **Primary**: Check if specific attribute combination has custom image
 - **Fallback**: Use default image for all other combinations
 - **Format**: Always returns IPFS CID without protocol prefix
@@ -524,13 +556,13 @@ let mut attrs_data: Array<(ByteArray, ByteArray)> = array![];
 
 for i in 0..attrs_arr.len() {
     let trait_value: u8 = attrs_arr.pop_front().unwrap();
-    
+
     if trait_value > 0 {  // Skip empty traits
-        let trait_type_name: ByteArray = 
+        let trait_type_name: ByteArray =
             self.trait_type_to_name.entry(i.try_into().unwrap()).read();
-        let trait_value_name: ByteArray = 
+        let trait_value_name: ByteArray =
             self.trait_value_to_name.entry((i.try_into().unwrap(), trait_value)).read();
-        
+
         // Only add if both names exist
         if trait_type_name != "" && trait_value_name != "" {
             attrs_data.append((trait_type_name, trait_value_name));
@@ -540,6 +572,7 @@ for i in 0..attrs_arr.len() {
 ```
 
 **Filtering Rules**:
+
 - Skip trait positions with value 0 (no trait present)
 - Skip traits where type name is not set
 - Skip traits where value name is not set
@@ -553,6 +586,7 @@ make_json_and_base64_encode_metadata(attrs_data, ipfs_cid)
 ```
 
 The final step uses a utility function that:
+
 1. **Builds JSON Structure**: Creates properly formatted JSON with image and attributes
 2. **Handles Special Characters**: Escapes quotes, newlines, and other JSON special characters
 3. **Base64 Encoding**: Converts to data URI format: `data:application/json;base64,...`
@@ -563,6 +597,7 @@ The final step uses a utility function that:
 #### Two-Tier Image System
 
 **Tier 1: Attribute-Specific Images**
+
 ```cairo
 // Set specific image for exact attribute combination
 metadata.set_attrs_raw_to_ipfs_cid(
@@ -572,6 +607,7 @@ metadata.set_attrs_raw_to_ipfs_cid(
 ```
 
 **Tier 2: Default Fallback**
+
 ```cairo
 // Set default image for all other combinations
 metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID");
@@ -580,16 +616,18 @@ metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID");
 #### Advanced Image Mapping Strategies
 
 **Strategy 1: Rarity-Based Images**
+
 ```cairo
 // Different images for different rarity levels
 metadata.set_attrs_raw_to_ipfs_cid(0x01, "QmCommonCID");     // Common
-metadata.set_attrs_raw_to_ipfs_cid(0x02, "QmUncommonCID");   // Uncommon  
+metadata.set_attrs_raw_to_ipfs_cid(0x02, "QmUncommonCID");   // Uncommon
 metadata.set_attrs_raw_to_ipfs_cid(0x03, "QmRareCID");       // Rare
 metadata.set_attrs_raw_to_ipfs_cid(0x04, "QmEpicCID");       // Epic
 metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendaryCID");  // Legendary
 ```
 
 **Strategy 2: Element-Based Images**
+
 ```cairo
 // Different images for different elements (trait_type_1)
 metadata.set_attrs_raw_to_ipfs_cid(0x0100, "QmFireCID");     // Fire element
@@ -599,6 +637,7 @@ metadata.set_attrs_raw_to_ipfs_cid(0x0400, "QmAirCID");      // Air element
 ```
 
 **Strategy 3: Combination-Based Images**
+
 ```cairo
 // Specific images for special combinations
 metadata.set_attrs_raw_to_ipfs_cid(
@@ -651,7 +690,7 @@ assert!(trait_value_id > 0 && trait_value_id <= 255, "Trait value must be 1-255"
 
 // Overwrite protection (when overwrite = false)
 assert!(
-    existing_name == "", 
+    existing_name == "",
     "Trait name already exists - use overwrite=true to modify"
 );
 ```
@@ -661,18 +700,21 @@ assert!(
 #### Gas-Efficient Queries
 
 **Raw Metadata Retrieval**:
+
 ```cairo
 // Cheapest operation - single storage read
 let raw_attrs = metadata.get_metadata_raw(token_id);  // ~800 gas
 ```
 
 **Full JSON Generation**:
+
 ```cairo
 // More expensive - includes name resolution and JSON building
 let json_metadata = metadata.get_metadata_json(token_id);  // ~3000-8000 gas
 ```
 
 **Batch Operations** (for external tools):
+
 ```cairo
 // Read multiple tokens efficiently
 let mut batch_metadata = array![];
@@ -690,11 +732,12 @@ for token_id in token_ids {
 #### Packed vs Unpacked Storage Comparison
 
 **Traditional Mapping Approach**:
+
 ```cairo
 // Each trait stored separately
 struct TraditionalStorage {
     rarity: Map<u256, u8>,        // 16 bytes per token
-    element: Map<u256, u8>,       // 16 bytes per token  
+    element: Map<u256, u8>,       // 16 bytes per token
     power: Map<u256, u8>,         // 16 bytes per token
     region: Map<u256, u8>,        // 16 bytes per token
     // ... 12 more traits
@@ -703,6 +746,7 @@ struct TraditionalStorage {
 ```
 
 **Packed Approach**:
+
 ```cairo
 // All traits in single u128
 struct PackedStorage {
@@ -710,6 +754,7 @@ struct PackedStorage {
 }
 
 ```
+
 ### Batch Operations
 
 #### Transfer Amount Optimization
@@ -718,24 +763,24 @@ The contract includes an optimized batch transfer function:
 
 ```cairo
 fn transfer_amount(
-    ref self: ContractState, 
-    from: ContractAddress, 
-    to: ContractAddress, 
+    ref self: ContractState,
+    from: ContractAddress,
+    to: ContractAddress,
     amount: u16
 ) -> Span<u256> {
     let mut token_ids = array![];
-    
+
     for _ in 0..amount {
         // Get first token owned by 'from'
         let token_id = self.erc721_enumerable.token_of_owner_by_index(from, 0);
-        
+
         // Transfer it
         self.erc721.transfer_from(from, to, token_id);
-        
+
         // Track transferred token
         token_ids.append(token_id);
     }
-    
+
     token_ids.span()
 }
 ```
@@ -762,7 +807,7 @@ for i in 0..owner_token_count {
 pub struct TraitValueUpdated {
     #[key]
     pub trait_type_id: u8,        // 1 byte
-    #[key] 
+    #[key]
     pub trait_value_id: u8,       // 1 byte
     pub trait_value_name: ByteArray,  // Variable length
     pub timestamp: u64,           // 8 bytes
@@ -770,6 +815,7 @@ pub struct TraitValueUpdated {
 ```
 
 **Event Optimization**:
+
 - Use smallest possible integer types
 - Key only essential fields for filtering
 - Group related events together
@@ -781,7 +827,7 @@ pub struct TraitValueUpdated {
 fn set_trait_value_name(
     ref self: ContractState,
     trait_type_id: u8,        // 1 byte
-    trait_value_id: u8,       // 1 byte  
+    trait_value_id: u8,       // 1 byte
     name: ByteArray,          // Variable
     overwrite: bool           // 1 byte
 )
@@ -796,12 +842,12 @@ fn set_trait_value_name(
 fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
     let mut result = array![];
     let mut remaining = packed;
-    
+
     // Unroll loop for known 16 iterations
     let byte0 = (remaining & 0xFF_u128).try_into().unwrap();
     remaining = remaining / 256_u128;  // Faster than bit shifting in Cairo
     result.append(byte0);
-    
+
     // Repeat for bytes 1-15...
     result
 }
@@ -832,11 +878,13 @@ fn validate_trait_params(trait_type_id: u8, trait_value_id: u8) {
 **Access Control**: Requires `MINTER_ROLE`
 
 **Parameters**:
+
 - `recipient`: Address that will own the newly minted token
 - `token_id`: Unique identifier for the token (must not exist)
 - `attributes_raw`: Packed u128 containing up to 16 trait values
 
 **Validation**:
+
 ```cairo
 self.erc721._require_not_exists(token_id);
 ```
@@ -844,10 +892,12 @@ self.erc721._require_not_exists(token_id);
 **Gas Cost**: ~20,000 gas
 
 **Events Emitted**:
+
 - `Transfer(from: 0, to: recipient, token_id)`
 - Standard ERC721 events
 
 **Example Usage**:
+
 ```cairo
 // Mint a Legendary Fire Mighty token (attributes: [0,0,0,0,0,0,0,0,0,0,0,0,3,1,5])
 let attributes = 0x00000000000000000000000000030105_u128;
@@ -861,15 +911,18 @@ mint_burn.safe_mint(player_address, 1001, attributes);
 **Access Control**: Token owner or approved operator
 
 **Parameters**:
+
 - `token_id`: ID of token to burn
 
 **Validation**:
+
 ```cairo
 self.erc721._require_owned(token_id);
 // Standard ERC721 authorization checks
 ```
 
 **Side Effects**:
+
 - Removes token from circulation
 - Clears approvals
 - Updates enumerable indices
@@ -884,11 +937,13 @@ self.erc721._require_owned(token_id);
 **Access Control**: Requires `METADATA_UPDATER_ROLE`
 
 **Parameters**:
+
 - `trait_type_id`: Position in packed attributes (0-15)
 - `name`: Human-readable name (e.g., "Rarity", "Element")
 - `overwrite`: Whether to overwrite existing names
 
 **Validation**:
+
 ```cairo
 assert!(trait_type_id < 16, "Trait type must be 0-15");
 if !overwrite {
@@ -897,6 +952,7 @@ if !overwrite {
 ```
 
 **Events Emitted**:
+
 ```cairo
 TraitTypeUpdated {
     trait_type_id,
@@ -906,6 +962,7 @@ TraitTypeUpdated {
 ```
 
 **Example Usage**:
+
 ```cairo
 // Set trait type names for game attributes
 metadata.set_trait_type_name(0, "Rarity", false);
@@ -920,25 +977,28 @@ metadata.set_trait_type_name(2, "Character Class", false);
 **Access Control**: Requires `METADATA_UPDATER_ROLE`
 
 **Parameters**:
+
 - `trait_type_id`: Trait category (0-15)
 - `trait_value_id`: Specific value within category (1-255)
 - `name`: Human-readable name
 - `overwrite`: Whether to overwrite existing names
 
 **Validation**:
+
 ```cairo
 assert!(trait_type_id < 16, "Invalid trait type");
 assert!(trait_value_id > 0, "Value must be 1-255");
 ```
 
 **Example Usage**:
+
 ```cairo
 // Set rarity values
 metadata.set_trait_value_name(0, 1, "Common", false);
 metadata.set_trait_value_name(0, 2, "Rare", false);
 metadata.set_trait_value_name(0, 3, "Legendary", false);
 
-// Set element values  
+// Set element values
 metadata.set_trait_value_name(1, 1, "Fire", false);
 metadata.set_trait_value_name(1, 2, "Water", false);
 ```
@@ -950,9 +1010,11 @@ metadata.set_trait_value_name(1, 2, "Water", false);
 **Access Control**: Requires `METADATA_UPDATER_ROLE`
 
 **Parameters**:
+
 - `ipfs_cid`: IPFS content identifier (without ipfs:// prefix)
 
 **Example Usage**:
+
 ```cairo
 metadata.set_default_ipfs_cid("QmDefaultCollectionImage123");
 ```
@@ -964,15 +1026,18 @@ metadata.set_default_ipfs_cid("QmDefaultCollectionImage123");
 **Access Control**: Requires `METADATA_UPDATER_ROLE`
 
 **Parameters**:
+
 - `attrs_raw`: Exact attribute combination
 - `ipfs_cid`: IPFS CID for this combination
 
 **Use Cases**:
+
 - Special artwork for legendary items
 - Unique images for specific combinations
 - Promotional or event-specific visuals
 
 **Example Usage**:
+
 ```cairo
 // Special image for all legendary items (rarity = 5)
 metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendarySpecialArt");
@@ -993,22 +1058,25 @@ metadata.set_attrs_raw_to_ipfs_cid(
 **Access Control**: Requires `LOCKER_ROLE`
 
 **Parameters**:
+
 - `lock_id`: Unique identifier for this lock (non-zero)
 - `unlock_at`: Timestamp when lock expires (must be future)
 
 **Validation**:
+
 ```cairo
 assert!(lock_id != 0, "Lock ID cannot be zero");
 assert!(unlock_at >= current_timestamp(), "Must be future timestamp");
 ```
 
 **Example Usage**:
+
 ```cairo
 // Create tournament lock lasting 30 days
 let tournament_end = current_timestamp() + (30 * 24 * 60 * 60);
 lock_admin.lock_state_update('world_tournament_2024', tournament_end);
 
-// Create staking pool lock lasting 90 days  
+// Create staking pool lock lasting 90 days
 let staking_end = current_timestamp() + (90 * 24 * 60 * 60);
 lock_admin.lock_state_update('q1_staking_pool', staking_end);
 ```
@@ -1020,10 +1088,12 @@ lock_admin.lock_state_update('q1_staking_pool', staking_end);
 **Access Control**: Token owner only (not approved operators)
 
 **Parameters**:
+
 - `token_id`: ID of token to lock
 - `lock_id`: ID of lock state to apply
 
 **Validation**:
+
 ```cairo
 assert!(caller == token_owner, "Only owner can lock");
 assert!(lock_exists && lock_active, "Lock must be active");
@@ -1031,11 +1101,13 @@ assert!(!already_locked, "Token already locked");
 ```
 
 **Side Effects**:
+
 - Prevents all transfers until unlock
 - Records transaction hash of lock operation
 - Can be unlocked only after lock expiration
 
 **Example Usage**:
+
 ```cairo
 // Player locks character for tournament
 lock.token_lock(character_nft_id, 'world_tournament_2024');
@@ -1051,9 +1123,11 @@ lock.token_lock(collectible_id, 'q1_staking_pool');
 **Access Control**: Token owner only
 
 **Parameters**:
+
 - `token_id`: ID of token to unlock
 
 **Validation**:
+
 ```cairo
 assert!(caller == token_owner, "Only owner can unlock");
 assert!(token_is_locked, "Token not locked");
@@ -1061,6 +1135,7 @@ assert!(lock_expired, "Lock not yet expired");
 ```
 
 **Example Usage**:
+
 ```cairo
 // After tournament ends, player unlocks character
 lock.token_unlock(character_nft_id);
@@ -1083,7 +1158,7 @@ lock.token_unlock(collectible_id);
 
 **Purpose**: Generates full OpenSea-compatible JSON metadata.
 
-**Access Control**: Public read  
+**Access Control**: Public read
 
 **Returns**: Base64-encoded data URI with complete metadata
 
@@ -1104,6 +1179,7 @@ lock.token_unlock(collectible_id);
 **Returns**: `(lock_id, transaction_hash)` tuple
 
 **Example Usage**:
+
 ```cairo
 let (lock_id, tx_hash) = lock.token_lock_state(token_id);
 if lock_id != 0 {
@@ -1121,19 +1197,22 @@ if lock_id != 0 {
 **Access Control**: Caller must be authorized for all transfers
 
 **Parameters**:
+
 - `from`: Current owner of tokens
-- `to`: New owner of tokens  
+- `to`: New owner of tokens
 - `amount`: Number of tokens to transfer
 
 **Returns**: Array of transferred token IDs
 
 **Important Notes**:
+
 - Transfers tokens in enumerable order (index 0 first)
 - Each token must pass individual authorization checks
 - Fails if any token is locked
 - Gas savings for bulk operations
 
 **Example Usage**:
+
 ```cairo
 // Transfer 5 tokens from Alice to Bob
 let transferred = enumerable.transfer_amount(alice, bob, 5);
@@ -1149,6 +1228,7 @@ let transferred = enumerable.transfer_amount(alice, bob, 5);
 **Access Control**: Requires `DEFAULT_ADMIN_ROLE`
 
 **Parameters**:
+
 - `role`: Role identifier (e.g., `MINTER_ROLE`)
 - `account`: Address to grant role to
 
@@ -1173,9 +1253,11 @@ let transferred = enumerable.transfer_amount(alice, bob, 5);
 **Access Control**: Requires `UPGRADER_ROLE`
 
 **Parameters**:
+
 - `new_class_hash`: Hash of new contract implementation
 
 **Security Notes**:
+
 - Preserves all storage during upgrade
 - New implementation must be compatible
 - Should be controlled by governance/multi-sig

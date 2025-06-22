@@ -4,30 +4,28 @@ import {
   setAttrsRawToIPFSCID,
   setDefaultIPFSCID,
   setTraitTypeName,
-  setTraitValueName
+  setTraitValueName,
 } from "./libs/commands.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
-
 
 /**
  * Deploy a RealmsCollectible contract with the specified name and symbol
  * All other parameters are read from environment variables
- * 
+ *
  * @param {string} erc721Name - The name of the ERC721 token
  * @param {string} erc721Symbol - The symbol of the ERC721 token
  * @returns {Promise<bigint>} The deployed contract address
  */
 export const deployCollectible = async (dataFileName) => {
-
-  const { 
-    name, 
-    symbol, 
+  const {
+    name,
+    symbol,
     description,
     updateContractAddress,
-    setDefaultIpfsCidCalldata, 
-    setTraitTypesNameCalldata, 
-    setTraitValueNameCalldata, 
-    setAttrsRawToIPFSCIDCalldata 
+    setDefaultIpfsCidCalldata,
+    setTraitTypesNameCalldata,
+    setTraitValueNameCalldata,
+    setAttrsRawToIPFSCIDCalldata,
   } = processData(dataFileName);
 
   if (updateContractAddress) {
@@ -46,12 +44,12 @@ export const deployCollectible = async (dataFileName) => {
   console.log("\n\n");
 
   // Contract parameters from environment variables
-  const defaultAdmin = BigInt(process.env.COLLECTIBLES_DEFAULT_ADMIN );
-  const minter = BigInt(process.env.COLLECTIBLES_MINTER );
-  const upgrader = BigInt(process.env.COLLECTIBLES_UPGRADER );
-  const locker = BigInt(process.env.COLLECTIBLES_LOCKER );
-  const metadataUpdater = BigInt(process.env.COLLECTIBLES_METADATA_UPDATER );
-  const defaultRoyaltyReceiver = BigInt(process.env.COLLECTIBLES_DEFAULT_ROYALTY_RECEIVER );
+  const defaultAdmin = BigInt(process.env.COLLECTIBLES_DEFAULT_ADMIN);
+  const minter = BigInt(process.env.COLLECTIBLES_MINTER);
+  const upgrader = BigInt(process.env.COLLECTIBLES_UPGRADER);
+  const locker = BigInt(process.env.COLLECTIBLES_LOCKER);
+  const metadataUpdater = BigInt(process.env.COLLECTIBLES_METADATA_UPDATER);
+  const defaultRoyaltyReceiver = BigInt(process.env.COLLECTIBLES_DEFAULT_ROYALTY_RECEIVER);
   const feeNumerator = BigInt(process.env.COLLECTIBLES_FEE_NUMERATOR);
 
   console.log(`📝 Contract Configuration:`);
@@ -64,7 +62,7 @@ export const deployCollectible = async (dataFileName) => {
   console.log(`   Locker: ${toHex(locker)}`);
   console.log(`   Metadata Updater: ${toHex(metadataUpdater)}`);
   console.log(`   Royalty Receiver: ${toHex(defaultRoyaltyReceiver)}`);
-  console.log(`   Royalty Fee Percentage: ${Number(feeNumerator)/10_000 * 100}%\n`);
+  console.log(`   Royalty Fee Percentage: ${(Number(feeNumerator) / 10_000) * 100}%\n`);
 
   exitIfDeclined(await confirmMainnetDeployment());
 
@@ -79,7 +77,7 @@ export const deployCollectible = async (dataFileName) => {
     locker,
     metadataUpdater,
     defaultRoyaltyReceiver,
-    feeNumerator
+    feeNumerator,
   );
 
   console.log(`\n\n 🎨 Deployed RealmsCollectible contract: ${toHex(collectibleAddress)}`);
@@ -94,7 +92,7 @@ export const deployCollectible = async (dataFileName) => {
     await setTraitTypeName(collectibleAddress, setTraitTypesNameCalldata);
     console.log(`\n\n ✔ Set trait types name: ${setTraitTypesNameCalldata}`);
   }
-  
+
   if (setTraitValueNameCalldata.length > 0) {
     await setTraitValueName(collectibleAddress, setTraitValueNameCalldata);
     console.log(`\n\n ✔ Set trait value name: ${setTraitValueNameCalldata}`);
@@ -104,7 +102,6 @@ export const deployCollectible = async (dataFileName) => {
     await setAttrsRawToIPFSCID(collectibleAddress, setAttrsRawToIPFSCIDCalldata);
     console.log(`\n\n ✔ Set attrs raw to IPFS CID: ${setAttrsRawToIPFSCIDCalldata}`);
   }
-  
 
   console.log("\n\n");
   console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
@@ -116,7 +113,6 @@ export const deployCollectible = async (dataFileName) => {
 
   return collectibleAddress;
 };
-
 
 const toHex = (address) => {
   if (typeof address === "string" && address.startsWith("0x")) {

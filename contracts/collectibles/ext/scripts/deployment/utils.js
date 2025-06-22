@@ -1,16 +1,16 @@
-import 'colors';
-import readline from 'readline';
+import "colors";
+import readline from "readline";
 
 /**
  * Prompts user for confirmation when deploying to mainnet
  * Shows a beautiful warning dialog and waits for user confirmation
- * 
+ *
  * @returns {Promise<boolean>} True if user confirms, false otherwise
  */
 export const confirmMainnetDeployment = async () => {
   const network = process.env.STARKNET_NETWORK?.toLowerCase();
-  
-  if (network !== 'mainnet') {
+
+  if (network !== "mainnet") {
     return true; // No confirmation needed for non-mainnet networks
   }
 
@@ -31,21 +31,21 @@ export const confirmMainnetDeployment = async () => {
 
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
   return new Promise((resolve) => {
     const askConfirmation = () => {
       rl.question(`🤔 Do you want to continue with MAINNET deployment? (yes/no): `.cyan.bold, (answer) => {
         const cleanAnswer = answer.trim().toLowerCase();
-        
-        if (cleanAnswer === 'yes' || cleanAnswer === 'y') {
+
+        if (cleanAnswer === "yes" || cleanAnswer === "y") {
           console.log("\n");
           console.log(`✅ Proceeding with MAINNET deployment...`.green.bold);
           console.log("\n");
           rl.close();
           resolve(true);
-        } else if (cleanAnswer === 'no' || cleanAnswer === 'n') {
+        } else if (cleanAnswer === "no" || cleanAnswer === "n") {
           console.log("\n");
           console.log(`❌ Deployment cancelled by user.`.red.bold);
           console.log("\n");
@@ -64,7 +64,7 @@ export const confirmMainnetDeployment = async () => {
 
 /**
  * Exits the process gracefully if user chooses not to continue
- * 
+ *
  * @param {boolean} shouldContinue - Result from confirmMainnetDeployment
  */
 export const exitIfDeclined = (shouldContinue) => {

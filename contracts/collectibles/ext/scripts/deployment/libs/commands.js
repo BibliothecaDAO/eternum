@@ -24,7 +24,18 @@ export const declareRealmsCollectibleContract = async () => {
   return class_hash;
 };
 
-export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, description, defaultAdmin, minter, upgrader, locker, metadataUpdater, defaultRoyaltyReceiver, feeNumerator) => {
+export const deployRealmsCollectibleContract = async (
+  erc721Name,
+  erc721Symbol,
+  description,
+  defaultAdmin,
+  minter,
+  upgrader,
+  locker,
+  metadataUpdater,
+  defaultRoyaltyReceiver,
+  feeNumerator,
+) => {
   ///////////////////////////////////////////
   ////////   Collectible Contract  //////////
   ///////////////////////////////////////////
@@ -49,17 +60,17 @@ export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, 
   let COLLECTIBLE_FEE_NUMERATOR = BigInt(feeNumerator);
 
   let constructorCalldata = [
-    COLLECTIBLE_ERC721_NAME, 
-    COLLECTIBLE_ERC721_SYMBOL, 
+    COLLECTIBLE_ERC721_NAME,
+    COLLECTIBLE_ERC721_SYMBOL,
     COLLECTIBLE_ERC721_BASE_URI,
-    COLLECTIBLE_DESCRIPTION, 
-    COLLECTIBLE_DEFAULT_ADMIN, 
-    COLLECTIBLE_MINTER, 
-    COLLECTIBLE_UPGRADER, 
-    COLLECTIBLE_LOCKER, 
-    COLLECTIBLE_METADATA_UPDATER, 
-    COLLECTIBLE_DEFAULT_ROYALTY_RECEIVER, 
-    COLLECTIBLE_FEE_NUMERATOR
+    COLLECTIBLE_DESCRIPTION,
+    COLLECTIBLE_DEFAULT_ADMIN,
+    COLLECTIBLE_MINTER,
+    COLLECTIBLE_UPGRADER,
+    COLLECTIBLE_LOCKER,
+    COLLECTIBLE_METADATA_UPDATER,
+    COLLECTIBLE_DEFAULT_ROYALTY_RECEIVER,
+    COLLECTIBLE_FEE_NUMERATOR,
   ];
   let address = await deploy(casualName, class_hash, constructorCalldata);
   await saveContractAddressToCommonFolder(erc721Name, address);
@@ -68,7 +79,6 @@ export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, 
   );
   return address;
 };
-
 
 export const setDefaultIPFSCID = async (collectibleAddress, calldata) => {
   ///////////////////////////////////////////
@@ -91,10 +101,7 @@ export const setDefaultIPFSCID = async (collectibleAddress, calldata) => {
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully set default IPFS CID in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully set default IPFS CID in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
 
 export const setAttrsRawToIPFSCID = async (collectibleAddress, calldataArray) => {
@@ -118,10 +125,7 @@ export const setAttrsRawToIPFSCID = async (collectibleAddress, calldataArray) =>
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully set attrs raw in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully set attrs raw in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
 
 export const setTraitTypeName = async (collectibleAddress, calldataArray) => {
@@ -145,10 +149,7 @@ export const setTraitTypeName = async (collectibleAddress, calldataArray) => {
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully set trait type name in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully set trait type name in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
 
 export const setMintCollectible = async (collectibleAddress, calldataArray) => {
@@ -166,7 +167,6 @@ export const setMintCollectible = async (collectibleAddress, calldataArray) => {
     calldata: calldata,
   }));
 
-
   const contract = await account.execute(calldatas);
 
   // Wait for transaction
@@ -174,10 +174,7 @@ export const setMintCollectible = async (collectibleAddress, calldataArray) => {
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully minted collectible in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully minted collectible in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
 
 export const setTraitValueName = async (collectibleAddress, calldataArray) => {
@@ -201,12 +198,8 @@ export const setTraitValueName = async (collectibleAddress, calldataArray) => {
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully set trait value name in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully set trait value name in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
-
 
 export const createOrUpdateLockState = async (collectibleAddress, lockId, unlockAtTimestamp) => {
   ///////////////////////////////////////////
@@ -214,7 +207,10 @@ export const createOrUpdateLockState = async (collectibleAddress, lockId, unlock
   ///////////////////////////////////////////
 
   const account = getAccount();
-  console.log(`\n Creating Lock ID ${lockId} to be unlocked at ${new Date(unlockAtTimestamp * 1000).toLocaleString()} in Collectible Contract ... \n\n`.green);
+  console.log(
+    `\n Creating Lock ID ${lockId} to be unlocked at ${new Date(unlockAtTimestamp * 1000).toLocaleString()} in Collectible Contract ... \n\n`
+      .green,
+  );
 
   const contract = await account.execute([
     {
@@ -229,16 +225,13 @@ export const createOrUpdateLockState = async (collectibleAddress, lockId, unlock
   console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
   await account.waitForTransaction(contract.transaction_hash);
 
-  console.log(
-    `Successfully created lock in collectible contract ${collectibleAddress}`.green,
-    "\n\n",
-  );
+  console.log(`Successfully created lock in collectible contract ${collectibleAddress}`.green, "\n\n");
 };
 
 export const saveContractAddressToCommonFolder = async (erc721Name, collectibleAddress) => {
   try {
     const folderPath = path.join("..", "..", "..", "..", "..", "common", "collectibles", "addresses");
-    
+
     const mkdirAsync = promisify(fs.mkdir);
     await mkdirAsync(folderPath, { recursive: true });
     const network = process.env.STARKNET_NETWORK;
