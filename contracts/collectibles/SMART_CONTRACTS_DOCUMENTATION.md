@@ -8,11 +8,10 @@
 4. [Token Locking System](#token-locking-system)
 5. [Access Control & Security](#access-control--security)
 6. [Metadata Generation Engine](#metadata-generation-engine)
-7. [Gas Optimization Strategies](#gas-optimization-strategies)
-8. [API Reference](#api-reference)
-9. [Integration Patterns](#integration-patterns)
-10. [Security Considerations](#security-considerations)
-11. [Testing & Deployment](#testing--deployment)
+7. [API Reference](#api-reference)
+8. [Integration Patterns](#integration-patterns)
+9. [Security Considerations](#security-considerations)
+10. [Testing & Deployment](#testing--deployment)
 
 ---
 
@@ -216,6 +215,125 @@ The metadata generation follows a sophisticated pipeline:
 4. **IPFS Resolution**: Check for attribute-specific image, fallback to default
 5. **JSON Compilation**: Build OpenSea-compatible metadata structure
 6. **Base64 Encoding**: Convert to data URI format
+
+#### Step 4: JSON Compilation and Encoding
+
+```cairo
+// 5. Generate final JSON and encode
+make_json_and_base64_encode_metadata(attrs_data, ipfs_cid)
+```
+
+The final step uses a utility function that:
+
+1. **Builds JSON Structure**: Creates properly formatted JSON with image and attributes
+2. **Handles Special Characters**: Escapes quotes, newlines, and other JSON special characters
+3. **Base64 Encoding**: Converts to data URI format: `data:application/json;base64,...`
+4. **Returns Data URI**: Compatible with OpenSea and other NFT platforms
+
+### IPFS Image Management
+
+#### Two-Tier Image System
+
+**Tier 1: Attribute-Specific Images**
+
+```cairo
+// Set specific image for exact attribute combination
+metadata.set_attrs_raw_to_ipfs_cid(
+    0x00000000000000000000000000000005,  // Legendary rarity only
+    "QmLegendarySpecialArtworkCID",
+    false
+);
+```
+
+**Tier 2: Default Fallback**
+
+```cairo
+// Set default image for all other combinations
+metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID", false);
+```
+
+#### Advanced Image Mapping Strategies
+
+**Strategy 1: Rarity-Based Images**
+
+```cairo
+// Different images for different rarity levels
+metadata.set_attrs_raw_to_ipfs_cid(0x01, "QmCommonCID", false);     // Common
+metadata.set_attrs_raw_to_ipfs_cid(0x02, "QmUncommonCID", false);   // Uncommon
+metadata.set_attrs_raw_to_ipfs_cid(0x03, "QmRareCID", false);       // Rare
+metadata.set_attrs_raw_to_ipfs_cid(0x04, "QmEpicCID", false);       // Epic
+metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendaryCID", false);  // Legendary
+```
+
+**Strategy 2: Element-Based Images**
+
+```cairo
+// Different images for different elements (trait_type_1)
+metadata.set_attrs_raw_to_ipfs_cid(0x0100, "QmFireCID", false);     // Fire element
+metadata.set_attrs_raw_to_ipfs_cid(0x0200, "QmWaterCID", false);    // Water element
+metadata.set_attrs_raw_to_ipfs_cid(0x0300, "QmEarthCID", false);    // Earth element
+metadata.set_attrs_raw_to_ipfs_cid(0x0400, "QmAirCID", false);      // Air element
+```
+
+**Strategy 3: Combination-Based Images**
+
+```cairo
+// Specific images for special combinations
+metadata.set_attrs_raw_to_ipfs_cid(
+    0x00000000000000000000000003020105,  // Legendary Fire Mighty
+    "QmLegendaryFireMightyCID",
+    false
+);
+```
+
+### Trait System Management
+
+#### Setting Up Trait Types
+
+```cairo
+// Define the category of traits (what the trait represents)
+metadata.set_trait_type_name(0, "Rarity", false);      // Position 0 = Rarity
+metadata.set_trait_type_name(1, "Element", false);     // Position 1 = Element
+metadata.set_trait_type_name(2, "Power Level", false); // Position 2 = Power
+metadata.set_trait_type_name(3, "Region", false);      // Position 3 = Geographic region
+metadata.set_trait_type_name(4, "Class", false);       // Position 4 = Character class
+metadata.set_trait_type_name(5, "Weapon", false);      // Position 5 = Equipped weapon
+```
+
+#### Setting Up Trait Values
+
+```cairo
+// Define specific values within each trait type
+// Rarity values (trait_type_id = 0)
+metadata.set_trait_value_name(0, 1, "Common", false);
+metadata.set_trait_value_name(0, 2, "Uncommon", false);
+metadata.set_trait_value_name(0, 3, "Rare", false);
+metadata.set_trait_value_name(0, 4, "Epic", false);
+metadata.set_trait_value_name(0, 5, "Legendary", false);
+metadata.set_trait_value_name(0, 6, "Mythic", false);
+
+// Element values (trait_type_id = 1)
+metadata.set_trait_value_name(1, 1, "Fire", false);
+metadata.set_trait_value_name(1, 2, "Water", false);
+metadata.set_trait_value_name(1, 3, "Earth", false);
+metadata.set_trait_value_name(1, 4, "Air", false);
+metadata.set_trait_value_name(1, 5, "Light", false);
+metadata.set_trait_value_name(1, 6, "Shadow", false);
+```
+
+#### Trait System Validation
+
+```cairo
+// Validation rules enforced by contract
+assert!(trait_type_id < 16, "Trait type must be 0-15");
+assert!(trait_value_id > 0 && trait_value_id <= 255, "Trait value must be 1-255");
+
+// Overwrite protection (when overwrite = false)
+assert!(
+    existing_name == "",
+    "Trait name already exists - use overwrite=true to modify"
+);
+```
 
 ---
 
@@ -493,6 +611,8 @@ The contract generates OpenSea-compatible metadata that follows the standard for
 
 ```json
 {
+  "name": "Collection Name #123",
+  "description": "Collection description",
   "image": "ipfs://QmSpecificImageCIDOrDefaultCID",
   "attributes": [
     {
@@ -602,7 +722,8 @@ The final step uses a utility function that:
 // Set specific image for exact attribute combination
 metadata.set_attrs_raw_to_ipfs_cid(
     0x00000000000000000000000000000005,  // Legendary rarity only
-    "QmLegendarySpecialArtworkCID"
+    "QmLegendarySpecialArtworkCID",
+    false
 );
 ```
 
@@ -610,7 +731,7 @@ metadata.set_attrs_raw_to_ipfs_cid(
 
 ```cairo
 // Set default image for all other combinations
-metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID");
+metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID", false);
 ```
 
 #### Advanced Image Mapping Strategies
@@ -619,21 +740,21 @@ metadata.set_default_ipfs_cid("QmDefaultCollectionArtworkCID");
 
 ```cairo
 // Different images for different rarity levels
-metadata.set_attrs_raw_to_ipfs_cid(0x01, "QmCommonCID");     // Common
-metadata.set_attrs_raw_to_ipfs_cid(0x02, "QmUncommonCID");   // Uncommon
-metadata.set_attrs_raw_to_ipfs_cid(0x03, "QmRareCID");       // Rare
-metadata.set_attrs_raw_to_ipfs_cid(0x04, "QmEpicCID");       // Epic
-metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendaryCID");  // Legendary
+metadata.set_attrs_raw_to_ipfs_cid(0x01, "QmCommonCID", false);     // Common
+metadata.set_attrs_raw_to_ipfs_cid(0x02, "QmUncommonCID", false);   // Uncommon
+metadata.set_attrs_raw_to_ipfs_cid(0x03, "QmRareCID", false);       // Rare
+metadata.set_attrs_raw_to_ipfs_cid(0x04, "QmEpicCID", false);       // Epic
+metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendaryCID", false);  // Legendary
 ```
 
 **Strategy 2: Element-Based Images**
 
 ```cairo
 // Different images for different elements (trait_type_1)
-metadata.set_attrs_raw_to_ipfs_cid(0x0100, "QmFireCID");     // Fire element
-metadata.set_attrs_raw_to_ipfs_cid(0x0200, "QmWaterCID");    // Water element
-metadata.set_attrs_raw_to_ipfs_cid(0x0300, "QmEarthCID");    // Earth element
-metadata.set_attrs_raw_to_ipfs_cid(0x0400, "QmAirCID");      // Air element
+metadata.set_attrs_raw_to_ipfs_cid(0x0100, "QmFireCID", false);     // Fire element
+metadata.set_attrs_raw_to_ipfs_cid(0x0200, "QmWaterCID", false);    // Water element
+metadata.set_attrs_raw_to_ipfs_cid(0x0300, "QmEarthCID", false);    // Earth element
+metadata.set_attrs_raw_to_ipfs_cid(0x0400, "QmAirCID", false);      // Air element
 ```
 
 **Strategy 3: Combination-Based Images**
@@ -641,8 +762,9 @@ metadata.set_attrs_raw_to_ipfs_cid(0x0400, "QmAirCID");      // Air element
 ```cairo
 // Specific images for special combinations
 metadata.set_attrs_raw_to_ipfs_cid(
-    0x00000000000000000000000000030105,  // Legendary Fire Mighty
-    "QmLegendaryFireMightyCID"
+    0x00000000000000000000000003020105,  // Legendary Fire Mighty
+    "QmLegendaryFireMightyCID",
+    false
 );
 ```
 
@@ -725,153 +847,11 @@ for token_id in token_ids {
 
 ---
 
-## Gas Optimization Strategies
-
-### Storage Layout Optimization
-
-#### Packed vs Unpacked Storage Comparison
-
-**Traditional Mapping Approach**:
-
-```cairo
-// Each trait stored separately
-struct TraditionalStorage {
-    rarity: Map<u256, u8>,        // 16 bytes per token
-    element: Map<u256, u8>,       // 16 bytes per token
-    power: Map<u256, u8>,         // 16 bytes per token
-    region: Map<u256, u8>,        // 16 bytes per token
-    // ... 12 more traits
-}
-
-```
-
-**Packed Approach**:
-
-```cairo
-// All traits in single u128
-struct PackedStorage {
-    token_id_to_attrs_raw: Map<u256, u128>,  // 16 bytes per token
-}
-
-```
-
-### Batch Operations
-
-#### Transfer Amount Optimization
-
-The contract includes an optimized batch transfer function:
-
-```cairo
-fn transfer_amount(
-    ref self: ContractState,
-    from: ContractAddress,
-    to: ContractAddress,
-    amount: u16
-) -> Span<u256> {
-    let mut token_ids = array![];
-
-    for _ in 0..amount {
-        // Get first token owned by 'from'
-        let token_id = self.erc721_enumerable.token_of_owner_by_index(from, 0);
-
-        // Transfer it
-        self.erc721.transfer_from(from, to, token_id);
-
-        // Track transferred token
-        token_ids.append(token_id);
-    }
-
-    token_ids.span()
-}
-```
-
-#### Enumerable Integration Benefits
-
-```cairo
-// Efficient token discovery without external indexing
-let owner_token_count = erc721.balance_of(owner);
-let mut tokens = array![];
-
-for i in 0..owner_token_count {
-    let token_id = enumerable.token_of_owner_by_index(owner, i);
-    tokens.append(token_id);
-}
-```
-
-### Memory Layout Optimization
-
-#### Struct Packing for Events
-
-```cairo
-#[derive(Drop, starknet::Event)]
-pub struct TraitValueUpdated {
-    #[key]
-    pub trait_type_id: u8,        // 1 byte
-    #[key]
-    pub trait_value_id: u8,       // 1 byte
-    pub trait_value_name: ByteArray,  // Variable length
-    pub timestamp: u64,           // 8 bytes
-}
-```
-
-**Event Optimization**:
-
-- Use smallest possible integer types
-- Key only essential fields for filtering
-- Group related events together
-
-#### Function Parameter Optimization
-
-```cairo
-// Optimized parameter order (smaller types first)
-fn set_trait_value_name(
-    ref self: ContractState,
-    trait_type_id: u8,        // 1 byte
-    trait_value_id: u8,       // 1 byte
-    name: ByteArray,          // Variable
-    overwrite: bool           // 1 byte
-)
-```
-
-### Computational Optimization
-
-#### Bit Manipulation Efficiency
-
-```cairo
-// Efficient bit unpacking using Cairo's native operations
-fn unpack_u128_to_bytes_full(packed: u128) -> Array<u8> {
-    let mut result = array![];
-    let mut remaining = packed;
-
-    // Unroll loop for known 16 iterations
-    let byte0 = (remaining & 0xFF_u128).try_into().unwrap();
-    remaining = remaining / 256_u128;  // Faster than bit shifting in Cairo
-    result.append(byte0);
-
-    // Repeat for bytes 1-15...
-    result
-}
-```
-
-#### Validation Optimization
-
-```cairo
-// Combine related assertions to reduce function calls
-fn validate_trait_params(trait_type_id: u8, trait_value_id: u8) {
-    assert!(
-        trait_type_id < 16 && trait_value_id > 0,
-        "Invalid trait parameters"
-    );
-}
-```
-
----
-
 ## API Reference
 
 ### Core NFT Functions
 
-#### `safe_mint(recipient: ContractAddress, token_id: u256, attributes_raw: u128)`
+#### `safe_mint(recipient: ContractAddress, attributes_raw: u128)`
 
 **Purpose**: Mints a new NFT with packed attributes to the specified recipient.
 
@@ -880,16 +860,16 @@ fn validate_trait_params(trait_type_id: u8, trait_value_id: u8) {
 **Parameters**:
 
 - `recipient`: Address that will own the newly minted token
-- `token_id`: Unique identifier for the token (must not exist)
-- `attributes_raw`: Packed u128 containing up to 16 trait values
+- `attributes_raw`: Packed u128 containing up to 16 trait values (must be non-zero)
 
 **Validation**:
 
 ```cairo
-self.erc721._require_not_exists(token_id);
+assert!(attributes_raw != 0, "RealmsCollectible: Attributes raw must be non-zero");
+// Must have IPFS CID set for attributes (specific or default)
+let ipfs_cid = self.attrs_raw_to_ipfs_cid.entry(attributes_raw).read();
+assert!(ipfs_cid != "", "RealmsCollectible: IPFS CID not set for those attributes");
 ```
-
-**Gas Cost**: ~20,000 gas
 
 **Events Emitted**:
 
@@ -901,7 +881,8 @@ self.erc721._require_not_exists(token_id);
 ```cairo
 // Mint a Legendary Fire Mighty token (attributes: [0,0,0,0,0,0,0,0,0,0,0,0,3,1,5])
 let attributes = 0x00000000000000000000000000030105_u128;
-mint_burn.safe_mint(player_address, 1001, attributes);
+mint_burn.safe_mint(player_address, attributes);
+// Token ID will be auto-generated (e.g., 1, 2, 3, etc.)
 ```
 
 #### `burn(token_id: u256)`
@@ -926,340 +907,8 @@ self.erc721._require_owned(token_id);
 - Removes token from circulation
 - Clears approvals
 - Updates enumerable indices
-- Does NOT clear attributes (gas optimization)
+- Attribute data remains in storage but becomes inaccessible
 
 ### Metadata Management Functions
 
-#### `set_trait_type_name(trait_type_id: u8, name: ByteArray, overwrite: bool)`
-
-**Purpose**: Sets or updates the human-readable name for a trait type.
-
-**Access Control**: Requires `METADATA_UPDATER_ROLE`
-
-**Parameters**:
-
-- `trait_type_id`: Position in packed attributes (0-15)
-- `name`: Human-readable name (e.g., "Rarity", "Element")
-- `overwrite`: Whether to overwrite existing names
-
-**Validation**:
-
-```cairo
-assert!(trait_type_id < 16, "Trait type must be 0-15");
-if !overwrite {
-    assert!(existing_name == "", "Name already exists");
-}
-```
-
-**Events Emitted**:
-
-```cairo
-TraitTypeUpdated {
-    trait_type_id,
-    trait_type_name: name,
-    timestamp: current_timestamp
-}
-```
-
-**Example Usage**:
-
-```cairo
-// Set trait type names for game attributes
-metadata.set_trait_type_name(0, "Rarity", false);
-metadata.set_trait_type_name(1, "Element", false);
-metadata.set_trait_type_name(2, "Character Class", false);
-```
-
-#### `set_trait_value_name(trait_type_id: u8, trait_value_id: u8, name: ByteArray, overwrite: bool)`
-
-**Purpose**: Sets human-readable name for specific trait values.
-
-**Access Control**: Requires `METADATA_UPDATER_ROLE`
-
-**Parameters**:
-
-- `trait_type_id`: Trait category (0-15)
-- `trait_value_id`: Specific value within category (1-255)
-- `name`: Human-readable name
-- `overwrite`: Whether to overwrite existing names
-
-**Validation**:
-
-```cairo
-assert!(trait_type_id < 16, "Invalid trait type");
-assert!(trait_value_id > 0, "Value must be 1-255");
-```
-
-**Example Usage**:
-
-```cairo
-// Set rarity values
-metadata.set_trait_value_name(0, 1, "Common", false);
-metadata.set_trait_value_name(0, 2, "Rare", false);
-metadata.set_trait_value_name(0, 3, "Legendary", false);
-
-// Set element values
-metadata.set_trait_value_name(1, 1, "Fire", false);
-metadata.set_trait_value_name(1, 2, "Water", false);
-```
-
-#### `set_default_ipfs_cid(ipfs_cid: ByteArray)`
-
-**Purpose**: Sets the default IPFS image for tokens without specific image mappings.
-
-**Access Control**: Requires `METADATA_UPDATER_ROLE`
-
-**Parameters**:
-
-- `ipfs_cid`: IPFS content identifier (without ipfs:// prefix)
-
-**Example Usage**:
-
-```cairo
-metadata.set_default_ipfs_cid("QmDefaultCollectionImage123");
-```
-
-#### `set_attrs_raw_to_ipfs_cid(attrs_raw: u128, ipfs_cid: ByteArray)`
-
-**Purpose**: Maps specific attribute combinations to custom IPFS images.
-
-**Access Control**: Requires `METADATA_UPDATER_ROLE`
-
-**Parameters**:
-
-- `attrs_raw`: Exact attribute combination
-- `ipfs_cid`: IPFS CID for this combination
-
-**Use Cases**:
-
-- Special artwork for legendary items
-- Unique images for specific combinations
-- Promotional or event-specific visuals
-
-**Example Usage**:
-
-```cairo
-// Special image for all legendary items (rarity = 5)
-metadata.set_attrs_raw_to_ipfs_cid(0x05, "QmLegendarySpecialArt");
-
-// Ultra-rare combination gets unique artwork
-metadata.set_attrs_raw_to_ipfs_cid(
-    0x00000000000000000000000003020105,  // Legendary Fire Strong Northern
-    "QmUltraRareCombinationArt"
-);
-```
-
-### Lock Management Functions
-
-#### `lock_state_update(lock_id: felt252, unlock_at: u64)`
-
-**Purpose**: Creates or updates a global lock state definition.
-
-**Access Control**: Requires `LOCKER_ROLE`
-
-**Parameters**:
-
-- `lock_id`: Unique identifier for this lock (non-zero)
-- `unlock_at`: Timestamp when lock expires (must be future)
-
-**Validation**:
-
-```cairo
-assert!(lock_id != 0, "Lock ID cannot be zero");
-assert!(unlock_at >= current_timestamp(), "Must be future timestamp");
-```
-
-**Example Usage**:
-
-```cairo
-// Create tournament lock lasting 30 days
-let tournament_end = current_timestamp() + (30 * 24 * 60 * 60);
-lock_admin.lock_state_update('world_tournament_2024', tournament_end);
-
-// Create staking pool lock lasting 90 days
-let staking_end = current_timestamp() + (90 * 24 * 60 * 60);
-lock_admin.lock_state_update('q1_staking_pool', staking_end);
-```
-
-#### `token_lock(token_id: u256, lock_id: felt252)`
-
-**Purpose**: Applies a lock state to a specific token.
-
-**Access Control**: Token owner only (not approved operators)
-
-**Parameters**:
-
-- `token_id`: ID of token to lock
-- `lock_id`: ID of lock state to apply
-
-**Validation**:
-
-```cairo
-assert!(caller == token_owner, "Only owner can lock");
-assert!(lock_exists && lock_active, "Lock must be active");
-assert!(!already_locked, "Token already locked");
-```
-
-**Side Effects**:
-
-- Prevents all transfers until unlock
-- Records transaction hash of lock operation
-- Can be unlocked only after lock expiration
-
-**Example Usage**:
-
-```cairo
-// Player locks character for tournament
-lock.token_lock(character_nft_id, 'world_tournament_2024');
-
-// User stakes NFT in pool
-lock.token_lock(collectible_id, 'q1_staking_pool');
-```
-
-#### `token_unlock(token_id: u256)`
-
-**Purpose**: Unlocks a token after its lock has expired.
-
-**Access Control**: Token owner only
-
-**Parameters**:
-
-- `token_id`: ID of token to unlock
-
-**Validation**:
-
-```cairo
-assert!(caller == token_owner, "Only owner can unlock");
-assert!(token_is_locked, "Token not locked");
-assert!(lock_expired, "Lock not yet expired");
-```
-
-**Example Usage**:
-
-```cairo
-// After tournament ends, player unlocks character
-lock.token_unlock(character_nft_id);
-
-// After staking period, user retrieves NFT
-lock.token_unlock(collectible_id);
-```
-
-### Query Functions
-
-#### `get_metadata_raw(token_id: u256) -> u128`
-
-**Purpose**: Returns raw packed attributes for a token.
-
-**Access Control**: Public read
-
-**Returns**: u128 value containing packed trait data
-
-#### `get_metadata_json(token_id: u256) -> ByteArray`
-
-**Purpose**: Generates full OpenSea-compatible JSON metadata.
-
-**Access Control**: Public read
-
-**Returns**: Base64-encoded data URI with complete metadata
-
-#### `token_is_locked(token_id: u256) -> bool`
-
-**Purpose**: Checks if a token is currently locked.
-
-**Access Control**: Public read
-
-**Returns**: true if locked, false if unlocked
-
-#### `token_lock_state(token_id: u256) -> (felt252, felt252)`
-
-**Purpose**: Returns lock details for a token.
-
-**Access Control**: Public read
-
-**Returns**: `(lock_id, transaction_hash)` tuple
-
-**Example Usage**:
-
-```cairo
-let (lock_id, tx_hash) = lock.token_lock_state(token_id);
-if lock_id != 0 {
-    // Token is locked with lock_id
-    // Can check lock expiration separately
-}
-```
-
-### Enumerable Functions
-
-#### `transfer_amount(from: ContractAddress, to: ContractAddress, amount: u16) -> Span<u256>`
-
-**Purpose**: Efficiently transfers multiple tokens in a single transaction.
-
-**Access Control**: Caller must be authorized for all transfers
-
-**Parameters**:
-
-- `from`: Current owner of tokens
-- `to`: New owner of tokens
-- `amount`: Number of tokens to transfer
-
-**Returns**: Array of transferred token IDs
-
-**Important Notes**:
-
-- Transfers tokens in enumerable order (index 0 first)
-- Each token must pass individual authorization checks
-- Fails if any token is locked
-- Gas savings for bulk operations
-
-**Example Usage**:
-
-```cairo
-// Transfer 5 tokens from Alice to Bob
-let transferred = enumerable.transfer_amount(alice, bob, 5);
-// transferred contains the IDs of the 5 tokens moved
-```
-
-### Access Control Functions
-
-#### `grant_role(role: felt252, account: ContractAddress)`
-
-**Purpose**: Grants a role to an account.
-
-**Access Control**: Requires `DEFAULT_ADMIN_ROLE`
-
-**Parameters**:
-
-- `role`: Role identifier (e.g., `MINTER_ROLE`)
-- `account`: Address to grant role to
-
-#### `revoke_role(role: felt252, account: ContractAddress)`
-
-**Purpose**: Revokes a role from an account.
-
-**Access Control**: Requires `DEFAULT_ADMIN_ROLE`
-
-#### `has_role(role: felt252, account: ContractAddress) -> bool`
-
-**Purpose**: Checks if an account has a specific role.
-
-**Access Control**: Public read
-
-### Upgrade Functions
-
-#### `upgrade(new_class_hash: ClassHash)`
-
-**Purpose**: Upgrades contract to new implementation.
-
-**Access Control**: Requires `UPGRADER_ROLE`
-
-**Parameters**:
-
-- `new_class_hash`: Hash of new contract implementation
-
-**Security Notes**:
-
-- Preserves all storage during upgrade
-- New implementation must be compatible
-- Should be controlled by governance/multi-sig
-
----
+#### `
