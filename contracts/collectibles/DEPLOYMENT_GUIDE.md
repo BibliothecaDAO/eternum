@@ -1,6 +1,7 @@
 # Realms Collectible Deployment Guide
 
-A comprehensive guide for deploying and managing Realms Collectible NFT contracts using the JavaScript automation system.
+A comprehensive guide for deploying and managing Realms Collectible NFT contracts using the JavaScript automation
+system.
 
 ## Table of Contents
 
@@ -17,12 +18,13 @@ A comprehensive guide for deploying and managing Realms Collectible NFT contract
 
 ## Overview
 
-The Realms Collectible deployment system provides a complete automation toolkit for managing NFT contracts on Starknet. It handles everything from trait data validation to contract deployment and ongoing updates.
+The Realms Collectible deployment system provides a complete automation toolkit for managing NFT contracts on Starknet.
+It handles everything from trait data validation to contract deployment and ongoing updates.
 
 ### Key Features
 
 - **Automated Data Validation**: Ensures trait data integrity and uniqueness
-- **Multi-Network Support**: Deploy to local, testnet, or mainnet environments  
+- **Multi-Network Support**: Deploy to local, testnet, or mainnet environments
 - **Incremental Updates**: Update existing contracts without redeployment
 - **Batch Operations**: Efficient minting and metadata management
 - **Binary Optimization**: Packs trait data into efficient storage format
@@ -79,6 +81,7 @@ scarb --release build
 ```
 
 **The provided shell scripts handle this automatically:**
+
 - `./deploy.sh` automatically builds before deploying
 - `./declare.sh` automatically builds before declaring
 
@@ -93,7 +96,7 @@ Create a `.env` file with the required configuration:
 STARKNET_NETWORK=sepolia
 STARKNET_RPC_URL=https://starknet-sepolia.public.blastapi.io
 
-# Account Configuration  
+# Account Configuration
 STARKNET_ACCOUNT_ADDRESS=0x123...
 STARKNET_PRIVATE_KEY=0x456...
 
@@ -132,21 +135,28 @@ ext/scripts/
 
 ### JSON Configuration Structure
 
-The heart of the system is the JSON configuration file that defines your NFT collection's traits, images, and minting parameters.
+The heart of the system is the JSON configuration file that defines your NFT collection's traits, images, and minting
+parameters.
 
 #### Complete Example Structure
 
 ```json
 {
   "name": "Collectible: Baby Chicken",
-  "symbol": "CBDC", 
+  "symbol": "CBDC",
   "description": "I dream of a better tomorrow, where chickens can cross the road and not be questioned about their motives.",
   "updateContractAddress": "",
   "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
   "defaultIpfsCidOverwrite": false,
-  "traits": [ /* Trait definitions */ ],
-  "traitsCombinedIpfsCid": [ /* Image mappings */ ],
-  "mintCData": [ /* Minting instructions */ ]
+  "traits": [
+    /* Trait definitions */
+  ],
+  "traitsCombinedIpfsCid": [
+    /* Image mappings */
+  ],
+  "mintCData": [
+    /* Minting instructions */
+  ]
 }
 ```
 
@@ -159,17 +169,17 @@ Each trait type represents a category of attributes (max 16 types):
 ```json
 {
   "traitTypeNameOverwrite": false,
-  "traitTypeId": 0,                    // Sequential IDs 0-15
-  "traitTypeName": "Skin",             // Human-readable category name
+  "traitTypeId": 0, // Sequential IDs 0-15
+  "traitTypeName": "Skin", // Human-readable category name
   "traitValues": [
     {
-      "traitValueId": 1,               // Sequential IDs 1-255 (0 = none)
-      "traitValueName": "Smooth",      // Human-readable value name
+      "traitValueId": 1, // Sequential IDs 1-255 (0 = none)
+      "traitValueName": "Smooth", // Human-readable value name
       "traitValueNameOverwrite": false
     },
     {
       "traitValueId": 2,
-      "traitValueName": "Rough", 
+      "traitValueName": "Rough",
       "traitValueNameOverwrite": false
     }
   ]
@@ -179,20 +189,22 @@ Each trait type represents a category of attributes (max 16 types):
 #### 2. Important Constraints
 
 **Trait Type Limits:**
+
 - Maximum 16 trait types (IDs 0-15)
 - IDs must be sequential starting from 0
 - Names must be unique across all trait types
 
 **Trait Value Limits:**
-- Maximum 255 values per trait type (IDs 1-255) 
+
+- Maximum 255 values per trait type (IDs 1-255)
 - ID 0 is reserved for "no trait present"
 - IDs must be sequential starting from 1
 - Names must be unique within each trait type
 
-**Binary Encoding:**
-Each trait type occupies exactly 8 bits (1 byte) in the packed representation:
+**Binary Encoding:** Each trait type occupies exactly 8 bits (1 byte) in the packed representation:
+
 - Trait Type 0: bits 0-7
-- Trait Type 1: bits 8-15  
+- Trait Type 1: bits 8-15
 - Trait Type 2: bits 16-23
 - etc.
 
@@ -216,19 +228,20 @@ Map specific trait combinations to unique artwork:
   "traitsCombinedIpfsCid": [
     {
       "traits": "Skin:Smooth,Structure:Regular,Eyes:Normal",
-      "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7", 
+      "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7",
       "overwrite": false
     },
     {
       "traits": "Skin:Scratched,Structure:Regular,Eyes:Elf",
       "ipfsCid": "QmNdvtT9EmrUc6haJyN7ZanHNrsjd23v1ydG6r8jTGEZvq",
-      "overwrite": false  
+      "overwrite": false
     }
   ]
 }
 ```
 
 **Trait String Format:**
+
 - Format: `"TraitType1:TraitValue1,TraitType2:TraitValue2"`
 - Must reference existing trait types and values
 - No duplicate trait types within one combination
@@ -241,7 +254,7 @@ For the combination `"Skin:Smooth,Structure:Village,Eyes:Normal"`:
 ```
 Trait Mappings:
 - Skin (type 0): Smooth (value 1) → byte 0 = 1
-- Structure (type 1): Village (value 2) → byte 1 = 2  
+- Structure (type 1): Village (value 2) → byte 1 = 2
 - Eyes (type 2): Normal (value 1) → byte 2 = 1
 
 Binary Result: 0x010201
@@ -260,7 +273,7 @@ Define which tokens to mint during deployment:
       "count": 7
     },
     {
-      "traits": "Skin:Smooth,Structure:Village,Eyes:Normal", 
+      "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
       "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39",
       "count": 3
     }
@@ -277,11 +290,12 @@ Define which tokens to mint during deployment:
 Before deployment, contracts must be declared to the network:
 
 ⚠️ **CRITICAL: If not using shell scripts, build first!**
+
 ```bash
 # If you DON'T use ./declare.sh, you MUST build manually:
 cd contracts/collectibles
 scarb --release build
-cd - 
+cd -
 ```
 
 ```bash
@@ -294,6 +308,7 @@ bun run declare:sepolia
 ```
 
 **Declaration Process:**
+
 1. Builds contracts with Scarb in release mode
 2. Declares the contract class to Starknet
 3. Returns class hash for deployment
@@ -303,11 +318,12 @@ bun run declare:sepolia
 Deploy a new contract instance with your configuration:
 
 ⚠️ **CRITICAL: If not using shell scripts, build first!**
+
 ```bash
 # If you DON'T use ./deploy.sh, you MUST build manually:
 cd contracts/collectibles
 scarb --release build
-cd - 
+cd -
 ```
 
 ```bash
@@ -320,11 +336,12 @@ bun run deploy:sepolia data/example.json
 ```
 
 **Deployment Process:**
+
 1. Validates JSON configuration data
 2. Deploys contract with constructor parameters
 3. Sets default IPFS CID
 4. Configures all trait type names
-5. Configures all trait value names  
+5. Configures all trait value names
 6. Maps trait combinations to IPFS CIDs
 7. Performs initial minting (if specified)
 
@@ -339,6 +356,7 @@ bun run update:sepolia data/updates.json
 ```
 
 **Update Requirements:**
+
 - Set `updateContractAddress` in JSON config
 - Only items marked with `overwrite: true` are processed
 - Useful for adding new traits or updating metadata
@@ -349,11 +367,12 @@ Mint additional tokens after deployment:
 
 ```bash
 # Mint new tokens
-cd deployment  
+cd deployment
 bun run mint:sepolia data/mint_batch.json
 ```
 
 **Minting Requirements:**
+
 - Contract must exist and be configured
 - Caller must have `MINTER_ROLE`
 - All trait combinations must have IPFS CIDs configured
@@ -371,7 +390,7 @@ Create your `collection.json` file:
 ```json
 {
   "name": "My Awesome Collection",
-  "symbol": "AWESOME", 
+  "symbol": "AWESOME",
   "description": "A collection of awesome NFTs",
   "updateContractAddress": "",
   "defaultIpfsCid": "QmYourDefaultImage",
@@ -388,7 +407,7 @@ Create your `collection.json` file:
           "traitValueNameOverwrite": false
         },
         {
-          "traitValueId": 2, 
+          "traitValueId": 2,
           "traitValueName": "Sunset",
           "traitValueNameOverwrite": false
         }
@@ -398,7 +417,7 @@ Create your `collection.json` file:
   "traitsCombinedIpfsCid": [
     {
       "traits": "Background:Blue Sky",
-      "ipfsCid": "QmBlueSkyImage", 
+      "ipfsCid": "QmBlueSkyImage",
       "overwrite": false
     }
   ],
@@ -435,20 +454,21 @@ Check the deployed contract using block explorers:
 ```bash
 # For Sepolia testnet, visit:
 # https://sepolia.starkscan.co/contract/0x[your-contract-address]
-# 
+#
 # For Mainnet, visit:
 # https://starkscan.co/contract/0x[your-contract-address]
 #
 # The block explorer will show:
 # - Contract details and verification status
-# - Transaction history 
+# - Transaction history
 # - Read contract functions (name, symbol, etc.)
 # - Write contract functions (if connected)
 ```
 
 **What to verify:**
+
 - Contract name matches your JSON configuration
-- Symbol matches your JSON configuration  
+- Symbol matches your JSON configuration
 - Total supply shows correct initial mint count
 - Trait metadata is properly configured
 
@@ -472,15 +492,15 @@ Modify your JSON file for updates:
 {
   "name": "My Awesome Collection",
   "symbol": "AWESOME",
-  "updateContractAddress": "0x123abc...",  // Set contract address
+  "updateContractAddress": "0x123abc...", // Set contract address
   "traits": [
     {
-      "traitTypeNameOverwrite": true,        // Enable overwrite
+      "traitTypeNameOverwrite": true, // Enable overwrite
       "traitTypeId": 0,
       "traitTypeName": "Background Updated", // New name
       "traitValues": [
         {
-          "traitValueId": 3,                 // New trait value
+          "traitValueId": 3, // New trait value
           "traitValueName": "Starry Night",
           "traitValueNameOverwrite": false
         }
@@ -489,7 +509,7 @@ Modify your JSON file for updates:
   ],
   "traitsCombinedIpfsCid": [
     {
-      "traits": "Background:Starry Night", 
+      "traits": "Background:Starry Night",
       "ipfsCid": "QmStarryNightImage",
       "overwrite": false
     }
@@ -505,6 +525,7 @@ bun run update:sepolia data/collection_update.json
 ```
 
 **Update Processing:**
+
 - Only processes items with `overwrite: true` or new items
 - Existing data remains unchanged unless explicitly overwritten
 - New trait values and IPFS mappings are added
@@ -517,7 +538,7 @@ bun run update:sepolia data/collection_update.json
 ```json
 {
   "name": "My Awesome Collection",
-  "symbol": "AWESOME", 
+  "symbol": "AWESOME",
   "updateContractAddress": "0x123abc...",
   "mintCData": [
     {
@@ -527,7 +548,7 @@ bun run update:sepolia data/collection_update.json
     },
     {
       "traits": "Background:Sunset",
-      "toAddress": "0x789ghi...", 
+      "toAddress": "0x789ghi...",
       "count": 5
     }
   ]
@@ -542,6 +563,7 @@ bun run mint:sepolia data/mint_batch.json
 ```
 
 **Minting Requirements:**
+
 - All trait combinations must have IPFS CIDs configured
 - Minter account must have `MINTER_ROLE` permission
 - Each mint operation creates tokens with auto-generated IDs
@@ -558,7 +580,7 @@ The deployment system supports multiple Starknet networks:
 # Local development
 bun run deploy:local
 
-# Testnet deployment  
+# Testnet deployment
 bun run deploy:sepolia
 bun run deploy:slot
 
@@ -582,7 +604,7 @@ STARKNET_PRIVATE_KEY=0x...
 #### Mainnet
 
 ```bash
-STARKNET_NETWORK=mainnet  
+STARKNET_NETWORK=mainnet
 STARKNET_RPC_URL=https://starknet-mainnet.public.blastapi.io
 STARKNET_ACCOUNT_ADDRESS=0x...
 STARKNET_PRIVATE_KEY=0x...
@@ -591,16 +613,19 @@ STARKNET_PRIVATE_KEY=0x...
 ### Network-Specific Considerations
 
 #### Local Development
+
 - Fast iteration and testing
 - No real value at stake
 - Full control over accounts and timing
 
 #### Testnet (Sepolia)
+
 - Real network conditions
 - Free test tokens
 - Ideal for final testing before mainnet
 
 #### Mainnet
+
 - Production environment
 - Real economic value
 - Requires careful planning and testing
@@ -621,7 +646,7 @@ assert(traitTypeId < 16, "Maximum 16 trait types");
 assert(traitTypeId === expectedSequential, "IDs must be sequential");
 assert(uniqueTraitTypeNames, "Trait type names must be unique");
 
-// Trait value constraints  
+// Trait value constraints
 assert(traitValueId > 0 && traitValueId <= 255, "Value IDs 1-255");
 assert(uniqueWithinType, "Value names unique within trait type");
 assert(sequentialValueIds, "Value IDs must be sequential");
@@ -642,16 +667,16 @@ const traits = "Skin:Smooth,Eyes:Blue,Hair:Long";
 
 // Step 1: Parse trait string
 const traitPairs = [
-  ["Skin", "Smooth"],   // Type 0, Value 1
-  ["Eyes", "Blue"],     // Type 2, Value 3  
-  ["Hair", "Long"]      // Type 4, Value 2
+  ["Skin", "Smooth"], // Type 0, Value 1
+  ["Eyes", "Blue"], // Type 2, Value 3
+  ["Hair", "Long"], // Type 4, Value 2
 ];
 
 // Step 2: Convert to binary positions
 let attrsRaw = 0;
-attrsRaw |= 1 << (0 * 8);  // Skin at position 0
-attrsRaw |= 3 << (2 * 8);  // Eyes at position 2
-attrsRaw |= 2 << (4 * 8);  // Hair at position 4
+attrsRaw |= 1 << (0 * 8); // Skin at position 0
+attrsRaw |= 3 << (2 * 8); // Eyes at position 2
+attrsRaw |= 2 << (4 * 8); // Hair at position 4
 
 // Result: 0x0002030001
 ```
@@ -666,7 +691,7 @@ Edit `package.json` to add new network configurations:
 {
   "scripts": {
     "deploy:custom": "STARKNET_NETWORK=custom node deploy.js",
-    "update:custom": "STARKNET_NETWORK=custom node update.js", 
+    "update:custom": "STARKNET_NETWORK=custom node update.js",
     "mint:custom": "STARKNET_NETWORK=custom node mint.js"
   }
 }
@@ -680,7 +705,7 @@ Extend `process.js` for specialized validation:
 // Add custom validation function
 function validateCustomConstraints(traits) {
   // Custom business logic
-  traits.forEach(trait => {
+  traits.forEach((trait) => {
     if (trait.traitTypeName === "Rarity") {
       assert(trait.traitValues.length <= 5, "Max 5 rarity levels");
     }
@@ -690,13 +715,13 @@ function validateCustomConstraints(traits) {
 // Integrate into processing pipeline
 export function processData(fileName) {
   const data = JSON.parse(readFileSync(fileName, "utf8"));
-  
+
   // Standard validation
   validateTraitsCombinations(/* ... */);
-  
-  // Custom validation  
+
+  // Custom validation
   validateCustomConstraints(data.traits);
-  
+
   // Continue processing...
 }
 ```
@@ -717,10 +742,10 @@ The system provides comprehensive logging for all operations:
    Symbol: MYCOL
    Default Admin: 0x123...
    Minter: 0x456...
-   
+
 🎯 DEFAULT IPFS CID:
    Default IPFS CID updated: 1
-   
+
 🏷️  TRAIT TYPES CALLDATA:
    Total trait types updated: 3
    ┌─────┬─────────────────────────────────────────────────────────┐
@@ -759,18 +784,21 @@ try {
 #### 1. Trait Configuration Errors
 
 **Error:** `Duplicate trait type name: Background`
+
 ```bash
 ❌ Trait Configuration Error: Duplicate trait type name: Background
 💡 Solution: Ensure all trait type names are unique across the entire collection
 ```
 
 **Error:** `Invalid trait format: Background Blue Sky`
+
 ```bash
 ❌ Trait Format Error: Invalid trait format: Background Blue Sky
 💡 Solution: Use correct format "Background:Blue Sky"
 ```
 
 **Error:** `Too many trait types: maximum 16 allowed`
+
 ```bash
 ❌ Trait Limit Error: Too many trait types at traitTypeId 16: maximum 16 allowed
 💡 Solution: Reduce number of trait types or combine similar categories
@@ -779,12 +807,14 @@ try {
 #### 2. IPFS Configuration Issues
 
 **Error:** `IPFS CID not set for those attributes`
+
 ```bash
 ❌ IPFS Error: IPFS CID not set for those attributes
 💡 Solution: Either add specific IPFS mapping or set defaultIpfsCid
 ```
 
 **Fix:** Add IPFS mapping or default:
+
 ```json
 {
   "defaultIpfsCid": "QmYourDefaultImage",
@@ -801,12 +831,14 @@ try {
 #### 3. Network Connection Issues
 
 **Error:** `Failed to connect to Starknet RPC`
+
 ```bash
 ❌ Network Error: Failed to connect to Starknet RPC
 💡 Solution: Check RPC URL and network configuration
 ```
 
 **Fix:** Verify environment variables:
+
 ```bash
 # Check current configuration
 echo $STARKNET_NETWORK
@@ -819,21 +851,23 @@ starknet get-block --network $STARKNET_NETWORK
 #### 4. Permission Issues
 
 **Error:** `Caller does not have MINTER_ROLE`
+
 ```bash
 ❌ Permission Error: Caller does not have MINTER_ROLE
 💡 Solution: Grant MINTER_ROLE to the deploying account
 ```
 
 **Fix:** Grant appropriate roles:
+
 ```bash
 # Use the block explorer's write functions to grant roles:
-# 
+#
 # 1. Go to your contract on the block explorer
 # 2. Connect your wallet (must be DEFAULT_ADMIN_ROLE holder)
 # 3. Navigate to "Write Contract" section
 # 4. Find "grant_role" function
 # 5. Enter role hash and account address
-# 
+#
 # For Sepolia: https://sepolia.starkscan.co/contract/0x[contract-address]
 # For Mainnet: https://starkscan.co/contract/0x[contract-address]
 #
@@ -846,12 +880,14 @@ starknet get-block --network $STARKNET_NETWORK
 #### 5. Build Issues
 
 **Error:** `scarb build failed`
+
 ```bash
 ❌ Build Error: scarb build failed
 💡 Solution: Check Scarb installation and contract syntax
 ```
 
 **Fix:** Verify Scarb setup:
+
 ```bash
 # Check Scarb version
 scarb --version
@@ -878,8 +914,8 @@ Test data processing without deployment:
 
 ```javascript
 // Test configuration processing
-const { processData } = require('./data/process.js');
-const result = processData('data/example.json');
+const { processData } = require("./data/process.js");
+const result = processData("data/example.json");
 console.log(JSON.stringify(result, null, 2));
 ```
 
@@ -903,22 +939,23 @@ Verify deployed contract state using block explorers:
 
 ```bash
 # Use block explorers to verify your contract:
-# 
+#
 # For Sepolia testnet:
 # https://sepolia.starkscan.co/contract/0x[your-contract-address]
-# 
+#
 # For Mainnet:
 # https://starkscan.co/contract/0x[your-contract-address]
 #
 # The block explorer provides read/write contract functions where you can:
 # - Call "name()" to verify contract name
-# - Call "symbol()" to verify contract symbol  
+# - Call "symbol()" to verify contract symbol
 # - Call "get_trait_type_name(0)" to check first trait type
 # - Call "get_trait_value_name(0,1)" to check trait values
 # - View all contract transactions and events
 ```
 
 **What to verify using the block explorer:**
+
 - Contract name and symbol match your configuration
 - Trait type names are properly set
 - Trait value names are properly configured
@@ -957,20 +994,24 @@ export STARKNET_RPC_URL=https://premium-rpc-endpoint.com
 ### Support and Resources
 
 #### Documentation
+
 - [Starknet Documentation](https://docs.starknet.io/)
 - [Cairo Language Guide](https://book.cairo-lang.org/)
 - [OpenZeppelin Cairo](https://docs.openzeppelin.com/contracts-cairo/)
 
 #### Community
+
 - [Starknet Discord](https://discord.gg/starknet)
 - [Cairo Telegram](https://t.me/starknet_cairo)
 - [GitHub Issues](https://github.com/eternum-game/project/issues)
 
 #### Tools
+
 - [Starkscan Explorer](https://starkscan.co/)
 - [Starknet Foundry](https://foundry-rs.github.io/starknet-foundry/)
 - [Cairo VSCode Extension](https://marketplace.visualstudio.com/items?itemName=starkware.cairo)
 
 ---
 
-*This guide covers the complete deployment and management workflow for Realms Collectible contracts. For specific technical questions or issues, please refer to the contract documentation or open an issue in the project repository.* 
+_This guide covers the complete deployment and management workflow for Realms Collectible contracts. For specific
+technical questions or issues, please refer to the contract documentation or open an issue in the project repository._
