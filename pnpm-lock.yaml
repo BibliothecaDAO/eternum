@@ -94,7 +94,7 @@ importers:
         version: 1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
+        version: 1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.5.5
@@ -430,7 +430,7 @@ importers:
         version: 1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
+        version: 1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.5.5
@@ -478,7 +478,7 @@ importers:
         version: 4.17.21
       metagame-sdk:
         specifier: 0.0.19
-        version: 0.0.19(@dojoengine/sdk@1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51))(typescript@5.8.3)(zustand@4.5.7(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1))
+        version: 0.0.19(@dojoengine/sdk@1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51))(typescript@5.8.3)(zustand@5.0.5(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1)))
       open:
         specifier: 'catalog:'
         version: 10.1.2
@@ -519,8 +519,8 @@ importers:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
       zustand:
-        specifier: ^4.5.2
-        version: 4.5.7(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)
+        specifier: ^5.0.5
+        version: 5.0.5(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))
     devDependencies:
       '@types/lodash':
         specifier: ^4.14.202
@@ -542,7 +542,7 @@ importers:
         version: 7.18.0(@typescript-eslint/parser@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3))(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3)
       '@vitest/coverage-v8':
         specifier: ^2.0.5
-        version: 2.1.9(vitest@2.1.9(@types/node@20.17.57)(@vitest/ui@2.1.9)(terser@5.40.0))
+        version: 2.1.9(vitest@2.1.9)
       '@vitest/ui':
         specifier: ^2.0.1
         version: 2.1.9(vitest@2.1.9)
@@ -11303,6 +11303,24 @@ packages:
       react:
         optional: true
 
+  zustand@5.0.5:
+    resolution: {integrity: sha512-mILtRfKW9xM47hqxGIxCv12gXusoY/xTSHBYApXozR0HmQv299whhBeeAcRy+KrPPybzosvJBCOmVjq6x12fCg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -12518,12 +12536,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)':
+  '@dojoengine/state@1.5.5(@types/node@20.17.57)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(terser@5.40.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/torii-client': 1.5.5
       starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.40.0)
+      vitest: 1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9)(terser@5.40.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -12549,7 +12567,7 @@ snapshots:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       '@dojoengine/torii-client': 1.5.5
       starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.40.0)
+      vitest: 1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9)(terser@5.40.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -17070,7 +17088,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@20.17.57)(@vitest/ui@2.1.9)(terser@5.40.0))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -20976,11 +20994,11 @@ snapshots:
 
   meshoptimizer@0.18.1: {}
 
-  metagame-sdk@0.0.19(@dojoengine/sdk@1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51))(typescript@5.8.3)(zustand@4.5.7(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)):
+  metagame-sdk@0.0.19(@dojoengine/sdk@1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51))(typescript@5.8.3)(zustand@5.0.5(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))):
     dependencies:
       '@dojoengine/sdk': 1.5.5(@tanstack/react-query@5.80.3(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.51)
       typescript: 5.8.3
-      zustand: 4.5.7(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)
+      zustand: 5.0.5(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1))
 
   micro-ftch@0.3.1: {}
 
@@ -24059,7 +24077,7 @@ snapshots:
       tsx: 4.19.4
       yaml: 2.8.0
 
-  vitest@1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.40.0):
+  vitest@1.6.1(@types/node@20.17.57)(@vitest/ui@2.1.9)(terser@5.40.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1
@@ -24563,5 +24581,12 @@ snapshots:
       '@types/react': 18.3.23
       immer: 10.1.1
       react: 18.3.1
+
+  zustand@5.0.5(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)(use-sync-external-store@1.5.0(react@18.3.1)):
+    optionalDependencies:
+      '@types/react': 18.3.23
+      immer: 10.1.1
+      react: 18.3.1
+      use-sync-external-store: 1.5.0(react@18.3.1)
 
   zwitch@2.0.4: {}

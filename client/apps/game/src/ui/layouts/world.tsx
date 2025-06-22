@@ -3,72 +3,77 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
+import { NotLoggedInMessage, SeasonWinnerMessage } from "@/ui/shared";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useEffect, useMemo } from "react";
 import { env } from "../../../env";
-import { NotLoggedInMessage } from "../components/not-logged-in-message";
-import { SeasonWinnerMessage } from "../components/season-winner-message";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
-  import("../components/worldmap/actions/selected-worldmap-entity").then((module) => ({
+  import("../features/world/components/actions/selected-worldmap-entity").then((module) => ({
     default: module.SelectedWorldmapEntity,
   })),
 );
 
 const ActionInfo = lazy(() =>
-  import("../components/worldmap/actions/action-info").then((module) => ({ default: module.ActionInfo })),
+  import("../features/world/components/actions/action-info").then((module) => ({ default: module.ActionInfo })),
 );
 
 const ActionInstructions = lazy(() =>
-  import("../components/worldmap/actions/action-instructions").then((module) => ({
+  import("../features/world/components/actions/action-instructions").then((module) => ({
     default: module.ActionInstructions,
   })),
 );
 
 const BlankOverlayContainer = lazy(() =>
-  import("../containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
+  import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
 const EntitiesInfoLabel = lazy(() =>
-  import("../components/worldmap/entities/entities-label").then((module) => ({
-    default: module.EntityInfoLabel,
+  import("../features/world/components/entities/entities-label").then((module) => ({
+    default: module.EntitiesLabel,
   })),
 );
-const TopCenterContainer = lazy(() => import("../containers/top-center-container"));
+const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
-  import("../containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
+  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
 );
-const LeftMiddleContainer = lazy(() => import("../containers/left-middle-container"));
-const RightMiddleContainer = lazy(() => import("../containers/right-middle-container"));
-const TopLeftContainer = lazy(() => import("../containers/top-left-container"));
-const Tooltip = lazy(() => import("../elements/tooltip").then((module) => ({ default: module.Tooltip })));
+const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
+const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
+const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
+const Tooltip = lazy(() =>
+  import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
+);
 const TopMiddleNavigation = lazy(() =>
-  import("../modules/navigation/top-navigation").then((module) => ({ default: module.TopMiddleNavigation })),
+  import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
 );
 const BottomMiddleContainer = lazy(() =>
-  import("../containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
+  import("../shared/containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
 );
 const LeftNavigationModule = lazy(() =>
-  import("../modules/navigation/left-navigation-module").then((module) => ({ default: module.LeftNavigationModule })),
+  import("../features/world/containers/left-navigation-module").then((module) => ({
+    default: module.LeftNavigationModule,
+  })),
 );
 const RightNavigationModule = lazy(() =>
-  import("../modules/navigation/right-navigation-module").then((module) => ({
+  import("../features/world/containers/right-navigation-module").then((module) => ({
     default: module.RightNavigationModule,
   })),
 );
 const TopLeftNavigation = lazy(() =>
-  import("../modules/navigation/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
+  import("../features/world/containers/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
 const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
 
 const MiniMapNavigation = lazy(() =>
-  import("../modules/navigation/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
+  import("../features/world/containers/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
 );
 
 const RealmTransferManager = lazy(() =>
-  import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
+  import("../features/economy/resources").then((module) => ({
+    default: module.RealmTransferManager,
+  })),
 );
 
 const StructureSynchronizerManager = () => {

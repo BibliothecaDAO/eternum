@@ -1,5 +1,5 @@
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
