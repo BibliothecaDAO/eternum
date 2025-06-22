@@ -105,9 +105,11 @@ mod tests {
         let name: ByteArray = "Realms Collectibles";
         let symbol: ByteArray = "RC";
         let base_uri: ByteArray = "https://base.uri/";
+        let description: ByteArray = "This is a test description";
         name.serialize(ref constructor_calldata);
         symbol.serialize(ref constructor_calldata);
         base_uri.serialize(ref constructor_calldata);
+        description.serialize(ref constructor_calldata);
         ADMIN().serialize(ref constructor_calldata); // default_admin
         MINTER().serialize(ref constructor_calldata); // minter
         UPGRADER().serialize(ref constructor_calldata); // upgrader

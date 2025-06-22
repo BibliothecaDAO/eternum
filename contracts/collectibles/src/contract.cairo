@@ -178,6 +178,7 @@ mod RealmsCollectible {
     #[storage]
     struct Storage {
         counter: u128,
+        description: ByteArray,
         token_id_to_attrs_raw: Map<u256, u128>,
         default_ipfs_cid: ByteArray,
         attrs_raw_to_ipfs_cid: Map<u128, ByteArray>,
@@ -231,6 +232,7 @@ mod RealmsCollectible {
         erc721_name: ByteArray,
         erc721_symbol: ByteArray,
         erc721_base_uri: ByteArray,
+        description: ByteArray,
         default_admin: ContractAddress,
         minter: ContractAddress,
         upgrader: ContractAddress,
@@ -249,6 +251,8 @@ mod RealmsCollectible {
         self.accesscontrol._grant_role(MINTER_ROLE, minter);
         self.accesscontrol._grant_role(LOCKER_ROLE, locker);
         self.accesscontrol._grant_role(METADATA_UPDATER_ROLE, metadata_updater);
+
+        self.description.write(description);
     }
 
     #[abi(embed_v0)]
@@ -482,7 +486,10 @@ mod RealmsCollectible {
                 }
             };
 
-            make_json_and_base64_encode_metadata(attrs_data, ipfs_cid)
+            let name = self.erc721.ERC721_name.read();
+            let description = self.description.read();
+
+            make_json_and_base64_encode_metadata(name, description, token_id, attrs_data, ipfs_cid)
         }
     }
 

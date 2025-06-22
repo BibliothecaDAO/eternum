@@ -67,7 +67,11 @@ fn pack_bytes_to_u128_full(mut bytes: Span<u8>) -> u128 {
 
 
 pub fn make_json_and_base64_encode_metadata(
-    mut attrs_data: Array<(ByteArray, ByteArray)>, ipfs_cid: ByteArray,
+    name: ByteArray,
+    description: ByteArray,
+    token_id: u256,
+    mut attrs_data: Array<(ByteArray, ByteArray)>,
+    ipfs_cid: ByteArray,
 ) -> ByteArray {
     let mut attrs: Array<ByteArray> = array![];
     while attrs_data.len() > 0 {
@@ -76,7 +80,9 @@ pub fn make_json_and_base64_encode_metadata(
     };
 
     // construct full metadata
-    let metadata = JsonImpl::new() // .add("name", name_str)
+    let metadata = JsonImpl::new()
+        .add("name", format!("{} #{}", name, token_id))
+        .add("description", description)
         .add("image", format!("ipfs://{}", ipfs_cid))
         .add_array("attributes", attrs.span());
     format!("data:application/json;base64,{}", bytes_base64_encode(metadata.build()))
