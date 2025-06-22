@@ -56,7 +56,7 @@ export function processData(fileName) {
     console.log("Current directory:", process.cwd());
     console.log("Processing file:", fileName);
     const data = JSON.parse(readFileSync(fileName, "utf8"));
-    const { name, symbol, updateContractAddress, defaultIpfsCid, defaultIpfsCidOverwrite, traits, traitsCombinedIpfsCid } = data;
+    const { name, symbol, description, updateContractAddress, defaultIpfsCid, defaultIpfsCidOverwrite, traits, traitsCombinedIpfsCid, mintCData } = data;
     
     let onlyProcessOverwriten = false;
     if (updateContractAddress) {
@@ -84,7 +84,8 @@ export function processData(fileName) {
     const setTraitValueNameCalldata = generateTraitValuesCalldata(traitsValuesToNamesMap, dataOverwriteMap, onlyProcessOverwriten);
     const setAttrsRawToIPFSCIDCalldata = generateAttrsRawCalldata(traitsCombinedIpfsCid, traitsTypeNameToIdMap, traitsValuesNameToIdMap, onlyProcessOverwriten);
     const setDefaultIpfsCidCalldata = generateDefaultIpfsCidCalldata(defaultIpfsCid, defaultIpfsCidOverwrite, onlyProcessOverwriten);
-    const result = { name, symbol, updateContractAddress, setDefaultIpfsCidCalldata, setTraitTypesNameCalldata, setTraitValueNameCalldata, setAttrsRawToIPFSCIDCalldata };
+    const setMintCalldata = generateMintCalldata(mintCData, traitsTypeNameToIdMap, traitsValuesNameToIdMap, onlyProcessOverwriten);
+    const result = { name, symbol, description, updateContractAddress, setMintCalldata, setDefaultIpfsCidCalldata, setTraitTypesNameCalldata, setTraitValueNameCalldata, setAttrsRawToIPFSCIDCalldata };
     
     // Beautiful logging of the processed data
     logProcessedData(result, fileName, onlyProcessOverwriten);
@@ -421,6 +422,19 @@ function generateAttrsRawCalldata(traitsCombinedIpfsCid, traitsTypeNameToIdMap, 
     return setAttrsRawToIPFSCIDCalldata;
 }
 
+function generateMintCalldata(mintCData, traitsTypeNameToIdMap, traitsValuesNameToIdMap, onlyProcessOverwriten) {
+    let setMintCalldata = [];
+    
+    for (const item of mintCData) {
+        const { traits, toAddress, count } = item;
+        const attrsRaw = getAttrsRawFromTraitsString(traits, traitsTypeNameToIdMap, traitsValuesNameToIdMap);
+        
+        setMintCalldata.push([toAddress, 1, {'0': attrsRaw, '1': count}]);
+    }
+    
+    return setMintCalldata;
+}
+
 function generateDefaultIpfsCidCalldata(defaultIpfsCid, defaultIpfsCidOverwrite, onlyProcessOverwriten) {
     let setDefaultIpfsCidCalldata = [];
     if (onlyProcessOverwriten) {
@@ -536,7 +550,7 @@ function getAttrsRawFromTraitsString(traitsString, traitsTypeNameToIdMap, traits
  * @param {boolean} onlyProcessOverwriten - Whether only overwrite items were processed
  */
 function logProcessedData(data, fileName, onlyProcessOverwriten) {
-    const { name, symbol, updateContractAddress, setDefaultIpfsCidCalldata, setTraitTypesNameCalldata, setTraitValueNameCalldata, setAttrsRawToIPFSCIDCalldata } = data;
+    const { name, symbol, description, updateContractAddress, setMintCalldata, setDefaultIpfsCidCalldata, setTraitTypesNameCalldata, setTraitValueNameCalldata, setAttrsRawToIPFSCIDCalldata } = data;
     
     if (updateContractAddress) {
         console.log('\n🔄 UPDATE MODE DETECTED:');
@@ -556,6 +570,7 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
     console.log(`│ Source File:     ${fileName.padEnd(58)} │`);
     console.log(`│ Collection Name: ${name.padEnd(58)} │`);
     console.log(`│ Symbol:          ${symbol.padEnd(58)} │`);
+    console.log(`│ Description:     ${description.padEnd(58)} │`);
     console.log('└─────────────────────────────────────────────────────────────────────────────┘');
     
 
@@ -595,13 +610,10 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
         console.log('   ┌─────┬─────┬─────────────────────────────────────────────────────┬───────────┐');
         console.log('   │ TID │ VID │ Name                                                │ Overwrite │');
         console.log('   ├─────┼─────┼─────────────────────────────────────────────────────┼───────────┤');
-        setTraitValueNameCalldata.slice(0, 20).forEach(([typeId, valueId, byteArrayName, overwrite]) => {
+        setTraitValueNameCalldata.forEach(([typeId, valueId, byteArrayName, overwrite]) => {
             const nameStr = byteArray.stringFromByteArray(byteArrayName);
             console.log(`   │ ${typeId.toString().padStart(3)} │ ${valueId.toString().padStart(3)} │ ${nameStr.padEnd(51)} │ ${overwrite ? '✓' : '✗'} ${overwrite ? '       ' : '       '} │`);
         });
-        if (setTraitValueNameCalldata.length > 20) {
-            console.log(`   │ ... │ ... │ ... (${setTraitValueNameCalldata.length - 20} more entries) ${' '.repeat(25)} │ ...       │`);
-        }
         console.log('   └─────┴─────┴─────────────────────────────────────────────────────┴───────────┘');
     }
     
@@ -612,14 +624,24 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
         console.log('   ┌──────────────────┬─────────────────────────────────────────────────┬───────────┐');
         console.log('   │ AttrsRaw (Hex)   │ IPFS CID                                        │ Overwrite │');
         console.log('   ├──────────────────┼─────────────────────────────────────────────────┼───────────┤');
-        setAttrsRawToIPFSCIDCalldata.slice(0, 15).forEach(([attrsRaw, byteArrayCid, overwrite]) => {
+        setAttrsRawToIPFSCIDCalldata.forEach(([attrsRaw, byteArrayCid, overwrite]) => {
             const cidStr = byteArray.stringFromByteArray(byteArrayCid);
             const attrsStr = attrsRaw.toString().padEnd(16);
             console.log(`   │ ${attrsStr} │ ${cidStr.padEnd(47)} │ ${overwrite ? '✓' : '✗'} ${overwrite ? '       ' : '       '} │`);
         });
-        if (setAttrsRawToIPFSCIDCalldata.length > 15) {
-            console.log(`   │ ...              │ ... (${setAttrsRawToIPFSCIDCalldata.length - 15} more combinations) ${' '.repeat(17)} │ ...       │`);
-        }
+        console.log('   └──────────────────┴─────────────────────────────────────────────────┴───────────┘');
+    }
+
+    // Display Mint Calldata Summary
+    console.log('\n🎨 MINT CALLLDATA:');
+    console.log(`   Total mint calldata generated: ${setMintCalldata.length}`);
+    if (setMintCalldata.length > 0) {
+        console.log('   ┌──────────────────┬──────────────────────────────────────────────────────────────────┬───────────┐');
+        console.log('   │ AttrsRaw (Hex)   │ To Address                                                       │ Count     │');
+        console.log('   ├──────────────────┼──────────────────────────────────────────────────────────────────┼───────────┤');
+        setMintCalldata.forEach(([toAddress, _, attrsRawAndCount]) => {
+            console.log(`   │ ${attrsRawAndCount['0']}  │ ${toAddress.padEnd(16)}        │ ${attrsRawAndCount['1'].toString().padEnd(47)} │`);
+        });
         console.log('   └──────────────────┴─────────────────────────────────────────────────┴───────────┘');
     }
     
@@ -629,6 +651,7 @@ function logProcessedData(data, fileName, onlyProcessOverwriten) {
     console.log(`│ Total Trait Types Updated:          ${setTraitTypesNameCalldata.length.toString().padStart(8)} entries              │`);
     console.log(`│ Total Trait Values Updated:         ${setTraitValueNameCalldata.length.toString().padStart(8)} entries              │`);
     console.log(`│ Total Attribute Mappings Updated:   ${setAttrsRawToIPFSCIDCalldata.length.toString().padStart(8)} combinations        │`);
+    console.log(`│ Total Mint Calldata Generated:      ${setMintCalldata.length.toString().padStart(8)} entries              │`);
     console.log(`│ Processing Mode:            ${(onlyProcessOverwriten ? 'Overwrite Only' : 'Full Processing').padEnd(24)} │`);
     console.log('└─────────────────────────────────────────────────────────────────────────────┘');
     

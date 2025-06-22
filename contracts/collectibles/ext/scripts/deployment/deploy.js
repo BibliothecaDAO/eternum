@@ -22,6 +22,7 @@ export const deployCollectible = async (dataFileName) => {
   const { 
     name, 
     symbol, 
+    description,
     updateContractAddress,
     setDefaultIpfsCidCalldata, 
     setTraitTypesNameCalldata, 
@@ -56,6 +57,7 @@ export const deployCollectible = async (dataFileName) => {
   console.log(`📝 Contract Configuration:`);
   console.log(`   Name: ${name}`);
   console.log(`   Symbol: ${symbol}`);
+  console.log(`   Description: ${description}`);
   console.log(`   Default Admin: ${toHex(defaultAdmin)}`);
   console.log(`   Minter: ${toHex(minter)}`);
   console.log(`   Upgrader: ${toHex(upgrader)}`);
@@ -70,6 +72,7 @@ export const deployCollectible = async (dataFileName) => {
   const collectibleAddress = await deployRealmsCollectibleContract(
     name,
     symbol,
+    description,
     defaultAdmin,
     minter,
     upgrader,
@@ -116,5 +119,8 @@ export const deployCollectible = async (dataFileName) => {
 
 
 const toHex = (address) => {
+  if (typeof address === "string" && address.startsWith("0x")) {
+    return address;
+  }
   return "0x" + address.toString(16);
 };

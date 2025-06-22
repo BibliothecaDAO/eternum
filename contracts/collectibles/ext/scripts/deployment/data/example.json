@@ -1,8 +1,9 @@
 {
-    "name": "Collectible: Example",
-    "symbol": "EXMP",
-    "updateContractAddress": "0x88b89320cd8d2b5f1f39f9df39a3a5459c02d745152f09197c487b36d1d5b3",
-    "defaultIpfsCid": "QmX1234567890123456789012345678901234567890",
+    "name": "Collectible: Baby Chicken",
+    "symbol": "CBDC",
+    "description": "I dream of a better tomorrow, where chickens can cross the road and not be questioned about their motives.",
+    "updateContractAddress": "",
+    "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
     "defaultIpfsCidOverwrite": false,
     "traits": [
         {
@@ -65,23 +66,35 @@
     "traitsCombinedIpfsCid": [
        { 
             "traits": "Skin:Smooth,Structure:Regular,Eyes:Normal", 
-            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7", 
             "overwrite": false 
         },
         { 
             "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
-            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "ipfsCid": "QmWykq5cb9YTrNTH6XAe5KagFBtTTPB82PKNw5f9ZiGiLf", 
             "overwrite": false 
         },
         { 
             "traits": "Skin:Rough,Structure:Regular,Eyes:Normal", 
-            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "ipfsCid": "QmPQdVU1riwzijhCs1Lk6CHmDo4LpmwPPLuDauY3i8gSzL", 
             "overwrite": false 
         },
         { 
             "traits": "Skin:Scratched,Structure:Regular,Eyes:Elf", 
-            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "ipfsCid": "QmNdvtT9EmrUc6haJyN7ZanHNrsjd23v1ydG6r8jTGEZvq", 
             "overwrite": false 
+        }
+    ],
+    "mintCData": [
+        { 
+            "traits": "Skin:Rough,Structure:Regular,Eyes:Normal", 
+            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
+            "count": 7
+        },
+        { 
+            "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
+            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
+            "count": 3
         }
     ]
 }

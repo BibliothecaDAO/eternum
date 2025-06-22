@@ -24,7 +24,7 @@ export const declareRealmsCollectibleContract = async () => {
   return class_hash;
 };
 
-export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, defaultAdmin, minter, upgrader, locker, metadataUpdater, defaultRoyaltyReceiver, feeNumerator) => {
+export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, description, defaultAdmin, minter, upgrader, locker, metadataUpdater, defaultRoyaltyReceiver, feeNumerator) => {
   ///////////////////////////////////////////
   ////////   Collectible Contract  //////////
   ///////////////////////////////////////////
@@ -39,6 +39,7 @@ export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, 
   let COLLECTIBLE_ERC721_NAME = byteArray.byteArrayFromString(erc721Name);
   let COLLECTIBLE_ERC721_SYMBOL = byteArray.byteArrayFromString(erc721Symbol);
   let COLLECTIBLE_ERC721_BASE_URI = byteArray.byteArrayFromString("");
+  let COLLECTIBLE_DESCRIPTION = byteArray.byteArrayFromString(description);
   let COLLECTIBLE_DEFAULT_ADMIN = BigInt(defaultAdmin);
   let COLLECTIBLE_MINTER = BigInt(minter);
   let COLLECTIBLE_UPGRADER = BigInt(upgrader);
@@ -47,7 +48,19 @@ export const deployRealmsCollectibleContract = async (erc721Name, erc721Symbol, 
   let COLLECTIBLE_DEFAULT_ROYALTY_RECEIVER = BigInt(defaultRoyaltyReceiver);
   let COLLECTIBLE_FEE_NUMERATOR = BigInt(feeNumerator);
 
-  let constructorCalldata = [COLLECTIBLE_ERC721_NAME, COLLECTIBLE_ERC721_SYMBOL, COLLECTIBLE_ERC721_BASE_URI, COLLECTIBLE_DEFAULT_ADMIN, COLLECTIBLE_MINTER, COLLECTIBLE_UPGRADER, COLLECTIBLE_LOCKER, COLLECTIBLE_METADATA_UPDATER, COLLECTIBLE_DEFAULT_ROYALTY_RECEIVER, COLLECTIBLE_FEE_NUMERATOR];
+  let constructorCalldata = [
+    COLLECTIBLE_ERC721_NAME, 
+    COLLECTIBLE_ERC721_SYMBOL, 
+    COLLECTIBLE_ERC721_BASE_URI,
+    COLLECTIBLE_DESCRIPTION, 
+    COLLECTIBLE_DEFAULT_ADMIN, 
+    COLLECTIBLE_MINTER, 
+    COLLECTIBLE_UPGRADER, 
+    COLLECTIBLE_LOCKER, 
+    COLLECTIBLE_METADATA_UPDATER, 
+    COLLECTIBLE_DEFAULT_ROYALTY_RECEIVER, 
+    COLLECTIBLE_FEE_NUMERATOR
+  ];
   let address = await deploy(casualName, class_hash, constructorCalldata);
   await saveContractAddressToCommonFolder(erc721Name, address);
   console.log(
@@ -134,6 +147,35 @@ export const setTraitTypeName = async (collectibleAddress, calldataArray) => {
 
   console.log(
     `Successfully set trait type name in collectible contract ${collectibleAddress}`.green,
+    "\n\n",
+  );
+};
+
+export const setMintCollectible = async (collectibleAddress, calldataArray) => {
+  ///////////////////////////////////////////
+  // Mint Collectible in Collectible Contract
+  ///////////////////////////////////////////
+
+  const account = getAccount();
+  console.log(`\n Minting Collectible in Collectible Contract ... \n\n`.green);
+  calldataArray.forEach((calldata) => console.log(calldata));
+
+  const calldatas = calldataArray.map((calldata) => ({
+    contractAddress: collectibleAddress,
+    entrypoint: "safe_mint_many",
+    calldata: calldata,
+  }));
+
+
+  const contract = await account.execute(calldatas);
+
+  // Wait for transaction
+  let network = getNetwork(process.env.STARKNET_NETWORK);
+  console.log("Tx hash: ".green, `${network.explorer_url}/tx/${contract.transaction_hash})`);
+  await account.waitForTransaction(contract.transaction_hash);
+
+  console.log(
+    `Successfully minted collectible in collectible contract ${collectibleAddress}`.green,
     "\n\n",
   );
 };
