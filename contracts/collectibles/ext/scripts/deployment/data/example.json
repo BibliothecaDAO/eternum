@@ -1,0 +1,87 @@
+{
+    "name": "Collectible: Example",
+    "symbol": "EXMP",
+    "updateContractAddress": "0x88b89320cd8d2b5f1f39f9df39a3a5459c02d745152f09197c487b36d1d5b3",
+    "defaultIpfsCid": "QmX1234567890123456789012345678901234567890",
+    "defaultIpfsCidOverwrite": false,
+    "traits": [
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 0,
+            "traitTypeName": "Skin",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Smooth",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Rough",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Scratched",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 1,
+            "traitTypeName": "Structure",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Regular",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Village",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 2,
+            "traitTypeName": "Eyes",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Normal",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Elf",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        }
+    ],
+    "traitsCombinedIpfsCid": [
+       { 
+            "traits": "Skin:Smooth,Structure:Regular,Eyes:Normal", 
+            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
+            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Rough,Structure:Regular,Eyes:Normal", 
+            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Scratched,Structure:Regular,Eyes:Elf", 
+            "ipfsCid": "QmX1234567890123456789012345678901234567890", 
+            "overwrite": false 
+        }
+    ]
+}
