@@ -33,9 +33,9 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
-    "@neondatabase/serverless": "0.10.4",
+    "@neondatabase/serverless": "1.0.1",
     "drizzle-orm": "catalog:",
-    "drizzle-zod": "^0.6.1",
+    "drizzle-zod": "^0.8.2",
     "ws": "^8.18.0",
     "zod": "catalog:"
   },
