@@ -720,18 +720,18 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
       <div className="cosmetic-prizes">
         <div className="cosmetic-header">
           <div className="cosmetic-title">
-            <h3>🎨 S1 Cosmetic Rewards</h3>
+            <h3>️ Extra S1 Rewards</h3>
             <p className="cosmetic-subtitle">
-              Special cosmetic rewards for Season 1 participants
+              Mysterious rewards await every Season 1 participant
             </p>
           </div>
         </div>
 
         <div className="coming-soon-container">
           <div className="coming-soon-content">
-            <div className="coming-soon-icon">🎨</div>
-            <h3>Coming Soon</h3>
-            <p>Cosmetic reward details will be announced soon.</p>
+            <div className="coming-soon-icon">🗝️</div>
+            <h3>Something Special Awaits</h3>
+            <p>Every participant will receive at least one mysterious reward, while top performers may discover even more treasures. Details will be revealed soon...</p>
           </div>
         </div>
       </div>
@@ -968,7 +968,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           onClick={() => setSelectedRewardType('cosmetic')}
           title="Coming Soon"
         >
-          🎨 S1 Cosmetic Reward
+          🗝️ Extra S1 Reward
         </button>
       </div>
       
