@@ -39,6 +39,8 @@ export const AllAutomationsTable: React.FC = () => {
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
   const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
   const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
+  const isGloballyPaused = useAutomationStore((state) => state.isGloballyPaused);
+  const toggleGlobalPause = useAutomationStore((state) => state.toggleGlobalPause);
 
   // Realm filter state
   const [realmFilter, setRealmFilter] = useState<string>("all");
@@ -123,8 +125,30 @@ export const AllAutomationsTable: React.FC = () => {
         Add Automation
       </Button>
 
+      {/* Global Pause Button */}
+      <Button
+        className={`mb-2 ml-2 ${isGloballyPaused ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+        size="xs"
+        onClick={toggleGlobalPause}
+        title={isGloballyPaused ? "Resume all automation" : "Pause all automation"}
+      >
+        {isGloballyPaused ? (
+          <>
+            <PlayIcon className="w-4 h-4 mr-1" />
+            Resume All
+          </>
+        ) : (
+          <>
+            <PauseIcon className="w-4 h-4 mr-1" />
+            Pause All
+          </>
+        )}
+      </Button>
+
       {/* Display Countdown Timer */}
-      <div className="mb-2 text-xs text-gray-400">Next automation run in: {countdown}</div>
+      <div className="mb-2 text-xs text-gray-400">
+        {isGloballyPaused ? "All automation paused" : `Next automation run in: ${countdown}`}
+      </div>
 
       {/* Realm filter */}
       <div className="mb-4 flex items-center text-sm space-x-2">
@@ -169,10 +193,11 @@ export const AllAutomationsTable: React.FC = () => {
               order.maxAmount !== "infinite" &&
               order.producedAmount >= order.maxAmount;
             const isPaused = isRealmPaused(order.realmEntityId);
+            const isEffectivelyPaused = isGloballyPaused || isPaused;
             return (
               <tr
                 key={order.id}
-                className={`border-b border-gold/10 hover:bg-gray-600/30 ${isFinished ? "bg-green-700/40" : ""} ${isPaused ? "opacity-50" : ""}`}
+                className={`border-b border-gold/10 hover:bg-gray-600/30 ${isFinished ? "bg-green-700/40" : ""} ${isEffectivelyPaused ? "opacity-50" : ""}`}
               >
                 <td className=" py-4">
                   {order.productionType === ProductionType.Transfer ? (
@@ -188,7 +213,8 @@ export const AllAutomationsTable: React.FC = () => {
                   <div className="text-xs bg-gold/20 px-2 py-1 rounded border border-gold/30">
                     <div className="h4 flex items-center gap-2">
                       {order.realmName ?? order.realmEntityId}
-                      {isPaused && <span className="text-red text-xs">(PAUSED)</span>}
+                      {isGloballyPaused && <span className="text-red text-xs">(ALL PAUSED)</span>}
+                      {!isGloballyPaused && isPaused && <span className="text-red text-xs">(PAUSED)</span>}
                     </div>
                     <div className="font-bold">Priority {order.priority}</div>
 
@@ -295,7 +321,14 @@ export const AllAutomationsTable: React.FC = () => {
                       onClick={() => toggleRealmPause(order.realmEntityId)}
                       variant="outline"
                       size="xs"
-                      title={isPaused ? "Resume automation for this realm" : "Pause automation for this realm"}
+                      disabled={isGloballyPaused}
+                      title={
+                        isGloballyPaused
+                          ? "Global pause is active - resume all automation first"
+                          : isPaused
+                            ? "Resume automation for this realm"
+                            : "Pause automation for this realm"
+                      }
                     >
                       {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
                     </Button>
