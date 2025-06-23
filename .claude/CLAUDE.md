@@ -51,9 +51,9 @@ When building features, read the relevant app README:
 - Test files should be colocated with source files
 - Use descriptive test names
 
-## PR Checklist
+## COMMIT Checklist
 
-IMPORTANT: Before creating a PR, YOU MUST:
+IMPORTANT: Before committing changes, YOU MUST:
 
 1. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
 2. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
