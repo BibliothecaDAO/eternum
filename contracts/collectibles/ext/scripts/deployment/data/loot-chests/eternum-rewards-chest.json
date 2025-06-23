@@ -3,7 +3,7 @@
     "symbol": "RLC",
     "description": "Loot Chests for Realms",
     "updateContractAddress": "",
-    "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
+    "defaultIpfsCid": "QmWR3F2hoWecnoEJqwbZ5TFKe64aQp2v6pwZY2HzEfhnaj",
     "defaultIpfsCidOverwrite": false,
     "traits": [
         {
@@ -34,15 +34,25 @@
     "traitsCombinedIpfsCid": [
        { 
             "traits": "Epoch:Season 1,Type:Eternum Rewards Chest", 
-            "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7", 
+            "ipfsCid": "QmWR3F2hoWecnoEJqwbZ5TFKe64aQp2v6pwZY2HzEfhnaj", 
             "overwrite": false 
         }
     ],
     "mintCData": [
-        { 
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest", 
-            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
-            "count": 7
-        }
+        {
+            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "toAddress": "0x13f009266a1d3befcbc9e32a7b2ac4270c6bec9887b61cc24e4ebadaa8d8c43",
+            "count": 3
+          },
+          {
+            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "toAddress": "0x1470e7181aa839f4c02e82b5826345e6264996afed5094caccb183f240998ce",
+            "count": 3
+          },
+          {
+            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "toAddress": "0x15d9023ac1fbc6963c0ad84e3b98c47c6ff90def416e2c21f7b0da1759e4546",
+            "count": 3
+          },
     ]
 }

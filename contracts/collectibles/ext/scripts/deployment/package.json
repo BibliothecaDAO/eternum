@@ -25,6 +25,10 @@
     "declare:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./declare",
     "declare:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./declare",
     "declare:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./declare",
-    "declare:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./declare"
+    "declare:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./declare",
+    "deploy:env": "source ../../../../common/.env && bun --env-file=../../../../common/.env -e \"import {deployCollectible} from './deploy.js'; import {readFileSync} from 'fs'; const config = JSON.parse(readFileSync('./package.json', 'utf8')); console.log('📁 Using data file:', config.config.dataFileName); deployCollectible(config.config.dataFileName).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1)})\"",
+    "update:env": "source ../../../../common/.env && bun --env-file=../../../../common/.env -e \"import {updateCollectible} from './update.js'; import {readFileSync} from 'fs'; const config = JSON.parse(readFileSync('./package.json', 'utf8')); console.log('📁 Using data file:', config.config.dataFileName); updateCollectible(config.config.dataFileName).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1)})\"",
+    "mint:env": "source ../../../../common/.env && bun --env-file=../../../../common/.env -e \"import {mintCollectible} from './mint.js'; import {readFileSync} from 'fs'; const config = JSON.parse(readFileSync('./package.json', 'utf8')); console.log('📁 Using data file:', config.config.dataFileName); mintCollectible(config.config.dataFileName).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1)})\"",
+    "declare:env": "source ../../../../common/.env && bun --env-file=../../../../common/.env ./declare"
   }
 }
