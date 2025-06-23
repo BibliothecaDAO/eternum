@@ -45,6 +45,7 @@ export interface AutomationOrder {
 interface AutomationState {
   ordersByRealm: Record<string, AutomationOrder[]>;
   pausedRealms: Record<string, boolean>; // Track paused state by realm ID
+  isGloballyPaused: boolean; // Global pause state for all automation
   addOrder: (orderData: Omit<AutomationOrder, "id" | "producedAmount"> & { mode?: OrderMode }) => void;
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
@@ -55,6 +56,7 @@ interface AutomationState {
   setNextRunTimestamp: (timestamp: number) => void; // Action to set the next run timestamp
   toggleRealmPause: (realmEntityId: string) => void; // Toggle pause state for a realm
   isRealmPaused: (realmEntityId: string) => boolean; // Check if a realm is paused
+  toggleGlobalPause: () => void; // Toggle global pause state for all automation
 }
 
 export const useAutomationStore = create<AutomationState>()(
@@ -62,6 +64,7 @@ export const useAutomationStore = create<AutomationState>()(
     (set, get) => ({
       ordersByRealm: {},
       pausedRealms: {},
+      isGloballyPaused: false, // Initialize global pause as false
       nextRunTimestamp: null, // Initialize nextRunTimestamp
       addOrder: (newOrderData) => {
         const newOrder: AutomationOrder = {
@@ -140,6 +143,10 @@ export const useAutomationStore = create<AutomationState>()(
       isRealmPaused: (realmEntityId: string) => {
         return get().pausedRealms[realmEntityId] || false;
       },
+      toggleGlobalPause: () =>
+        set((state) => ({
+          isGloballyPaused: !state.isGloballyPaused,
+        })),
     }),
     {
       name: "eternum-automation-orders-by-realm",

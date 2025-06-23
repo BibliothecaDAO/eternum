@@ -138,6 +138,7 @@ export const useAutomation = () => {
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
   const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
   const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
+  const isGloballyPaused = useAutomationStore((state) => state.isGloballyPaused);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
@@ -162,6 +163,12 @@ export const useAutomation = () => {
       currentTickRef.current === 0
     ) {
       console.warn("Automation: Conditions not met (signer/components/currentDefaultTick). Skipping.");
+      return;
+    }
+
+    // Check if automation is globally paused
+    if (isGloballyPaused) {
+      console.log("Automation: Globally paused. Skipping all automation processing.");
       return;
     }
 
@@ -578,6 +585,7 @@ export const useAutomation = () => {
     updateOrderProducedAmount,
     isRealmPaused,
     updateTransferTimestamp,
+    isGloballyPaused,
   ]);
 
   // Setup the automation interval as soon as the hook mounts. The `processOrders` function
