@@ -60,6 +60,9 @@ catalogs:
     open:
       specifier: ^10.1.0
       version: 10.1.2
+    posthog-js:
+      specifier: ^1.160.0
+      version: 1.255.1
     react:
       specifier: ^18
       version: 18.3.1
@@ -485,6 +488,9 @@ importers:
       platform:
         specifier: ^1.3.6
         version: 1.3.6
+      posthog-js:
+        specifier: 'catalog:'
+        version: 1.255.1
       postprocessing:
         specifier: ^6.36.2
         version: 6.37.3(three@0.166.1)
@@ -6405,6 +6411,9 @@ packages:
   core-js-compat@3.42.0:
     resolution: {integrity: sha512-bQasjMfyDGyaeWKBIu33lHh9qlSR0MFE/Nmc6nMjf/iU9b3rSMdAYz1Baxrv4lPdGUsTqZudHA4jIGSJy0SWZQ==}
 
+  core-js@3.43.0:
+    resolution: {integrity: sha512-N6wEbTTZSYOY2rYAn85CuvWWkCK6QweMn7/4Nr3w+gDBeBhk/x4EJeY6FPo4QzDoJZxVTv8U7CMvgWk6pOHHqA==}
+
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
 
@@ -7235,6 +7244,9 @@ packages:
 
   fetch-cookie@3.1.0:
     resolution: {integrity: sha512-s/XhhreJpqH0ftkGVcQt8JE9bqk+zRn4jF5mPJXWZeQMCI5odV9K+wEWYbnzFPHgQZlvPSMjS4n4yawWE8RINw==}
+
+  fflate@0.4.8:
+    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
 
   fflate@0.6.10:
     resolution: {integrity: sha512-IQrh3lEPM93wVCEczc9SaAOvkmcoQn/G8Bo1e8ZPlY3X3bnAxWaBdvTdvM1hP62iZp0BXWDy4vTAy4fF0+Dlpg==}
@@ -9232,6 +9244,17 @@ packages:
   posthog-js-lite@3.2.1:
     resolution: {integrity: sha512-F+S+T9XiQr2rOkD0UFTr8yu8qScm4aM2lR5PmyknxxqlkC5gpRKS+Hi8cq5CYda7Q3BODh0h7pdW1P2XfZjEag==}
 
+  posthog-js@1.255.1:
+    resolution: {integrity: sha512-KMh0o9MhORhEZVjXpktXB5rJ8PfDk+poqBoTSoLzWgNjhJf6D8jcyB9jUMA6vVPfn4YeepVX5NuclDRqOwr5Mw==}
+    peerDependencies:
+      '@rrweb/types': 2.0.0-alpha.17
+      rrweb-snapshot: 2.0.0-alpha.17
+    peerDependenciesMeta:
+      '@rrweb/types':
+        optional: true
+      rrweb-snapshot:
+        optional: true
+
   postprocessing@6.37.3:
     resolution: {integrity: sha512-2FzfZg41Ml/ddvSalLdCz7H53Wmr/ZvK238fauTG1CI97+65BDgo1dNH6AKhAWc5q9ngpyG5EYiXVbNCl2t1iA==}
     peerDependencies:
@@ -9239,6 +9262,9 @@ packages:
 
   potpack@1.0.2:
     resolution: {integrity: sha512-choctRBIV9EMT9WGAZHn3V7t0Z2pMQyl0EZE6pFc/6ml3ssw7Dlf/oAOvFwjm1HVsqfQN8GfeFyJ+d8tRzqueQ==}
+
+  preact@10.26.9:
+    resolution: {integrity: sha512-SSjF9vcnF27mJK1XyFMNJzFd5u3pQiATFqoaDy03XuN00u4ziveVVEGt5RKJrDR8MHE/wJo9Nnad56RLzS2RMA==}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -11031,6 +11057,9 @@ packages:
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
     engines: {node: '>= 8'}
+
+  web-vitals@4.2.4:
+    resolution: {integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==}
 
   webextension-polyfill@0.10.0:
     resolution: {integrity: sha512-c5s35LgVa5tFaHhrZDnr3FpQpjj1BB+RXhLTYUxGqBVN460HkbM8TBtEqdXWbpTKfzwCcjAZVF7zXCYSKtcp9g==}
@@ -18532,6 +18561,8 @@ snapshots:
     dependencies:
       browserslist: 4.25.0
 
+  core-js@3.43.0: {}
+
   core-util-is@1.0.3: {}
 
   cosmiconfig@8.3.6(typescript@5.8.3):
@@ -19541,6 +19572,8 @@ snapshots:
     dependencies:
       set-cookie-parser: 2.7.1
       tough-cookie: 5.1.2
+
+  fflate@0.4.8: {}
 
   fflate@0.6.10: {}
 
@@ -21917,11 +21950,20 @@ snapshots:
 
   posthog-js-lite@3.2.1: {}
 
+  posthog-js@1.255.1:
+    dependencies:
+      core-js: 3.43.0
+      fflate: 0.4.8
+      preact: 10.26.9
+      web-vitals: 4.2.4
+
   postprocessing@6.37.3(three@0.166.1):
     dependencies:
       three: 0.166.1
 
   potpack@1.0.2: {}
+
+  preact@10.26.9: {}
 
   prelude-ls@1.2.1: {}
 
@@ -24270,6 +24312,8 @@ snapshots:
       defaults: 1.0.4
 
   web-streams-polyfill@3.3.3: {}
+
+  web-vitals@4.2.4: {}
 
   webextension-polyfill@0.10.0: {}
 
