@@ -1,6 +1,9 @@
 import posthog from "posthog-js";
 import { env } from "../env";
 
+// Export posthog instance for direct use
+export { posthog };
+
 export const initPostHog = () => {
   // Only initialize if we have a project API key
   if (!env.VITE_PUBLIC_POSTHOG_KEY) {

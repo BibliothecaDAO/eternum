@@ -7,7 +7,7 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { initPostHog, captureSystemError } from "./posthog";
+import { initPostHog, captureSystemError } from "@/posthog";
 
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
