@@ -1817,14 +1817,16 @@ tr:hover {
     }
 }
 
-/* Enhanced Cartridge and Daydreams Styles */
+/* Enhanced Cartridge, Daydreams, and Chest Styles */
 .cartridge-prizes,
-.daydreams-prizes {
+.daydreams-prizes,
+.chest-prizes {
     padding: 2rem 0;
 }
 
 .cartridge-header,
-.daydreams-header {
+.daydreams-header,
+.chest-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -1833,12 +1835,14 @@ tr:hover {
 }
 
 .cartridge-title,
-.daydreams-title {
+.daydreams-title,
+.chest-title {
     flex: 1;
 }
 
 .cartridge-title h3,
-.daydreams-title h3 {
+.daydreams-title h3,
+.chest-title h3 {
     color: #f0b060;
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
@@ -1848,7 +1852,8 @@ tr:hover {
 }
 
 .cartridge-subtitle,
-.daydreams-subtitle {
+.daydreams-subtitle,
+.chest-subtitle {
     color: #dfc296;
     opacity: 0.8;
     line-height: 1.5;
@@ -1856,14 +1861,16 @@ tr:hover {
 }
 
 .cartridge-summary,
-.daydreams-summary {
+.daydreams-summary,
+.chest-summary {
     display: flex;
     gap: 1rem;
     flex-shrink: 0;
 }
 
 .cartridge-controls,
-.daydreams-controls {
+.daydreams-controls,
+.chest-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1871,9 +1878,10 @@ tr:hover {
     gap: 1rem;
 }
 
-/* Enhanced table styles for cartridge and daydreams */
+/* Enhanced table styles for cartridge, daydreams, and chest */
 .cartridge-table,
-.daydreams-table {
+.daydreams-table,
+.chest-table {
     background: rgba(77, 57, 35, 0.1);
     border-radius: 1rem;
     overflow: hidden;
@@ -1881,7 +1889,8 @@ tr:hover {
 }
 
 .cartridge-table .table-header,
-.daydreams-table .table-header {
+.daydreams-table .table-header,
+.chest-table .table-header {
     display: grid;
     padding: 1.5rem 2rem;
     background: rgba(77, 57, 35, 0.3);
@@ -1908,6 +1917,15 @@ tr:hover {
 }
 
 .daydreams-table .player-row {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+/* Chest table grid */
+.chest-table .table-header {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+.chest-table .player-row {
     grid-template-columns: 2fr 1.5fr 1.5fr;
 }
 

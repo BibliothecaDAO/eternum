@@ -137,4 +137,11 @@ export interface DaydreamsReward {
 // Known addresses mapping type
 export interface KnownAddresses {
   [key: string]: string;
+}
+
+// Chest reward type
+export interface ChestReward {
+  traits: string;
+  toAddress: string;
+  count: number;
 } 

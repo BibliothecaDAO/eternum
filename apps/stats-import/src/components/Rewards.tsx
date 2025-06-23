@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses } from '../types';
+import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses, ChestReward } from '../types';
 
 const padAddress = (address: string): string => {
   const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
@@ -11,9 +11,10 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [cartridgePoints, setCartridgePoints] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [knownAddresses, setKnownAddresses] = useState<KnownAddresses | null>(null);
   const [nexus6Players, setNexus6Players] = useState<{ player_id: string; total_points: number }[] | null>(null);
+  const [chestRewards, setChestRewards] = useState<ChestReward[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'cosmetic'>('victory');
+  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'chests'>('victory');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -25,11 +26,12 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         setLoading(true);
         setError(null);
         
-        const [eternumResponse, cartridgeResponse, knownAddressesResponse, nexus6Response] = await Promise.all([
+        const [eternumResponse, cartridgeResponse, knownAddressesResponse, nexus6Response, chestResponse] = await Promise.all([
           fetch('/data/eternum-social-export.json'),
           fetch('/data/cartridge-points.json'),
           fetch('/data/known-addresses.json'),
-          fetch('/data/nexus-6-players.json')
+          fetch('/data/nexus-6-players.json'),
+          fetch('/data/chest-rewards.json').catch(() => ({ ok: false, json: () => [] }))
         ]);
         
         if (!eternumResponse.ok || !cartridgeResponse.ok || !knownAddressesResponse.ok || !nexus6Response.ok) {
@@ -40,6 +42,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         const cartridgeData: { player_id: string; total_points: number }[] = await cartridgeResponse.json();
         const knownAddressesData: KnownAddresses = await knownAddressesResponse.json();
         const nexus6Data: { player_id: string; total_points: number }[] = await nexus6Response.json();
+        const chestData: ChestReward[] = chestResponse.ok ? await chestResponse.json() : [];
 
         // Pad addresses in eternumData
         eternumData.tribes = eternumData.tribes.map(tribe => ({
@@ -61,11 +64,18 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           ...player,
           player_id: padAddress(player.player_id)
         }));
+
+        // Pad addresses in chestData
+        const paddedChestData = chestData.map(chest => ({
+          ...chest,
+          toAddress: padAddress(chest.toAddress)
+        }));
     
         setEternumData(eternumData);
         setCartridgePoints(paddedCartridgeData);
         setKnownAddresses(knownAddressesData);
         setNexus6Players(paddedNexus6Data);
+        setChestRewards(paddedChestData);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load rewards data');
@@ -397,8 +407,8 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         return renderCartridgePrizes();
       case 'daydreams':
         return renderDaydreamsPrizes();
-      case 'cosmetic':
-        return renderCosmeticRewards();
+      case 'chests':
+        return renderChestRewards();
       default:
         return null;
     }
@@ -715,23 +725,155 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
     );
   };
 
-  const renderCosmeticRewards = () => {
+
+  const renderChestRewards = () => {
+    if (loading) {
+      return (
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading loot chest rewards...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="error-state">
+          <p className="error-message">{error}</p>
+        </div>
+      );
+    }
+
+    if (!chestRewards || chestRewards.length === 0) {
+      return (
+        <div className="error-state">
+          <p>No chest rewards data available. Please run the chest generation script first.</p>
+        </div>
+      );
+    }
+
+    const filteredRewards = chestRewards.filter(reward => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      const playerName = getPlayerName(reward.toAddress);
+      return reward.toAddress.toLowerCase().includes(search) || 
+             (playerName && playerName.toLowerCase().includes(search));
+    });
+
+    // Sort the rewards
+    filteredRewards.sort((a, b) => {
+      let aValue: number | string;
+      let bValue: number | string;
+
+      switch (sortBy) {
+        case 'points':
+          aValue = a.count;
+          bValue = b.count;
+          break;
+        case 'name':
+          aValue = getDisplayName(a.toAddress).toLowerCase();
+          bValue = getDisplayName(b.toAddress).toLowerCase();
+          break;
+        default:
+          aValue = a.count;
+          bValue = b.count;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+    const totalChests = chestRewards.reduce((sum, reward) => sum + reward.count, 0);
+    const playersWithChests = chestRewards.filter(r => r.count > 0).length;
+
     return (
-      <div className="cosmetic-prizes">
-        <div className="cosmetic-header">
-          <div className="cosmetic-title">
-            <h3>️ Extra S1 Rewards</h3>
-            <p className="cosmetic-subtitle">
-              Mysterious rewards await every Season 1 participant
+      <div className="chest-prizes">
+        <div className="chest-header">
+          <div className="chest-title">
+            <h3>🗝️ Loot Chest Rewards</h3>
+            <p className="chest-subtitle">
+              NFT rewards distributed based on achievement points earned by {playersWithChests} players
             </p>
+          </div>
+          
+          <div className="chest-summary">
+            <div className="summary-card">
+              <div className="summary-label">Total Chests</div>
+              <div className="summary-value">{totalChests.toLocaleString()}</div>
+              <div className="summary-usd">Eternum NFT Rewards</div>
+            </div>
           </div>
         </div>
 
-        <div className="coming-soon-container">
-          <div className="coming-soon-content">
-            <div className="coming-soon-icon">🗝️</div>
-            <h3>Something Special Awaits</h3>
-            <p>Every participant will receive at least one mysterious reward, while top performers may discover even more treasures. Details will be revealed soon...</p>
+        <div className="chest-controls">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search by player name or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
+          <div className="sort-controls">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'lords' | 'strk' | 'points' | 'name')}
+              className="sort-select"
+            >
+              <option value="points">Sort by Chests</option>
+              <option value="name">Sort by Name</option>
+            </select>
+            
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="sort-order-btn"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+        </div>
+
+        <div className="chest-table">
+          <div className="table-header">
+            <div className="header-player">Player</div>
+            <div className="header-achievement">Reward Type</div>
+            <div className="header-rewards">Chest Count</div>
+          </div>
+          
+          <div className="table-body">
+            {filteredRewards.map((reward, index) => (
+              <div key={`${reward.toAddress}-${index}`} className="player-row">
+                <div className="player-info">
+                  {getPlayerName(reward.toAddress) ? (
+                    <>
+                      <div className="player-name">{getPlayerName(reward.toAddress)}</div>
+                      <div className="player-address">{reward.toAddress}</div>
+                    </>
+                  ) : (
+                    <div className="player-address-only">{reward.toAddress}</div>
+                  )}
+                </div>
+                
+                <div className="achievement-info">
+                  <div className="achievement-name">🗝️ Eternum Rewards Chest</div>
+                  <div className="achievement-description">Season 1 NFT</div>
+                </div>
+                
+                <div className="reward-info">
+                  <div className="reward-amount">{reward.count} {reward.count === 1 ? 'Chest' : 'Chests'}</div>
+                  <div className="reward-usd">Achievement Rewards</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -964,11 +1106,10 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           🤖 Daydreams Agents
         </button>
         <button
-          className={`reward-type-btn ${selectedRewardType === 'cosmetic' ? 'active' : ''}`}
-          onClick={() => setSelectedRewardType('cosmetic')}
-          title="Coming Soon"
+          className={`reward-type-btn ${selectedRewardType === 'chests' ? 'active' : ''}`}
+          onClick={() => setSelectedRewardType('chests')}
         >
-          🗝️ Extra S1 Reward
+          🗝️ Loot Chests
         </button>
       </div>
       
