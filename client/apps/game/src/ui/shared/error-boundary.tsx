@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    
+
     // Send to PostHog
     captureError(error, {
       error_boundary: true,
@@ -38,9 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex h-screen w-screen items-center justify-center bg-brown p-4">
             <div className="panel-wood max-w-md rounded-xl border p-6 text-center text-gold">
               <h2 className="mb-4 text-xl font-bold">Something went wrong</h2>
-              <p className="mb-4 text-sm">
-                An unexpected error occurred. The development team has been notified.
-              </p>
+              <p className="mb-4 text-sm">An unexpected error occurred. The development team has been notified.</p>
               <button
                 className="button-wood px-4 py-2"
                 onClick={() => {

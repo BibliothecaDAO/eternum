@@ -5,11 +5,13 @@ This document explains how to set up PostHog analytics and error reporting for t
 ## Setup Instructions
 
 1. **Create a PostHog Project**
+
    - Go to [posthog.com](https://posthog.com) and create a new project
    - Copy the Project API Key from your project settings
    - Note your PostHog instance URL (default: https://us.i.posthog.com)
 
 2. **Configure Environment Variables**
+
    - Copy `.env.local.sample` to `.env.local`
    - Add your PostHog configuration:
      ```
@@ -35,6 +37,7 @@ This document explains how to set up PostHog analytics and error reporting for t
 ## Configuration
 
 The PostHog integration is configured in `src/posthog.ts` with:
+
 - Environment-based sample rates (lower for production)
 - Privacy-focused session recording settings
 - Automatic person properties (environment, client version, etc.)
@@ -43,6 +46,7 @@ The PostHog integration is configured in `src/posthog.ts` with:
 ## Error Boundary
 
 The `ErrorBoundary` component provides:
+
 - Automatic error catching for React components
 - Fallback UI with game-themed styling
 - Reload button to recover from errors
@@ -58,19 +62,20 @@ import { captureError, captureSystemError } from "@/posthog";
 // Capture generic errors
 captureError(new Error("Something went wrong"), {
   context: "additional context",
-  user_action: "button_click"
+  user_action: "button_click",
 });
 
 // Capture system/Dojo errors
 captureSystemError(error, {
   system_name: "trading_system",
-  error_context: "trade_execution"
+  error_context: "trade_execution",
 });
 ```
 
 ## Testing
 
 To test the error reporting:
+
 1. Set up PostHog API key in your environment
 2. Add a test error in a component (e.g., `throw new Error("Test error")`)
 3. Check your PostHog dashboard under "Events" for the reported error
@@ -79,6 +84,7 @@ To test the error reporting:
 ## Discord Integration
 
 To pipe errors and events to Discord:
+
 1. Set up PostHog webhooks in your project settings
 2. Configure a webhook to send events to your Discord channel via webhook URL
 3. Filter events to only send critical errors and important game events
@@ -95,6 +101,7 @@ To pipe errors and events to Discord:
 ## Analytics Events
 
 The integration automatically captures:
+
 - Page views and navigation
 - Error events with full context
 - System call failures
@@ -109,16 +116,16 @@ import { posthog } from "@/posthog";
 posthog.capture("trade_completed", {
   resource_type: "wood",
   quantity: 100,
-  realm_id: "0x123"
+  realm_id: "0x123",
 });
 ```
 
 ## Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `VITE_PUBLIC_POSTHOG_KEY` | PostHog project API key | Yes | - |
-| `VITE_PUBLIC_POSTHOG_HOST` | PostHog instance URL | No | https://us.i.posthog.com |
+| Variable                   | Description             | Required | Default                  |
+| -------------------------- | ----------------------- | -------- | ------------------------ |
+| `VITE_PUBLIC_POSTHOG_KEY`  | PostHog project API key | Yes      | -                        |
+| `VITE_PUBLIC_POSTHOG_HOST` | PostHog instance URL    | No       | https://us.i.posthog.com |
 
 ## Troubleshooting
 

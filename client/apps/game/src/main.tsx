@@ -177,7 +177,7 @@ async function init() {
       },
       onError: (error: any) => {
         console.error("System call error:", error);
-        
+
         // Report to PostHog
         captureSystemError(error, {
           error_type: "dojo_system_call",
