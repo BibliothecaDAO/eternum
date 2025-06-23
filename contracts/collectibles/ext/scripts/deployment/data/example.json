@@ -1,0 +1,100 @@
+{
+    "name": "Collectible: Baby Chicken",
+    "symbol": "CBDC",
+    "description": "I dream of a better tomorrow, where chickens can cross the road and not be questioned about their motives.",
+    "updateContractAddress": "",
+    "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
+    "defaultIpfsCidOverwrite": false,
+    "traits": [
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 0,
+            "traitTypeName": "Skin",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Smooth",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Rough",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Scratched",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 1,
+            "traitTypeName": "Structure",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Regular",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Village",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 2,
+            "traitTypeName": "Eyes",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Normal",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Elf",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        }
+    ],
+    "traitsCombinedIpfsCid": [
+       { 
+            "traits": "Skin:Smooth,Structure:Regular,Eyes:Normal", 
+            "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
+            "ipfsCid": "QmWykq5cb9YTrNTH6XAe5KagFBtTTPB82PKNw5f9ZiGiLf", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Rough,Structure:Regular,Eyes:Normal", 
+            "ipfsCid": "QmPQdVU1riwzijhCs1Lk6CHmDo4LpmwPPLuDauY3i8gSzL", 
+            "overwrite": false 
+        },
+        { 
+            "traits": "Skin:Scratched,Structure:Regular,Eyes:Elf", 
+            "ipfsCid": "QmNdvtT9EmrUc6haJyN7ZanHNrsjd23v1ydG6r8jTGEZvq", 
+            "overwrite": false 
+        }
+    ],
+    "mintCData": [
+        { 
+            "traits": "Skin:Rough,Structure:Regular,Eyes:Normal", 
+            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
+            "count": 7
+        },
+        { 
+            "traits": "Skin:Smooth,Structure:Village,Eyes:Normal",
+            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
+            "count": 3
+        }
+    ]
+}
