@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { readdir, stat, readFile, writeFile, mkdir, copyFile } from 'fs/promises';
-import { join, dirname, extname, basename } from 'path';
-import { fileURLToPath } from 'url';
+import { readdir, stat, readFile, writeFile, mkdir, copyFile } from "fs/promises";
+import { join, dirname, extname, basename } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,20 +10,20 @@ const __dirname = dirname(__filename);
 // Check if sharp is available
 let sharp;
 try {
-  sharp = (await import('sharp')).default;
-  console.log('✅ Sharp library loaded successfully');
+  sharp = (await import("sharp")).default;
+  console.log("✅ Sharp library loaded successfully");
 } catch (error) {
-  console.error('❌ Sharp library not found. Please install it with: pnpm add -D sharp');
-  console.log('This script requires sharp for image compression.');
+  console.error("❌ Sharp library not found. Please install it with: pnpm add -D sharp");
+  console.log("This script requires sharp for image compression.");
   process.exit(1);
 }
 
 // Configuration
-const CLIENT_PUBLIC_DIR = join(__dirname, '../client/public');
-const BACKUP_DIR = join(__dirname, '../client/public-backup');
-const SUPPORTED_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
-const EXCLUDE_DIRS = ['draco', 'models']; // Skip 3D models and draco files
-const EXCLUDE_FILES = ['favicon.ico']; // Skip specific files
+const CLIENT_PUBLIC_DIR = join(__dirname, "../client/public");
+const BACKUP_DIR = join(__dirname, "../client/public-backup");
+const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg"];
+const EXCLUDE_DIRS = ["draco", "models"]; // Skip 3D models and draco files
+const EXCLUDE_FILES = ["favicon.ico"]; // Skip specific files
 
 // Compression options
 const COMPRESSION_OPTIONS = {
@@ -40,7 +40,7 @@ const COMPRESSION_OPTIONS = {
   webp: {
     quality: 85,
     effort: 6,
-  }
+  },
 };
 
 class ImageCompressor {
@@ -57,7 +57,7 @@ class ImageCompressor {
     try {
       const originalStats = await stat(inputPath);
       const originalSize = originalStats.size;
-      
+
       // Skip very small files
       if (originalSize < this.minSizeThreshold) {
         console.log(`→ ${basename(inputPath)}: Too small to compress (${this.formatBytes(originalSize)})`);
@@ -65,18 +65,18 @@ class ImageCompressor {
       }
 
       let sharpInstance = sharp(inputPath);
-      
+
       // Apply compression based on type
       switch (type) {
-        case 'png':
+        case "png":
           sharpInstance = sharpInstance.png({
             quality: COMPRESSION_OPTIONS.png.quality,
             compressionLevel: COMPRESSION_OPTIONS.png.compressionLevel,
             progressive: COMPRESSION_OPTIONS.png.progressive,
           });
           break;
-        case 'jpeg':
-        case 'jpg':
+        case "jpeg":
+        case "jpg":
           sharpInstance = sharpInstance.jpeg({
             quality: COMPRESSION_OPTIONS.jpeg.quality,
             progressive: COMPRESSION_OPTIONS.jpeg.progressive,
@@ -89,26 +89,28 @@ class ImageCompressor {
 
       const compressedBuffer = await sharpInstance.toBuffer();
       const compressedSize = compressedBuffer.length;
-      
+
       // Only save if we achieved meaningful compression (>5% reduction)
       const saved = originalSize - compressedSize;
       const percentage = (saved / originalSize) * 100;
-      
+
       if (percentage > 5) {
         if (!this.dryRun) {
           await writeFile(inputPath, compressedBuffer);
         }
-        
-        console.log(`✓ ${basename(inputPath)}: ${this.formatBytes(originalSize)} → ${this.formatBytes(compressedSize)} (${percentage.toFixed(1)}% saved)${this.dryRun ? ' [DRY RUN]' : ''}`);
-        
+
+        console.log(
+          `✓ ${basename(inputPath)}: ${this.formatBytes(originalSize)} → ${this.formatBytes(compressedSize)} (${percentage.toFixed(1)}% saved)${this.dryRun ? " [DRY RUN]" : ""}`,
+        );
+
         this.totalSaved += saved;
         this.filesProcessed++;
-        
+
         // Generate WebP version if requested
         if (this.generateWebP && !this.dryRun) {
           await this.generateWebPVersion(inputPath);
         }
-        
+
         return { originalSize, compressedSize, saved };
       } else {
         console.log(`→ ${basename(inputPath)}: Minimal improvement (${percentage.toFixed(1)}%), keeping original`);
@@ -123,14 +125,14 @@ class ImageCompressor {
 
   async generateWebPVersion(imagePath) {
     try {
-      const webpPath = imagePath.replace(/\.(png|jpe?g)$/i, '.webp');
+      const webpPath = imagePath.replace(/\.(png|jpe?g)$/i, ".webp");
       const webpBuffer = await sharp(imagePath)
         .webp({
           quality: COMPRESSION_OPTIONS.webp.quality,
           effort: COMPRESSION_OPTIONS.webp.effort,
         })
         .toBuffer();
-      
+
       await writeFile(webpPath, webpBuffer);
       console.log(`  ↳ Generated WebP: ${basename(webpPath)} (${this.formatBytes(webpBuffer.length)})`);
     } catch (error) {
@@ -141,11 +143,11 @@ class ImageCompressor {
   async findImages(dir, images = []) {
     try {
       const entries = await readdir(dir);
-      
+
       for (const entry of entries) {
         const fullPath = join(dir, entry);
         const stats = await stat(fullPath);
-        
+
         if (stats.isDirectory()) {
           // Skip excluded directories
           if (!EXCLUDE_DIRS.includes(entry)) {
@@ -158,7 +160,7 @@ class ImageCompressor {
               path: fullPath,
               size: stats.size,
               type: ext.substring(1), // Remove the dot
-              relativePath: fullPath.replace(CLIENT_PUBLIC_DIR, '')
+              relativePath: fullPath.replace(CLIENT_PUBLIC_DIR, ""),
             });
           }
         }
@@ -166,7 +168,7 @@ class ImageCompressor {
     } catch (error) {
       console.error(`Error reading directory ${dir}:`, error.message);
     }
-    
+
     return images;
   }
 
@@ -178,20 +180,20 @@ class ImageCompressor {
 
   async createBackup() {
     if (this.dryRun) {
-      console.log('📁 Dry run mode - no backup needed');
+      console.log("📁 Dry run mode - no backup needed");
       return;
     }
-    
-    console.log('📁 Creating backup...');
+
+    console.log("📁 Creating backup...");
     try {
       await mkdir(BACKUP_DIR, { recursive: true });
-      
+
       // Copy key directories
-      const keyDirs = ['images', 'assets', 'gifs'];
+      const keyDirs = ["images", "assets", "gifs"];
       for (const dir of keyDirs) {
         const sourcePath = join(CLIENT_PUBLIC_DIR, dir);
         const backupPath = join(BACKUP_DIR, dir);
-        
+
         try {
           await stat(sourcePath);
           console.log(`  Backing up ${dir}/...`);
@@ -201,23 +203,23 @@ class ImageCompressor {
           // Directory doesn't exist, skip
         }
       }
-      
+
       console.log(`📁 Backup location: ${BACKUP_DIR}`);
-      console.log('⚠️  Please ensure you have a backup before proceeding in production!');
+      console.log("⚠️  Please ensure you have a backup before proceeding in production!");
     } catch (error) {
-      console.error('Failed to create backup:', error.message);
+      console.error("Failed to create backup:", error.message);
       throw error;
     }
   }
 
   async run() {
-    console.log('🖼️  Eternum Image Compression Tool (Sharp Edition)');
-    console.log('===============================================');
-    
+    console.log("🖼️  Eternum Image Compression Tool (Sharp Edition)");
+    console.log("===============================================");
+
     if (this.dryRun) {
-      console.log('🔍 DRY RUN MODE - No files will be modified\n');
+      console.log("🔍 DRY RUN MODE - No files will be modified\n");
     }
-    
+
     // Check if client/public directory exists
     try {
       await stat(CLIENT_PUBLIC_DIR);
@@ -229,11 +231,11 @@ class ImageCompressor {
     // Create backup
     await this.createBackup();
 
-    console.log('\n🔍 Finding images...');
+    console.log("\n🔍 Finding images...");
     const images = await this.findImages(CLIENT_PUBLIC_DIR);
-    
+
     if (images.length === 0) {
-      console.log('No images found to compress.');
+      console.log("No images found to compress.");
       return;
     }
 
@@ -241,18 +243,18 @@ class ImageCompressor {
     images.sort((a, b) => b.size - a.size);
 
     console.log(`\n📊 Found ${images.length} images to process:`);
-    
+
     // Show overview
     const totalSize = images.reduce((sum, img) => sum + img.size, 0);
     const largestFiles = images.slice(0, 10);
-    
+
     console.log(`Total size: ${this.formatBytes(totalSize)}`);
-    console.log('\nLargest files:');
+    console.log("\nLargest files:");
     largestFiles.forEach((img, index) => {
       console.log(`  ${index + 1}. ${img.relativePath} (${this.formatBytes(img.size)})`);
     });
 
-    console.log('\n🚀 Starting compression...\n');
+    console.log("\n🚀 Starting compression...\n");
 
     // Process images
     for (const image of images) {
@@ -260,8 +262,8 @@ class ImageCompressor {
     }
 
     // Show summary
-    console.log('\n📈 Compression Summary:');
-    console.log('=====================');
+    console.log("\n📈 Compression Summary:");
+    console.log("=====================");
     console.log(`Files processed: ${this.filesProcessed}`);
     console.log(`Total space saved: ${this.formatBytes(this.totalSaved)}`);
     if (this.filesProcessed > 0) {
@@ -269,24 +271,24 @@ class ImageCompressor {
       console.log(`Overall compression: ${percentageSaved.toFixed(1)}%`);
       console.log(`Average savings per file: ${this.formatBytes(this.totalSaved / this.filesProcessed)}`);
     }
-    
+
     if (this.errors.length > 0) {
       console.log(`\n❌ Errors encountered: ${this.errors.length}`);
-      this.errors.forEach(error => {
-        console.log(`  ${error.file.replace(CLIENT_PUBLIC_DIR, '')}: ${error.error}`);
+      this.errors.forEach((error) => {
+        console.log(`  ${error.file.replace(CLIENT_PUBLIC_DIR, "")}: ${error.error}`);
       });
     }
 
-    console.log('\n✅ Image compression complete!');
-    
+    console.log("\n✅ Image compression complete!");
+
     if (!this.dryRun) {
-      console.log('\n💡 Next steps:');
-      console.log('  1. Test your application to ensure images display correctly');
+      console.log("\n💡 Next steps:");
+      console.log("  1. Test your application to ensure images display correctly");
       console.log('  2. Run "pnpm run build" to verify bundle size reduction');
-      console.log('  3. Consider running with --webp flag for modern browser support');
-      console.log('  4. Update your application to serve WebP images when supported');
+      console.log("  3. Consider running with --webp flag for modern browser support");
+      console.log("  4. Update your application to serve WebP images when supported");
     } else {
-      console.log('\n💡 To actually compress images, run without --dry-run flag');
+      console.log("\n💡 To actually compress images, run without --dry-run flag");
     }
   }
 }
@@ -294,12 +296,12 @@ class ImageCompressor {
 // Parse command line arguments
 const args = process.argv.slice(2);
 const options = {
-  dryRun: args.includes('--dry-run'),
-  generateWebP: args.includes('--webp'),
-  minSizeThreshold: 1024
+  dryRun: args.includes("--dry-run"),
+  generateWebP: args.includes("--webp"),
+  minSizeThreshold: 1024,
 };
 
-if (args.includes('--help')) {
+if (args.includes("--help")) {
   console.log(`
 Eternum Image Compression Tool
 
@@ -320,7 +322,7 @@ Examples:
 
 // Run the compressor
 const compressor = new ImageCompressor(options);
-compressor.run().catch(error => {
-  console.error('💥 Fatal error:', error);
+compressor.run().catch((error) => {
+  console.error("💥 Fatal error:", error);
   process.exit(1);
 });

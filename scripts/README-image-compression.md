@@ -5,9 +5,11 @@ This directory contains scripts to analyze and compress image assets to reduce b
 ## Scripts Overview
 
 ### 1. `analyze-images.js` - Image Asset Analysis
+
 Analyzes all image assets in the client/public directory without making any changes.
 
 **Features:**
+
 - Scans for PNG, JPEG, GIF, SVG, and WebP files
 - Provides detailed statistics by file type and directory
 - Identifies large files and compression opportunities
@@ -15,14 +17,17 @@ Analyzes all image assets in the client/public directory without making any chan
 - No dependencies required
 
 **Usage:**
+
 ```bash
 pnpm run images:analyze
 ```
 
 ### 2. `compress-images-with-sharp.js` - Image Compression
+
 Compresses images using the Sharp library for optimal results.
 
 **Features:**
+
 - Lossless and lossy compression for PNG, JPEG
 - Optional WebP generation for modern browsers
 - Dry-run mode for testing
@@ -30,6 +35,7 @@ Compresses images using the Sharp library for optimal results.
 - Configurable quality settings
 
 **Usage:**
+
 ```bash
 # Install dependencies first
 pnpm add -D sharp
@@ -45,11 +51,13 @@ pnpm run images:compress:webp
 ```
 
 ### 3. `compress-images.js` - Basic Compression (Legacy)
+
 A basic version that shows the compression framework without external dependencies.
 
 ## Installation and Setup
 
 ### Prerequisites
+
 ```bash
 # For advanced compression (recommended)
 pnpm add -D sharp
@@ -61,16 +69,19 @@ pnpm add -D imagemin imagemin-optipng imagemin-mozjpeg imagemin-gifsicle
 ### Quick Start
 
 1. **Analyze your current images:**
+
    ```bash
    pnpm run images:analyze
    ```
 
 2. **Test compression (dry run):**
+
    ```bash
    pnpm run images:compress:dry-run
    ```
 
 3. **Create a backup:**
+
    ```bash
    cp -r client/public client/public-backup
    ```
@@ -101,15 +112,17 @@ const COMPRESSION_OPTIONS = {
   webp: {
     quality: 85,
     effort: 6,
-  }
+  },
 };
 ```
 
 ### Excluded Directories
+
 - `draco/` - 3D model files
 - `models/` - 3D model assets
 
 ### File Size Thresholds
+
 - Minimum file size for compression: 1KB
 - Minimum improvement required: 5%
 
@@ -118,13 +131,14 @@ const COMPRESSION_OPTIONS = {
 Based on typical web projects, you can expect:
 
 - **PNG files:** 20-50% size reduction
-- **JPEG files:** 10-30% size reduction  
+- **JPEG files:** 10-30% size reduction
 - **GIF files:** 30-70% size reduction (or convert to WebP)
 - **Overall bundle reduction:** 15-40% depending on asset composition
 
 ## Integration with Build Process
 
 ### Option 1: Manual Optimization (Recommended)
+
 Run compression scripts before major releases:
 
 ```bash
@@ -135,10 +149,13 @@ pnpm run build
 ```
 
 ### Option 2: Build Pipeline Integration
+
 Add to your CI/CD pipeline or pre-build hooks.
 
 ### Option 3: Vite Plugin (Future Enhancement)
+
 Consider integrating with Vite build process using plugins like:
+
 - `vite-plugin-imagemin`
 - `@rollup/plugin-image`
 
@@ -147,6 +164,7 @@ Consider integrating with Vite build process using plugins like:
 Modern browsers support WebP format which offers superior compression:
 
 1. **Generate WebP versions:**
+
    ```bash
    pnpm run images:compress:webp
    ```
@@ -154,8 +172,8 @@ Modern browsers support WebP format which offers superior compression:
 2. **Update your application** to serve WebP when supported:
    ```html
    <picture>
-     <source srcset="image.webp" type="image/webp">
-     <img src="image.png" alt="description">
+     <source srcset="image.webp" type="image/webp" />
+     <img src="image.png" alt="description" />
    </picture>
    ```
 
@@ -164,6 +182,7 @@ Modern browsers support WebP format which offers superior compression:
 ### Common Issues
 
 1. **Sharp installation problems:**
+
    ```bash
    # Clear cache and reinstall
    rm -rf node_modules pnpm-lock.yaml
@@ -172,6 +191,7 @@ Modern browsers support WebP format which offers superior compression:
    ```
 
 2. **Permission errors:**
+
    ```bash
    # Make scripts executable
    chmod +x scripts/*.js
@@ -201,12 +221,15 @@ Modern browsers support WebP format which offers superior compression:
 ## Advanced Usage
 
 ### Custom Quality Settings
+
 Edit the `COMPRESSION_OPTIONS` in `compress-images-with-sharp.js` for different quality/size tradeoffs.
 
 ### Selective Compression
+
 Modify the `EXCLUDE_DIRS` and `EXCLUDE_FILES` arrays to skip specific assets.
 
 ### Batch Processing
+
 For very large projects, consider processing images in smaller batches by directory.
 
 ## Contributing
