@@ -1,0 +1,36 @@
+name: test collectibles
+
+on:
+  pull_request:
+    paths-ignore:
+      - "contracts/common/**"
+      - "contracts/game/**"
+      - "contracts/season_resources/**"
+      - "contracts/season_pass/**"
+      - "contracts/village_pass/**"
+      - "contracts/utils/**"
+      - "contracts/world/**"
+      - "client/**"
+      - "**/manifest.json"
+      - "config/**"
+      - ".github/**"
+      - "pnpm-lock.yaml"
+
+env:
+  SCARB_VERSION: v2.9.2
+
+jobs:
+  test-collectibles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/collectibles/.tool-versions
+      - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: contracts/collectibles/.tool-versions
+      - run: scarb build
+        working-directory: contracts/collectibles
+      - run: snforge test
+        working-directory: contracts/collectibles
