@@ -1929,6 +1929,115 @@ tr:hover {
     grid-template-columns: 2fr 1.5fr 1.5fr;
 }
 
+/* Distribution Toggle */
+.distribution-toggle-container {
+    margin-bottom: 1rem;
+}
+
+.distribution-toggle {
+    background: rgba(77, 57, 35, 0.2);
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: #f0b060;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.distribution-toggle:hover {
+    background: rgba(77, 57, 35, 0.3);
+    border-color: rgba(240, 176, 96, 0.5);
+}
+
+.toggle-text {
+    color: #f0b060;
+}
+
+.toggle-arrow {
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease;
+}
+
+.toggle-arrow svg {
+    transition: transform 0.3s ease;
+}
+
+/* Chest Distribution Explanation */
+.chest-distribution-explanation {
+    background: rgba(77, 57, 35, 0.1);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.distribution-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.distribution-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: rgba(50, 35, 25, 0.3);
+    border-radius: 0.5rem;
+    border-left: 3px solid #f0b060;
+}
+
+.distribution-chest-count {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0b060;
+    min-width: 50px;
+    text-align: center;
+}
+
+.distribution-details {
+    flex: 1;
+}
+
+.distribution-range {
+    font-size: 0.9rem;
+    color: #f9fafb;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.distribution-players {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+/* Player points display */
+.player-points {
+    color: #f0b060;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: 0.2rem;
+}
+
+/* Responsive design for distribution */
+@media (max-width: 768px) {
+    .distribution-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .distribution-item {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
 /* Enhanced player info styles */
 .player-info {
     display: flex;

@@ -19,6 +19,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showCalculations, setShowCalculations] = useState<boolean>(false);
+  const [showDistribution, setShowDistribution] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -793,6 +794,43 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
     const totalChests = chestRewards.reduce((sum, reward) => sum + reward.count, 0);
     const playersWithChests = chestRewards.filter(r => r.count > 0).length;
 
+    // Calculate distribution for explanation
+    const chestDistribution = new Map<number, number>();
+    const playerPointsMap = new Map<string, number>();
+    
+    // Create a map of player addresses to their points
+    if (cartridgePoints) {
+      cartridgePoints.forEach(player => {
+        playerPointsMap.set(player.player_id, player.total_points);
+      });
+    }
+    
+    // Calculate distribution
+    chestRewards.forEach(reward => {
+      const count = chestDistribution.get(reward.count) || 0;
+      chestDistribution.set(reward.count, count + 1);
+    });
+
+    // Infer brackets from the data (reverse engineer the brackets used)
+    const bracketData = new Map<number, {min: number, max: number, count: number}>();
+    
+    chestRewards.forEach(reward => {
+      const playerPoints = playerPointsMap.get(reward.toAddress) || 0;
+      const chestCount = reward.count;
+      
+      if (!bracketData.has(chestCount)) {
+        bracketData.set(chestCount, {min: playerPoints, max: playerPoints, count: 1});
+      } else {
+        const bracket = bracketData.get(chestCount)!;
+        bracket.min = Math.min(bracket.min, playerPoints);
+        bracket.max = Math.max(bracket.max, playerPoints);
+        bracket.count++;
+      }
+    });
+
+    const sortedBrackets = Array.from(bracketData.entries())
+      .sort((a, b) => b[0] - a[0]); // Sort by chest count descending
+
     return (
       <div className="chest-prizes">
         <div className="chest-header">
@@ -811,6 +849,53 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
             </div>
           </div>
         </div>
+
+        {/* Distribution Toggle */}
+        <div className="distribution-toggle-container">
+          <button
+            className="distribution-toggle"
+            onClick={() => setShowDistribution(!showDistribution)}
+            aria-expanded={showDistribution}
+          >
+            <span className="toggle-text">View Distribution Breakdown</span>
+            <span className="toggle-arrow">
+              <svg 
+                width="12" 
+                height="12" 
+                viewBox="0 0 12 12"
+                style={{ transform: showDistribution ? 'rotate(90deg)' : 'rotate(0deg)' }}
+              >
+                <path 
+                  d="M4 2L8 6L4 10" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  fill="none" 
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+
+        {/* Distribution Explanation */}
+        {showDistribution && (
+          <div className="chest-distribution-explanation">
+            <div className="distribution-grid">
+              {sortedBrackets.map(([chestCount, bracket]) => {
+                const percentage = (bracket.count / chestRewards.length) * 100;
+                return (
+                  <div key={chestCount} className="distribution-item">
+                    <div className="distribution-chest-count">{chestCount}</div>
+                    <div className="distribution-details">
+                      <div className="distribution-range">{bracket.min.toLocaleString()}-{bracket.max.toLocaleString()} pts</div>
+                      <div className="distribution-players">{bracket.count} players ({percentage.toFixed(0)}%)</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="chest-controls">
           <div className="search-container">
@@ -850,30 +935,37 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           </div>
           
           <div className="table-body">
-            {filteredRewards.map((reward, index) => (
-              <div key={`${reward.toAddress}-${index}`} className="player-row">
-                <div className="player-info">
-                  {getPlayerName(reward.toAddress) ? (
-                    <>
-                      <div className="player-name">{getPlayerName(reward.toAddress)}</div>
-                      <div className="player-address">{reward.toAddress}</div>
-                    </>
-                  ) : (
-                    <div className="player-address-only">{reward.toAddress}</div>
-                  )}
+            {filteredRewards.map((reward, index) => {
+              const playerPoints = playerPointsMap.get(reward.toAddress) || 0;
+              
+              return (
+                <div key={`${reward.toAddress}-${index}`} className="player-row">
+                  <div className="player-info">
+                    {getPlayerName(reward.toAddress) ? (
+                      <>
+                        <div className="player-name">{getPlayerName(reward.toAddress)}</div>
+                        <div className="player-address">{reward.toAddress}</div>
+                      </>
+                    ) : (
+                      <div className="player-address-only">{reward.toAddress}</div>
+                    )}
+                    {playerPoints > 0 && (
+                      <div className="player-points">{playerPoints.toLocaleString()} points earned</div>
+                    )}
+                  </div>
+                  
+                  <div className="achievement-info">
+                    <div className="achievement-name">🗝️ Eternum Rewards Chest</div>
+                    <div className="achievement-description">Season 1 NFT</div>
+                  </div>
+                  
+                  <div className="reward-info">
+                    <div className="reward-amount">{reward.count} {reward.count === 1 ? 'Chest' : 'Chests'}</div>
+                    <div className="reward-usd">Achievement Rewards</div>
+                  </div>
                 </div>
-                
-                <div className="achievement-info">
-                  <div className="achievement-name">🗝️ Eternum Rewards Chest</div>
-                  <div className="achievement-description">Season 1 NFT</div>
-                </div>
-                
-                <div className="reward-info">
-                  <div className="reward-amount">{reward.count} {reward.count === 1 ? 'Chest' : 'Chests'}</div>
-                  <div className="reward-usd">Achievement Rewards</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

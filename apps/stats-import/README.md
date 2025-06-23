@@ -30,7 +30,13 @@ node scripts/generate-chest-rewards.js --brackets "950:1000:7,800:949:5,600:799:
 
 # Simple 3-tier system
 node scripts/generate-chest-rewards.js --brackets "500:1000:3,100:499:2,5:99:1"
+
+# Example with 7 brackets
+node scripts/generate-chest-rewards.js --brackets "750:1000:18,500:749:12,300:499:8,150:299:5,50:149:3,15:49:2,0:14:1"
+
 ```
+
+
 
 #### Output
 
