@@ -105,7 +105,7 @@ export const deployCollectible = async (dataFileName) => {
 
   console.log("\n\n");
   console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
-  console.log(`     ${name} Contract: Deployed`.yellow + toHex(collectibleAddress).magenta);
+  console.log(`     ${name} Contract: Deployed `.yellow + toHex(collectibleAddress).magenta + " ");
   console.log("    Network: ".yellow + process.env.STARKNET_NETWORK.magenta);
   console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`.yellow);
 

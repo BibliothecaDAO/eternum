@@ -7,7 +7,7 @@
   "type": "module",
   "main": "deploy.js",
   "config": {
-    "dataFileName": "./data/example.json"
+    "dataFileName": "data/loot-chests/eternum-rewards-chest.json"
   },
   "scripts": {
     "deploy:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local -e \"import {deployCollectible} from './deploy.js'; import {readFileSync} from 'fs'; const config = JSON.parse(readFileSync('./package.json', 'utf8')); console.log('📁 Using data file:', config.config.dataFileName); deployCollectible(config.config.dataFileName).then(() => process.exit(0)).catch(e => {console.error(e); process.exit(1)})\"",
