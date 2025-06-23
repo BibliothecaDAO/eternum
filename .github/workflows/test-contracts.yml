@@ -2,13 +2,8 @@ name: test-contracts
 
 on:
   pull_request:
-    paths-ignore:
-      - "client/**"
-      - "sdk/**"
-      - "**/manifest.json"
-      - "config/**"
-      - ".github/**"
-      - "pnpm-lock.yaml"
+    paths:
+      - "contracts/game/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

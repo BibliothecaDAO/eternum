@@ -55,12 +55,13 @@ When building features, read the relevant app README:
 
 IMPORTANT: Before creating a PR, YOU MUST:
 
-1. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-2. **Update README**: Update the main README if you've added new features or changed setup steps
-3. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-4. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-5. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-6. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+1. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
+2. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
+3. **Update README**: Update the main README if you've added new features or changed setup steps
+4. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
+5. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
+6. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
+7. **Build Packages**: If you modified packages, run `pnpm run build:packages`
 
 ## Project-Specific Notes
 
@@ -86,11 +87,13 @@ IMPORTANT: Before creating a PR, YOU MUST:
 6. **Create PR**: Always create pull requests FROM your branch TO `next` branch
 
 **If you find yourself on `next` with uncommitted changes:**
+
 - Create an appropriate branch: `git checkout -b fix/move-from-next` (or feature/, refactor/, etc.)
 - Your changes will move with you to the new branch
 - Then follow steps 4-6 above
 
 **NEVER:**
+
 - Work directly on `next` branch
 - Create PRs to `main` (always target `next`)
 - Push commits directly to `next`

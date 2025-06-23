@@ -7,6 +7,7 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { initPostHog, captureSystemError } from "@/posthog";
 
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
@@ -37,6 +38,9 @@ declare global {
 window.Buffer = Buffer;
 
 async function init() {
+  // Initialize PostHog for analytics and error reporting
+  initPostHog();
+
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
@@ -173,7 +177,13 @@ async function init() {
       },
       onError: (error: any) => {
         console.error("System call error:", error);
-        // Handle other types of errors if needed
+
+        // Report to PostHog
+        captureSystemError(error, {
+          error_type: "dojo_system_call",
+          setup_phase: "post-setup",
+          context: "System call error during post-setup phase",
+        });
       },
     },
   );

@@ -127,108 +127,96 @@ jobs:
 
             Focus on reliability, security, and maintainability of the entire Eternum infrastructure.
 
-            ## Issue Creation for Small Fixes
+            ## Inline PR Comments for Infrastructure Improvements
 
-            If you identify small, specific issues that can be easily fixed (such as):
+            When you identify specific improvements during infrastructure review, provide **inline comments** on the relevant lines with:
+
+            **For Security & Configuration Issues:**
             - Configuration inconsistencies between environments
-            - Missing environment variables or .env.sample updates
+            - Missing environment variables or secrets
+            - Security vulnerabilities in deployment scripts
+            - Access control and permission issues
+
+            **For Reliability & Performance Issues:**
             - Script improvements or error handling
             - Deployment process optimizations
             - Docker configuration improvements
             - GitHub Actions workflow optimizations
             - Missing documentation for setup steps
             - Package.json script inconsistencies
-            - Unused dependencies or security updates
 
-            Create GitHub issues using mcp__github__create_issue with:
+            **Comment Format:**
+            ```
+            ⚙️ **[Config] [Area] Suggestion:** Brief description
 
-            **Title Format:** `[Config] [Area]: Brief description`
+            **Current Issue:** What infrastructure issue exists
+            **Suggested Change:** Specific configuration/script improvement
+            **Impact:** Reliability/security/developer experience benefit
+            **Environment Impact:** Which environments affected (local/sepolia/mainnet/slot)
+
+            **Example Implementation:**
+            ```bash/yaml/json
+            # Suggested configuration change here
+            ```
+
             **Examples:**
-            - `[Config] Environment: Add missing VITE_PUBLIC_INDEXER_URL to .env.sample`
-            - `[Config] Scripts: Add error handling to deployment scripts`
-            - `[Config] Docker: Optimize container build caching`
-            - `[Config] CI: Add workflow caching for pnpm dependencies`
-
-            **Issue Body Template:**
-            ```
-            ## Description
-            [Brief description of the issue and why it should be fixed]
-
-            ## Location
-            File: `path/to/config/file`
-            Area: [Environment/Scripts/Docker/CI/etc.]
-
-            ## Suggested Fix
-            [Specific suggestion for how to fix it]
-
-            ## Impact
-            [Brief explanation of the benefit - developer experience, deployment reliability, security, etc.]
-
-            ## Environment Impact
-            [Specify which environments this affects: local, sepolia, mainnet, slot]
-
-            @claude please fix this issue
-            ```
-
-            **Labels to Apply:**
-            - `config` (for configuration issues)
-            - Area-specific: `environment`, `deployment`, `docker`, `ci-cd`, `scripts`
-            - Type-specific: `developer-experience`, `security`, `performance`, `documentation`
-            - Priority: `low-priority` or `med-priority`
-            - `good first issue` (for simple fixes)
+            - `⚙️ **Config Environment Suggestion:** Add missing environment variable to .env.sample`
+            - `⚙️ **Config Scripts Suggestion:** Add error handling to prevent deployment failures`
+            - `⚙️ **Config Docker Suggestion:** Optimize container caching for faster builds`
+            - `⚙️ **Config CI Suggestion:** Add workflow caching to reduce build times`
 
           allowed_tools: "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
 
           custom_instructions: |
             You are reviewing infrastructure and configuration for Eternum, a blockchain gaming project with complex multi-environment deployment:
-            
+
             ## Critical Infrastructure Components:
             - **Dojo Framework**: Cairo smart contracts with custom deployment scripts
             - **Multi-Network**: Local (Katana), Sepolia testnet, Mainnet (Starknet)
             - **Indexing**: Torii for blockchain data indexing and querying
             - **Monorepo**: pnpm workspaces with multiple apps and packages
             - **Real-time**: WebSocket connections for live game data
-            
+
             ## Security Priorities:
             - Deployment wallet security and key management
             - Environment isolation and secret management
             - Smart contract deployment safety
             - API key and service account security
-            
+
             ## Documentation Updates via MCP
-            
+
             If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
-            
+
             **Documentation Areas to Consider:**
-            
+
             **Infrastructure Documentation:**
             - config/README.md for configuration changes
             - Update deployment sections in main readme.md
             - CLAUDE.md for development workflow changes
-            
+
             **Environment Documentation:**
             - Update setup instructions for new environment requirements
             - Update .env.sample files for new environment variables
             - Document new deployment procedures or script changes
-            
+
             **Developer Documentation:**
             - client/apps/game-docs/docs/pages/development/ for infrastructure changes
             - Update local development setup instructions
             - Document new scripts or configuration requirements
-            
+
             **How to Create Documentation PR using MCP:**
-            
+
             1. Use mcp__github__create_branch to create a new documentation branch:
                - Branch name: "docs/update-infrastructure-[change-type]"
                - Base branch: "next"
-            
+
             2. Use file editing tools to update the necessary documentation files
-            
+
             3. Use mcp__github__create_pull_request to create the documentation PR:
                - Title: "docs: Update infrastructure documentation"
                - Body: "Updates documentation to reflect infrastructure changes in PR #[original-pr-number]"
                - Target branch: "next"
-            
+
             **Available MCP Tools for Documentation:**
             - mcp__github__create_branch
             - mcp__github__create_pull_request
