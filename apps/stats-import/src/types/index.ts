@@ -144,4 +144,17 @@ export interface ChestReward {
   traits: string;
   toAddress: string;
   count: number;
+}
+
+// Chest brackets type
+export interface ChestBracket {
+  min: number;
+  max: number;
+  chests: number;
+}
+
+// Chest rewards data structure
+export interface ChestRewardsData {
+  brackets: ChestBracket[];
+  rewards: ChestReward[];
 } 

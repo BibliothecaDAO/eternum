@@ -1929,45 +1929,6 @@ tr:hover {
     grid-template-columns: 2fr 1.5fr 1.5fr;
 }
 
-/* Distribution Toggle */
-.distribution-toggle-container {
-    margin-bottom: 1rem;
-}
-
-.distribution-toggle {
-    background: rgba(77, 57, 35, 0.2);
-    border: 1px solid rgba(240, 176, 96, 0.3);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    color: #f0b060;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.distribution-toggle:hover {
-    background: rgba(77, 57, 35, 0.3);
-    border-color: rgba(240, 176, 96, 0.5);
-}
-
-.toggle-text {
-    color: #f0b060;
-}
-
-.toggle-arrow {
-    display: flex;
-    align-items: center;
-    transition: transform 0.3s ease;
-}
-
-.toggle-arrow svg {
-    transition: transform 0.3s ease;
-}
-
 /* Chest Distribution Explanation */
 .chest-distribution-explanation {
     background: rgba(77, 57, 35, 0.1);

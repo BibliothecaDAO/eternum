@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses, ChestReward } from '../types';
+import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses, ChestReward, ChestRewardsData, ChestBracket } from '../types';
 
 const padAddress = (address: string): string => {
   const cleanAddress = address.startsWith('0x') ? address.slice(2) : address;
@@ -12,6 +12,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [knownAddresses, setKnownAddresses] = useState<KnownAddresses | null>(null);
   const [nexus6Players, setNexus6Players] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [chestRewards, setChestRewards] = useState<ChestReward[] | null>(null);
+  const [chestBrackets, setChestBrackets] = useState<ChestBracket[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'chests'>('victory');
@@ -19,7 +20,6 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showCalculations, setShowCalculations] = useState<boolean>(false);
-  const [showDistribution, setShowDistribution] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,7 +43,20 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         const cartridgeData: { player_id: string; total_points: number }[] = await cartridgeResponse.json();
         const knownAddressesData: KnownAddresses = await knownAddressesResponse.json();
         const nexus6Data: { player_id: string; total_points: number }[] = await nexus6Response.json();
-        const chestData: ChestReward[] = chestResponse.ok ? await chestResponse.json() : [];
+        const chestDataResponse: ChestRewardsData | ChestReward[] = chestResponse.ok ? await chestResponse.json() : [];
+        
+        // Handle both old format (array) and new format (object with brackets)
+        let chestData: ChestReward[] = [];
+        let bracketsData: ChestBracket[] | null = null;
+        
+        if (Array.isArray(chestDataResponse)) {
+          // Old format - just an array of rewards
+          chestData = chestDataResponse;
+        } else {
+          // New format - object with brackets and rewards
+          chestData = chestDataResponse.rewards || [];
+          bracketsData = chestDataResponse.brackets || null;
+        }
 
         // Pad addresses in eternumData
         eternumData.tribes = eternumData.tribes.map(tribe => ({
@@ -77,6 +90,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
         setKnownAddresses(knownAddressesData);
         setNexus6Players(paddedNexus6Data);
         setChestRewards(paddedChestData);
+        setChestBrackets(bracketsData);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load rewards data');
@@ -794,42 +808,41 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
     const totalChests = chestRewards.reduce((sum, reward) => sum + reward.count, 0);
     const playersWithChests = chestRewards.filter(r => r.count > 0).length;
 
-    // Calculate distribution for explanation
-    const chestDistribution = new Map<number, number>();
-    const playerPointsMap = new Map<string, number>();
-    
     // Create a map of player addresses to their points
+    const playerPointsMap = new Map<string, number>();
     if (cartridgePoints) {
       cartridgePoints.forEach(player => {
         playerPointsMap.set(player.player_id, player.total_points);
       });
     }
     
-    // Calculate distribution
-    chestRewards.forEach(reward => {
-      const count = chestDistribution.get(reward.count) || 0;
-      chestDistribution.set(reward.count, count + 1);
-    });
-
-    // Infer brackets from the data (reverse engineer the brackets used)
-    const bracketData = new Map<number, {min: number, max: number, count: number}>();
+    // Calculate player counts for each bracket
+    const bracketStats = new Map<number, number>();
     
-    chestRewards.forEach(reward => {
-      const playerPoints = playerPointsMap.get(reward.toAddress) || 0;
-      const chestCount = reward.count;
-      
-      if (!bracketData.has(chestCount)) {
-        bracketData.set(chestCount, {min: playerPoints, max: playerPoints, count: 1});
-      } else {
-        const bracket = bracketData.get(chestCount)!;
-        bracket.min = Math.min(bracket.min, playerPoints);
-        bracket.max = Math.max(bracket.max, playerPoints);
-        bracket.count++;
-      }
-    });
+    if (chestBrackets) {
+      // Use actual brackets from the file
+      chestBrackets.forEach(bracket => {
+        const playersInBracket = chestRewards.filter(reward => reward.count === bracket.chests).length;
+        bracketStats.set(bracket.chests, playersInBracket);
+      });
+    } else {
+      // Fallback: calculate distribution from rewards if brackets not available
+      chestRewards.forEach(reward => {
+        const count = bracketStats.get(reward.count) || 0;
+        bracketStats.set(reward.count, count + 1);
+      });
+    }
 
-    const sortedBrackets = Array.from(bracketData.entries())
-      .sort((a, b) => b[0] - a[0]); // Sort by chest count descending
+    const sortedBrackets = chestBrackets 
+      ? chestBrackets.sort((a, b) => b.chests - a.chests) // Sort by chest count descending
+      : Array.from(bracketStats.entries())
+          .sort((a, b) => b[0] - a[0])
+          .map(([chests, count]) => ({ 
+            min: 0, 
+            max: 0, 
+            chests, 
+            playerCount: count 
+          }));
 
     return (
       <div className="chest-prizes">
@@ -850,52 +863,24 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
           </div>
         </div>
 
-        {/* Distribution Toggle */}
-        <div className="distribution-toggle-container">
-          <button
-            className="distribution-toggle"
-            onClick={() => setShowDistribution(!showDistribution)}
-            aria-expanded={showDistribution}
-          >
-            <span className="toggle-text">View Distribution Breakdown</span>
-            <span className="toggle-arrow">
-              <svg 
-                width="12" 
-                height="12" 
-                viewBox="0 0 12 12"
-                style={{ transform: showDistribution ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              >
-                <path 
-                  d="M4 2L8 6L4 10" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  fill="none" 
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-          </button>
-        </div>
-
         {/* Distribution Explanation */}
-        {showDistribution && (
-          <div className="chest-distribution-explanation">
-            <div className="distribution-grid">
-              {sortedBrackets.map(([chestCount, bracket]) => {
-                const percentage = (bracket.count / chestRewards.length) * 100;
-                return (
-                  <div key={chestCount} className="distribution-item">
-                    <div className="distribution-chest-count">{chestCount}</div>
-                    <div className="distribution-details">
-                      <div className="distribution-range">{bracket.min.toLocaleString()}-{bracket.max.toLocaleString()} pts</div>
-                      <div className="distribution-players">{bracket.count} players ({percentage.toFixed(0)}%)</div>
-                    </div>
+        <div className="chest-distribution-explanation">
+          <div className="distribution-grid">
+            {sortedBrackets.map((bracket) => {
+              const playerCount = bracketStats.get(bracket.chests) || 0;
+              const percentage = chestRewards.length > 0 ? (playerCount / chestRewards.length) * 100 : 0;
+              return (
+                <div key={bracket.chests} className="distribution-item">
+                  <div className="distribution-chest-count">{bracket.chests}</div>
+                  <div className="distribution-details">
+                    <div className="distribution-range">{bracket.min.toLocaleString()}-{bracket.max.toLocaleString()} pts</div>
+                    <div className="distribution-players">{playerCount} players ({percentage.toFixed(0)}%)</div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         <div className="chest-controls">
           <div className="search-container">

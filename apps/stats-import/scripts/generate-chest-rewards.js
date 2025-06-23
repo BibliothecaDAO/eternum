@@ -103,9 +103,19 @@ async function generateChestRewards() {
             return a.toAddress.localeCompare(b.toAddress);
         });
         
+        // Create the output object with brackets metadata
+        const output = {
+            brackets: brackets.map(b => ({
+                min: b.min,
+                max: b.max,
+                chests: b.chests
+            })),
+            rewards: chestRewards
+        };
+        
         // Write the output file
         const outputPath = path.join(__dirname, '..', 'public', 'data', 'chest-rewards.json');
-        fs.writeFileSync(outputPath, JSON.stringify(chestRewards, null, 2));
+        fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
         
         // Calculate players per chest count
         const playersPerChestCount = new Map();

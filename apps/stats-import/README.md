@@ -44,13 +44,20 @@ The script will:
 1. Read player data from `public/data/cartridge-points.json`
 2. Generate `public/data/chest-rewards.json` with the format:
    ```json
-   [
-     {
-       "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
-       "toAddress": "0x...",
-       "count": 7
-     }
-   ]
+   {
+     "brackets": [
+       { "min": 950, "max": 1000, "chests": 7 },
+       { "min": 800, "max": 949, "chests": 5 },
+       ...
+     ],
+     "rewards": [
+       {
+         "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+         "toAddress": "0x...",
+         "count": 7
+       }
+     ]
+   }
    ```
 3. Display detailed statistics:
    - Total players and chest recipients
