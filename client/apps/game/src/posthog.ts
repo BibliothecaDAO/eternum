@@ -22,29 +22,10 @@ export const initPostHog = () => {
     capture_pageview: true,
     capture_pageleave: true,
 
-    // Session recording
+    // Session recording - simplified to only include supported options
     session_recording: {
-      enabled: true,
-      recordCrossOriginIframes: false,
       maskAllInputs: true,
-      maskInputOptions: {
-        password: true,
-        email: true,
-      },
-      // Sample rate based on environment
-      sample_rate: env.VITE_PUBLIC_CHAIN === "mainnet" ? 0.1 : 1.0,
     },
-
-    // Autocapture
-    autocapture: {
-      dom_event_allowlist: [],
-      url_allowlist: [],
-      element_allowlist: [],
-    },
-
-    // Disable features we don't need
-    disable_surveys: true,
-    disable_toolbar: env.VITE_PUBLIC_CHAIN === "mainnet",
 
     // Set properties
     loaded: (posthog) => {
@@ -58,7 +39,7 @@ export const initPostHog = () => {
 };
 
 // Utility functions for error reporting
-export const captureError = (error: Error, context?: Record<string, any>) => {
+export const captureError = (error: Error, context?: Record<string, unknown>) => {
   if (!env.VITE_PUBLIC_POSTHOG_KEY) return;
 
   posthog.capture("error", {
@@ -69,13 +50,16 @@ export const captureError = (error: Error, context?: Record<string, any>) => {
   });
 };
 
-export const captureSystemError = (error: any, context?: Record<string, any>) => {
+export const captureSystemError = (error: unknown, context?: Record<string, unknown>) => {
   if (!env.VITE_PUBLIC_POSTHOG_KEY) return;
+
+  const errorMessage = error instanceof Error ? error.message : "Unknown system error";
+  const errorStack = error instanceof Error ? error.stack : undefined;
 
   posthog.capture("system_error", {
     error_type: "dojo_system_call",
-    error_message: error?.message || "Unknown system error",
-    error_stack: error?.stack,
+    error_message: errorMessage,
+    error_stack: errorStack,
     ...context,
   });
 };
