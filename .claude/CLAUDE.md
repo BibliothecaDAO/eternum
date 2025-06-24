@@ -53,15 +53,23 @@ When building features, read the relevant app README:
 
 ## COMMIT Checklist
 
+**⚠️ CRITICAL: NEVER COMMIT WITHOUT A SUCCESSFUL BUILD! ⚠️**
+
 IMPORTANT: Before committing changes, YOU MUST:
 
-1. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
-2. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-3. **Update README**: Update the main README if you've added new features or changed setup steps
-4. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-5. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-6. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-7. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+1. **Run Build Check** (MANDATORY - DO THIS FIRST!): 
+   - Execute `pnpm run build` in EVERY affected app directory
+   - For game changes: `cd client/apps/game && pnpm run build`
+   - For landing page changes: `cd client/apps/landing && pnpm run build`
+   - **IF BUILD FAILS: FIX ALL ERRORS BEFORE PROCEEDING!**
+   - **NEVER use --no-verify or skip this step**
+2. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
+3. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
+4. **Update README**: Update the main README if you've added new features or changed setup steps
+5. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
+6. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
+7. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
+8. **Build Packages**: If you modified packages, run `pnpm run build:packages`
 
 ## Project-Specific Notes
 

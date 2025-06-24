@@ -14,6 +14,7 @@ import {
   RESOURCE_PRECISION,
   RESOURCE_RARITY,
   resources,
+  ResourcesIds,
   StructureType,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
@@ -273,8 +274,8 @@ export const Bridge = ({ structures }: BridgeProps) => {
       if (b.name.toLowerCase() === "lords") return 1;
 
       // Sort other resources by rarity (lower rarity values = more common = should appear first)
-      const rarityA = RESOURCE_RARITY[a.id] || 999;
-      const rarityB = RESOURCE_RARITY[b.id] || 999;
+      const rarityA = RESOURCE_RARITY[a.id as ResourcesIds] || 999;
+      const rarityB = RESOURCE_RARITY[b.id as ResourcesIds] || 999;
       return rarityA - rarityB;
     });
 
