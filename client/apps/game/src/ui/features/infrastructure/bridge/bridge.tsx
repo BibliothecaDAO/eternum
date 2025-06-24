@@ -12,6 +12,7 @@ import {
   ID,
   PlayerStructure,
   RESOURCE_PRECISION,
+  RESOURCE_RARITY,
   resources,
   StructureType,
   WORLD_CONFIG_ID,
@@ -270,8 +271,11 @@ export const Bridge = ({ structures }: BridgeProps) => {
       // Make LORDS appear first
       if (a.name.toLowerCase() === "lords") return -1;
       if (b.name.toLowerCase() === "lords") return 1;
-      // Keep original order for other resources
-      return 0;
+      
+      // Sort other resources by rarity (lower rarity values = more common = should appear first)
+      const rarityA = RESOURCE_RARITY[a.id] || 999;
+      const rarityB = RESOURCE_RARITY[b.id] || 999;
+      return rarityA - rarityB;
     });
 
   const {
@@ -347,6 +351,55 @@ export const Bridge = ({ structures }: BridgeProps) => {
       setResourcesToBridge((prev) => prev.map((r) => (r.key === key ? { ...r, amount } : r)));
     }
   };
+
+// Component for Max Button that properly handles wallet balance for bridge-in
+const MaxButton = ({
+  resourceKey,
+  resourceId,
+  tokenAddress,
+  structureBalance,
+  direction,
+  onAmountChange,
+}: {
+  resourceKey: number;
+  resourceId: number | null;
+  tokenAddress: string | null;
+  structureBalance: number;
+  direction: BridgeDirection;
+  onAmountChange: (key: number, amount: string) => void;
+}) => {
+  const { balance: walletBalance } = useResourceBalance({
+    resourceAddress: tokenAddress,
+    disabled: direction === "out" || !resourceId,
+  });
+
+  const handleMaxClick = () => {
+    if (!resourceId) return;
+    
+    if (direction === "out") {
+      // For bridge out, use structure balance
+      onAmountChange(resourceKey, structureBalance.toString());
+    } else if (direction === "in" && walletBalance !== undefined) {
+      // For bridge in, use wallet balance
+      const formattedBalance = parseFloat(formatEther(walletBalance));
+      onAmountChange(resourceKey, formattedBalance.toString());
+    }
+  };
+
+  const isDisabled = !resourceId || (direction === "out" && structureBalance <= 0) || (direction === "in" && (!walletBalance || walletBalance === 0n));
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleMaxClick}
+      disabled={isDisabled}
+      className="h-9 px-3 text-xs"
+    >
+      Max
+    </Button>
+  );
+};
 
   const addResourceEntry = () => {
     setResourcesToBridge((prev) => [...prev, { key: Date.now(), resourceId: null, amount: "", tokenAddress: null }]);
@@ -654,22 +707,29 @@ export const Bridge = ({ structures }: BridgeProps) => {
                   </Select>
                 </div>
 
-                {/* Amount Input & Optional Mint Button */}
+                {/* Amount Input & Max Button */}
                 <div className="flex items-center gap-2">
-                  {" "}
-                  {/* Container for input and button */}
                   <div className="flex-grow">
-                    {" "}
-                    {/* Allow input to take most space */}
                     <NumberInput
                       min={0}
                       max={bridgeDirection === "out" && balance !== null ? displayBalance : undefined}
                       value={parseInt(resource.amount) || 0}
                       onChange={(value) => handleAmountChange(resource.key, value.toString())}
                       disabled={!resource.resourceId}
-                      className="w-full h-9" // Explicit height for alignment
+                      className="w-full h-9"
                     />
                   </div>
+                  {/* Max Button */}
+                  {resource.resourceId && (
+                    <MaxButton
+                      resourceKey={resource.key}
+                      resourceId={resource.resourceId}
+                      tokenAddress={resource.tokenAddress}
+                      structureBalance={displayBalance}
+                      direction={bridgeDirection}
+                      onAmountChange={handleAmountChange}
+                    />
+                  )}
                 </div>
               </div>
             );
