@@ -2,7 +2,7 @@
     "name": "Realms: Loot Chest",
     "symbol": "RLC",
     "description": "Loot Chest for Realms",
-    "updateContractAddress": "",
+    "updateContractAddress": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
     "defaultIpfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW",
     "defaultIpfsCidOverwrite": false,
     "traits": [
@@ -847,11 +847,6 @@
           {
             "traits": "Epoch:Season 1,ID:Eternum Rewards Chest",
             "toAddress": "0x189387405b56937b67d1cdca9ac24f03c78d2ac0678704970877cd442a8bc95",
-            "count": 3
-          },
-          {
-            "traits": "Epoch:Season 1,ID:Eternum Rewards Chest",
-            "toAddress": "0x18f1a5171cf91eb2c8075af1f9e29a2890aa16037dff87c3920ca6307b1d199",
             "count": 3
           },
           {
