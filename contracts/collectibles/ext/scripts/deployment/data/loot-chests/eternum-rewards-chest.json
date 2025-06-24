@@ -21,7 +21,7 @@
         {
             "traitTypeNameOverwrite": false,
             "traitTypeId": 1,
-            "traitTypeName": "Type",
+            "traitTypeName": "Id",
             "traitValues": [
                 {
                     "traitValueId": 1,
@@ -33,3389 +33,3389 @@
     ],
     "traitsCombinedIpfsCid": [
        { 
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest", 
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest", 
             "ipfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW", 
             "overwrite": false 
         }
     ],
     "mintCData": [
         {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x13f009266a1d3befcbc9e32a7b2ac4270c6bec9887b61cc24e4ebadaa8d8c43",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x15d9023ac1fbc6963c0ad84e3b98c47c6ff90def416e2c21f7b0da1759e4546",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x165f4a1b98f2e156c05e439fee69f9929bf7163195ada1e37c7d5885f7ed638",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x218dce986a928b5cdc309877037f6b59615fa025348d6333f85d349c78e8c00",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x22225ebb7bee715044c233f977f47a16738e56d3d9381958cfe11476a24cd6",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x254dff075e6d9c73a9a9116861df956b60fcd87e9832ab54015e49cad28cb70",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2abaaa087dfb839e12338b01841f228c4b28a82c300ddb4f426747e5f9439ab",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2e4727dfc9f4a6a0c8cee69c6987f487637ccd5e220808fd975bf267cf70431",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x32d083f46cd40ed9429fc040412f402a710ed44c57d9a6574edbabc71594706",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3a285af8c8fb7115ffc69f0bb22c82e1cb5e0b3101c811d51ba8bf9848302ea",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3dcc1ffd8e9059d072a0b6573b9a3121c617082b12fba9dc5692d949eb304ff",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x427fab88f49f07dd490c892651caa7205a813270b882a09b27073c94cf44bb9",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4364d8e9f994453f5d0c8dc838293226d8ae0aec78030e5ee5fb91614b00eb5",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d42009bc443404bc044ba6bf87a0224c760991d533bd98b06fe0092ae21d96",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x629c702d3afdb8154261510f47dfc0f2b4310daa0875dadcb64da3a5af389d1",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x62d69c12007e40bd6689499829bf5ed56a5908ce307bc5bd614fc50f299333b",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x643bce119f53a1ec83f57c4c42f694659c2da543d6f8a85b335d3f4bef12548",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x654b7c89c08cc134a28b877c3b1a498bd117afb488583e85c2e4d8672053765",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x689701974d95364aad9c2306bc322a40a27fb775b0c97733fd0e36e900b1878",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68fad6c2042939ed25dc63998bc56d6c6a28150ed513196db0314a0daccd567",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x74a62d86fe4e500a640c2e82775bbc15f1565f2f8f557718e6628f9099fd488",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x761147d4280e9c8249d3fb8eb8a36603a164aec9a1b29ea608da12c8bcc04c6",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x761d521e73d363b68a82537484b7deabf08225b75c300c9f98920daec22871b",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xd180062e736f295a7ba3201a9bbb387843beac593b7446a2a37f4d88f1a0a3",
             "count": 18
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1470e7181aa839f4c02e82b5826345e6264996afed5094caccb183f240998ce",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x193c90acf61b6ae5fa490935d4dda874982fa3515217be73c31cb8be156f269",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1bfa7f1ce418eac449d64b3b2888fc5e0315b65f9f749c95495342ef1144963",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1d544105dc01738b3cb1939aeda781545492bb44a99c858d7df601af319ca26",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x21f15400c64ea638066848ada8f0cc2fca0bcec0d822e802b4a47e2380333c6",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x239b3bf88e7cb0989708395de4da28e417d5a3dfb172511033e6f99014b6e75",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x29a6a0f3c5a3c430f15ef42a701f924b4092ef2dc684355767a08d0fc854a3e",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x39f936b9e72073022fde41e26d3ba97df0f74e1c3c618b54cf1808848b8cc6c",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3c0f67740e3fe298a52fe75dd24b4981217406f133e0835331379731b67dc92",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x419d649f349f191ded9ae98f63627082d2d3bb6888af8fb7cd387ff54a054fc",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4316f9d58440d49c23ae913a613d6de983ec76875c7a77fdd58064f95d713c8",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58b948fe3439a8790c6ec80ab5c2fc54f0f87052f81afb4a5fa86308a5ed469",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58f5ca3b0975f45ed25d2431b8c881fc312f1f032a280ec10c26d2c3afb5320",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5bd1b94e081dc3f4d867d374110b08199ce6f9642f78830753092b793384fc8",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5bee3a70403512c1a2ee7c4ecc4530a8d3c8b59f2edc7c0dbae5794500756c",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5c802f261c3eb2c23936b979d5cd246dbfcfb883c7b4d790ae7511ed430b7c8",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d6fe2d8c63f69ec6e16a77832826bd5843166c35d63c697cbc5c4d57080701",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x657bd5dbb3d5bf0500db47d6acaae7dec56e86a81ea8cdba2e437bbb8a3fcb9",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6638464fe8732b3521122f5073c2f2f34e238f9d078fe05b257a7b204dc80c1",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x688a8bd30026f0a33bf805108b236433e1d3c2a686dde2d602f98c941c61c4a",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a16f4a841a743df1a473e3b716dc6aaeea9bd477f57abecf522f6695fa78e9",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d969ad83f87efe73495a095d7437c64bbf55ab1c3eb7f4d0f1c1ce3fa2a5a0",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7fb814c0334ef5b644932912e780a53841803c5bf13d73933c7c844b53ce538",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x8b95a26e1392ed9e817607bfae2dd93efb9c66ee7db0b018091a11d9037006",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xc9cc60add566d71b3b563508fad22b75db93eb725139bf94aaa5a15ed45704",
             "count": 12
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x168708173fe2fc6ed1ed5b585ccaf7c025dde33b3670667feb0aac9061302d",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x16c8b6168e8853b6bcc67f046f67d37abf214eb90172f1b184583d46541ed68",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1863b22b523a41a9b9b6cb72c8ff17b7f05a0104ab4e03fecf38d446e01ff5",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1f1e541246efe1380f211a4d3df73a87b6fc13b5651a0016dd418d67280bf11",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x24a10c271899fcd309889b37a46fa99ed1f9b3c32778acd4fcad930c1394940",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x253ca280e4118cb1c80f6c9ca05f8f6841dd1eefb813261b8a8699c0eabe1b4",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x279e34cf34e2286f44521aa9c624e9f76665d09fc69bdfd485e78e008db411a",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2d826edd7dc8e56f51b09cf2db0a5065a9d1bda8a60a16df82891b7c239b091",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3426a93e228d1b5824ba98d3eb6881bf2289104693abeb538ee6aa25d2f13a5",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x389a701a79f1d62f160dc991d98ad14f122b79e54af68c5eac9086b3e93cbb9",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x433a8b2efb9e36a80a7baa009a3778e887ad0de1790da5c0af06fa152019bec",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x43c79d6d5e3554cd50d324a951d562210d2b067d96e1e4381217a13025544e3",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x46069523e9ec7562368a7cb2159060a49c434f0efcb180ba7594930828f4604",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x462f41abee039d1add38de1d5e54ce2f0be1e0aba723ee8a6d8f33b45b1e296",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x47a77dfa2f599dae66b7eaace6b85f8d3b9428aea7bc392dbdc1dfdd44a9114",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x496da4cb85a1644f6e75fad1c2749ccf9c9eeee11c0caf2f9f45341db5cd307",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x49c3ec8b446f1d5ee23d3fae14d8ddbac1ad4115ae1a43526536caaad9c0cc3",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4cb4e0eb5d2bb3b9798801ae6dd7dec7ed774caff8a92e5ba16ff4062a432ea",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x50c887c7d76fcd40e842e8c6c844687920454991980e9f334b111f2273e2f72",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x52eaece65e70b394f6907fbef609a143466ee0b861bc339306ab54dc8668a25",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5378be688f31d94dc4f9feeb5ce5eaa8bd0e21c070ae91d93de3b8fe1739fc",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5508fb4bbad0bfe2dd057bda7d820f2ad99a1ed7b81ba5e713c8eb0ec16afb2",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x55b717df2e8d41be2c8f8ded171573237543a6fb6838993e86699b31619f2ee",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x56c3cd5ed408a22b2932947abfdf69e467cb999d0cde0b51d6055baa009b544",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x587b3f2de1b6313e2da851447445e2fe7fb610159c9823fc492c347d2eac09a",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58ff6513194522db457c7f4996dd120f49402e8693f7e1e831ebc56ab660222",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5a719b9c2dd74c0ecd8dab74f14b74e801746b1acc788cfedc7f8788716ce45",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x61458130a2f306b5dd5a2d3d6298bc102d8bf3307b4f73ef1ee213210234631",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x665d63a2970891d7e7eef78c3eabf799b89256df8b247f0243c1a312449c324",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x674389445ce31a136da076301234111262c82c8e83d2ab765b1d0f510933dc9",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x67768824074e064224d5dedece14f2d4c4544cbf74f0b9a7c3e1f77ba675cba",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x69836b22d012332bc3490a1e1e230fc74013f9f118eab1f698d1259e0badb2a",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a347b1d9eccdde0909f37359f18a7cf0e90669c825e30cd8b0ecdd055c6b36",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6e5e0be50e728e1d298ee693fc13fdb16113ef97a7e192e110e5ab9b5263c5c",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x71864626127184aa9d9b1acf71a41b007e024e6c54c16c148084018bdc5f74e",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x778e002f1625143d350c224490c8774c0ef18542152600686f65618e2d208f5",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x77ac9d6dc57cd1c42a059067fdbd5ae5d72cffcfad1e94d4713a94cce280e7b",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x957880ae68d68b4b8aa491ce1b65439a6539d546850941fc9a54e255ad64ae",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xa7cf6ec8701d810193d1384a1a70b812ab53ef7f2bd94fdfe8fb5da8a02ae",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xb1a254cb459212a09367af53866932ad3c28085465ab0806c9a5a6c855fb76",
             "count": 8
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x10b5d0ac0002e7a19713a37c75ebb5e62646f77e7ccc9c690e9f9c20cb8b79",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x14b50e5f3562b72ccee2e5f547319240bcdcc85d7878cc741c8e83e962ae5b4",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x15b75cb3b1594257606399b886c1699a0e2fc8afc13bd11bb7f3b55be23f047",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x172177e70a3e091903ebe09b338fd312dd53704547a283a28ed75545640aabf",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1a11acec660f90bb0820454c6617631a8e35082b720c592383e5b906cc710e7",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1ab4d89531c8ff73cda7ea319b0809f5fef01befbf727c5ba1cfa1b189a660e",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b5fb0ab8b06544ecd809bd4f7c46b9a328d5e6b03791eafca4dcca73b0894",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1e42f205058bfd8b626abb2a01d3082cf363c70b4ad6b02ff02d2099823f81e",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20a75cdff606c0b2931a651530af0255f2e6a4ef0f684ea74f1df76f715182d",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20e24af25b913186c23d81eadb7a60670e20dc7364e807df45590ad77ecc4dd",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x248d31da0fe0d62da557e03a9ac142b3086efb669a08bb9998edbee5c951caa",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x24a70b9cef38952e9fd249c76c266fb937c362fb691a91b94080fb9a8ca9b6",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2a333551b9e8e85c659a9284d26449cb1995d91064c818612bf15219e261484",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2cebd871504df87dc84a2fdc15707b6d831546fae0264d5d66f8b1480b451e8",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2da593bb4a46926994e4b3f086f611b545eeb8cbbd719369aa66fee37a341e0",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2dff02c78f7828fb5ad7619caf4ea830e91ef3b6ce3a97efee681fbfc1af572",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2e1bbc7ab6d4928ba0f741572b5ea2b44f65031ea2ac23685843bfc11b7d3b7",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3122caf3055bf72d7e628c3427b90d17c99ff5d1c51dac1019979897d027130",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3532f42f9945d82d8c40d15abae3589c9faf70f43906a6122abf2f50945a7ac",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3c0267f43d17406f6b17e1927af5c81eca2b5eca76aa7ef4b4884eaf5e193b9",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40722f5802d563004e643b3e4363e076f4ab06a009139f369e0286af5dc6fe1",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x424170ee2e0898ff4fa2fab070421b06a6afd83642883391c64d71096803a70",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x44b357d5df2e785117ea35692868a8f94ff363b7140f36a34eebe4d77ad0e4f",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4569aa8c31f6943947281add43eb79bfbbf999f90a1024636a0a9d44465869b",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x468b0ef7100a857692becc985b0f7d7c0bc70fe536e545d8af38d2a113fb053",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x46bf98286f45552a360cfb1b2d4434b5e6cc02bf2e5a3df872e30fb9d6e9fb0",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x47258a4fc0cb171f0c89f5196b23554c209d5039653787388ed472646e336c",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4811df8f198d62620a7335672f2b31c53dca8603a3de9f351130b2b96c2c1a7",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x48cd209ee4c48d81301ff0e065a6e110f700e79c6b51cfc9db9e945f41c03d",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a28ce582d3b707f3c5d37385fd528953ae10826d00efeaacb554f4d868760a",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4ab7ee5245cdf11e8b49e23203597e8479c2b380f756bba82121067a962ad63",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4bb37841b5f2d078810d0c38f4a4c71314075333846920519ece9b3a76732a",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4db3098f9df0912285138697b688cb7fc9734abdd1959c69bbd77489d593c7f",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4f29c54d143b4d6956eff1dfbd39a22db9d4e85a05fa327997efa6eefbeed95",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4fcc04993aeb945158840fc887eb6bff4c353b1f2114bff19ecd7cbf87d37cd",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x55c7e4b7056476b84259d20d4556169c987750573627dcd9f9890aa53021320",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x57802e167e1c8a3424145a00851fc39796925f08fc6db90d60e4eadfa29809f",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x57c54434905c896cc163358a9057f91b5e3e6a4f60b5a4bef3fdd77c2dc91aa",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58423de388f38939ee36036acd096d89b3ab69d084eccc2eefdaf79d3ae1c76",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x584e7fc6bb6626f8715c956433838b0b0b77dd31f0847d44d55ab3e87e7745",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5c712459c44cd0edcbf5c126acbc72b03d3868774ab5aa8b70994d5aaeced44",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5e2ba2a76483cd9b5f5c6e6167f3d13a798ca1c8afe175f8eccadf1a4e4e9c5",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5fb0363c56124ab1472ca495d3a840f9303aba01f168f6ea1043acb545bdbb1",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5fc7f6231fbafbeffe1331beeb420674845d4184731bce164eba76502c92126",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6107eb26e38827414ef556daef88e03f0f257588fa812dc976a6678efe54d73",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a35f7dc71d805a33a618c8e17927c68bbffb0931e0e28d8b4d91bd1c6471a7",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6dabb94c4f99f782dadd1af4457cb6c1fd29dcbdcc37068cf981076c71c6d73",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6e3a352c5078c25462ee79e8e901f5dd5657e51252de63010ad54c34214e924",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6ee78e9624c12cac8eb6bfd79ca808aa4f309505cbc1e0db1a71584003f5772",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6ffc2a65930e503c2addb4f02e4f2342cd6ae4a22aee2e8e8a2e7a74b76aa31",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x702150abd7903798fb763b6240beeb7fb6c73d7eceb2bb81ae11cf63ee4cfd8",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x71e7d5a6339edd896ee19083fe0d0ebf88093e165727b259d96bd9da9721ff6",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x734c5c344f75e1b0d2662afef2324d60828f9b9310d14e6e8670add2fb76004",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x760bb30c0fb1cfde19bac737d4d184dc238034be602709c89fddfa4c76a7a5a",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x792cf6265c21b922c740dad0c0d4fdb330747833f5d45a155e62557194319e1",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7a47acbd6c8a1bbc818da8a4794d77e206cc5711c81003f8530a38211751458",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7a5d4397d8b361d6fe4dd200745bf34e7f19a55c9b3b2edc518310b8af9c53",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xc2da235e9c6ae24b8b9d771683ad0e45d956db8773f38c5cf271636cef2130",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xd9cd08befce898dabce28da12079b9006b29146471fbcc526e8988691eb9e",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xe3a3846f880489259e9d87bbd185c398058f058020ce49d61489ee2bb8b994",
             "count": 5
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x108b857eef87b5efc1ac140df0c03a2574f9178980cf3bd2b4c7520e0412f19",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x10b685e795f70a7fb32d473878154e38a2668372dfe5d01d6cbdd9309d1be7f",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1180cd8572858a23c90da671dbb46117b0793bbab147cda4ee6d85dc2ea2084",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x12da39656049428c0cc8e2c9b602d902ea5e13e331c92c467cc40510939eb2d",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x139c4ff407c82024e8a9c297a870f47bd996a27b4cb8b72973d81c1b9f52592",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x13f1386e3d4267a1502d8ca782d34b63634d969d3c527a511814c2ef67b84c4",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x147809fc3676630af00be00da7e8137f9c5891a4881714ac806189553100784",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1563f6466d3fc27790a0378548a7b2f63b8ab63a9a58c087523de9cb0a87b45",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1594743d11bfe03cab43a2ff95ec9dd741d1a3aed8de123d2d3f905cd27b518",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x160fcf7b9ab4944c0ea98df811be78d206905cc46d7f9a83aee060e9779885b",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x178b580c4e92eb2d6e89b8b3a3129542d1a9bddc67a0670f7e6cb963f680983",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x17dba28b232315e1014f0846798d7943951af18b6729256834f3684929507c9",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x189387405b56937b67d1cdca9ac24f03c78d2ac0678704970877cd442a8bc95",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x18f1a5171cf91eb2c8075af1f9e29a2890aa16037dff87c3920ca6307b1d199",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x19099db0ec02972471f69960324c8cfbbd5032dab2ec0fd7f624b3a902cba94",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1a3b659af46ab4b8f213db65e2300fa99a5e5bd190321ca529bb413f0e0f062",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1abf7d6d4acc9b4e08a63bca8b5a5e530142e7c65c6eba5174e3ab313ee47e3",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b4f0bcca3b0e6213f475698adef80b2f79c7b4356d56f50400e8089ba8af68",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b6770d48ac7af07478e898f2879b81d44d0fc734235cffc35f5f211a6d4560",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1d17243dbd76bc15bf467c19a5de3f31bdda26fbd5a2571f60983c55522e081",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1e65dbc1b13e8535f56f8411ad8f74be0e3749db0430a6ee4903fb6334b2e3f",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x206c29f6e36aa8319f5fb4482367b2ff0c982f5559bf411b1010346619c3b06",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20a813da9f67b4b5407c49ffd0f69b861b7b5b38f81457365f43fb882a0c0d8",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20a9cb30471fdc6e450c3b08f5a4e28e35f517705982eec71181fa6ee04e37",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20c7f4fe3465923bc2c65857892d195349147354defc1b88b2e6d7741d5bfca",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x22fcf85614f756bbc0f6973b15a0a05d7117db0066915ea723132a6d21efa6b",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x239f6d94104180a040e351ae801602ebb88682fb3d112fb58339201758e179c",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x244a1fc5c84068c53c2683f9702fbcc192c0515b74f2ad0fc2070b5fd9f13fe",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x244d102eb450467626592f2ed3df2026597cfae4926968716a20f0dddacc865",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x247393f2b4f3915fd5ed5acd704248cbd119709ae89a4787497d7157f4553b0",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2828359162a32abbe0eb5d0867068d13398103f1152414f14ded7063cfedc2",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x29a092d0810ef4ad66075753c453d29e7ee3c714bf81fbb8130ffe0412fdd96",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x29a74fee502dd22fcf739af6cca317c398562f6452a899f1591c9181cb97f95",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x29ddbcf81af5ecca42baa5947179ac4ed76eb4728d966753a6be8a1d04d985",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2ab339547198c0c5a11fa3c7ed8297681296532860f6294916b67d7503df36f",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2c6876bc0a283620e2e3a8ec2ebe27a662fba2081c8dd2648e7fba376cf58e9",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2c9253035ab94e8e8f66316650d4edf7b3e3b897250a429a76dd8cc2e50f67",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2ca2bae77044d5646f0fc7aaa0edb75bdfa17a5f62635e8fddf930b26d4e764",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2cc19a1e0e8db1261c545a4b455e20660d2a16e721fa7f25ef3f04f6a762f9d",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2eb8e6459a39d3ac8a2f52ab17084b259beed1f705c0cae9caae4cffe391d8e",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2f38530fc2e7b3338759fd07da4598770718309f23fd4fa861bad74a168d3eb",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x30d411979d5bedbeadea38230fecf08fa59073f32e3735b150caa61c789a9f9",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x320719b0022b475936c4999b3afb45cb1e908bd2dd5652faf1fe6715da19815",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x374c17628ca51defba556976d097d3b30115d33f62237875238ff4042b18c18",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3984efeccfd2bc064ae9b22783a919e490a1152de52ea3ffd382a0af360db9",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3a07d9d41fee9169e283f4a840b41d618355f2eeacd3b47f665e61505202222",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3bf17b1f7bf17777054e50175d556021793f13b2e279ecfc82b407620bcb5d1",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3c85be857ee17ed7745d26731de57cbe0dc4d17aa610fd5f406706020a3ece0",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3d2d4a3b339a5195e53e494782b8b18dac3acb29f3e12f5f1634fa087754c2",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3f30420483002515e154cae9088073e4b084ba119f062aaaddb8b50bfde94be",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4084713b498e0c10e06e239bd19276d2642ca582b22baf1c215f5c515cde950",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40db150844dc372928b3b47e23cb6e240e2c99ddc5381680afd73d777cbd6c8",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40eef43f4d7b9cc357312a83365c3649273886c5394efafdcc9144bd6b86424",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x456395f05593d5fa89480624b150a672ff90014c1f0197480b3f022197a410d",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45b9a4f1d2dfa51438d2ead963cca7e8a65db6091f3b810c021f54b15c8d272",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x47bb35b7f4f645b5336fcedb37184d4477143d2bd976c4b996927f534871df",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4904066378b609bedde15c276c146eecec8bef78566fc42ad6f59e79155c422",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x490736622574f39cd34bec4abc8e96e4e0ff3fd33226d5b343d53e8aaf23183",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a38bea1f6df525401376c07c2b34c8713c551a9e192d08e4d209a5344b0a36",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4aed39718b449423ea37a0b67d434497c1e1c37a752651ea4ac779491de8ce8",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4c2ba6a2ca8ea58208f91eff688480424f618ab27c740fa1e57725d901e6f0b",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4c40deee9eaca9f237362f4e12959afa28cfd4741c493296af2d03a83f3b210",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4d9dfba7f92d24a01ed619f5be48fe53d01deff521caff0b70a9b5be399af71",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4f3c6f0fc6831a21675ba19414b2d778fe97deeab54499a6d2124400898fbd5",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x510302c1e2fd7c33c1a7932b0eb2aeba120008b4c72c32cbab38beaab2fd423",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x57c9e8771c8cbe25b9fe4b6f2dc38b58c492681b2fac7f7af7cf53cf7ad6deb",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x59748c926521dfdac24f3b96c35e2ed7b9d1107db974d3eec957fe2fdacc930",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5a2d43bcf0023b26d3c0a3355c767208241f5579655e3e2b8ef90a86c8c0354",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5c0783d63484f77ef2116dd15b1842e62a5239f07ce19e8b9061a29c7f00870",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d009fa06d1077786a475ce4114486283633f094472dc0ce8e491d4492eb542",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d24d00507d0eb2fc1f58b73c4ed4aea56680ecbba267e33b4528df27d76167",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d347b2e6aa16d62ff2f799df2da2c325dae82e8c9c09104348560b390ee444",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5daea49f1575e1cc73b7c91a0d8db216153b57f7ba3b32b105093414b6400c4",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5db1457f96ae7f5fd1e8c23fc49facc66e824abde92091e0bd43c151f622bd3",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x612c4133e7d516f671b2e43bf28765f1a3dae82ce6ebdf6aaed20f60eeb9f9",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6133ff8b44b57fb4cccb10dfdbfbaacde08c8d69d4616d5b2e0faf2fcf51b31",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x65796c6ba979aad9435eea657a69a8d1b0635476621a529480ef5da94806c71",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x66719119ce0adb54498daaa927192a91bf0b1cc6580ff8c72b8b40fd39cdba",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6758cc56683a26baf0b47441ef8c12ad2bb4f1bd682c0c8bc0b2e8a552e4d86",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6905ec922fa7a1a410c5838dc33cc8c4385a6163c8bf2372550a1bb82c6f359",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a46b6c4ebda009f807399242ea9c066b47929975f71e09b17d71505c811875",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6b525b0aaf7694a7e854f44ae0a4467c84c4e0111c15df7a6e2ab691bd77311",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d75bb3de5462b1d9dcdd2aac04ecf763de95a89d7be318200a602a5bff1992",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6e7b668b292c60ab6e71e33374139abc3335cd90688ccf13f93180ecc1c6aa5",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x702bfee23a451fed0f1aa1a6601341ffcb69940573859acb5484aa56bbfb79",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7208e02b4136070bfb5e47526abf341a5eea27216581341c01563891f38ff6d",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7396875adcd8cea1e7221bbe09103d7970e60054c0bb2c55a9cf8f1f65cd43e",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73ed1c0938947f0350b1499ece30bbdf5ed33eac34fd7736db0a09e5675407",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x751f1aa4ce67a8bbd44c88f85c4ed135e34a74b666e156704d65a85747eb12a",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x75c8fa8a6b477f458ba6537b208547795d5dd0147db2e9b46cea4e256506f4e",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x78067efac939d07bbb3ef0b325958b257a4f63fbba8257b404555187b0fb771",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7a79d36ebb19bd7a314897035578b64f5b7446fe742bb202b8a68e3036460e5",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7a8a8281a5f9409e8defe0c77986c7e5118e594cb22b7131a2daca541911921",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7ad2bc92cd6b25a8b15a96ee69a4a90d9ba6f4e73af7a8a119c792d4d1f5c9d",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7c3190561352604febd257c5b79597c0b2a587d127259b8d3daebb9b8dbeff5",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7c4289fdb440308d8bfae8ebf9c645599d94f7bae379c97c26ce7fa781ea01f",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7c4d03b35e224ac19247c429a203c36ca40653e12d28e696d2674ee61a60fa3",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7d0e048998b29c58e86f00f2a6a570dfcd416ae93b8ec04fedbd16ddbb3fdba",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7d8b70913a2345ebc5e28f28a7831c82f388a6a2b5322ae206c58c00dc439de",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7e4854cd3b62ad9514ccb7208f33960d94bb1a39b081d05b5d89395fc2a6459",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7e4aba9086f4d2e65f2c43dd81979cf90ec75ad19407d4fd68897cd44ec4102",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x9bc2fe35bc8f5046ea18ccc2a16776318cb6a3eabdc8b09364236aac41f9f2",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xb55cf7334d62470f0fd519c2b022772c94cdf7e169d5446f0707d9f7629581",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xcdd9ad959195a0f1a789cdd60cd54c2756a74abc514903b55ab41d9e9a5ce4",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xdd0d687c5a0f5a57bcd94d9d9d6f1434e99128c2d417fd215926f55a230651",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xf3bb372f3ae768b6181b08c1f7ce8783ec7b87096b5f3bf38b51bbb8ce3e50",
             "count": 3
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x10cc45e3ff2203e63797a8e4dee0b7f1edcd3d2dd9157c9a5adc642a04cf263",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x130f4f5546411358697999f9435a4c06d2328ea24cb7eef05e37415422164a2",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x132d9658f349bac4a019ec87bb0307274f8220105a8e43e32577b552980d32c",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x138945182b06dfa50a4f3a754a6f930f46aad70812e3f600898e35478ea5c3f",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x14581602af3c625c6906b278dda41f48c6e9dd63ac1087c90580341593db76d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1483baba3337df2def5f69a069164627c3e4b4b6cdaa5f825cfa45835421de8",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x149ed9117df5f41c03a22532b253baa70cca52a31bedf4f518e09ba9f52c343",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x175a06cf7b34b9169da1a075a1a66323be766f219e3160e4da55ecf234c8c5d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x182ec732e28d0d0e271f6a505022df36e4a7a5fd31a514e4602f66c1477853f",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1a81fce3629496c608d931321a1106356a93eb5a8b28d3d3cc6ca2bc843a83d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1abb8b91e9c6d1f57335ef97077ffc4aad145c254e755619041fefee3ef1c47",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b4f6ada2be78be3c01f9cf5bcf0f8e02af1dd0409b842bfaa59aadd11fbffe",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b6c5878a4a9be9fb277085eacd2f5f94ca61b1f27336672843a36b472957c4",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1d05774f4b488e0103329e7dd94ef5636b33267ff5aecd113db82b7643db366",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1d3ccc3d163319096dc6213408433e32dd5ae31f448a0c8f85919201b7ba828",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1fbb16a84fdcbc358cc6df88e0bff1534f2e5f06d43117ce475fdccb4f53491",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1ff7c29a87ba585d86ca9268c53a97f9422e04e6c2b4c3cf9ee5d81c124d089",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20b2944069f51ebf1efdd586bdeebedfec3b6eba4f3d1fc0013cbc17022f4d5",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x218e8ad493f0d1a307522be6dc51e6045fcfef3cdc290d5875cd1f62328e099",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2220cd2757cb68b4e7ee28b233a331222ec9ef96336c8301195b61b904a6c30",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x22d4cc1e3cd7249e758c60218ff973d4cce6a72357a37d94f5664109752e196",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x22ec087151f643e816ea1197c6f3d80d42a326590fc6ed05f5debada7f1b24e",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x241bada53a84914523aba535a9676cd8b5e29120b895d6404120ad352dbf462",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2438eb757734503907a3b6ea70a68b3ac6dd6f91e8c379f907969bbf7c4564",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x24bc77a9405e6000ada29b0e5d3407a9a478f194826bb67c9fdb92fa9f2223d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x256d696f908f2748efcc6931c1bca88f269394ab80b91c691d7916f04af3d8c",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x257cd13653842e6da55c2c8ead64c201e27cc72371781d09537bc13951ffa2d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x25fac6c17c9b814bcdb280538dfacd6bc6c2fa2a2f1803a216600dae78cf141",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x265bdaef91fcb59b7cabd1b8a2397e6f074eb1822a90f3186baaeddadfb41ed",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x279fc7bc6cf0fd161d992929e73984233f738d73190d741f5510374d1d0459a",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x28da009a2bd5614d730eb7fc942d66bb2a5541d7bbf93cfff9de5f7e6c31e25",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2a79b855bedb395a40e92957f2b5ba458c46b2df8a5542c542913a8fdb85d57",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2d06499b3c2bbd7b40a2431bd90ca640ac3fdad6d919bf4d4f5417fedd0c458",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2d519e871965d3512b1f6f062817d828b2d6cad2cf1eeaef151e6407980cc69",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3009c014afaadff6555238badd30549a9b56a75b3b82f819084044fb6ce505a",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x328428195256ee42e7f455695b155b89c7dc129122d5e110eeb2db9579af0a5",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x33da6ced4ecc5023d0b37405212eea558770ad38f56e8adc160fd1d080ac4ad",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x345c3f9dc242465cd15b026f47587e6daa9032369296bed9d167370afbbdf29",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x352f27eb30ab37338f2c065784f711a866f20a18a979f314539c8034239b373",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x354adc6339b82d14f6ccbd0ff9f8eca1c0eae2e69775ee5d155b0c293ea03f1",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x360dd47196ee66a2bcf6925e4047648e19cb0dc67cbc677865cd49bcaebc6b2",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x36cebc017bd2281d0f8dc977995146e17bcedb2c8fb273572dd5c1d32ccec2f",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x36da6c2a0e8735e831cea0cb5f88fd07470964cc31953f671a4f05793391b94",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3794259833a4d39fc711477a984e986c1fe843b31da71995728fe447b93b494",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3951540f3532e5c442cdbdaa8beb2612459bbc5c7846d1444cdb42df2c07374",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x39bc2e882e10ccd112e4ecb8dd292b05474b55a60653f6206a409d52545cbbc",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3a09a1931d7334f6a64654cf4a1eb2ea5f125df5433463f2ee514c73a8ae192",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3a27545e2847bc8dec91961f0baa4490a9504a07c3eec6c2ac6142ad17474e0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ad390b29e04417cb1e82a0e52f3312acb7cefe2b394d445c3e1bce3b77efa2",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3b318c215e22262cd9a5accf8a97bfefa0805dfe03ddfd370ed4db2f5f50e82",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3c0ea11325ea975f4390f3c079f4250045a6c71bd4008d753cd6ad1afb69105",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3c9bae0544b1e03460b58add440fc04329c3dabb8977ba12ca5a13237d5d9fa",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ced97f429ee5bdc4b7ec71b65bf8b62c391de87f7571ed03cfde7194fa2d7b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3d7612f6e18a00070807ef2d5aa95a276128e27f575c728aa4823cb536193c8",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3d786f5b104ed05c85c9a2187e3a9c0d03adbe9ea6d1d8ed5931a598829b5b4",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3db1176a4cbed703db976de406e51ff06c383e066b268df250ff35e74a210a0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3e0e982379d7fd647203ece83d8c3514d234bec3ececca02e22c03318450183",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ed346f319b16e6ab01c5e1f32b7205bfd5cb3935bf6fe600ca3be591d4a727",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3f8c515ea4213746e878a04bf144bcab5ed624bf3c5fe0430ae8b9383c7a6c8",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4000d6a4498ec806ffa9d1e6f2e494a88ff526138110e01111dffcce22d7363",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40e7788801347b243bb3873a1017ab4b2a6e850d2eb1103923ec8639e361b6b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x42322c1fce230b1edb355cc66032647148d0eefe655d4b330a549f72ae24de3",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x42f66a913d63ec80482708f26bdd24a245b5e3818cce53e79d612d2db9479c9",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4304bb59ef88781db09e2fb648d0133f879a956ce4a81934b4910ffa0176aab",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x43adc4e78f631880136221ae69c127ea7f01d4340563efc5be51c5b167f0895",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x43b93fe697d0caf6211323251c497f4da56bc59c51183b75226f50d6169bbe2",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x44df3a081f4fc6f812c01bd0a72e84d888b1ff5fa87db94eddcffda513949c0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45512eb663110b832188e6e9efca6b7b98044f30fca334eb7395821fcd525c6",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4573a8da39136f1ccaa0eb7d05b4ad524b32c1c64ea1fdfc13c7c582e15ac93",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45dff80e45bc0e7cfeba39b235e8e755a77f180fceb9ce7430de50f716757dc",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x467a1a3962d8fd45809d8fe518d9e262780e50aac9d2c6b364b01db2e58b244",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x46909243c9e60d13b647de9e5734c14baddd11624e82bd2cad816af5a7c9eaa",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x46a8868178fa8bf56a5c3b48f903ab406e5a324517d990af786d5ab54d86865",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x48024abcff30f85e34a27bf5d32aef6b065272b6916da2345dc1d7f5d792c79",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x480aba724c31f64e490c55c53409f7fa79a9ef24771297bed03ec2d30c89c25",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x48e13ef7ab79637afd38a4b022862a7e6f3fd934f194c435d7e7b17bac06715",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x491e62ba28d244197c770fe27a2f2125fdf9b8dcbfad5f6297a85b42e53d23b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a100384c231058476dc24210984383b3b89f8faddfb0b9dda325ee9bf8f765",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4b78406193542c74c5c71f6dbc136e4e7cdbd9ee35898b67d5381d801fdfc49",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4c1f44b30955ab30bbd2a86291a60f86640d1f2bfb9c006f272d6609ad9a0b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4d4bd3637eca6a81b8dc08ba35e5cb256c518728ac9959b8db4fe068d2da911",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x506440ed14e9d04b8bf4d595ab10a891cb9d9af3c6a09dd5ca57dd2effcd191",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5144466224fde5d648d6295a2fb6e7cd45f2ca3ede06196728026f12c84c9ff",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5182d69e155054d4852c775f3da3df704fd12fd77ebcc97b0a4ec3d619f60e6",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x52f7bafa6761133f18c7df20d9dd84379f59481e84a4076d42d20e2520decb8",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x553bbbe1b7731beed6ad2cc16e5668adf4068ed424907c91bd1734c54b8b448",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x56a24c95435b5574c571dd3b84e80fbedb90346f290b0d1425dab74fe052361",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5721142e509fa273c47f67bd04ce630d5d517612ba39f6555c2b4fbdb8f774b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x575f85ebb192e2b9554bec83c82c32d0fa683d801321126381586dbe4b5002",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x57e50f869814e15a97ae0002bcf689eb71e03ece984419c84b4b68e4df9dfc0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58ed374070fabdbc81825c35b1de6d92d34aa361a4f80a2c36f1238b2c2a983",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x593c4894a5773f2d5765e6f2977d996a12e968c86eb5ae98c72bcb26de2d670",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x59d3482e70226970ecae8b87a376f73057c01cc33e919e41460d2ed328a56c6",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x59fddaca731d7900897ddbd475d81b404a423d87b68a198c776111a610d92c3",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5a2a4a94ea13f89605654001fc69ae70e6ccd91d0891727e3598a0b7f713901",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5c76918b723ab4fa73dcbb646ce7db847abbba8e790e77875b8774508acb2dd",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5caec3ec88ef8df11bb82c026e10dd95579417dc4d8a5ee996a5fbad7e87f5e",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5cecd3c8d31ba919cd4ab582a255f9314357e8223a7468f56a73a3b1890ce12",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d76ca9272d9a59b22bf46f9a6390d88b96e96d0df76f5242fced985cdb4e58",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d819beb6310231b3ddba1a17875d075942e88f8daeac24e111a9a7ea89a70b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5e62c8c71dbe0edd12f736f4b6fef1cb15f4f51697a51596cb3d29cd6c6e379",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5f16e2de9bdaab6e531ae5f6f09204ceeb2826942f9321d73f247f0aceb5b52",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5fc4951b0f663d9536ff30848d49c071cd7f06971c9c5c22fee8bc7dcad1990",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x614eb06b1d07449e2117a6e7e76490525bddc6f0e7e8c935a674cc21ab37753",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6150de19ca2323cc42ab06a3591d29181075e3b4a8f525732f48a3ce92b8efa",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x61fbdb08fa68ce6d3e171095405b830ef1ae233d9878b5e91c92e27612ce9e4",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6329302b5bdeb622e0034d9b50fad7322379af33ea5dbdde0646181fee84f8c",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6338d7043dc33300cf170bc9443394ded0be6262b8cb30caa1aa8f9c7599889",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6366b6bae7f1b122cfb016a6c637205674613663893fb84b3bb3a8bf6956afe",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6381debb1ce2b0f31c13254dbd54505a4b317670f591d3ad3f3c7e2c0e6cd72",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6503fc21026e33033fa396b64336dece11aaa056f922fe6553f89fdf56003f8",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6513cb8b8e4e1b14a09e4dd12b6f2b0e4661b111d44ee9b2f51b936791f29aa",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6684c48706e8cc257ef5c02114b8271747da4c40e380d6f12eb1edb1243d342",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x687623d2ef78af20da3ba302d4a123e249bdc3f075c5f92abb6b886f252cf3",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68eb241f8c9870089acdac7dbbd487dfbc3520cbaed347a8381de926ac42fba",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68f33cff4322aa64f481ca709b9fb3f86da80bd336088c637285e9759c2f0f0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68f84ac81fdb5dcf6a2911cae4d2b07134851e5873f25b23c722a192a446157",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a901a2f73ed5aa719fa00fd07978c92f5161314aef3fabb1b4ca11e2b5dd2a",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6bc90157f95ab7446ee252dad1daf2d03bdc6e39c1f853c7d9b08ac3ef2af44",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6c2ee7afa29fff2f3d4aa159333619513d2b5f52c89ba1b98c5160c76fdeeff",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6c7baa0f7fd22b8ab450b354bb1521adadd97fd2bb8ad4c083d51ee47d180f1",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6c8e293358f24769454bb8d15c3a67c6e4e49703cca4eb9f4f62ee659926bfd",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d47c2cefcaf8b176a9ae304fc8d3fed8567b9233b8e67e019052e429933f24",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6db4e1299a9cfb770ecd9e3b587989c45f1666336e53c584a2ae53a9d1018f4",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6dd8ae6e37116eb406a3453d2cbc36d390341da507f3035e5d56270be80bc2",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6ed4b727bcb51e12553e40c981936916e897a027450adfa7750573637753f4a",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6f03e397802c01eaaf323c9dc0d162944974b9f14825bee440ec2b19108a79b",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6f3a2209ffb1935df69a83f0478f1af7d736c4204e07eac9cb704da545cf2f9",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6fcbe1d3c54c8917a1925d2190080fe81aa83f35bc60316976c9625f8c0ca6d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x70860737cc4db275d62be932ec1d1d10c8ff69ef4830e25e6477ad51ddd852c",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73e5462def760f6655040c9dcf0aa68f49870e893c012f32de44630c28ade72",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x76305eafbd474a274cc86cf3760346b6cdb8b1e4426675976890f3c8b82f8cf",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x771d322f7f75dd486742a335a9503a7f7a6791dd72c175177e376d23fff75ae",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x77faf03bf5302a9e728a0da4c6eb7c6d4dff734a39d4b0bbcb9f79fa5b0365d",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7981bb369b14a7f15ca0cec03e3489f5114da16831a6153b19958921c8d9cb7",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7bbde03efc9f0390bfc2d4475469b4f7a25ea908350c3e26e429d037523d4d1",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7c9f022ed5a503d3117a52a651409bf01dd8fb8cef5ba9117451c746a92ea40",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7d1c9cd691dccbaf04c1d3b60006c7d26e45b72a4cf8f37c1d59b4986bf979f",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7e20d70b299b74446662846e1cfe263eb37f09e299cb007c9d250db593b4b14",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7e5f1258ec41badce63021bd3f76ec0e599020928a7a73ff30f2cc81d5b85eb",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7edcec6c41b9c169b6dc2f323c9a370ad4a206878244e61185baa36418fbd11",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7ee59ca7d02c6f8dbc27f770a51a5e645f82539d778d9677d96f0118bd340f5",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7ee812b42ab6110406f2355c2cd8ccbfc5a84e307f036776a7ef888b153f347",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7f759bb75ea128e920f706a2bc07d289a202dfe53d3ecae22485ff37340bf6e",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x85da06d2e4c0afc32329ef00b894d4acc5e2fef1079364033fd2969c39ad08",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xb0a06650cc675d3bd1c69c864eeb67c8f7e8269cadd3b187dacd78d7d776a3",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xb5df23bbbfa318589e7bab530e1007927c176a08b33dab43f5e1621752adeb",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xbc73204800ca52a01035a2e58ff6fd3284f5edcc54912393010c014ecc2d9a",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xbe3562be143ff478437aea1518e172c42395b8c09dc3ac000927bbe8896f6f",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xc017d598ce372e1fc374e036330dc0c46e9833da7e6d677cc360fa0d2ca5d0",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xd47d20a82c3b9901c15158ab31b4404c8fe8dd0a499772da26a0c792c0cc79",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xd8336258f20c80aac993e294c644739d45cbdd37b0c7b74927cc941abdb0c9",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xee0d8238b21c182d16de9055b15493e114499a970bad27d2ecf087e1a499ee",
             "count": 2
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x105970df1c70839645ae52b1f919104dc5557131c48ef12a36cbd8b23b27ec",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x10b37f34c9a9dfc6e73b6773d9dbf33a155be322c869c7855aab784a4daf1a8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x10edfe01b14bd2ac208ba55c33d97d5099c115689d4269c699579a057789611",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1234e0ffd2cdd8f9fca39d57a10a4b34eb8e7feb327b20ed458ffc8f4505a03",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x12666fe3326288fe6ea7bf11772337b3a42814b590d2c27c4c58071b811754e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x12ae87bf86dbe0028cf65d8bf55b27cb6a21cc3834a683fe20b87cb561f5405",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x12da567362fd480769f875e1bf7681f33d143acf46b3406f9918538de89c0bf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x131b72048871317b10fecaca3d4c7b03f2bc9cc3f2f8d0aa4b6603acfbdb02d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x137c6285452d59b4fc4d1db75ad0dcf3b5530dc62b8cc8bc568a03db476770d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x139ba54f1efa182f2f26cdc0d0af866e139a625fe5bf69cb32422f0467ec4dd",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x148b6327fd373156a1e7030d085211dad6cec1bd5e42510ac00cdc639db533c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1630eaad1dc789433e54cbcaf7ec1f3cfeab8cb7c9cdf2e4b9183d442d5f673",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x164ade982a515f9b339873ce6e5b0293a0560eba781d6a8b24d500534168b1e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1660b3b0cc5749791daa7c168269c53feae86f601a0a5a61dbcf48511a04083",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x16a582cc0a6e86dbf4fc1c8e25171e454255c1e08e97c19db3e669968b83595",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x16df0719489f82b184d762cea6389c07e05dcd080d48fe3827bfd8a15302993",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1783f0133d0044701b1e9cada98fc08142c436e22c3928365f94194662e9f4f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x17af02acba2d303f41c1158ca18494a4070310157cca118cbfb2de219a805b8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x18c34a8e6a2e42119eabcbda560f5d5dc8aa7e58d730b7ec28a84474de3c616",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x18c48d5ccb255a210d3f2c25db4817ce5a391a33528105986586fbd722ceffc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x190542e74613f661456bbc2d709e204d082df4e3f309c395444d1547bf1ddde",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x19c3d788d1baa43d4192cf61f7b912b134dc62e9db752e1cb07a76a602a0c88",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1a07e017bb2d73d5fb6afc50e5d236f064cc822cb679a6ffee0f89db8cb30bf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1adc874a7e1f69ab0b89c955c09c34342bde7e3a829f23046b97dfb276f9d18",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b4124469cd0b45fb286179c788db995716fa857f7412b90f67676487ff1c5e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b78e30a236fbec10dffbfc7d4042f6e4e9dc82fcf26481df70338c4d735be1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1b87ab2261d431e84d7f38a9e4a84a144cd563da6d2c1ea56fcdf68e855242a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1bcacc8ac18c9eedcfa63a2e8773f269ee58bd536da41451248afce4ed4b389",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1bf3acfddbf8142989b65894ea4dce1756194b49e62d74d27ca18337167fc4b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1cca8f11de8b2e460100b396c0e4caa13058f21ded5df556975cd5479b70cc2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1cd262bd5f03996c76e8769141837e865b37ed5779c9d8aa43bba360f532f96",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1d3d5fb391318bbb9388558645b38c8dbebd406518db1b6d64d6cdfa2d2bd2d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1dec789fff2ce11c9814ab66d76ff6cd5c98a992fc763cc9bad53e18de74f14",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1e1fbd527fdb6af95c8bd12d54b0ba3a0caeb61822b40bd2912941bce57c98f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1ee94f632a9dae1d062c3909a0788ad613d85e11f601cb47de921b0d696d0f6",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1f07f0764f5442a6138017e2d70ee4d89955244481b6bf273590a6431a6580f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1f0c0b9adc50e067a61293bbcf912dfbcc42c59cb3a22c29aff1656eceaa867",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x1f577eaf2f0ea1c741bad975bb0dc3f7c40b2f2befa3b01228aeaa69605025",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x200c4cb7842fe12a62a0938f6d0b4da33f7697de26213dced13f7b51435691c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20856d68edf596bf46b7759c93fc2c141e850986b1cd0af5fdebe329bb2c466",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x20a8fef755e570f32b1588072c254eeadc1aedffc924f494949718b9ad49ce5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x218fe7279a7a729ff965bf7435c74996a402f2fec2d3719e1184c3fb68ccc12",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x21ca82fa6010cbf2e74c563f6e5ec2dcef25f6424ff2fc25429211c28cb1b87",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2229d90a2149085c0c7349924ef2649aa6f1afe84cc6a874e1a935cf9745ece",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x224cf5f72ba61c9202a9ebb59fb56990ed0ba0d214414bf5984871d585107ac",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x22e55398c8ce93322c5434a0bdb774c1fba87e77bda09971215a68a7edd0383",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x23160bd01a98243684a0d8e3586a7adcf79b3ee5e845f7a8162dd6a1b6fe0ce",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2397614c15212d44ea63c400bbf2d4b6f1194111e3dd45b13ce369071807b73",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x249f6da26d66b3f84715d79c39a313617374f274664a10c3b75f9516cacbd13",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x24f30b5e6c303657e402485f4260c424bd15d65278b4dfbd5c1ea4ea2381132",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x260e4e57a17497a77e8058b360b62a7b1ede6e63f999599def08d2826076240",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x26b85f857df889893242e83c21c66a735bb532285e3a6006d75234a4b8103c9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x26c5d6dbec4f1f82625b5ade8bc66d8305a1855222fdf3e68d62b5e7b05c547",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x276d750cb0de519238113ca2772ff2e9e0c1658749e8acf1db74ebf0052c20b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x27f1cd170c41f181d3ec7797784ff2ea385db0f12430866c3021ae6cef768b6",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x28033646ef922837fa60b84feb7ead85614c58fd9c70eb93a65926675457edc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x28051348a432b9728206910ca05da3711b034e75d7776ce5de64a0d635811f0",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x28639c90404fc5a5a07e6ad85966bacbb7dfac5ae53239fca01c32c544474b7",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x28bc3edb13bfe0f48d0a57887ef6d9aa5acecb385f9378c00585c31839db80a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2b6ccd752c11cb9f3257d50663ccd274ee894fc35078d0cd28da4713f390e23",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2baa93c042202a8d7f17170c907785ccf140db88a703a34c98fe3ad45a75afd",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2bcc3cda2071289f1b2017f9ca983675bacd23b7976cad53c6f06787b47a0c8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2bd877b80456e3e69ebd967a1c75636cc823cf276599bf35caf9957b2029f9e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2c8fca0b35228bf1b1aa6841871e8bc20db7e8636ca1418201101dd4dbee0df",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2c98fa7918e744f7f250ba093424bdb5213d4a0db613023c2fe9951f6c8f4dd",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2d270ae1d3257cfe43c77eb86e00284ce53cd95cb76012ba5124c240e4437fd",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2d85c07a3f6c48e3fb0d0440215143251a7993ee40b159c35033ca7225f9044",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2db3d70ce70c23fbb10a528bbf5e751863dd9b3ce86fe5384fb2154363297cf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2dd5b984227002bb27475fb3e243a7cb53fd18d1ec6e266899100ec2f25db77",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2ee242660ff1b7caacf1f06b7bf4230988b96d9329115ff04782ddcb6f7b5bc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2ef18e5fb344fee16c540fa8be2938be82e832534424989e030a7f33e7ae5be",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2f92fc09b57e5177b1dd08e2e80f7c1d2609996d5c186dabfb855af664e6bb2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x2fe09b1fac16dca10b80adfaecfcb20ed26e38db376c5727d00c98d4070bc20",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3087ea4fa00b7941f97a3e5174db5a023877ec43ac3273861f59ff3f344d15c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x312ca85734ebb822bd45a59e7f5ed318de42688578fcc54e91bc78c34f3b80f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x314128267f5728fc5e58d816a08c63286e7b41fb787e5d1966498309e840b0f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x331eca98183a68cc2ce0a17eb6d0195204b45631dfd0d4bd662223215ca1696",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x331fb4942bce4d02a773c5e10d8740355dc9140d027d03a4a518b1a22c65e24",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x34af01c1b0c18f5c96961ddc7932ddcd91b6bc13b2df59e4b4aeb61cec5d391",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x34f76f77b06d3e4cebb7020ac0ae54c8891ab9cf11ac886b8964c6042580572",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x352019d1c48a5c69c7f1971105071a79673a35c9f63df1e30fe1d1e96a1a198",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x35693bf703f3f873597839514f8c6d7edf3b45771edf015e36ad10898ed244e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3585783597cfeaf62a49171408018f89b0c4e8c6854c418eb3ed196d39f89d4",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3661a15cfd9988d097451fd7d071f555cd6dd50905ae0435482f9a445851da5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x36b0c836a1af6dd6e9cae5f04b5ebf8fdac8d5a223db7da12d58820c86305ba",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3745f15a97eb9cb3f2edb42abc288ee13c5e5662b1c4bba830c92795b631373",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x37cf413d4aa5acdaee1a106df788dec60f54e99aa50af83c0393ec62799f91d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x38eb51f5bcd7c7d2a44f68ff16535f3e16a3d5c051f80477e58ae309feb20ff",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x39140a3972d272b9ad2beffb62d07be24eb7b153f6155da3fe60735bb625a67",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3953f2c785ead3417bdcb989cc3a25f52740c4e43fde35c6447f80bf63f78bf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3aa35605389593d0515652d714341e541cea85a260d04bea6292371fb2c3f58",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ad3b262fa1e067a25b06ff20883ea2e9c26469034263fd39bb4de73ab9c6c0",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3aebf039d175e3569b4c2f7d45b575b5c957de979f74d6ff9e2892b2785ca87",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3aeeb39cdf3bcd88652bb393c74aecbb9752b3be4cacae9bbaf664f60abe418",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3afb2105fb83826cac6f81b19a374c87e0b31fb80fa015f16ebcae84a0f80a1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3b1acc83f4d89ede41cf2a526d1364b0a1bee05801cfe8820230df7e1d2ec72",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3b8d964b99a97fabdb8bf9668903e301a649a9dcb88856c3722efd075e80d98",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ba75a38c4162a420ed1312ea8f78c58d251fff944ffb0d070fc0403b35ee5b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3bf6a7a277c6b92a1cb0d9b824607d7e02c4ba76a7602be7b050e1703b0ffa7",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3bfb09accf656243d574b90649da1d932c6af1388259527341655b461259956",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3bfea18f075b096e6ddb838744751a5629ae3315353765623ae8174e33229b1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3cabbb292ccd55f1ba8843bb1fba59367ce1d21ecda21ef5b1b1700de4264b8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3cbbc94f0ecff52a5a9b30fed9c6010c3bf961c6ec3a9665a9b4e2f536a1208",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3d3e1de2cff6cdd3533133a5d617d9d0651edd0d7ae49218709ee0df76380",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3d54fdfa8ad901ac443e600d4440ca5fd27d954e7e07af74f8dec05b022cdae",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3dedb0879aef9eb90a423d180b2387c19e647061a7c6021ca98a9e1db08eea8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3e0dc3db95613650b33ecb833a3ee4707f9c4ab384d8b71c43b185848012d23",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3e6a2748208dfa91e134bdf43f3084b8c083a8d16b88f598461eecd2bedba9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3ea1d7c74e10ac45094f601a4a7485e09ae56dc9d24963172af7e1638589cde",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3f181a569cf9ec84bf49c2784dfccbd6e2ea2bc57e43c2d7c75859f2dd135cf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3f33066102329799f31c6de0abd5ee323289e686d06e0eec94803369b40f90",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3fb55cfac873723f2ffb84a0d09404f5870805366988a9f8531422be63e3c2e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x3fe5ba047a86998a500aff3a3c256fbb4326e1f618355d74aafc975d93da95a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40178fd890406b7f28085df0984b13e89ce46b15c4de531fa858f6574ff812e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40179aebda26ce30029191ac45963a430ffe93a036f7bbc6b1e07ab652d39f3",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40784f8e3a9dd4640c25d5ec9aead7cf2855c3f455366bfbb5886d3318124c5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x40bbc64ce7a0a25a9ca7b1410fd40008fdab43941a4d8540dc9c474eaa4fb2b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x42181575eabff683c67ed5d89244d1e3fec1edb1ad6c32bdd29c3f82e6bd36c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4263891ae749c76c01ea381dbbd2c7490757e7a847aeb6c194bc39dda8196f8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x43bb2711d45095ea7ea000c8c9b30d43cac9f9d7f4a587f585a73d475aa045f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x43f52b8ebf732283a9e5417e8a1997451f8fa88c6e47bfa5a74aa379ee37763",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x440920411f041b0750bf902d601d7d8df93414a0aacbe63a96ff79511bfec82",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x44a216d3558d9e2be728a55d3e9988257a98dc3389302073e784c5d2c2e32b1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x454132371d785534ea3ed13c733bdceb379aa7f54154be561f5fce5ed430a8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45695112595dd93f6bc766fa2bf68962d74c8faef1b717891ee149216bf5b9c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45c270794f4b4849d694bbc9767091ea21557544a021ab89e70aef523f1064",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45e0cb03b0f4253dded09c66efea9262d2882d74a9b0305ab19b90cc399f73b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x45e77a6108460515718a21d2fa29e346a088340069d0b6bb12d6af519b697",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x466b3cdfcf870b3c898f506b25d36b738df8d8c2ca8e93c77c400289b153411",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x46f281568a2e847c4f1922ea5637dc942910b22e9289c51aa053bd394708377",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x487dc85f01914c98fad3c956d9de5ec7f38ffc7c656b6fad8f6ebb18338bc39",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x48e525df5bc69a1d8f873e24bbf0dd60e505b359d537e4ac7ace5b702d6c5c3",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4979ff9061d1ecc6b4f5bfd0a00a32b688adff95b57f29e602e4c3506bde5c1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x49a7a9ba60edb47b393cb7d0314bc6628312161ed5a42f418990b49cff6a43",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a2a3f6cbe9b3e1a8e6b5653285ceb110975072da8b3623ddb9e52bae35bc0d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a5fb49cc242e420b049182103668c559cf6b7dda2058b15ba50559f21394d3",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a5fb4dd44d61b447ae45e57cf25db03b8e1ba97b2fe98750d31daac2e406e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4a6a67c6965f00219fdf5a7f5e91c5a32bde4e34589e08925151f2ce36aab6c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4ab0788827ec16bad0a0499f526c70dae0566c83e592273e714f1db7782b1c0",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4ac319f0c415e84108c8badc439f566abbd00c74994144aaee13f2e293910e2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4b343413a8c98f8db27ae7474cdd2621148ea4903eb219938a9e089c4b827b2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4bb08616ec7c137c4350bd66d63cbb86322e0ef38ad7ce499e00e6f62cc6a00",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4bb91ce76fa38565b546c437e87a49324efd3be5e757153ed3304a02fbeaba3",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4bf0d7a5ee1fe9aa05ba97f7f8b3438efa73c637a1e1608942ad34721b237b1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4c5d9dce00b9b42455a55ea2d6d6f503fd3e88fb631e5463e617f13ad658206",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4cf97b51de9a8b0703bf3bf1fc4c819fb69d019554e2f989f0834ceeca35fb",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4f0d6279553f471280313dfcd2336432d56ae43dc8e17ac14e1534204fc93",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x4fcbefb4753beefaa6fd77626f14357c2a3144c32eb5e946326f740a783943f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x510426d4e340d839ce0a7801332b7a140d5477a15abca33b2fd4c0788111e8c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x521e0dd0223e0e90aacd1ec830b117ecc45b06f9c0dbf666daf1ef8b91c4999",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5236160168c00995114e450b3121d99e7a19c9b33d79e50fe9098060a4f6030",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x52a5bc1d415aef5766845153d1d36375f8e2644771009fa3dc0e6f28d2f1aeb",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x52a9d8e4e88dd83ad37d1673e9db0fef5006bfca2edc4661af7e4a4fece78c2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x52c0ae6268bfa690fc0d20b63af73e38295ccef9d3886df707a33d699e32e47",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x530df39788d9114d37f820226f1605856b3fd41d44b15b5c46d3f293ca6abf4",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5325a25dd7cdebec852ce8f5cba39f0aea9b612afea4f4c74dc8a89a1b8cd3d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5351a895b20452fe7440c54d2017fc803c360d7d9ce62f9e2a7e3d663ed9c66",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x53e1cf0e6cbbaf506b1dbd5a1908858d5404ebd50b7353dccee129e5872a8c6",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x53f09a57fc5c6a4ceb2d042c4adb209a76c11af245240d688f42e5079bfccf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x53f48152d18c5f6de330bba8ef94c7524c6e8b140aeb8b5d96f1eb2929459c8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x54b006e10118ba336294a2463f45c643543eff02980d4251fc6d946998df548",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x54f5e9b64e27fb44614c34bee104303d967e45e8f1cf6e40fc97b411399c2f5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x550212d3f13a373dfe9e3ef6aa41fba4124bde63fd7955393f879de19f3f47f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x55a3f6f1ae64cdb9cc40899f7c30f68d985651c1fbc4e492a2cb0bea5e2b1a5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x55c963c85947493544d02120321f5b98a6523f7d36db89f3926e68381cb7882",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x56f9572f468128df7de92de0fe29321b6320ac97bcbcc9732d028893ed17426",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x58f1bbf120a6483bfd2542ea22371e63e2a2b5973dfe135a3b8bfa4ed6c62f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5900c64c6320c2aadab20628daa9696a6cb72eb5ba51b64d80d9dc7981058f6",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x59265579d67fb8d9468f112516df1253474a965d9a1f7d227c0fd027629c037",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x592ba6b7c8103d2a48509ec73ee3f712da877924dea2da9f8789bf87ecef5a2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5a37fbd08f65e5ce484f1ad7a7483d0e455162a6e74b236cefe2457ebd347d2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5a3f56a474c4b770d6edea1dacbf01474e56900a1d1116e09b46975424b1fb4",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5ac1d3b7d6d891daa2326f7c8ffd561d4067a188a3dfd76727cc3ecd521583a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5ad2f5a9431cf0ade1583f44dfc13f166a719bc6490f39f982b73960778d0d2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5b27ef27996f01ae66e32a4fa9c8fd195a93ad2a292fadee528318817b14bf1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5b72b5de8ec8bab4f7c5bed1c3c3f00e3f8606889b2ba7efd837e061b6e3cd9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5bf27494ec8ead32018e5ec50854615edf7f6b84d7d57beed1148958fda0161",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5d6ec05687e63c25227e82b358140dd1d0fb64a4c90f95b76f6a29c94c76c02",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x5ed03c6c3b0a967e0a99f82ac19f477534d853b75410ef22d33eed9bd56c482",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6092fa129cdc00f8b472d7c1f8143d385eb5af08f374e072d06a7d9b6076fe3",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x60ee8b37f6e5b28db056761300e27376ad05d27325647ae13e367c3a6561fcc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6276199fd95d6cd12574bab0d60a5d72539a0e5a6cc7d679501edfe75bce70",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x62bf22849795b88333bc53b4a7ed29e0fad1c28934f900f093bb38ad5d35e80",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x62e37b4f6cb15aa5e8b6048f95be160198bbf10dda0ed40f929c64c52efd2ca",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x62f0ca21835f5fb7470f80eaee41dcf29f7989e14607f023f390fcfb864bc7c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x63a92830bf34e2701aaceef38d9f1a1fb8a74c960a59a709c8ae22071b2be96",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x65aa04d9f098bf6fba9c327710239bf0b6110279335099ce6632767d0a7f0b6",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x65ae1e4fef59825d09e737f3661580ed96d81fb54b646edb0feee1b66601e92",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x65dc1fa350f8d2ebbb7136187d072a4e4513e10dcdfb78366dfa3d091ca842b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6609e78c2e2c91b60c4c3a29654cc6a17fe81f1c18d127600a7fb5f3d101d94",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x665d10f25a27e8cd9f7363f5bc21448524b1000031be6fc7dd8787195091b7d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x674db424f107f2d9b663c96ce566ae45e79471730f1be20ee77277078a2eeee",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x67f0c55207d981862620a67209bbb68ba13b6935c2be91db2fc6b9d330cfc58",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x683801422cf639e59159711d41724464b6e63099554d64cac432a81c0dbc3c2",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68bd08c7308c729b485ed4a8f497100d410b7880020e0572158db4e734f3a5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x68e1fe403632f674e9c6ca0ba5d9a5c0a60bb4ed3777144881761d2b031cb3e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x69a0ca2a3fc4f7cacb7c8350523dcf1ecfe3fa1e354b43ab1ee8423bfb47b5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x69d4605a049197b71baa2da17f2323f81d74caeaa933c014dfb073889d19b7b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x69d563af4444ea7425919db006bd7f4c2da1d9aa2e9d6bcdbf1ab6b0161ab6c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x69ec3de9700e49b174628ee7ab918b5d8b177d9b2ebba832c6c5b4636bd6f80",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a27ed2e89f0157bfea1f944821402d4e8c93ab016bdd99c3a14aba6619c33a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6a5fa1dbcb857afc450390c757242ea13926f534bdc2667cb6ebc5b7804df98",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6aac26b1395ff10d84f1eb76e502b7d2073bd67198ba93618d068afff63e66c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6ad585215ba90170020471b99f0314cc0838b5dbf9a0c4ebae5adbb0948edc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6b57d73b9e554fd81017e622889dbefc59de7344c6546a3e6f421fd000b4782",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6c355508ee99c4f99ea8565dd395473822fdda6e08401c2dd68e7bbb4b78721",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6c6900a2b56a637655ad99558502c583bc7016b0bcc4b254952f5de733d9b83",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d169ede2a6b7ef9ab8d14cc3c9820305ae47e9adef16067d49d84492e3150b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d280ee5ba8aea619d150178f93259dd051bb3d5e5fcc6eb19babe756e9beb9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6d2c1635908d15cc56a391521678eb0d35683e7acc4925196a1f4d2cfdac72f",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6db1f6a1482db7ee035507b8f04d97676f6427f0ff9220e08d0ea34d940f97d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6e3318ec3ddabb59a6bc4d53737cca781c3a1c7f3400ef33292e6c59ae610",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6e417073c2c6d5e306d4d07c7ef870df28675023a81ebf6b2f998260a3fe4ad",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6ec89fd9ad67a902c0f0e409decfe1e2ef35df54a35eb270d3f3eafa20f58cc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6edd4c2fa2e967d6a82275fe66cc7eb47e9d9c0a2ee570c4ea017d1e0d64131",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6f2d6df68a6eb500c64716b76edd8967d0a751666d1f33e7628182fffdc24c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6f4d23271fb7676411f82fb96657a0466d2c7a05abd86884980ffe937dd36b9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x6f82d9d15504d87d527b6f5b9afea7483d68276631b5849b815cc67e4f0a1c5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7065419611cf35e619284fb780ec1eb78783dbfaf909a7872c3348f4b84936e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x72f1575ba02cc5332ed54abc9e6bea5f9a71848cd99b92cbd519f12d8ead781",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73bf155974eb69deb29abc25b39b16f7aa6bbe5ac6da30e602678fa91d0cf10",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73ccef00d690e5e27315ba9fa83ad6a055efe0a9db7b3d6d9498dda21c464fc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73d092e26f326ddd9d3f4a8283352fde48a44c41f0d9e37a67fc5d1b6fb7949",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73d58c6d14344b71e907141e40703c225a2ef36cff1b6e5905050ad1ff106b8",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x73dd781b9ac9f7f225e2bffeef448b0293d7a83b43be02be485e45bc4a88d67",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x740570867918892e0ff826dea870ada0884edf0109b2e80105e1f3be6a36754",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x74f15e95ae4cebaff98b1b163e83f95153278e8d06df74d685fdb110fb432ca",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x75d47f10c3b073f5dc8a67515c5ee12faa0f83c0983bb01b6aeb029c6f7c157",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x75ddd9c20afc8b23fa20b0084146bfb1d0a1d122b07562c0a136c34977d206c",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x75eb0e4b04761bad8bd40aa2f9e42a05555ba0f94e0dd62bdd5bc7fd8bebd21",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x76240a237f18746594786862fae9111584cd4193872329fdf0b1900ec71981d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x76efe06131bce339afe9a1655ac3d36f373db7d5deeb238f9d1cd349158fec9",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x76f7f7b4b83389fedd757b185e5fb9eb6107abc57dc08acbd7291f11ec73aee",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x771969f22718f570004bc1883d93c9755c0a636ed74c80309368dffcac0cc50",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x77269681bb36380316c25b22a3ae373fdb234944209f7a0df134c6be3ada154",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x774acf8ba09293a61636c4a84288ef4e58d901c4b943a9fdc2bc171f148f4b7",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7a33d296668e22343120c0b7c6331f72f84be78074122f3c30435b831543168",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7ac28b7960dcadb21dd6ee466797e6965a882913ec2f7a08e2a46f65c84212b",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7b022c8352ab3e09d7dcdc33f421d404350f0c511b86329958dd43109cc2044",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7b10637b15fcb9df7c1b82953b4e6f901a0016948fc8270534db8e5951d52bf",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7b54327ecbb3e38a1448fc740030642bcd5b1f112b492e29e4a5f5abb4b4875",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7c38931c6a8c943f93b8bd6541971cc9106d2b1cd9d5680472dbc77042a8e54",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7cd0c7fa3c942aa3ac0fa0598dd2e066065665c7e3a6e9205fe293911b02a48",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7cdb2cab11a38ff3c14b4138bb7930f27ca06ba9b7e7aac9bb9bfffd2913640",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7da94f0049bc061f0b4027f74cd7f1ff99498f1017c98a329712d54ba5db180",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7e268203c670265e8af497a201d568947db4087438c7fdac2be3b956de73811",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7eb82ce7dfc216aa54ace25261dadd943e8fa8d55b8f70013a91005ac402a30",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7ec3789161ddd9a7ecefa7b07faa0f7252919ed4cd039e89e9691e3910b41fe",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7fc6f596b60c06d94710b7ca3abdd58cecadb191abc43129252383663bcc5eb",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x7fef8a3814a092ca3c34e8fc8c5d996e73369275cfc56715436ead1d46d9844",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x854653576eb09382c948a7bc4e149e904c037cd0b7f38813c76439c9465906",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x867e322442cc8d425e05af07c4261b03e1a7578a35992aaba579724296fea1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x88604e8d267060f580380d84754f531e9ed0b2b46207acd64d3451e923fb61",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x8bb2850a29db1e109a38b547cf64ba8669c18bd4a997a1d9cb8fc376f151c1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0x9f737a384e76576421c66f491a01514e632ebad117616b11a3aaf57f32cbbd",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xa42ce23cf86506695272ddf02134e929762fc2a55d94f363bb313fe0ad20d",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xa4e3fcbe3a76e041421bf2c64fe0559ee44399342a56f35aa09b92dfa9d644",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xab6913bed287c5cc85b605c8c1f661b41db7bc3bed150d4219394161946e48",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xbd1d0035c8577e2aac65702cdf97e75a0a5b93ea8466b76f34b89c3472d44e",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xcac3c0f9f3050bae9cae77bbf7933d2d4d18222619543f14d1ded2132464e1",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xd5fb7d641f6d97fcacfb82c6c78dad7bed726f1603600a06ea93a4798cce7a",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xdcc2b7813ac3ad6871b11a8aec28badf6bde20eb1a40063b22a2d6303d6455",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xe3fa4ce94a149de7ab4a06033b74c3e7446322e5e682518fcff10f5145c597",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xeb493d771490b96e0091c0358318a44463ce1511651321ad166e69d18bf5a5",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xeff03fd36c2cc07cc579a2dee41e9409520de6659789b0727bf948768cb7d4",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xf4f8bfd94a46867b29e51c3672868a16a64d00acd1192d3840cc997f5569dc",
             "count": 1
           },
           {
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest",
+            "traits": "Epoch:Season 1,Id:Eternum Rewards Chest",
             "toAddress": "0xf9faa4514e6db814a42156e717a245e18c5f623cd03ed255254fd5e784749f",
             "count": 1
           }    ]
