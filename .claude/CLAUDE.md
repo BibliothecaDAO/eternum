@@ -104,3 +104,19 @@ IMPORTANT: Before committing changes, YOU MUST:
 - Keep commits focused and atomic
 - Don't commit generated files or build artifacts
 - Always test locally before pushing
+
+## Design System Guidelines
+
+When creating new UI components:
+
+1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
+   elsewhere in the app
+2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
+   appropriate design system folder:
+   - `atoms/` for basic UI primitives (buttons, inputs, labels)
+   - `molecules/` for composed components (card headers, form groups)
+3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
+   implementations that could be replaced
+4. **Replace existing implementations**: Update all found instances to use the new design system component for
+   consistency
+5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names

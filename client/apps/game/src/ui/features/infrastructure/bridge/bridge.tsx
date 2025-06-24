@@ -1,7 +1,7 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import { Button, NumberInput, Select, cn } from "@/ui/design-system/atoms";
+import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
@@ -271,7 +271,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       // Make LORDS appear first
       if (a.name.toLowerCase() === "lords") return -1;
       if (b.name.toLowerCase() === "lords") return 1;
-      
+
       // Sort other resources by rarity (lower rarity values = more common = should appear first)
       const rarityA = RESOURCE_RARITY[a.id] || 999;
       const rarityB = RESOURCE_RARITY[b.id] || 999;
@@ -352,54 +352,51 @@ export const Bridge = ({ structures }: BridgeProps) => {
     }
   };
 
-// Component for Max Button that properly handles wallet balance for bridge-in
-const MaxButton = ({
-  resourceKey,
-  resourceId,
-  tokenAddress,
-  structureBalance,
-  direction,
-  onAmountChange,
-}: {
-  resourceKey: number;
-  resourceId: number | null;
-  tokenAddress: string | null;
-  structureBalance: number;
-  direction: BridgeDirection;
-  onAmountChange: (key: number, amount: string) => void;
-}) => {
-  const { balance: walletBalance } = useResourceBalance({
-    resourceAddress: tokenAddress,
-    disabled: direction === "out" || !resourceId,
-  });
+  // Wrapper component for bridge-specific max button logic
+  const BridgeMaxButton = ({
+    resourceKey,
+    resourceId,
+    tokenAddress,
+    structureBalance,
+    direction,
+  }: {
+    resourceKey: number;
+    resourceId: number | null;
+    tokenAddress: string | null;
+    structureBalance: number;
+    direction: BridgeDirection;
+  }) => {
+    const { balance: walletBalance } = useResourceBalance({
+      resourceAddress: tokenAddress,
+      disabled: direction === "out" || !resourceId,
+    });
 
-  const handleMaxClick = () => {
-    if (!resourceId) return;
-    
-    if (direction === "out") {
-      // For bridge out, use structure balance
-      onAmountChange(resourceKey, structureBalance.toString());
-    } else if (direction === "in" && walletBalance !== undefined) {
-      // For bridge in, use wallet balance
-      const formattedBalance = parseFloat(formatEther(walletBalance));
-      onAmountChange(resourceKey, formattedBalance.toString());
-    }
+    const calculateMax = useCallback(() => {
+      if (!resourceId) return 0;
+
+      if (direction === "out") {
+        return structureBalance;
+      } else if (direction === "in" && walletBalance !== undefined) {
+        return parseFloat(formatEther(walletBalance));
+      }
+      return 0;
+    }, [resourceId, direction, structureBalance, walletBalance]);
+
+    const isDisabled =
+      !resourceId ||
+      (direction === "out" && structureBalance <= 0) ||
+      (direction === "in" && (!walletBalance || walletBalance === 0n));
+
+    return (
+      <MaxButton
+        max={calculateMax}
+        onChange={(value) => handleAmountChange(resourceKey, value)}
+        disabled={isDisabled}
+        className="h-9 px-3 text-xs"
+        size="md"
+      />
+    );
   };
-
-  const isDisabled = !resourceId || (direction === "out" && structureBalance <= 0) || (direction === "in" && (!walletBalance || walletBalance === 0n));
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleMaxClick}
-      disabled={isDisabled}
-      className="h-9 px-3 text-xs"
-    >
-      Max
-    </Button>
-  );
-};
 
   const addResourceEntry = () => {
     setResourcesToBridge((prev) => [...prev, { key: Date.now(), resourceId: null, amount: "", tokenAddress: null }]);
@@ -721,13 +718,12 @@ const MaxButton = ({
                   </div>
                   {/* Max Button */}
                   {resource.resourceId && (
-                    <MaxButton
+                    <BridgeMaxButton
                       resourceKey={resource.key}
                       resourceId={resource.resourceId}
                       tokenAddress={resource.tokenAddress}
                       structureBalance={displayBalance}
                       direction={bridgeDirection}
-                      onAmountChange={handleAmountChange}
                     />
                   )}
                 </div>
