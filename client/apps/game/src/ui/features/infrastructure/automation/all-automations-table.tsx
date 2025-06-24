@@ -127,7 +127,7 @@ export const AllAutomationsTable: React.FC = () => {
 
       {/* Global Pause Button */}
       <Button
-        className={`mb-2 ml-2 ${isGloballyPaused ? "bg-dark-green-accent hover:bg-dark-green-accent" : "bg-danger hover:bg-danger"}`}
+        className={`mb-2 ml-2 ${isGloballyPaused ? "hover:bg-dark-green-accent" : "hover:bg-danger"}`}
         size="xs"
         onClick={toggleGlobalPause}
         title={isGloballyPaused ? "Resume all automation" : "Pause all automation"}
