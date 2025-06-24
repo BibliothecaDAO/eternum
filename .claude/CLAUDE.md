@@ -43,6 +43,7 @@ When building features, read the relevant app README:
 - Prefer composition over inheritance
 - Use functional components for React code
 - Keep components small and focused
+- **Tailwind CSS**: Always use colors defined in `client/apps/game/tailwind.config.js` rather than default Tailwind colors (e.g., use `bg-danger` instead of `bg-red-600`, `bg-green` instead of `bg-green-600`)
 
 ## Testing Guidelines
 
