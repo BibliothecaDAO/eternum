@@ -57,7 +57,7 @@ When building features, read the relevant app README:
 
 IMPORTANT: Before committing changes, YOU MUST:
 
-1. **Run Build Check** (MANDATORY - DO THIS FIRST!): 
+1. **Run Build Check** (MANDATORY - DO THIS FIRST!):
    - Execute `pnpm run build` in EVERY affected app directory
    - For game changes: `cd client/apps/game && pnpm run build`
    - For landing page changes: `cd client/apps/landing && pnpm run build`
@@ -70,6 +70,7 @@ IMPORTANT: Before committing changes, YOU MUST:
 6. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
 7. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
 8. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+9. **Create PR to `next`**: When creating PR, ALWAYS use `gh pr create --base next` (NEVER to `main`)
 
 ## Project-Specific Notes
 
@@ -92,7 +93,7 @@ IMPORTANT: Before committing changes, YOU MUST:
 3. **Make your changes on the branch** (NEVER work directly on `next`)
 4. **Commit changes**: `git add . && git commit -m "your message"`
 5. **Push branch**: `git push -u origin your-branch-name`
-6. **Create PR**: Always create pull requests FROM your branch TO `next` branch
+6. **Create PR**: **ALWAYS use `--base next`** when creating PRs: `gh pr create --base next`
 
 **If you find yourself on `next` with uncommitted changes:**
 
@@ -103,8 +104,9 @@ IMPORTANT: Before committing changes, YOU MUST:
 **NEVER:**
 
 - Work directly on `next` branch
-- Create PRs to `main` (always target `next`)
+- **Create PRs to `main` branch (ALWAYS target `next` - use `--base next`)**
 - Push commits directly to `next`
+- Use `gh pr create` without explicitly specifying `--base next`
 
 ## Repository Etiquette
 
