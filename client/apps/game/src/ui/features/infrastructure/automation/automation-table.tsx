@@ -55,7 +55,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
   const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
-  
+
   // Derive the values for this specific realm
   const ordersForRealm = useMemo(() => ordersByRealm[realmEntityId] || [], [ordersByRealm, realmEntityId]);
   const isRealmPaused = useMemo(() => pausedRealms[realmEntityId] || false, [pausedRealms, realmEntityId]);
