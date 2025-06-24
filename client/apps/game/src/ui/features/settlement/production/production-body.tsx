@@ -1,11 +1,11 @@
 import { BuildingThumbs } from "@/ui/config";
+import { AutomationTable } from "@/ui/features/infrastructure";
 import { configManager, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AutomationTable } from "@/ui/features/infrastructure";
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
 import { RealmInfo } from "./realm-info";
