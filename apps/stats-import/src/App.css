@@ -1940,26 +1940,29 @@ tr:hover {
 
 .distribution-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    max-width: 100%;
 }
 
 .distribution-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.75rem;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
     background: rgba(50, 35, 25, 0.3);
     border-radius: 0.5rem;
     border-left: 3px solid #f0b060;
+    min-height: 60px;
 }
 
 .distribution-chest-count {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: #f0b060;
-    min-width: 50px;
+    min-width: 35px;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .distribution-details {
@@ -1967,16 +1970,18 @@ tr:hover {
 }
 
 .distribution-range {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #f9fafb;
     font-weight: 600;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.1rem;
+    line-height: 1.2;
 }
 
 .distribution-players {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #dfc296;
     opacity: 0.8;
+    line-height: 1.2;
 }
 
 /* Player points display */
@@ -1990,12 +1995,53 @@ tr:hover {
 /* Responsive design for distribution */
 @media (max-width: 768px) {
     .distribution-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
     }
     
     .distribution-item {
-        justify-content: center;
-        text-align: center;
+        padding: 0.4rem 0.6rem;
+        gap: 0.5rem;
+        min-height: 50px;
+    }
+    
+    .distribution-chest-count {
+        font-size: 1.3rem;
+        min-width: 30px;
+    }
+    
+    .distribution-range {
+        font-size: 0.8rem;
+    }
+    
+    .distribution-players {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .distribution-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.4rem;
+    }
+    
+    .distribution-item {
+        padding: 0.3rem 0.5rem;
+        gap: 0.4rem;
+        min-height: 45px;
+    }
+    
+    .distribution-chest-count {
+        font-size: 1.2rem;
+        min-width: 25px;
+    }
+    
+    .distribution-range {
+        font-size: 0.75rem;
+    }
+    
+    .distribution-players {
+        font-size: 0.65rem;
     }
 }
 

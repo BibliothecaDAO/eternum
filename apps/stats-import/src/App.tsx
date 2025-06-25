@@ -176,6 +176,12 @@ function App(): React.JSX.Element {
               strkPrice={strkPrice}
             />
           } />
+          <Route path="/rewards/:tab" element={
+            <RewardsPage
+              lordsPrice={lordsPrice}
+              strkPrice={strkPrice}
+            />
+          } />
           <Route path="/seasonpass" element={
             <SeasonPassPage
               lordsPrice={lordsPrice}

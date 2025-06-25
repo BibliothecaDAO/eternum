@@ -112,6 +112,7 @@ export interface EternumSocialData {
 export interface RewardsProps {
   lordsPrice: number;
   strkPrice: number;
+  initialTab?: 'victory' | 'cartridge' | 'daydreams' | 'chests';
 }
 
 // Achievement types

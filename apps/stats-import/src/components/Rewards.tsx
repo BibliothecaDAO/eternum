@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EternumSocialData, Player, RewardsProps, AchievementPlayer, CartridgeReward, DaydreamsReward, KnownAddresses, ChestReward, ChestRewardsData, ChestBracket } from '../types';
 
 const padAddress = (address: string): string => {
@@ -6,7 +7,8 @@ const padAddress = (address: string): string => {
   return `0x${cleanAddress.padStart(64, '0')}`;
 };
 
-const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
+const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice, initialTab }) => {
+  const navigate = useNavigate();
   const [eternumData, setEternumData] = useState<EternumSocialData | null>(null);
   const [cartridgePoints, setCartridgePoints] = useState<{ player_id: string; total_points: number }[] | null>(null);
   const [knownAddresses, setKnownAddresses] = useState<KnownAddresses | null>(null);
@@ -15,11 +17,16 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
   const [chestBrackets, setChestBrackets] = useState<ChestBracket[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'chests'>('victory');
+  const [selectedRewardType, setSelectedRewardType] = useState<'victory' | 'cartridge' | 'daydreams' | 'chests'>(initialTab || 'victory');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<'lords' | 'strk' | 'points' | 'name'>('lords');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showCalculations, setShowCalculations] = useState<boolean>(false);
+
+  const handleTabChange = (tab: 'victory' | 'cartridge' | 'daydreams' | 'chests') => {
+    setSelectedRewardType(tab);
+    navigate(`/rewards/${tab}`);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1166,25 +1173,25 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice }) => {
       <div className="rewards-nav">
         <button
           className={`reward-type-btn ${selectedRewardType === 'victory' ? 'active' : ''}`}
-          onClick={() => setSelectedRewardType('victory')}
+          onClick={() => handleTabChange('victory')}
         >
           🏆 Victory Prizes
         </button>
         <button
           className={`reward-type-btn ${selectedRewardType === 'cartridge' ? 'active' : ''}`}
-          onClick={() => setSelectedRewardType('cartridge')}
+          onClick={() => handleTabChange('cartridge')}
         >
           🎮 Cartridge Achievements
         </button>
         <button
           className={`reward-type-btn ${selectedRewardType === 'daydreams' ? 'active' : ''}`}
-          onClick={() => setSelectedRewardType('daydreams')}
+          onClick={() => handleTabChange('daydreams')}
         >
           🤖 Daydreams Agents
         </button>
         <button
           className={`reward-type-btn ${selectedRewardType === 'chests' ? 'active' : ''}`}
-          onClick={() => setSelectedRewardType('chests')}
+          onClick={() => handleTabChange('chests')}
         >
           🗝️ Loot Chests
         </button>
