@@ -3,7 +3,7 @@ import { LordsAbi } from "@bibliothecadao/eternum";
 import {
   AcceptMarketplaceOrdersProps,
   CancelMarketplaceOrderProps,
-  CreateMarketplaceOrderProps,
+  CreateMarketplaceOrdersProps,
   EditMarketplaceOrderProps,
 } from "@bibliothecadao/types";
 import { useAccount, useContract } from "@starknet-react/core";
@@ -13,7 +13,7 @@ import { AccountInterface } from "starknet";
 import { useDojo } from "./context/dojo-context";
 
 // Define the parameters needed for each function, excluding the signer which is handled internally.
-type ListItemParams = Omit<CreateMarketplaceOrderProps, "signer" | "marketplace_address">;
+type ListItemsParams = Omit<CreateMarketplaceOrdersProps, "signer" | "marketplace_address">;
 type AcceptOrdersParams = Omit<AcceptMarketplaceOrdersProps, "signer" | "marketplace_address">;
 type CancelOrderParams = Omit<CancelMarketplaceOrderProps, "signer" | "marketplace_address">;
 type EditOrderParams = Omit<EditMarketplaceOrderProps, "signer" | "marketplace_address">;
@@ -27,7 +27,7 @@ export const useMarketplace = () => {
   const {
     setup: {
       systemCalls: {
-        create_marketplace_order,
+        create_marketplace_orders,
         accept_marketplace_orders,
         cancel_marketplace_order,
         edit_marketplace_order,
@@ -42,19 +42,15 @@ export const useMarketplace = () => {
     address: lordsAddress as `0x${string}`,
   });
 
-  const listItem = async (params: ListItemParams): Promise<{ execution_status: string } | undefined> => {
+  const listItems = async (params: ListItemsParams) => {
     if (!account) throw new Error("Account not connected");
     setIsCreatingOrder(true);
     try {
-      return (await create_marketplace_order({
-        price: params.price.toString(),
-        expiration: params.expiration,
-        token_id: params.token_id,
-        collection_id: params.collection_id,
+      return await create_marketplace_orders({
+        tokens: params.tokens,
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
-        cancel_order_id: params.cancel_order_id,
-      })) as { execution_status: string };
+      });
       // Add success handling if needed
     } catch (error) {
       console.error("Failed to list item:", error);
@@ -128,7 +124,7 @@ export const useMarketplace = () => {
   };
 
   return {
-    listItem,
+    listItems,
     acceptOrders,
     cancelOrder,
     editOrder,

@@ -1,0 +1,224 @@
+name: Claude Review - Configuration & Infrastructure
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "config/**/*.{ts,js}"
+      - "*.{json,yaml,yml,toml}"
+      - ".github/**/*"
+      - "scripts/**/*"
+      - "**/package.json"
+      - "pnpm-*.yaml"
+      - "Dockerfile*"
+      - "docker-compose*"
+
+jobs:
+  claude-review-config:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup GitHub MCP Server
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude Config Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+
+          direct_prompt: |
+            Review this configuration and infrastructure pull request for Eternum focusing on:
+
+            **Security & Secret Management:**
+            - Environment variable handling (.env files, GitHub secrets)
+            - Private key and wallet security (deployment accounts)
+            - API key management (Anthropic, GitHub, Alchemy, etc.)
+            - Container security and minimal attack surface
+            - Dependency vulnerability scanning
+
+            **Multi-Environment Configuration:**
+            - **Local**: Development setup (contracts/game/dojo_local.toml, katana, torii)
+            - **Sepolia**: Testnet configuration (contracts/game/dojo_sepolia.toml)
+            - **Mainnet**: Production configuration (contracts/game/dojo_mainnet.toml)
+            - **Slot**: Staging environment configuration
+            - Environment-specific address management (contracts/common/addresses/)
+            - Network endpoint configuration and fallbacks
+
+            **Deployment & Infrastructure:**
+            - Deployment script reliability (contracts/game/ext/scripts/)
+            - Migration safety and rollback strategies
+            - Build script efficiency and caching
+            - Docker configuration optimization
+            - Katana and Torii configuration
+
+            **Configuration Management:**
+            - Dojo configuration validation (Scarb.toml, dojo_*.toml)
+            - Torii indexer configuration (torii-*.toml)
+            - Manifest file consistency (manifest_*.json)
+            - Game balance parameter management (config/environments/)
+            - Resource and contract address management
+
+            **Developer Experience:**
+            - Local development setup (pnpm scripts, contract:start:local)
+            - Clear documentation of configuration requirements
+            - Error messages and debugging information
+            - Workspace configuration (pnpm-workspace.yaml)
+            - IDE configuration and tooling
+
+            **Package Management & Monorepo:**
+            - pnpm workspace configuration and dependency management
+            - Package.json script consistency across apps and packages
+            - Lock file integrity (pnpm-lock.yaml)
+            - Build order and package dependencies
+            - Version compatibility across packages
+
+            **GitHub Actions & CI/CD:**
+            - Workflow efficiency and build caching
+            - Secret usage and security in workflows
+            - Matrix build strategies for different environments
+            - Artifact management and deployment automation
+            - Code review workflow optimization
+
+            **Blockchain & Game Configuration:**
+            - Network RPC endpoints and redundancy
+            - Game balance parameters and validation
+            - Smart contract deployment configuration
+            - Indexer performance and database optimization
+            - Resource calculation formulas (contracts/game/ext/formulas/)
+
+            **Monitoring & Operations:**
+            - Logging configuration for different environments
+            - Performance monitoring setup
+            - Health check implementations
+            - Error tracking and alerting
+
+            Focus on reliability, security, and maintainability of the entire Eternum infrastructure.
+
+            ## Inline PR Comments for Infrastructure Improvements
+
+            When you identify specific improvements during infrastructure review, provide **inline comments** on the relevant lines with:
+
+            **For Security & Configuration Issues:**
+            - Configuration inconsistencies between environments
+            - Missing environment variables or secrets
+            - Security vulnerabilities in deployment scripts
+            - Access control and permission issues
+
+            **For Reliability & Performance Issues:**
+            - Script improvements or error handling
+            - Deployment process optimizations
+            - Docker configuration improvements
+            - GitHub Actions workflow optimizations
+            - Missing documentation for setup steps
+            - Package.json script inconsistencies
+
+            **Comment Format:**
+            ```
+            ⚙️ **[Config] [Area] Suggestion:** Brief description
+
+            **Current Issue:** What infrastructure issue exists
+            **Suggested Change:** Specific configuration/script improvement
+            **Impact:** Reliability/security/developer experience benefit
+            **Environment Impact:** Which environments affected (local/sepolia/mainnet/slot)
+
+            **Example Implementation:**
+            ```bash/yaml/json
+            # Suggested configuration change here
+            ```
+
+            **Examples:**
+            - `⚙️ **Config Environment Suggestion:** Add missing environment variable to .env.sample`
+            - `⚙️ **Config Scripts Suggestion:** Add error handling to prevent deployment failures`
+            - `⚙️ **Config Docker Suggestion:** Optimize container caching for faster builds`
+            - `⚙️ **Config CI Suggestion:** Add workflow caching to reduce build times`
+
+          allowed_tools: "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
+
+          custom_instructions: |
+            You are reviewing infrastructure and configuration for Eternum, a blockchain gaming project with complex multi-environment deployment:
+
+            ## Critical Infrastructure Components:
+            - **Dojo Framework**: Cairo smart contracts with custom deployment scripts
+            - **Multi-Network**: Local (Katana), Sepolia testnet, Mainnet (Starknet)
+            - **Indexing**: Torii for blockchain data indexing and querying
+            - **Monorepo**: pnpm workspaces with multiple apps and packages
+            - **Real-time**: WebSocket connections for live game data
+
+            ## Security Priorities:
+            - Deployment wallet security and key management
+            - Environment isolation and secret management
+            - Smart contract deployment safety
+            - API key and service account security
+
+            ## Documentation Updates via MCP
+
+            If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
+
+            **Documentation Areas to Consider:**
+
+            **Infrastructure Documentation:**
+            - config/README.md for configuration changes
+            - Update deployment sections in main readme.md
+            - CLAUDE.md for development workflow changes
+
+            **Environment Documentation:**
+            - Update setup instructions for new environment requirements
+            - Update .env.sample files for new environment variables
+            - Document new deployment procedures or script changes
+
+            **Developer Documentation:**
+            - client/apps/game-docs/docs/pages/development/ for infrastructure changes
+            - Update local development setup instructions
+            - Document new scripts or configuration requirements
+
+            **How to Create Documentation PR using MCP:**
+
+            1. Use mcp__github__create_branch to create a new documentation branch:
+               - Branch name: "docs/update-infrastructure-[change-type]"
+               - Base branch: "next"
+
+            2. Use file editing tools to update the necessary documentation files
+
+            3. Use mcp__github__create_pull_request to create the documentation PR:
+               - Title: "docs: Update infrastructure documentation"
+               - Body: "Updates documentation to reflect infrastructure changes in PR #[original-pr-number]"
+               - Target branch: "next"
+
+            **Available MCP Tools for Documentation:**
+            - mcp__github__create_branch
+            - mcp__github__create_pull_request
+            - mcp__github__get_file_contents
+            - mcp__github__update_file

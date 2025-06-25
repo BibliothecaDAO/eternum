@@ -7,9 +7,11 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { initPostHog, captureSystemError } from "@/posthog";
 
+import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
-import { dojoConfig } from "../dojoConfig";
+import { dojoConfig } from "../dojo-config";
 import { env } from "../env";
 import App from "./app";
 import { initialSync } from "./dojo/sync";
@@ -20,9 +22,8 @@ import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
-import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { IS_MOBILE } from "./ui/config";
-import Button from "./ui/elements/button";
+import Button from "./ui/design-system/atoms/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
@@ -37,6 +38,9 @@ declare global {
 window.Buffer = Buffer;
 
 async function init() {
+  // Initialize PostHog for analytics and error reporting
+  initPostHog();
+
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
@@ -121,7 +125,7 @@ async function init() {
             <Button
               variant="gold"
               className="w-full sm:w-auto"
-              onClick={() => window.open("https://eternum-docs.realms.world/", "_blank")}
+              onClick={() => window.open("https://docs.eternum.realms.world/", "_blank")}
             >
               Docs
             </Button>
@@ -173,7 +177,13 @@ async function init() {
       },
       onError: (error: any) => {
         console.error("System call error:", error);
-        // Handle other types of errors if needed
+
+        // Report to PostHog
+        captureSystemError(error, {
+          error_type: "dojo_system_call",
+          setup_phase: "post-setup",
+          context: "System call error during post-setup phase",
+        });
       },
     },
   );

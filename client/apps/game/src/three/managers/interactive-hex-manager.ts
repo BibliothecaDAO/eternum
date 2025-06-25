@@ -1,6 +1,6 @@
+import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
-import { HEX_SIZE } from "@/three/scenes/constants";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
 import * as THREE from "three";
 import { getHexagonCoordinates, getWorldPositionForHex } from "../utils";

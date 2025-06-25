@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/elements/button";
+import { Button } from "@/ui/design-system/atoms";
 import { useMemo, useRef, useState } from "react";
 
 export const TermsOfService = () => {
@@ -105,7 +105,7 @@ export const TermsOfService = () => {
             <li className="text-lg">
               Players are encouraged to review the{" "}
               <a
-                href="https://eternum-docs.realms.world/"
+                href="https://docs.eternum.realms.world/"
                 className="underline hover:text-gold-light cursor-fancy text-gold"
                 target="_blank"
                 rel="noopener noreferrer"

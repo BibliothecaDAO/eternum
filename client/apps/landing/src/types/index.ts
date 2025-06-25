@@ -20,4 +20,5 @@ export interface MergedNftData {
   token_id: string | number;
   contract_address: string;
   name?: string | null;
+  collection_floor_price?: bigint | null;
 }

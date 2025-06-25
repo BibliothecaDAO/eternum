@@ -3,6 +3,8 @@ import { ContractAddress, ID, ResourcesIds, StructureType } from "@bibliothecada
 import {
   BattleLogEvent,
   EventType,
+  Guard,
+  GuardData,
   Hyperstructure,
   PlayersData,
   PlayerStructure,
@@ -17,7 +19,13 @@ import {
   TokenTransfer,
   TradeEvent,
 } from "../../types/sql";
-import { buildApiUrl, extractFirstOrNull, fetchWithErrorHandling, formatAddressForQuery } from "../../utils/sql";
+import {
+  buildApiUrl,
+  extractFirstOrNull,
+  fetchWithErrorHandling,
+  formatAddressForQuery,
+  hexToBigInt,
+} from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { QUEST_QUERIES } from "./quest";
 import { SEASON_QUERIES } from "./season";
@@ -274,5 +282,92 @@ export class SqlApi {
     const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED);
     const results = await fetchWithErrorHandling<SeasonEnded>(url, "Failed to fetch season ended");
     return extractFirstOrNull(results);
+  }
+
+  /**
+   * Fetch guards by structure entity ID from the SQL database.
+   * SQL queries always return arrays, so we extract the first result and transform it.
+   */
+  async fetchGuardsByStructure(entityId: ID): Promise<Guard[]> {
+    const query = STRUCTURE_QUERIES.GUARDS_BY_STRUCTURE.replace("{entityId}", entityId.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<GuardData>(url, "Failed to fetch guards by structure");
+
+    const guardData = extractFirstOrNull(results);
+    if (!guardData) return [];
+
+    // Transform the flat SQL result into structured Guard objects
+    const guards: Guard[] = [
+      {
+        slot: 0,
+        troops:
+          guardData.delta_count && hexToBigInt(guardData.delta_count) > 0n
+            ? {
+                category: guardData.delta_category,
+                tier: guardData.delta_tier,
+                count: hexToBigInt(guardData.delta_count),
+                stamina: {
+                  amount: hexToBigInt(guardData.delta_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.delta_stamina_updated_tick),
+                },
+              }
+            : null,
+        destroyedTick: hexToBigInt(guardData.delta_destroyed_tick),
+        cooldownEnd: 0, // Will be calculated by the client
+      },
+      {
+        slot: 1,
+        troops:
+          guardData.charlie_count && hexToBigInt(guardData.charlie_count) > 0n
+            ? {
+                category: guardData.charlie_category,
+                tier: guardData.charlie_tier,
+                count: hexToBigInt(guardData.charlie_count),
+                stamina: {
+                  amount: hexToBigInt(guardData.charlie_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.charlie_stamina_updated_tick),
+                },
+              }
+            : null,
+        destroyedTick: hexToBigInt(guardData.charlie_destroyed_tick),
+        cooldownEnd: 0, // Will be calculated by the client
+      },
+      {
+        slot: 2,
+        troops:
+          guardData.bravo_count && hexToBigInt(guardData.bravo_count) > 0n
+            ? {
+                category: guardData.bravo_category,
+                tier: guardData.bravo_tier,
+                count: hexToBigInt(guardData.bravo_count),
+                stamina: {
+                  amount: hexToBigInt(guardData.bravo_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.bravo_stamina_updated_tick),
+                },
+              }
+            : null,
+        destroyedTick: hexToBigInt(guardData.bravo_destroyed_tick),
+        cooldownEnd: 0, // Will be calculated by the client
+      },
+      {
+        slot: 3,
+        troops:
+          guardData.alpha_count && hexToBigInt(guardData.alpha_count) > 0n
+            ? {
+                category: guardData.alpha_category,
+                tier: guardData.alpha_tier,
+                count: hexToBigInt(guardData.alpha_count),
+                stamina: {
+                  amount: hexToBigInt(guardData.alpha_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.alpha_stamina_updated_tick),
+                },
+              }
+            : null,
+        destroyedTick: hexToBigInt(guardData.alpha_destroyed_tick),
+        cooldownEnd: 0, // Will be calculated by the client
+      },
+    ];
+
+    return guards;
   }
 }

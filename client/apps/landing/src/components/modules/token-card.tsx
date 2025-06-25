@@ -212,7 +212,6 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
-          collection_id={collection?.id}
           price={token.best_price_hex ? BigInt(token.best_price_hex) : undefined}
           orderId={token.order_id?.toString() ?? undefined}
           isListed={token.expiration !== null}

@@ -97,6 +97,7 @@ export const getConfigFromTorii = async <S extends Schema>(
   const oneKeyConfigModels = [
     "s1_eternum-WorldConfig",
     "s1_eternum-HyperstructureConstructConfig",
+    "s1_eternum-HyperstructureGlobals",
     "s1_eternum-WeightConfig",
     "s1_eternum-ResourceFactoryConfig",
     "s1_eternum-BuildingCategoryConfig",

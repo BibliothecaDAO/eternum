@@ -26,11 +26,10 @@
 
     "client/apps/eternum-mobile/**",
 
-    "gg-xyz/**",
+    "client/apps/gg-xyz/**",
     "config/**",
     "contracts/**",
 
-    "**/global.d.ts"
-
+    "**/global.d.ts",
   ]
 }

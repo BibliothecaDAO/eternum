@@ -1,5 +1,5 @@
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -138,6 +138,7 @@ export const useAutomation = () => {
   const updateOrderProducedAmount = useAutomationStore((state) => state.updateOrderProducedAmount);
   const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
   const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
+  const isGloballyPaused = useAutomationStore((state) => state.isGloballyPaused);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
@@ -162,6 +163,12 @@ export const useAutomation = () => {
       currentTickRef.current === 0
     ) {
       console.warn("Automation: Conditions not met (signer/components/currentDefaultTick). Skipping.");
+      return;
+    }
+
+    // Check for global pause - exit early if all automation is paused
+    if (isGloballyPaused) {
+      console.log("Automation: Globally paused. Skipping all processing.");
       return;
     }
 
@@ -577,6 +584,7 @@ export const useAutomation = () => {
     burn_resource_for_labor_production,
     updateOrderProducedAmount,
     isRealmPaused,
+    isGloballyPaused,
     updateTransferTimestamp,
   ]);
 

@@ -41,7 +41,7 @@ const envSchema = z.object({
   // Social
   VITE_SOCIAL_LINK: z.string().url().optional().default(""),
 
-  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("eternum-mobile.realms.world"),
+  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("m.eternum.realms.world"),
 
   // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
@@ -61,6 +61,10 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+
+  // PostHog
+  VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 });
 
 let env: z.infer<typeof envSchema>;

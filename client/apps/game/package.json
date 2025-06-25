@@ -22,6 +22,7 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "posthog-js": "catalog:",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
     "@dojoengine/sdk": "catalog:",
@@ -55,7 +56,7 @@
     "use-sound": "^4.0.1",
     "vite-plugin-pwa": "^0.20.5",
     "wouter": "^2.12.1",
-    "zustand": "^4.5.2"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.202",

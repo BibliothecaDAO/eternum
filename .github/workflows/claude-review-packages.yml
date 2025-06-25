@@ -1,0 +1,207 @@
+name: Claude Review - Shared Packages
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "packages/**/*.{ts,tsx}"
+      - "packages/**/package.json"
+      - "packages/**/README.md"
+
+jobs:
+  claude-review-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup GitHub MCP Server
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude Packages Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+
+          direct_prompt: |
+            Review this shared packages pull request focusing on:
+
+            **Eternum Package Architecture:**
+            Understanding the specific role of each package in the Eternum ecosystem:
+            - **@bibliothecadao/types**: Type definitions, constants, entities, shared interfaces
+            - **@bibliothecadao/core**: EternumProvider, data structures, hex map utilities, resource calculations, game managers
+            - **@bibliothecadao/provider**: Type-safe contract interactions, transaction management, promise queue, system calls
+            - **@bibliothecadao/react**: React hooks, stores, game state access, player data management
+            - **@bibliothecadao/torii**: gRPC queries, SQL access, on-chain data fetching, indexing
+            - **@bibliothecadao/dojo**: Dojo framework integration and utilities
+
+            **API Design & Consistency:**
+            - Public interface usability across all consuming apps (game, landing, bot, docs)
+            - Function naming following established patterns
+            - Return type consistency and comprehensive error handling
+            - Backward compatibility considerations for consuming applications
+            - Integration with Dojo (@dojoengine/core, @dojoengine/recs) and Starknet.js
+
+            **Type Safety & Cross-Package Integration:**
+            - Comprehensive TypeScript definitions using @bibliothecadao/types
+            - Generic type usage and proper constraints
+            - No circular dependencies between packages
+            - Strict type checking compliance
+            - Proper type exports and module declarations
+
+            **Package-Specific Deep Review:**
+            - **types**: Complete coverage of game entities (realms, resources, armies, structures), no missing types
+            - **core**: Pure functions, testability, performance optimization, hex map calculations accuracy
+            - **provider**: Transaction batching, error handling, retry logic, contract call optimization
+            - **react**: Hook performance (avoid unnecessary re-renders), proper state management integration
+            - **torii**: Query optimization, caching strategies, real-time data synchronization
+            - **dojo**: Proper Dojo patterns, world state management, component definitions
+
+            **Build & Distribution:**
+            - Build configuration and TypeScript compilation
+            - Package.json metadata and peer dependencies
+            - Export maps and module resolution
+            - Compatibility with pnpm workspaces and monorepo structure
+            - Tree-shaking optimization
+
+            **Performance & Gaming Considerations:**
+            - Real-time game state handling
+            - Memory efficiency for large game datasets
+            - Batch operations for blockchain interactions
+            - Caching strategies for frequently accessed data
+            - WebSocket handling for real-time features
+
+            **Testing & Quality:**
+            - Unit test coverage for all public APIs
+            - Integration tests between packages
+            - Mock strategies for blockchain interactions
+            - Performance benchmarks for critical game operations
+
+            Focus on stability and developer experience since these packages are foundational to all Eternum applications.
+
+            ## Inline PR Comments for Package Improvements
+
+            When you identify specific improvements during package review, provide **inline comments** on the relevant lines with:
+
+            **For API & Architecture Issues:**
+            - Missing TypeScript type exports or improvements
+            - API consistency improvements across packages
+            - Breaking change implications
+            - Cross-package compatibility issues
+
+            **For Quality & Performance Issues:**
+            - Performance optimizations in core functions
+            - Missing error handling or validation
+            - Documentation improvements (JSDoc, examples)
+            - Dead code or unused dependencies
+            - Build configuration optimizations
+            - Test coverage gaps
+
+            **Comment Format:**
+            ```
+            📦 **[Package] [Type] Suggestion:** Brief description
+
+            **Current Issue:** What could be improved in this package
+            **Suggested Change:** Specific TypeScript code suggestion
+            **Impact:** Developer experience/performance/type safety benefit
+            **Breaking Change Risk:** Yes/No - impact on consuming applications
+
+            **Example Implementation:**
+            ```typescript
+            // Suggested TypeScript code change here
+            ```
+
+            **Examples:**
+            - `📦 **Core Types Suggestion:** Export missing interface for better type safety`
+            - `📦 **Provider Performance Suggestion:** Cache contract calls to reduce redundant requests`
+            - `📦 **React API Suggestion:** Standardize hook return types for consistency`
+            - `📦 **Torii Documentation Suggestion:** Add JSDoc examples for SQL query usage`
+
+          allowed_tools:
+            "Bash(pnpm run build:packages),Bash(pnpm run format),Bash(pnpm run
+            knip),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
+
+          custom_instructions: |
+            You are reviewing shared TypeScript packages for Eternum that are consumed by:
+            - Main game client (client/apps/game)
+            - Landing page (client/apps/landing)  
+            - Bot implementation (client/apps/bot)
+            - Documentation site (client/apps/game-docs)
+            - Performance testing (client/apps/heavy-load)
+
+            ## Critical Considerations:
+            - Changes affect ALL consuming applications
+            - Breaking changes require careful coordination
+            - Performance impacts are multiplied across all apps
+            - Type safety is essential for developer experience
+
+            ## Documentation Updates via MCP
+
+            If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
+
+            **Documentation Areas to Consider:**
+
+            **Package Documentation:**
+            - Update specific package README.md files for API changes
+            - packages/readme.md for new packages or architecture changes
+            - Update installation and usage examples for breaking changes
+
+            **Integration Documentation:**
+            - client/apps/*/README.md if package usage patterns change
+            - CLAUDE.md package architecture section for new packages
+            - Main readme.md if new prerequisites or setup steps are needed
+
+            **Developer Documentation:**
+            - client/apps/game-docs/docs/pages/development/sdk.mdx for SDK changes
+            - Add migration guides for breaking changes
+            - Update JSDoc comments for public APIs
+
+            **How to Create Documentation PR using MCP:**
+
+            1. Use mcp__github__create_branch to create a new documentation branch:
+               - Branch name: "docs/update-packages-[package-name]"
+               - Base branch: "next"
+
+            2. Use file editing tools to update the necessary documentation files
+
+            3. Use mcp__github__create_pull_request to create the documentation PR:
+               - Title: "docs: Update package documentation for [package]"
+               - Body: "Updates documentation to reflect package changes in PR #[original-pr-number]"
+               - Target branch: "next"
+
+            **Available MCP Tools for Documentation:**
+            - mcp__github__create_branch
+            - mcp__github__create_pull_request
+            - mcp__github__get_file_contents
+            - mcp__github__update_file

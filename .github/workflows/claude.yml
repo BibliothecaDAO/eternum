@@ -1,0 +1,265 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup GitHub MCP Server
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+
+          # Optional: Customize the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+
+          # Optional: Trigger when specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"
+
+          # Enable all available tools for comprehensive project work
+          allowed_tools:
+            "Bash(pnpm run format),Bash(pnpm run lint),Bash(pnpm run knip),Bash(pnpm run build:packages),Bash(pnpm
+            test),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
+
+          # Comprehensive Eternum project instructions
+          custom_instructions: |
+            # Eternum Project Assistant Instructions
+
+            You are an AI assistant for Eternum, a blockchain gaming project built with Cairo/Dojo on Starknet. 
+
+            ## Project Overview
+
+            **Eternum** is a strategy game where players:
+            - Manage realms and resources on an infinite hexagonal map
+            - Train armies and engage in battles
+            - Trade resources in a player-driven economy using $LORDS tokens
+            - Form guilds and compete in seasonal gameplay
+            - Build and upgrade structures (hyperstructures, settlements)
+
+            **Technology Stack:**
+            - **Smart Contracts**: Cairo language with Dojo framework on Starknet
+            - **Frontend**: React + TypeScript + Vite + Three.js for 3D rendering
+            - **Indexing**: Torii for blockchain data querying
+            - **Package Management**: pnpm workspaces (monorepo)
+            - **Authentication**: Cartridge Controller for wallet connections
+
+            ## Repository Structure
+
+            ```
+            eternum/
+            ├── client/apps/           # Frontend applications
+            │   ├── game/             # Main game client (React + Three.js)
+            │   ├── landing/          # Landing page
+            │   ├── game-docs/        # Documentation site (Vocs)
+            │   ├── bot/              # Automated bot implementation
+            │   └── heavy-load/       # Performance testing tools
+            ├── contracts/            # Cairo smart contracts
+            │   ├── game/             # Main game contracts (Dojo)
+            │   ├── season_pass/      # Season pass NFT contracts
+            │   └── season_resources/ # Resource management contracts
+            ├── packages/             # Shared TypeScript packages
+            │   ├── core/             # Core SDK (@bibliothecadao/eternum)
+            │   ├── provider/         # Contract interaction layer
+            │   ├── react/            # React hooks and components
+            │   ├── torii/            # Blockchain data querying
+            │   └── types/            # Shared type definitions
+            └── config/               # Deployment and environment configuration
+            ```
+
+            ## CRITICAL: Git Workflow - MANDATORY PROCESS
+
+            **ALWAYS follow this exact workflow for ALL changes:**
+
+            1. **Always start from `next` branch**: 
+               ```bash
+               git checkout next && git pull origin next
+               ```
+
+            2. **Create appropriately named branches**:
+               - Features: `feature/your-feature-name`
+               - Bug fixes: `fix/your-bug-description`
+               - Refactors: `refactor/what-youre-refactoring`
+               - Documentation: `docs/what-docs-youre-updating`
+               - Chores: `chore/your-change-description`
+
+            3. **Use MCP tools for branch creation**:
+               ```
+               mcp__github__create_branch with base branch "next"
+               ```
+
+            4. **NEVER work directly on `next` branch**
+            5. **Always target `next` branch for pull requests, NEVER `main`**
+
+            ## Development Workflow
+
+            ### Before Making Changes:
+            1. **Read relevant documentation**:
+               - Main project README.md
+               - CLAUDE.md for development guidelines
+               - Specific package/app README files
+               - client/apps/game-docs/ for game mechanics
+
+            2. **Understand package dependencies**:
+               - Run `pnpm run build:packages` after any package changes
+               - Check cross-package dependencies
+               - Verify no circular dependencies
+
+            3. **Check existing patterns**:
+               - Look for similar implementations in the codebase
+               - Follow established architectural patterns
+               - Use existing utilities and components
+
+            ### Making Changes:
+
+            #### For Client Apps:
+            - Follow feature-based architecture (`src/ui/features/`)
+            - Use established design system (`ui/design-system/`)
+            - Integrate with Eternum packages (@bibliothecadao/*)
+            - Test Three.js and WebSocket integrations
+            - Ensure proper TypeScript typing
+
+            #### For Cairo Contracts:
+            - Follow Dojo patterns (components, systems, models)
+            - Pay special attention to economic security
+            - Validate game balance implications
+            - Add comprehensive tests
+            - Update manifest files and configurations
+
+            #### For Shared Packages:
+            - Maintain API consistency across packages
+            - Consider impact on all consuming applications
+            - Update package READMEs for API changes
+            - Run `pnpm run build:packages` to verify builds
+
+            #### For Configuration:
+            - Test across all environments (local, sepolia, mainnet)
+            - Update relevant .env.sample files
+            - Verify deployment script compatibility
+            - Check security implications
+
+            ### Quality Assurance:
+            1. **Run formatting and linting**:
+               ```bash
+               pnpm run format
+               pnpm run lint
+               pnpm run knip  # Check for unused dependencies
+               ```
+
+            2. **Run tests**:
+               ```bash
+               pnpm test
+               ```
+
+            3. **Build packages if modified**:
+               ```bash
+               pnpm run build:packages
+               ```
+
+            ### Documentation Updates:
+            - Always check if documentation needs updates
+            - Update READMEs for significant changes
+            - Update game-docs for gameplay changes
+            - Use MCP tools to create documentation PRs when needed
+
+            ## Issue Resolution Guidelines
+
+            When assigned to issues (tagged with @claude):
+
+            1. **Analyze the issue thoroughly**:
+               - Read the full issue description
+               - Check related files and context
+               - Look for similar patterns in codebase
+
+            2. **Plan the approach**:
+               - Break down complex issues into steps
+               - Consider impact on other parts of the system
+               - Plan tests and validation
+
+            3. **Implement with best practices**:
+               - Follow established patterns
+               - Add appropriate tests
+               - Update documentation if needed
+               - Consider performance and security implications
+
+            4. **Validate the solution**:
+               - Run all relevant tests
+               - Test in appropriate environment
+               - Verify no breaking changes
+
+            ## Code Standards
+
+            - **TypeScript**: Use strict typing, avoid `any`
+            - **React**: Functional components, proper hook usage
+            - **Cairo**: Follow Dojo patterns, comprehensive testing
+            - **Performance**: Optimize for real-time gaming
+            - **Security**: Especially critical for contract code
+            - **Accessibility**: Ensure UI is accessible
+            - **Documentation**: JSDoc for complex functions
+
+            ## Environment Context
+
+            - **Local**: Development with Katana local blockchain
+            - **Sepolia**: Starknet testnet for testing
+            - **Mainnet**: Production Starknet environment
+            - **Slot**: Staging environment
+
+            ## Key Considerations
+
+            - **Game Balance**: Changes affecting gameplay must consider balance
+            - **Economic Security**: Prevent exploits in resource/trading systems
+            - **Real-time Performance**: Optimize for live gaming experience
+            - **Cross-package Compatibility**: Changes affect multiple applications
+            - **Blockchain Integration**: Ensure proper Starknet/Dojo integration

@@ -211,6 +211,49 @@ export interface RawRealmVillageSlot {
   directions_left: string; // JSON string that needs parsing
 }
 
+export interface GuardData {
+  entity_id: number;
+  delta_category: string | null;
+  delta_tier: string | null;
+  delta_count: string | null; // hex string
+  delta_stamina_amount: string | null; // hex string
+  delta_stamina_updated_tick: string | null; // hex string
+  charlie_category: string | null;
+  charlie_tier: string | null;
+  charlie_count: string | null; // hex string
+  charlie_stamina_amount: string | null; // hex string
+  charlie_stamina_updated_tick: string | null; // hex string
+  bravo_category: string | null;
+  bravo_tier: string | null;
+  bravo_count: string | null; // hex string
+  bravo_stamina_amount: string | null; // hex string
+  bravo_stamina_updated_tick: string | null; // hex string
+  alpha_category: string | null;
+  alpha_tier: string | null;
+  alpha_count: string | null; // hex string
+  alpha_stamina_amount: string | null; // hex string
+  alpha_stamina_updated_tick: string | null; // hex string
+  delta_destroyed_tick: string | null; // hex string
+  charlie_destroyed_tick: string | null; // hex string
+  bravo_destroyed_tick: string | null; // hex string
+  alpha_destroyed_tick: string | null; // hex string
+}
+
+export interface Guard {
+  slot: number;
+  troops: {
+    category: string | null;
+    tier: string | null;
+    count: bigint;
+    stamina: {
+      amount: bigint;
+      updated_tick: bigint;
+    };
+  } | null;
+  destroyedTick: bigint;
+  cooldownEnd: number;
+}
+
 export enum EventType {
   SWAP = "AMM Swap",
   ORDERBOOK = "Orderbook",

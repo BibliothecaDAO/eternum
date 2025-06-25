@@ -1,4 +1,4 @@
-import { gltfLoader } from "@/three/helpers/utils";
+import { gltfLoader } from "@/three/utils/utils";
 import { type HexPosition } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import * as THREE from "three";

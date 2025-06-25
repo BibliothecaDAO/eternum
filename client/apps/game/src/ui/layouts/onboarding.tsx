@@ -2,17 +2,16 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
-import Button from "@/ui/elements/button";
+import { Button } from "@/ui/design-system/atoms";
+import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
+import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
-import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
 
 interface OnboardingOverlayProps {
   controller?: boolean;
@@ -42,7 +41,7 @@ interface SeasonPassButtonProps {
 }
 
 export const mintUrl =
-  env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://next-empire.realms.world/";
+  env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://dev.empire.realms.world/";
 
 const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
 
@@ -350,7 +349,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://eternum-docs.realms.world/"
+            href="https://docs.eternum.realms.world/"
             target="_blank"
             rel="noopener noreferrer"
           >
