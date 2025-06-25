@@ -19,19 +19,11 @@ interface TokenCardProps {
   toggleNftSelection?: () => void;
 }
 
-interface ListingDetails {
-  orderId?: bigint;
-  price?: bigint | null;
-  isListed: boolean;
-  expiration?: string;
-}
-
 export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
   const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const isOwner = token.account_address === trimAddress(accountAddress);
@@ -76,7 +68,12 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
     }
   };
 
-  const { attributes, name, image } = metadata ?? {};
+  const { attributes, name, image: originalImage } = metadata ?? {};
+
+  // Transform IPFS URLs to use Pinata gateway
+  const image = originalImage?.startsWith("ipfs://")
+    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+    : originalImage;
 
   const listingActive = useMemo(() => {
     if (token.expiration !== null && token.best_price_hex !== null) {
@@ -121,7 +118,7 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           </div>
 
           {/* Listing Indicator */}
-          {listingDetails.isListed && (
+          {listingActive && (
             <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20">
               Listed
             </div>

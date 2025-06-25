@@ -52,7 +52,12 @@ export const TokenDetailModal = ({
   collection_id,
   expiration, // Added
 }: TokenDetailModalProps) => {
-  const { name, image, attributes } = tokenData.metadata ?? {};
+  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
+
+  // Transform IPFS URLs to use Pinata gateway
+  const image = originalImage?.startsWith("ipfs://")
+    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+    : originalImage;
   const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
 
   const { data: activeMarketOrder } = useQuery({
