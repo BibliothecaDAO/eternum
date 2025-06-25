@@ -15,8 +15,8 @@ It serves as both a game and an open platform.
 
 ### Eternum as a Game
 
-A high-stakes game played in seasons where players forge their own path to victory. On an infinite hexagonal map,
-players:
+A high-stakes strategy game played in competitive seasons where players forge their own unique path to victory. On an
+infinite hexagonal world map, players:
 
 - Build resource stockpiles
 - Train troops
