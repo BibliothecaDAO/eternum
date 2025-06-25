@@ -4,6 +4,7 @@
   "lords": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
   "villagePass": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
   "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
+  "lootChests": "",
   "resources": {
     "STONE": [1,"0x27dbfe27fc79ed10bc7e8c0889dd01d2b5e9d1c4e471a32d447b156f0a6fea1"],
     "COAL": [2,"0x68540b2989cb86c9f73f2615c41a53818598a4ee29731403dad2fcd3974e005"],

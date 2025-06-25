@@ -50,8 +50,13 @@ export const TokenDetailModal = ({
   orderId,
   expiration, // Added
 }: TokenDetailModalProps) => {
-  const { name, image, attributes } = tokenData.metadata ?? {};
-  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
+  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
+
+  // Transform IPFS URLs to use Pinata gateway
+  const image = originalImage?.startsWith("ipfs://")
+    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+    : originalImage;
+  const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
 
   const { data: activeMarketOrder } = useQuery({
     queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
