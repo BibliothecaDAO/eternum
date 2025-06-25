@@ -1,4 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
+import { MaxButton } from "@/ui/design-system/atoms";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -513,15 +514,30 @@ export const TransferResourcesContainer = ({
                             None
                           </button>
 
-                          <button
-                            className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                            onClick={() => {
-                              // Let handleResourceAmountChange handle capacity limits
-                              handleResourceAmountChange(resource.resourceId, displayAmount);
+                          <MaxButton
+                            max={() => {
+                              // Calculate max based on explorer capacity if applicable
+                              if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+                                const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+                                const otherResourcesWeight = Object.entries(resourceAmounts)
+                                  .filter(([id]) => parseInt(id) !== resource.resourceId)
+                                  .reduce((total, [id, amt]) => {
+                                    const weight = configManager.resourceWeightsKg[parseInt(id)] || 0;
+                                    return total + amt * weight;
+                                  }, 0);
+                                const availableForThisResource =
+                                  explorerCapacity.maxCapacityKg -
+                                  explorerCapacity.currentLoadKg -
+                                  otherResourcesWeight;
+                                const maxPossibleAmount = Math.floor(availableForThisResource / resourceWeight);
+                                return Math.min(displayAmount, maxPossibleAmount);
+                              }
+                              return displayAmount;
                             }}
-                          >
-                            Max
-                          </button>
+                            onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
+                            className="px-2 py-1 text-xs"
+                            size="xs"
+                          />
                         </div>
                       </div>
                     )}

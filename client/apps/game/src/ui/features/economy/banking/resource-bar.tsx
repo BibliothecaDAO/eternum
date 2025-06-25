@@ -1,3 +1,4 @@
+import { MaxButton } from "@/ui/design-system/atoms";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -108,11 +109,14 @@ export const ResourceBar = memo(
           />
 
           {!disableInput && (
-            <div
-              className="flex text-xs  mt-1 justify-center items-center relative text-center self-center mx-auto w-full cursor-pointer"
-              onClick={() => handleAmountChange(finalResourceBalance)}
-            >
-              Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
+            <div className="flex text-xs mt-1 items-center justify-center">
+              <MaxButton
+                max={finalResourceBalance}
+                onChange={(value) => handleAmountChange(parseFloat(value))}
+                variant="text"
+                label={`Max: ${isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}`}
+                className="hover:text-gold"
+              />
               {hasLordsFees && (
                 <div className="text-danger ml-2">
                   <div>{`[+${isNaN(lordsFee) ? "0" : formatNumber(lordsFee, 2)}]`}</div>

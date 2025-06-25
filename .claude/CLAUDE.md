@@ -55,15 +55,24 @@ When building features, read the relevant app README:
 
 ## COMMIT Checklist
 
+**⚠️ CRITICAL: NEVER COMMIT WITHOUT A SUCCESSFUL BUILD! ⚠️**
+
 IMPORTANT: Before committing changes, YOU MUST:
 
-1. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
-2. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-3. **Update README**: Update the main README if you've added new features or changed setup steps
-4. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-5. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-6. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-7. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+1. **Run Build Check** (MANDATORY - DO THIS FIRST!):
+   - Execute `pnpm run build` in EVERY affected app directory
+   - For game changes: `cd client/apps/game && pnpm run build`
+   - For landing page changes: `cd client/apps/landing && pnpm run build`
+   - **IF BUILD FAILS: FIX ALL ERRORS BEFORE PROCEEDING!**
+   - **NEVER use --no-verify or skip this step**
+2. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
+3. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
+4. **Update README**: Update the main README if you've added new features or changed setup steps
+5. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
+6. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
+7. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
+8. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+9. **Create PR to `next`**: When creating PR, ALWAYS use `gh pr create --base next` (NEVER to `main`)
 
 ## Project-Specific Notes
 
@@ -86,7 +95,7 @@ IMPORTANT: Before committing changes, YOU MUST:
 3. **Make your changes on the branch** (NEVER work directly on `next`)
 4. **Commit changes**: `git add . && git commit -m "your message"`
 5. **Push branch**: `git push -u origin your-branch-name`
-6. **Create PR**: Always create pull requests FROM your branch TO `next` branch
+6. **Create PR**: **ALWAYS use `--base next`** when creating PRs: `gh pr create --base next`
 
 **If you find yourself on `next` with uncommitted changes:**
 
@@ -97,8 +106,9 @@ IMPORTANT: Before committing changes, YOU MUST:
 **NEVER:**
 
 - Work directly on `next` branch
-- Create PRs to `main` (always target `next`)
+- **Create PRs to `main` branch (ALWAYS target `next` - use `--base next`)**
 - Push commits directly to `next`
+- Use `gh pr create` without explicitly specifying `--base next`
 
 ## Repository Etiquette
 
@@ -106,3 +116,19 @@ IMPORTANT: Before committing changes, YOU MUST:
 - Keep commits focused and atomic
 - Don't commit generated files or build artifacts
 - Always test locally before pushing
+
+## Design System Guidelines
+
+When creating new UI components:
+
+1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
+   elsewhere in the app
+2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
+   appropriate design system folder:
+   - `atoms/` for basic UI primitives (buttons, inputs, labels)
+   - `molecules/` for composed components (card headers, form groups)
+3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
+   implementations that could be replaced
+4. **Replace existing implementations**: Update all found instances to use the new design system component for
+   consistency
+5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
