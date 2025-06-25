@@ -15,6 +15,7 @@ export class TileRenderer {
   // Tile constants
   private static readonly TILE_WIDTH = 256;
   private static readonly TILE_HEIGHT = 304;
+  private static readonly TILE_GAP = 1;
   private static readonly TILEMAP_PATH = "/images/tiles/isometric-tiles.png";
 
   constructor(scene: THREE.Scene) {
@@ -33,8 +34,9 @@ export class TileRenderer {
       tileTexture.minFilter = THREE.LinearFilter;
       tileTexture.colorSpace = THREE.SRGBColorSpace;
 
-      // Calculate how many tiles per row in the tilemap
-      const tilesPerRow = Math.floor(tileTexture.image.width / TileRenderer.TILE_WIDTH);
+      // Calculate how many tiles per row in the tilemap, accounting for gaps
+      const tileWidthWithGap = TileRenderer.TILE_WIDTH + TileRenderer.TILE_GAP;
+      const tilesPerRow = Math.floor((tileTexture.image.width + TileRenderer.TILE_GAP) / tileWidthWithGap);
 
       // Create materials for tile 1 and tile 2 (can be extended for more tiles)
       this.createTileMaterial(1, 0, tilesPerRow, tileTexture); // First tile (index 0)
@@ -69,10 +71,16 @@ export class TileRenderer {
     const tileX = tileIndex % tilesPerRow;
     const tileY = Math.floor(tileIndex / tilesPerRow);
 
+    // Account for tile gaps when calculating UV coordinates
+    const tileWidthWithGap = TileRenderer.TILE_WIDTH + TileRenderer.TILE_GAP;
+    const tileHeightWithGap = TileRenderer.TILE_HEIGHT + TileRenderer.TILE_GAP;
+
     const repeatX = TileRenderer.TILE_WIDTH / textureWidth;
     const repeatY = TileRenderer.TILE_HEIGHT / textureHeight;
-    const offsetX = tileX * repeatX;
-    const offsetY = 1 - (tileY + 1) * repeatY; // Flip Y coordinate for correct orientation
+
+    // Calculate offset accounting for gaps
+    const offsetX = (tileX * tileWidthWithGap) / textureWidth;
+    const offsetY = 1 - ((tileY + 1) * tileHeightWithGap) / textureHeight; // Flip Y coordinate for correct orientation
 
     return { offsetX, offsetY, repeatX, repeatY };
   }
@@ -110,11 +118,11 @@ export class TileRenderer {
     const sprite = new THREE.Sprite(material);
 
     // Scale sprite to match hex size
-    const spriteScale = HEX_SIZE * 3.25; // Adjustable multiplier
-    sprite.scale.set(spriteScale, spriteScale * 1.25, 1);
+    const spriteScale = HEX_SIZE * 3.2; // Adjustable multiplier
+    sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
 
     // Position sprite above the hex shape
-    sprite.position.set(position.x, 0.2, position.z - HEX_SIZE);
+    sprite.position.set(position.x, 0.2, position.z - HEX_SIZE * 0.825);
 
     // Set render order based on row (higher row = higher render order)
     sprite.renderOrder = 1000 + row;
