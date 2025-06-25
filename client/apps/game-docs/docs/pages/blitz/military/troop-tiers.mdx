@@ -3,70 +3,19 @@ import { MaxStaminaTable } from "@/components/TroopMovementTable";
 
 # 🛡️ Troop Tiers
 
-## Troop Types
+Troops come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
+troops are more advanced, offering significantly increased combat strength and stamina.
 
-Blitz features three distinct troop types, each with unique combat characteristics:
+T1 troops have the lowest cost and can be produced in simple mode. Higher-tier troops require rare resources, essence and lower-tier troops
+as inputs:
 
-### Knights
-- **Combat Role**: Heavy melee units
-- **Stamina**: High stamina capacity
-- **Movement**: Moderate movement speed
-- **Specialization**: Strong in close combat
+- Two T1 troops combine to produce one T2 troop
+- Two T2 troops combine to produce one T3 troop
 
-### Crossbowmen
-- **Combat Role**: Ranged units
-- **Stamina**: Moderate stamina capacity
-- **Movement**: Fast movement speed
-- **Specialization**: Effective at range
-
-### Paladins
-- **Combat Role**: Elite units
-- **Stamina**: Highest stamina capacity
-- **Movement**: Slow but steady movement
-- **Specialization**: Versatile combat units
-
-## Troop Tiers
-
-Each troop type has three tiers of increasing power:
-
-### Tier 1 (T1)
-- **Basic Units**: Foundation of your military
-- **Production**: Can be produced directly from military buildings
-- **Cost**: Lowest resource investment
-- **Effectiveness**: Basic combat capabilities
-
-### Tier 2 (T2)
-- **Intermediate Units**: Enhanced combat power
-- **Production**: Requires T1 troops as input
-- **Cost**: Moderate resource investment
-- **Effectiveness**: Improved combat capabilities
-
-### Tier 3 (T3)
-- **Elite Units**: Highest combat power
-- **Production**: Requires T2 troops as input
-- **Cost**: Highest resource investment
-- **Effectiveness**: Maximum combat capabilities
-
-## Blitz-Specific Considerations
-
-### Production Requirements
-- **Essence Requirement**: All troop production requires Essence
-- **Increased Rates**: Production rates are increased for Blitz's fast-paced gameplay
-- **Altered Recipes**: Production recipes are modified for Blitz balance
-
-### Deployment Strategy
-- **Immediate Use**: All troops start in Realm inventory
-- **No Stripping**: No incentive to strip mine troops
-- **Strategic Deployment**: Deploy troops based on immediate needs
-
-### Combat Focus
-- **Bandit Battles**: Primary use against AI bandit forces
-- **Player Combat**: Direct competition with other players
-- **Structure Control**: Essential for claiming and defending world structures
-- **Scoring Impact**: All combat actions contribute to Military Score
+Each troop tier provides escalating advantages in terms of damage output and stamina.
 
 <TroopTiers />
 
-<TroopTierDamageStats />
+<TroopTierDamageStats />asD asd
 
 <MaxStaminaTable />
