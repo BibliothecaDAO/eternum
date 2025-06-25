@@ -3,6 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
+use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION};
 use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::WeightConfig;
 use s1_eternum::models::config::{TickImpl};
@@ -128,9 +129,24 @@ pub impl TroopResourceImpl of TroopResourceTrait {
 
 #[generate_trait]
 pub impl SingleResourceImpl of SingleResourceTrait {
+    fn is_relic_or_essence(resource_type: u8) -> bool {
+        (resource_type >= RELICS_RESOURCE_START_ID && resource_type <= RELICS_RESOURCE_END_ID)
+            || resource_type == ResourceTypes::ESSENCE
+    }
+
+    fn ensure_correct_precision(ref self: SingleResource) {
+        if Self::is_relic_or_essence(self.resource_type) {
+            assert!(
+                self.balance % RESOURCE_PRECISION == 0,
+                "Eternum: Resource balance must be a multiple of RESOURCE_PRECISION for relics and essence",
+            );
+        }
+    }
+
     fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
         self.balance -= amount;
+        self.ensure_correct_precision();
         entity_weight.deduct(amount * unit_weight);
         // todo add event here to show amount burnt
     }
@@ -142,6 +158,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         let (max_storable, total_weight) = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
 
         self.balance += max_storable;
+        self.ensure_correct_precision();
         entity_weight.add(total_weight);
 
         // todo add event here to show amount burnt
@@ -213,6 +230,10 @@ pub struct Resource {
     WHEAT_BALANCE: u128,
     FISH_BALANCE: u128,
     LORDS_BALANCE: u128,
+    ESSENCE_BALANCE: u128,
+    RELIC_E1_BALANCE: u128,
+    RELIC_E2_BALANCE: u128,
+    RELIC_E3_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
     COAL_PRODUCTION: Production,
@@ -337,6 +358,10 @@ pub impl ResourceImpl of ResourceTrait {
             35 => selector!("WHEAT_BALANCE"),
             36 => selector!("FISH_BALANCE"),
             37 => selector!("LORDS_BALANCE"),
+            38 => selector!("ESSENCE_BALANCE"),
+            39 => selector!("RELIC_E1_BALANCE"),
+            40 => selector!("RELIC_E2_BALANCE"),
+            41 => selector!("RELIC_E3_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }

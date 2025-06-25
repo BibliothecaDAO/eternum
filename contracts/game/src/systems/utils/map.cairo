@@ -170,5 +170,9 @@ pub impl IMapImpl of IMapTrait {
         world.write_model(@tile);
         // todo add event {if not already explored}
     }
+
+    fn unoccupy(ref world: WorldStorage, ref tile: Tile) {
+        Self::occupy(ref world, ref tile, TileOccupier::None, 0);
+    }
 }
 

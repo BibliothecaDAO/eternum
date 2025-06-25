@@ -126,6 +126,20 @@ pub enum Direction {
     SouthEast,
 }
 
+#[generate_trait]
+pub impl DirectionImpl of DirectionTrait {
+    fn all() -> Array<Direction> {
+        array![
+            Direction::East,
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::West,
+            Direction::SouthWest,
+            Direction::SouthEast,
+        ]
+    }
+}
+
 pub impl DirectionDisplay of Display<Direction> {
     fn fmt(self: @Direction, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!("Direction: ");

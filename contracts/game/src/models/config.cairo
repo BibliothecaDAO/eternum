@@ -256,9 +256,10 @@ pub struct MapConfig {
     pub hyps_fail_prob_increase_p_hex: u16,
     // fail probability increase per hyperstructure found
     pub hyps_fail_prob_increase_p_fnd: u16,
-    // Mine discovery rewards
-    pub mine_wheat_grant_amount: u32,
-    pub mine_fish_grant_amount: u32,
+    // Relic discovery
+    pub relic_discovery_interval_sec: u16,
+    pub relic_hex_dist_from_center: u8,
+    pub relic_chest_relics_per_chest: u8,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

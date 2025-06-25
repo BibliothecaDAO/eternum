@@ -338,6 +338,22 @@ pub mod troop_movement_util_systems {
                 "caller must be the troop movement systems",
             );
 
+            //////////////////////////////////////
+            /// TIME BASED GLOBAL DISCOVERY
+            //////////////////////////////////////
+            let (relic_chest_discovery_systems, _) = world.dns(@"relic_chest_discovery_systems").unwrap();
+            let relic_chest_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                contract_address: relic_chest_discovery_systems,
+            };
+            relic_chest_discovery_systems
+                .find_treasure(
+                    vrf_seed, tile, caller, map_config, troop_limit_config, troop_stamina_config, current_tick,
+                );
+
+            //////////////////////////////////////
+            /// LOTTERY BASED PERSONAL DISCOVERY
+            //////////////////////////////////////
+
             let (hyperstructure_discovery_systems, _) = world.dns(@"hyperstructure_discovery_systems").unwrap();
             let hyperstructure_discovery_systems = ITroopMovementUtilSystemsDispatcher {
                 contract_address: hyperstructure_discovery_systems,
@@ -560,6 +576,49 @@ pub mod agent_discovery_systems {
                     ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
                 );
                 return (true, ExploreFind::Agent);
+            }
+            return (false, ExploreFind::None);
+        }
+    }
+}
+
+#[dojo::contract]
+pub mod relic_chest_discovery_systems {
+    use dojo::world::{WorldStorageTrait};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::agent::AgentCountImpl;
+    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::record::{RelicRecord, WorldRecordImpl};
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::utils::{relic::iRelicChestDiscoveryImpl};
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+
+    #[abi(embed_v0)]
+    impl RelicChestDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+        ) -> (bool, ExploreFind) {
+            // ensure caller is the troop utils systems because this changes state
+            let mut world = self.world(DEFAULT_NS());
+
+            // ensure caller is the troop utils movement systems
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            let relic_record: RelicRecord = WorldRecordImpl::get_member(world, selector!("relic_record"));
+            if iRelicChestDiscoveryImpl::should_discover(world, relic_record, map_config) {
+                iRelicChestDiscoveryImpl::discover(ref world, tile.into(), map_config, vrf_seed);
             }
             return (false, ExploreFind::None);
         }

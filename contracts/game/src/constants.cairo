@@ -79,8 +79,17 @@ pub fn all_resource_ids() -> Array<u8> {
         35,
         36,
         37,
+        // Essence
+        38,
+        // Relics
+        39,
+        40,
+        41,
     ]
 }
+
+pub const RELICS_RESOURCE_START_ID: u8 = 39;
+pub const RELICS_RESOURCE_END_ID: u8 = 41;
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 pub mod ResourceTypes {
@@ -126,6 +135,13 @@ pub mod ResourceTypes {
     pub const WHEAT: u8 = 35;
     pub const FISH: u8 = 36;
     pub const LORDS: u8 = 37;
+
+    // Essence
+    pub const ESSENCE: u8 = 38;
+    // Relics
+    pub const RELIC_E1: u8 = 39;
+    pub const RELIC_E2: u8 = 40;
+    pub const RELIC_E3: u8 = 41;
 }
 
 
@@ -204,6 +220,14 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
         "FISH"
     } else if resource_type == 37 {
         "LORDS"
+    } else if resource_type == 38 {
+        "ESSENCE"
+    } else if resource_type == 39 {
+        "RELIC E1"
+    } else if resource_type == 40 {
+        "RELIC E2"
+    } else if resource_type == 41 {
+        "RELIC E3"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }

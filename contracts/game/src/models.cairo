@@ -20,6 +20,7 @@ pub mod bank {
     pub mod liquidity;
     pub mod market;
 }
+pub mod record;
 
 pub mod resource {
     pub mod arrivals;
