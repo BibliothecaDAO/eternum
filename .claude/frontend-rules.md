@@ -62,3 +62,19 @@ IMPORTANT: Before committing changes, YOU MUST:
 5. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
 6. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
 7. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+
+## Design System Guidelines
+
+When creating new UI components:
+
+1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
+   elsewhere in the app
+2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
+   appropriate design system folder:
+   - `atoms/` for basic UI primitives (buttons, inputs, labels)
+   - `molecules/` for composed components (card headers, form groups)
+3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
+   implementations that could be replaced
+4. **Replace existing implementations**: Update all found instances to use the new design system component for
+   consistency
+5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
