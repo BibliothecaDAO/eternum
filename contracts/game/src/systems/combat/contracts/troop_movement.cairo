@@ -616,9 +616,13 @@ pub mod relic_chest_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            let relic_record: RelicRecord = WorldRecordImpl::get_member(world, selector!("relic_record"));
+            let mut relic_record: RelicRecord = WorldRecordImpl::get_member(world, selector!("relic_record"));
             if iRelicChestDiscoveryImpl::should_discover(world, relic_record, map_config) {
                 iRelicChestDiscoveryImpl::discover(ref world, tile.into(), map_config, vrf_seed);
+
+                // update relic record
+                relic_record.last_discovered_at = starknet::get_block_timestamp();
+                WorldRecordImpl::set_member(ref world, selector!("relic_record"), relic_record);
             }
             return (false, ExploreFind::None);
         }
