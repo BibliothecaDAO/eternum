@@ -2,6 +2,7 @@
 // Re-export all shared, cross-feature components
 
 // Core UI Components
+export { ErrorBoundary } from "./error-boundary";
 export { ModalContainer } from "./components/modal-container";
 export { NameChangePopup } from "./components/name-change-popup";
 export { NotLoggedInMessage } from "./components/not-logged-in-message";

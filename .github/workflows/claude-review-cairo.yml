@@ -1,0 +1,201 @@
+name: Claude Review - Cairo Contracts
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "contracts/**/*.cairo"
+      - "contracts/**/Scarb.toml"
+      - "contracts/**/dojo*.toml"
+      - "contracts/**/manifest*.json"
+
+jobs:
+  claude-review-cairo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup GitHub MCP Server
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude Cairo Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+
+          direct_prompt: |
+            Review this Cairo smart contract pull request for Eternum focusing on:
+
+            **Security & Economic Safety:**
+            - Access control patterns and ownership validation
+            - Input validation and bounds checking (especially for resource amounts)
+            - Integer overflow/underflow prevention in resource calculations
+            - Economic exploit prevention (infinite resources, duplicate spending)
+            - Game balance validation (troop costs, building requirements, resource production)
+            - Proper use of assert vs require statements
+
+            **Cairo/Dojo Best Practices:**
+            - Efficient use of Cairo's felt252 type system
+            - Proper component and system architecture following Dojo patterns
+            - Model definitions in src/models/ (agent, config, event, guild, hyperstructure, map, etc.)
+            - System organization in src/systems/ (bank, config, dev, guild, hyperstructure, ownership, production, realm, resources, season, structure, trade, village)
+            - Storage optimization and gas efficiency
+            - Event emission for Torii indexing
+
+            **Eternum Game Logic:**
+            - **Resource Systems**: Production rates, decay, transfer limits, arrival calculations
+            - **Military Systems**: Troop training costs, battle mechanics, army movement
+            - **Economic Systems**: Trading, market orders, liquidity, bank operations
+            - **Structures**: Building costs, settlement mechanics, hyperstructure construction
+            - **Map Systems**: Hex coordinate calculations, exploration, biome effects
+            - **Quest/Achievement Systems**: Task completion validation, reward distribution
+            - Mathematical accuracy in game formulas (see contracts/game/ext/formulas/)
+
+            **Dojo Framework Integration:**
+            - World state management and system interactions
+            - Proper model component definitions
+            - Migration scripts and manifest updates
+            - Configuration management (dojo_*.toml files)
+            - Torii indexer configuration
+
+            **Testing & Validation:**
+            - Unit test coverage in src/systems/*/tests/
+            - Edge case handling and error scenarios
+            - Integration tests for system interactions
+            - Gas usage optimization
+            - Test data consistency with game balance
+
+            **Deployment & Configuration:**
+            - Environment-specific configurations (local, sepolia, mainnet)
+            - Migration script safety
+            - Manifest file consistency
+            - Address management in contracts/common/addresses/
+
+            CRITICAL: Pay special attention to economic exploits, game balance, and resource integrity.
+
+            ## Inline PR Comments for Security & Optimization Suggestions
+
+            When you identify specific improvements during contract review, provide **inline comments** on the relevant lines with:
+
+            **For Critical Issues (Security/Economic):**
+            - Missing input validation or bounds checking
+            - Economic exploit vulnerabilities
+            - Game balance issues
+            - Access control problems
+            - State consistency issues
+
+            **For Optimization & Quality Issues:**
+            - Gas optimization opportunities
+            - Code documentation improvements
+            - Test coverage gaps
+            - Function naming improvements
+            - Configuration inconsistencies
+
+            **Comment Format:**
+            ```
+            🚨 **[SECURITY/CRITICAL]** or 💡 **[Type] Suggestion:** Brief description
+
+            **Current Issue:** What vulnerability or improvement area exists
+            **Suggested Change:** Specific Cairo code suggestion
+            **Impact:** Security/gas/maintainability benefit
+            **Game Balance Impact:** (if applicable)
+
+            **Example Implementation:**
+            ```cairo
+            // Suggested Cairo code change here
+            ```
+
+            **Examples:**
+            - `🚨 **SECURITY:** Add bounds checking to prevent resource overflow`
+            - `💡 **Gas Optimization:** Cache storage reads to reduce gas usage`
+            - `💡 **Documentation:** Add inline docs for complex economic calculations`
+            - `🚨 **CRITICAL:** Validate army ownership before movement`
+
+          allowed_tools: "mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
+
+          custom_instructions: |
+            You are reviewing Cairo smart contracts for Eternum, a blockchain gaming project using Dojo framework on Starknet.
+
+            ## Key Context:
+            - Eternum is a resource management and strategy game with realms, armies, and trading
+            - Uses $LORDS token for in-game economy
+            - Seasonal gameplay with immutable on-chain state
+            - Multi-environment deployment (local, sepolia, mainnet)
+
+            ## Critical Review Focus:
+            - Economic exploits and infinite resource generation
+            - Game balance and fair play mechanics
+            - Resource integrity and double-spending prevention
+            - Proper Dojo component/system patterns
+            - Gas optimization for complex game operations
+
+            ## Documentation Updates via MCP
+
+            If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
+
+            **Documentation Areas to Consider:**
+
+            **Contract Documentation:**
+            - Update contract-specific READMEs if architecture changes
+            - Update deployment instructions if new contracts are added
+            - Update configuration documentation if new environments are supported
+
+            **Game Documentation:**
+            - client/apps/game-docs/docs/pages/development/contracts.mdx for contract changes
+            - Update game mechanics documentation if contract logic changes affect gameplay
+            - client/apps/game-docs/docs/components/ for new game constants or mechanics
+
+            **Main Documentation:**
+            - readme.md if contract deployment process changes  
+            - CLAUDE.md if contract development workflow changes
+
+            **How to Create Documentation PR using MCP:**
+
+            1. Use mcp__github__create_branch to create a new documentation branch:
+               - Branch name: "docs/update-contracts-[feature-name]"
+               - Base branch: "next"
+
+            2. Use file editing tools to update the necessary documentation files
+
+            3. Use mcp__github__create_pull_request to create the documentation PR:
+               - Title: "docs: Update contract documentation for [feature]"
+               - Body: "Updates documentation to reflect contract changes in PR #[original-pr-number]"
+               - Target branch: "next"
+
+            **Available MCP Tools for Documentation:**
+            - mcp__github__create_branch
+            - mcp__github__create_pull_request
+            - mcp__github__get_file_contents
+            - mcp__github__update_file

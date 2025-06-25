@@ -113,6 +113,7 @@ class Minimap {
   private mouseStartPosition: { x: number; y: number } | null = null;
   private tiles: Tile[] = []; // SQL-fetched tiles
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
+  private isMinimized: boolean = false; // Add minimized state
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -273,12 +274,18 @@ class Minimap {
     if (!this.context) return;
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // When minimized, don't draw anything - let the UI handle the visual representation
+    if (this.isMinimized) {
+      return;
+    }
+
     this.drawExploredTiles();
     this.drawStructures();
     this.drawArmies();
     this.drawQuests();
     this.drawCamera();
-    this.drawHoveredCoordinates(); // Add this new method call
+    this.drawHoveredCoordinates();
   }
 
   private drawExploredTiles() {
@@ -623,6 +630,23 @@ class Minimap {
     useUIStore.getState().setShowMinimap(true);
   }
 
+  minimizeMinimap() {
+    this.setMinimized(true);
+  }
+
+  // Set minimized state
+  setMinimized(minimized: boolean) {
+    this.isMinimized = minimized;
+    if (this.context) {
+      this.draw();
+    }
+  }
+
+  // Get minimized state
+  getMinimized(): boolean {
+    return this.isMinimized;
+  }
+
   moveMinimapCenterToUrlLocation() {
     const url = new URL(window.location.href);
     const col = parseInt(url.searchParams.get("col") || "0");
@@ -663,6 +687,9 @@ class Minimap {
   }
 
   private handleMouseDown = (event: MouseEvent) => {
+    // Don't allow dragging when minimized
+    if (this.isMinimized) return;
+
     this.isDragging = true;
     this.mouseStartPosition = {
       x: event.clientX,
@@ -675,11 +702,14 @@ class Minimap {
   };
 
   private handleMouseMove = (event: MouseEvent) => {
-    // Update hovered coordinates
-    const { col, row } = this.getMousePosition(event);
-    this.hoveredHexCoords = { col, row };
+    // Don't update hover coordinates when minimized
+    if (!this.isMinimized) {
+      // Update hovered coordinates
+      const { col, row } = this.getMousePosition(event);
+      this.hoveredHexCoords = { col, row };
+    }
 
-    if (this.isDragging && this.lastMousePosition) {
+    if (this.isDragging && this.lastMousePosition && !this.isMinimized) {
       const colShift = Math.round((event.clientX - this.lastMousePosition.x) * this.dragSpeed);
       const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
       this.mapCenter.col -= colShift;
@@ -692,14 +722,14 @@ class Minimap {
 
       this.recomputeScales();
       this.draw();
-    } else {
+    } else if (!this.isMinimized) {
       // Redraw only when not dragging to show updated hover coordinates
       this.draw();
     }
   };
 
   private handleMouseUp = (event: MouseEvent) => {
-    if (this.mouseStartPosition) {
+    if (this.mouseStartPosition && !this.isMinimized) {
       const startX = this.mouseStartPosition.x;
       const startY = this.mouseStartPosition.y;
       const endX = event.clientX;
@@ -718,6 +748,9 @@ class Minimap {
   };
 
   private zoom(zoomOut: boolean, event?: MouseEvent) {
+    // Don't allow zooming when minimized
+    if (this.isMinimized) return;
+
     const currentRange = this.mapSize.width;
 
     if (!zoomOut && currentRange < MINIMAP_CONFIG.MIN_ZOOM_RANGE) {
@@ -747,12 +780,18 @@ class Minimap {
   }
 
   private handleWheel = (event: WheelEvent) => {
+    // Don't allow wheel events when minimized
+    if (this.isMinimized) return;
+
     event.stopPropagation();
     const zoomOut = event.deltaY > 0; // Zoom out for positive deltaY, zoom in for negative
     this.zoom(zoomOut, event);
   };
 
   handleClick = (event: MouseEvent) => {
+    // Don't handle clicks for navigation when minimized
+    if (this.isMinimized) return;
+
     event.stopPropagation();
     const { col, row, x, y } = this.getMousePosition(event);
 
@@ -913,8 +952,10 @@ class Minimap {
 
   // New method to handle mouse leaving the canvas
   private handleMouseLeave = () => {
-    this.hoveredHexCoords = null;
-    this.draw();
+    if (!this.isMinimized) {
+      this.hoveredHexCoords = null;
+      this.draw();
+    }
   };
 }
 

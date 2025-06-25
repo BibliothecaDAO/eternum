@@ -1,7 +1,7 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import { Button, NumberInput, Select, cn } from "@/ui/design-system/atoms";
+import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
@@ -12,7 +12,9 @@ import {
   ID,
   PlayerStructure,
   RESOURCE_PRECISION,
+  RESOURCE_RARITY,
   resources,
+  ResourcesIds,
   StructureType,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
@@ -270,8 +272,11 @@ export const Bridge = ({ structures }: BridgeProps) => {
       // Make LORDS appear first
       if (a.name.toLowerCase() === "lords") return -1;
       if (b.name.toLowerCase() === "lords") return 1;
-      // Keep original order for other resources
-      return 0;
+
+      // Sort other resources by rarity (lower rarity values = more common = should appear first)
+      const rarityA = RESOURCE_RARITY[a.id as ResourcesIds] || 999;
+      const rarityB = RESOURCE_RARITY[b.id as ResourcesIds] || 999;
+      return rarityA - rarityB;
     });
 
   const {
@@ -346,6 +351,52 @@ export const Bridge = ({ structures }: BridgeProps) => {
     if (/^\d*\.?\d*$/.test(amount) || amount === "") {
       setResourcesToBridge((prev) => prev.map((r) => (r.key === key ? { ...r, amount } : r)));
     }
+  };
+
+  // Wrapper component for bridge-specific max button logic
+  const BridgeMaxButton = ({
+    resourceKey,
+    resourceId,
+    tokenAddress,
+    structureBalance,
+    direction,
+  }: {
+    resourceKey: number;
+    resourceId: number | null;
+    tokenAddress: string | null;
+    structureBalance: number;
+    direction: BridgeDirection;
+  }) => {
+    const { balance: walletBalance } = useResourceBalance({
+      resourceAddress: tokenAddress,
+      disabled: direction === "out" || !resourceId,
+    });
+
+    const calculateMax = useCallback(() => {
+      if (!resourceId) return 0;
+
+      if (direction === "out") {
+        return structureBalance;
+      } else if (direction === "in" && walletBalance !== undefined) {
+        return parseFloat(formatEther(walletBalance));
+      }
+      return 0;
+    }, [resourceId, direction, structureBalance, walletBalance]);
+
+    const isDisabled =
+      !resourceId ||
+      (direction === "out" && structureBalance <= 0) ||
+      (direction === "in" && (!walletBalance || walletBalance === 0n));
+
+    return (
+      <MaxButton
+        max={calculateMax}
+        onChange={(value) => handleAmountChange(resourceKey, value)}
+        disabled={isDisabled}
+        className="h-9 px-3 text-xs"
+        size="md"
+      />
+    );
   };
 
   const addResourceEntry = () => {
@@ -654,22 +705,28 @@ export const Bridge = ({ structures }: BridgeProps) => {
                   </Select>
                 </div>
 
-                {/* Amount Input & Optional Mint Button */}
+                {/* Amount Input & Max Button */}
                 <div className="flex items-center gap-2">
-                  {" "}
-                  {/* Container for input and button */}
                   <div className="flex-grow">
-                    {" "}
-                    {/* Allow input to take most space */}
                     <NumberInput
                       min={0}
                       max={bridgeDirection === "out" && balance !== null ? displayBalance : undefined}
                       value={parseInt(resource.amount) || 0}
                       onChange={(value) => handleAmountChange(resource.key, value.toString())}
                       disabled={!resource.resourceId}
-                      className="w-full h-9" // Explicit height for alignment
+                      className="w-full h-9"
                     />
                   </div>
+                  {/* Max Button */}
+                  {resource.resourceId && (
+                    <BridgeMaxButton
+                      resourceKey={resource.key}
+                      resourceId={resource.resourceId}
+                      tokenAddress={resource.tokenAddress}
+                      structureBalance={displayBalance}
+                      direction={bridgeDirection}
+                    />
+                  )}
                 </div>
               </div>
             );

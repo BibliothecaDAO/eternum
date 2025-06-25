@@ -20,6 +20,8 @@ export interface SeasonAddresses {
   realms: string;
   /** Address of the LORDS token contract */
   lords: string;
+  /** Address of the loot chest contract */
+  lootChests: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
     [key: string]: (string | number)[];

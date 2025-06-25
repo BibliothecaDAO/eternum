@@ -1,0 +1,181 @@
+name: Claude Review - Client Apps
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "client/apps/**/*.{ts,tsx,js,jsx}"
+      - "client/apps/**/package.json"
+      - "client/apps/**/*.{css,scss}"
+      - "client/apps/**/README.md"
+
+jobs:
+  claude-review-client:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup GitHub MCP Server
+        run: |
+          mkdir -p /tmp/mcp-config
+          cat > /tmp/mcp-config/mcp-servers.json << 'EOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run",
+                  "-i",
+                  "--rm",
+                  "-e",
+                  "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:sha-7aced2b"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PAT }}"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude Client Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_config: /tmp/mcp-config/mcp-servers.json
+
+          # Enable documentation review capabilities
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          direct_prompt: |
+            Review this client application pull request focusing on:
+
+            **React/TypeScript Best Practices:**
+            - Component design following the established feature-based architecture (ui/features/)
+            - Proper use of React hooks and lifecycle methods
+            - TypeScript type safety using @bibliothecadao/types
+            - State management with Zustand stores (ui/store-managers.tsx)
+            - Design system consistency (ui/design-system/atoms & molecules)
+
+            **Eternum-Specific Architecture:**
+            - Feature module organization (economy, military, world, settlement, social, progression, infrastructure)
+            - Proper use of Eternum packages (@bibliothecadao/core, @bibliothecadao/provider, @bibliothecadao/react)
+            - Dojo integration patterns (@dojoengine/react, @dojoengine/recs)
+            - Cartridge Controller integration for wallet connections
+
+            **Performance & Gaming:**
+            - Component re-rendering optimization for real-time game state
+            - Three.js integration and 3D rendering performance
+            - WebSocket handling for real-time features (chat, game updates)
+            - Bundle size impact and code splitting strategies
+            - Resource-intensive operations (hex map calculations, army movements)
+
+            **Blockchain Gaming UX:**
+            - Transaction state handling (pending, success, error)
+            - Gas optimization considerations
+            - Wallet connection flows
+            - Real-time blockchain data synchronization via Torii
+            - Loading states for blockchain operations
+
+            **Code Quality:**
+            - Error handling and error boundaries
+            - Accessibility (ARIA labels, keyboard navigation)
+            - Responsive design for different screen sizes
+            - Proper type definitions and imports
+
+            **Testing:**
+            - Unit test coverage for components and hooks
+            - Integration tests for user flows
+            - Mock strategies for blockchain interactions
+            - Test setup using vitest.config.ts
+
+            Be constructive and focus on maintainability, performance, and blockchain gaming user experience.
+
+            ## Inline PR Comments for Actionable Suggestions
+
+            When you identify specific improvements during review, provide **inline comments** on the relevant lines with:
+
+            **For Small, Specific Improvements:**
+            - Missing TypeScript types or type improvements
+            - Performance optimizations (React.memo, useCallback, etc.)
+            - Accessibility improvements (ARIA labels, keyboard navigation)
+            - Code style inconsistencies
+            - Missing error handling
+            - Import optimizations
+            - Component refactoring opportunities
+
+            **Comment Format:**
+            ```
+            💡 **[Type] Suggestion:** Brief description
+
+            **Current Issue:** What could be improved
+            **Suggested Change:** Specific code suggestion
+            **Impact:** Why this improves the code
+
+            **Example Implementation:**
+            ```typescript
+            // Suggested code change here
+            ```
+
+            **Examples:**
+            - `💡 **Performance Suggestion:** Add React.memo to prevent unnecessary re-renders`
+            - `💡 **A11y Suggestion:** Add ARIA label for better screen reader support`
+            - `💡 **Type Safety Suggestion:** Add proper typing for better IDE support`
+            - `💡 **Refactor Suggestion:** Extract shared logic into custom hook`
+
+          allowed_tools:
+            "Bash(pnpm run format),Bash(pnpm run lint),Bash(pnpm run typecheck),Bash(pnpm
+            test),mcp__github__get_issue,mcp__github__get_issue_comments,mcp__github__update_issue,mcp__github__search_issues,mcp__github__list_issues,mcp__github__create_issue,mcp__github__get_pull_request,mcp__github__list_pull_requests,mcp__github__create_pull_request,mcp__github__update_pull_request,mcp__github__get_file_contents,mcp__github__update_file,mcp__github__create_branch,mcp__github__list_branches,mcp__github__get_repository,mcp__github__list_repositories,mcp__github__search_repositories,mcp__github__get_user,mcp__github__list_commits,mcp__github__create_comment,mcp__github__list_comments,mcp__github__update_comment,mcp__github__delete_comment"
+
+          # Documentation Update Instructions
+          custom_instructions: |
+            ## Documentation Updates via MCP
+
+            If your review identifies changes that require documentation updates, you can create a separate pull request using MCP tools:
+
+            **Documentation Areas to Consider:**
+
+            **App README Updates:**
+            - client/apps/game/README.md if architecture changes
+            - client/apps/game-docs/README.md if documentation structure changes
+            - client/apps/landing/README.md if landing page features change
+            - client/apps/bot/README.md if bot functionality changes
+
+            **Game Documentation Updates:**
+            - client/apps/game-docs/docs/pages/ if game mechanics change
+            - Add new components to client/apps/game-docs/docs/components/ for new game features
+            - Update client/apps/game-docs/docs/utils/ if constants or resources change
+
+            **Main Documentation:**
+            - readme.md if new apps are added or setup instructions change
+            - CLAUDE.md if development processes or package architecture changes
+
+            **How to Create Documentation PR using MCP:**
+
+            1. Use mcp__github__create_branch to create a new documentation branch:
+               - Branch name: "docs/update-client-[feature-name]"
+               - Base branch: "next"
+
+            2. Use file editing tools to update the necessary documentation files
+
+            3. Use mcp__github__create_pull_request to create the documentation PR:
+               - Title: "docs: Update client documentation for [feature]"
+               - Body: "Updates documentation to reflect client changes in PR #[original-pr-number]"
+               - Target branch: "next"
+
+            **Available MCP Tools for Documentation:**
+            - mcp__github__create_branch
+            - mcp__github__create_pull_request
+            - mcp__github__get_file_contents
+            - mcp__github__update_file

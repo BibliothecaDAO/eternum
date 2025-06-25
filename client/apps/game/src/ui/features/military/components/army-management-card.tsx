@@ -45,6 +45,7 @@ type ArmyCreateProps = {
   isExplorer: boolean;
   guardSlot?: number;
   onCancel?: () => void;
+  onSuccess?: () => void;
 };
 
 interface DirectionButtonProps {
@@ -81,7 +82,15 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
   );
 };
 
-export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardSlot, onCancel }: ArmyCreateProps) => {
+export const ArmyCreate = ({
+  owner_entity,
+  army,
+  armyManager,
+  isExplorer,
+  guardSlot,
+  onCancel,
+  onSuccess,
+}: ArmyCreateProps) => {
   const {
     setup: { components },
     account: { account },
@@ -464,6 +473,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
             handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount).finally(() => {
               setTroopCount(0);
               setIsLoading(false);
+              onSuccess?.();
               onCancel?.();
             })
           }
