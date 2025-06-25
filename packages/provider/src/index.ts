@@ -1900,8 +1900,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
       hyps_fail_prob_increase_p_fnd,
-      mine_wheat_grant_amount,
-      mine_fish_grant_amount,
+      relic_discovery_interval_sec,
+      relic_hex_dist_from_center,
+      relic_chest_relics_per_chest,
       signer,
     } = props;
 
@@ -1918,8 +1919,9 @@ export class EternumProvider extends EnhancedDojoProvider {
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
         hyps_fail_prob_increase_p_fnd,
-        mine_wheat_grant_amount,
-        mine_fish_grant_amount,
+        relic_discovery_interval_sec,
+        relic_hex_dist_from_center,
+        relic_chest_relics_per_chest,
       ],
     });
   }

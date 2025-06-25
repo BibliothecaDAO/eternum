@@ -854,8 +854,6 @@ export const setupGlobals = async (config: Config) => {
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
     hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
-    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
-    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
     relic_discovery_interval_sec: config.config.exploration.relicDiscoveryIntervalSeconds,
     relic_hex_dist_from_center: config.config.exploration.relicHexDistanceFromCenter,
     relic_chest_relics_per_chest: config.config.exploration.relicChestRelicsPerChest,
@@ -879,8 +877,6 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
-    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
-    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
     │  ${chalk.gray("Relic Discovery Interval:")} ${chalk.white(mapCalldata.relic_discovery_interval_sec + " seconds")}
     │  ${chalk.gray("Relic Hex Distance from Center:")} ${chalk.white(mapCalldata.relic_hex_dist_from_center)}
     │  ${chalk.gray("Relic Chest Relics per Chest:")} ${chalk.white(mapCalldata.relic_chest_relics_per_chest)}

@@ -1216,8 +1216,6 @@ export function defineContractComponents(world: World) {
             hyps_fail_prob: RecsType.Number,
             hyps_fail_prob_increase_p_hex: RecsType.Number,
             hyps_fail_prob_increase_p_fnd: RecsType.Number,
-            mine_wheat_grant_amount: RecsType.Number,
-            mine_fish_grant_amount: RecsType.Number,
             relic_discovery_interval_sec: RecsType.Number,
             relic_hex_dist_from_center: RecsType.Number,
             relic_chest_relics_per_chest: RecsType.Number,

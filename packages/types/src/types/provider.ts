@@ -347,8 +347,9 @@ export interface SetMapConfigProps extends SystemSigner {
   hyps_fail_prob: num.BigNumberish;
   hyps_fail_prob_increase_p_hex: num.BigNumberish;
   hyps_fail_prob_increase_p_fnd: num.BigNumberish;
-  mine_wheat_grant_amount: num.BigNumberish;
-  mine_fish_grant_amount: num.BigNumberish;
+  relic_discovery_interval_sec: num.BigNumberish;
+  relic_hex_dist_from_center: num.BigNumberish;
+  relic_chest_relics_per_chest: num.BigNumberish;
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
