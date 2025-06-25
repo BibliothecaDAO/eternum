@@ -37,6 +37,11 @@ const items = [
     icon: Gamepad2,
   },
   {
+    title: "Loot Chests",
+    url: "/loot-chests",
+    icon: Gamepad2,
+  },
+  {
     title: "Marketplace",
     url: "/trade",
     icon: Scale,

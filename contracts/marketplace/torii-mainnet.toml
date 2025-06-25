@@ -19,9 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-	  "erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
-	  "erc721:0x060e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",
-      "erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+	  "erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",   # Realms
+	  "erc721:0x060e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",	 # Season Pass
+	  "erc721:0x0572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266", 	 # Loot Chests
+      "erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",	 # Lords
 ]
 
 namespaces = ["marketplace"]
