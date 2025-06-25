@@ -49,11 +49,16 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       .filter((res) => res.id !== ResourcesIds.Fish && res.id !== ResourcesIds.Wheat);
   }, [realmInfo, availableResources]);
 
-  const ordersForRealm = useAutomationStore((state) => state.getOrdersForRealm(realmEntityId));
+  // Get the raw data and functions from the store
+  const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
+  const pausedRealms = useAutomationStore((state) => state.pausedRealms);
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
   const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
-  const isRealmPaused = useAutomationStore((state) => state.isRealmPaused(realmEntityId));
+
+  // Derive the values for this specific realm
+  const ordersForRealm = useMemo(() => ordersByRealm[realmEntityId] || [], [ordersByRealm, realmEntityId]);
+  const isRealmPaused = useMemo(() => pausedRealms[realmEntityId] || false, [pausedRealms, realmEntityId]);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
