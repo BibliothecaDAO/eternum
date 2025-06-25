@@ -16,7 +16,7 @@ Each military building constructed also increases total field armies by 1 (up to
 view. The maximum size of an army is
 **{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
 
-### Field Armies
+## Field Armies
 
 Field armies are used to project force on the world map, explore unknown territories, claim hyperstructures, defeat bandit forces, and engage in combat with other players. These armies are deployed onto one of the six hexes surrounding their parent Realm on the world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies occupy a hex and traverse the world map based on the conditions outlined in the [World Map & Movement](/blitz/worldmap-movement/movement) section.
 
@@ -29,13 +29,15 @@ any guard armies present.
   <em>Flow to create field army in the client</em>
 </div>
 
-### Guard Armies
+## Guard Armies
 
 Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
 view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
-opening up the Details tab.
+opening the Details tab.
 
 Unlike Realms, world structures have a static number of defence slots:
+
+<span style={{ color: "red" }}>DRAFTING NOTE: Review table.</span>
 
 <WorldStructureDefenseSlotsTable />
 
@@ -44,9 +46,11 @@ Unlike Realms, world structures have a static number of defence slots:
   <em>Flow to create guard in the client</em>
 </div>
 
+<span style={{ color: "red" }}>DRAFTING NOTE: Review reinforcement delay to 10 minutes.</span>
+
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
 destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
+**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} minutes**. Once all guard armies are defeated,
 the structure becomes vulnerable to being claimed by an adjacent field army. Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
 structure on the worldmap, then right-clicking the target hex.
 
@@ -55,25 +59,3 @@ structure on the worldmap, then right-clicking the target hex.
   <em>Attack field army with structure</em>
 </div>
 
-## Blitz-Specific Mechanics
-
-### No P2P Transfers
-- **No Direct Transfers**: Players cannot transfer troops directly to other players
-- **No Trade System**: No trading of troops between players
-- **Individual Competition**: All military actions are focused on individual competition
-
-### Reinforcement Limitations
-- **No Donkey Transport**: Players cannot transport troops by donkey to hyperstructures
-- **Map Movement Only**: Reinforcements must be moved across the map from a Realm
-- **Strategic Planning**: Requires careful planning for military operations
-
-### Starting Troops
-- **Full Inventory**: Each Realm starts with all troops in their inventory
-- **No Stripping**: No incentive to strip mine troops from Realms
-- **Immediate Deployment**: Players can immediately deploy troops for exploration and combat
-
-### Combat Focus
-- **Bandit Battles**: Primary AI opponents are bandit forces protecting structures
-- **Player Combat**: Direct combat with other players for territory and resources
-- **Structure Control**: Military actions focused on claiming and defending world structures
-- **Scoring Impact**: All military actions contribute to Military Score

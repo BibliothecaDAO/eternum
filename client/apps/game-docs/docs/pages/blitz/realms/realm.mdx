@@ -16,48 +16,13 @@ They can produce any of the nine resources available in Blitz and are equally ca
   style={{ margin: "0 auto", transform: "scale(1.2)" }}
 />
 
-## Settling
+## Realm Details
+
+### Settling
 
 Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are registered to play are drawn at random from the pool and assigned spawn positions sequentially according to the settling algorithm.
 Once assigned a map position, Lords are required to confirm their participation in the session by initiating a 'Settle' transaction, which will place their three Realms in their drawn position.
 This must be done in the 30-minute Settling Phase to ensure presence and readiness to play the game. Lords who fail to confirm settling during this phase will not have their Realms placed and will forfeit participation in the session. Their allocated spawn position will remain empty throughout the game.
-
-<span style={{ color: "red" }}>DRAFTING NOTE: Insert gif of settling transaction process.</span>
-
-### Settling Algorithm
-
-The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
-
-The number of Hyperstructure rings is determined by:
-
-**r = √(P/6)**
-
-Where:
-- **P** is the number of players (Lords) registered to play in the session
-- **r** is the number of Hyperstructure rings
-- If **r** is not an integer, then it is rounded up to the nearest integer
-
-The number of Hyperstructures in a ring is determined by:
-
-**H<sub>r</sub> = 6r**
-
-Where:
-- **H<sub>r</sub>** is the number of Hyperstructures in ring **r**
-- **r** is the ring number (1, 2, 3, etc.)
-
-Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is sequential and follows
-a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
-
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-  <p style={importantNote.content}>
-    There is no immunity period in Blitz. All Realms are able to be attacked and claimed
-    from the moment the game begins.
-  </p>
-</div>
-
-## Realm Details
 
 ### Starting Resources
 
