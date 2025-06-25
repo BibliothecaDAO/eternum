@@ -1218,6 +1218,9 @@ export function defineContractComponents(world: World) {
             hyps_fail_prob_increase_p_fnd: RecsType.Number,
             mine_wheat_grant_amount: RecsType.Number,
             mine_fish_grant_amount: RecsType.Number,
+            relic_discovery_interval_sec: RecsType.Number,
+            relic_hex_dist_from_center: RecsType.Number,
+            relic_chest_relics_per_chest: RecsType.Number,
           },
           settlement_config: {
             center: RecsType.Number,
@@ -1374,6 +1377,9 @@ export function defineContractComponents(world: World) {
               "u16", // MapConfig hyps_fail_prob_increase_p_fnd
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
+              "u16", // MapConfig relic_discovery_interval_sec
+              "u8", // MapConfig relic_hex_dist_from_center
+              "u8", // MapConfig relic_chest_relics_per_chest
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig subsequent_distance

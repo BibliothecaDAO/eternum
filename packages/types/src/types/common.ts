@@ -435,6 +435,9 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     questFindProbability: number;
     questFindFailProbability: number;
+    relicDiscoveryIntervalSeconds: number;
+    relicHexDistanceFromCenter: number;
+    relicChestRelicsPerChest: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
