@@ -23,3 +23,7 @@ export const getRealmsAddress = () => {
 export const getMarketplaceAddress = () => {
   return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).marketplace;
 };
+
+export const getLootChestsAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lootChests;
+};

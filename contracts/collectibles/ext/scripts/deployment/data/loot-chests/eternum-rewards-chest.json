@@ -1,9 +1,9 @@
 {
-    "name": "Realms: Loot Chests",
+    "name": "Realms: Loot Chest",
     "symbol": "RLC",
-    "description": "Loot Chests for Realms",
-    "updateContractAddress": "",
-    "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
+    "description": "Loot Chest for Realms",
+    "updateContractAddress": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
+    "defaultIpfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW",
     "defaultIpfsCidOverwrite": false,
     "traits": [
         {
@@ -15,13 +15,13 @@
                     "traitValueId": 1,
                     "traitValueName": "Season 1",
                     "traitValueNameOverwrite": false
-                },
+                }
             ]
         },
         {
             "traitTypeNameOverwrite": false,
             "traitTypeId": 1,
-            "traitTypeName": "Type",
+            "traitTypeName": "ID",
             "traitValues": [
                 {
                     "traitValueId": 1,
@@ -33,16 +33,11 @@
     ],
     "traitsCombinedIpfsCid": [
        { 
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest", 
-            "ipfsCid": "QmSg9bPzW9anFYc3wWU5KnvymwkxQTpmqcRSfYj7UmiBa7", 
+            "traits": "Epoch:Season 1,ID:Eternum Rewards Chest", 
+            "ipfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW", 
             "overwrite": false 
         }
     ],
     "mintCData": [
-        { 
-            "traits": "Epoch:Season 1,Type:Eternum Rewards Chest", 
-            "toAddress": "0x01bfc84464f990c09cc0e5d64d18f54c3469fd5c467398bf31293051bade1c39", 
-            "count": 7
-        }
-    ]
+        ]
 }

@@ -29,10 +29,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.9.4"
+          scarb-version: "2.10.1"
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.4.0/dojo_v1.4.0_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.5.0/dojo_v1.5.0_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
       - name: Run Dojo Test for ${{ matrix.test }}
@@ -46,6 +46,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.9.4"
+          scarb-version: "2.10.1"
       - name: Run scarb fmt check
         run: cd contracts/game && scarb fmt --check

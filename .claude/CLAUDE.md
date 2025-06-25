@@ -19,7 +19,7 @@
 3. **Make your changes on the branch** (NEVER work directly on `next`)
 4. **Commit changes**: `git add . && git commit -m "your message"`
 5. **Push branch**: `git push -u origin your-branch-name`
-6. **Create PR**: Always create pull requests FROM your branch TO `next` branch
+6. **Create PR**: **ALWAYS use `--base next`** when creating PRs: `gh pr create --base next`
 
 **If you find yourself on `next` with uncommitted changes:**
 
@@ -30,8 +30,9 @@
 **NEVER:**
 
 - Work directly on `next` branch
-- Create PRs to `main` (always target `next`)
+- **Create PRs to `main` branch (ALWAYS target `next` - use `--base next`)**
 - Push commits directly to `next`
+- Use `gh pr create` without explicitly specifying `--base next`
 
 ## Repository Etiquette
 
