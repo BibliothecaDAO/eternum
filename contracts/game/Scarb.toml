@@ -1,5 +1,5 @@
 [package]
-cairo-version = "=2.9.4"
+cairo-version = "=2.10.1"
 name = "s1_eternum"
 version = "1.0.0"
 edition = "2024_07"
@@ -8,16 +8,16 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [dependencies]
-starknet = "2.9.4"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
+starknet = "2.10.1"
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.0" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
-achievement = { git = "https://github.com/cartridge-gg/arcade", tag = "v1.4.0" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "5268dc0" }
 cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
-tournaments = { git = "https://github.com/Provable-Games/tournaments.git", tag = "v0.1.5" }
+tournaments = { git = "https://github.com/Provable-Games/tournaments.git", rev = "9b867a3" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.4.0" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.5.0" }
 openzeppelin_token = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
 
