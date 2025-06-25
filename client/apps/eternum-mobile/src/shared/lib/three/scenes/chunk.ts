@@ -57,7 +57,7 @@ export class Chunk {
     this.isLoaded = false;
   }
 
-  public getGroup(): THREE.Group {
+  public async getGroup(): Promise<THREE.Group> {
     return this.group;
   }
 

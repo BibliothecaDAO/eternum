@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createHexagonShape } from "./hexagon-geometry";
+import { TilePosition, TileRenderer } from "./tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
 export class HexagonMap {
@@ -7,6 +8,7 @@ export class HexagonMap {
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
   private instanceMesh: THREE.InstancedMesh | null = null;
+  private tileRenderer: TileRenderer;
   private raycaster: THREE.Raycaster;
   private matrix = new THREE.Matrix4();
   private position = new THREE.Vector3();
@@ -24,6 +26,7 @@ export class HexagonMap {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.raycaster = new THREE.Raycaster();
+    this.tileRenderer = new TileRenderer(scene);
     this.initializeMap();
   }
 
@@ -100,29 +103,43 @@ export class HexagonMap {
       this.instanceMesh.dispose();
     }
 
-    const hexagonShape = createHexagonShape(HEX_SIZE * 0.98); // 0.9 scale for gaps
+    const hexagonShape = createHexagonShape(HEX_SIZE); // 0.98 scale for gaps
     const hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
     const hexagonMaterial = new THREE.MeshLambertMaterial({
       color: 0xffffff, // White base color, will be overridden by instance colors
       transparent: true,
-      opacity: 0.8,
+      opacity: 0,
     });
 
     const instanceCount = this.visibleHexes.size;
 
-    if (instanceCount === 0) return;
+    if (instanceCount === 0) {
+      // Clear tiles when no hexes are visible
+      this.tileRenderer.clearTiles();
+      return;
+    }
 
     this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, hexagonMaterial, instanceCount);
 
     // Set up per-instance colors
     this.instanceMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
-    let index = 0;
-    this.visibleHexes.forEach((hexString) => {
+    // Collect and sort hexes by row for proper rendering order
+    const hexArray = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
+      return { col, row, hexString };
+    });
+
+    // Sort by row (higher row = higher render order)
+    hexArray.sort((a, b) => b.row - a.row);
+
+    let index = 0;
+    const tilePositions: TilePosition[] = [];
+
+    hexArray.forEach(({ col, row, hexString }) => {
       const position = getWorldPositionForHex({ col, row });
 
-      // Simple positioning without random offsets
+      // Position hex shape
       this.dummy.position.set(position.x, 0.1, position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
@@ -130,6 +147,9 @@ export class HexagonMap {
 
       // Set default blue color for each instance
       this.instanceMesh!.setColorAt(index, new THREE.Color(0x4a90e2));
+
+      // Collect tile positions for the tile renderer
+      tilePositions.push({ col, row });
 
       index++;
     });
@@ -140,6 +160,9 @@ export class HexagonMap {
     }
 
     this.scene.add(this.instanceMesh);
+
+    // Render tiles using the TileRenderer
+    this.tileRenderer.renderTilesForHexes(tilePositions);
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3): void {
@@ -220,6 +243,9 @@ export class HexagonMap {
       this.scene.remove(this.instanceMesh);
       this.instanceMesh.dispose();
     }
+
+    // Dispose tile renderer
+    this.tileRenderer.dispose();
 
     this.allHexes.clear();
     this.visibleHexes.clear();
