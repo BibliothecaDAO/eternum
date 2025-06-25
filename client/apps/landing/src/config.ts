@@ -11,7 +11,7 @@ export const lordsAddress = getLordsAddress();
 export const seasonPassAddress = getSeasonPassAddress();
 export const realmsAddress = getRealmsAddress();
 export const marketplaceAddress = getMarketplaceAddress();
-export const lootChestsAddress = getLootChestsAddress();
+const lootChestsAddress = getLootChestsAddress();
 // Collection IDs for different networks
 const COLLECTION_IDS = {
   mainnet: {

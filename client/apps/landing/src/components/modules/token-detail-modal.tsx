@@ -58,7 +58,6 @@ export const TokenDetailModal = ({
     : originalImage;
   const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
 
-
   const { data: activeMarketOrder } = useQuery({
     queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
     queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
