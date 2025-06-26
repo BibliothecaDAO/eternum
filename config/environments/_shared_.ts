@@ -89,8 +89,8 @@ export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 // ----- Relic Discovery ----- //
-export const RELIC_DISCOVERY_INTERVAL_SECONDS = 3600; // 1 hour
-export const RELIC_HEX_DISTANCE_FROM_CENTER = 10;
+export const RELIC_DISCOVERY_INTERVAL_SECONDS = 180; // 3 minutes
+export const RELIC_HEX_DISTANCE_FROM_CENTER = 3;
 export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
