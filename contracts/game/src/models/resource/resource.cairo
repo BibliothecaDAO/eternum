@@ -101,6 +101,13 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
 }
 
 #[generate_trait]
+pub impl RelicResourceImpl of RelicResourceTrait {
+    fn is_relic(resource_type: u8) -> bool {
+        resource_type >= RELICS_RESOURCE_START_ID && resource_type <= RELICS_RESOURCE_END_ID
+    }
+}
+
+#[generate_trait]
 pub impl TroopResourceImpl of TroopResourceTrait {
     fn is_troop(resource_type: u8) -> bool {
         resource_type == ResourceTypes::KNIGHT_T1
@@ -129,13 +136,8 @@ pub impl TroopResourceImpl of TroopResourceTrait {
 
 #[generate_trait]
 pub impl SingleResourceImpl of SingleResourceTrait {
-    fn is_relic_or_essence(resource_type: u8) -> bool {
-        (resource_type >= RELICS_RESOURCE_START_ID && resource_type <= RELICS_RESOURCE_END_ID)
-            || resource_type == ResourceTypes::ESSENCE
-    }
-
     fn ensure_correct_precision(ref self: SingleResource) {
-        if Self::is_relic_or_essence(self.resource_type) {
+        if RelicResourceImpl::is_relic(self.resource_type) {
             assert!(
                 self.balance % RESOURCE_PRECISION == 0,
                 "Eternum: Resource balance must be a multiple of RESOURCE_PRECISION for relics and essence",
@@ -289,6 +291,9 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
+        if RelicResourceImpl::is_relic(resource_type) {
+            return Zero::zero();
+        }
         return world
             .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::production_selector(resource_type.into()));
     }
@@ -302,6 +307,9 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
+        if RelicResourceImpl::is_relic(resource_type) {
+            panic!("Eternum: Relics and Essence cannot be produced");
+        }
         world
             .write_member(
                 Model::<Resource>::ptr_from_keys(entity_id),
