@@ -59,6 +59,47 @@ some time for the full amount of ancient fragments to be produced by the structu
 the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
 only have one defense slot to support a guard army.
 
+## Relic Chests
+
+Relic Chests are mystical containers that appear across the world at regular intervals, containing powerful artifacts from ancient civilizations. These chests represent a global discovery system that rewards active exploration and creates strategic opportunities for Lords seeking rare materials.
+
+<img src="/images/buildings/construction/relic-chest.png" width="800" />
+
+### Discovery Mechanics
+
+Unlike other world structures that are discovered through exploration probability, Relic Chests operate on a **time-based global discovery system**:
+
+- A single Relic Chest spawns globally at configurable intervals (determined by server settings)
+- Discovery is triggered whenever any army explores a new hex, but only if enough time has passed since the last chest was discovered
+- When a chest is discovered, it spawns at a calculated distance from the exploration point using advanced placement algorithms
+- The chest will automatically appear on the nearest unoccupied hex, ensuring fair access
+
+### Chest Contents
+
+Each Relic Chest contains valuable relics that are automatically granted to the army that opens it:
+
+- **Relic Types**: Three different types of relics (E1, E2, E3) with varying properties
+- **Quantity**: Each chest contains a configurable number of relics (typically 1-3 relics)
+- **Randomization**: Relic selection uses cryptographic randomization to ensure fair distribution
+- **Instant Reward**: Relics are immediately added to the explorer's inventory upon opening
+
+### Opening Requirements
+
+To claim a Relic Chest's contents, armies must meet specific conditions:
+
+- **Adjacency**: The exploring army must be positioned on a hex adjacent to the chest
+- **Ownership**: Only the army owner or authorized agents can open chests
+- **Timing**: Chests can only be opened during active game seasons
+
+### Strategic Implications
+
+Relic Chests introduce several strategic considerations:
+
+- **Global Competition**: Since only one chest spawns at a time, there's inherent competition among all players
+- **Exploration Incentive**: Active exploration increases chances of triggering new chest discoveries
+- **Resource Scarcity**: Relics cannot be produced, making chests the sole source of these valuable materials
+- **Early Game Advantage**: Players who explore more frequently have better chances of discovering new chests
+
 ## Quest Tiles
 
 _WIP, update next week !_

@@ -92,6 +92,7 @@ pub mod utils {
     pub mod map;
     pub mod mine;
     pub mod realm;
+    pub mod relic;
     pub mod resource;
     pub mod structure;
     pub mod troop;
@@ -100,5 +101,9 @@ pub mod utils {
 
 pub mod quest {
     pub mod constants;
+    pub mod contracts;
+}
+
+pub mod relic {
     pub mod contracts;
 }
