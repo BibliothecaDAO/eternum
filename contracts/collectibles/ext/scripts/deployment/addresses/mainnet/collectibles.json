@@ -1,0 +1,34 @@
+{
+  "address": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
+  "calldata": [
+    {
+      "data": [],
+      "pending_word": "0x5265616c6d733a204c6f6f74204368657374",
+      "pending_word_len": 18
+    },
+    {
+      "data": [],
+      "pending_word": "0x524c43",
+      "pending_word_len": 3
+    },
+    {
+      "data": [],
+      "pending_word": "0x00",
+      "pending_word_len": 0
+    },
+    {
+      "data": [],
+      "pending_word": "0x4c6f6f7420436865737420666f72205265616c6d73",
+      "pending_word_len": 21
+    },
+    "0x289bf5e0916ca68d21946eabd1caa2be94e33eb7379af04914ed513d80c67af",
+    "0x289bf5e0916ca68d21946eabd1caa2be94e33eb7379af04914ed513d80c67af",
+    "0x289bf5e0916ca68d21946eabd1caa2be94e33eb7379af04914ed513d80c67af",
+    "0x289bf5e0916ca68d21946eabd1caa2be94e33eb7379af04914ed513d80c67af",
+    "0x289bf5e0916ca68d21946eabd1caa2be94e33eb7379af04914ed513d80c67af",
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    "0x1f4"
+  ],
+  "deployed_at": 1750763492792,
+  "deployed_at_readable": "Tue, 24 Jun 2025 11:11:32 GMT"
+}

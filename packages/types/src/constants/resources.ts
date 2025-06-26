@@ -53,6 +53,9 @@ export const STEALABLE_RESOURCES = [
   ResourcesIds.Wheat,
 ];
 
+// Alias for backward compatibility with documentation
+export const RAIDABLE_RESOURCES = STEALABLE_RESOURCES;
+
 export const resources: Array<Resources> = [
   {
     trait: "Stone",
