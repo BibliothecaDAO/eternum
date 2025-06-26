@@ -1,3 +1,4 @@
+import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { BaseScene } from "./base-scene";
 import { HexagonMap } from "./hexagon-map";
@@ -5,8 +6,10 @@ import { HexagonMap } from "./hexagon-map";
 export class WorldmapScene implements BaseScene {
   private scene: THREE.Scene;
   private hexagonMap!: HexagonMap;
+  private dojo: DojoResult;
 
-  constructor() {
+  constructor(dojo: DojoResult) {
+    this.dojo = dojo;
     this.scene = new THREE.Scene();
     this.createScene();
   }
@@ -17,7 +20,7 @@ export class WorldmapScene implements BaseScene {
   }
 
   private createHexagonMap(): void {
-    this.hexagonMap = new HexagonMap(this.scene);
+    this.hexagonMap = new HexagonMap(this.scene, this.dojo);
   }
 
   private addLighting(): void {
@@ -38,6 +41,10 @@ export class WorldmapScene implements BaseScene {
 
   public getHexagonMap(): HexagonMap {
     return this.hexagonMap;
+  }
+
+  public getDojo(): DojoResult {
+    return this.dojo;
   }
 
   public update(camera: THREE.Camera): void {

@@ -1,3 +1,4 @@
+import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { SCENE_COLORS } from "../constants";
 import { BaseScene } from "./base-scene";
@@ -5,9 +6,11 @@ import { BaseScene } from "./base-scene";
 export class GenericScene implements BaseScene {
   private scene: THREE.Scene;
   private sceneId: string;
+  private dojo: DojoResult;
 
-  constructor(sceneId: string) {
+  constructor(sceneId: string, dojo: DojoResult) {
     this.sceneId = sceneId;
+    this.dojo = dojo;
     this.scene = new THREE.Scene();
     this.createScene();
   }
@@ -74,5 +77,9 @@ export class GenericScene implements BaseScene {
         }
       }
     });
+  }
+
+  public getDojo(): DojoResult {
+    return this.dojo;
   }
 }

@@ -1,3 +1,4 @@
+import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants";
@@ -17,12 +18,14 @@ export class GameRenderer {
   private isDisposed = false;
   private mouse: THREE.Vector2;
   private boundClickHandler: ((event: MouseEvent) => void) | null = null;
+  private dojo: DojoResult;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, dojo: DojoResult) {
     this.scenes = new Map();
     this.sceneInstances = new Map();
     this.currentScene = "worldmap";
     this.mouse = new THREE.Vector2();
+    this.dojo = dojo;
 
     // Initialize Three.js components
     this.scene = new THREE.Scene();
@@ -161,11 +164,9 @@ export class GameRenderer {
     let sceneInstance: BaseScene;
 
     if (sceneId === "worldmap") {
-      // Use the dedicated WorldmapScene class
-      sceneInstance = new WorldmapScene();
+      sceneInstance = new WorldmapScene(this.dojo);
     } else {
-      // Use the generic scene for other scenes
-      sceneInstance = new GenericScene(sceneId);
+      sceneInstance = new GenericScene(sceneId, this.dojo);
     }
 
     this.scenes.set(sceneId, sceneInstance.getScene());
@@ -237,6 +238,10 @@ export class GameRenderer {
 
   public getAvailableScenes(): string[] {
     return Array.from(this.scenes.keys());
+  }
+
+  public getDojo(): DojoResult {
+    return this.dojo;
   }
 
   public dispose(): void {

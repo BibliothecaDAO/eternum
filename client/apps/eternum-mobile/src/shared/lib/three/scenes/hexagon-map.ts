@@ -1,10 +1,14 @@
+import { DojoResult } from "@bibliothecadao/react";
+import { FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
+import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { createHexagonShape } from "./hexagon-geometry";
 import { TilePosition, TileRenderer } from "./tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
 export class HexagonMap {
   private scene: THREE.Scene;
+  private dojo: DojoResult;
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
   private instanceMesh: THREE.InstancedMesh | null = null;
@@ -37,8 +41,12 @@ export class HexagonMap {
   private chunkLoadRadiusX = HexagonMap.CHUNK_LOAD_RADIUS_X;
   private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
 
-  constructor(scene: THREE.Scene) {
+  // Chunk fetching tracking
+  private fetchedChunks: Set<string> = new Set();
+
+  constructor(scene: THREE.Scene, dojo: DojoResult) {
     this.scene = scene;
+    this.dojo = dojo;
     this.raycaster = new THREE.Raycaster();
     this.tileRenderer = new TileRenderer(scene);
     this.initializeStaticAssets();
@@ -83,7 +91,7 @@ export class HexagonMap {
   }
 
   // Filter visible hexes for the current chunk area
-  private updateVisibleHexes(centerChunkX: number, centerChunkZ: number): void {
+  private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
     this.visibleHexes.clear();
 
     const radiusX = this.chunkLoadRadiusX;
@@ -92,11 +100,15 @@ export class HexagonMap {
       `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
     );
 
+    // Compute tile entities for the current chunk
+    const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
+    await this.computeTileEntities(chunkKey);
+
     for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
       for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
         // Check if chunk is within map bounds
         if (this.isChunkInBounds(x, z)) {
-          console.log(`Processing chunk (${x}, ${z})`);
+          // console.log(`Processing chunk (${x}, ${z})`);
           this.loadChunkHexes(x, z);
         } else {
           console.log(`Skipping chunk (${x}, ${z}) - out of bounds`);
@@ -152,9 +164,9 @@ export class HexagonMap {
     }
 
     // Debug logging to help understand what's being loaded
-    console.log(
-      `Loading chunk (${chunkX}, ${chunkZ}): hex range (${startCol}-${endCol - 1}, ${startRow}-${endRow - 1})`,
-    );
+    // console.log(
+    //   `Loading chunk (${chunkX}, ${chunkZ}): hex range (${startCol}-${endCol - 1}, ${startRow}-${endRow - 1})`,
+    // );
   }
 
   private renderHexes(): void {
@@ -247,7 +259,10 @@ export class HexagonMap {
     if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ) {
       console.log(`Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})`);
       console.log(`Camera at (${cameraPosition.x.toFixed(2)}, ${cameraPosition.z.toFixed(2)}) -> Hex (${col}, ${row})`);
-      this.updateVisibleHexes(chunkX, chunkZ);
+      // Don't await here to avoid blocking the render loop
+      this.updateVisibleHexes(chunkX, chunkZ).catch((error) => {
+        console.error("Error updating visible hexes:", error);
+      });
       this.lastChunkX = chunkX;
       this.lastChunkZ = chunkZ;
     }
@@ -397,5 +412,44 @@ export class HexagonMap {
     console.log(
       `Adjusted chunk loading radius to (${this.chunkLoadRadiusX}, ${this.chunkLoadRadiusZ}) for screen ${screenWidth}x${screenHeight}, aspect ratio: ${aspectRatio.toFixed(2)}`,
     );
+  }
+
+  private async computeTileEntities(chunkKey: string) {
+    const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
+    const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
+
+    const range = this.chunkLoadRadiusX;
+
+    if (this.fetchedChunks.has(chunkKey)) {
+      console.log("Already fetched chunk:", chunkKey);
+      return;
+    }
+
+    this.fetchedChunks.add(chunkKey);
+
+    const start = performance.now();
+    try {
+      console.log(
+        `[HexagonMap] Fetching tile entities for chunk ${chunkKey} at (${startCol}, ${startRow}) with range ${range}`,
+      );
+
+      await getMapFromTorii(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as any,
+        startCol,
+        startRow,
+        range,
+      );
+    } catch (error) {
+      this.fetchedChunks.delete(chunkKey);
+      console.error("Error fetching tile entities:", error);
+    } finally {
+      const end = performance.now();
+      console.log("[HexagonMap] Tile entities query completed in", end - start, "ms");
+    }
+  }
+
+  public clearTileEntityCache() {
+    this.fetchedChunks.clear();
   }
 }

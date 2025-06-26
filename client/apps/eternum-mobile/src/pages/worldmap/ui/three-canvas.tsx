@@ -1,4 +1,5 @@
 import { GameRenderer } from "@/shared/lib/three/game-renderer";
+import { useDojo } from "@bibliothecadao/react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 interface ThreeCanvasProps {
@@ -18,6 +19,7 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(({ onSce
   const isInitializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const dojo = useDojo();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,7 +35,7 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(({ onSce
       isInitializedRef.current = true;
 
       // Initialize GameRenderer
-      const renderer = new GameRenderer(canvas);
+      const renderer = new GameRenderer(canvas, dojo);
       rendererRef.current = renderer;
 
       // Start render loop
