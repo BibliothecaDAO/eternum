@@ -13,38 +13,50 @@ export interface HexagonWorldPosition {
 }
 
 export class Hexagon {
-  private mesh: THREE.Mesh;
   private coordinates: HexagonCoordinates;
   private worldPosition: HexagonWorldPosition;
+  private instanceId: number;
   private static geometry: THREE.ShapeGeometry | null = null;
   private static material: THREE.MeshLambertMaterial | null = null;
 
   // Hexagon constants
-  private static readonly HEX_HEIGHT = 0.1;
+  public static readonly HEX_HEIGHT = 0.1;
 
-  constructor(col: number, row: number) {
+  constructor(col: number, row: number, instanceId: number = -1) {
     this.coordinates = { col, row };
     this.worldPosition = this.calculateWorldPosition(col, row);
+    this.instanceId = instanceId;
 
-    // Create shared geometry and material if not exists
+    // Ensure shared resources are created
+    Hexagon.ensureSharedResources();
+  }
+
+  private static ensureSharedResources(): void {
+    // Create shared geometry if not exists
     if (!Hexagon.geometry) {
       const hexagonShape = createHexagonShape(HEX_SIZE);
       Hexagon.geometry = new THREE.ShapeGeometry(hexagonShape);
     }
 
+    // Create shared material if not exists
     if (!Hexagon.material) {
       Hexagon.material = new THREE.MeshLambertMaterial({
         color: 0x4a90e2,
         transparent: true,
         opacity: 0.8,
+        vertexColors: true,
       });
     }
+  }
 
-    // Create mesh
-    this.mesh = new THREE.Mesh(Hexagon.geometry, Hexagon.material);
-    this.mesh.position.set(this.worldPosition.x, Hexagon.HEX_HEIGHT, this.worldPosition.z);
-    this.mesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-    this.mesh.userData = { hexagon: this, coordinates: this.coordinates };
+  public static getSharedGeometry(): THREE.ShapeGeometry | null {
+    Hexagon.ensureSharedResources();
+    return Hexagon.geometry;
+  }
+
+  public static getSharedMaterial(): THREE.MeshLambertMaterial | null {
+    Hexagon.ensureSharedResources();
+    return Hexagon.material;
   }
 
   private calculateWorldPosition(col: number, row: number): HexagonWorldPosition {
@@ -53,8 +65,18 @@ export class Hexagon {
     return { x: position.x, z: position.z };
   }
 
+  // Legacy method for backward compatibility - creates individual mesh
   public getMesh(): THREE.Mesh {
-    return this.mesh;
+    Hexagon.ensureSharedResources();
+    if (!Hexagon.geometry || !Hexagon.material) {
+      throw new Error("Failed to create shared resources");
+    }
+
+    const mesh = new THREE.Mesh(Hexagon.geometry, Hexagon.material);
+    mesh.position.set(this.worldPosition.x, Hexagon.HEX_HEIGHT, this.worldPosition.z);
+    mesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    mesh.userData = { hexagon: this, coordinates: this.coordinates };
+    return mesh;
   }
 
   public getCoordinates(): HexagonCoordinates {
@@ -65,25 +87,23 @@ export class Hexagon {
     return this.worldPosition;
   }
 
-  public onClick(): void {
-    console.log(`Hexagon clicked: col=${this.coordinates.col}, row=${this.coordinates.row}`);
-
-    // Visual feedback - temporarily change color
-    const originalColor = (this.mesh.material as THREE.MeshLambertMaterial).color.getHex();
-    (this.mesh.material as THREE.MeshLambertMaterial).color.setHex(0xff6b6b);
-
-    setTimeout(() => {
-      (this.mesh.material as THREE.MeshLambertMaterial).color.setHex(originalColor);
-    }, 200);
+  public getInstanceId(): number {
+    return this.instanceId;
   }
 
-  public setVisible(visible: boolean): void {
-    this.mesh.visible = visible;
+  public setInstanceId(instanceId: number): void {
+    this.instanceId = instanceId;
+  }
+
+  public onClick(): void {
+    console.log(
+      `Hexagon clicked: col=${this.coordinates.col}, row=${this.coordinates.row}, instance=${this.instanceId}`,
+    );
   }
 
   public dispose(): void {
-    // Don't dispose shared geometry and material
-    // They will be disposed when the last hexagon is disposed
+    // Lightweight object, nothing to dispose
+    // Shared resources are managed separately
   }
 
   public static disposeSharedResources(): void {

@@ -182,7 +182,7 @@ export class HexagonMap {
       this.instanceMesh!.setColorAt(index, new THREE.Color(0x4a90e2));
 
       // Collect tile positions for the tile renderer
-      tilePositions.push({ col, row });
+      //tilePositions.push({ col, row });
 
       index++;
     });

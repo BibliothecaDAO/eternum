@@ -16,6 +16,7 @@ export class GameRenderer {
   private animationId: number | null = null;
   private isDisposed = false;
   private mouse: THREE.Vector2;
+  private boundClickHandler: ((event: MouseEvent) => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.scenes = new Map();
@@ -48,9 +49,17 @@ export class GameRenderer {
   }
 
   private setupEventListeners(canvas: HTMLCanvasElement): void {
+    // Remove any existing click listeners to prevent duplicates
+    if (this.boundClickHandler) {
+      canvas.removeEventListener("click", this.boundClickHandler);
+    }
+
+    // Create bound handler to ensure proper removal later
+    this.boundClickHandler = (event: MouseEvent) => this.handleClick(event);
+
     // Handle click events
-    canvas.addEventListener("click", (event) => this.handleClick(event));
-    canvas.addEventListener("touchend", (event) => this.handleTouch(event));
+    canvas.addEventListener("click", this.boundClickHandler);
+    // canvas.addEventListener("touchend", (event) => this.handleTouch(event));
   }
 
   private handleClick(event: MouseEvent): void {
@@ -61,18 +70,20 @@ export class GameRenderer {
     this.processClick();
   }
 
-  private handleTouch(event: TouchEvent): void {
-    if (event.changedTouches.length > 0) {
-      const touch = event.changedTouches[0];
-      const rect = this.renderer.domElement.getBoundingClientRect();
-      this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
-      this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+  // private handleTouch(event: TouchEvent): void {
+  //   if (event.changedTouches.length > 0) {
+  //     const touch = event.changedTouches[0];
+  //     const rect = this.renderer.domElement.getBoundingClientRect();
+  //     this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+  //     this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
 
-      this.processClick();
-    }
-  }
+  //     this.processClick();
+  //   }
+  // }
 
   private processClick(): void {
+    console.log("handleClick fired");
+
     // Handle click for current scene
     const currentSceneInstance = this.sceneInstances.get(this.currentScene);
     if (currentSceneInstance && currentSceneInstance.handleClick) {
@@ -231,6 +242,12 @@ export class GameRenderer {
   public dispose(): void {
     this.isDisposed = true;
     this.stopRenderLoop();
+
+    // Remove event listeners
+    if (this.boundClickHandler) {
+      this.renderer.domElement.removeEventListener("click", this.boundClickHandler);
+      this.boundClickHandler = null;
+    }
 
     // Dispose of scene instances
     this.sceneInstances.forEach((sceneInstance) => {

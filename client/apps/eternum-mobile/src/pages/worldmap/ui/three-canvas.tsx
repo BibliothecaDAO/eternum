@@ -15,16 +15,22 @@ export interface ThreeCanvasRef {
 export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(({ onSceneChange, className }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
+  const isInitializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || isInitializedRef.current) return;
 
     try {
       setIsLoading(true);
       setError(null);
+
+      console.log("Creating GameRenderer instance");
+
+      // Mark as initialized to prevent double initialization
+      isInitializedRef.current = true;
 
       // Initialize GameRenderer
       const renderer = new GameRenderer(canvas);
@@ -47,19 +53,22 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(({ onSce
 
       // Cleanup function
       return () => {
+        console.log("Cleaning up GameRenderer");
         window.removeEventListener("resize", handleResize);
         if (rendererRef.current) {
           rendererRef.current.stopRenderLoop();
           rendererRef.current.dispose();
           rendererRef.current = null;
         }
+        isInitializedRef.current = false;
       };
     } catch (err) {
       console.error("Failed to initialize Three.js canvas:", err);
       setError(err instanceof Error ? err.message : "Failed to initialize 3D view");
       setIsLoading(false);
+      isInitializedRef.current = false;
     }
-  }, []);
+  }, []); // Empty dependency array - run once
 
   const switchScene = (sceneId: string) => {
     if (rendererRef.current) {
