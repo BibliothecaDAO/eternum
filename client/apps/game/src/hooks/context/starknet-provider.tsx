@@ -5,7 +5,6 @@ import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../env";
-import { policies } from "./policies";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
@@ -24,7 +23,7 @@ const chain_id = isLocal
     ? constants.StarknetChainId.SN_SEPOLIA
     : constants.StarknetChainId.SN_MAIN;
 
-const nonLocalController = new ControllerConnector({
+const controller = new ControllerConnector({
   chains: [
     {
       rpcUrl: isLocal
@@ -75,7 +74,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={isLocal ? [katanaLocalChain] : [mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[nonLocalController as unknown as Connector]}
+      connectors={[controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
     >

@@ -48,7 +48,7 @@ const useRpcProvider = () => {
   return useMemo(
     () =>
       new RpcProvider({
-        nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+        nodeUrl: env.VITE_PUBLIC_NODE_URL,
       }),
     [],
   );
