@@ -125,7 +125,7 @@ export class TileRenderer {
     sprite.position.set(position.x, 0.2, position.z - HEX_SIZE * 0.825);
 
     // Set render order based on row (higher row = higher render order)
-    sprite.renderOrder = 1000 + row;
+    sprite.renderOrder = 10 + row;
 
     this.sprites.set(hexKey, sprite);
     this.scene.add(sprite);
