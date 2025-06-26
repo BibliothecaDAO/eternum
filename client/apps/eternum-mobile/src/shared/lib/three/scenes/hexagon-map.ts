@@ -19,8 +19,13 @@ export class HexagonMap {
   private lastChunkZ: number = -999;
 
   // Map constants - removed MAP_SIZE since map is infinite
-  private static readonly CHUNK_LOAD_RADIUS = 1; // Load chunks within this radius
+  private static readonly CHUNK_LOAD_RADIUS_X = 2; // Load chunks within this radius horizontally
+  private static readonly CHUNK_LOAD_RADIUS_Z = 2; // Load chunks within this radius vertically
   private static readonly CHUNK_SIZE = 5; // 5x5 hexagons per chunk
+
+  // Dynamic chunk loading radius (can be adjusted based on screen size)
+  private chunkLoadRadiusX = HexagonMap.CHUNK_LOAD_RADIUS_X;
+  private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -54,13 +59,14 @@ export class HexagonMap {
   private updateVisibleHexes(centerChunkX: number, centerChunkZ: number): void {
     this.visibleHexes.clear();
 
-    const radius = HexagonMap.CHUNK_LOAD_RADIUS;
+    const radiusX = this.chunkLoadRadiusX;
+    const radiusZ = this.chunkLoadRadiusZ;
     console.log(
-      `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius ${radius} ===`,
+      `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
     );
 
-    for (let x = centerChunkX - radius; x <= centerChunkX + radius; x++) {
-      for (let z = centerChunkZ - radius; z <= centerChunkZ + radius; z++) {
+    for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
+      for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
         // Check if chunk is within map bounds
         if (this.isChunkInBounds(x, z)) {
           console.log(`Processing chunk (${x}, ${z})`);
@@ -176,7 +182,7 @@ export class HexagonMap {
       this.instanceMesh!.setColorAt(index, new THREE.Color(0x4a90e2));
 
       // Collect tile positions for the tile renderer
-      //tilePositions.push({ col, row });
+      tilePositions.push({ col, row });
 
       index++;
     });
@@ -193,17 +199,28 @@ export class HexagonMap {
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3): void {
-    // Convert camera position to hex coordinates
-    const hexCol = Math.floor(cameraPosition.x / (HEX_SIZE * Math.sqrt(3)));
-    const hexRow = Math.floor(cameraPosition.z / (HEX_SIZE * 1.5));
+    // Convert camera position to hex coordinates using the same logic as getHexForWorldPosition
+    const hexRadius = HEX_SIZE;
+    const hexHeight = hexRadius * 2;
+    const hexWidth = hexHeight * 1.6; // width = height * 1.6
+    const vertDist = hexHeight * 0.75; // Vertical distance between row centers
+    const horizDist = hexWidth; // Horizontal distance between column centers
+
+    // Calculate row first
+    const row = Math.round(cameraPosition.z / vertDist);
+    // Calculate row offset for hexagon staggering
+    const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
+    // Calculate column using the offset
+    const col = Math.round((cameraPosition.x + rowOffset) / horizDist);
 
     // Get chunk coordinates
-    const chunkX = Math.floor(hexCol / HexagonMap.CHUNK_SIZE);
-    const chunkZ = Math.floor(hexRow / HexagonMap.CHUNK_SIZE);
+    const chunkX = Math.floor(col / HexagonMap.CHUNK_SIZE);
+    const chunkZ = Math.floor(row / HexagonMap.CHUNK_SIZE);
 
     // Only update if we've moved to a different chunk
     if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ) {
       console.log(`Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})`);
+      console.log(`Camera at (${cameraPosition.x.toFixed(2)}, ${cameraPosition.z.toFixed(2)}) -> Hex (${col}, ${row})`);
       this.updateVisibleHexes(chunkX, chunkZ);
       this.lastChunkX = chunkX;
       this.lastChunkZ = chunkZ;
@@ -308,5 +325,33 @@ export class HexagonMap {
 
     this.allHexes.clear();
     this.visibleHexes.clear();
+  }
+
+  /**
+   * Adjust chunk loading radius based on screen dimensions and camera settings
+   * @param screenWidth - Screen width in pixels
+   * @param screenHeight - Screen height in pixels
+   * @param cameraDistance - Distance of camera from the map
+   */
+  public adjustChunkLoadingRadius(screenWidth: number, screenHeight: number, cameraDistance: number = 10): void {
+    // Calculate aspect ratio
+    const aspectRatio = screenWidth / screenHeight;
+
+    // Base radius calculation - adjust these multipliers as needed
+    const baseRadius = Math.max(1, Math.ceil(cameraDistance / 10));
+
+    if (aspectRatio > 1) {
+      // Landscape orientation - load more chunks horizontally
+      this.chunkLoadRadiusX = Math.ceil(baseRadius * aspectRatio);
+      this.chunkLoadRadiusZ = baseRadius;
+    } else {
+      // Portrait orientation - load more chunks vertically
+      this.chunkLoadRadiusX = baseRadius;
+      this.chunkLoadRadiusZ = Math.ceil(baseRadius / aspectRatio);
+    }
+
+    console.log(
+      `Adjusted chunk loading radius to (${this.chunkLoadRadiusX}, ${this.chunkLoadRadiusZ}) for screen ${screenWidth}x${screenHeight}, aspect ratio: ${aspectRatio.toFixed(2)}`,
+    );
   }
 }
