@@ -129,6 +129,7 @@ class PromiseQueue {
 
             if (batch.length === 1) {
               const { providerCall, resolve, reject } = batch[0];
+              console.log({ providerCall, batch });
               try {
                 const result = await providerCall();
                 resolve(result);
@@ -1649,6 +1650,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     };
 
     const call = this.createProviderCall(signer, [...callData, moveCall]);
+
+    console.log({ call });
 
     return await this.promiseQueue.enqueue(call);
   }

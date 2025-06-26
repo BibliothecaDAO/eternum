@@ -1329,7 +1329,7 @@
   "contracts": [
     {
       "address": "0x34b2c4dd955b447ba4850e3ba7b1a29725cc939c30ffc42f253c347326527eb",
-      "class_hash": "0xc6cb2d6548e08e808908bc8bc3a19dfb37f0ef8aea9afce4fe9bdaf7c96f9f",
+      "class_hash": "0x62b0a58b7a94aa6a846a0f4deaf9b0df7f76949ea71ae677ee9aa6ee3ba4123",
       "abi": [
         {
           "type": "impl",
@@ -3586,7 +3586,7 @@
     },
     {
       "address": "0x3b5b78653e926ba986263ade7bd9a1d603ae6350e971d20cddbef3ea9c17fa5",
-      "class_hash": "0x4be0e4021c13fd9ead2c8c22ee866949c57f3f11bb5a59721ac231c94bfef43",
+      "class_hash": "0x2a1910307d6fe90853ca5c8bb591096e2e86c50e36d426416b6793eb5cce0ee",
       "abi": [
         {
           "type": "impl",
@@ -5616,7 +5616,7 @@
     },
     {
       "address": "0x67626c7e69bded4ef70bc60523264ebe47be1fa0954267894be342c29567400",
-      "class_hash": "0x55bd971cbc9c636abcffa164d40d0f868012ab180cd29d802a4dd73744766e6",
+      "class_hash": "0x24d4e55a79bd859defa42741ed738639c0e3c1af4f436f24f9955efac60d3fa",
       "abi": [
         {
           "type": "impl",
@@ -5932,7 +5932,7 @@
     },
     {
       "address": "0x4b8f89ca7d0ea8ce7c22ab95675e9dd453fcbb3430e9667b4d10419f953de14",
-      "class_hash": "0x66278de8f98cebb7ecf852e371aa924713054c1a6a04969b97d25660428cc5b",
+      "class_hash": "0x3dac57152dab1bf89e572662410e2894f970cdcbd331a7cb6d96531d68a3b7a",
       "abi": [
         {
           "type": "impl",
@@ -6173,7 +6173,7 @@
     },
     {
       "address": "0x2210d301af0f3afedde6443114790d689d29ab874dc4b00414a7d37b3f0dd90",
-      "class_hash": "0x2f80ae017dff226f3153bbd676e032890457bee5764d0e465f650b105cb450e",
+      "class_hash": "0x61108ac43af0abdf76566861837add9c1ffe0620daf856297b8e607bd147d2d",
       "abi": [
         {
           "type": "impl",
@@ -7055,7 +7055,7 @@
     },
     {
       "address": "0x5cb99f579d1a56ac212e6cb0875310591bde10a8ff8d7f5efefee59184eccee",
-      "class_hash": "0x71a79abffedf802fe9c58db925bb9cb560ad8117b93a480c4bf0a72a11e9ba2",
+      "class_hash": "0x78c1f441b1505e1f9ff6600ec471caae9f9af9b566bf5ede444247900182064",
       "abi": [
         {
           "type": "impl",
@@ -7648,7 +7648,7 @@
     },
     {
       "address": "0x5517957cc8a6653bf335654366b0406d87f13334fda2f50719362c31b11c8af",
-      "class_hash": "0x45e255fd6e8879f1d1f05e47c88b2e27928316a96a42bce68eb7d5a4b39e4d9",
+      "class_hash": "0x781e6bb7861edd0a0baa57df5134ad488089bd74e183a6a68491ca212a81f20",
       "abi": [
         {
           "type": "impl",
@@ -8229,7 +8229,7 @@
     },
     {
       "address": "0x2eab267e61a133666c825257f52edbaf1a30f8d5833b1c02f8c571c7652957d",
-      "class_hash": "0x68cacefcef2c56967700fe8b1c7b635ed322ea02c5f10e9e85b33255461b833",
+      "class_hash": "0x22435ec4b003907b7608cc72f6e24a50bc4b50029431b2c2367309e155a83fc",
       "abi": [
         {
           "type": "impl",
@@ -9162,7 +9162,7 @@
     },
     {
       "address": "0x33e2217125720e6f9ff03239fe4e7c43bdf898350f9434404a936c5a24b752e",
-      "class_hash": "0x20c08162757be8c74b241af6af98544408a9763ebba34ecf41f014d7fe75772",
+      "class_hash": "0x260b9206bd4e667240e09237ce62432dae87411fdd2c51c6e8cad676dca80e0",
       "abi": [
         {
           "type": "impl",
@@ -9234,6 +9234,20 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam",
+          "variants": [
+            {
+              "name": "Explorer",
+              "type": "()"
+            },
+            {
+              "name": "Structure",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::relic::contracts::IRelicSystems",
           "items": [
@@ -9248,6 +9262,26 @@
                 {
                   "name": "chest_coord",
                   "type": "s1_eternum::models::position::Coord"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "apply_relic",
+              "inputs": [
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "relic_resource_id",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "recipient_type",
+                  "type": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam"
                 }
               ],
               "outputs": [],
@@ -9375,12 +9409,13 @@
       "selector": "0x632480e29dba9c95a8b4e4ba0c7ad48bd5abdd3906211ec6f8a5350249b9d0",
       "systems": [
         "open_chest",
+        "apply_relic",
         "upgrade"
       ]
     },
     {
       "address": "0x5be5058e823abae6f9e9bf300f68113ed0e7a95bcfa9ae92d166a88451c18fe",
-      "class_hash": "0x39a9991cb1ed718452a336dd10fba83e09965b3b4b7d186e56bc2e1a85d770f",
+      "class_hash": "0x588fda3baf9d8b6180b29d89e167820692dd529bb7ae03514dc47ea4cf282f6",
       "abi": [
         {
           "type": "impl",
@@ -9668,7 +9703,7 @@
     },
     {
       "address": "0x607cabfde7363a3ee2b44db0d10fe6474a449fb36236d22e34ec936e7a92488",
-      "class_hash": "0x316cbd656433a970a4b841e4f5669748a069fdeb9cfdbdfd47d619ac08780de",
+      "class_hash": "0x573d189e590d5005bc9bfbc412a663dfda5c152f72d85d1b05c06f9ea5c42f9",
       "abi": [
         {
           "type": "impl",
@@ -10258,7 +10293,7 @@
     },
     {
       "address": "0x7c3923153d08607fb8313beeea4d136fcfeee2de3027cd94da655cc23e6b4c1",
-      "class_hash": "0x14af3c1e1988566c013091ccba9750d321578f11c3b987e320332728390b738",
+      "class_hash": "0x247c51cc0a2ea8bdaabf44ca1e89a464e333650e70606fc082f7dfd51e28f97",
       "abi": [
         {
           "type": "impl",
@@ -10458,7 +10493,7 @@
     },
     {
       "address": "0x56e7f747b54e037417d304bff8ca930cb312d2fed2dde2e126379f6d6e3eef2",
-      "class_hash": "0x2c787d57c47a141215c20d84c7f7bb5837a4a59dfbfa43229697b24713e590f",
+      "class_hash": "0x421929d144998d5f3001474b398ddaf4805543619d9a6f18ab51f4b981a444a",
       "abi": [
         {
           "type": "impl",
@@ -10695,7 +10730,7 @@
     },
     {
       "address": "0x659e9ddf3f66af93b2b4596e68064a096b8dffc0bf3301e37efc9ebb788be64",
-      "class_hash": "0x4f704a778213b6a214a57948e6ec429349c6c4ddf958c4a2dd1f378442cfad0",
+      "class_hash": "0x31f177562cb0496cf104f55c34fa86b2f9963194a9a79e25bf518bbed9b1e8",
       "abi": [
         {
           "type": "impl",
@@ -10961,7 +10996,7 @@
     },
     {
       "address": "0x2ae2be84517bec404790c2c6731af3ebd29fbeb43617496b1d1fc2fad16edbb",
-      "class_hash": "0x19b02eea35202065cdad05febb702083871d66e63a2548440e90c2f4609aa08",
+      "class_hash": "0x69ec9e96217d04a4175fc76f50c6c283fcce321f0c437254051008f6244d1b0",
       "abi": [
         {
           "type": "impl",
@@ -11281,7 +11316,7 @@
     },
     {
       "address": "0x4d8c3cb503bd71a550ccc92bf5cd22dcbe304892b7e013eabcea5bbf473d735",
-      "class_hash": "0x5ef0fd727718c8f1c322410d86589df3b090bdf3678749565aea925678beb5a",
+      "class_hash": "0x5ec7b0330cc592c00978256105838e623888610f7eacbb7003835c6b1904ec8",
       "abi": [
         {
           "type": "impl",
@@ -11752,7 +11787,7 @@
     },
     {
       "address": "0x13e6dfb0c6ee357618e92280f3b710b5a99b321b635784f6befa5805674213d",
-      "class_hash": "0x3cacf44ec9cf587420677d8202685a52479b046cc92a1dad0a3ca408e33b485",
+      "class_hash": "0x562268f97fb8c9db1d9aecb43e42da446af2a0dfe06bbe13d82f1ad5ffbfb87",
       "abi": [
         {
           "type": "impl",
@@ -12519,7 +12554,7 @@
     },
     {
       "address": "0x6521b1479207009192384194343d577df2ad0d8f905d92c9e69a0ba59cab38f",
-      "class_hash": "0x2cad288399be4f68ec6c91a19e808087830ba82a768ca0dab4ea4d183bea0b7",
+      "class_hash": "0x34f585ab0f16d5f1f4c1ed3970cb4a374dedf6a20a70f5b88f88071586a1532",
       "abi": [
         {
           "type": "impl",
@@ -12771,7 +12806,7 @@
     },
     {
       "address": "0x7bf7992aa74da56960387d2c4163122a1a498847ba719ac7b8c2a1390ad03aa",
-      "class_hash": "0x296e4d0af6b0f68aa4e3db688347a4164d4ab57c106bddb4fd948115dcede40",
+      "class_hash": "0x60b3c3658d703bd34cd9e96b7fbf6ca8dc3e6e225086e7c1480b221ff6d39a5",
       "abi": [
         {
           "type": "impl",
@@ -13223,6 +13258,12 @@
       "class_hash": "0x4b649edee2f208e5b98739d33b33a34f8000f635b27d812503f2877167cf066",
       "tag": "s1_eternum-QuestTile",
       "selector": "0x61f4cba350928998cf98d6fafef2b9c7da216ef013195f85c41b0f3e0d8a370"
+    },
+    {
+      "members": [],
+      "class_hash": "0x1a6d4de997e8ab5c618a2091fc201b4dd6930b0050b51fa643cba5a070df647",
+      "tag": "s1_eternum-RelicEffect",
+      "selector": "0x67b3f39d396aa9377fef642a79196fd0dbe9ef01662e13bbc120ebc95fdc0a5"
     },
     {
       "members": [],
