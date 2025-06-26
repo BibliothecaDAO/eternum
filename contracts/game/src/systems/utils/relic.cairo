@@ -40,13 +40,19 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
         };
 
         // calculate final probabilities
+        let num_directions_choices: u32 = 3;
         let mut directions: Span<Direction> = random::choices(
-            DirectionImpl::all().span(), array![1, 1, 1, 1, 1, 1].span(), array![].span(), 1, false, relic_vrf_seed,
+            DirectionImpl::all().span(),
+            array![1, 1, 1, 1, 1, 1].span(),
+            array![].span(),
+            num_directions_choices.into(),
+            false,
+            relic_vrf_seed,
         );
 
         let mut destination_coord: Coord = start_coord;
         let mut i = 1;
-        while i <= 3 {
+        while i <= num_directions_choices {
             let direction = directions.pop_front().unwrap();
             destination_coord = destination_coord
                 .neighbor_after_distance(*direction, map_config.relic_hex_dist_from_center.into() / i);
