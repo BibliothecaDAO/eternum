@@ -62,3 +62,6 @@ export const SCENE_COLORS = {
     box: 0x2ecc71, // Green
   },
 };
+
+export const PROGRESS_HALF_THRESHOLD = 50;
+export const PROGRESS_FINAL_THRESHOLD = 100;

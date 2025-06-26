@@ -1,7 +1,11 @@
 import { DojoResult } from "@bibliothecadao/react";
-import { FELT_CENTER } from "@bibliothecadao/types";
+import { BiomeType, FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../app/dojo/queries";
+import { GUIManager } from "../helpers/gui-manager";
+import { SystemManager } from "../system/system-manager";
+import { TileSystemUpdate } from "../types";
+import { Position } from "../types/position";
 import { createHexagonShape } from "./hexagon-geometry";
 import { TilePosition, TileRenderer } from "./tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
@@ -11,13 +15,14 @@ export class HexagonMap {
   private dojo: DojoResult;
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
+  private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private instanceMesh: THREE.InstancedMesh | null = null;
   private tileRenderer: TileRenderer;
   private raycaster: THREE.Raycaster;
   private matrix = new THREE.Matrix4();
   private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
-
+  private systemManager: SystemManager;
   // Reusable objects to avoid creation in loops
   private tempVector3 = new THREE.Vector3();
   private tempColor = new THREE.Color();
@@ -34,7 +39,7 @@ export class HexagonMap {
 
   // Map constants - removed MAP_SIZE since map is infinite
   private static readonly CHUNK_LOAD_RADIUS_X = 2; // Load chunks within this radius horizontally
-  private static readonly CHUNK_LOAD_RADIUS_Z = 2; // Load chunks within this radius vertically
+  private static readonly CHUNK_LOAD_RADIUS_Z = 3; // Load chunks within this radius vertically
   private static readonly CHUNK_SIZE = 5; // 5x5 hexagons per chunk
 
   // Dynamic chunk loading radius (can be adjusted based on screen size)
@@ -44,13 +49,18 @@ export class HexagonMap {
   // Chunk fetching tracking
   private fetchedChunks: Set<string> = new Set();
 
-  constructor(scene: THREE.Scene, dojo: DojoResult) {
+  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager) {
     this.scene = scene;
     this.dojo = dojo;
+    this.systemManager = systemManager;
     this.raycaster = new THREE.Raycaster();
     this.tileRenderer = new TileRenderer(scene);
     this.initializeStaticAssets();
     this.initializeMap();
+
+    this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+    GUIManager.addFolder("HexagonMap");
+    GUIManager.add(this, "moveCameraToColRow");
   }
 
   private initializeStaticAssets(): void {
@@ -82,6 +92,7 @@ export class HexagonMap {
     this.lastChunkZ = centerChunkZ;
 
     this.updateVisibleHexes(centerChunkX, centerChunkZ);
+    //this.moveCameraToColRow(-32, -15);
   }
 
   // Add hex to the global collection of all hexagons (now dynamic)
@@ -175,7 +186,15 @@ export class HexagonMap {
       this.instanceMesh.dispose();
     }
 
-    const instanceCount = this.visibleHexes.size;
+    // Filter visible hexes to only include explored ones
+    const exploredHexes = Array.from(this.visibleHexes)
+      .map((hexString) => {
+        const [col, row] = hexString.split(",").map(Number);
+        return { col, row, hexString };
+      })
+      .filter(({ col, row }) => this.isHexExplored(col, row));
+
+    const instanceCount = exploredHexes.length;
 
     if (instanceCount === 0) {
       this.tileRenderer.clearTiles();
@@ -192,19 +211,13 @@ export class HexagonMap {
     // Set up per-instance colors
     this.instanceMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
-    // Collect and sort hexes by row for proper rendering order
-    const hexArray = Array.from(this.visibleHexes).map((hexString) => {
-      const [col, row] = hexString.split(",").map(Number);
-      return { col, row, hexString };
-    });
-
     // Sort by row (higher row = higher render order)
-    hexArray.sort((a, b) => b.row - a.row);
+    exploredHexes.sort((a, b) => b.row - a.row);
 
     let index = 0;
     const tilePositions: TilePosition[] = [];
 
-    hexArray.forEach(({ col, row, hexString }) => {
+    exploredHexes.forEach(({ col, row, hexString }) => {
       // Reuse tempVector3 instead of creating new Vector3
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
 
@@ -418,7 +431,7 @@ export class HexagonMap {
     const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
     const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
 
-    const range = this.chunkLoadRadiusX;
+    const range = this.chunkLoadRadiusX * HexagonMap.CHUNK_SIZE;
 
     if (this.fetchedChunks.has(chunkKey)) {
       console.log("Already fetched chunk:", chunkKey);
@@ -451,5 +464,43 @@ export class HexagonMap {
 
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
+  }
+
+  public moveCameraToColRow(col: number, row: number, controls?: any) {
+    const worldPosition = getWorldPositionForHex({ col, row }, true, this.tempVector3);
+
+    if (controls) {
+      console.log("Moving camera to col", col, "row", row);
+      // Set the target position for the controls
+      controls.target.copy(worldPosition);
+      controls.update();
+    }
+
+    return worldPosition;
+  }
+
+  private updateExploredHex(update: TileSystemUpdate) {
+    const { hexCoords, removeExplored, biome } = update;
+
+    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+
+    const col = normalized.x;
+    const row = normalized.y;
+
+    if (removeExplored) {
+      this.exploredTiles.get(col)?.delete(row);
+      return;
+    }
+
+    if (!this.exploredTiles.has(col)) {
+      this.exploredTiles.set(col, new Map());
+    }
+    if (!this.exploredTiles.get(col)!.has(row)) {
+      this.exploredTiles.get(col)!.set(row, biome);
+    }
+  }
+
+  private isHexExplored(col: number, row: number): boolean {
+    return this.exploredTiles.has(col) && this.exploredTiles.get(col)!.has(row);
   }
 }

@@ -2,6 +2,7 @@ import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants";
+import { GUIManager } from "./helpers/gui-manager";
 import { BaseScene } from "./scenes/base-scene";
 import { GenericScene } from "./scenes/generic-scene";
 import { WorldmapScene } from "./scenes/worldmap-scene";
@@ -45,6 +46,7 @@ export class GameRenderer {
       this.setupEventListeners(canvas);
       this.createDefaultScenes();
       this.switchScene(this.currentScene);
+      this.setupCameraMovementGUI();
     } catch (error) {
       console.error("Failed to initialize GameRenderer:", error);
       throw error;
@@ -132,6 +134,39 @@ export class GameRenderer {
       this.render();
       this.updateCurrentScene();
     });
+  }
+
+  private setupCameraMovementGUI() {
+    const moveCameraFolder = GUIManager.addFolder("Move Camera");
+    const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
+
+    moveCameraFolder.add(moveCameraParams, "col").name("Column");
+    moveCameraFolder.add(moveCameraParams, "row").name("Row");
+    moveCameraFolder.add(moveCameraParams, "x").name("X");
+    moveCameraFolder.add(moveCameraParams, "y").name("Y");
+    moveCameraFolder.add(moveCameraParams, "z").name("Z");
+
+    moveCameraFolder
+      .add(
+        {
+          move: () =>
+            this.sceneInstances
+              .get("worldmap")
+              ?.getHexagonMap()
+              .moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
+        },
+        "move",
+      )
+      .name("Move Camera");
+
+    // moveCameraFolder.add(
+    //   {
+    //     move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
+    //   },
+    //   "move",
+    // );
+
+    moveCameraFolder.close();
   }
 
   private updateCurrentScene(): void {

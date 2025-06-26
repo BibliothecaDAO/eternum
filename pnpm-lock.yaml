@@ -395,6 +395,9 @@ importers:
       globals:
         specifier: ^15.14.0
         version: 15.15.0
+      lil-gui:
+        specifier: ^0.19.2
+        version: 0.19.2
       postcss:
         specifier: ^8.5.1
         version: 8.5.4
@@ -621,7 +624,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.16
+        version: 1.2.17
       eslint:
         specifier: ^9.20.1
         version: 9.28.0(jiti@2.4.2)
@@ -836,7 +839,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.16
+        version: 1.2.17
 
   packages/core:
     dependencies:
@@ -5231,8 +5234,8 @@ packages:
   '@types/babel__traverse@7.20.7':
     resolution: {integrity: sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==}
 
-  '@types/bun@1.2.16':
-    resolution: {integrity: sha512-1aCZJ/6nSiViw339RsaNhkNoEloLaPzZhxMOYEa7OzRzO41IGg5n/7I43/ZIAW/c+Q6cT12Vf7fOZOoVIzb5BQ==}
+  '@types/bun@1.2.17':
+    resolution: {integrity: sha512-l/BYs/JYt+cXA/0+wUhulYJB6a6p//GTPiJ7nV+QHa8iiId4HZmnu/3J/SowP5g0rTiERY2kfGKXEK5Ehltx4Q==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -6115,8 +6118,8 @@ packages:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
     engines: {node: '>=6.14.2'}
 
-  bun-types@1.2.16:
-    resolution: {integrity: sha512-ciXLrHV4PXax9vHvUrkvun9VPVGOVwbbbBF/Ev1cXz12lyEZMoJpIJABOfPcN9gDJRaiKF9MVbSygLg4NXu3/A==}
+  bun-types@1.2.17:
+    resolution: {integrity: sha512-ElC7ItwT3SCQwYZDYoAH+q6KT4Fxjl8DtZ6qDulUFBmXA8YB4xo+l54J9ZJN+k2pphfn9vk7kfubeSd5QfTVJQ==}
 
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
@@ -16555,9 +16558,9 @@ snapshots:
     dependencies:
       '@babel/types': 7.27.3
 
-  '@types/bun@1.2.16':
+  '@types/bun@1.2.17':
     dependencies:
-      bun-types: 1.2.16
+      bun-types: 1.2.17
 
   '@types/connect@3.4.38':
     dependencies:
@@ -18207,7 +18210,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  bun-types@1.2.16:
+  bun-types@1.2.17:
     dependencies:
       '@types/node': 20.17.57
 
