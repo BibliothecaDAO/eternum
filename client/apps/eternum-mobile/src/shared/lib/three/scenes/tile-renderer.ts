@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { getWorldPositionForTile, HEX_SIZE } from "./utils";
+import { getWorldPositionForTile, HEX_SIZE, pseudoRandom } from "./utils";
 
 export interface TilePosition {
   col: number;
@@ -107,7 +107,7 @@ export class TileRenderer {
     const position = getWorldPositionForTile({ col, row });
 
     // Choose tile based on row (even = tile1, odd = tile2)
-    const tileId = Math.floor(Math.random() * 5) + 1;
+    const tileId = Math.floor(pseudoRandom(col, row) * 5) + 1;
     const material = this.materials.get(tileId);
 
     if (!material) {

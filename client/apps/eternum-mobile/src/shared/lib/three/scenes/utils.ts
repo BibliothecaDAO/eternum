@@ -71,7 +71,7 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   };
 };
 
-const pseudoRandom = (x: number, y: number) => {
+export const pseudoRandom = (x: number, y: number) => {
   const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
