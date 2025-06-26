@@ -19,6 +19,7 @@ pub mod relic_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
+    use s1_eternum::constants::RESOURCE_PRECISION;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::MapConfig;
     use s1_eternum::models::config::{CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
@@ -27,7 +28,7 @@ pub mod relic_systems {
     use s1_eternum::models::position::{Coord, TravelTrait};
     use s1_eternum::models::relic::{RelicEffectObjectImpl, RelicEffectStoreImpl};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::StructureOwnerStoreImpl;
@@ -115,6 +116,15 @@ pub mod relic_systems {
             let current_tick: u32 = TickImpl::get_tick_config(ref world).current().try_into().unwrap();
             let relic_effect = RelicEffectObjectImpl::create_relic_effect(entity_id, relic_resource_id, current_tick);
             relic_effect.store(ref world, current_tick);
+
+            // spend the relic resource
+            let mut entity_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+            let relic_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, relic_resource_id);
+            let mut relic_resource = SingleResourceStoreImpl::retrieve(
+                ref world, entity_id, relic_resource_id, ref entity_weight, relic_resource_weight_grams, true,
+            );
+            relic_resource.spend(1 * RESOURCE_PRECISION, ref entity_weight, relic_resource_weight_grams);
+            relic_resource.store(ref world);
         }
     }
 }
