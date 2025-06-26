@@ -7,7 +7,7 @@ export interface HexPosition {
 
 export const HEX_SIZE = 1;
 
-export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true) => {
+export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = true, output?: THREE.Vector3) => {
   const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
   const hexWidth = hexHeight * 1.6; // width = height * 1.6
@@ -25,10 +25,16 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
+
+  if (output) {
+    output.set(x, y, z);
+    return output;
+  }
+
   return new THREE.Vector3(x, y, z);
 };
 
-export const getWorldPositionForTile = (hexCoords: HexPosition, flat: boolean = true) => {
+export const getWorldPositionForTile = (hexCoords: HexPosition, flat: boolean = true, output?: THREE.Vector3) => {
   const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
   const hexWidth = hexHeight * 1.6; // width = height * 1.6
@@ -46,6 +52,12 @@ export const getWorldPositionForTile = (hexCoords: HexPosition, flat: boolean = 
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
+
+  if (output) {
+    output.set(x, y, z);
+    return output;
+  }
+
   return new THREE.Vector3(x, y, z);
 };
 
@@ -76,16 +88,20 @@ export const pseudoRandom = (x: number, y: number) => {
   return n - Math.floor(n);
 };
 
+// Reusable objects for getHexagonCoordinates
+const tempMatrix = new THREE.Matrix4();
+const tempPosition = new THREE.Vector3();
+const tempQuaternion = new THREE.Quaternion();
+const tempScale = new THREE.Vector3();
+
 export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,
 ): { hexCoords: HexPosition; position: THREE.Vector3 } => {
-  const matrix = new THREE.Matrix4();
-  instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new THREE.Vector3();
-  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+  instancedMesh.getMatrixAt(instanceId, tempMatrix);
+  tempMatrix.decompose(tempPosition, tempQuaternion, tempScale);
 
-  const hexCoords = getHexForWorldPosition(position);
+  const hexCoords = getHexForWorldPosition(tempPosition);
 
-  return { hexCoords, position };
+  return { hexCoords, position: tempPosition.clone() };
 };

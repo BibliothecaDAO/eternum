@@ -12,6 +12,16 @@ export class TileRenderer {
   private sprites: Map<string, THREE.Sprite> = new Map();
   private materialsInitialized: boolean = false;
 
+  // Prototype sprites for cloning
+  private prototypeSprites: Map<number, THREE.Sprite> = new Map();
+
+  // Reusable objects to avoid creation in loops
+  private tempVector3 = new THREE.Vector3();
+
+  // Cached texture - shared across all materials
+  private static tileTexture: THREE.Texture | null = null;
+  private static textureLoader = new THREE.TextureLoader();
+
   // Tile constants
   private static readonly TILE_WIDTH = 256;
   private static readonly TILE_HEIGHT = 304;
@@ -26,27 +36,31 @@ export class TileRenderer {
   private async initializeTileMaterials(): Promise<void> {
     if (this.materialsInitialized) return;
 
-    const textureLoader = new THREE.TextureLoader();
-
     try {
-      const tileTexture = await textureLoader.loadAsync(TileRenderer.TILEMAP_PATH);
-      tileTexture.magFilter = THREE.LinearFilter;
-      tileTexture.minFilter = THREE.LinearFilter;
-      tileTexture.colorSpace = THREE.SRGBColorSpace;
+      // Load texture only once and reuse it
+      if (!TileRenderer.tileTexture) {
+        TileRenderer.tileTexture = await TileRenderer.textureLoader.loadAsync(TileRenderer.TILEMAP_PATH);
+        TileRenderer.tileTexture.magFilter = THREE.LinearFilter;
+        TileRenderer.tileTexture.minFilter = THREE.LinearFilter;
+        TileRenderer.tileTexture.colorSpace = THREE.SRGBColorSpace;
+      }
 
       // Calculate how many tiles per row in the tilemap, accounting for gaps
       const tileWidthWithGap = TileRenderer.TILE_WIDTH + TileRenderer.TILE_GAP;
-      const tilesPerRow = Math.floor((tileTexture.image.width + TileRenderer.TILE_GAP) / tileWidthWithGap);
+      const tilesPerRow = Math.floor((TileRenderer.tileTexture.image.width + TileRenderer.TILE_GAP) / tileWidthWithGap);
 
       // Create materials for tile 1 and tile 2 (can be extended for more tiles)
-      this.createTileMaterial(1, 0, tilesPerRow, tileTexture); // First tile (index 0)
-      this.createTileMaterial(2, 1, tilesPerRow, tileTexture); // Second tile (index 1)
-      this.createTileMaterial(3, 2, tilesPerRow, tileTexture); // Third tile (index 2)
-      this.createTileMaterial(4, 3, tilesPerRow, tileTexture); // Fourth tile (index 3)
-      this.createTileMaterial(5, 4, tilesPerRow, tileTexture); // Fifth tile (index 4)
+      this.createTileMaterial(1, 0, tilesPerRow, TileRenderer.tileTexture); // First tile (index 0)
+      this.createTileMaterial(2, 1, tilesPerRow, TileRenderer.tileTexture); // Second tile (index 1)
+      this.createTileMaterial(3, 2, tilesPerRow, TileRenderer.tileTexture); // Third tile (index 2)
+      this.createTileMaterial(4, 3, tilesPerRow, TileRenderer.tileTexture); // Fourth tile (index 3)
+      this.createTileMaterial(5, 4, tilesPerRow, TileRenderer.tileTexture); // Fifth tile (index 4)
+
+      // Create prototype sprites for each tile type
+      this.createPrototypeSprites();
 
       this.materialsInitialized = true;
-      console.log("Tile materials initialized successfully");
+      console.log("Tile materials and prototype sprites initialized successfully");
     } catch (error) {
       console.error("Failed to load tile texture:", error);
     }
@@ -55,16 +69,33 @@ export class TileRenderer {
   private createTileMaterial(tileId: number, tileIndex: number, tilesPerRow: number, texture: THREE.Texture): void {
     const tileUV = this.calculateTileUV(tileIndex, tilesPerRow, texture.image.width, texture.image.height);
 
+    // Don't clone texture - reuse the same texture with different UV settings
     const material = new THREE.SpriteMaterial({
-      map: texture.clone(),
+      map: texture,
       transparent: true,
       alphaTest: 0.1,
     });
 
-    material.map!.offset.set(tileUV.offsetX, tileUV.offsetY);
-    material.map!.repeat.set(tileUV.repeatX, tileUV.repeatY);
+    // Create a copy of the texture for UV manipulation
+    material.map = texture.clone();
+    material.map.offset.set(tileUV.offsetX, tileUV.offsetY);
+    material.map.repeat.set(tileUV.repeatX, tileUV.repeatY);
 
     this.materials.set(tileId, material);
+  }
+
+  private createPrototypeSprites(): void {
+    // Create prototype sprites for each tile type
+    this.materials.forEach((material, tileId) => {
+      const sprite = new THREE.Sprite(material);
+
+      // Scale sprite to match hex size
+      const spriteScale = HEX_SIZE * 3.2; // Adjustable multiplier
+      sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
+
+      // Store prototype (don't add to scene yet)
+      this.prototypeSprites.set(tileId, sprite);
+    });
   }
 
   private calculateTileUV(tileIndex: number, tilesPerRow: number, textureWidth: number, textureHeight: number) {
@@ -104,25 +135,23 @@ export class TileRenderer {
 
   private createTileSprite(col: number, row: number): void {
     const hexKey = `${col},${row}`;
-    const position = getWorldPositionForTile({ col, row });
+    // Reuse tempVector3 instead of creating new Vector3
+    getWorldPositionForTile({ col, row }, true, this.tempVector3);
 
     // Choose tile based on row (even = tile1, odd = tile2)
     const tileId = Math.floor(pseudoRandom(col, row) * 5) + 1;
-    const material = this.materials.get(tileId);
+    const prototypeSprite = this.prototypeSprites.get(tileId);
 
-    if (!material) {
-      console.warn(`Material for tile ${tileId} not found`);
+    if (!prototypeSprite) {
+      console.warn(`Prototype sprite for tile ${tileId} not found`);
       return;
     }
 
-    const sprite = new THREE.Sprite(material);
+    // Clone the prototype sprite instead of creating from scratch
+    const sprite = prototypeSprite.clone();
 
-    // Scale sprite to match hex size
-    const spriteScale = HEX_SIZE * 3.2; // Adjustable multiplier
-    sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
-
-    // Position sprite above the hex shape
-    sprite.position.set(position.x, 0.2, position.z - HEX_SIZE * 0.825);
+    // Position sprite above the hex shape using reused vector
+    sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
 
     // Set render order based on row (higher row = higher render order)
     sprite.renderOrder = 10 + row;
@@ -188,6 +217,12 @@ export class TileRenderer {
   public dispose(): void {
     this.clearTiles();
 
+    // Dispose prototype sprites
+    this.prototypeSprites.forEach((sprite) => {
+      // Don't dispose materials here as they're shared
+    });
+    this.prototypeSprites.clear();
+
     // Dispose all materials
     this.materials.forEach((material) => {
       material.dispose();
@@ -198,5 +233,15 @@ export class TileRenderer {
 
     this.materials.clear();
     this.materialsInitialized = false;
+
+    // Don't dispose static texture here as it might be used by other instances
+  }
+
+  // Static method to dispose shared resources when no longer needed
+  public static disposeStaticAssets(): void {
+    if (TileRenderer.tileTexture) {
+      TileRenderer.tileTexture.dispose();
+      TileRenderer.tileTexture = null;
+    }
   }
 }
