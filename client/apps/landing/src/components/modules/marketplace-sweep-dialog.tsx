@@ -11,10 +11,11 @@ import { ConnectWalletPrompt } from "./connect-wallet-prompt";
 interface PurchaseDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  collection: string;
 }
 
-export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) => {
-  const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore("marketplace-sweep-dialog");
+export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDialogProps) => {
+  const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore("$collection" + collection);
   const totalPrice = getTotalPrice();
   const { acceptOrders } = useMarketplace();
 
@@ -37,7 +38,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-gold">Purchase Season Passes</DialogTitle>
+          <DialogTitle className="text-gold">Purchase {collection}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 text-gold">
@@ -46,14 +47,12 @@ export const PurchaseDialog = ({ isOpen, onOpenChange }: PurchaseDialogProps) =>
             {selectedPasses.map((pass) => {
               const metadata = pass.metadata;
               const price = pass.best_price_hex ? Number(formatUnits(BigInt(pass.best_price_hex), 18)) : 0;
-
+              const image = metadata?.image?.startsWith("ipfs://")
+                ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                : metadata?.image;
               return (
                 <div key={pass.token_id} className="flex items-center gap-4 p-3 bg-card rounded-lg ">
-                  <img
-                    src={metadata?.image}
-                    alt={`Pass #${pass.token_id}`}
-                    className="w-16 h-16 object-cover rounded-md"
-                  />
+                  <img src={image} alt={`Pass #${pass.token_id}`} className="w-16 h-16 object-cover rounded-md" />
                   <div className="flex-1">
                     <h4 className="font-medium text-gold">{metadata?.name || `Pass #${pass.token_id}`}</h4>
                     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
