@@ -1,0 +1,166 @@
+import RarityResourceTable from "@/components/RarityResourceTable";
+import ResourceIcon from "@/components/ResourceIcon";
+import TroopsLimitTable from "@/components/TroopsLimitTable";
+import { ResourcesIds } from "@bibliothecadao/types";
+
+# 🪵 Materials
+
+## Materials Overview
+
+Materials encompass all transportable assets in Blitz, including:
+
+- **Food**: Essential wheat that fuels production and troop movement
+- **Resources**: 9 distinct resource types that can be produced on Realms
+- **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
+- **Donkeys**: One-time-use transport units required for moving materials across the world
+- **Labor**: A special material that enables construction and production
+- **Essence**: A new strategic resource found through exploration and required for upgrades
+
+While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only
+bridge relics into the game.
+
+## Resources
+
+Resources are the foundation of **Blitz**'s economy. The 9 simplified resources play vital roles in the game's
+ecosystem, from basic production to advanced military operations.
+
+![Produce from building](/gifs/produce-from-building-click.gif)
+
+## Material Categories
+
+### Basic Materials
+
+#### Food
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
+</div>
+
+Food is the cornerstone of your realm's economy:
+
+- **Simplified System**: Only Wheat is available (no Fish)
+- **Basic Production**: Produced without additional resource inputs
+- **Essential Resource**: Required for most production chains
+- **Troop Maintenance**: Essential for maintaining troops and construction
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
+
+### Strategic Materials
+
+#### Military
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
+  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
+  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
+</div>
+
+<TroopsLimitTable />
+
+Military units have unique properties:
+
+- **Deployment Only**: Cannot be converted back to tradeable form once deployed to an army
+- **Army Transfer**: Can be transferred between armies if located on adjacent hexes and of the same type and tier
+- **Essence Requirement**: All troop production requires Essence
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
+
+#### Transport (Donkeys)
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
+</div>
+
+Essential for logistics:
+
+- **Food Cost Only**: Donkeys only cost food to produce (no $LORDS cost)
+- **Single Use**: Consumed after a single journey
+- **Required Transport**: Essential for moving materials around the world
+
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
+
+### Special Materials
+
+#### **$LORDS** Currency
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Lords" id={ResourcesIds.Lords} size="xl" />
+</div>
+
+**$LORDS** is Blitz's economic backbone:
+
+- **Entry Fees**: Used for Warrior bracket entry fees
+- **Prize Pools**: Distributed as prizes to top performers
+- **No Donkey Production**: Not required for donkey production in Blitz
+
+#### Labor
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
+</div>
+
+Labor is a fundamental production material:
+
+- **Universal Production**: Can be produced by any Realm
+- **Construction Required**: Required to construct most buildings
+- **Resource Burning**: Produced by burning resources, with rarer resources yielding more labor
+- **Essence Integration**: May require Essence for some production
+
+#### Essence
+
+**Essence** is the key strategic resource in Blitz:
+
+- **Exploration Required**: Found by exploring the map and interacting with world structures
+- **Upgrade Requirement**: Required for all Realm upgrades and building construction
+- **Troop Production**: Essential for producing all troop types
+- **Strategic Value**: Control of Essence sources provides competitive advantage
+- **No Production**: Cannot be produced, only found through exploration
+
+## Blitz-Specific Mechanics
+
+### No Bridging Out
+
+- **Internal Only**: All materials remain within the Blitz game world
+- **No External Trade**: Cannot bridge materials out as ERC20 tokens
+- **Relic Bridging**: Players may only bridge relics into the game
+- **Scoring Focus**: Materials contribute to scoring rather than external value
+
+### Simplified Resources
+
+- **9 Resources**: Simplified resource system for fast-paced gameplay
+- **No Fish**: Food simplified to just Wheat
+- **Balanced System**: Resources designed for 3-hour competitive games
+- **Strategic Choices**: Choose production based on immediate needs
+
+### Increased Production Rates
+
+- **Faster Production**: All production rates increased for fast-paced gameplay
+- **Altered Recipes**: Production and building recipes modified for Blitz balance
+- **Efficient Scaling**: Optimized for 3-hour competitive sessions
+- **Strategic Timing**: Production timing crucial for competitive success
+
+## Strategic Considerations
+
+### Essence Management
+
+- **Early Acquisition**: Secure Essence sources quickly
+- **Exploration Priority**: Focus exploration on Essence discovery
+- **Strategic Control**: Control Essence Wells for steady production
+- **Upgrade Planning**: Plan upgrades around Essence availability
+
+### Resource Optimization
+
+- **Production Efficiency**: Optimize production for maximum scoring
+- **Strategic Building**: Choose buildings based on immediate needs
+- **Resource Conversion**: Convert resources to scoring opportunities
+- **Balanced Development**: Balance all resource types for maximum efficiency
+
+### Competitive Strategy
+
+- **Early Game**: Establish basic production quickly
+- **Mid Game**: Scale up production based on strategic needs
+- **Late Game**: Optimize for maximum scoring
+- **Resource Control**: Control key resource sources for competitive advantage
+
+Remember, in Blitz's fast-paced environment, efficient resource management is crucial for maximizing your Total Score
+and competitive performance!
