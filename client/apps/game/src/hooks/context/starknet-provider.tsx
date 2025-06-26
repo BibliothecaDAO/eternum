@@ -5,6 +5,7 @@ import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../env";
+import { policies } from "./policies";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
