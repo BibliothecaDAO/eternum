@@ -90,7 +90,7 @@ export class GameRenderer {
     const pixelRatio = Math.min(window.devicePixelRatio, 2);
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setClearColor(0x000000, 0.5);
   }
 
   private setupCamera(): void {
