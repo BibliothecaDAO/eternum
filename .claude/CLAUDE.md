@@ -41,6 +41,29 @@
 - Don't commit generated files or build artifacts
 - Always test locally before pushing
 
+## Build Verification - MANDATORY
+
+**CRITICAL: After making ANY code changes, always verify the build:**
+
+```bash
+pnpm run build
+```
+
+- This MUST pass before considering any task complete
+- The project uses `pnpm`, not `npm`
+- Never assume changes work without running the build
+- If build fails, fix all errors before proceeding
+
+## Claude.md Changes Guidelines
+
+When making changes to project rules and guidelines:
+
+- **Project-wide rules** (Git workflow, repository etiquette, etc.) → Update this file (`CLAUDE.md`)
+- **Frontend-specific rules** → Update `.claude/frontend-rules.md`
+- **Contract-specific rules** → Update `.claude/contracts-rules.md`
+
+Keep changes focused to their respective domains and avoid cross-contamination between rule files.
+
 # Frontend Guidelines
 
 @.claude/frontend-rules.md
