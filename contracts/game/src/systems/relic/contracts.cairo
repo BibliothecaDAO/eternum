@@ -72,7 +72,7 @@ pub mod relic_systems {
 
             // ensure the tile specified is occupied by a chest
             let mut chest_tile: Tile = world.read_model((chest_coord.x, chest_coord.y));
-            assert!(chest_tile.occupied(), "chest is not occupied");
+            assert!(chest_tile.occupied(), "tile is not occupied");
             assert!(chest_tile.occupier_type == TileOccupier::Chest.into(), "Eternum: No chest found at coord");
 
             // remove the chest from the tile

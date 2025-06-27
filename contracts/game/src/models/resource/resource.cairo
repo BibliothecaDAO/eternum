@@ -108,6 +108,13 @@ pub impl RelicResourceImpl of RelicResourceTrait {
 }
 
 #[generate_trait]
+pub impl EssenceResourceImpl of EssenceResourceTrait {
+    fn is_essence(resource_type: u8) -> bool {
+        resource_type == ResourceTypes::ESSENCE
+    }
+}
+
+#[generate_trait]
 pub impl TroopResourceImpl of TroopResourceTrait {
     fn is_troop(resource_type: u8) -> bool {
         resource_type == ResourceTypes::KNIGHT_T1
@@ -140,7 +147,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         if RelicResourceImpl::is_relic(self.resource_type) {
             assert!(
                 self.balance % RESOURCE_PRECISION == 0,
-                "Eternum: Resource balance must be a multiple of RESOURCE_PRECISION for relics and essence",
+                "Eternum: Resource balance must be a multiple of RESOURCE_PRECISION for relics",
             );
         }
     }
@@ -291,7 +298,7 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
-        if RelicResourceImpl::is_relic(resource_type) {
+        if RelicResourceImpl::is_relic(resource_type) || EssenceResourceImpl::is_essence(resource_type) {
             return Zero::zero();
         }
         return world
@@ -307,8 +314,8 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
-        if RelicResourceImpl::is_relic(resource_type) {
-            panic!("Eternum: Relics and Essence cannot be produced");
+        if RelicResourceImpl::is_relic(resource_type) || EssenceResourceImpl::is_essence(resource_type) {
+            return;
         }
         world
             .write_member(
