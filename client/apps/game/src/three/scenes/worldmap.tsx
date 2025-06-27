@@ -17,7 +17,7 @@ import { playResourceSound, playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
-import { CombatModal, HelpModal } from "@/ui/features/military";
+import { ChestModal, CombatModal, HelpModal } from "@/ui/features/military";
 import { QuestModal } from "@/ui/features/progression";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -427,6 +427,8 @@ export default class WorldmapScene extends HexagonScene {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Quest) {
           this.onQuestSelection(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.Chest) {
+          this.onChestSelection(actionPath, selectedEntityId);
         }
       }
     }
@@ -560,6 +562,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes,
       this.exploredTiles,
       this.questHexes,
+      this.chestHexes,
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
@@ -579,6 +582,24 @@ export default class WorldmapScene extends HexagonScene {
       <QuestModal
         explorerEntityId={selectedEntityId}
         targetHex={new Position({ x: targetHex.col, y: targetHex.row }).getContract()}
+      />,
+    );
+  }
+
+  private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+
+    // Get the target hex (last hex in the path)
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    this.state.toggleModal(
+      <ChestModal
+        selected={{
+          type: ActorType.Explorer,
+          id: selectedEntityId,
+          hex: { x: targetHex.col, y: targetHex.row },
+        }}
+        chestHex={{ x: targetHex.col, y: targetHex.row }}
       />,
     );
   }
