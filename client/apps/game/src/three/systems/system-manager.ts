@@ -507,6 +507,56 @@ export class SystemManager {
     };
   }
 
+  public get Chest() {
+    return {
+      onUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const chest = currentState.occupier_type === TileOccupier.Chest;
+
+              if (!chest) return;
+
+              return {
+                entityId: update.entity,
+                occupierId: currentState?.occupier_id,
+                hexCoords: { col: currentState.col, row: currentState.row },
+              };
+            }
+          },
+          true,
+        );
+      },
+      onDeadChest: (callback: (value: ID) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          async (update: any): Promise<ID | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, prevState] = update.value;
+
+              // Check if the previous state was a chest and current state is not
+              if (
+                prevState &&
+                prevState.occupier_type === TileOccupier.Chest &&
+                (!currentState || currentState.occupier_type !== TileOccupier.Chest)
+              ) {
+                return prevState.occupier_id;
+              }
+            }
+          },
+          false,
+        );
+      },
+    };
+  }
+
   public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
       const { initialized, percentage } = getHyperstructureProgress(entityId, this.setup.components);

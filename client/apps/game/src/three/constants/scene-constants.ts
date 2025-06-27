@@ -78,6 +78,10 @@ enum QuestFilenames {
   DarkShuffle = "quest_tile_high.glb",
 }
 
+enum ChestFilenames {
+  Chest = "chest_model.glb",
+}
+
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
@@ -306,3 +310,5 @@ export const MinesMaterialsParams: Record<
 export const QuestModelPaths: Record<string, string> = {
   [QuestType.DarkShuffle]: QUEST_MODELS_PATH + QuestFilenames.DarkShuffle,
 };
+
+export const ChestModelPath = "/models/" + ChestFilenames.Chest;

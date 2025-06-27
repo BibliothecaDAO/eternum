@@ -52,6 +52,12 @@ export interface QuestData {
   hexCoords: Position;
 }
 
+export interface ChestData {
+  entityId: ID;
+  occupierId: ID;
+  hexCoords: Position;
+}
+
 export interface RenderChunkSize {
   width: number;
   height: number;

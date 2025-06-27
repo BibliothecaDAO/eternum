@@ -199,3 +199,7 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
 export const isTileOccupierQuest = (tileOccupier: TileOccupier) => {
   return tileOccupier === TileOccupier.Quest;
 };
+
+export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
+  return tileOccupier === TileOccupier.Chest;
+};

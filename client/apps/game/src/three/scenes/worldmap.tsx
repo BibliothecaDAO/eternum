@@ -7,6 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { HEX_SIZE } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
+import { ChestManager } from "@/three/managers/chest-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
@@ -47,6 +48,7 @@ import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import {
   ArmySystemUpdate,
+  ChestSystemUpdate,
   ExplorerRewardSystemUpdate,
   QuestSystemUpdate,
   SceneName,
@@ -74,6 +76,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
+  private chestManager: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
@@ -81,6 +84,8 @@ export default class WorldmapScene extends HexagonScene {
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  // normalized positions and if they are allied or not
+  private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private selectedHexManager: SelectedHexManager;
@@ -95,6 +100,7 @@ export default class WorldmapScene extends HexagonScene {
   private armyLabelsGroup: THREE.Group;
   private structureLabelsGroup: THREE.Group;
   private questLabelsGroup: THREE.Group;
+  private chestLabelsGroup: THREE.Group;
 
   dojo: SetupResult;
 
@@ -160,12 +166,17 @@ export default class WorldmapScene extends HexagonScene {
     this.structureLabelsGroup.name = "StructureLabelsGroup";
     this.questLabelsGroup = new THREE.Group();
     this.questLabelsGroup.name = "QuestLabelsGroup";
+    this.chestLabelsGroup = new THREE.Group();
+    this.chestLabelsGroup.name = "ChestLabelsGroup";
 
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup, this);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup, this);
 
     // Initialize the quest manager
     this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
+    
+    // Initialize the chest manager
+    this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -213,6 +224,16 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
+    });
+
+    // perform some updates for the chest manager
+    this.systemManager.Chest.onUpdate((update: ChestSystemUpdate) => {
+      this.updateChestHexes(update);
+      this.chestManager.onUpdate(update);
+    });
+    this.systemManager.Chest.onDeadChest((entityId) => {
+      // If the chest is opened, remove it from the map
+      this.deleteChest(entityId);
     });
 
     this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
@@ -326,7 +347,9 @@ export default class WorldmapScene extends HexagonScene {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     const army = this.armyHexes.get(hex.x)?.get(hex.y);
     const structure = this.structureHexes.get(hex.x)?.get(hex.y);
-    return { army, structure };
+    const quest = this.questHexes.get(hex.x)?.get(hex.y);
+    const chest = this.chestHexes.get(hex.x)?.get(hex.y);
+    return { army, structure, quest, chest };
   }
 
   // hexcoords is normalized
@@ -338,7 +361,7 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    const { army, structure } = this.getHexagonEntity(hexCoords);
+    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     const isMine = army?.owner === account || structure?.owner === account;
@@ -348,6 +371,12 @@ export default class WorldmapScene extends HexagonScene {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id);
+    } else if (quest) {
+      // Handle quest click
+      this.clearEntitySelection();
+    } else if (chest) {
+      // Handle chest click - chests can be interacted with by anyone
+      this.clearEntitySelection();
     } else {
       this.clearEntitySelection();
     }
@@ -368,6 +397,7 @@ export default class WorldmapScene extends HexagonScene {
         this.armyManager.removeLabelsFromScene();
         this.structureManager.removeLabelsFromScene();
         this.questManager.removeLabelsFromScene();
+        this.chestManager.removeLabelsFromScene();
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
@@ -568,6 +598,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
+    this.chestManager.addLabelsToScene();
   }
 
   setup() {
@@ -591,11 +622,13 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.add(this.armyLabelsGroup);
     this.scene.add(this.structureLabelsGroup);
     this.scene.add(this.questLabelsGroup);
+    this.scene.add(this.chestLabelsGroup);
 
     // Update army and structure managers
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
+    this.chestManager.addLabelsToScene();
     this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
@@ -606,6 +639,7 @@ export default class WorldmapScene extends HexagonScene {
     this.scene.remove(this.armyLabelsGroup);
     this.scene.remove(this.structureLabelsGroup);
     this.scene.remove(this.questLabelsGroup);
+    this.scene.remove(this.chestLabelsGroup);
 
     // Clean up labels
     this.minimap.hideMinimap();
@@ -614,6 +648,7 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing structure labels from scene");
     this.questManager.removeLabelsFromScene();
+    this.chestManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing quest labels from scene");
 
     // Clean up wheel event listener
@@ -633,6 +668,18 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       this.armiesPositions.delete(entityId);
     }
+  }
+
+  public deleteChest(entityId: ID) {
+    this.chestManager.removeChest(entityId);
+    // Find and remove from chestHexes
+    this.chestHexes.forEach((rowMap, col) => {
+      rowMap.forEach((hex, row) => {
+        if (hex.id === entityId) {
+          rowMap.delete(row);
+        }
+      });
+    });
   }
 
   // used to track the position of the armies on the map
@@ -700,6 +747,24 @@ export default class WorldmapScene extends HexagonScene {
       this.questHexes.set(newCol, new Map());
     }
     this.questHexes.get(newCol)?.set(newRow, { id: entityId, owner: 0n });
+  }
+
+  // update chest hexes on the map
+  public updateChestHexes(update: ChestSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const newCol = normalized.x;
+    const newRow = normalized.y;
+
+    if (!this.chestHexes.has(newCol)) {
+      this.chestHexes.set(newCol, new Map());
+    }
+    this.chestHexes.get(newCol)?.set(newRow, { id: entityId, owner: 0n });
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -1091,6 +1156,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
       this.questManager.updateChunk(chunkKey);
+      this.chestManager.updateChunk(chunkKey);
     }
   }
 
@@ -1099,6 +1165,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
+    this.chestManager.update(deltaTime);
     this.minimap.update();
   }
 
