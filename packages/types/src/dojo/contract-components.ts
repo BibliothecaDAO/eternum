@@ -1654,6 +1654,29 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      OpenRelicChestEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            chest_coord: {
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
+            relics: RecsType.NumberArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "OpenRelicChestEvent",
+              types: ["u32", "u32", "u32", "Span<u8>", "u64"],
+              customTypes: ["Coord"],
+            },
+          },
+        );
+      })(),
+
       ExplorerMoveEvent: (() => {
         return defineComponent(
           world,

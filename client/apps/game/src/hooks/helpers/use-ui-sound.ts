@@ -69,6 +69,9 @@ export const soundSelector = {
   unitMarching1: "units/marching1.mp3",
   unitMarching2: "units/marching2.mp3",
   gong: "events/gong.mp3",
+  relicChest1: "relics/chest1.mp3",
+  relicChest2: "relics/chest2.mp3",
+  relicChest3: "relics/chest3.mp3",
 };
 
 export const useUiSounds = (selector: string) => {
