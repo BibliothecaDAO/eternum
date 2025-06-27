@@ -2862,4 +2862,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id, resources.length, ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount])],
     });
   }
+
+  public async open_chest(props: SystemProps.OpenChestProps) {
+    const { signer, explorer_id, chest_coord } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-relic_systems`),
+      entrypoint: "open_chest",
+      calldata: [explorer_id, chest_coord.x, chest_coord.y],
+    });
+  }
+
+  public async apply_relic(props: SystemProps.ApplyRelicProps) {
+    const { signer, entity_id, relic_resource_id, recipient_type } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-relic_systems`),
+      entrypoint: "apply_relic",
+      calldata: [entity_id, relic_resource_id, recipient_type],
+    });
+  }
 }

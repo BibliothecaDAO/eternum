@@ -78,3 +78,66 @@ When creating new UI components:
 4. **Replace existing implementations**: Update all found instances to use the new design system component for
    consistency
 5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
+
+## Adding New Contract Entrypoints - MANDATORY PROCESS
+
+**When new entrypoints are added to contracts, follow this exact pattern:**
+
+1. **Add TypeScript Props Interface** in `packages/types/src/types/provider.ts`:
+
+   ```typescript
+   export interface YourEntrypointProps extends SystemSigner {
+     // Add parameters matching the contract entrypoint
+     // Use num.BigNumberish for IDs and numbers
+     // Use coordinate structure for Coord: { x: num.BigNumberish; y: num.BigNumberish; }
+   }
+   ```
+
+2. **Add Provider Method** in `packages/dojo/node_modules/@bibliothecadao/provider/src/index.ts`:
+
+   ```typescript
+   public async your_entrypoint(props: SystemProps.YourEntrypointProps) {
+     const { signer, param1, param2 } = props;
+     return await this.executeAndCheckTransaction(signer, {
+       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-system_name`),
+       entrypoint: "your_entrypoint",
+       calldata: [param1, param2], // Match contract parameter order
+     });
+   }
+   ```
+
+3. **Add System Call Wrapper** in `packages/types/src/dojo/create-system-calls.ts`:
+
+   ```typescript
+   // Add function definition
+   const your_entrypoint = async (props: SystemProps.YourEntrypointProps): Promise<Result> => {
+     return await provider.your_entrypoint(props);
+   };
+
+   // Add to systemCalls export object
+   const systemCalls = {
+     // ... existing calls
+     your_entrypoint: withAuth(your_entrypoint),
+   };
+   ```
+
+4. **MANDATORY: Run Build Verification**:
+   ```bash
+   pnpm run build:packages
+   pnpm run build
+   ```
+
+**Example Pattern - Relic System:**
+
+- Contract entrypoints: `open_chest(explorer_id: ID, chest_coord: Coord)`, `apply_relic(...)`
+- Props interfaces: `OpenChestProps`, `ApplyRelicProps`
+- Provider methods: `open_chest()`, `apply_relic()`
+- System calls: `open_chest: withAuth(open_chest)`, `apply_relic: withAuth(apply_relic)`
+
+**CRITICAL NOTES:**
+
+- Always match contract parameter names and order exactly
+- Use `${NAMESPACE}-system_name` pattern for contract addresses (e.g., `relic_systems`)
+- Coordinate parameters use `{ x: num.BigNumberish; y: num.BigNumberish; }` structure
+- All system calls MUST use `withAuth()` wrapper for authentication
+- Build verification is mandatory before considering task complete

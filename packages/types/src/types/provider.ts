@@ -986,3 +986,17 @@ export interface TroopBurnProps extends SystemSigner {
   explorer_id: num.BigNumberish;
   resources: Resource[];
 }
+
+export interface OpenChestProps extends SystemSigner {
+  explorer_id: num.BigNumberish;
+  chest_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}
+
+export interface ApplyRelicProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  relic_resource_id: num.BigNumberish;
+  recipient_type: num.BigNumberish;
+}

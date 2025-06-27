@@ -354,6 +354,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.troop_burn(props);
   };
 
+  const open_chest = async (props: SystemProps.OpenChestProps): Promise<Result> => {
+    return await provider.open_chest(props);
+  };
+
+  const apply_relic = async (props: SystemProps.ApplyRelicProps): Promise<Result> => {
+    return await provider.apply_relic(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -444,6 +452,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     transfer_agent_ownership: withAuth(transfer_agent_ownership),
     structure_burn: withAuth(structure_burn),
     troop_burn: withAuth(troop_burn),
+    open_chest: withAuth(open_chest),
+    apply_relic: withAuth(apply_relic),
   };
 
   return systemCalls;
