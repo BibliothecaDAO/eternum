@@ -121,7 +121,28 @@ When creating new UI components:
    };
    ```
 
-4. **MANDATORY: Run Build Verification**:
+4. **Add to Policies** in `client/apps/game/src/hooks/context/policies.ts`:
+   ```typescript
+   [getContractByName(dojoConfig.manifest, "s1_eternum", "system_name").address]: {
+     methods: [
+       {
+         name: "your_entrypoint",
+         entrypoint: "your_entrypoint",
+       },
+       // Don't forget dojo_name and world_dispatcher
+       {
+         name: "dojo_name",
+         entrypoint: "dojo_name",
+       },
+       {
+         name: "world_dispatcher",
+         entrypoint: "world_dispatcher",
+       },
+     ],
+   },
+   ```
+
+5. **MANDATORY: Run Build Verification**:
    ```bash
    pnpm run build:packages
    pnpm run build
@@ -130,9 +151,10 @@ When creating new UI components:
 **Example Pattern - Relic System:**
 
 - Contract entrypoints: `open_chest(explorer_id: ID, chest_coord: Coord)`, `apply_relic(...)`
-- Props interfaces: `OpenChestProps`, `ApplyRelicProps`
+- Props interfaces: `OpenChestProps`, `ApplyRelicProps` 
 - Provider methods: `open_chest()`, `apply_relic()`
 - System calls: `open_chest: withAuth(open_chest)`, `apply_relic: withAuth(apply_relic)`
+- Policies entry: Add `relic_systems` contract with `open_chest` and `apply_relic` methods
 
 **CRITICAL NOTES:**
 
@@ -140,4 +162,5 @@ When creating new UI components:
 - Use `${NAMESPACE}-system_name` pattern for contract addresses (e.g., `relic_systems`)
 - Coordinate parameters use `{ x: num.BigNumberish; y: num.BigNumberish; }` structure
 - All system calls MUST use `withAuth()` wrapper for authentication
+- ALWAYS update policies.ts when adding new entrypoints - this is required for user authorization
 - Build verification is mandatory before considering task complete

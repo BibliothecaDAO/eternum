@@ -1,7 +1,7 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, getRelicInfo, ID, RelicInfo, RELICS, world } from "@bibliothecadao/types";
+import { ClientComponents, getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
 import { ComponentValue, defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useAnimation, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,25 +9,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
   // Map relic names to resource icon component names
-  const getResourceName = (relicName: string) => {
-    if (relicName.includes("Stamina")) return relicName.includes("II") ? "StaminaRelic2" : "StaminaRelic1";
-    if (relicName.includes("Damage Reduction"))
-      return relicName.includes("II") ? "DamageReductionRelic2" : "DamageReductionRelic1";
-    if (relicName.includes("Damage")) return relicName.includes("II") ? "DamageRelic2" : "DamageRelic1";
-    if (relicName.includes("Exploration Reward"))
-      return relicName.includes("II") ? "ExplorationRewardRelic2" : "ExplorationRewardRelic1";
-    if (relicName.includes("Exploration")) return relicName.includes("II") ? "ExplorationRelic2" : "ExplorationRelic1";
-    if (relicName.includes("Structure Defense"))
-      return relicName.includes("II") ? "StructureDefenseRelic2" : "StructureDefenseRelic1";
-    if (relicName.includes("Labor Production"))
-      return relicName.includes("II") ? "LaborProductionRelic2" : "LaborProductionRelic1";
-    if (relicName.includes("Troop Production"))
-      return relicName.includes("II") ? "TroopProductionRelic2" : "TroopProductionRelic1";
-    if (relicName.includes("Production")) return relicName.includes("II") ? "ProductionRelic2" : "ProductionRelic1";
-    return relicName.replace(" ", "").replace("II", "2").replace("I", "1");
-  };
 
-  const resourceName = getResourceName(relic.name);
+  const resourceName = ResourcesIds[relic.id];
+  console.log({ resourceName, relic });
 
   return (
     <motion.div
@@ -307,14 +291,14 @@ export const ChestContainer = ({
       setHasClicked(true);
       try {
         // TODO: Uncomment when ready to enable transactions
-        // const result = await systemCalls.open_chest({
-        //   signer: account,
-        //   explorer_id: explorerEntityId,
-        //   chest_coord: {
-        //     x: chestHex.x,
-        //     y: chestHex.y,
-        //   },
-        // });
+        await systemCalls.open_chest({
+          signer: account,
+          explorer_id: explorerEntityId,
+          chest_coord: {
+            x: chestHex.x,
+            y: chestHex.y,
+          },
+        });
         console.log("Chest opening transaction would be triggered here");
       } catch (error) {
         console.error("Failed to open chest:", error);
@@ -350,7 +334,6 @@ export const ChestContainer = ({
 
         {/* Horizontal Relic Carousel */}
         <div className="w-full max-w-6xl mt-8">
-          <div className="text-gold">HELLO</div>
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
