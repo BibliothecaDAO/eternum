@@ -1,8 +1,9 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
-import { ComponentValue, defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
+import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
+import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useAnimation, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -11,7 +12,6 @@ const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean 
   // Map relic names to resource icon component names
 
   const resourceName = ResourcesIds[relic.id];
-  console.log({ resourceName, relic });
 
   return (
     <motion.div
@@ -213,9 +213,7 @@ export const ChestContainer = ({
   const [isShaking, setIsShaking] = useState(false);
   const [hasClicked, setHasClicked] = useState(false);
   const [clickCount, setClickCount] = useState(0);
-  const [chestResult, setChestResult] = useState<ComponentValue<
-    ClientComponents["events"]["OpenRelicChestEvent"]["schema"]
-  > | null>(null);
+  const [chestResult, setChestResult] = useState<number[] | null>(null);
   const [showResult, setShowResult] = useState(false);
 
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -224,6 +222,8 @@ export const ChestContainer = ({
   const { play: playChestSound1 } = useUiSounds(soundSelector.relicChest1);
   const { play: playChestSound2 } = useUiSounds(soundSelector.relicChest2);
   const { play: playChestOpenSound } = useUiSounds(soundSelector.relicChest3);
+
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const {
     setup: {
@@ -245,7 +245,7 @@ export const ChestContainer = ({
           currentState?.chest_coord?.x === chestHex.x &&
           currentState?.chest_coord?.y === chestHex.y
         ) {
-          setChestResult(currentState);
+          setChestResult(currentState.relics.map((relic: any) => relic.value));
           setShowResult(true);
           // Play chest open sound when event arrives
           playChestOpenSound();
@@ -317,34 +317,189 @@ export const ChestContainer = ({
 
   // Show result when event arrives
   if (showResult && chestResult) {
+    const relicInfos = chestResult.map((id) => getRelicInfo(id as ResourcesIds)).filter(Boolean) as RelicInfo[];
+
     return (
-      <div className="flex flex-col items-center justify-center p-8 min-h-screen">
+      <div className="flex flex-col items-center justify-center p-8 min-h-[80vh]">
+        {/* Header Section */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          className="flex flex-col items-center mb-8"
+          className="flex flex-col items-center mb-12"
         >
-          <div className="text-gold text-2xl mb-4">🎉 Chest Opened!</div>
-          <img src="/images/relic-chest/chest-opened.png" alt="Open Chest" className="w-48 h-48 mb-4" />
-          <p className="text-gold mb-4">Relics discovered!</p>
+          <motion.div
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="text-gold text-3xl mb-6 font-bold"
+          >
+            🎉 Chest Opened!
+          </motion.div>
 
-          <p className="text-gold/70 text-sm text-center">The relics have been added to your explorer's inventory.</p>
+          <motion.img
+            src="/images/relic-chest/chest-opened.png"
+            alt="Open Chest"
+            className="w-56 h-56 mb-6"
+            initial={{ rotate: -5 }}
+            animate={{ rotate: 5 }}
+            transition={{
+              repeat: Infinity,
+              repeatType: "reverse",
+              duration: 2,
+              ease: "easeInOut",
+            }}
+          />
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-center"
+          >
+            <p className="text-gold text-xl mb-2">
+              {relicInfos.length} {relicInfos.length === 1 ? "Relic" : "Relics"} Discovered!
+            </p>
+            <p className="text-gold/70 text-sm">
+              These powerful artifacts have been added to your explorer's inventory
+            </p>
+          </motion.div>
         </motion.div>
 
-        {/* Horizontal Relic Carousel */}
-        <div className="w-full max-w-6xl mt-8">
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            <h3 className="text-center text-gold text-lg font-semibold mb-4">
-              {chestResult.relics && chestResult.relics.length > 0 ? "Your Discovered Relics" : "Available Relics"}
-            </h3>
-            <RelicCarousel foundRelics={chestResult.relics || []} />
-          </motion.div>
+        {/* Relics Grid Display */}
+        <div className="w-full max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relicInfos.map((relic, index) => (
+              <motion.div
+                key={relic.id}
+                initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{
+                  delay: 0.3 + index * 0.2,
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                }}
+              >
+                <motion.div
+                  className="relative bg-dark-brown/90 backdrop-blur-md rounded-xl border-2 border-gold/60 p-6 shadow-2xl overflow-hidden"
+                  whileHover={{
+                    scale: 1.05,
+                    borderColor: "rgba(255, 215, 0, 0.9)",
+                    transition: { duration: 0.2 },
+                  }}
+                >
+                  {/* Glow effect for rare relics */}
+                  {relic.level === 2 && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-radial from-purple-600/20 via-transparent to-transparent"
+                      animate={{
+                        opacity: [0.5, 0.8, 0.5],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  )}
+
+                  {/* Relic Content */}
+                  <div className="relative z-10">
+                    {/* Relic Image */}
+                    <div className="flex justify-center mb-4">
+                      <motion.div
+                        className="w-32 h-32 flex items-center justify-center bg-black/30 rounded-lg p-4"
+                        animate={
+                          relic.level === 2
+                            ? {
+                                boxShadow: [
+                                  "0 0 20px rgba(168, 85, 247, 0.5)",
+                                  "0 0 40px rgba(168, 85, 247, 0.8)",
+                                  "0 0 20px rgba(168, 85, 247, 0.5)",
+                                ],
+                              }
+                            : {}
+                        }
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <ResourceIcon resource={ResourcesIds[relic.id]} size="xl" withTooltip={false} />
+                      </motion.div>
+                    </div>
+
+                    {/* Relic Name */}
+                    <h4 className="text-gold font-bold text-lg text-center mb-3">{relic.name}</h4>
+
+                    {/* Badges */}
+                    <div className="flex justify-center gap-2 mb-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          relic.type === "Stamina"
+                            ? "bg-green-600/30 text-green-400 border border-green-500/50"
+                            : relic.type === "Damage"
+                              ? "bg-red-600/30 text-red-400 border border-red-500/50"
+                              : relic.type === "Damage Reduction"
+                                ? "bg-blue-600/30 text-blue-400 border border-blue-500/50"
+                                : relic.type === "Exploration"
+                                  ? "bg-purple-600/30 text-purple-400 border border-purple-500/50"
+                                  : "bg-yellow-600/30 text-yellow-400 border border-yellow-500/50"
+                        }`}
+                      >
+                        {relic.type}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          relic.level === 2
+                            ? "bg-purple-600/30 text-purple-400 border border-purple-500/50"
+                            : "bg-blue-600/30 text-blue-400 border border-blue-500/50"
+                        }`}
+                      >
+                        Level {relic.level}
+                      </span>
+                    </div>
+
+                    {/* Effect Description */}
+                    <p className="text-gray-300 text-sm text-center mb-3 leading-relaxed">{relic.effect}</p>
+
+                    {/* Additional Info */}
+                    <div className="flex flex-col items-center gap-1 text-xs">
+                      {relic.duration && <p className="text-gold/70">Duration: {relic.duration}</p>}
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                          relic.activation === "Army" ? "bg-red-600/20 text-red-400" : "bg-green-600/20 text-green-400"
+                        }`}
+                      >
+                        {relic.activation} Activation
+                      </span>
+                      {relic.craftable && <p className="text-blue-400">✨ Craftable</p>}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ))}
+          </div>
         </div>
+
+        {/* Continue Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 + relicInfos.length * 0.2 }}
+          className="mt-12"
+        >
+          <button
+            className="px-8 py-3 bg-gold/20 hover:bg-gold/30 border-2 border-gold text-gold font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+            onClick={() => {
+              toggleModal(null);
+            }}
+          >
+            Continue Exploring
+          </button>
+        </motion.div>
       </div>
     );
   }
@@ -391,17 +546,19 @@ export const ChestContainer = ({
         Click the chest to open it. Each click will shake the chest!
       </p>
 
-      {/* Horizontal Relic Carousel - Always Visible */}
-      <div className="w-full mt-8">
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-        >
-          <h3 className="text-center text-gold text-lg font-semibold mb-4">Possible Relics in This Chest</h3>
-          <RelicCarousel foundRelics={[]} />
-        </motion.div>
-      </div>
+      {/* Horizontal Relic Carousel - Only show before opening */}
+      {!hasClicked && (
+        <div className="w-full mt-8">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+          >
+            <h3 className="text-center text-gold text-lg font-semibold mb-4">Possible Relics in This Chest</h3>
+            <RelicCarousel foundRelics={[]} />
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
