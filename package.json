@@ -8,6 +8,7 @@
     "build:landing": "pnpm --dir ./client/apps/landing build",
     "build:packages": "pnpm --dir ./packages/types build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build && pnpm --dir ./packages/torii build",
     "build:mobile": "pnpm --dir ./client/apps/eternum-mobile build",
+    "build:marketplace": "pnpm --dir ./client/apps/marketplace build",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'pnpm-lock.yaml' -type f -delete",
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:mainnet": "NODE_ENV=mainnet pnpm --dir ./client/apps/game dev",
