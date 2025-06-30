@@ -21,19 +21,16 @@ A standalone marketplace application for trading Eternum NFTs including Realms, 
 
 ```bash
 # Install dependencies
-npm install
-
-# Start development server
-npm run dev
+pnpm install
 
 # Start development server for Sepolia testnet
-npm run dev::sepolia
+pnpm dev --mode sepolia
 
 # Build for production
-npm run build
+pnpm build
 
 # Preview production build
-npm run preview
+pnpm preview
 ```
 
 ## Environment Variables
