@@ -25,7 +25,7 @@ export function CollectionCard({ collectionKey, collection, stats, variants }: C
 
   return (
     <MotionLink
-      to={`/trade/${collectionKey}`}
+      to={`/collection/${collectionKey}`}
       key={collectionKey}
       variants={variants}
       whileHover={{ scale: 1.03 }}

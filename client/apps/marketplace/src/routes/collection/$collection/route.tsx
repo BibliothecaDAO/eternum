@@ -8,12 +8,12 @@ import { createFileRoute, Link, Outlet, useLocation, useParams } from "@tanstack
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
-export const Route = createFileRoute("/trade/$collection")({
+export const Route = createFileRoute("/collection/$collection")({
   component: TradeLayout,
 });
 
 function TradeLayout() {
-  const { collection } = useParams({ from: "/trade/$collection" });
+  const { collection } = useParams({ from: "/collection/$collection" });
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
   const collectionName = marketplaceCollections[collection as keyof typeof marketplaceCollections].name;
   const { data: totals } = useQuery({
@@ -61,13 +61,13 @@ function TradeLayout() {
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent uppercase">
                 {!isSeasonPass && (
                   <TabsTrigger className="h3 bg-transparent data-[state=active]:bg-transparent" value="items" asChild>
-                    <Link to={collection ? `/trade/$collection` : "/trade"} className="cursor-pointer">
+                    <Link to={collection ? `/collection/$collection` : "/"} className="cursor-pointer">
                       Items
                     </Link>
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="activity" asChild>
-                  <Link to={collection ? `/trade/$collection/activity` : "/trade"} className="cursor-pointer">
+                  <Link to={collection ? `/collection/$collection/activity` : "/"} className="cursor-pointer">
                     Activity
                   </Link>
                 </TabsTrigger>

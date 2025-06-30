@@ -11,9 +11,9 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { formatUnits } from "viem";
-import { env } from "../../../../env";
+import { env } from "../../../env";
 
-export const Route = createLazyFileRoute("/trade/$collection/activity")({
+export const Route = createLazyFileRoute("/collection/$collection/activity")({
   component: ActivityPage,
   pendingComponent: FullPageLoader,
 });

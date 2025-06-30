@@ -25,7 +25,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
-export const Route = createLazyFileRoute("/trade/$collection/")({
+export const Route = createLazyFileRoute("/collection/$collection/")({
   component: CollectionPage,
   pendingComponent: FullPageLoader,
 });
@@ -118,7 +118,7 @@ function CollectionPage() {
   // Auto-redirect to activity tab if season has ended for season passes
   useEffect(() => {
     if (isSeasonPassEndSeason) {
-      navigate({ to: `/trade/$collection/activity`, params: { collection } });
+      navigate({ to: `/collection/$collection/activity`, params: { collection } });
     }
   }, [isSeasonPassEndSeason, navigate, collection]);
 

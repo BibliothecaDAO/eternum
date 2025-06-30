@@ -11,7 +11,7 @@ import { Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { formatUnits } from "viem";
 
-export const Route = createLazyFileRoute("/trade/activity")({
+export const Route = createLazyFileRoute("/activity")({
   component: ActivityPage,
   pendingComponent: FullPageLoader,
 });
