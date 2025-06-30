@@ -13,6 +13,7 @@ use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
+use s1_eternum::models::relic::{RelicEffect, RelicEffectStoreImpl};
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -41,6 +42,7 @@ pub impl iGuardImpl of iGuardTrait {
         ref structure_base: StructureBase,
         ref guards: GuardTroops,
         ref troops: Troops,
+        stamina_relic_effect: Option<RelicEffect>,
         slot: GuardSlot,
         category: TroopType,
         tier: TroopTier,
@@ -77,7 +79,7 @@ pub impl iGuardImpl of iGuardTrait {
         }
 
         // update stamina
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(stamina_relic_effect, troops.category, troops.tier, troop_stamina_config, current_tick);
         // force stamina to be 0 so it isn't gamed
         // through the refill function and guard deletion
         if troops.count.is_zero() {
@@ -189,7 +191,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
         };
         let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(Option::None, troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
         let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
@@ -233,6 +235,9 @@ pub impl iExplorerImpl of iExplorerTrait {
         mut biomes: Array<Biome>,
         current_tick: u64,
     ) {
+        let explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+            ref world, explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+        );
         loop {
             match biomes.pop_front() {
                 Option::Some(biome) => {
@@ -255,6 +260,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                         .troops
                         .stamina
                         .spend(
+                            explorer_stamina_relic_effect,
                             explorer.troops.category,
                             explorer.troops.tier,
                             troop_stamina_config,
@@ -498,6 +504,10 @@ pub impl iMercenariesImpl of iMercenariesTrait {
     ) {
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
+        let current_tick: u64 = tick.current().try_into().unwrap();
+        let guard_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+            ref world, structure_id, StaminaImpl::relic_effect_id(), current_tick,
+        );
         let mut salt: u128 = 1;
 
         loop {
@@ -519,6 +529,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         ref structure_base,
                         ref structure_guards,
                         ref troops,
+                        guard_stamina_relic_effect,
                         *slot,
                         *category,
                         *tier,

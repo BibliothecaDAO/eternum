@@ -32,6 +32,7 @@ pub mod troop_battle_systems {
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
+    use s1_eternum::models::relic::{RelicEffect, RelicEffectStoreImpl};
     use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
@@ -46,6 +47,7 @@ pub mod troop_battle_systems {
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::utils::random::{VRFImpl};
+
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -128,9 +130,23 @@ pub mod troop_battle_systems {
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
+            let explorer_aggressor_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world,
+                explorer_aggressor.explorer_id,
+                StaminaImpl::relic_effect_id(),
+                tick.current().try_into().unwrap(),
+            );
+            let explorer_defender_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world,
+                explorer_defender.explorer_id,
+                StaminaImpl::relic_effect_id(),
+                tick.current().try_into().unwrap(),
+            );
             explorer_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
+                    explorer_aggressor_stamina_relic_effect,
+                    explorer_defender_stamina_relic_effect,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
@@ -359,9 +375,22 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_config(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
+            let explorer_aggressor_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, explorer_aggressor.explorer_id, StaminaImpl::relic_effect_id(), tick.current(),
+            );
+            let guard_troops_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, structure_id, StaminaImpl::relic_effect_id(), tick.current(),
+            );
             explorer_aggressor_troops
-                .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
-
+                .attack(
+                    ref guard_troops,
+                    explorer_aggressor_stamina_relic_effect,
+                    guard_troops_stamina_relic_effect,
+                    defender_biome,
+                    troop_stamina_config,
+                    troop_damage_config,
+                    tick.current(),
+                );
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -548,9 +577,20 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
+            let guard_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, structure_id, StaminaImpl::relic_effect_id(), tick.current().try_into().unwrap(),
+            );
+            let explorer_defender_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world,
+                explorer_defender.explorer_id,
+                StaminaImpl::relic_effect_id(),
+                tick.current().try_into().unwrap(),
+            );
             structure_guard_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
+                    guard_stamina_relic_effect,
+                    explorer_defender_stamina_relic_effect,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,

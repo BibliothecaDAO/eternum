@@ -4,6 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
 use s1_eternum::models::position::Coord;
+use s1_eternum::models::relic::{RelicEffect};
 use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
@@ -500,6 +501,8 @@ pub impl TroopsImpl of TroopsTrait {
     fn damage(
         ref self: Troops,
         ref bravo: Troops,
+        self_stamina_relic_effect: Option<RelicEffect>,
+        bravo_stamina_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
@@ -510,10 +513,15 @@ pub impl TroopsImpl of TroopsTrait {
         assert!(biome != Biome::None, "biome is not set");
 
         let mut alpha = self;
+        let alpha_stamina_relic_effect = self_stamina_relic_effect;
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(alpha.category, alpha.tier, troop_stamina_config, current_tick);
-        bravo.stamina.refill(bravo.category, bravo.tier, troop_stamina_config, current_tick);
+        alpha
+            .stamina
+            .refill(alpha_stamina_relic_effect, alpha.category, alpha.tier, troop_stamina_config, current_tick);
+        bravo
+            .stamina
+            .refill(bravo_stamina_relic_effect, bravo.category, bravo.tier, troop_stamina_config, current_tick);
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -586,22 +594,43 @@ pub impl TroopsImpl of TroopsTrait {
     fn attack(
         ref self: Troops,
         ref bravo: Troops,
+        self_stamina_relic_effect: Option<RelicEffect>,
+        bravo_stamina_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
     ) {
         let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss) = self
-            .damage(ref bravo, biome, troop_stamina_config, troop_damage_config, current_tick);
+            .damage(
+                ref bravo,
+                self_stamina_relic_effect,
+                bravo_stamina_relic_effect,
+                biome,
+                troop_stamina_config,
+                troop_damage_config,
+                current_tick,
+            );
 
         let mut alpha = self;
+        let alpha_stamina_relic_effect = self_stamina_relic_effect;
 
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
 
         // deduct stamina spent
-        alpha.stamina.spend(alpha.category, alpha.tier, troop_stamina_config, alpha_stamina_loss, current_tick, true);
+        alpha
+            .stamina
+            .spend(
+                alpha_stamina_relic_effect,
+                alpha.category,
+                alpha.tier,
+                troop_stamina_config,
+                alpha_stamina_loss,
+                current_tick,
+                true,
+            );
 
         // the defense does not lose stamina
 
@@ -611,6 +640,7 @@ pub impl TroopsImpl of TroopsTrait {
                 alpha
                     .stamina
                     .add(
+                        alpha_stamina_relic_effect,
                         alpha.category,
                         alpha.tier,
                         troop_stamina_config,
@@ -622,6 +652,7 @@ pub impl TroopsImpl of TroopsTrait {
                 bravo
                     .stamina
                     .add(
+                        bravo_stamina_relic_effect,
                         bravo.category,
                         bravo.tier,
                         troop_stamina_config,
@@ -711,7 +742,16 @@ mod tests {
             stamina: Stamina { amount: 100, updated_tick: 1 },
         };
 
-        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha
+            .attack(
+                ref bravo,
+                Option::None,
+                Option::None,
+                Biome::DeepOcean,
+                TROOP_STAMINA_CONFIG(),
+                TROOP_DAMAGE_CONFIG(),
+                1,
+            );
 
         assert_eq!(alpha.count, 0);
         assert_eq!(bravo.count, 95_000 * RESOURCE_PRECISION);
@@ -733,7 +773,16 @@ mod tests {
             stamina: Stamina { amount: 100, updated_tick: 1 },
         };
 
-        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha
+            .attack(
+                ref bravo,
+                Option::None,
+                Option::None,
+                Biome::DeepOcean,
+                TROOP_STAMINA_CONFIG(),
+                TROOP_DAMAGE_CONFIG(),
+                1,
+            );
 
         assert_eq!(alpha.count, 40_079 * RESOURCE_PRECISION);
         assert_eq!(bravo.count, 108_288 * RESOURCE_PRECISION);
