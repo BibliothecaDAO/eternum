@@ -36,6 +36,3 @@ out/
 
 # TypeScript
 *.tsbuildinfo
-
-# Generated files
-routeTree.gen.ts 
