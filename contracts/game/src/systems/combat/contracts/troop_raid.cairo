@@ -25,7 +25,7 @@ pub mod troop_raid_systems {
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::relic::{RelicEffect, RelicEffectStoreImpl};
+    use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffect, RelicEffectStoreImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
@@ -160,8 +160,24 @@ pub mod troop_raid_systems {
                 let explorer_aggressor_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
                     ref world, explorer_aggressor.explorer_id, StaminaImpl::relic_effect_id(), tick.current(),
                 );
+                let explorer_aggressor_increase_damage_dealt_relic_effect: Option<RelicEffect> =
+                    RelicEffectStoreImpl::retrieve(
+                    ref world, explorer_aggressor.explorer_id, RELIC_EFFECT::INCREASE_DAMAGE_30P_3D, tick.current(),
+                );
+                let explorer_aggressor_reduce_damage_taken_relic_effect: Option<RelicEffect> =
+                    RelicEffectStoreImpl::retrieve(
+                    ref world, explorer_aggressor.explorer_id, RELIC_EFFECT::REDUCE_DAMAGE_30P_3D, tick.current(),
+                );
+
                 let guard_troops_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
                     ref world, structure_id, StaminaImpl::relic_effect_id(), tick.current(),
+                );
+                let guard_troops_increase_damage_dealt_relic_effect: Option<RelicEffect> =
+                    RelicEffectStoreImpl::retrieve(
+                    ref world, structure_id, RELIC_EFFECT::INCREASE_DAMAGE_30P_3D, tick.current(),
+                );
+                let guard_troops_reduce_damage_taken_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                    ref world, structure_id, RELIC_EFFECT::REDUCE_DAMAGE_30P_3D, tick.current(),
                 );
 
                 for i in 0..structure_non_zero_guard_slots.len() {
@@ -174,6 +190,10 @@ pub mod troop_raid_systems {
                             ref guard_defender_troops,
                             explorer_aggressor_stamina_relic_effect,
                             guard_troops_stamina_relic_effect,
+                            explorer_aggressor_increase_damage_dealt_relic_effect,
+                            guard_troops_increase_damage_dealt_relic_effect,
+                            explorer_aggressor_reduce_damage_taken_relic_effect,
+                            guard_troops_reduce_damage_taken_relic_effect,
                             defender_biome,
                             troop_stamina_config,
                             troop_damage_config,

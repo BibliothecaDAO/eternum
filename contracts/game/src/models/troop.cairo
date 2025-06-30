@@ -503,6 +503,10 @@ pub impl TroopsImpl of TroopsTrait {
         ref bravo: Troops,
         self_stamina_relic_effect: Option<RelicEffect>,
         bravo_stamina_relic_effect: Option<RelicEffect>,
+        self_increase_damage_dealt_relic_effect: Option<RelicEffect>,
+        bravo_increase_damage_dealt_relic_effect: Option<RelicEffect>,
+        self_reduce_damage_taken_relic_effect: Option<RelicEffect>,
+        bravo_reduce_damage_taken_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
@@ -514,6 +518,8 @@ pub impl TroopsImpl of TroopsTrait {
 
         let mut alpha = self;
         let alpha_stamina_relic_effect = self_stamina_relic_effect;
+        let alpha_increase_damage_dealt_relic_effect = self_increase_damage_dealt_relic_effect;
+        let alpha_reduce_damage_taken_relic_effect = self_reduce_damage_taken_relic_effect;
 
         // update alpha and bravo's staminas
         alpha
@@ -562,7 +568,7 @@ pub impl TroopsImpl of TroopsTrait {
         let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, troop_damage_config);
         let TOTAL_NUM_TROOPS: Fixed = ALPHA_NUM_TROOPS + BRAVO_NUM_TROOPS;
         let EFFECTIVE_BETA: Fixed = Self::_effective_beta();
-        let BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
+        let mut BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * BRAVO_NUM_TROOPS
             * BRAVO_TIER_BONUS
             * BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER
@@ -570,13 +576,53 @@ pub impl TroopsImpl of TroopsTrait {
             / ALPHA_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        let ALPHA_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
+        let mut ALPHA_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * ALPHA_NUM_TROOPS
             * ALPHA_TIER_BONUS
             * ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER
             * ALPHA_BIOME_BONUS_DAMAGE_MULTIPLIER
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
+
+        ////////////////////////////////////////////
+        /// APPLY BATTLE DAMAGE RELIC EFFECTS
+        ////////////////////////////////////////////
+
+        match alpha_increase_damage_dealt_relic_effect {
+            Option::Some(relic_effect) => {
+                ALPHA_DAMAGE_DEALT += ALPHA_DAMAGE_DEALT
+                    * relic_effect.effect_rate.into()
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        }
+
+        match bravo_increase_damage_dealt_relic_effect {
+            Option::Some(relic_effect) => {
+                BRAVO_DAMAGE_DEALT += BRAVO_DAMAGE_DEALT
+                    * relic_effect.effect_rate.into()
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        }
+
+        match alpha_reduce_damage_taken_relic_effect {
+            Option::Some(relic_effect) => {
+                BRAVO_DAMAGE_DEALT -= BRAVO_DAMAGE_DEALT
+                    * relic_effect.effect_rate.into()
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        }
+
+        match bravo_reduce_damage_taken_relic_effect {
+            Option::Some(relic_effect) => {
+                ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
+                    * relic_effect.effect_rate.into()
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        }
 
         let ALPHA_STAMINA_LOSS: u64 = alpha_additional_stamina_for_damage
             + troop_stamina_config.stamina_attack_req.into();
@@ -596,6 +642,10 @@ pub impl TroopsImpl of TroopsTrait {
         ref bravo: Troops,
         self_stamina_relic_effect: Option<RelicEffect>,
         bravo_stamina_relic_effect: Option<RelicEffect>,
+        self_increase_damage_dealt_relic_effect: Option<RelicEffect>,
+        bravo_increase_damage_dealt_relic_effect: Option<RelicEffect>,
+        self_reduce_damage_taken_relic_effect: Option<RelicEffect>,
+        bravo_reduce_damage_taken_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
@@ -606,6 +656,10 @@ pub impl TroopsImpl of TroopsTrait {
                 ref bravo,
                 self_stamina_relic_effect,
                 bravo_stamina_relic_effect,
+                self_increase_damage_dealt_relic_effect,
+                bravo_increase_damage_dealt_relic_effect,
+                self_reduce_damage_taken_relic_effect,
+                bravo_reduce_damage_taken_relic_effect,
                 biome,
                 troop_stamina_config,
                 troop_damage_config,
