@@ -6,6 +6,14 @@
     "destination": "/index.html"
     },
     {
+    "source": "/$accountAddress*",
+    "destination": "/index.html"
+    },
+    {
+    "source": "/:accountAddress*",
+    "destination": "/index.html"
+    },
+    {
     "source": "/(.*)",
     "destination": "/index.html"
     }
