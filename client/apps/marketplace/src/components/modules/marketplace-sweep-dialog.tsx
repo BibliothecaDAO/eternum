@@ -96,7 +96,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
               </div>
             </div>
             {!address ? (
-              <ConnectWalletPrompt connectors={connectors} connect={connect} />
+              <ConnectWalletPrompt />
             ) : (
               <Button className="w-full" onClick={handlePurchase} disabled={selectedPasses.length === 0}>
                 Purchase {selectedPasses.length} Pass{selectedPasses.length !== 1 ? "es" : ""}
