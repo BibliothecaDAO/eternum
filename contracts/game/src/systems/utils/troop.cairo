@@ -30,6 +30,7 @@ use s1_eternum::models::troop::{
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::math::PercentageValueImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 
@@ -382,14 +383,29 @@ pub impl iExplorerImpl of iExplorerTrait {
         Self::_explorer_delete(ref world, ref explorer);
     }
 
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
+    fn exploration_reward(
+        ref world: WorldStorage,
+        exploration_multiplier_relic_effect: Option<RelicEffect>,
+        config: MapConfig,
+        vrf_seed: u256,
+    ) -> (u8, u128) {
         let (resource_types, resources_probs) = split_resources_and_probs();
         let reward_resource_id: u8 = *random::choices(
             resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
         )
             .at(0);
 
-        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
+        let mut exploration_reward_resource_amount: u128 = config.reward_resource_amount.into();
+        match exploration_multiplier_relic_effect {
+            Option::Some(relic_effect) => {
+                exploration_reward_resource_amount +=
+                    (exploration_reward_resource_amount * relic_effect.effect_rate.into())
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        };
+
+        return (reward_resource_id, exploration_reward_resource_amount * RESOURCE_PRECISION);
     }
 
     fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
