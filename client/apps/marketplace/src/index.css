@@ -1,0 +1,130 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Goudy+Bookletter+1911&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+  :root {
+    --background: 27 100% 95%;
+    --foreground: 27 5% 4%;
+    --card: 27 50% 90%;
+    --card-foreground: 27 5% 1%;
+    --popover: 27 100% 95%;
+    --popover-foreground: 27 100% 4%;
+    --primary: 27 84.1% 77.8%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 27 30% 70%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: -11 30% 85%;
+    --muted-foreground: 27 5% 35%;
+    --accent: -11 30% 80%;
+    --accent-foreground: 27 5% 10%;
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 27 5% 90%;
+    --border: 27 30% 50%;
+    --input: 27 30% 18%;
+    --ring: 27 84.1% 77.8%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 27 100% 95%;
+    --sidebar-foreground: 27 5% 10%;
+    --sidebar-primary: 27 84.1% 77.8%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: -11 30% 80%;
+    --sidebar-accent-foreground: 27 5% 10%;
+    --sidebar-border: 27 30% 50%;
+    --sidebar-ring: 27 84.1% 77.8%;
+  }
+  .dark {
+    --background: 27 50% 5%;
+    --foreground: 26 89.1% 78.4%;
+    --card: 27 50% 4%;
+    --card-foreground: 26 89.1% 78.4%;
+    --popover: 27 50% 5%;
+    --popover-foreground: 27 5% 90%;
+    --primary: 27 84.1% 77.8%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 27 30% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: -11 30% 15%;
+    --muted-foreground: 22 35% 41%;
+    --accent: -11 30% 15%;
+    --accent-foreground: 27 5% 90%;
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 27 5% 90%;
+    --border: 27 30% 18%;
+    --input: 27 30% 18%;
+    --ring: 27 84.1% 77.8%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 27 50% 5%;
+    --sidebar-foreground: 26 89.1% 78.4%;
+    --sidebar-primary: 27 84.1% 77.8%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: -11 30% 15%;
+    --sidebar-accent-foreground: 27 5% 90%;
+    --sidebar-border: 27 30% 18%;
+    --sidebar-ring: 27 84.1% 77.8%;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background;
+  }
+}
+
+html,
+body {
+  overflow: hidden;
+  font-family: "Goudy Bookletter 1911", serif;
+  touch-action: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Cinzel", serif;
+}
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  font-family: "Cinzel", serif;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: #1b1b1b;
+
+  /* border: 1px solid var(--gray-gold, #776756); */
+  margin-bottom: 2px;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  background-color: #1b1b1b;
+}
+
+*::-webkit-scrollbar-thumb {
+  /* border: 2px solid var(--gray-gold, #776756); */
+  @apply bg-gold;
+}
+
+@property --border-angle {
+  inherits: false;
+  initial-value: 0deg;
+  syntax: "<angle>";
+}

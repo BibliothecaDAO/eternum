@@ -1,0 +1,980 @@
+schema {
+  query: World__Query
+  subscription: World__Subscription
+}
+
+scalar ContractAddress
+
+scalar Cursor
+
+scalar DateTime
+
+type ERC20__Token {
+  amount: String!
+  contractAddress: String!
+  decimals: Int!
+  name: String!
+  symbol: String!
+}
+
+type ERC721__Token {
+  contractAddress: String!
+  imagePath: String!
+  metadata: String!
+  metadataAttributes: String
+  metadataDescription: String
+  metadataName: String
+  name: String!
+  symbol: String!
+  tokenId: String!
+}
+
+type ERC1155__Token {
+  amount: String!
+  contractAddress: String!
+  imagePath: String!
+  metadata: String!
+  metadataAttributes: String
+  metadataDescription: String
+  metadataName: String
+  name: String!
+  symbol: String!
+  tokenId: String!
+}
+
+union ERC__Token = ERC20__Token | ERC721__Token | ERC1155__Token
+
+scalar Enum
+
+union ModelUnion =
+  | marketplace_MarketFeeModel
+  | marketplace_MarketGlobalModel
+  | marketplace_MarketOrderEvent
+  | marketplace_MarketOrderModel
+  | marketplace_MarketTokenOrderModel
+  | marketplace_MarketWhitelistModel
+
+enum OrderDirection {
+  ASC
+  DESC
+}
+
+type Token {
+  tokenMetadata: ERC__Token!
+}
+
+type TokenConnection {
+  edges: [TokenEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type TokenEdge {
+  cursor: Cursor
+  node: Token
+}
+
+type Token__Balance {
+  tokenMetadata: ERC__Token!
+}
+
+type Token__BalanceConnection {
+  edges: [Token__BalanceEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type Token__BalanceEdge {
+  cursor: Cursor
+  node: Token__Balance
+}
+
+type Token__Transfer {
+  executedAt: String!
+  from: String!
+  to: String!
+  tokenMetadata: ERC__Token!
+  transactionHash: String!
+}
+
+type Token__TransferConnection {
+  edges: [Token__TransferEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type Token__TransferEdge {
+  cursor: Cursor
+  node: Token__Transfer
+}
+
+type World__Call {
+  callType: String
+  calldata: [String]
+  callerAddress: String
+  contractAddress: String
+  entrypoint: String
+  transactionHash: String
+}
+
+type World__Content {
+  coverUri: String
+  description: String
+  iconUri: String
+  name: String
+  socials: [World__Social]
+  website: String
+}
+
+type World__Controller {
+  address: String!
+  deployedAt: DateTime!
+  id: ID
+  username: String!
+}
+
+type World__ControllerConnection {
+  edges: [World__ControllerEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__ControllerEdge {
+  cursor: Cursor
+  node: World__Controller
+}
+
+type World__Entity {
+  createdAt: DateTime
+  eventId: String
+  executedAt: DateTime
+  id: ID
+  keys: [String]
+  models: [ModelUnion]
+  updatedAt: DateTime
+}
+
+type World__EntityConnection {
+  edges: [World__EntityEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__EntityEdge {
+  cursor: Cursor
+  node: World__Entity
+}
+
+type World__Event {
+  createdAt: DateTime
+  data: [String]
+  executedAt: DateTime
+  id: ID
+  keys: [String]
+  transactionHash: String
+}
+
+type World__EventConnection {
+  edges: [World__EventEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__EventEdge {
+  cursor: Cursor
+  node: World__Event
+}
+
+type World__EventMessage {
+  createdAt: DateTime
+  eventId: String
+  executedAt: DateTime
+  id: ID
+  keys: [String]
+  models: [ModelUnion]
+  updatedAt: DateTime
+}
+
+type World__EventMessageConnection {
+  edges: [World__EventMessageEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__EventMessageEdge {
+  cursor: Cursor
+  node: World__EventMessage
+}
+
+type World__Metadata {
+  content: World__Content
+  coverImg: String
+  createdAt: DateTime
+  executedAt: DateTime
+  iconImg: String
+  id: ID
+  updatedAt: DateTime
+  uri: String
+  worldAddress: String!
+}
+
+type World__MetadataConnection {
+  edges: [World__MetadataEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__MetadataEdge {
+  cursor: Cursor
+  node: World__Metadata
+}
+
+type World__Model {
+  classHash: felt252
+  contractAddress: felt252
+  createdAt: DateTime
+  executedAt: DateTime
+  id: ID
+  name: String
+  namespace: String
+  transactionHash: felt252
+}
+
+type World__ModelConnection {
+  edges: [World__ModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__ModelEdge {
+  cursor: Cursor
+  node: World__Model
+}
+
+input World__ModelOrder {
+  direction: OrderDirection!
+  field: World__ModelOrderField!
+}
+
+enum World__ModelOrderField {
+  CLASS_HASH
+  NAME
+}
+
+type World__PageInfo {
+  endCursor: Cursor
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+}
+
+type World__Query {
+  controller(id: ID!): World__Controller!
+  controllers(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__ControllerConnection
+  entities(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EntityConnection
+  entity(id: ID!): World__Entity!
+  eventMessage(id: ID!): World__EventMessage!
+  eventMessages(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EventMessageConnection
+  events(
+    after: Cursor
+    before: Cursor
+    first: Int
+    keys: [String]
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__EventConnection
+  marketplaceMarketFeeModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketFeeModelOrder
+    where: marketplace_MarketFeeModelWhereInput
+  ): marketplace_MarketFeeModelConnection
+  marketplaceMarketGlobalModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketGlobalModelOrder
+    where: marketplace_MarketGlobalModelWhereInput
+  ): marketplace_MarketGlobalModelConnection
+  marketplaceMarketOrderEventModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketOrderEventOrder
+    where: marketplace_MarketOrderEventWhereInput
+  ): marketplace_MarketOrderEventConnection
+  marketplaceMarketOrderModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketOrderModelOrder
+    where: marketplace_MarketOrderModelWhereInput
+  ): marketplace_MarketOrderModelConnection
+  marketplaceMarketTokenOrderModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketTokenOrderModelOrder
+    where: marketplace_MarketTokenOrderModelWhereInput
+  ): marketplace_MarketTokenOrderModelConnection
+  marketplaceMarketWhitelistModelModels(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: marketplace_MarketWhitelistModelOrder
+    where: marketplace_MarketWhitelistModelWhereInput
+  ): marketplace_MarketWhitelistModelConnection
+  metadatas(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int): World__MetadataConnection
+  model(id: ID!): World__Model!
+  models(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+    order: World__ModelOrder
+  ): World__ModelConnection
+  token(id: String!): Token!
+  tokenBalances(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__BalanceConnection
+  tokenTransfers(
+    accountAddress: String!
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): Token__TransferConnection
+  tokens(
+    after: Cursor
+    before: Cursor
+    contractAddress: String
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): TokenConnection!
+  transaction(transactionHash: ID!): World__Transaction!
+  transactions(
+    after: Cursor
+    before: Cursor
+    first: Int
+    last: Int
+    limit: Int
+    offset: Int
+  ): World__TransactionConnection
+}
+
+type World__Social {
+  name: String
+  url: String
+}
+
+type World__Subscription {
+  entityUpdated(id: ID): World__Entity!
+  eventEmitted(keys: [String]): World__Event!
+  eventMessageUpdated(id: ID): World__EventMessage!
+  modelRegistered(id: ID): World__Model!
+  tokenBalanceUpdated(accountAddress: String): Token__Balance!
+  tokenUpdated: Token!
+  transaction(hasCaller: String, hash: ID): World__Transaction!
+}
+
+type World__Transaction {
+  blockNumber: Int
+  calldata: [felt252]
+  calls: [World__Call]
+  createdAt: DateTime
+  executedAt: DateTime
+  id: ID
+  maxFee: felt252
+  nonce: felt252
+  senderAddress: felt252
+  signature: [felt252]
+  tokenTransfers: [Token__Transfer]
+  transactionHash: felt252
+}
+
+type World__TransactionConnection {
+  edges: [World__TransactionEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type World__TransactionEdge {
+  cursor: Cursor
+  node: World__Transaction
+}
+
+scalar bool
+
+scalar felt252
+
+type marketplace_MarketFeeModel {
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  fee_denominator: u64
+  fee_numerator: u64
+  fee_recipient: ContractAddress
+  fee_token: ContractAddress
+  id: u32
+}
+
+type marketplace_MarketFeeModelConnection {
+  edges: [marketplace_MarketFeeModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketFeeModelEdge {
+  cursor: Cursor
+  node: marketplace_MarketFeeModel
+}
+
+input marketplace_MarketFeeModelOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketFeeModelOrderField!
+}
+
+enum marketplace_MarketFeeModelOrderField {
+  FEE_DENOMINATOR
+  FEE_NUMERATOR
+  FEE_RECIPIENT
+  FEE_TOKEN
+  ID
+}
+
+input marketplace_MarketFeeModelWhereInput {
+  fee_denominator: u64
+  fee_denominatorEQ: u64
+  fee_denominatorGT: u64
+  fee_denominatorGTE: u64
+  fee_denominatorIN: [u64]
+  fee_denominatorLIKE: u64
+  fee_denominatorLT: u64
+  fee_denominatorLTE: u64
+  fee_denominatorNEQ: u64
+  fee_denominatorNOTIN: [u64]
+  fee_denominatorNOTLIKE: u64
+  fee_numerator: u64
+  fee_numeratorEQ: u64
+  fee_numeratorGT: u64
+  fee_numeratorGTE: u64
+  fee_numeratorIN: [u64]
+  fee_numeratorLIKE: u64
+  fee_numeratorLT: u64
+  fee_numeratorLTE: u64
+  fee_numeratorNEQ: u64
+  fee_numeratorNOTIN: [u64]
+  fee_numeratorNOTLIKE: u64
+  fee_recipient: ContractAddress
+  fee_recipientEQ: ContractAddress
+  fee_recipientGT: ContractAddress
+  fee_recipientGTE: ContractAddress
+  fee_recipientIN: [ContractAddress]
+  fee_recipientLIKE: ContractAddress
+  fee_recipientLT: ContractAddress
+  fee_recipientLTE: ContractAddress
+  fee_recipientNEQ: ContractAddress
+  fee_recipientNOTIN: [ContractAddress]
+  fee_recipientNOTLIKE: ContractAddress
+  fee_token: ContractAddress
+  fee_tokenEQ: ContractAddress
+  fee_tokenGT: ContractAddress
+  fee_tokenGTE: ContractAddress
+  fee_tokenIN: [ContractAddress]
+  fee_tokenLIKE: ContractAddress
+  fee_tokenLT: ContractAddress
+  fee_tokenLTE: ContractAddress
+  fee_tokenNEQ: ContractAddress
+  fee_tokenNOTIN: [ContractAddress]
+  fee_tokenNOTLIKE: ContractAddress
+  id: u32
+  idEQ: u32
+  idGT: u32
+  idGTE: u32
+  idIN: [u32]
+  idLIKE: u32
+  idLT: u32
+  idLTE: u32
+  idNEQ: u32
+  idNOTIN: [u32]
+  idNOTLIKE: u32
+}
+
+type marketplace_MarketGlobalModel {
+  collection_count: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  id: u32
+  order_count: u64
+  owner: ContractAddress
+  paused: bool
+}
+
+type marketplace_MarketGlobalModelConnection {
+  edges: [marketplace_MarketGlobalModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketGlobalModelEdge {
+  cursor: Cursor
+  node: marketplace_MarketGlobalModel
+}
+
+input marketplace_MarketGlobalModelOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketGlobalModelOrderField!
+}
+
+enum marketplace_MarketGlobalModelOrderField {
+  COLLECTION_COUNT
+  ID
+  ORDER_COUNT
+  OWNER
+  PAUSED
+}
+
+input marketplace_MarketGlobalModelWhereInput {
+  collection_count: u32
+  collection_countEQ: u32
+  collection_countGT: u32
+  collection_countGTE: u32
+  collection_countIN: [u32]
+  collection_countLIKE: u32
+  collection_countLT: u32
+  collection_countLTE: u32
+  collection_countNEQ: u32
+  collection_countNOTIN: [u32]
+  collection_countNOTLIKE: u32
+  id: u32
+  idEQ: u32
+  idGT: u32
+  idGTE: u32
+  idIN: [u32]
+  idLIKE: u32
+  idLT: u32
+  idLTE: u32
+  idNEQ: u32
+  idNOTIN: [u32]
+  idNOTLIKE: u32
+  order_count: u64
+  order_countEQ: u64
+  order_countGT: u64
+  order_countGTE: u64
+  order_countIN: [u64]
+  order_countLIKE: u64
+  order_countLT: u64
+  order_countLTE: u64
+  order_countNEQ: u64
+  order_countNOTIN: [u64]
+  order_countNOTLIKE: u64
+  owner: ContractAddress
+  ownerEQ: ContractAddress
+  ownerGT: ContractAddress
+  ownerGTE: ContractAddress
+  ownerIN: [ContractAddress]
+  ownerLIKE: ContractAddress
+  ownerLT: ContractAddress
+  ownerLTE: ContractAddress
+  ownerNEQ: ContractAddress
+  ownerNOTIN: [ContractAddress]
+  ownerNOTLIKE: ContractAddress
+  paused: bool
+}
+
+type marketplace_MarketOrder {
+  active: bool
+  collection_id: u16
+  expiration: u32
+  owner: ContractAddress
+  price: u128
+  token_id: u16
+}
+
+type marketplace_MarketOrderEvent {
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  market_order: marketplace_MarketOrder
+  order_id: u64
+  state: Enum
+}
+
+type marketplace_MarketOrderEventConnection {
+  edges: [marketplace_MarketOrderEventEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketOrderEventEdge {
+  cursor: Cursor
+  node: marketplace_MarketOrderEvent
+}
+
+input marketplace_MarketOrderEventOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketOrderEventOrderField!
+}
+
+enum marketplace_MarketOrderEventOrderField {
+  MARKET_ORDER
+  ORDER_ID
+  STATE
+}
+
+input marketplace_MarketOrderEventWhereInput {
+  market_order: marketplace_MarketOrderEvent_market_orderWhereInput
+  order_id: u64
+  order_idEQ: u64
+  order_idGT: u64
+  order_idGTE: u64
+  order_idIN: [u64]
+  order_idLIKE: u64
+  order_idLT: u64
+  order_idLTE: u64
+  order_idNEQ: u64
+  order_idNOTIN: [u64]
+  order_idNOTLIKE: u64
+  state: Enum
+}
+
+input marketplace_MarketOrderEvent_market_orderWhereInput {
+  active: bool
+  collection_id: u16
+  collection_idEQ: u16
+  collection_idGT: u16
+  collection_idGTE: u16
+  collection_idIN: [u16]
+  collection_idLIKE: u16
+  collection_idLT: u16
+  collection_idLTE: u16
+  collection_idNEQ: u16
+  collection_idNOTIN: [u16]
+  collection_idNOTLIKE: u16
+  expiration: u32
+  expirationEQ: u32
+  expirationGT: u32
+  expirationGTE: u32
+  expirationIN: [u32]
+  expirationLIKE: u32
+  expirationLT: u32
+  expirationLTE: u32
+  expirationNEQ: u32
+  expirationNOTIN: [u32]
+  expirationNOTLIKE: u32
+  owner: ContractAddress
+  ownerEQ: ContractAddress
+  ownerGT: ContractAddress
+  ownerGTE: ContractAddress
+  ownerIN: [ContractAddress]
+  ownerLIKE: ContractAddress
+  ownerLT: ContractAddress
+  ownerLTE: ContractAddress
+  ownerNEQ: ContractAddress
+  ownerNOTIN: [ContractAddress]
+  ownerNOTLIKE: ContractAddress
+  price: u128
+  priceEQ: u128
+  priceGT: u128
+  priceGTE: u128
+  priceIN: [u128]
+  priceLIKE: u128
+  priceLT: u128
+  priceLTE: u128
+  priceNEQ: u128
+  priceNOTIN: [u128]
+  priceNOTLIKE: u128
+  token_id: u16
+  token_idEQ: u16
+  token_idGT: u16
+  token_idGTE: u16
+  token_idIN: [u16]
+  token_idLIKE: u16
+  token_idLT: u16
+  token_idLTE: u16
+  token_idNEQ: u16
+  token_idNOTIN: [u16]
+  token_idNOTLIKE: u16
+}
+
+type marketplace_MarketOrderModel {
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  order: marketplace_MarketOrder
+  order_id: u64
+}
+
+type marketplace_MarketOrderModelConnection {
+  edges: [marketplace_MarketOrderModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketOrderModelEdge {
+  cursor: Cursor
+  node: marketplace_MarketOrderModel
+}
+
+input marketplace_MarketOrderModelOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketOrderModelOrderField!
+}
+
+enum marketplace_MarketOrderModelOrderField {
+  ORDER
+  ORDER_ID
+}
+
+input marketplace_MarketOrderModelWhereInput {
+  order: marketplace_MarketOrderModel_orderWhereInput
+  order_id: u64
+  order_idEQ: u64
+  order_idGT: u64
+  order_idGTE: u64
+  order_idIN: [u64]
+  order_idLIKE: u64
+  order_idLT: u64
+  order_idLTE: u64
+  order_idNEQ: u64
+  order_idNOTIN: [u64]
+  order_idNOTLIKE: u64
+}
+
+input marketplace_MarketOrderModel_orderWhereInput {
+  active: bool
+  collection_id: u16
+  collection_idEQ: u16
+  collection_idGT: u16
+  collection_idGTE: u16
+  collection_idIN: [u16]
+  collection_idLIKE: u16
+  collection_idLT: u16
+  collection_idLTE: u16
+  collection_idNEQ: u16
+  collection_idNOTIN: [u16]
+  collection_idNOTLIKE: u16
+  expiration: u32
+  expirationEQ: u32
+  expirationGT: u32
+  expirationGTE: u32
+  expirationIN: [u32]
+  expirationLIKE: u32
+  expirationLT: u32
+  expirationLTE: u32
+  expirationNEQ: u32
+  expirationNOTIN: [u32]
+  expirationNOTLIKE: u32
+  owner: ContractAddress
+  ownerEQ: ContractAddress
+  ownerGT: ContractAddress
+  ownerGTE: ContractAddress
+  ownerIN: [ContractAddress]
+  ownerLIKE: ContractAddress
+  ownerLT: ContractAddress
+  ownerLTE: ContractAddress
+  ownerNEQ: ContractAddress
+  ownerNOTIN: [ContractAddress]
+  ownerNOTLIKE: ContractAddress
+  price: u128
+  priceEQ: u128
+  priceGT: u128
+  priceGTE: u128
+  priceIN: [u128]
+  priceLIKE: u128
+  priceLT: u128
+  priceLTE: u128
+  priceNEQ: u128
+  priceNOTIN: [u128]
+  priceNOTLIKE: u128
+  token_id: u16
+  token_idEQ: u16
+  token_idGT: u16
+  token_idGTE: u16
+  token_idIN: [u16]
+  token_idLIKE: u16
+  token_idLT: u16
+  token_idLTE: u16
+  token_idNEQ: u16
+  token_idNOTIN: [u16]
+  token_idNOTLIKE: u16
+}
+
+type marketplace_MarketTokenOrderModel {
+  collection_address: ContractAddress
+  entity: World__Entity
+  eventMessage: World__EventMessage
+  order_id: u64
+  token_id: u16
+}
+
+type marketplace_MarketTokenOrderModelConnection {
+  edges: [marketplace_MarketTokenOrderModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketTokenOrderModelEdge {
+  cursor: Cursor
+  node: marketplace_MarketTokenOrderModel
+}
+
+input marketplace_MarketTokenOrderModelOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketTokenOrderModelOrderField!
+}
+
+enum marketplace_MarketTokenOrderModelOrderField {
+  COLLECTION_ADDRESS
+  ORDER_ID
+  TOKEN_ID
+}
+
+input marketplace_MarketTokenOrderModelWhereInput {
+  collection_address: ContractAddress
+  collection_addressEQ: ContractAddress
+  collection_addressGT: ContractAddress
+  collection_addressGTE: ContractAddress
+  collection_addressIN: [ContractAddress]
+  collection_addressLIKE: ContractAddress
+  collection_addressLT: ContractAddress
+  collection_addressLTE: ContractAddress
+  collection_addressNEQ: ContractAddress
+  collection_addressNOTIN: [ContractAddress]
+  collection_addressNOTLIKE: ContractAddress
+  order_id: u64
+  order_idEQ: u64
+  order_idGT: u64
+  order_idGTE: u64
+  order_idIN: [u64]
+  order_idLIKE: u64
+  order_idLT: u64
+  order_idLTE: u64
+  order_idNEQ: u64
+  order_idNOTIN: [u64]
+  order_idNOTLIKE: u64
+  token_id: u16
+  token_idEQ: u16
+  token_idGT: u16
+  token_idGTE: u16
+  token_idIN: [u16]
+  token_idLIKE: u16
+  token_idLT: u16
+  token_idLTE: u16
+  token_idNEQ: u16
+  token_idNOTIN: [u16]
+  token_idNOTLIKE: u16
+}
+
+type marketplace_MarketWhitelistModel {
+  collection_address: ContractAddress
+  collection_id: u32
+  entity: World__Entity
+  eventMessage: World__EventMessage
+}
+
+type marketplace_MarketWhitelistModelConnection {
+  edges: [marketplace_MarketWhitelistModelEdge]
+  pageInfo: World__PageInfo!
+  totalCount: Int!
+}
+
+type marketplace_MarketWhitelistModelEdge {
+  cursor: Cursor
+  node: marketplace_MarketWhitelistModel
+}
+
+input marketplace_MarketWhitelistModelOrder {
+  direction: OrderDirection!
+  field: marketplace_MarketWhitelistModelOrderField!
+}
+
+enum marketplace_MarketWhitelistModelOrderField {
+  COLLECTION_ADDRESS
+  COLLECTION_ID
+}
+
+input marketplace_MarketWhitelistModelWhereInput {
+  collection_address: ContractAddress
+  collection_addressEQ: ContractAddress
+  collection_addressGT: ContractAddress
+  collection_addressGTE: ContractAddress
+  collection_addressIN: [ContractAddress]
+  collection_addressLIKE: ContractAddress
+  collection_addressLT: ContractAddress
+  collection_addressLTE: ContractAddress
+  collection_addressNEQ: ContractAddress
+  collection_addressNOTIN: [ContractAddress]
+  collection_addressNOTLIKE: ContractAddress
+  collection_id: u32
+  collection_idEQ: u32
+  collection_idGT: u32
+  collection_idGTE: u32
+  collection_idIN: [u32]
+  collection_idLIKE: u32
+  collection_idLT: u32
+  collection_idLTE: u32
+  collection_idNEQ: u32
+  collection_idNOTIN: [u32]
+  collection_idNOTLIKE: u32
+}
+
+scalar u16
+
+scalar u32
+
+scalar u64
+
+scalar u128
