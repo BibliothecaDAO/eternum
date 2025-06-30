@@ -2,9 +2,9 @@ import { useLords } from "@/hooks/use-lords";
 import { useMintTestLords } from "@/hooks/use-mint-test-lords";
 import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
-import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount, useDisconnect } from "@starknet-react/core";
-import { ArrowDownUp, CoinsIcon, HomeIcon } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowDownUp, CoinsIcon, LogOutIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import {
@@ -14,6 +14,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
+import { Separator } from "../ui/separator";
+import { SidebarTrigger } from "../ui/sidebar";
 import { StarknetWalletButton } from "./starknet-wallet-button";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -29,19 +31,8 @@ export const TopNavigation = () => {
     <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex justify-between items-center w-full p-2 max-w-[100vw]">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              window.open(
-                chain === "sepolia" ? "https://dev.eternum.realms.world" : "https://eternum.realms.world",
-                "_blank",
-              );
-            }}
-            className="gap-2"
-          >
-            <HomeIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Realms World Market</span>
-          </Button>
+          <SidebarTrigger className="-ml-1" />
+
           <ThemeToggle />
         </div>
 
@@ -100,8 +91,8 @@ export const TopNavigation = () => {
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <Button
-                      variant="outline"
-                      className="gap-2"
+                      variant="ghost"
+                      className="gap-2 w-full  justify-start"
                       size={"default"}
                       onClick={() => {
                         if (connector?.id === "controller") {
@@ -117,23 +108,25 @@ export const TopNavigation = () => {
                       />
                       {address ? displayAddress(address) : ""}
                     </Button>
+                    <Link to="/$accountAddress" params={{ accountAddress: address || "" }}>
+                      <Button variant="ghost" className="gap-2 w-full justify-start" size={"default"}>
+                        My Empire
+                      </Button>
+                    </Link>
+                    <Separator className="my-2" />
+                    <Button
+                      variant="ghost"
+                      onClick={() => disconnect()}
+                      className="gap-2 w-full justify-start"
+                      size={"default"}
+                    >
+                      <LogOutIcon />
+                      Logout
+                    </Button>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
-          )}
-
-          {isConnected && (
-            <Button
-              variant="outline"
-              className="px-1"
-              size={"default"}
-              onClick={() => {
-                disconnect();
-              }}
-            >
-              <ExitIcon />
-            </Button>
           )}
         </div>
       </div>
