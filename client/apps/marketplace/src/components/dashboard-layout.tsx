@@ -37,7 +37,7 @@ const sidebarItems = [
   },
   {
     title: "My Empire",
-    url: "/$accountAddress", // Example route, adjust as needed
+    url: "/$accountAddress/", // Example route, adjust as needed
     icon: User2,
   },
 ];

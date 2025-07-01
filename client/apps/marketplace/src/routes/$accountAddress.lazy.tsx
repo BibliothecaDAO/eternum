@@ -26,7 +26,7 @@ import { createLazyFileRoute, useParams } from "@tanstack/react-router";
 import { Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 
-export const Route = createLazyFileRoute("/$accountAddress/")({
+export const Route = createLazyFileRoute("/$accountAddress")({
   component: AccountProfilePage,
   pendingComponent: FullPageLoader,
 });
