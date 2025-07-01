@@ -31,7 +31,7 @@ pnpm build
 
 # Preview production build
 pnpm preview
-```  
+```
 
 ## Environment Variables
 
