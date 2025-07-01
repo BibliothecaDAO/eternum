@@ -16,8 +16,6 @@ pub mod RELIC_EFFECT {
     pub const INSTANT_EXPLORE_2TILE: u8 = RELICS_RESOURCE_START_ID + 4;
     pub const INCREASE_EXPLORATION_REWARDS_100P_3D: u8 = RELICS_RESOURCE_START_ID + 5;
     pub const INCREASE_RESOURCE_PRODUCTION_30P_3D: u8 = RELICS_RESOURCE_START_ID + 6;
-    pub const INCREASE_LABOR_PRODUCTION_20P_8D: u8 = RELICS_RESOURCE_START_ID + 7;
-    pub const INCREASE_TROOP_PRODUCTION_20P_8D: u8 = RELICS_RESOURCE_START_ID + 8;
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -106,10 +104,6 @@ pub impl RelicEffectObjectImpl of RelicEffectObjectTrait {
             5 => (10_000, 3, Bounded::MAX),
             // E7: increase resource production by 30% for 3 Eternum Days
             6 => (3_000, 3, Bounded::MAX),
-            // E8: increase labor production by 20% for 8 Eternum Days
-            7 => (2_000, 8, Bounded::MAX),
-            // E9: increase troop production by 20% for 8 Eternum Days
-            8 => (2_000, 8, Bounded::MAX),
             _ => {
                 panic!("Invalid relic resource id");
                 (0, 0, 0)
