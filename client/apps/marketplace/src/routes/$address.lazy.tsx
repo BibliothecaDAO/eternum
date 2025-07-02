@@ -1,5 +1,4 @@
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
-import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferNftDialog from "@/components/modules/transfer-nft-dialog";
@@ -22,17 +21,16 @@ import { displayAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
 import { useQueries } from "@tanstack/react-query";
-import { createLazyFileRoute, useParams } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 
 export const Route = createLazyFileRoute("/$address")({
   component: AccountProfilePage,
-  pendingComponent: FullPageLoader,
 });
 
 export default function AccountProfilePage() {
-  const { address } = useParams({ strict: false }) as { address: string };
+  const { address } = Route.useParams();
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);

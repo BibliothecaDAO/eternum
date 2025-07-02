@@ -1,12 +1,8 @@
 {
-"version": 2,
-"rewrites": [
-    {
-    "source": "/(.*)",
-    "destination": "/index.html"
-    },
-    {
-        "source": "/:address/",
+    "version": 2,
+    "rewrites": [
+        {
+        "source": "/(.*)",
         "destination": "/index.html"
         }
     ]
