@@ -2,6 +2,7 @@ import { marketplaceAddress } from "@/config";
 import { SeasonPassAbi } from "@bibliothecadao/eternum";
 import { useAccount, useContract, useReadContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
+import { Call } from "starknet";
 
 export const useMarketplaceApproval = (collectionAddresses: string[]) => {
   const { address } = useAccount();
@@ -82,13 +83,13 @@ export const useMarketplaceApproval = (collectionAddresses: string[]) => {
 
   // Prepare all approval calls
   const approvalCalls = [
-    firstContract?.populate("set_approval_for_all", [marketplaceAddress, 1n]),
-    secondContract?.populate("set_approval_for_all", [marketplaceAddress, 1n]),
-    thirdContract?.populate("set_approval_for_all", [marketplaceAddress, 1n]),
+    firstContract?.populate("set_approval_for_all", [marketplaceAddress, true]),
+    secondContract?.populate("set_approval_for_all", [marketplaceAddress, true]),
+    thirdContract?.populate("set_approval_for_all", [marketplaceAddress, true]),
   ].filter(Boolean);
 
   const { sendAsync } = useSendTransaction({
-    calls: approvalCalls.length > 0 ? approvalCalls : undefined,
+    calls: approvalCalls.length > 0 ? (approvalCalls as Call[]) : undefined,
   });
 
   const handleApproveMarketplace = async () => {

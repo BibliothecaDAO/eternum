@@ -9,7 +9,7 @@ import {
 import { useAccount, useContract } from "@starknet-react/core";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AccountInterface } from "starknet";
+import { AccountInterface, Call } from "starknet";
 import { useDojo } from "./context/dojo-context";
 
 // Define the parameters needed for each function, excluding the signer which is handled internally.
@@ -73,7 +73,7 @@ export const useMarketplace = () => {
           signer: account as AccountInterface,
           marketplace_address: marketplaceAddress,
         },
-        lordsApproved,
+        lordsApproved as Call,
       );
       // Add success handling if needed
       toast.success("Order accepted successfully!");

@@ -1,8 +1,10 @@
 import svgr from "@svgr/rollup";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { defineConfig, loadEnv } from "vite";
 import mkcert from "vite-plugin-mkcert";
+
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
@@ -10,7 +12,17 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [mkcert(), svgr({ dimensions: false, svgo: false, typescript: true }), react(), wasm(), topLevelAwait()],
+    plugins: [
+      mkcert(),
+      svgr({ dimensions: false, svgo: false, typescript: true }),
+      TanStackRouterVite({
+        target: "react",
+        autoCodeSplitting: true,
+      }),
+      react(),
+      wasm(),
+      topLevelAwait(),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
