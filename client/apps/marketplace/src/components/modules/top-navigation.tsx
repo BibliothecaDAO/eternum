@@ -108,7 +108,7 @@ export const TopNavigation = () => {
                       />
                       {address ? displayAddress(address) : ""}
                     </Button>
-                    <Link to="/account/$address" params={{ address: address || "" }}>
+                    <Link to="/$address" params={{ address: address || "" }}>
                       <Button variant="ghost" className="gap-2 w-full justify-start" size={"default"}>
                         My Empire
                       </Button>
