@@ -67,7 +67,8 @@
     "@tanstack/router-devtools": "^1.74.0",
     "@tanstack/router-plugin": "^1.73.1",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:"
+    "@types/react-dom": "catalog:",
+    "vite": "^6.3.5"
   },
   "peerDependencies": {
     "starknet": "catalog:"
