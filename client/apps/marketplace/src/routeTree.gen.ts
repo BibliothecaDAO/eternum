@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AddressRouteRouteImport } from './routes/$address/route'
 import { Route as CollectionCollectionRouteRouteImport } from './routes/collection/$collection/route'
 
 const IndexLazyRouteImport = createFileRoute('/')()
@@ -22,15 +23,20 @@ const CollectionCollectionActivityLazyRouteImport = createFileRoute(
   '/collection/$collection/activity',
 )()
 
+const AddressRouteRoute = AddressRouteRouteImport.update({
+  id: '/$address',
+  path: '/$address',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexLazyRoute = IndexLazyRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 const AddressIndexLazyRoute = AddressIndexLazyRouteImport.update({
-  id: '/$address/',
-  path: '/$address/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AddressRouteRoute,
 } as any).lazy(() =>
   import('./routes/$address/index.lazy').then((d) => d.Route),
 )
@@ -61,8 +67,9 @@ const CollectionCollectionActivityLazyRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
+  '/$address': typeof AddressRouteRouteWithChildren
   '/collection/$collection': typeof CollectionCollectionRouteRouteWithChildren
-  '/$address': typeof AddressIndexLazyRoute
+  '/$address/': typeof AddressIndexLazyRoute
   '/collection/$collection/activity': typeof CollectionCollectionActivityLazyRoute
   '/collection/$collection/': typeof CollectionCollectionIndexLazyRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexLazyRoute
+  '/$address': typeof AddressRouteRouteWithChildren
   '/collection/$collection': typeof CollectionCollectionRouteRouteWithChildren
   '/$address/': typeof AddressIndexLazyRoute
   '/collection/$collection/activity': typeof CollectionCollectionActivityLazyRoute
@@ -84,8 +92,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/collection/$collection'
     | '/$address'
+    | '/collection/$collection'
+    | '/$address/'
     | '/collection/$collection/activity'
     | '/collection/$collection/'
   fileRoutesByTo: FileRoutesByTo
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$address'
     | '/collection/$collection'
     | '/$address/'
     | '/collection/$collection/activity'
@@ -105,12 +115,19 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
+  AddressRouteRoute: typeof AddressRouteRouteWithChildren
   CollectionCollectionRouteRoute: typeof CollectionCollectionRouteRouteWithChildren
-  AddressIndexLazyRoute: typeof AddressIndexLazyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/$address': {
+      id: '/$address'
+      path: '/$address'
+      fullPath: '/$address'
+      preLoaderRoute: typeof AddressRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -120,10 +137,10 @@ declare module '@tanstack/react-router' {
     }
     '/$address/': {
       id: '/$address/'
-      path: '/$address'
-      fullPath: '/$address'
+      path: '/'
+      fullPath: '/$address/'
       preLoaderRoute: typeof AddressIndexLazyRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AddressRouteRoute
     }
     '/collection/$collection': {
       id: '/collection/$collection'
@@ -149,6 +166,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AddressRouteRouteChildren {
+  AddressIndexLazyRoute: typeof AddressIndexLazyRoute
+}
+
+const AddressRouteRouteChildren: AddressRouteRouteChildren = {
+  AddressIndexLazyRoute: AddressIndexLazyRoute,
+}
+
+const AddressRouteRouteWithChildren = AddressRouteRoute._addFileChildren(
+  AddressRouteRouteChildren,
+)
+
 interface CollectionCollectionRouteRouteChildren {
   CollectionCollectionActivityLazyRoute: typeof CollectionCollectionActivityLazyRoute
   CollectionCollectionIndexLazyRoute: typeof CollectionCollectionIndexLazyRoute
@@ -168,8 +197,8 @@ const CollectionCollectionRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
+  AddressRouteRoute: AddressRouteRouteWithChildren,
   CollectionCollectionRouteRoute: CollectionCollectionRouteRouteWithChildren,
-  AddressIndexLazyRoute: AddressIndexLazyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

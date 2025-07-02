@@ -1,5 +1,5 @@
 import svgr from "@svgr/rollup";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { defineConfig, loadEnv } from "vite";
@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       mkcert(),
       svgr({ dimensions: false, svgo: false, typescript: true }),
-      TanStackRouterVite({
+      tanstackRouter({
         target: "react",
         autoCodeSplitting: true,
       }),

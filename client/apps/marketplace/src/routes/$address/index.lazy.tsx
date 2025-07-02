@@ -1,11 +1,11 @@
+import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/$address/")({
-  component: AccountProfilePage,
+  component: CollectionPage,
+  pendingComponent: FullPageLoader,
 });
 
-export default function AccountProfilePage() {
-  const { address } = Route.useParams();
-
-  return <div>Account Profile Page {address}</div>;
+function CollectionPage() {
+  return <div>Account Profile Page</div>;
 }
