@@ -2,12 +2,15 @@
 "version": 2,
 "rewrites": [
     {
-    "source": "/:accountAddress/",
+    "source": "/(.*)",
     "destination": "/index.html"
     },
     {
-    "source": "/(.*)",
-    "destination": "/index.html"
-    }
-]
+        "source": "/:accountAddress/",
+        "destination": "/index.html"
+        }
+    ],
+"routes": [
+    { "src": "/[^.]+", "dest": "/", "status": 200 }
+    ] 
 }
