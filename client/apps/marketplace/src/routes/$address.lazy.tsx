@@ -26,13 +26,13 @@ import { createLazyFileRoute, useParams } from "@tanstack/react-router";
 import { Grid2X2, Grid3X3 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 
-export const Route = createLazyFileRoute("/$accountAddress")({
+export const Route = createLazyFileRoute("/$address")({
   component: AccountProfilePage,
   pendingComponent: FullPageLoader,
 });
 
 export default function AccountProfilePage() {
-  const { accountAddress } = useParams({ strict: false }) as { accountAddress: string };
+  const { address } = useParams({ strict: false }) as { address: string };
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,9 +49,9 @@ export default function AccountProfilePage() {
   const collectionEntries = Object.entries(marketplaceCollections);
   const queries = useQueries({
     queries: collectionEntries.map(([, collection]) => ({
-      queryKey: ["ownedTokens", collection.address, accountAddress],
-      queryFn: () => fetchTokenBalancesWithMetadata(collection.address, accountAddress),
-      enabled: !!accountAddress,
+      queryKey: ["ownedTokens", collection.address, address],
+      queryFn: () => fetchTokenBalancesWithMetadata(collection.address, address),
+      enabled: !!address,
     })),
   });
 
@@ -106,7 +106,7 @@ export default function AccountProfilePage() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedTokens = filteredTokens.slice(startIndex, endIndex);
 
-  const { selectedPasses, togglePass, clearSelection } = useSelectedPassesStore(`profile-${accountAddress}`);
+  const { selectedPasses, togglePass, clearSelection } = useSelectedPassesStore(`profile-${address}`);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -174,7 +174,7 @@ export default function AccountProfilePage() {
 
       {/* Account Address */}
       <div className="text-center mb-6">
-        <div className="text-lg font-mono text-muted-foreground break-all">{displayAddress(accountAddress)}</div>
+        <div className="text-lg font-mono text-muted-foreground break-all">{displayAddress(address)}</div>
       </div>
 
       {/* Filter UI */}
@@ -215,7 +215,7 @@ export default function AccountProfilePage() {
                 setIsTransferOpen={handleTransferClick}
                 isCompactGrid={isCompactGrid}
                 onToggleSelection={togglePass}
-                pageId={`profile-${accountAddress}`}
+                pageId={`profile-${address}`}
               />
             )}
 

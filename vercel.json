@@ -6,11 +6,8 @@
     "destination": "/index.html"
     },
     {
-        "source": "/:accountAddress/",
+        "source": "/:address/",
         "destination": "/index.html"
         }
-    ],
-"routes": [
-    { "src": "/[^.]+", "dest": "/", "status": 200 }
-    ] 
+    ]
 }
