@@ -44,7 +44,7 @@
     "@starknet-react/chains": "catalog:",
     "@starknet-react/core": "catalog:",
     "@tanstack/react-query": "^5.59.15",
-    "@tanstack/react-router": "^1.74.0",
+    "@tanstack/react-router": "^1.124.0",
     "cmdk": "1.0.0",
     "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
