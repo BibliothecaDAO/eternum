@@ -237,8 +237,8 @@ WITH limited_active_orders AS (
     FROM "marketplace-MarketOrderEvent" AS moe
     JOIN tokens t
       ON t.token_id = printf("0x%064x", moe."market_order.token_id")  
-      AND t.contract_address = '{contractAddress}'
-    WHERE moe."market_order.collection_id" = '{collectionId}'
+      AND ('{contractAddress}' = '' OR t.contract_address = '{contractAddress}')
+    WHERE ('{collectionId}' = '' OR moe."market_order.collection_id" = '{collectionId}')
       AND (( '{type}' = 'all' OR '{type}' = '')
            OR ('{type}' = 'listings' AND moe.state <> 'Accepted')
            OR ('{type}' <> 'listings' AND moe.state = '{type}'))

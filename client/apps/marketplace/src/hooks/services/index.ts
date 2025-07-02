@@ -221,10 +221,10 @@ export async function fetchMarketOrderEvents(
   offset?: number,
 ): Promise<MarketOrderEvent[]> {
   const finalType = type === "sales" ? "Accepted" : type;
-  const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
 
   const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
-    .replace("{collectionId}", collectionId?.toString())
+    .replaceAll("{collectionId}", collectionId?.toString() ?? "")
     .replace("{limit}", limit?.toString() ?? "50")
     .replace("{offset}", offset?.toString() ?? "0")
     .replaceAll("{type}", finalType);

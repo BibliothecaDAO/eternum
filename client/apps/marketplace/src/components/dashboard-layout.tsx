@@ -1,5 +1,6 @@
+import { useAccount } from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
-import { Database, HomeIcon, Scale, User2 } from "lucide-react";
+import { Database, Scale, User2 } from "lucide-react";
 import React from "react";
 import {
   Sidebar,
@@ -21,28 +22,24 @@ interface DashboardLayoutProps {
 
 const sidebarItems = [
   {
-    title: "Home",
-    url: "/",
-    icon: HomeIcon,
-  },
-  {
     title: "Marketplace",
-    url: "/collection/realms", // Example route, adjust as needed
+    url: "/",
     icon: Scale,
   },
   {
-    title: "Data",
-    url: "/data", // Example route, adjust as needed
+    title: "Activity",
+    url: "/activity",
     icon: Database,
   },
   {
     title: "My Empire",
-    url: "/$address/", // Example route, adjust as needed
+    url: "/$address/",
     icon: User2,
   },
 ];
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  const { address } = useAccount();
   return (
     <SidebarProvider>
       <div className="flex h-[100vh] w-full dark:bg-dark-wood">
