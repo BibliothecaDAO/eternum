@@ -1,3 +1,5 @@
+import { HyperstructureRings } from "@/components/HyperstructureRings";
+
 # 🗺️ The World Map
 
 <img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
@@ -17,26 +19,7 @@ mist, waiting for ambitious Lords to send forth their armies to explore. Once a 
 The number of registered Lords for a game of Blitz determines the size of the map and the number of Hyperstructures available for Lords to compete over. 
 A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
 
-The number of Hyperstructure rings is determined by:
-
-```
-r = √(P/6)
-```
-
-Where:
-- **P** is the number of players (Lords) registered to play in the session
-- **r** is the number of Hyperstructure rings
-- If **r** is not an integer, then it is rounded up to the nearest integer
-
-The number of Hyperstructures in a ring is determined by:
-
-```
-H<sub>r</sub> = 6r
-```
-
-Where:
-- **H<sub>r</sub>** is the number of Hyperstructures in ring **r**
-- **r** is the ring number (1, 2, 3, etc.)
+<HyperstructureRings />
 
 ### Realm Positioning
 
@@ -55,12 +38,6 @@ The Realms of each participating Lord are positioned six hexes apart in a triang
   </p>
 </div>
 
-
-
-
-
-
-
 ## Biomes
 
 Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
@@ -72,9 +49,3 @@ explained in more detail in the [Military](/blitz/military/stamina-and-biomes) s
 the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
 type differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/mechanics/worldmap-movement/movement) section below.
-
-
-
-
-
-

@@ -1,75 +1,16 @@
-# ⚔️ Damage & Combat
+# 💥 Damage
 
-Blitz uses combat mechanics with armies engaging in strategic battles based on damage output, stamina, and biome effects.
+import { DamageCalculation } from "@/components/DamageCalculation";
 
-## Combat System
+## Damage Overview
 
-Blitz uses combat mechanics with armies engaging in strategic battles based on damage output, stamina, and biome effects.
+Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
+the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
+Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
+troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
+numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
 
-## Damage Calculation
+<span style={{ color: "red" }}>DRAFTING NOTE: Damage calculation to be reviewed.</span>
 
-Combat damage is calculated based on several factors:
-
-### Army Composition
-- **Troop Type**: Knights, Crossbowmen, and Paladins have different base damage
-- **Troop Tier**: Higher tiers (T2, T3) deal significantly more damage than T1
-- **Army Size**: Larger armies deal more total damage
-
-### Combat Modifiers
-- **Stamina Effects**: Armies with higher stamina deal more damage
-- **Biome Advantages**: Troops gain +30% damage in advantageous biomes
-- **Biome Disadvantages**: Troops suffer -30% damage in disadvantageous biomes
-- **Neutral Biomes**: No damage modifier in neutral biomes
-
-## Blitz-Specific Combat
-
-### Bandit Battles
-- **Primary Opponents**: Bandit forces protecting world structures
-- **Defensive Focus**: Bandits are optimized for defending their positions
-- **Predictable Patterns**: Bandit behavior follows consistent patterns
-- **Resource Rewards**: Defeating bandits provides immediate rewards
-
-### Player Combat
-- **Direct Competition**: Combat with other players for territory and resources
-- **Strategic Depth**: Requires careful planning and positioning
-- **Risk Assessment**: Balance potential gains against potential losses
-- **Scoring Impact**: All combat actions contribute to Military Score
-
-### Structure Control
-- **Hyperstructure Battles**: Combat for control of hyperstructures
-- **Camp Battles**: Fighting for control of resource-rich camps
-- **Essence Well Battles**: Securing steady Essence production
-- **Defensive Positioning**: Using structures as defensive strongholds
-
-## Combat Strategy
-
-### Offensive Tactics
-- **Early Aggression**: Claim structures quickly before other players
-- **Coordinated Attacks**: Use multiple armies for complex operations
-- **Resource Investment**: Balance military investment against potential rewards
-- **Timing**: Choose optimal moments to engage in combat
-
-### Defensive Tactics
-- **Guard Army Placement**: Position guard armies strategically
-- **Structure Defense**: Protect valuable world structures
-- **Reinforcement Planning**: Plan for timely reinforcements
-- **Territory Control**: Maintain control of key strategic positions
-
-### Risk Management
-- **Loss Assessment**: Evaluate potential losses before engaging
-- **Resource Conservation**: Don't overextend your military resources
-- **Strategic Retreat**: Know when to withdraw from unfavorable battles
-- **Recovery Planning**: Plan for rebuilding after significant losses
-
-## Scoring Impact
-
-All combat actions in Blitz contribute to your Military Score:
-
-- **Troops Deployed**: Points for total troops in active armies
-- **Casualties Inflicted**: Points for damage dealt to enemies
-- **Bandit Battles Won**: Points for defeating AI opponents
-- **World Structures Controlled**: Points for claiming and holding structures
-- **Player Battles Won**: Points for defeating other players
-- **Realms Captured**: Points for capturing enemy Realms
-
-Remember, in Blitz every combat decision impacts your Total Score and competitive ranking. Choose your battles wisely and maximize your military effectiveness!
+<DamageCalculation />
