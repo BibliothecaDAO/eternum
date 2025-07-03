@@ -157,7 +157,6 @@ export default defineConfig({
     },
     {
       text: "Development",
-      link: "/development",
       collapsed: true,
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
