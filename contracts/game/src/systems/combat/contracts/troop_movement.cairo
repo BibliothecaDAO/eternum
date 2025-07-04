@@ -17,6 +17,7 @@ pub mod troop_movement_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::map::BiomeDiscovered;
+    use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffect, RelicEffectStoreImpl};
     use s1_eternum::models::{
         config::{
             CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
@@ -153,8 +154,12 @@ pub mod troop_movement_systems {
                     }
 
                     // grant resource reward for exploration
+                    let explorer_increase_exploration_rewards_relic_effect: Option<RelicEffect> =
+                        RelicEffectStoreImpl::retrieve(
+                        ref world, explorer_id, RELIC_EFFECT::INCREASE_EXPLORATION_REWARDS_100P_3D, current_tick,
+                    );
                     let (_explore_reward_type, _explore_reward_amount) = iExplorerImpl::exploration_reward(
-                        ref world, map_config, vrf_seed,
+                        ref world, explorer_increase_exploration_rewards_relic_effect, map_config, vrf_seed,
                     );
                     explore_reward_type = _explore_reward_type;
                     explore_reward_amount = _explore_reward_amount;

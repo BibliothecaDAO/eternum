@@ -497,6 +497,10 @@ pub impl TickImpl of TickTrait {
         }
         ticks
     }
+
+    fn convert_to_estimated_timestamp(self: TickConfig, tick: u64) -> u64 {
+        tick * self.interval()
+    }
 }
 
 // weight
