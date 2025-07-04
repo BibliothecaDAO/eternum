@@ -7,10 +7,9 @@ import { importantNote } from "@/components/styles";
 
 # 🏰 Realms
 
-In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are
-functionally identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any
-of the nine resources available in Blitz and are equally capable in all aspects of the game, limited only by the skill
-and strategy of their Lord.
+In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are functionally
+identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any of the nine resources available 
+in Blitz and are equally capable in all aspects of the game, limited only by the skill and strategy of their Lord.
 
 <img
   src="/images/buildings/construction/castleOne.png"
@@ -18,23 +17,56 @@ and strategy of their Lord.
   style={{ margin: "0 auto", transform: "scale(1.2)" }}
 />
 
+## Settling
+
+Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are registered to play are 
+drawn at random from the pool and assigned spawn positions sequentially according to the settling algorithm. Once assigned a map position, 
+Lords are required to confirm their participation in the session by initiating a 'Settle' transaction, which will place their three Realms 
+in their drawn position. This must be done in the 30-minute Settling Phase to ensure presence and readiness to play the game. Lords who fail 
+to confirm settling during this phase will not have their Realms placed and will forfeit participation in the session. Their allocated spawn 
+position will remain empty throughout the game.
+
+<span style={{ color: "red" }}>DRAFTING NOTE: Insert gif of settling transaction process.</span>
+
+### Settling Algorithm
+
+The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available for Lords to compete over. 
+A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
+
+The number of Hyperstructure rings is determined by:
+
+**r = √(P/6)**
+
+Where:
+- **P** is the number of players (Lords) registered to play in the session
+- **r** is the number of Hyperstructure rings
+- If **r** is not an integer, then it is rounded up to the nearest integer
+
+The number of Hyperstructures in a ring is determined by:
+
+**H<sub>r</sub> = 6r**
+
+Where:
+- **H<sub>r</sub>** is the number of Hyperstructures in ring **r**
+- **r** is the ring number (1, 2, 3, etc.)
+
+Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the bounds of the Hyperstructure 
+rings. While the order in which players are placed is randomised, the positioning is sequential and follows a rotational pattern to distribute Lords 
+as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>
+    There is no immunity period in Blitz. All Realms are able to be attacked and claimed
+    from the moment the game begins.
+  </p>
+</div>
+
 ## Realm Details
-
-### Settling
-
-Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are
-registered to play are drawn at random from the pool and assigned spawn positions sequentially according to the settling
-algorithm. Once assigned a map position, Lords are required to confirm their participation in the session by initiating
-a 'Settle' transaction, which will place their three Realms in their drawn position. This must be done in the 30-minute
-Settling Phase to ensure presence and readiness to play the game. Lords who fail to confirm settling during this phase
-will not have their Realms placed and will forfeit participation in the session. Their allocated spawn position will
-remain empty throughout the game.
 
 ### Starting Resources
 
-<span style={{ color: "red" }}>
-  DRAFTING NOTE: Insert table. Include starting military units as they all start in inventory (none deployed).
-</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Insert table. Include starting military units as they all start in inventory (none deployed).</span>
 
 ### Realm Progression
 
@@ -42,10 +74,9 @@ Realms can grow from a Settlement into a City, then to a Kingdom, and finally an
 additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
 your defences. Each progression requires specific materials, outlined in the table below:
 
-<span style={{ color: "red" }}>
-  DRAFTING NOTE: Review RealmLeveling table, to be aligned with scope. Others should be the same as Eternum.
-</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Review RealmLeveling table, to be aligned with scope. Others should be the same as Eternum.</span>
 
-<RealmLeveling />
+{/* <RealmLeveling /> */}
+
 <BuildableHexes />
 <RealmDefenseSlotsTable />
