@@ -43,6 +43,8 @@ When building features, read the relevant app README:
 - Prefer composition over inheritance
 - Use functional components for React code
 - Keep components small and focused
+- **NEVER use `(as any)` to bypass TypeScript errors** - This defeats the purpose of TypeScript's type safety. Instead,
+  properly type your data or fix the underlying type issues
 
 ## Testing Guidelines
 
@@ -122,6 +124,7 @@ When creating new UI components:
    ```
 
 4. **Add to Policies** in `client/apps/game/src/hooks/context/policies.ts`:
+
    ```typescript
    [getContractByName(dojoConfig.manifest, "s1_eternum", "system_name").address]: {
      methods: [
@@ -151,7 +154,7 @@ When creating new UI components:
 **Example Pattern - Relic System:**
 
 - Contract entrypoints: `open_chest(explorer_id: ID, chest_coord: Coord)`, `apply_relic(...)`
-- Props interfaces: `OpenChestProps`, `ApplyRelicProps` 
+- Props interfaces: `OpenChestProps`, `ApplyRelicProps`
 - Provider methods: `open_chest()`, `apply_relic()`
 - System calls: `open_chest: withAuth(open_chest)`, `apply_relic: withAuth(apply_relic)`
 - Policies entry: Add `relic_systems` contract with `open_chest` and `apply_relic` methods
