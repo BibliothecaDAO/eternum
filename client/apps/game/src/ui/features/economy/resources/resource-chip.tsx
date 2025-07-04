@@ -206,10 +206,9 @@ export const ResourceChip = ({
 
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
-    // Relics have IDs in a specific range - you'll need to define this based on your game's resource configuration
-    // For now, let's assume relics are resources with IDs >= 255
-    return resourceId >= 255;
-  }, [resourceId]);
+    // Using type assertion until the build system picks up the new method
+    return (resourceManager as any).isRelic ? (resourceManager as any).isRelic(resourceId) : resourceId >= 39;
+  }, [resourceManager, resourceId]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {

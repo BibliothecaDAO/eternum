@@ -28,6 +28,10 @@ export class ResourceManager {
     return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
 
+  public isRelic(resourceId: ResourcesIds): boolean {
+    return resourceId >= 39; // Relics start from ID 39 onwards
+  }
+
   public isActive(resourceId: ResourcesIds): boolean {
     const resource = this._getResource();
     if (!resource) return false;
