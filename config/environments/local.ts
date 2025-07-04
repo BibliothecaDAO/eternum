@@ -8,7 +8,6 @@
 
 import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -71,27 +70,20 @@ export const LocalEternumGlobalConfig: Config = {
     graceTickCountHyp: 0,
     delaySeconds: 0,
   },
-  // starting resources x1000
-  // startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
-  // villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
+  startingResources: [
+    ...CommonEternumGlobalConfig.startingResources,
+    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
+  villageStartingResources: [
+    ...CommonEternumGlobalConfig.villageStartingResources,
+    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
