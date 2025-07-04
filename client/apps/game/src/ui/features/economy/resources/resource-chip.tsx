@@ -9,7 +9,8 @@ import {
   getTotalResourceWeightKg,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
+import { findResourceById, ID, RelicRecipientType, TickIds } from "@bibliothecadao/types";
+import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -30,6 +31,7 @@ export const ResourceChip = ({
   storageCapacityUsed?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
@@ -202,6 +204,13 @@ export const ResourceChip = ({
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
+  // Check if this resource is a relic
+  const isRelic = useMemo(() => {
+    // Relics have IDs in a specific range - you'll need to define this based on your game's resource configuration
+    // For now, let's assume relics are resources with IDs >= 255
+    return resourceId >= 255;
+  }, [resourceId]);
+
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {
     return null;
@@ -284,6 +293,33 @@ export const ResourceChip = ({
               d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
             />
           </svg>
+        </button>
+      )}
+      {isRelic && balance > 0 && (
+        <button
+          onClick={() => {
+            import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
+              toggleModal(
+                <RelicActivationPopup
+                  structureEntityId={resourceManager.entityId}
+                  recipientType={RelicRecipientType.Structure}
+                  relicId={resourceId}
+                  relicBalance={balance}
+                  onClose={() => toggleModal(null)}
+                />,
+              );
+            });
+          }}
+          onMouseEnter={() =>
+            setTooltip({
+              content: "Activate Relic",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="ml-2 p-1 hover:bg-gold/20 rounded"
+        >
+          <Sparkles className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
         </button>
       )}
     </div>

@@ -241,3 +241,9 @@ export const RELIC_IDS = RELICS.map((relic) => relic.id);
 export const ARMY_RELICS = getRelicsByActivation("Army");
 export const STRUCTURE_RELICS = getRelicsByActivation("Structure");
 export const CRAFTABLE_RELICS = getCraftableRelics();
+
+// Relic recipient type
+export enum RelicRecipientType {
+  Explorer = 0,
+  Structure = 1,
+}
