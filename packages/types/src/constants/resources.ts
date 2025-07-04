@@ -687,6 +687,28 @@ export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
 
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+  relics: [
+    // Army Enhancement Relics
+    ResourcesIds.StaminaRelic1,
+    ResourcesIds.StaminaRelic2,
+    ResourcesIds.DamageRelic1,
+    ResourcesIds.DamageRelic2,
+    ResourcesIds.DamageReductionRelic1,
+    ResourcesIds.DamageReductionRelic2,
+    ResourcesIds.ExplorationRelic1,
+    ResourcesIds.ExplorationRelic2,
+    ResourcesIds.ExplorationRewardRelic1,
+    ResourcesIds.ExplorationRewardRelic2,
+    // Structure Enhancement Relics
+    ResourcesIds.StructureDamageReductionRelic1,
+    ResourcesIds.StructureDamageReductionRelic2,
+    ResourcesIds.ProductionRelic1,
+    ResourcesIds.ProductionRelic2,
+    ResourcesIds.LaborProductionRelic1,
+    ResourcesIds.LaborProductionRelic2,
+    ResourcesIds.TroopProductionRelic1,
+    ResourcesIds.TroopProductionRelic2,
+  ],
   labor: [ResourcesIds.Labor],
   military: [
     ResourcesIds.Knight,
@@ -713,26 +735,4 @@ export const RESOURCE_TIERS = {
     ResourcesIds.AlchemicalSilver,
   ],
   mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
-  relics: [
-    // Army Enhancement Relics
-    ResourcesIds.StaminaRelic1,
-    ResourcesIds.StaminaRelic2,
-    ResourcesIds.DamageRelic1,
-    ResourcesIds.DamageRelic2,
-    ResourcesIds.DamageReductionRelic1,
-    ResourcesIds.DamageReductionRelic2,
-    ResourcesIds.ExplorationRelic1,
-    ResourcesIds.ExplorationRelic2,
-    ResourcesIds.ExplorationRewardRelic1,
-    ResourcesIds.ExplorationRewardRelic2,
-    // Structure Enhancement Relics
-    ResourcesIds.StructureDamageReductionRelic1,
-    ResourcesIds.StructureDamageReductionRelic2,
-    ResourcesIds.ProductionRelic1,
-    ResourcesIds.ProductionRelic2,
-    ResourcesIds.LaborProductionRelic1,
-    ResourcesIds.LaborProductionRelic2,
-    ResourcesIds.TroopProductionRelic1,
-    ResourcesIds.TroopProductionRelic2,
-  ],
 };

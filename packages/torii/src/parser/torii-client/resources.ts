@@ -41,6 +41,10 @@ export const getResourcesFromToriiEntity = (entity: any): ComponentValue<ClientC
     WHEAT_BALANCE: BigInt(entity.WHEAT_BALANCE.value),
     FISH_BALANCE: BigInt(entity.FISH_BALANCE.value),
     LORDS_BALANCE: BigInt(entity.LORDS_BALANCE.value),
+    ESSENCE_BALANCE: BigInt(entity.ESSENCE_BALANCE.value),
+    RELIC_E1_BALANCE: BigInt(entity.RELIC_E1_BALANCE.value),
+    RELIC_E2_BALANCE: BigInt(entity.RELIC_E2_BALANCE.value),
+    RELIC_E3_BALANCE: BigInt(entity.RELIC_E3_BALANCE.value),
     weight: {
       capacity: BigInt(entity.weight.value.capacity.value),
       weight: BigInt(entity.weight.value.weight.value),

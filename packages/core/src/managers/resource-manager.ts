@@ -650,6 +650,12 @@ export class ResourceManager {
       last_updated_at: number;
     };
   } {
+    const noProduction = {
+      building_count: 0,
+      production_rate: 0n,
+      output_amount_left: 0n,
+      last_updated_at: 0,
+    };
     switch (resourceId) {
       case ResourcesIds.Stone:
         return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
@@ -725,6 +731,26 @@ export class ResourceManager {
         return { balance: resource.FISH_BALANCE, production: resource.FISH_PRODUCTION };
       case ResourcesIds.Lords:
         return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
+      case ResourcesIds.Essence:
+        return {
+          balance: resource.ESSENCE_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StaminaRelic1:
+        return {
+          balance: resource.RELIC_E1_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StaminaRelic2:
+        return {
+          balance: resource.RELIC_E2_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageRelic1:
+        return {
+          balance: resource.RELIC_E3_BALANCE,
+          production: noProduction,
+        };
       default:
         return {
           balance: 0n,
@@ -779,6 +805,10 @@ export class ResourceManager {
       ["WHEAT_BALANCE", ResourcesIds.Wheat],
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
+      ["ESSENCE_BALANCE", ResourcesIds.Essence],
+      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
+      ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
+      ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
     ];
   }
 
