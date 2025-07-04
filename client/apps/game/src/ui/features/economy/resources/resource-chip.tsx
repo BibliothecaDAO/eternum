@@ -9,7 +9,7 @@ import {
   getTotalResourceWeightKg,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { findResourceById, ID, RelicRecipientType, TickIds } from "@bibliothecadao/types";
+import { findResourceById, ID, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -102,7 +102,7 @@ export const ResourceChip = ({
     return (
       <ResourceIcon
         withTooltip={false}
-        resource={findResourceById(resourceId)?.trait as string}
+        resource={ResourcesIds[resourceId]}
         size={size === "large" ? "md" : "sm"}
         className=" self-center"
       />
@@ -303,7 +303,7 @@ export const ResourceChip = ({
                   structureEntityId={resourceManager.entityId}
                   recipientType={RelicRecipientType.Structure}
                   relicId={resourceId}
-                  relicBalance={balance}
+                  relicBalance={divideByPrecision(balance)}
                   onClose={() => toggleModal(null)}
                 />,
               );

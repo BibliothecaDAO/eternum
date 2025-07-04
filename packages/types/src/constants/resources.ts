@@ -408,7 +408,7 @@ export const resources: Array<Resources> = [
 
   // Relics - Army Enhancement Items
   {
-    trait: "StaminaRelic1",
+    trait: "Stamina Relic 1",
     value: 39,
     colour: "#4ade80",
     id: ResourcesIds.StaminaRelic1,
@@ -417,7 +417,7 @@ export const resources: Array<Resources> = [
     ticker: "$STAM1",
   },
   {
-    trait: "StaminaRelic2",
+    trait: "Stamina Relic 2",
     value: 40,
     colour: "#22c55e",
     id: ResourcesIds.StaminaRelic2,
@@ -426,7 +426,7 @@ export const resources: Array<Resources> = [
     ticker: "$STAM2",
   },
   {
-    trait: "DamageRelic1",
+    trait: "Damage Relic 1",
     value: 41,
     colour: "#f87171",
     id: ResourcesIds.DamageRelic1,
@@ -435,7 +435,7 @@ export const resources: Array<Resources> = [
     ticker: "$DMG1",
   },
   {
-    trait: "DamageRelic2",
+    trait: "Damage Relic 2",
     value: 42,
     colour: "#ef4444",
     id: ResourcesIds.DamageRelic2,
@@ -444,7 +444,7 @@ export const resources: Array<Resources> = [
     ticker: "$DMG2",
   },
   {
-    trait: "DamageReductionRelic1",
+    trait: "Damage Reduction Relic 1",
     value: 43,
     colour: "#60a5fa",
     id: ResourcesIds.DamageReductionRelic1,
@@ -453,7 +453,7 @@ export const resources: Array<Resources> = [
     ticker: "$DEF1",
   },
   {
-    trait: "DamageReductionRelic2",
+    trait: "Damage Reduction Relic 2",
     value: 44,
     colour: "#3b82f6",
     id: ResourcesIds.DamageReductionRelic2,
@@ -462,7 +462,7 @@ export const resources: Array<Resources> = [
     ticker: "$DEF2",
   },
   {
-    trait: "ExplorationRelic1",
+    trait: "Exploration Relic 1",
     value: 45,
     colour: "#a78bfa",
     id: ResourcesIds.ExplorationRelic1,
@@ -471,7 +471,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXP1",
   },
   {
-    trait: "ExplorationRelic2",
+    trait: "Exploration Relic 2",
     value: 46,
     colour: "#8b5cf6",
     id: ResourcesIds.ExplorationRelic2,
@@ -480,7 +480,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXP2",
   },
   {
-    trait: "ExplorationRewardRelic1",
+    trait: "Exploration Reward Relic 1",
     value: 47,
     colour: "#fbbf24",
     id: ResourcesIds.ExplorationRewardRelic1,
@@ -489,7 +489,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXPR1",
   },
   {
-    trait: "ExplorationRewardRelic2",
+    trait: "Exploration Reward Relic 2",
     value: 48,
     colour: "#f59e0b",
     id: ResourcesIds.ExplorationRewardRelic2,
@@ -500,7 +500,7 @@ export const resources: Array<Resources> = [
 
   // Relics - Structure Enhancement Items
   {
-    trait: "StructureDefenseRelic1",
+    trait: "Damage Reduction Relic 1",
     value: 49,
     colour: "#94a3b8",
     id: ResourcesIds.StructureDamageReductionRelic1,
@@ -509,7 +509,7 @@ export const resources: Array<Resources> = [
     ticker: "$SDEF1",
   },
   {
-    trait: "StructureDefenseRelic2",
+    trait: "Damage Reduction Relic 2",
     value: 50,
     colour: "#64748b",
     id: ResourcesIds.StructureDamageReductionRelic2,
@@ -518,7 +518,7 @@ export const resources: Array<Resources> = [
     ticker: "$SDEF2",
   },
   {
-    trait: "ProductionRelic1",
+    trait: "Production Relic 1",
     value: 51,
     colour: "#10b981",
     id: ResourcesIds.ProductionRelic1,
@@ -527,7 +527,7 @@ export const resources: Array<Resources> = [
     ticker: "$PROD1",
   },
   {
-    trait: "ProductionRelic2",
+    trait: "Production Relic 2",
     value: 52,
     colour: "#059669",
     id: ResourcesIds.ProductionRelic2,
@@ -536,7 +536,7 @@ export const resources: Array<Resources> = [
     ticker: "$PROD2",
   },
   {
-    trait: "LaborProductionRelic1",
+    trait: "Labor Production Relic 1",
     value: 53,
     colour: "#f472b6",
     id: ResourcesIds.LaborProductionRelic1,
@@ -545,7 +545,7 @@ export const resources: Array<Resources> = [
     ticker: "$LAB1",
   },
   {
-    trait: "LaborProductionRelic2",
+    trait: "Labor Production Relic 2",
     value: 54,
     colour: "#ec4899",
     id: ResourcesIds.LaborProductionRelic2,
@@ -554,7 +554,7 @@ export const resources: Array<Resources> = [
     ticker: "$LAB2",
   },
   {
-    trait: "TroopProductionRelic1",
+    trait: "Troop Production Relic 1",
     value: 55,
     colour: "#fb923c",
     id: ResourcesIds.TroopProductionRelic1,
@@ -563,7 +563,7 @@ export const resources: Array<Resources> = [
     ticker: "$TROOP1",
   },
   {
-    trait: "TroopProductionRelic2",
+    trait: "Troop Production Relic 2",
     value: 56,
     colour: "#ea580c",
     id: ResourcesIds.TroopProductionRelic2,
