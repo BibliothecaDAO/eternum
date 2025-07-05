@@ -17,35 +17,32 @@ the production screen.
 
 ![Simple Mode Production](/gifs/labor-production.gif)
 
-_Note: Production works a little differently in Blitz compared to other game modes. Instead of streaming resources unit
-by unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
-requirements to the production order upfront. The output is then produced at a given rate per second._
+_Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at a given rate per second._
 
 ### Standard Mode
 
-The classic production system—every resource and troop production order requires food and a combination of other
-resources as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
+The classic production system—every resource and troop production order requires food and a combination of other resources
+as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
 
 ### Simple Mode
 
-Simple mode reduces the input requirements to food and labor. This is, once again, less efficient in both time and
-resources—but it allows Lords to produce resources on their Realm even if they don't have access to the input resources
-required in standard mode.
+Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
+both time and resources—but it allows Lords to produce resources on their Realm even if they don't have
+access to the input resources required in standard mode.
 
 ## Materials Production
 
 ### Food
 
-Wheat is the only food source in Blitz and it can be produced without inputs. Once a Farm has been constructed, it can
-produce Wheat indefinitely.
+Wheat is the only food source in Blitz and can be produced without inputs. Once a Farm has been constructed, it can produce food indefinitely.
 
 ### Resources
 
-The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
-resources (standard mode), or labor (simple mode). Resources are also the main components in building construction and
-troop production - so mastery of these assets is key to success and security.
+The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other resources (standard mode), 
+or labor (simple mode). Resources are also the main components in building construction and troop production - so mastery of these assets is key 
+to success and security.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Tables require review.</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
 <SimpleResourceProduction />
 
@@ -53,38 +50,35 @@ troop production - so mastery of these assets is key to success and security.
 
 ### Labor
 
-Labor is the primary input for buildings and production in simple mode, but is also required in standard mode for
-building construction and Realm upgrades.
+Labor is the primary input for construction and production in simple mode, but is also required in standard mode 
+for building construction and Realm upgrades. It is produced by permanently burning resources in the Keep. This creates a steady
+stream of Labor at a fixed rate. Each of the 9 resources can be burned to produce Labor at varying efficiency,
+dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
 
-Labor is produced by permanently burning resources in the Keep. This creates a steady stream of labor at a fixed rate.
-Each of the 9 resources can be burned to produce labor at varying efficiency, dependent on rarity. The amount of
-resources burned per second to produce labor at the fixed rate is as follows:
-
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires review.</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
 <LaborProduction />
 
 ### Troops
 
-Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
-produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
-requiring a combination of food, rare resources, and troops of the previous tier as input for production.
+Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to produce troops to ensure 
+they remain a relevant force throughout the game. Three troop tiers are available, each requiring a combination of food, rare resources, and troops 
+of the previous tier as input for production.
 
-Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
-mode.
+_Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
+mode._
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Tables require review.</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
 <SimpleTroopProduction />
 <StandardTroopProduction />
 
 ### Donkeys
 
-The humble steeds that move all materials around the world must themselves be produced in a market building. Donkeys are
-one-time-use and consumed after a single journey, so Lords will need to produce a steady supply of donkeys to ensure
-that they can sustain their supply chains and logistics. Once the market has been constructed, donkeys only require a
-steady stream of food to produce.
+The humble steeds that move all materials around the world must themselves be produced in a market building. Donkeys are one-time-use and consumed 
+after a single journey, so Lords will need to produce a steady supply of donkeys to ensure that they can sustain their supply chains and logistics. 
+Once the market has been constructed, donkeys only require a steady stream of food to produce.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires review.</span>
+<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
 <DonkeyProduction />

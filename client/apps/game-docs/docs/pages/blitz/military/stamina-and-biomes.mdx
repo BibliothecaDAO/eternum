@@ -1,38 +1,34 @@
-import { Biomes } from "@/components/Biomes";
 import { BiomeCombat } from "@/components/BiomeCombat";
 
-# 🌪️ Stamina & Biomes
+# ⚡ Stamina & Biome Effects
 
 ## Stamina
 
 Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
-stamina value determined by its troop type and tier. Field armies expend stamina when moving, exploring unknown hexes,
-or engaging in combat against other armies and structures. Guard armies only expend stamina when attacking armies in
-hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
+exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
+when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. Attacks require a minimum of **30 stamina**, so armies
-with less than 30 stamina cannot initiate an attack. Each additional stamina point above this threshold grants a **1%**
-damage bonus, up to a maximum of **+30%** damage at **60 stamina**. Additional stamina spend is not optional, so
-attacking armies will use all available stamina up to a maximum of **60** for any one attack. If the attacking army
-destroys the defending army, they gain **+30 stamina**.
+The attacking army is the army initiating an instance of combat. Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
+additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
+stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
+of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. Defending armies rely on having stamina
-available to maintain full combat effectiveness. When attacked, defending armies incur a **1%** damage reduction for
-every stamina point below **30**. For example, if an army is attacked while they have **10 stamina**, they would deal
-**-20%** damage to the attacking army. The maximum penalty is **-30%** damage if stamina is completely depleted.
-Successfully defending an attack does not deplete stamina. Lords should manage their armies' stamina carefully, ensuring
-they retain enough reserves to remain effective against unexpected attacks.
+The defending army is the army being attacked in an instance of combat. Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
+incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
+have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
+stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
+armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
 
 ## Biomes (Combat Effects)
 
 The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
-the combat instance is started. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%**
-damage), or no effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each
-troop type:
+engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
+effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
 
 ⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
 beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
@@ -43,7 +39,7 @@ and make the most of their ranged capabilities. However, they will be disadvanta
 or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
 modifiers of the three troop types.
 
-🛡 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+🐴 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
 water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
 type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
 Crossbowmen, but are devastatingly effective in the right situations.
