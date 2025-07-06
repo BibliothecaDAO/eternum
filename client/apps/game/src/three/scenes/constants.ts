@@ -186,9 +186,6 @@ export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = 
   Empty: BIOMES_MODELS_PATH + BiomeFilenames.Empty,
 };
 
-export const PROGRESS_HALF_THRESHOLD = 50;
-export const PROGRESS_FINAL_THRESHOLD = 100;
-
 export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Realm]: [
     BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,

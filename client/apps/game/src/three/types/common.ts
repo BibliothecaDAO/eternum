@@ -12,12 +12,6 @@ export enum HyperstructureTypesNames {
   STAGE_3 = "hyperstructure_stage2",
 }
 
-export enum StructureProgress {
-  STAGE_1 = 0,
-  STAGE_2 = 1,
-  STAGE_3 = 2,
-}
-
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };

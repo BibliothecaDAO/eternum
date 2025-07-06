@@ -7,8 +7,9 @@ import { Position } from "@/types/position";
 import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
+
+import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "@bibliothecadao/eternum";
 import { CameraView } from "../scenes/hexagon-scene";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "../systems/system-manager";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {

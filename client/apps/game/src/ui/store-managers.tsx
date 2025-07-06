@@ -1,9 +1,14 @@
 import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import {
+  getAddressName,
+  getAllArrivals,
+  getEntityInfo,
+  getGuildFromPlayerAddress,
+  usePlayerStore,
+} from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -90,7 +95,7 @@ const PlayerDataStoreManager = () => {
   // Initialize the player store on mount
   useEffect(() => {
     if (!playerDataStore) {
-      initializePlayerStore();
+      initializePlayerStore(sqlApi as any);
     }
   }, [initializePlayerStore, playerDataStore]);
 

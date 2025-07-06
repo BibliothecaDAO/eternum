@@ -20,15 +20,17 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@latticexyz/utils": "^2.0.0-next.12",
-    "@dojoengine/core": "catalog:",
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@bibliothecadao/torii": "workspace:*",
+    "@dojoengine/core": "catalog:",
+    "@latticexyz/utils": "^2.0.0-next.12",
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",
     "eventemitter3": "^5.0.1",
-    "starknet": "catalog:"
+    "starknet": "catalog:",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",
