@@ -78,6 +78,7 @@ export class TileRenderer {
         TileRenderer.tileTexture,
       ); // Fifteenth tile (index 14)
       this.createTileMaterial(BiomeTypeToId[BiomeType.TropicalRainForest], 9, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
+      this.createTileMaterial(17, 13, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
 
       // Create prototype sprites for each tile type
       this.createPrototypeSprites();

@@ -1,4 +1,4 @@
-export type { BaseScene } from "./base-scene";
+export { BaseScene } from "./base-scene";
 export { Chunk } from "./chunk";
 export type { ChunkCoordinates } from "./chunk";
 export { GenericScene } from "./generic-scene";
