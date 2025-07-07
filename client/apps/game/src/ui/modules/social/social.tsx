@@ -1,7 +1,5 @@
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
 import { ExpandableOSWindow } from "@/ui/components/navigation/os-window";
@@ -11,7 +9,7 @@ import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { Tabs } from "@/ui/elements/tab";
-import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { getPlayerInfo, LeaderboardManager, PlayerDataTransformed, usePlayerStore } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";

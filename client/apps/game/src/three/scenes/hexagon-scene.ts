@@ -1,17 +1,18 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
-import { gltfLoader } from "@/three/helpers/utils";
+import { gltfLoader, loggedInAccount } from "@/three/helpers/utils";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
-import { SystemManager } from "@/three/systems/system-manager";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
+import { SystemManager } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
@@ -74,7 +75,7 @@ export abstract class HexagonScene {
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
-    this.systemManager = new SystemManager(this.dojo);
+    this.systemManager = new SystemManager(this.dojo, loggedInAccount());
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.state = useUIStore.getState();
@@ -94,6 +95,15 @@ export abstract class HexagonScene {
         this.state.leftNavigationView = leftNavigationView;
         this.state.rightNavigationView = rightNavigationView;
         this.state.structureEntityId = structureEntityId;
+      },
+    );
+
+    useAccountStore.subscribe(
+      (state) => ({
+        account: state.account,
+      }),
+      (account) => {
+        this.systemManager.setLoggedInAccount(BigInt(account?.account?.address || "0"));
       },
     );
   }
