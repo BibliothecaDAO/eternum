@@ -1,9 +1,9 @@
-import { StartingResources, StructureType } from "@/components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
 import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
 import { RealmLeveling } from "@/components/RealmLeveling";
-import { importantNote } from "@/components/styles";
+import ResourceIcon from "@/components/ResourceIcon";
+import { importantNote, table, formatAmount, section } from "@/components/styles";
 
 # 🏰 Realms
 
@@ -26,33 +26,18 @@ in their drawn position. This must be done in the 30-minute Settling Phase to en
 to confirm settling during this phase will not have their Realms placed and will forfeit participation in the session. Their allocated spawn 
 position will remain empty throughout the game.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Insert gif of settling transaction process.</span>
-
 ### Settling Algorithm
 
 The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available for Lords to compete over. 
-A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
-
-The number of Hyperstructure rings is determined by:
-
-**r = √(P/6)**
-
-Where:
-- **P** is the number of players (Lords) registered to play in the session
-- **r** is the number of Hyperstructure rings
-- If **r** is not an integer, then it is rounded up to the nearest integer
-
-The number of Hyperstructures in a ring is determined by:
-
-**H<sub>r</sub> = 6r**
-
-Where:
-- **H<sub>r</sub>** is the number of Hyperstructures in ring **r**
-- **r** is the ring number (1, 2, 3, etc.)
+A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players 
+are accommodated. The details of Hyperstructure spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
 
 Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the bounds of the Hyperstructure 
 rings. While the order in which players are placed is randomised, the positioning is sequential and follows a rotational pattern to distribute Lords 
-as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
+as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for 
+an example of 24 players is visualised below:
+
+<img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
@@ -66,7 +51,49 @@ as evenly as possible and attempt to ensure equal opportunity in accessing the H
 
 ### Starting Resources
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Insert table. Include starting military units as they all start in inventory (none deployed).</span>
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Starting Resources per Realm</th>
+          <th style={table.headerCell}>Quantity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+              Labor
+            </div>
+          </td>
+          <td style={table.cell}>5,000</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+              Donkeys
+            </div>
+          </td>
+          <td style={table.cell}>200</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={26} name="Knight" size="md" />
+              T1 Troops
+            </div>
+          </td>
+          <td style={table.cell}>3,000</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+*Note: The type of troop received depends on the biome that the realm is spawned on. Starting troops will always have a combat advantage when defending their home.*
 
 ### Realm Progression
 
@@ -74,9 +101,110 @@ Realms can grow from a Settlement into a City, then to a Kingdom, and finally an
 additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
 your defences. Each progression requires specific materials, outlined in the table below:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Review RealmLeveling table, to be aligned with scope. Others should be the same as Eternum.</span>
+export const BlitzRealmLeveling = () => {
+  // Resource item style matching the original component
+  const resourceItemStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.25rem",
+    padding: "0.125rem 0.25rem",
+    backgroundColor: "rgba(40, 30, 25, 0.6)",
+    borderRadius: "0.25rem",
+    fontSize: "0.85rem",
+  };
 
-{/* <RealmLeveling /> */}
+  // Hardcoded realm leveling data for blitz
+  const levelData = [
+    {
+      currentLevel: "Settlement",
+      nextLevel: "City",
+      resources: [
+        { id: 23, amount: 2000 }, // Labor
+        { id: 35, amount: 1200 }, // Wheat
+        { id: "essence", amount: 200 }, // Essence (placeholder)
+      ]
+    },
+    {
+      currentLevel: "City",
+      nextLevel: "Kingdom",
+      resources: [
+        { id: 23, amount: 4000 }, // Labor
+        { id: 35, amount: 3600 }, // Wheat
+        { id: "essence", amount: 1200 }, // Essence (placeholder)
+        { id: 3, amount: 600 },   // Wood
+      ]
+    },
+    {
+      currentLevel: "Kingdom",
+      nextLevel: "Empire",
+      resources: [
+        { id: 23, amount: 8000 }, // Labor
+        { id: 35, amount: 7200 }, // Wheat
+        { id: "essence", amount: 4800 }, // Essence (placeholder)
+        { id: 3, amount: 1800 },  // Wood
+        { id: 2, amount: 1200 },  // Coal
+        { id: 4, amount: 1200 },  // Copper
+      ]
+    }
+  ];
+
+  return (
+    <div style={section.wrapper}>
+      <div style={section.accentedTitle}>
+        <span style={{ marginRight: "0.5rem" }}>⬆️</span>Realm Upgrade Costs
+      </div>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
+            <tr>
+              <th style={table.headerCell}>Current Level</th>
+              <th style={table.headerCell}>Next Level</th>
+              <th style={table.headerCell}>Resources Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            {levelData.map((item, index) => (
+              <tr key={index}>
+                <td style={table.cell}>{item.currentLevel}</td>
+                <td style={table.cell}>{item.nextLevel}</td>
+                <td style={table.cell}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    {item.resources.map((resource, idx) => (
+                      <div key={`${resource.id}-${idx}`} style={resourceItemStyle}>
+                        {resource.id === "essence" ? (
+                          <div style={{
+                            width: "20px",
+                            height: "20px",
+                            backgroundColor: "#f8bbd9",
+                            borderRadius: "2px",
+                            border: "1px solid #ec4899",
+                            flexShrink: 0
+                          }} />
+                        ) : (
+                          <ResourceIcon id={resource.id} name="" size="md" />
+                        )}
+                        {formatAmount(resource.amount)}
+                      </div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+<BlitzRealmLeveling />
 
 <BuildableHexes />
 <RealmDefenseSlotsTable />

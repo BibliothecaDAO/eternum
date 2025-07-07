@@ -1,4 +1,4 @@
-import TroopMovementTable from "@/components/TroopMovementTable";
+import { BlitzTroopMovementTable } from "@/components/TroopMovementTable";
 import { BiomeStamina } from "@/components/BiomeStamina";
 
 # 🧭 Movement & Exploration
@@ -14,7 +14,7 @@ troop type possesses different maximum stamina capacities, outlined in the table
 
 <span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
-<TroopMovementTable />
+<BlitzTroopMovementTable />
 
 Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
 themselves severely disadvantaged if attacked by enemy forces.
@@ -46,9 +46,7 @@ hidden. Exploring an unknown hex always costs 30 stamina and will reveal that he
 the known boundaries of the world. If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
 back to the hex from which they started without any additional stamina penalty. 
 
-During exploration, armies gather any valuables they encounter, receiving the goods directly into their inventory. The reward chances for any explored hex are as follows:
-
-<span style={{ color: "red" }}>DRAFTING NOTE: New table of exploration reward chance</span>
+During exploration, armies gather any valuables they encounter, receiving the goods directly into their inventory. The reward chances for any explored hex are a _work in progress_.
 
 If an army becomes overencumbered, they will not be able to collect any materials found when exploring. Instead, the materials will remain on that tile and will be able 
 to be collected by another army with enough capacity. Armies can return to a structure to offload the materials, or drop them to free up space. Note that any materials 

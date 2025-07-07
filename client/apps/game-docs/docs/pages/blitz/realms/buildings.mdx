@@ -68,10 +68,211 @@ There is a specific resource building for each of the 9 resources in Blitz, so L
 buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
 have the same requirements in simple and standard mode.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Building costs require update from config.</span>
+{/* 
+  TEMPORARY HARDCODED RESOURCE BUILDING COSTS - TODO: Remove once config is finalized
+  
+  This BlitzBuildingCard component contains hardcoded building costs for blitz mode.
+  Once the configuration files are updated with blitz-specific costs, this should be 
+  replaced with the standard BuildingCard component that reads from config.
+*/}
+
+export const BlitzBuildingCard = ({ title, image, buildingType, description, simpleCosts, standardCosts, standardOnly = false }) => {
+  const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
+  const resourceId = buildingType - 2; // Resource buildings map to resource IDs
+  const resourceName = resources.find((r) => r.id === resourceId)?.trait || "";
+
+  const styles = {
+    card: {
+      padding: "0.75rem",
+      marginBottom: "1rem",
+      borderRadius: "0.375rem",
+      border: `1px solid #8b5a2b`,
+      backgroundColor: colors.background.dark,
+    },
+    header: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: "0.5rem",
+      borderBottom: `1px solid ${colors.borderDark}`,
+      paddingBottom: "0.25rem",
+    },
+    titleContainer: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      fontWeight: "bold",
+      color: "#f6c297",
+    },
+    content: {
+      display: "flex",
+      gap: "0.75rem",
+    },
+    image: {
+      width: "80px",
+      height: "80px",
+      objectFit: "contain" as const,
+      padding: "0.25rem",
+      backgroundColor: colors.background.light,
+      border: `1px solid ${colors.borderDark}`,
+      borderRadius: "0.25rem",
+    },
+    info: {
+      flex: 1,
+      fontSize: "0.875rem",
+    },
+    stats: {
+      display: "flex",
+      gap: "0.5rem",
+      marginBottom: "0.5rem",
+    },
+    stat: {
+      padding: "0.25rem 0.5rem",
+      backgroundColor: colors.background.dark,
+      borderRadius: "0.25rem",
+      fontSize: "0.75rem",
+    },
+    desc: {
+      fontSize: "0.8rem",
+      color: colors.secondary,
+      marginBottom: "0.5rem",
+    },
+    costsContainer: {
+      marginTop: "0.5rem",
+      borderTop: `1px solid ${colors.borderDark}`,
+      paddingTop: "0.5rem",
+    },
+    costsTitle: {
+      fontWeight: "bold",
+      fontSize: "0.875rem",
+      color: "#f6c297",
+      marginBottom: "0.375rem",
+    },
+    modeHeader: {
+      fontSize: "0.75rem",
+      color: colors.primary,
+      backgroundColor: "rgba(60, 40, 20, 0.3)",
+      padding: "0.125rem 0.375rem",
+      borderRadius: "0.25rem",
+      marginBottom: "0.25rem",
+      display: "inline-block",
+    },
+    costsRow: {
+      display: "flex",
+      flexWrap: "wrap" as const,
+      gap: "0.25rem",
+      marginBottom: "0.5rem",
+    },
+    costItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.25rem",
+      padding: "0.25rem 0.375rem",
+      backgroundColor: "rgba(40, 30, 25, 0.6)",
+      borderRadius: "0.25rem",
+      fontSize: "0.75rem",
+    },
+  };
+
+  return (
+    <div style={styles.card}>
+      <div style={styles.header}>
+        <div style={styles.titleContainer}>
+          <ResourceIcon id={resourceId} name={resourceName} size="lg" />
+          {title}
+        </div>
+        <div style={{ fontSize: "0.75rem", color: "#a89986" }}>ID: {buildingType}</div>
+      </div>
+
+      <div style={styles.content}>
+        <img src={image} alt={title} style={styles.image} />
+
+        <div style={styles.info}>
+          <div style={styles.stats}>
+            {population > 0 && <div style={styles.stat}>Pop Req: {population}</div>}
+          </div>
+
+          <ul style={{ listStyleType: "disc", marginLeft: "1rem", marginBottom: "0.5rem" }}>
+            {description.map((desc, index) => (
+              <li key={index} style={styles.desc}>
+                {desc}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div style={styles.costsContainer}>
+        <div style={styles.costsTitle}>Building Costs</div>
+        
+        {standardOnly ? (
+          <div>
+            <div style={styles.modeHeader}>Standard Only</div>
+            <div style={styles.costsRow}>
+              {standardCosts.map((cost, index) => (
+                <div key={index} style={styles.costItem}>
+                  {cost.resource === "essence" ? (
+                    <div style={{
+                      width: "16px",
+                      height: "16px",
+                      backgroundColor: "#f8bbd9",
+                      borderRadius: "2px",
+                      border: "1px solid #ec4899",
+                      flexShrink: 0
+                    }} />
+                  ) : (
+                    <ResourceIcon id={cost.resource} name="" size="md" />
+                  )}
+                  {formatAmount(cost.amount)}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div>
+              <div style={styles.modeHeader}>Simple</div>
+              <div style={styles.costsRow}>
+                {simpleCosts.map((cost, index) => (
+                  <div key={index} style={styles.costItem}>
+                    <ResourceIcon id={cost.resource} name="" size="md" />
+                    {formatAmount(cost.amount)}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div style={styles.modeHeader}>Standard</div>
+              <div style={styles.costsRow}>
+                {standardCosts.map((cost, index) => (
+                  <div key={index} style={styles.costItem}>
+                    {cost.resource === "essence" ? (
+                      <div style={{
+                        width: "16px",
+                        height: "16px",
+                        backgroundColor: "#f8bbd9",
+                        borderRadius: "2px",
+                        border: "1px solid #ec4899",
+                        flexShrink: 0
+                      }} />
+                    ) : (
+                      <ResourceIcon id={cost.resource} name="" size="md" />
+                    )}
+                    {formatAmount(cost.amount)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-<BuildingCard 
+<BlitzBuildingCard 
   title="Wood Mill" 
   image="/images/buildings/construction/lumber_mill.png" 
   buildingType={5} 
@@ -79,80 +280,156 @@ have the same requirements in simple and standard mode.
     "Produces Wood resource",
     "Same construction cost in both simple and standard modes"
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 400 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 } // Labor
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Coal Mine"
   image="/images/buildings/construction/mine.png"
   buildingType={4}
   description={[
     "Produces Coal resource",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 560 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 }, // Labor
+    { resource: 3, amount: 80 } // Wood
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Copper Smelter"
   image="/images/buildings/construction/forge.png"
   buildingType={6}
   description={[
     "Produces Copper resource",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 1200 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 }, // Wood
+    { resource: 2, amount: 90 } // Coal
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Ironwood Mill"
   image="/images/buildings/construction/lumber_mill.png"
   buildingType={7}
   description={[
     "Produces Ironwood resource",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Cold Iron Foundry"
   image="/images/buildings/construction/forge.png"
   buildingType={13}
   description={[
     "Produces Cold Iron resource",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Gold Mine"
   image="/images/buildings/construction/forge.png"
   buildingType={9}
   description={[
     "Produces Gold resource",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Adamantine Mine"
   image="/images/buildings/construction/forge.png"
   buildingType={21}
   description={[
     "Produces Adamantine resource",
+    "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 5, amount: 540 }, // Ironwood
+    { resource: "essence", amount: 600 } // Essence
+  ]}
+  standardOnly={true}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Mithral Forge"
   image="/images/buildings/construction/forge.png"
   buildingType={11}
   description={[
     "Produces Mithral resource",
+    "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 11, amount: 540 }, // Cold Iron
+    { resource: "essence", amount: 600 } // Essence
+  ]}
+  standardOnly={true}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Dragonhide Tannery"
   image="/images/buildings/construction/dragonhide.png"
   buildingType={24}
   description={[
     "Produces Dragonhide resource",
+    "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 7, amount: 540 }, // Gold
+    { resource: "essence", amount: 600 } // Essence
+  ]}
+  standardOnly={true}
 />
 </div>
+{/* END TEMPORARY HARDCODED RESOURCE BUILDING CARDS */}
 
 ### Economic Buildings
 
@@ -160,37 +437,15 @@ These buildings define the utility of a Realm or Village, including food product
 capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
 varying costs and population requirements:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Building costs require update from config.</span>
+{/* 
+  TEMPORARY HARDCODED ECONOMIC BUILDING COSTS - TODO: Remove once config is finalized
+  
+  These building cards use hardcoded costs instead of reading from config files.
+  Replace with standard BuildingCard components once blitz configuration is complete.
+*/}
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-<BuildingCard 
-  title="Worker's Hut" 
-  image="/images/buildings/construction/workers_hut.png" 
-  buildingType={1} 
-  description={[
-    "Increases population capacity by 5",
-  ]}
-/>
-
-<BuildingCard
-  title="Storehouse"
-  image="/images/buildings/construction/storehouse.png"
-  buildingType={2}
-  description={[
-    `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg for each material`,
-  ]}
-/>
-
-<BuildingCard
-  title="Market"
-  image="/images/buildings/construction/market.png"
-  buildingType={27}
-  description={[
-    "Produces Donkeys for transportation of materials",
-  ]}
-/>
-
-<BuildingCard
+<BlitzBuildingCard
   title="Farm"
   image="/images/buildings/construction/farm.png"
   buildingType={37}
@@ -198,8 +453,64 @@ varying costs and population requirements:
     "Produces Wheat (food)",
     "Same construction cost in both simple and standard modes",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 200 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 200 } // Labor
+  ]}
+/>
+
+<BlitzBuildingCard 
+  title="Worker's Hut" 
+  image="/images/buildings/construction/workers_hut.png" 
+  buildingType={1} 
+  description={[
+    "Increases population capacity by 5",
+  ]}
+  simpleCosts={[
+    { resource: 23, amount: 560 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 }, // Labor
+    { resource: 3, amount: 80 } // Wood
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Storehouse"
+  image="/images/buildings/construction/storehouse.png"
+  buildingType={2}
+  description={[
+    `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg for each material`,
+  ]}
+  simpleCosts={[
+    { resource: 23, amount: 1200 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 }, // Wood
+    { resource: 4, amount: 90 } // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Market"
+  image="/images/buildings/construction/market.png"
+  buildingType={27}
+  description={[
+    "Produces Donkeys for transportation of materials",
+  ]}
+  simpleCosts={[
+    { resource: 23, amount: 840 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 } // Wood
+  ]}
 />
 </div>
+{/* END TEMPORARY HARDCODED ECONOMIC BUILDING CARDS */}
 
 ### Military Buildings
 
@@ -210,10 +521,15 @@ such, there are a total of 9 military buildings in the game.
 Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
 available for construction in standard mode.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Building costs require update from config.</span>
+{/* 
+  TEMPORARY HARDCODED MILITARY BUILDING COSTS - TODO: Remove once config is finalized
+  
+  These building cards use hardcoded costs instead of reading from config files.
+  Replace with standard BuildingCard components once blitz configuration is complete.
+*/}
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-<BuildingCard 
+<BlitzBuildingCard 
   title="Barracks (T1)" 
   image="/images/buildings/construction/barracks.png" 
   buildingType={28} 
@@ -221,9 +537,17 @@ available for construction in standard mode.
     "Produces T1 Knights",
     "Available in both simple and standard building modes"
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Barracks (T2)"
   image="/images/buildings/construction/barracks.png"
   buildingType={29}
@@ -231,9 +555,16 @@ available for construction in standard mode.
     "Produces T2 Knight units",
     "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 6, amount: 540 }, // Cold Iron
+    { resource: 999, amount: 600 } // Essence (placeholder)
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Barracks (T3)"
   image="/images/buildings/construction/barracks.png"
   buildingType={30}
@@ -241,9 +572,16 @@ available for construction in standard mode.
     "Produces T3 Knight units",
     "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 6, amount: 1080 }, // Cold Iron
+    { resource: 8, amount: 1080 }, // Mithral
+    { resource: 999, amount: 1200 } // Essence (placeholder)
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Archery Range (T1)"
   image="/images/buildings/construction/archery.png"
   buildingType={31}
@@ -251,9 +589,17 @@ available for construction in standard mode.
     "Produces T1 Crossbowman units",
     "Available in both simple and standard building modes",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Archery Range (T2)"
   image="/images/buildings/construction/archery.png"
   buildingType={32}
@@ -261,9 +607,16 @@ available for construction in standard mode.
     "Produces T2 Crossbowman units",
     "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 7, amount: 540 }, // Ironwood
+    { resource: 999, amount: 600 } // Essence (placeholder)
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Archery Range (T3)"
   image="/images/buildings/construction/archery.png"
   buildingType={33}
@@ -271,9 +624,16 @@ available for construction in standard mode.
     "Produces T3 Crossbowman units",
     "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 7, amount: 1080 }, // Ironwood
+    { resource: 9, amount: 1080 }, // Adamantine
+    { resource: 999, amount: 1200 } // Essence (placeholder)
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Stables (T1)"
   image="/images/buildings/construction/stable.png"
   buildingType={34}
@@ -281,9 +641,17 @@ available for construction in standard mode.
     "Produces T1 Paladin units",
     "Available in both simple and standard building modes",
   ]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 } // Copper
+  ]}
 />
 
-<BuildingCard
+<BlitzBuildingCard
   title="Stables (T2)"
   image="/images/buildings/construction/stable.png"
   buildingType={35}
@@ -291,9 +659,16 @@ available for construction in standard mode.
     "Produces T2 Paladin units",
     "Only available in standard building mode",
   ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 10, amount: 540 }, // Gold
+    { resource: 999, amount: 600 } // Essence (placeholder)
+  ]}
 />
 
-<BuildingCard 
+<BlitzBuildingCard 
   title="Stables (T3)" 
   image="/images/buildings/construction/stable.png" 
   buildingType={36} 
@@ -301,8 +676,16 @@ available for construction in standard mode.
     "Produces T3 Paladin units",
     "Only available in standard building mode"
   ]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 10, amount: 1080 }, // Gold
+    { resource: 11, amount: 1080 }, // Dragonhide
+    { resource: 999, amount: 1200 } // Essence (placeholder)
+  ]}
 />
 </div>
+{/* END TEMPORARY HARDCODED MILITARY BUILDING CARDS */}
 
 ### Same Building Cost Increase
 

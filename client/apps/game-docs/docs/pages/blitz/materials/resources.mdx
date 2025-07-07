@@ -1,6 +1,6 @@
 import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
-import TroopsLimitTable from "@/components/TroopsLimitTable";
+import BlitzTroopsLimitTable from "@/components/BlitzTroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🧱 Materials
@@ -58,9 +58,14 @@ Food is the cornerstone a Realm's economy:
   <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
 </div>
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
-
-<TroopsLimitTable /> 
+{/* 
+  TEMPORARY HARDCODED TROOP LIMITS TABLE - TODO: Update BlitzTroopsLimitTable once config is implemented.
+  
+  This table uses hardcoded values instead of reading from config files.
+  Replace with standard TroopsLimitTable component once blitz configuration is complete.
+*/}
+<BlitzTroopsLimitTable />
+{/* END TEMPORARY HARDCODED TROOP LIMITS TABLE */} 
 
 Troops have unique properties:
 
@@ -92,11 +97,24 @@ Labor is a fundamental production material:
 
 ### Essence
 
+{/* TODO: Replace placeholder art with proper Essence icon once available */}
 <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
+  <div style={{ 
+    width: "24px", 
+    height: "24px", 
+    backgroundColor: "#ff69b4", 
+    borderRadius: "4px", 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    fontSize: "12px", 
+    color: "white", 
+    fontWeight: "bold" 
+  }}>
+    E
+  </div>
+  <span style={{ fontSize: "1rem", fontWeight: "500" }}>Essence</span>
 </div>
-
-<span style={{ color: "red" }}>DRAFTING NOTE: Add Essence art.</span>
 
 **Essence** is a new strategic material in Blitz:
 

@@ -1,10 +1,10 @@
 import {
-  StandardTroopProduction,
-  SimpleTroopProduction,
-  SimpleResourceProduction,
-  StandardResourceProduction,
-  LaborProduction,
-  DonkeyProduction,
+  BlitzDonkeyProduction,
+  BlitzStandardTroopProduction,
+  BlitzSimpleTroopProduction,
+  BlitzSimpleResourceProduction,
+  BlitzStandardResourceProduction,
+  BlitzLaborProduction,
 } from "@/components/ResourceProduction";
 
 # ⚒️ Production
@@ -42,11 +42,9 @@ The 9 resources found in Blitz are the backbone of the economy. Producing one re
 or labor (simple mode). Resources are also the main components in building construction and troop production - so mastery of these assets is key 
 to success and security.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
+<BlitzSimpleResourceProduction />
 
-<SimpleResourceProduction />
-
-<StandardResourceProduction />
+<BlitzStandardResourceProduction />
 
 ### Labor
 
@@ -55,9 +53,7 @@ for building construction and Realm upgrades. It is produced by permanently burn
 stream of Labor at a fixed rate. Each of the 9 resources can be burned to produce Labor at varying efficiency,
 dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
-
-<LaborProduction />
+<BlitzLaborProduction />
 
 ### Troops
 
@@ -68,10 +64,8 @@ of the previous tier as input for production.
 _Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
 mode._
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
-
-<SimpleTroopProduction />
-<StandardTroopProduction />
+<BlitzSimpleTroopProduction />
+<BlitzStandardTroopProduction />
 
 ### Donkeys
 
@@ -79,6 +73,4 @@ The humble steeds that move all materials around the world must themselves be pr
 after a single journey, so Lords will need to produce a steady supply of donkeys to ensure that they can sustain their supply chains and logistics. 
 Once the market has been constructed, donkeys only require a steady stream of food to produce.
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
-
-<DonkeyProduction />
+<BlitzDonkeyProduction />

@@ -225,6 +225,138 @@ export const SimpleResourceProduction = () => {
   );
 };
 
+// Component for Blitz Mode Resource Production (Hardcoded)
+export const BlitzSimpleResourceProduction = () => {
+  // Hardcoded data for Blitz mode - 9 resources with wheat and labor inputs
+  const blitzResources = [
+    {
+      id: ResourcesIds.Wood,
+      name: "Wood",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Coal,
+      name: "Coal", 
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Copper,
+      name: "Copper",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Ironwood,
+      name: "Ironwood",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.ColdIron,
+      name: "Cold Iron",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Gold,
+      name: "Gold",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Adamantine,
+      name: "Adamantine",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Mithral,
+      name: "Mithral",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Dragonhide,
+      name: "Dragonhide",
+      inputs: [
+        { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+      ],
+      output: 1
+    }
+  ];
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Mode Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Resource</th>
+            <th style={styles.headerCellStyle}>Input Materials</th>
+            <th style={styles.headerCellStyle}>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blitzResources.map((resource) => (
+            <tr key={`blitz-${resource.id}`}>
+              <td style={styles.resourceCellStyle}>
+                <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                {resource.name}
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceGroupStyle}>
+                  {resource.inputs.map((input, idx) => (
+                    <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
+                      <ResourceIcon id={input.resource} name={input.name} size="md" />
+                      {input.amount}/s
+                    </div>
+                  ))}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                  {resource.output}/s
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz mode - replace with dynamic data when config is updated */}
+      </div>
+    </div>
+  );
+};
+
 // Component for Complex Mode Resource Production
 export const StandardResourceProduction = () => {
   const config = ETERNUM_CONFIG();
@@ -599,6 +731,447 @@ export const DonkeyProduction = () => {
           </tr>
         </tbody>
       </table>
+    </div>
+  );
+};
+
+// Component for Blitz Standard Mode Resource Production (Hardcoded)
+export const BlitzStandardResourceProduction = () => {
+  // Hardcoded data for Blitz standard mode
+  const blitzStandardResources = [
+    {
+      id: ResourcesIds.Wood,
+      name: "Wood",
+      wheat: 1,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.2, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Coal,
+      name: "Coal",
+      wheat: 1,
+      inputs: [
+        { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
+        { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Copper,
+      name: "Copper",
+      wheat: 1,
+      inputs: [
+        { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
+        { resource: ResourcesIds.Coal, amount: 0.24, name: "Coal" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Ironwood,
+      name: "Ironwood",
+      wheat: 2,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.ColdIron,
+      name: "Cold Iron",
+      wheat: 2,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Gold,
+      name: "Gold",
+      wheat: 2,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Adamantine,
+      name: "Adamantine",
+      wheat: 4,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
+        { resource: ResourcesIds.Ironwood, amount: 0.48, name: "Ironwood" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Mithral,
+      name: "Mithral",
+      wheat: 4,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
+        { resource: ResourcesIds.ColdIron, amount: 0.48, name: "Cold Iron" }
+      ],
+      output: 1
+    },
+    {
+      id: ResourcesIds.Dragonhide,
+      name: "Dragonhide",
+      wheat: 4,
+      inputs: [
+        { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
+        { resource: ResourcesIds.Gold, amount: 0.48, name: "Gold" }
+      ],
+      output: 1
+    }
+  ];
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Standard Mode Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Resource</th>
+            <th style={styles.headerCellStyle}>Wheat Input (units/s)</th>
+            <th style={styles.headerCellStyle}>Input 1</th>
+            <th style={styles.headerCellStyle}>Input 1 Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Input 2</th>
+            <th style={styles.headerCellStyle}>Input 2 Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Output (units/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blitzStandardResources.map((resource) => (
+            <tr key={`blitz-standard-${resource.id}`}>
+              <td style={styles.resourceCellStyle}>
+                <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                {resource.name}
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
+                  {resource.wheat}/s
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={resource.inputs[0].resource} name={resource.inputs[0].name} size="md" />
+                  {resource.inputs[0].name}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>{resource.inputs[0].amount}/s</td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={resource.inputs[1].resource} name={resource.inputs[1].name} size="md" />
+                  {resource.inputs[1].name}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>{resource.inputs[1].amount}/s</td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                  {resource.output}/s
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz standard mode - replace with dynamic data when config is updated */}
+      </div>
+    </div>
+  );
+};
+
+// Component for Blitz Labor Production (Hardcoded)
+export const BlitzLaborProduction = () => {
+  // Hardcoded data for Blitz labor production
+  const blitzLaborResources = [
+    { id: ResourcesIds.Wood, name: "Wood", input: 10, output: 10 },
+    { id: ResourcesIds.Coal, name: "Coal", input: 5, output: 10 },
+    { id: ResourcesIds.Copper, name: "Copper", input: 5, output: 10 },
+    { id: ResourcesIds.Ironwood, name: "Ironwood", input: 2, output: 10 },
+    { id: ResourcesIds.ColdIron, name: "Cold Iron", input: 2, output: 10 },
+    { id: ResourcesIds.Gold, name: "Gold", input: 2, output: 10 },
+    { id: ResourcesIds.Adamantine, name: "Adamantine", input: 0.5, output: 10 },
+    { id: ResourcesIds.Mithral, name: "Mithral", input: 0.5, output: 10 },
+    { id: ResourcesIds.Dragonhide, name: "Dragonhide", input: 0.5, output: 10 },
+  ];
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Labor Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Resource</th>
+            <th style={styles.headerCellStyle}>Input (units/s)</th>
+            <th style={styles.headerCellStyle}>Labor Output (units/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blitzLaborResources.map((resource) => (
+            <tr key={`blitz-labor-${resource.id}`}>
+              <td style={styles.resourceCellStyle}>
+                <ResourceIcon id={resource.id} name={resource.name} size="md" />
+                {resource.name}
+              </td>
+              <td style={styles.productionCellStyle}>{resource.input}</td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Labor} name="Labor" size="md" />
+                  {resource.output}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz labor production - replace with dynamic data when config is updated */}
+      </div>
+    </div>
+  );
+};
+
+// Component for Blitz Simple Troop Production (Hardcoded)
+export const BlitzSimpleTroopProduction = () => {
+  // Hardcoded data for Blitz simple troop production
+  const blitzSimpleTroops = [
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 2.5, output: 5 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 2.5, output: 5 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 2.5, output: 5 },
+  ];
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Simple Troop Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Troop Type</th>
+            <th style={styles.headerCellStyle}>Wheat Cost (units/s)</th>
+            <th style={styles.headerCellStyle}>Labor Cost (units/s)</th>
+            <th style={styles.headerCellStyle}>Output (units/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blitzSimpleTroops.map((troop) => (
+            <tr key={`blitz-simple-troop-${troop.id}`}>
+              <td style={styles.resourceCellStyle}>
+                <ResourceIcon id={troop.id} name={troop.name} size="md" />
+                {troop.name}
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
+                  {troop.wheat}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Labor} name="Labor" size="md" />
+                  {troop.labor}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>{troop.output}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz simple troop production - replace with dynamic data when config is updated */}
+      </div>
+    </div>
+  );
+};
+
+// Component for Blitz Standard Troop Production (Hardcoded)
+export const BlitzStandardTroopProduction = () => {
+  // Hardcoded data for Blitz standard troop production
+  const ESSENCE_ID = 9999; // Use a placeholder ID for Essence icon
+  const blitzStandardTroops = [
+    // T1
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
+    ], output: 5 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
+    ], output: 5 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
+    ], output: 5 },
+    // T2
+    { id: ResourcesIds.CrossbowmanT2, name: "T2 Crossbowman", wheat: 4, troopInput: ResourcesIds.Crossbowman, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+      { resource: ResourcesIds.Ironwood, amount: 0.32, name: "Ironwood" },
+      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
+    ], output: 5 },
+    { id: ResourcesIds.KnightT2, name: "T2 Knight", wheat: 4, troopInput: ResourcesIds.Knight, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+      { resource: ResourcesIds.ColdIron, amount: 0.32, name: "Cold Iron" },
+      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
+    ], output: 5 },
+    { id: ResourcesIds.PaladinT2, name: "T2 Paladin", wheat: 4, troopInput: ResourcesIds.Paladin, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+      { resource: ResourcesIds.Gold, amount: 0.32, name: "Gold" },
+      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
+    ], output: 5 },
+    // T3
+    { id: ResourcesIds.CrossbowmanT3, name: "T3 Crossbowman", wheat: 7, troopInput: ResourcesIds.CrossbowmanT2, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.Ironwood, amount: 0.64, name: "Ironwood" },
+      { resource: ResourcesIds.Adamantine, amount: 0.72, name: "Adamantine" },
+      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
+    ], output: 5 },
+    { id: ResourcesIds.KnightT3, name: "T3 Knight", wheat: 7, troopInput: ResourcesIds.KnightT2, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.ColdIron, amount: 0.64, name: "Cold Iron" },
+      { resource: ResourcesIds.Mithral, amount: 0.72, name: "Mithral" },
+      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
+    ], output: 5 },
+    { id: ResourcesIds.PaladinT3, name: "T3 Paladin", wheat: 7, troopInput: ResourcesIds.PaladinT2, troopInputRate: 10, inputs: [
+      { resource: ResourcesIds.Gold, amount: 0.64, name: "Gold" },
+      { resource: ResourcesIds.Dragonhide, amount: 0.72, name: "Dragonhide" },
+      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
+    ], output: 5 },
+  ];
+
+  // Helper for Essence icon: use a pink square with E as a placeholder
+  const EssenceIcon = () => (
+    <span style={{
+      display: "inline-block",
+      width: 20,
+      height: 20,
+      background: "#e75480",
+      color: "#fff",
+      fontWeight: 700,
+      fontSize: 14,
+      borderRadius: 4,
+      textAlign: "center",
+      lineHeight: "20px",
+      marginRight: 4,
+      border: "1px solid #b03060"
+    }}>E</span>
+  );
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Standard Troop Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Troop Type</th>
+            <th style={styles.headerCellStyle}>Wheat Cost (units/s)</th>
+            <th style={styles.headerCellStyle}>Troop Input</th>
+            <th style={styles.headerCellStyle}>Troop Input Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Input 1</th>
+            <th style={styles.headerCellStyle}>Input 1 Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Input 2</th>
+            <th style={styles.headerCellStyle}>Input 2 Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Input 3</th>
+            <th style={styles.headerCellStyle}>Input 3 Rate (units/s)</th>
+            <th style={styles.headerCellStyle}>Output (units/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blitzStandardTroops.map((troop) => (
+            <tr key={`blitz-standard-troop-${troop.id}`}>
+              <td style={styles.resourceCellStyle}>
+                <ResourceIcon id={troop.id} name={troop.name} size="md" />
+                {troop.name}
+              </td>
+              <td style={styles.productionCellStyle}>
+                <div style={styles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
+                  {troop.wheat}
+                </div>
+              </td>
+              <td style={styles.productionCellStyle}>
+                {troop.troopInput ? (
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={troop.troopInput} name="Troop" size="md" />
+                    {blitzStandardTroops.find(t => t.id === troop.troopInput)?.name || "Troop"}
+                  </div>
+                ) : null}
+              </td>
+              <td style={styles.productionCellStyle}>{troop.troopInputRate || ""}</td>
+              <td style={styles.productionCellStyle}>
+                {troop.inputs[0] ? (
+                  <div style={styles.resourceItemStyle}>
+                    {troop.inputs[0].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[0].resource} name={troop.inputs[0].name} size="md" />}
+                    {troop.inputs[0].name}
+                  </div>
+                ) : null}
+              </td>
+              <td style={styles.productionCellStyle}>{troop.inputs[0]?.amount || ""}</td>
+              <td style={styles.productionCellStyle}>
+                {troop.inputs[1] ? (
+                  <div style={styles.resourceItemStyle}>
+                    {troop.inputs[1].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[1].resource} name={troop.inputs[1].name} size="md" />}
+                    {troop.inputs[1].name}
+                  </div>
+                ) : null}
+              </td>
+              <td style={styles.productionCellStyle}>{troop.inputs[1]?.amount || ""}</td>
+              <td style={styles.productionCellStyle}>
+                {troop.inputs[2] ? (
+                  <div style={styles.resourceItemStyle}>
+                    {troop.inputs[2].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[2].resource} name={troop.inputs[2].name} size="md" />}
+                    {troop.inputs[2].name}
+                  </div>
+                ) : null}
+              </td>
+              <td style={styles.productionCellStyle}>{troop.inputs[2]?.amount || ""}</td>
+              <td style={styles.productionCellStyle}>{troop.output}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz standard troop production - replace with dynamic data when config is updated. Essence icon is a placeholder. */}
+      </div>
+    </div>
+  );
+};
+
+// Component for Blitz Donkey Production (Hardcoded)
+export const BlitzDonkeyProduction = () => {
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Blitz Donkey Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Input (Wheat/s)</th>
+            <th style={styles.headerCellStyle}>Output (Donkeys/s)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={styles.productionCellStyle}>
+              <div style={styles.resourceItemStyle}>
+                <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
+                5
+              </div>
+            </td>
+            <td style={styles.productionCellStyle}>
+              <div style={styles.resourceItemStyle}>
+                <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+                0.1
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style={componentStyles.tableFootnoteStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz donkey production - replace with dynamic data when config is updated */}
+      </div>
     </div>
   );
 };
