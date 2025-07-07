@@ -2,13 +2,17 @@ import * as THREE from "three";
 import { AnimationType, AuraPartConfig, AuraPartType } from "../types";
 import { BasePart } from "./base-part";
 
-const PARTICLES_COUNT = 30;
-const PARTICLE_BASE_SPEED = 0.75;
+const PARTICLES_COUNT = 15;
+const PARTICLE_BASE_SPEED = 0.35;
 const PARTICLE_RESET_Y = 2.5;
 const PARTICLE_START_Y = -0.5;
 const PARTICLE_RADIUS = 0.7;
 const PARTICLE_COLOR = new THREE.Color(8, 8, 4);
 const MAX_DELTA = 1 / 120;
+
+const WANDER_STRENGTH = 0.7;
+const WANDER_SPEED = 2.0;
+const HORIZONTAL_DRIFT = 0.3;
 
 export class ParticlesAura extends BasePart {
   private static textureLoader = new THREE.TextureLoader();
@@ -19,6 +23,9 @@ export class ParticlesAura extends BasePart {
   private particleVelocities: Float32Array;
   private particleAngles: Float32Array;
   private particlePositions: Float32Array;
+  private particleWanderAngles: Float32Array;
+  private particleWanderOffsets: Float32Array;
+  private particleBasePositions: Float32Array;
   private scene: THREE.Scene;
 
   constructor(config: AuraPartConfig, scene: THREE.Scene) {
@@ -29,6 +36,9 @@ export class ParticlesAura extends BasePart {
     this.particleVelocities = new Float32Array(PARTICLES_COUNT);
     this.particleAngles = new Float32Array(PARTICLES_COUNT);
     this.particlePositions = new Float32Array(PARTICLES_COUNT * 3);
+    this.particleWanderAngles = new Float32Array(PARTICLES_COUNT);
+    this.particleWanderOffsets = new Float32Array(PARTICLES_COUNT * 2);
+    this.particleBasePositions = new Float32Array(PARTICLES_COUNT * 3);
 
     this.initializeParticles();
     this.createParticleSprites();
@@ -38,13 +48,21 @@ export class ParticlesAura extends BasePart {
   private initializeParticles(): void {
     for (let i = 0; i < PARTICLES_COUNT; i++) {
       this.particleAngles[i] = (i / PARTICLES_COUNT) * Math.PI * 2;
+      this.particleWanderAngles[i] = Math.random() * Math.PI * 2;
 
-      this.particlePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
-      this.particlePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particleBasePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particleBasePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
 
       this.particleVelocities[i] = Math.random();
-      this.particlePositions[i * 3 + 1] =
+      this.particleBasePositions[i * 3 + 1] =
         PARTICLE_START_Y + (PARTICLE_RESET_Y - PARTICLE_START_Y) * this.particleVelocities[i];
+
+      this.particleWanderOffsets[i * 2] = 0;
+      this.particleWanderOffsets[i * 2 + 1] = 0;
+
+      this.particlePositions[i * 3] = this.particleBasePositions[i * 3];
+      this.particlePositions[i * 3 + 1] = this.particleBasePositions[i * 3 + 1];
+      this.particlePositions[i * 3 + 2] = this.particleBasePositions[i * 3 + 2];
     }
   }
 
@@ -97,16 +115,40 @@ export class ParticlesAura extends BasePart {
     for (let i = 0; i < PARTICLES_COUNT; i++) {
       this.particleVelocities[i] += PARTICLE_BASE_SPEED * clampedDelta;
 
-      this.particlePositions[i * 3 + 1] =
+      this.particleBasePositions[i * 3 + 1] =
         PARTICLE_START_Y + (PARTICLE_RESET_Y - PARTICLE_START_Y) * this.particleVelocities[i];
 
       if (this.particleVelocities[i] >= 1.0) {
         this.particleVelocities[i] = Math.random() * 0.3;
-        this.particlePositions[i * 3 + 1] = PARTICLE_START_Y;
+        this.particleBasePositions[i * 3 + 1] = PARTICLE_START_Y;
+
+        this.particleBasePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
+        this.particleBasePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
+
+        this.particleWanderOffsets[i * 2] = 0;
+        this.particleWanderOffsets[i * 2 + 1] = 0;
       }
 
-      this.particlePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
-      this.particlePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particleWanderAngles[i] += (Math.random() - 0.5) * WANDER_SPEED * clampedDelta;
+
+      const wanderX = Math.cos(this.particleWanderAngles[i]) * WANDER_STRENGTH;
+      const wanderZ = Math.sin(this.particleWanderAngles[i]) * WANDER_STRENGTH;
+
+      this.particleWanderOffsets[i * 2] += wanderX * clampedDelta;
+      this.particleWanderOffsets[i * 2 + 1] += wanderZ * clampedDelta;
+
+      this.particleWanderOffsets[i * 2] = Math.max(
+        -HORIZONTAL_DRIFT,
+        Math.min(HORIZONTAL_DRIFT, this.particleWanderOffsets[i * 2]),
+      );
+      this.particleWanderOffsets[i * 2 + 1] = Math.max(
+        -HORIZONTAL_DRIFT,
+        Math.min(HORIZONTAL_DRIFT, this.particleWanderOffsets[i * 2 + 1]),
+      );
+
+      this.particlePositions[i * 3] = this.particleBasePositions[i * 3] + this.particleWanderOffsets[i * 2];
+      this.particlePositions[i * 3 + 1] = this.particleBasePositions[i * 3 + 1];
+      this.particlePositions[i * 3 + 2] = this.particleBasePositions[i * 3 + 2] + this.particleWanderOffsets[i * 2 + 1];
 
       this.particles[i].position.set(
         this.particlePositions[i * 3],
