@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { GUIManager } from "../helpers/gui-manager";
 import { SystemManager } from "../system/system-manager";
-import { TileSystemUpdate } from "../types";
+import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
 import { createHexagonShape } from "./hexagon-geometry";
 import { TilePosition, TileRenderer } from "./tile-renderer";
@@ -16,6 +16,12 @@ export class HexagonMap {
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
+
+  // Army and structure tracking
+  private armyHexes: Map<number, Map<number, { id: number; owner: bigint }>> = new Map();
+  private structureHexes: Map<number, Map<number, { id: number; owner: bigint }>> = new Map();
+  private armiesPositions: Map<number, { col: number; row: number }> = new Map();
+
   private instanceMesh: THREE.InstancedMesh | null = null;
   private tileRenderer: TileRenderer;
   private raycaster: THREE.Raycaster;
@@ -59,6 +65,12 @@ export class HexagonMap {
     this.initializeMap();
 
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+
+    // TODO: Uncomment these when Army and Structure system managers are implemented
+    this.systemManager.Army.onUpdate((update) => this.updateArmyHexes(update));
+    this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
+    this.systemManager.Structure.onUpdate((update) => this.updateStructureHexes(update));
+
     GUIManager.addFolder("HexagonMap");
     GUIManager.add(this, "moveCameraToColRow");
   }
@@ -234,8 +246,12 @@ export class HexagonMap {
       const biome = this.exploredTiles.get(col)?.get(row);
       const isExplored = biome !== undefined;
 
+      // Check for structures and armies at this hex
+      const hasStructure = this.hasStructureAtHex(col, row);
+      const hasArmy = this.hasArmyAtHex(col, row);
+
       // Add to tile positions for rendering
-      tilePositions.push({ col, row, biome, isExplored });
+      tilePositions.push({ col, row, biome, isExplored, hasStructure, hasArmy });
 
       index++;
     });
@@ -385,6 +401,9 @@ export class HexagonMap {
 
     this.allHexes.clear();
     this.visibleHexes.clear();
+    this.armyHexes.clear();
+    this.structureHexes.clear();
+    this.armiesPositions.clear();
 
     // Don't dispose static assets here as they might be used by other instances
   }
@@ -504,5 +523,87 @@ export class HexagonMap {
 
   private isHexExplored(col: number, row: number): boolean {
     return this.exploredTiles.has(col) && this.exploredTiles.get(col)!.has(row);
+  }
+
+  // Army tracking methods
+  public updateArmyHexes(update: ArmySystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      owner: { address },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    const newPos = { col: normalized.x, row: normalized.y };
+    const oldPos = this.armiesPositions.get(entityId);
+
+    this.armiesPositions.set(entityId, newPos);
+
+    if (
+      oldPos &&
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
+    ) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+    }
+
+    if (!this.armyHexes.has(newPos.col)) {
+      this.armyHexes.set(newPos.col, new Map());
+    }
+    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+  }
+
+  public updateStructureHexes(update: StructureSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      owner: { address },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    const newCol = normalized.x;
+    const newRow = normalized.y;
+
+    if (!this.structureHexes.has(newCol)) {
+      this.structureHexes.set(newCol, new Map());
+    }
+    this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
+  }
+
+  public deleteArmy(entityId: number) {
+    const oldPos = this.armiesPositions.get(entityId);
+    if (oldPos) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      this.armiesPositions.delete(entityId);
+    }
+  }
+
+  // Helper methods to check if hex has army or structure
+  public hasArmyAtHex(col: number, row: number): boolean {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return this.armyHexes.get(normalized.x)?.has(normalized.y) || false;
+  }
+
+  public hasStructureAtHex(col: number, row: number): boolean {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return this.structureHexes.get(normalized.x)?.has(normalized.y) || false;
+  }
+
+  public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return this.armyHexes.get(normalized.x)?.get(normalized.y);
+  }
+
+  public getStructureAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return this.structureHexes.get(normalized.x)?.get(normalized.y);
+  }
+
+  public getHexagonEntity(hexCoords: { col: number; row: number }) {
+    const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    const army = this.armyHexes.get(hex.x)?.get(hex.y);
+    const structure = this.structureHexes.get(hex.x)?.get(hex.y);
+    return { army, structure };
   }
 }
