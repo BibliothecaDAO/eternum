@@ -3,7 +3,15 @@ import { colors, formatAmount } from "@/components/styles";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@/utils/constants";
 
-export const BlitzBuildingCard = ({ title, image, buildingType, description, simpleCosts, standardCosts, standardOnly = false }) => {
+export const BlitzBuildingCard = ({
+  title,
+  image,
+  buildingType,
+  description = [],
+  simpleCosts = [],
+  standardCosts = [],
+  standardOnly = false,
+}) => {
   const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
   const resourceId = buildingType - 2; // Resource buildings map to resource IDs
   const resourceName = resources.find((r) => r.id === resourceId)?.trait || "";
@@ -37,7 +45,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
     image: {
       width: "80px",
       height: "80px",
-      objectFit: "contain" as const,
+      objectFit: "contain",
       padding: "0.25rem",
       backgroundColor: colors.background.light,
       border: `1px solid ${colors.borderDark}`,
@@ -85,7 +93,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
     },
     costsRow: {
       display: "flex",
-      flexWrap: "wrap" as const,
+      flexWrap: "wrap",
       gap: "0.25rem",
       marginBottom: "0.5rem",
     },
@@ -114,9 +122,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
         <img src={image} alt={title} style={styles.image} />
 
         <div style={styles.info}>
-          <div style={styles.stats}>
-            {population > 0 && <div style={styles.stat}>Pop Req: {population}</div>}
-          </div>
+          <div style={styles.stats}>{population > 0 && <div style={styles.stat}>Pop Req: {population}</div>}</div>
 
           <ul style={{ listStyleType: "disc", marginLeft: "1rem", marginBottom: "0.5rem" }}>
             {description.map((desc, index) => (
@@ -130,7 +136,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
 
       <div style={styles.costsContainer}>
         <div style={styles.costsTitle}>Building Costs</div>
-        
+
         {standardOnly ? (
           <div>
             <div style={styles.modeHeader}>Standard Only</div>
@@ -138,14 +144,16 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
               {standardCosts.map((cost, index) => (
                 <div key={index} style={styles.costItem}>
                   {cost.resource === "essence" ? (
-                    <div style={{
-                      width: "16px",
-                      height: "16px",
-                      backgroundColor: "#f8bbd9",
-                      borderRadius: "2px",
-                      border: "1px solid #ec4899",
-                      flexShrink: 0
-                    }} />
+                    <div
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        backgroundColor: "#f8bbd9",
+                        borderRadius: "2px",
+                        border: "1px solid #ec4899",
+                        flexShrink: 0,
+                      }}
+                    />
                   ) : (
                     <ResourceIcon id={cost.resource} name="" size="md" />
                   )}
@@ -174,14 +182,16 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
                 {standardCosts.map((cost, index) => (
                   <div key={index} style={styles.costItem}>
                     {cost.resource === "essence" ? (
-                      <div style={{
-                        width: "16px",
-                        height: "16px",
-                        backgroundColor: "#f8bbd9",
-                        borderRadius: "2px",
-                        border: "1px solid #ec4899",
-                        flexShrink: 0
-                      }} />
+                      <div
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          backgroundColor: "#f8bbd9",
+                          borderRadius: "2px",
+                          border: "1px solid #ec4899",
+                          flexShrink: 0,
+                        }}
+                      />
                     ) : (
                       <ResourceIcon id={cost.resource} name="" size="md" />
                     )}
@@ -195,4 +205,4 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
       </div>
     </div>
   );
-}; 
+};
