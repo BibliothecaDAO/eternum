@@ -184,10 +184,10 @@ export const getStructureInfoFromTileOccupier = (
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  private loggedInAccount: string;
+  private loggedInAccount: bigint;
   constructor(
     private setup: SetupResult,
-    loggedInAccount: string,
+    loggedInAccount: bigint,
   ) {
     this.loggedInAccount = loggedInAccount;
   }
@@ -196,7 +196,7 @@ export class SystemManager {
     return this.loggedInAccount;
   }
 
-  public setLoggedInAccount(loggedInAccount: string) {
+  public setLoggedInAccount(loggedInAccount: bigint) {
     this.loggedInAccount = loggedInAccount;
   }
 

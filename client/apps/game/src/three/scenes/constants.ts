@@ -7,10 +7,11 @@ import {
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
+  StructureProgress,
   StructureType,
 } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { HyperstructureTypesNames, StructureProgress } from "../types";
+import { HyperstructureTypesNames } from "../types";
 
 export const HEX_SIZE = 1;
 
