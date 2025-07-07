@@ -30,30 +30,29 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
+  ArmySystemUpdate,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  ExplorerRewardSystemUpdate,
   findResourceById,
   getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
   ID,
+  QuestSystemUpdate,
+  StructureSystemUpdate,
+  TileSystemUpdate,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { AnimationType, AuraConfig, AuraManager, AuraPartType } from "../managers/aura-system";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import {
-  ArmySystemUpdate,
-  ExplorerRewardSystemUpdate,
-  QuestSystemUpdate,
-  SceneName,
-  StructureSystemUpdate,
-  TileSystemUpdate,
-} from "../types";
+import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();
@@ -104,6 +103,7 @@ export default class WorldmapScene extends HexagonScene {
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
+  private auraManager: AuraManager;
 
   constructor(
     dojoContext: SetupResult,
@@ -117,6 +117,7 @@ export default class WorldmapScene extends HexagonScene {
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
+    this.auraManager = new AuraManager(this.scene);
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -255,6 +256,8 @@ export default class WorldmapScene extends HexagonScene {
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
     });
+
+    this.setupAuraGUI();
   }
 
   private setupCameraZoomHandler() {
@@ -602,6 +605,69 @@ export default class WorldmapScene extends HexagonScene {
     this.setupCameraZoomHandler();
   }
 
+  private setupAuraGUI(): void {
+    const auraFolder = this.GUIFolder.addFolder("Aura System");
+
+    const auraParams = {
+      col: -32,
+      row: -18,
+      groundAuraId: 1,
+      middleAuraId: 1,
+      particlesId: 1,
+      entityId: 999999,
+      spawnAura: () => {
+        const config: AuraConfig = {
+          groundAuraId: auraParams.groundAuraId,
+          middleAuraId: auraParams.middleAuraId,
+          particlesId: auraParams.particlesId,
+        };
+
+        this.auraManager.createAura(auraParams.entityId, config);
+        const position = getWorldPositionForHex({
+          col: auraParams.col,
+          row: auraParams.row,
+        });
+        this.auraManager.setAuraPosition(auraParams.entityId, position.x, position.y + 0.25, position.z);
+        console.log(`Spawned aura at col: ${auraParams.col}, row: ${auraParams.row}`);
+      },
+      removeAura: () => {
+        this.auraManager.removeAura(auraParams.entityId);
+        console.log(`Removed aura for entity: ${auraParams.entityId}`);
+      },
+      setGroundAnimation: () => {
+        this.auraManager.setAuraAnimation(auraParams.entityId, AuraPartType.GROUND, AnimationType.ROTATE);
+      },
+      setMiddleAnimation: () => {
+        this.auraManager.setAuraAnimation(auraParams.entityId, AuraPartType.MIDDLE, AnimationType.FLOAT);
+      },
+      setParticlesAnimation: () => {
+        this.auraManager.setAuraAnimation(auraParams.entityId, AuraPartType.PARTICLES, AnimationType.SPIRAL);
+      },
+      toggleVisibility: () => {
+        const aura = this.auraManager.getAuraByEntityId(auraParams.entityId);
+        if (aura) {
+          this.auraManager.setAuraVisible(auraParams.entityId, !aura.isActive);
+        }
+      },
+    };
+
+    auraFolder.add(auraParams, "col", -500, 500).name("Column");
+    auraFolder.add(auraParams, "row", -500, 500).name("Row");
+    auraFolder.add(auraParams, "groundAuraId", 1, 10).step(1).name("Ground Aura ID");
+    auraFolder.add(auraParams, "middleAuraId", 1, 10).step(1).name("Middle Aura ID");
+    auraFolder.add(auraParams, "particlesId", 1, 10).step(1).name("Particles ID");
+    auraFolder.add(auraParams, "entityId", 1, 999999).step(1).name("Entity ID");
+
+    auraFolder.add(auraParams, "spawnAura").name("Spawn Aura");
+    auraFolder.add(auraParams, "removeAura").name("Remove Aura");
+    auraFolder.add(auraParams, "setGroundAnimation").name("Ground: Rotate");
+    auraFolder.add(auraParams, "setMiddleAnimation").name("Middle: Float");
+    auraFolder.add(auraParams, "setParticlesAnimation").name("Particles: Spiral");
+    auraFolder.add(auraParams, "toggleVisibility").name("Toggle Visibility");
+
+    auraFolder.close();
+  }
+
   onSwitchOff() {
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
@@ -616,6 +682,9 @@ export default class WorldmapScene extends HexagonScene {
     console.debug("[WorldMap] Removing structure labels from scene");
     this.questManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing quest labels from scene");
+
+    // Clean up aura system
+    this.auraManager.dispose();
 
     // Clean up wheel event listener
     if (this.wheelHandler) {
@@ -1101,6 +1170,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     this.minimap.update();
+    this.auraManager.update();
   }
 
   public clearTileEntityCache() {
@@ -1111,6 +1181,7 @@ export default class WorldmapScene extends HexagonScene {
 
   destroy() {
     this.resourceFXManager.destroy();
+    this.auraManager.dispose();
   }
 
   /**
