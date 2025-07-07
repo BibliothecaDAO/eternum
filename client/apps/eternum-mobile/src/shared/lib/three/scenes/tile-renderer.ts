@@ -5,7 +5,8 @@ import { getWorldPositionForTile, HEX_SIZE } from "./utils";
 export interface TilePosition {
   col: number;
   row: number;
-  biome: BiomeType;
+  biome?: BiomeType;
+  isExplored: boolean;
 }
 
 export class TileRenderer {
@@ -78,7 +79,7 @@ export class TileRenderer {
         TileRenderer.tileTexture,
       ); // Fifteenth tile (index 14)
       this.createTileMaterial(BiomeTypeToId[BiomeType.TropicalRainForest], 9, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
-      this.createTileMaterial(17, 13, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
+      this.createTileMaterial(17, 13, tilesPerRow, TileRenderer.tileTexture, 0.3); // Outline tile for unexplored hexes
 
       // Create prototype sprites for each tile type
       this.createPrototypeSprites();
@@ -90,7 +91,13 @@ export class TileRenderer {
     }
   }
 
-  private createTileMaterial(tileId: number, tileIndex: number, tilesPerRow: number, texture: THREE.Texture): void {
+  private createTileMaterial(
+    tileId: number,
+    tileIndex: number,
+    tilesPerRow: number,
+    texture: THREE.Texture,
+    opacity: number = 1.0,
+  ): void {
     const tileUV = this.calculateTileUV(tileIndex, tilesPerRow, texture.image.width, texture.image.height);
 
     // Don't clone texture - reuse the same texture with different UV settings
@@ -98,6 +105,7 @@ export class TileRenderer {
       map: texture,
       transparent: true,
       alphaTest: 0.1,
+      opacity: opacity,
     });
 
     // Create a copy of the texture for UV manipulation
@@ -152,22 +160,24 @@ export class TileRenderer {
     // Sort hexes by row for proper rendering order (higher row = higher render order)
     const sortedHexes = [...hexes].sort((a, b) => b.row - a.row);
 
-    sortedHexes.forEach(({ col, row, biome }) => {
-      this.createTileSprite(col, row, biome);
+    sortedHexes.forEach(({ col, row, biome, isExplored }) => {
+      this.createTileSprite(col, row, biome, isExplored);
     });
   }
 
-  private createTileSprite(col: number, row: number, biome: BiomeType): void {
+  private createTileSprite(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
     // Reuse tempVector3 instead of creating new Vector3
     getWorldPositionForTile({ col, row }, true, this.tempVector3);
 
-    // Use actual biome instead of pseudo-random
-    const tileId = BiomeTypeToId[biome];
+    // Use tileId 17 for unexplored hexes (outline tile), otherwise use biome's tileId
+    const tileId = isExplored && biome ? BiomeTypeToId[biome] : 17;
     const prototypeSprite = this.prototypeSprites.get(tileId);
 
     if (!prototypeSprite) {
-      console.warn(`Prototype sprite for biome ${biome} (tileId: ${tileId}) not found`);
+      console.warn(
+        `Prototype sprite for ${isExplored ? `biome ${biome}` : "unexplored hex"} (tileId: ${tileId}) not found`,
+      );
       return;
     }
 
@@ -202,7 +212,7 @@ export class TileRenderer {
     }
   }
 
-  public addTile(col: number, row: number, biome: BiomeType): void {
+  public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
 
     // Don't create duplicate tiles
@@ -210,7 +220,7 @@ export class TileRenderer {
       return;
     }
 
-    this.createTileSprite(col, row, biome);
+    this.createTileSprite(col, row, biome, isExplored);
   }
 
   public updateTilesForHexes(hexes: TilePosition[]): void {
@@ -226,10 +236,10 @@ export class TileRenderer {
     });
 
     // Add new tiles
-    hexes.forEach(({ col, row, biome }) => {
+    hexes.forEach(({ col, row, biome, isExplored }) => {
       const hexKey = `${col},${row}`;
       if (!currentHexKeys.has(hexKey)) {
-        this.addTile(col, row, biome);
+        this.addTile(col, row, biome, isExplored);
       }
     });
   }

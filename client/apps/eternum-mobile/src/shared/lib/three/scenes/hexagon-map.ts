@@ -74,7 +74,7 @@ export class HexagonMap {
       HexagonMap.hexagonMaterial = new THREE.MeshLambertMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.5,
+        opacity: 0,
       });
     }
   }
@@ -186,15 +186,13 @@ export class HexagonMap {
       this.instanceMesh.dispose();
     }
 
-    // Filter visible hexes to only include explored ones
-    const exploredHexes = Array.from(this.visibleHexes)
-      .map((hexString) => {
-        const [col, row] = hexString.split(",").map(Number);
-        return { col, row, hexString };
-      })
-      .filter(({ col, row }) => this.isHexExplored(col, row));
+    // Process all visible hexes (both explored and unexplored)
+    const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
+      const [col, row] = hexString.split(",").map(Number);
+      return { col, row, hexString };
+    });
 
-    const instanceCount = exploredHexes.length;
+    const instanceCount = allVisibleHexes.length;
 
     if (instanceCount === 0) {
       this.tileRenderer.clearTiles();
@@ -212,12 +210,12 @@ export class HexagonMap {
     this.instanceMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
     // Sort by row (higher row = higher render order)
-    exploredHexes.sort((a, b) => b.row - a.row);
+    allVisibleHexes.sort((a, b) => b.row - a.row);
 
     let index = 0;
     const tilePositions: TilePosition[] = [];
 
-    exploredHexes.forEach(({ col, row, hexString }) => {
+    allVisibleHexes.forEach(({ col, row, hexString }) => {
       // Reuse tempVector3 instead of creating new Vector3
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
 
@@ -232,12 +230,12 @@ export class HexagonMap {
       this.tempColor.setHex(0x4a90e2);
       this.instanceMesh!.setColorAt(index, this.tempColor);
 
-      // Get the actual biome for this hex from exploredTiles
+      // Check if hex is explored and get biome data
       const biome = this.exploredTiles.get(col)?.get(row);
-      if (biome !== undefined) {
-        // Collect tile positions with biome data for the tile renderer
-        tilePositions.push({ col, row, biome });
-      }
+      const isExplored = biome !== undefined;
+
+      // Add to tile positions for rendering
+      tilePositions.push({ col, row, biome, isExplored });
 
       index++;
     });
