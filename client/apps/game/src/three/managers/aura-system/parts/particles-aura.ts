@@ -11,50 +11,82 @@ const PARTICLE_COLOR = new THREE.Color(8, 8, 4);
 const MAX_DELTA = 1 / 120;
 
 export class ParticlesAura extends BasePart {
-  private pointsPositions: Float32Array;
+  private static textureLoader = new THREE.TextureLoader();
+  private static textureCache = new Map<string, THREE.Texture>();
+
+  private particleGroup: THREE.Group;
+  private particles: THREE.Sprite[] = [];
   private particleVelocities: Float32Array;
   private particleAngles: Float32Array;
-  private points!: THREE.Points;
+  private particlePositions: Float32Array;
   private scene: THREE.Scene;
 
   constructor(config: AuraPartConfig, scene: THREE.Scene) {
     super(config);
     this.scene = scene;
 
-    this.pointsPositions = new Float32Array(PARTICLES_COUNT * 3);
+    this.particleGroup = new THREE.Group();
     this.particleVelocities = new Float32Array(PARTICLES_COUNT);
     this.particleAngles = new Float32Array(PARTICLES_COUNT);
+    this.particlePositions = new Float32Array(PARTICLES_COUNT * 3);
 
     this.initializeParticles();
-    this.createParticleMesh();
-    this.mesh = this.points;
+    this.createParticleSprites();
+    this.mesh = this.particleGroup;
   }
 
   private initializeParticles(): void {
     for (let i = 0; i < PARTICLES_COUNT; i++) {
       this.particleAngles[i] = (i / PARTICLES_COUNT) * Math.PI * 2;
 
-      this.pointsPositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
-      this.pointsPositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particlePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particlePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
 
       this.particleVelocities[i] = Math.random();
-      this.pointsPositions[i * 3 + 1] =
+      this.particlePositions[i * 3 + 1] =
         PARTICLE_START_Y + (PARTICLE_RESET_Y - PARTICLE_START_Y) * this.particleVelocities[i];
     }
   }
 
-  private createParticleMesh(): void {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
-
-    const material = new THREE.PointsMaterial({
+  private createParticleSprites(): void {
+    const material = new THREE.SpriteMaterial({
       color: this.config.color || PARTICLE_COLOR,
-      size: this.config.size || 0.2,
-      sizeAttenuation: true,
+      transparent: true,
+      opacity: this.config.opacity || 1.0,
+      alphaTest: 0.1,
     });
 
-    this.points = new THREE.Points(geometry, material);
-    this.points.renderOrder = this.config.renderOrder || 10;
+    if (this.config.texturePath) {
+      const texture = this.loadTexture(this.config.texturePath);
+      material.map = texture;
+    }
+
+    for (let i = 0; i < PARTICLES_COUNT; i++) {
+      const sprite = new THREE.Sprite(material.clone());
+      sprite.scale.setScalar(this.config.size || 0.2);
+      sprite.renderOrder = this.config.renderOrder || 10;
+
+      sprite.position.set(
+        this.particlePositions[i * 3],
+        this.particlePositions[i * 3 + 1],
+        this.particlePositions[i * 3 + 2],
+      );
+
+      this.particles.push(sprite);
+      this.particleGroup.add(sprite);
+    }
+  }
+
+  private loadTexture(path: string): THREE.Texture {
+    if (ParticlesAura.textureCache.has(path)) {
+      return ParticlesAura.textureCache.get(path)!;
+    }
+
+    const texture = ParticlesAura.textureLoader.load(path);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    ParticlesAura.textureCache.set(path, texture);
+    return texture;
   }
 
   public update(delta: number): void {
@@ -65,26 +97,30 @@ export class ParticlesAura extends BasePart {
     for (let i = 0; i < PARTICLES_COUNT; i++) {
       this.particleVelocities[i] += PARTICLE_BASE_SPEED * clampedDelta;
 
-      this.pointsPositions[i * 3 + 1] =
+      this.particlePositions[i * 3 + 1] =
         PARTICLE_START_Y + (PARTICLE_RESET_Y - PARTICLE_START_Y) * this.particleVelocities[i];
 
       if (this.particleVelocities[i] >= 1.0) {
         this.particleVelocities[i] = Math.random() * 0.3;
-        this.pointsPositions[i * 3 + 1] = PARTICLE_START_Y;
+        this.particlePositions[i * 3 + 1] = PARTICLE_START_Y;
       }
 
-      this.pointsPositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
-      this.pointsPositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
-    }
+      this.particlePositions[i * 3] = Math.cos(this.particleAngles[i]) * PARTICLE_RADIUS;
+      this.particlePositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
 
-    this.points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
+      this.particles[i].position.set(
+        this.particlePositions[i * 3],
+        this.particlePositions[i * 3 + 1],
+        this.particlePositions[i * 3 + 2],
+      );
+    }
   }
 
   public setPosition(x: number, y: number, z: number): void {
     super.setPosition(x, y, z);
 
-    if (!this.scene.children.includes(this.points)) {
-      this.scene.add(this.points);
+    if (!this.scene.children.includes(this.particleGroup)) {
+      this.scene.add(this.particleGroup);
     }
   }
 
@@ -92,45 +128,59 @@ export class ParticlesAura extends BasePart {
     super.setVisible(visible);
 
     if (visible) {
-      if (!this.scene.children.includes(this.points)) {
-        this.scene.add(this.points);
+      if (!this.scene.children.includes(this.particleGroup)) {
+        this.scene.add(this.particleGroup);
       }
     } else {
-      if (this.scene.children.includes(this.points)) {
-        this.scene.remove(this.points);
+      if (this.scene.children.includes(this.particleGroup)) {
+        this.scene.remove(this.particleGroup);
       }
     }
   }
 
   public dispose(): void {
-    if (this.scene.children.includes(this.points)) {
-      this.scene.remove(this.points);
+    if (this.scene.children.includes(this.particleGroup)) {
+      this.scene.remove(this.particleGroup);
     }
 
-    this.points.geometry.dispose();
-    if (this.points.material instanceof THREE.Material) {
-      this.points.material.dispose();
-    }
+    this.particles.forEach((sprite) => {
+      if (sprite.material instanceof THREE.Material) {
+        sprite.material.dispose();
+      }
+    });
 
+    this.particles = [];
     super.dispose();
   }
 
   public setParticleSize(size: number): void {
-    const material = this.points.material as THREE.PointsMaterial;
-    material.size = size;
-    material.needsUpdate = true;
+    this.particles.forEach((sprite) => {
+      sprite.scale.setScalar(size);
+    });
   }
 
   public setParticleColor(color: THREE.Color): void {
-    const material = this.points.material as THREE.PointsMaterial;
-    material.color = color;
-    material.needsUpdate = true;
+    this.particles.forEach((sprite) => {
+      const material = sprite.material as THREE.SpriteMaterial;
+      material.color = color;
+      material.needsUpdate = true;
+    });
+  }
+
+  public setTexture(texturePath: string): void {
+    const texture = this.loadTexture(texturePath);
+    this.particles.forEach((sprite) => {
+      const material = sprite.material as THREE.SpriteMaterial;
+      material.map = texture;
+      material.needsUpdate = true;
+    });
   }
 
   public static getDefaultConfig(id: number): AuraPartConfig {
     return {
       id,
       type: AuraPartType.PARTICLES,
+      texturePath: `/textures/auras/particles/${id}.png`,
       animations: [AnimationType.WAVE, AnimationType.SPIRAL],
       defaultAnimation: AnimationType.WAVE,
       opacity: 1.0,
