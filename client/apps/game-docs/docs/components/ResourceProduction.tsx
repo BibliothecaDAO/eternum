@@ -154,8 +154,8 @@ const componentStyles = {
 // Component for Simple Mode Resource Production
 export const SimpleResourceProduction = () => {
   const config = ETERNUM_CONFIG();
-  const resourceInputSimpleMode = config.resources.productionBySimpleRecipe;
-  const resourceOutputSimpleMode = config.resources.productionBySimpleRecipeOutputs;
+  const resourceInputSimpleMode = config.resources?.productionBySimpleRecipe || {};
+  const resourceOutputSimpleMode = config.resources?.productionBySimpleRecipeOutputs || {};
 
   // Get all resource IDs with production data for simple mode
   const simpleResourceIds = Object.keys(resourceInputSimpleMode)
@@ -196,7 +196,7 @@ export const SimpleResourceProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
-                    {resourceInputSimpleMode[resourceId].map((input, idx) => (
+                    {(resourceInputSimpleMode[resourceId] || []).map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
                         <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
@@ -360,8 +360,8 @@ export const BlitzSimpleResourceProduction = () => {
 // Component for Complex Mode Resource Production
 export const StandardResourceProduction = () => {
   const config = ETERNUM_CONFIG();
-  const resourceInputComplexMode = config.resources.productionByComplexRecipe;
-  const resourceOutputComplexMode = config.resources.productionByComplexRecipeOutputs;
+  const resourceInputComplexMode = config.resources?.productionByComplexRecipe || {};
+  const resourceOutputComplexMode = config.resources?.productionByComplexRecipeOutputs || {};
 
   // Get all resource IDs with production data for complex mode
   const complexResourceIds = Object.keys(resourceInputComplexMode)
@@ -402,7 +402,7 @@ export const StandardResourceProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
-                    {resourceInputComplexMode[resourceId].map((input, idx) => (
+                    {(resourceInputComplexMode[resourceId] || []).map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
                         <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
@@ -434,8 +434,8 @@ export const StandardResourceProduction = () => {
 // Component for Simple Mode Troop Production
 export const SimpleTroopProduction = () => {
   const config = ETERNUM_CONFIG();
-  const troopInputSimpleMode = config.resources.productionBySimpleRecipe;
-  const troopOutputSimpleMode = config.resources.productionBySimpleRecipeOutputs;
+  const troopInputSimpleMode = config.resources?.productionBySimpleRecipe || {};
+  const troopOutputSimpleMode = config.resources?.productionBySimpleRecipeOutputs || {};
 
   // Get all troop IDs with production data for simple mode
   const simpleTroopIds = Object.keys(troopInputSimpleMode)
@@ -470,7 +470,7 @@ export const SimpleTroopProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
-                    {troopInputSimpleMode[troopId].map((input, idx) => (
+                    {(troopInputSimpleMode[troopId] || []).map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
                         <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
@@ -502,8 +502,8 @@ export const SimpleTroopProduction = () => {
 // Component for Standard Mode Troop Production
 export const StandardTroopProduction = () => {
   const config = ETERNUM_CONFIG();
-  const troopInputComplexMode = config.resources.productionByComplexRecipe;
-  const troopOutputComplexMode = config.resources.productionByComplexRecipeOutputs;
+  const troopInputComplexMode = config.resources?.productionByComplexRecipe || {};
+  const troopOutputComplexMode = config.resources?.productionByComplexRecipeOutputs || {};
 
   // Get all troop IDs with production data for complex mode
   const complexTroopIds = Object.keys(troopInputComplexMode)
@@ -538,7 +538,7 @@ export const StandardTroopProduction = () => {
           </td>
           <td style={styles.productionCellStyle}>
             <div style={styles.resourceGroupStyle}>
-              {troopInputComplexMode[troopId].map((input, idx) => (
+              {(troopInputComplexMode[troopId] || []).map((input, idx) => (
                 <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
                   <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="sm" />
                   {formatAmount(input.amount)}/s
@@ -623,9 +623,9 @@ export const StandardTroopProduction = () => {
 // Component for Labor Production
 export const LaborProduction = () => {
   const config = ETERNUM_CONFIG();
-  const laborOutputPerResource = config.resources.laborOutputPerResource;
+  const laborOutputPerResource = config.resources?.laborOutputPerResource || {};
 
-  const laborOutputPerSecond = config.resources.productionByComplexRecipeOutputs[ResourcesIds.Labor] || 0;
+  const laborOutputPerSecond = config.resources?.productionByComplexRecipeOutputs?.[ResourcesIds.Labor] || 0;
 
   // Get resources that produce labor
   const laborProducingResources = Object.keys(laborOutputPerResource)
@@ -685,8 +685,8 @@ export const LaborProduction = () => {
 
 export const DonkeyProduction = () => {
   const config = ETERNUM_CONFIG();
-  const donkeyOutput = config.resources.productionBySimpleRecipeOutputs[ResourcesIds.Donkey];
-  const donkeyInputs = config.resources.productionByComplexRecipe[ResourcesIds.Donkey] || [];
+  const donkeyOutput = config.resources?.productionBySimpleRecipeOutputs?.[ResourcesIds.Donkey] || 0;
+  const donkeyInputs = config.resources?.productionByComplexRecipe?.[ResourcesIds.Donkey] || [];
 
   return (
     <div style={styles.sectionStyle}>

@@ -1,7 +1,9 @@
 import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig } from "@bibliothecadao/types";
+import { CapacityConfig, resources } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { colors } from "../../../components/styles";
+import ResourceIcon from "../../../components/ResourceIcon";
 
 # 🪓 Buildings
 
@@ -76,10 +78,17 @@ have the same requirements in simple and standard mode.
   replaced with the standard BuildingCard component that reads from config.
 */}
 
-export const BlitzBuildingCard = ({ title, image, buildingType, description, simpleCosts, standardCosts, standardOnly = false }) => {
+export const BlitzBuildingCard = ({ title, image, buildingType, description = [], simpleCosts = [], standardCosts = [], standardOnly = false }) => {
   const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
   const resourceId = buildingType - 2; // Resource buildings map to resource IDs
   const resourceName = resources.find((r) => r.id === resourceId)?.trait || "";
+  
+  const formatAmount = (amount) => {
+    if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+    }
+    return amount.toString();
+  };
 
   const styles = {
     card: {
@@ -110,7 +119,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
     image: {
       width: "80px",
       height: "80px",
-      objectFit: "contain" as const,
+      objectFit: "contain",
       padding: "0.25rem",
       backgroundColor: colors.background.light,
       border: `1px solid ${colors.borderDark}`,
@@ -158,7 +167,7 @@ export const BlitzBuildingCard = ({ title, image, buildingType, description, sim
     },
     costsRow: {
       display: "flex",
-      flexWrap: "wrap" as const,
+      flexWrap: "wrap",
       gap: "0.25rem",
       marginBottom: "0.5rem",
     },
