@@ -1,4 +1,8 @@
-import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable, BlitzWorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
+import {
+  RealmDefenseSlotsTable,
+  WorldStructureDefenseSlotsTable,
+  BlitzWorldStructureDefenseSlotsTable,
+} from "@/components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -6,22 +10,22 @@ import { formatNumberWithCommas } from "@/utils/formatting";
 
 <img src="/images/covers/forest-army.png" alt="Forest Army" className="w-full rounded-lg my-6" />
 
-Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully manage their positioning and
-engagement opportunities.
+Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
+manage their positioning and engagement opportunities.
 
-Each Realm has a limited number of guard and field armies. The number of armies can be increased by upgrading
-the Realm level as explained in the [Realms](/blitz/realms/realm) section.
-Each military building constructed also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
-view. The maximum size of an army is
+Each Realm has a limited number of guard and field armies. The number of armies can be increased by upgrading the Realm
+level as explained in the [Realms](/blitz/realms/realm) section. Each military building constructed also increases total
+field armies by 1 (up to a maximum of **+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy
+armies from the Military tab in the Local view. The maximum size of an army is
 **{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
 
 ## Field Armies
 
-Field armies are used to project force on the world map, explore unknown territories, claim hyperstructures, defeat bandit forces, and engage 
-in combat with other players. These armies are deployed onto one of the six hexes surrounding their parent Realm on the world map. If all hexes 
-adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies occupy a hex and traverse the world map based 
-on the conditions outlined in the [World Map & Movement](/blitz/worldmap-movement/movement) section.
+Field armies are used to project force on the world map, explore unknown territories, claim hyperstructures, defeat
+bandit forces, and engage in combat with other players. These armies are deployed onto one of the six hexes surrounding
+their parent Realm on the world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed.
+Once deployed, these armies occupy a hex and traverse the world map based on the conditions outlined in the
+[World Map & Movement](/blitz/worldmap-movement/movement) section.
 
 Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
 left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
@@ -48,10 +52,10 @@ Unlike Realms, world structures have a static number of defence slots:
 </div>
 
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
-destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**10 minutes**. Once all guard armies are defeated,
-the structure becomes vulnerable to being claimed by an adjacent field army. Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
-structure on the worldmap, then right-clicking the target hex.
+destroyed, the slot that it occupied becomes unavailable for reinforcement for **10 minutes**. Once all guard armies are
+defeated, the structure becomes vulnerable to being claimed by an adjacent field army. Lords can also direct their guard
+armies to launch attacks against adjacent hexes by selecting their structure on the worldmap, then right-clicking the
+target hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />

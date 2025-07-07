@@ -76,7 +76,9 @@ export const HyperstructureRings = () => {
 
       <div style={section.legend}>
         <p>
-          <em>Note: If <strong>r</strong> is not an integer, then it is rounded up to the nearest integer.</em>
+          <em>
+            Note: If <strong>r</strong> is not an integer, then it is rounded up to the nearest integer.
+          </em>
         </p>
       </div>
 
@@ -121,11 +123,13 @@ export const HyperstructureRings = () => {
         }}
       >
         <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>H</div>
-        <div>= Number of Hyperstructures in ring <strong>r</strong></div>
+        <div>
+          = Number of Hyperstructures in ring <strong>r</strong>
+        </div>
 
         <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>r</div>
         <div>= Ring number (1, 2, 3, etc.)</div>
       </div>
     </div>
   );
-}; 
+};

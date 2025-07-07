@@ -193,14 +193,10 @@ export const BlitzWeightTable = () => {
   ];
 
   // Wheat (Food)
-  const foodResources = [
-    { id: ResourcesIds.Wheat, name: "Wheat", weight: 1 },
-  ];
+  const foodResources = [{ id: ResourcesIds.Wheat, name: "Wheat", weight: 1 }];
 
   // Donkey (Transport)
-  const transportResources = [
-    { id: ResourcesIds.Donkey, name: "Donkey", weight: 50 },
-  ];
+  const transportResources = [{ id: ResourcesIds.Donkey, name: "Donkey", weight: 50 }];
 
   // Troops (Military Units)
   const troopResources = [
@@ -218,20 +214,24 @@ export const BlitzWeightTable = () => {
   // Essence special row
   const ESSENCE_ID = 9999;
   const EssenceIcon = () => (
-    <span style={{
-      display: "inline-block",
-      width: 20,
-      height: 20,
-      background: "#e75480",
-      color: "#fff",
-      fontWeight: 700,
-      fontSize: 14,
-      borderRadius: 4,
-      textAlign: "center",
-      lineHeight: "20px",
-      marginRight: 4,
-      border: "1px solid #b03060"
-    }}>E</span>
+    <span
+      style={{
+        display: "inline-block",
+        width: 20,
+        height: 20,
+        background: "#e75480",
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 14,
+        borderRadius: 4,
+        textAlign: "center",
+        lineHeight: "20px",
+        marginRight: 4,
+        border: "1px solid #b03060",
+      }}
+    >
+      E
+    </span>
   );
 
   return (

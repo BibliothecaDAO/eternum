@@ -16,13 +16,15 @@ Materials encompass all transportable assets in Blitz, including:
 - **Labor**: A special material that enables construction and production.
 - **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
 
-While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only bridge relics into the game.
+While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only
+bridge relics into the game.
 
 ## Material Categories
 
 ### Resources
 
-Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to advanced military operations.
+Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
+advanced military operations.
 
 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
   <ResourceIcon name="Wood" id={ResourcesIds.Wood} />
@@ -58,14 +60,13 @@ Food is the cornerstone a Realm's economy:
   <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
 </div>
 
-{/* 
-  TEMPORARY HARDCODED TROOP LIMITS TABLE - TODO: Update BlitzTroopsLimitTable once config is implemented.
-  
-  This table uses hardcoded values instead of reading from config files.
-  Replace with standard TroopsLimitTable component once blitz configuration is complete.
-*/}
+{/\* TEMPORARY HARDCODED TROOP LIMITS TABLE - TODO: Update BlitzTroopsLimitTable once config is implemented.
+
+This table uses hardcoded values instead of reading from config files. Replace with standard TroopsLimitTable component
+once blitz configuration is complete. \*/}
+
 <BlitzTroopsLimitTable />
-{/* END TEMPORARY HARDCODED TROOP LIMITS TABLE */} 
+{/* END TEMPORARY HARDCODED TROOP LIMITS TABLE */}
 
 Troops have unique properties:
 
@@ -98,19 +99,22 @@ Labor is a fundamental production material:
 ### Essence
 
 {/* TODO: Replace placeholder art with proper Essence icon once available */}
+
 <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <div style={{ 
-    width: "24px", 
-    height: "24px", 
-    backgroundColor: "#ff69b4", 
-    borderRadius: "4px", 
-    display: "flex", 
-    alignItems: "center", 
-    justifyContent: "center", 
-    fontSize: "12px", 
-    color: "white", 
-    fontWeight: "bold" 
-  }}>
+  <div
+    style={{
+      width: "24px",
+      height: "24px",
+      backgroundColor: "#ff69b4",
+      borderRadius: "4px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "12px",
+      color: "white",
+      fontWeight: "bold",
+    }}
+  >
     E
   </div>
   <span style={{ fontSize: "1rem", fontWeight: "500" }}>Essence</span>

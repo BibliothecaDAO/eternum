@@ -7,45 +7,51 @@ import { importantNote } from "@/components/styles";
 
 ## An Unexplored World
 
-At the beginning of each Blitz game, the world lies largely unexplored. The only
-exceptions are the settled Realms and the array of Hyperstructures which can be seen in the World view, arranged in expanding rings around the center of the map. 
-The six hexes adjacent to these structures are also revealed, but beyond these instances, the world remains cloaked by the
-mist, waiting for ambitious Lords to send forth their armies to explore. Once a hex is explored, the state of the hex
-(i.e. the biome and whether it contains a world structure) is permanently revealed to all Lords.
+At the beginning of each Blitz game, the world lies largely unexplored. The only exceptions are the settled Realms and
+the array of Hyperstructures which can be seen in the World view, arranged in expanding rings around the center of the
+map. The six hexes adjacent to these structures are also revealed, but beyond these instances, the world remains cloaked
+by the mist, waiting for ambitious Lords to send forth their armies to explore. Once a hex is explored, the state of the
+hex (i.e. the biome and whether it contains a world structure) is permanently revealed to all Lords.
 
 ## Map Layout
 
 ### Hyperstructure Positioning
 
-The number of registered Lords for a game of Blitz determines the size of the map and the number of Hyperstructures available for Lords to compete over. 
-A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
+The number of registered Lords for a game of Blitz determines the size of the map and the number of Hyperstructures
+available for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
+Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
 
 <HyperstructureRings />
 
 ### Realm Positioning
 
-Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is sequential and follows
-a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
+Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
+bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
+sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
+opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
 
-The Realms of each participating Lord are positioned six hexes apart in a triangle formation. Each Realm is also located within eight hexes of a Hyperstructure, and eight hexes from the nearest Realm belonging to another Lord (assuming all available player positions are filled).
-More details of the positioning system are available in the [Realms](/blitz/realms/realm) section.
+The Realms of each participating Lord are positioned six hexes apart in a triangle formation. Each Realm is also located
+within eight hexes of a Hyperstructure, and eight hexes from the nearest Realm belonging to another Lord (assuming all
+available player positions are filled). More details of the positioning system are available in the
+[Realms](/blitz/realms/realm) section.
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
   <p style={importantNote.content}>
-    There is no immunity period in Blitz. All Realms are able to be attacked and claimed
-    from the moment the game begins.
+    There is no immunity period in Blitz. All Realms are able to be attacked and claimed from the moment the game
+    begins.
   </p>
 </div>
 
 ## Biomes
 
 Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, with certain biomes naturally occurring more or less frequently than others.
+procedurally generated across the world map following specific rules that dictate their distribution, with certain
+biomes naturally occurring more or less frequently than others.
 
 Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
 potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the [Military](/blitz/military/stamina-and-biomes) section. Additionally, biomes have
-the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
-type differently as they move between hexes—this is explained further in the
+explained in more detail in the [Military](/blitz/military/stamina-and-biomes) section. Additionally, biomes have the
+potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
+differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/blitz/worldmap-movement/movement) section below.

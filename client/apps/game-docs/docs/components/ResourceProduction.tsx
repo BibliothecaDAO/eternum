@@ -234,82 +234,82 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Wood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Coal,
-      name: "Coal", 
+      name: "Coal",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Copper,
       name: "Copper",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Ironwood,
       name: "Ironwood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.ColdIron,
       name: "Cold Iron",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Gold,
       name: "Gold",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Adamantine,
       name: "Adamantine",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Mithral,
       name: "Mithral",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Dragonhide,
       name: "Dragonhide",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" }
+        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
       ],
-      output: 1
-    }
+      output: 1,
+    },
   ];
 
   return (
@@ -745,9 +745,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 1,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.2, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" }
+        { resource: ResourcesIds.Copper, amount: 0.2, name: "Copper" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Coal,
@@ -755,9 +755,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 1,
       inputs: [
         { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
-        { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
+        { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Copper,
@@ -765,9 +765,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 1,
       inputs: [
         { resource: ResourcesIds.Wood, amount: 0.36, name: "Wood" },
-        { resource: ResourcesIds.Coal, amount: 0.24, name: "Coal" }
+        { resource: ResourcesIds.Coal, amount: 0.24, name: "Coal" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Ironwood,
@@ -775,9 +775,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 2,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.ColdIron,
@@ -785,9 +785,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 2,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Gold,
@@ -795,9 +795,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 2,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.48, name: "Coal" },
-        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" }
+        { resource: ResourcesIds.Copper, amount: 0.32, name: "Copper" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Adamantine,
@@ -805,9 +805,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 4,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.Ironwood, amount: 0.48, name: "Ironwood" }
+        { resource: ResourcesIds.Ironwood, amount: 0.48, name: "Ironwood" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Mithral,
@@ -815,9 +815,9 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 4,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.ColdIron, amount: 0.48, name: "Cold Iron" }
+        { resource: ResourcesIds.ColdIron, amount: 0.48, name: "Cold Iron" },
       ],
-      output: 1
+      output: 1,
     },
     {
       id: ResourcesIds.Dragonhide,
@@ -825,10 +825,10 @@ export const BlitzStandardResourceProduction = () => {
       wheat: 4,
       inputs: [
         { resource: ResourcesIds.Coal, amount: 0.72, name: "Coal" },
-        { resource: ResourcesIds.Gold, amount: 0.48, name: "Gold" }
+        { resource: ResourcesIds.Gold, amount: 0.48, name: "Gold" },
       ],
-      output: 1
-    }
+      output: 1,
+    },
   ];
 
   return (
@@ -999,65 +999,135 @@ export const BlitzStandardTroopProduction = () => {
   const ESSENCE_ID = 9999; // Use a placeholder ID for Essence icon
   const blitzStandardTroops = [
     // T1
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
-    ], output: 5 },
-    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
-    ], output: 5 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, troopInput: null, troopInputRate: null, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }
-    ], output: 5 },
+    {
+      id: ResourcesIds.Crossbowman,
+      name: "T1 Crossbowman",
+      wheat: 2,
+      troopInput: null,
+      troopInputRate: null,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.Knight,
+      name: "T1 Knight",
+      wheat: 2,
+      troopInput: null,
+      troopInputRate: null,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.Paladin,
+      name: "T1 Paladin",
+      wheat: 2,
+      troopInput: null,
+      troopInputRate: null,
+      inputs: [{ resource: ResourcesIds.Copper, amount: 0.24, name: "Copper" }],
+      output: 5,
+    },
     // T2
-    { id: ResourcesIds.CrossbowmanT2, name: "T2 Crossbowman", wheat: 4, troopInput: ResourcesIds.Crossbowman, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-      { resource: ResourcesIds.Ironwood, amount: 0.32, name: "Ironwood" },
-      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
-    ], output: 5 },
-    { id: ResourcesIds.KnightT2, name: "T2 Knight", wheat: 4, troopInput: ResourcesIds.Knight, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-      { resource: ResourcesIds.ColdIron, amount: 0.32, name: "Cold Iron" },
-      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
-    ], output: 5 },
-    { id: ResourcesIds.PaladinT2, name: "T2 Paladin", wheat: 4, troopInput: ResourcesIds.Paladin, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
-      { resource: ResourcesIds.Gold, amount: 0.32, name: "Gold" },
-      { resource: ESSENCE_ID, amount: 1, name: "Essence" }
-    ], output: 5 },
+    {
+      id: ResourcesIds.CrossbowmanT2,
+      name: "T2 Crossbowman",
+      wheat: 4,
+      troopInput: ResourcesIds.Crossbowman,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+        { resource: ResourcesIds.Ironwood, amount: 0.32, name: "Ironwood" },
+        { resource: ESSENCE_ID, amount: 1, name: "Essence" },
+      ],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.KnightT2,
+      name: "T2 Knight",
+      wheat: 4,
+      troopInput: ResourcesIds.Knight,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+        { resource: ResourcesIds.ColdIron, amount: 0.32, name: "Cold Iron" },
+        { resource: ESSENCE_ID, amount: 1, name: "Essence" },
+      ],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.PaladinT2,
+      name: "T2 Paladin",
+      wheat: 4,
+      troopInput: ResourcesIds.Paladin,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.Copper, amount: 0.48, name: "Copper" },
+        { resource: ResourcesIds.Gold, amount: 0.32, name: "Gold" },
+        { resource: ESSENCE_ID, amount: 1, name: "Essence" },
+      ],
+      output: 5,
+    },
     // T3
-    { id: ResourcesIds.CrossbowmanT3, name: "T3 Crossbowman", wheat: 7, troopInput: ResourcesIds.CrossbowmanT2, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.Ironwood, amount: 0.64, name: "Ironwood" },
-      { resource: ResourcesIds.Adamantine, amount: 0.72, name: "Adamantine" },
-      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
-    ], output: 5 },
-    { id: ResourcesIds.KnightT3, name: "T3 Knight", wheat: 7, troopInput: ResourcesIds.KnightT2, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.ColdIron, amount: 0.64, name: "Cold Iron" },
-      { resource: ResourcesIds.Mithral, amount: 0.72, name: "Mithral" },
-      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
-    ], output: 5 },
-    { id: ResourcesIds.PaladinT3, name: "T3 Paladin", wheat: 7, troopInput: ResourcesIds.PaladinT2, troopInputRate: 10, inputs: [
-      { resource: ResourcesIds.Gold, amount: 0.64, name: "Gold" },
-      { resource: ResourcesIds.Dragonhide, amount: 0.72, name: "Dragonhide" },
-      { resource: ESSENCE_ID, amount: 3, name: "Essence" }
-    ], output: 5 },
+    {
+      id: ResourcesIds.CrossbowmanT3,
+      name: "T3 Crossbowman",
+      wheat: 7,
+      troopInput: ResourcesIds.CrossbowmanT2,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.Ironwood, amount: 0.64, name: "Ironwood" },
+        { resource: ResourcesIds.Adamantine, amount: 0.72, name: "Adamantine" },
+        { resource: ESSENCE_ID, amount: 3, name: "Essence" },
+      ],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.KnightT3,
+      name: "T3 Knight",
+      wheat: 7,
+      troopInput: ResourcesIds.KnightT2,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.ColdIron, amount: 0.64, name: "Cold Iron" },
+        { resource: ResourcesIds.Mithral, amount: 0.72, name: "Mithral" },
+        { resource: ESSENCE_ID, amount: 3, name: "Essence" },
+      ],
+      output: 5,
+    },
+    {
+      id: ResourcesIds.PaladinT3,
+      name: "T3 Paladin",
+      wheat: 7,
+      troopInput: ResourcesIds.PaladinT2,
+      troopInputRate: 10,
+      inputs: [
+        { resource: ResourcesIds.Gold, amount: 0.64, name: "Gold" },
+        { resource: ResourcesIds.Dragonhide, amount: 0.72, name: "Dragonhide" },
+        { resource: ESSENCE_ID, amount: 3, name: "Essence" },
+      ],
+      output: 5,
+    },
   ];
 
   // Helper for Essence icon: use a pink square with E as a placeholder
   const EssenceIcon = () => (
-    <span style={{
-      display: "inline-block",
-      width: 20,
-      height: 20,
-      background: "#e75480",
-      color: "#fff",
-      fontWeight: 700,
-      fontSize: 14,
-      borderRadius: 4,
-      textAlign: "center",
-      lineHeight: "20px",
-      marginRight: 4,
-      border: "1px solid #b03060"
-    }}>E</span>
+    <span
+      style={{
+        display: "inline-block",
+        width: 20,
+        height: 20,
+        background: "#e75480",
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 14,
+        borderRadius: 4,
+        textAlign: "center",
+        lineHeight: "20px",
+        marginRight: 4,
+        border: "1px solid #b03060",
+      }}
+    >
+      E
+    </span>
   );
 
   return (
@@ -1096,7 +1166,7 @@ export const BlitzStandardTroopProduction = () => {
                 {troop.troopInput ? (
                   <div style={styles.resourceItemStyle}>
                     <ResourceIcon id={troop.troopInput} name="Troop" size="md" />
-                    {blitzStandardTroops.find(t => t.id === troop.troopInput)?.name || "Troop"}
+                    {blitzStandardTroops.find((t) => t.id === troop.troopInput)?.name || "Troop"}
                   </div>
                 ) : null}
               </td>
@@ -1104,7 +1174,11 @@ export const BlitzStandardTroopProduction = () => {
               <td style={styles.productionCellStyle}>
                 {troop.inputs[0] ? (
                   <div style={styles.resourceItemStyle}>
-                    {troop.inputs[0].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[0].resource} name={troop.inputs[0].name} size="md" />}
+                    {troop.inputs[0].resource === ESSENCE_ID ? (
+                      <EssenceIcon />
+                    ) : (
+                      <ResourceIcon id={troop.inputs[0].resource} name={troop.inputs[0].name} size="md" />
+                    )}
                     {troop.inputs[0].name}
                   </div>
                 ) : null}
@@ -1113,7 +1187,11 @@ export const BlitzStandardTroopProduction = () => {
               <td style={styles.productionCellStyle}>
                 {troop.inputs[1] ? (
                   <div style={styles.resourceItemStyle}>
-                    {troop.inputs[1].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[1].resource} name={troop.inputs[1].name} size="md" />}
+                    {troop.inputs[1].resource === ESSENCE_ID ? (
+                      <EssenceIcon />
+                    ) : (
+                      <ResourceIcon id={troop.inputs[1].resource} name={troop.inputs[1].name} size="md" />
+                    )}
                     {troop.inputs[1].name}
                   </div>
                 ) : null}
@@ -1122,7 +1200,11 @@ export const BlitzStandardTroopProduction = () => {
               <td style={styles.productionCellStyle}>
                 {troop.inputs[2] ? (
                   <div style={styles.resourceItemStyle}>
-                    {troop.inputs[2].resource === ESSENCE_ID ? <EssenceIcon /> : <ResourceIcon id={troop.inputs[2].resource} name={troop.inputs[2].name} size="md" />}
+                    {troop.inputs[2].resource === ESSENCE_ID ? (
+                      <EssenceIcon />
+                    ) : (
+                      <ResourceIcon id={troop.inputs[2].resource} name={troop.inputs[2].name} size="md" />
+                    )}
                     {troop.inputs[2].name}
                   </div>
                 ) : null}
@@ -1156,8 +1238,7 @@ export const BlitzDonkeyProduction = () => {
           <tr>
             <td style={styles.productionCellStyle}>
               <div style={styles.resourceItemStyle}>
-                <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
-                5
+                <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
               </div>
             </td>
             <td style={styles.productionCellStyle}>

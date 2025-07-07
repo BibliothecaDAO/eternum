@@ -8,9 +8,10 @@ import { BlitzRealmLeveling } from "@/components/BlitzRealmLeveling";
 
 # 🏰 Realms
 
-In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are functionally
-identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any of the nine resources available 
-in Blitz and are equally capable in all aspects of the game, limited only by the skill and strategy of their Lord.
+In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are
+functionally identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any
+of the nine resources available in Blitz and are equally capable in all aspects of the game, limited only by the skill
+and strategy of their Lord.
 
 <img
   src="/images/buildings/construction/castleOne.png"
@@ -20,31 +21,38 @@ in Blitz and are equally capable in all aspects of the game, limited only by the
 
 ## Settling
 
-Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are registered to play are 
-drawn at random from the pool and assigned spawn positions sequentially according to the settling algorithm. Once assigned a map position, 
-Lords are required to confirm their participation in the session by initiating a 'Settle' transaction, which will place their three Realms 
-in their drawn position. This must be done in the 30-minute Settling Phase to ensure presence and readiness to play the game. Lords who fail 
-to confirm settling during this phase will not have their Realms placed and will forfeit participation in the session. Their allocated spawn 
-position will remain empty throughout the game.
+Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are
+registered to play are drawn at random from the pool and assigned spawn positions sequentially according to the settling
+algorithm. Once assigned a map position, Lords are required to confirm their participation in the session by initiating
+a 'Settle' transaction, which will place their three Realms in their drawn position. This must be done in the 30-minute
+Settling Phase to ensure presence and readiness to play the game. Lords who fail to confirm settling during this phase
+will not have their Realms placed and will forfeit participation in the session. Their allocated spawn position will
+remain empty throughout the game.
 
 ### Settling Algorithm
 
-The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available for Lords to compete over. 
-A single Hyperstructure marks the center of the map, around which other concentric Hyperstructure 'rings' are spawned every 18 hexes until all players 
-are accommodated. The details of Hyperstructure spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
+The number of registered Lords for a session determines the size of the map and the number of Hyperstructures available
+for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
+Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated. The details of Hyperstructure
+spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
 
-Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the bounds of the Hyperstructure 
-rings. While the order in which players are placed is randomised, the positioning is sequential and follows a rotational pattern to distribute Lords 
-as evenly as possible and attempt to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for 
-an example of 24 players is visualised below:
+Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
+bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
+sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
+opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for an example of 24
+players is visualised below:
 
-<img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
+<img
+  src="/images/gifs/blitz-map-build.gif"
+  alt="Blitz map building sequence showing hyperstructure placement and player realm spawns"
+  className="w-full rounded-lg my-6"
+/>
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
   <p style={importantNote.content}>
-    There is no immunity period in Blitz. All Realms are able to be attacked and claimed
-    from the moment the game begins.
+    There is no immunity period in Blitz. All Realms are able to be attacked and claimed from the moment the game
+    begins.
   </p>
 </div>
 
@@ -94,7 +102,8 @@ an example of 24 players is visualised below:
   </div>
 </div>
 
-*Note: The type of troop received depends on the biome that the realm is spawned on. Starting troops will always have a combat advantage when defending their home.*
+_Note: The type of troop received depends on the biome that the realm is spawned on. Starting troops will always have a
+combat advantage when defending their home._
 
 ### Realm Progression
 

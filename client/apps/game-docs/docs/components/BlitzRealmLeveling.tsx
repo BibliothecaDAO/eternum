@@ -22,7 +22,7 @@ export const BlitzRealmLeveling = () => {
         { id: 23, amount: 2000 }, // Labor
         { id: 35, amount: 1200 }, // Wheat
         { id: "essence", amount: 200 }, // Essence (placeholder)
-      ]
+      ],
     },
     {
       currentLevel: "City",
@@ -31,8 +31,8 @@ export const BlitzRealmLeveling = () => {
         { id: 23, amount: 4000 }, // Labor
         { id: 35, amount: 3600 }, // Wheat
         { id: "essence", amount: 1200 }, // Essence (placeholder)
-        { id: 3, amount: 600 },   // Wood
-      ]
+        { id: 3, amount: 600 }, // Wood
+      ],
     },
     {
       currentLevel: "Kingdom",
@@ -41,11 +41,11 @@ export const BlitzRealmLeveling = () => {
         { id: 23, amount: 8000 }, // Labor
         { id: 35, amount: 7200 }, // Wheat
         { id: "essence", amount: 4800 }, // Essence (placeholder)
-        { id: 3, amount: 1800 },  // Wood
-        { id: 2, amount: 1200 },  // Coal
-        { id: 4, amount: 1200 },  // Copper
-      ]
-    }
+        { id: 3, amount: 1800 }, // Wood
+        { id: 2, amount: 1200 }, // Coal
+        { id: 4, amount: 1200 }, // Copper
+      ],
+    },
   ];
 
   return (
@@ -79,16 +79,18 @@ export const BlitzRealmLeveling = () => {
                     {item.resources.map((resource, idx) => (
                       <div key={`${resource.id}-${idx}`} style={resourceItemStyle}>
                         {resource.id === "essence" ? (
-                          <div style={{
-                            width: "20px",
-                            height: "20px",
-                            backgroundColor: "#f8bbd9",
-                            borderRadius: "2px",
-                            border: "1px solid #ec4899",
-                            flexShrink: 0
-                          }} />
+                          <div
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              backgroundColor: "#f8bbd9",
+                              borderRadius: "2px",
+                              border: "1px solid #ec4899",
+                              flexShrink: 0,
+                            }}
+                          />
                         ) : (
-                          <ResourceIcon id={typeof resource.id === 'number' ? resource.id : 0} name="" size="md" />
+                          <ResourceIcon id={typeof resource.id === "number" ? resource.id : 0} name="" size="md" />
                         )}
                         {formatAmount(resource.amount)}
                       </div>
@@ -102,4 +104,4 @@ export const BlitzRealmLeveling = () => {
       </div>
     </div>
   );
-}; 
+};
