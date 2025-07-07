@@ -7,7 +7,7 @@ import { RotateAnimation } from "./rotate-animation";
 
 export class AnimationFactory {
   private static animationConfigs: Map<AnimationType, AnimationConfig> = new Map([
-    [AnimationType.ROTATE, { speed: 0.5, direction: { x: 0, y: 1, z: 0 } as any }],
+    [AnimationType.ROTATE, { speed: 0.3, direction: { x: 0, y: 1, z: 0 } as any }],
     [AnimationType.PULSE, { speed: 0.5, amplitude: 0.1 }],
     [AnimationType.FLOAT, { speed: 0.8, amplitude: 0.1 }],
     [AnimationType.SPIRAL, { speed: 0.3, amplitude: 0.05 }],
