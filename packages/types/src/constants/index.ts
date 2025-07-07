@@ -49,4 +49,5 @@ export enum ResourcesIds {
   Wheat = 35,
   Fish = 36,
   Lords = 37,
+  Essence = 38,
 }

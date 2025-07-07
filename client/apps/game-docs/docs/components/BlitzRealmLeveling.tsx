@@ -11,6 +11,22 @@ export const BlitzRealmLeveling = () => {
     backgroundColor: "rgba(40, 30, 25, 0.6)",
     borderRadius: "0.25rem",
     fontSize: "0.85rem",
+    whiteSpace: "nowrap" as const,
+    minWidth: "fit-content",
+  };
+
+  // Updated table cell style to prevent wrapping
+  const tableCellStyle = {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+    whiteSpace: "nowrap" as const,
+  };
+
+  const resourcesCellStyle = {
+    ...tableCellStyle,
+    whiteSpace: "normal" as const, // Allow wrapping for the resources cell since it contains multiple items
   };
 
   // Hardcoded realm leveling data for blitz
@@ -21,7 +37,7 @@ export const BlitzRealmLeveling = () => {
       resources: [
         { id: 23, amount: 2000 }, // Labor
         { id: 35, amount: 1200 }, // Wheat
-        { id: "essence", amount: 200 }, // Essence (placeholder)
+        { id: 38, amount: 200 }, // Essence
       ],
     },
     {
@@ -30,7 +46,7 @@ export const BlitzRealmLeveling = () => {
       resources: [
         { id: 23, amount: 4000 }, // Labor
         { id: 35, amount: 3600 }, // Wheat
-        { id: "essence", amount: 1200 }, // Essence (placeholder)
+        { id: 38, amount: 1200 }, // Essence
         { id: 3, amount: 600 }, // Wood
       ],
     },
@@ -40,7 +56,7 @@ export const BlitzRealmLeveling = () => {
       resources: [
         { id: 23, amount: 8000 }, // Labor
         { id: 35, amount: 7200 }, // Wheat
-        { id: "essence", amount: 4800 }, // Essence (placeholder)
+        { id: 38, amount: 4800 }, // Essence
         { id: 3, amount: 1800 }, // Wood
         { id: 2, amount: 1200 }, // Coal
         { id: 4, amount: 1200 }, // Copper
@@ -65,9 +81,9 @@ export const BlitzRealmLeveling = () => {
           <tbody>
             {levelData.map((item, index) => (
               <tr key={index}>
-                <td style={table.cell}>{item.currentLevel}</td>
-                <td style={table.cell}>{item.nextLevel}</td>
-                <td style={table.cell}>
+                <td style={tableCellStyle}>{item.currentLevel}</td>
+                <td style={tableCellStyle}>{item.nextLevel}</td>
+                <td style={resourcesCellStyle}>
                   <div
                     style={{
                       display: "flex",
@@ -78,20 +94,9 @@ export const BlitzRealmLeveling = () => {
                   >
                     {item.resources.map((resource, idx) => (
                       <div key={`${resource.id}-${idx}`} style={resourceItemStyle}>
-                        {resource.id === "essence" ? (
-                          <div
-                            style={{
-                              width: "20px",
-                              height: "20px",
-                              backgroundColor: "#f8bbd9",
-                              borderRadius: "2px",
-                              border: "1px solid #ec4899",
-                              flexShrink: 0,
-                            }}
-                          />
-                        ) : (
+                        <div style={{ minWidth: "20px", display: "flex", justifyContent: "center" }}>
                           <ResourceIcon id={typeof resource.id === "number" ? resource.id : 0} name="" size="md" />
-                        )}
+                        </div>
                         {formatAmount(resource.amount)}
                       </div>
                     ))}

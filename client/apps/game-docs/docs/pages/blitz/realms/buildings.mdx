@@ -1,6 +1,6 @@
 import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig, resources } from "@bibliothecadao/types";
+import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
 
@@ -170,7 +170,7 @@ have the same requirements in simple and standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 5, amount: 540 }, // Ironwood
-    { resource: "essence", amount: 600 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
 />
@@ -185,7 +185,7 @@ have the same requirements in simple and standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 11, amount: 540 }, // Cold Iron
-    { resource: "essence", amount: 600 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
 />
@@ -203,7 +203,7 @@ have the same requirements in simple and standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 7, amount: 540 }, // Gold
-    { resource: "essence", amount: 600 } // Essence
+    { resource: ResourcesIds.Essence, amount: 600 } // Essence
   ]}
   standardOnly={true}
 />
@@ -318,7 +318,7 @@ available for construction in standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 6, amount: 540 }, // Cold Iron
-    { resource: 999, amount: 600 }, // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -332,7 +332,7 @@ available for construction in standard mode.
     { resource: 3, amount: 1440 }, // Wood
     { resource: 6, amount: 1080 }, // Cold Iron
     { resource: 8, amount: 1080 }, // Mithral
-    { resource: 999, amount: 1200 }, // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
 
@@ -361,7 +361,7 @@ available for construction in standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 7, amount: 540 }, // Ironwood
-    { resource: 999, amount: 600 }, // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -375,7 +375,7 @@ available for construction in standard mode.
     { resource: 3, amount: 1440 }, // Wood
     { resource: 7, amount: 1080 }, // Ironwood
     { resource: 9, amount: 1080 }, // Adamantine
-    { resource: 999, amount: 1200 }, // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
 
@@ -404,7 +404,7 @@ available for construction in standard mode.
     { resource: 3, amount: 720 }, // Wood
     { resource: 4, amount: 540 }, // Copper
     { resource: 10, amount: 540 }, // Gold
-    { resource: 999, amount: 600 }, // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -421,7 +421,7 @@ available for construction in standard mode.
     { resource: 3, amount: 1440 }, // Wood
     { resource: 10, amount: 1080 }, // Gold
     { resource: 11, amount: 1080 }, // Dragonhide
-    { resource: 999, amount: 1200 } // Essence (placeholder)
+    { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
   ]}
 />
 </div>

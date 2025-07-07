@@ -100,6 +100,8 @@ const componentStyles = {
     backgroundColor: "rgba(40, 30, 25, 0.6)",
     borderRadius: "0.25rem",
     fontSize: "0.75rem",
+    whiteSpace: "nowrap" as const,
+    minWidth: "fit-content",
   },
   weightStyle: {
     marginLeft: "auto",
@@ -112,6 +114,7 @@ const componentStyles = {
     color: colors.secondary,
     fontWeight: 500,
     padding: "0.75rem 0.5rem",
+    whiteSpace: "nowrap" as const,
   },
 };
 
@@ -211,29 +214,6 @@ export const BlitzWeightTable = () => {
     { id: ResourcesIds.PaladinT3, name: "T3 Paladin", weight: 100 },
   ];
 
-  // Essence special row
-  const ESSENCE_ID = 9999;
-  const EssenceIcon = () => (
-    <span
-      style={{
-        display: "inline-block",
-        width: 20,
-        height: 20,
-        background: "#e75480",
-        color: "#fff",
-        fontWeight: 700,
-        fontSize: 14,
-        borderRadius: 4,
-        textAlign: "center",
-        lineHeight: "20px",
-        marginRight: 4,
-        border: "1px solid #b03060",
-      }}
-    >
-      E
-    </span>
-  );
-
   return (
     <div style={section.wrapper}>
       <div style={section.subtitle}>Material Weights (kg)</div>
@@ -305,8 +285,8 @@ export const BlitzWeightTable = () => {
             <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c0c0c0` }}>Special</td>
             <td style={table.cell}>
               <div style={componentStyles.resourcesGroupStyle}>
-                <div key={ESSENCE_ID} style={componentStyles.resourceItemStyle}>
-                  <EssenceIcon />
+                <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="sm" />
                   <span style={{ color: colors.text.light }}>Essence</span>
                   <span style={componentStyles.weightStyle}>0.1 kg</span>
                 </div>

@@ -50,6 +50,56 @@ export default defineConfig({
       ],
     },
     {
+      text: "Blitz",
+      items: [
+        { text: "Key Concepts", link: "/blitz/key-concepts" },
+        { text: "World Physics", link: "/blitz/world-physics" },
+        { text: "World Structures", link: "/blitz/world-structures" },
+        { text: "Victory", link: "/blitz/victory" },
+        { text: "Prize Pool", link: "/blitz/prize-pool" },
+        { text: "Achievements", link: "/blitz/achievements" },
+        {
+          text: "World Map & Movement",
+          link: "/blitz/worldmap-movement/worldmap",
+          collapsed: true,
+          items: [
+            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
+          ],
+        },
+        {
+          text: "Realms",
+          link: "/blitz/realms/realm",
+          collapsed: true,
+          items: [
+            { text: "Realms", link: "/blitz/realms/realm" },
+            { text: "Buildings", link: "/blitz/realms/buildings" },
+          ],
+        },
+        {
+          text: "Materials",
+          link: "/blitz/materials/resources",
+          collapsed: true,
+          items: [
+            { text: "Materials", link: "/blitz/materials/resources" },
+            { text: "Production", link: "/blitz/materials/production" },
+            { text: "Storage", link: "/blitz/materials/storage" },
+          ],
+        },
+        {
+          text: "Military",
+          link: "/blitz/military/armies",
+          collapsed: true,
+          items: [
+            { text: "Armies", link: "/blitz/military/armies" },
+            { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
+            { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
+            { text: "Damage", link: "/blitz/military/damage" },
+          ],
+        },
+      ],
+    },
+    {
       text: "Eternum (Season 1 - Concluded)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
@@ -101,56 +151,6 @@ export default defineConfig({
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
             { text: "Damage", link: "/eternum/military/damage" },
             { text: "Raiding", link: "/eternum/military/raiding" },
-          ],
-        },
-      ],
-    },
-    {
-      text: "Blitz",
-      items: [
-        { text: "Key Concepts", link: "/blitz/key-concepts" },
-        { text: "World Physics", link: "/blitz/world-physics" },
-        { text: "World Structures", link: "/blitz/world-structures" },
-        { text: "Victory", link: "/blitz/victory" },
-        { text: "Prize Pool", link: "/blitz/prize-pool" },
-        { text: "Achievements", link: "/blitz/achievements" },
-        {
-          text: "World Map & Movement",
-          link: "/blitz/worldmap-movement/worldmap",
-          collapsed: true,
-          items: [
-            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
-        },
-        {
-          text: "Realms",
-          link: "/blitz/realms/realm",
-          collapsed: true,
-          items: [
-            { text: "Realms", link: "/blitz/realms/realm" },
-            { text: "Buildings", link: "/blitz/realms/buildings" },
-          ],
-        },
-        {
-          text: "Materials",
-          link: "/blitz/materials/resources",
-          collapsed: true,
-          items: [
-            { text: "Materials", link: "/blitz/materials/resources" },
-            { text: "Production", link: "/blitz/materials/production" },
-            { text: "Storage", link: "/blitz/materials/storage" },
-          ],
-        },
-        {
-          text: "Military",
-          link: "/blitz/military/armies",
-          collapsed: true,
-          items: [
-            { text: "Armies", link: "/blitz/military/armies" },
-            { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
-            { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
-            { text: "Damage", link: "/blitz/military/damage" },
           ],
         },
       ],
