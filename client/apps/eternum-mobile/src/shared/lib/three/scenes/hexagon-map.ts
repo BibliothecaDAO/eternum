@@ -232,8 +232,12 @@ export class HexagonMap {
       this.tempColor.setHex(0x4a90e2);
       this.instanceMesh!.setColorAt(index, this.tempColor);
 
-      // Collect tile positions for the tile renderer
-      tilePositions.push({ col, row });
+      // Get the actual biome for this hex from exploredTiles
+      const biome = this.exploredTiles.get(col)?.get(row);
+      if (biome !== undefined) {
+        // Collect tile positions with biome data for the tile renderer
+        tilePositions.push({ col, row, biome });
+      }
 
       index++;
     });

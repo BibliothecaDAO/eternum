@@ -1,9 +1,11 @@
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getWorldPositionForTile, HEX_SIZE, pseudoRandom } from "./utils";
+import { getWorldPositionForTile, HEX_SIZE } from "./utils";
 
 export interface TilePosition {
   col: number;
   row: number;
+  biome: BiomeType;
 }
 
 export class TileRenderer {
@@ -26,7 +28,7 @@ export class TileRenderer {
   private static readonly TILE_WIDTH = 256;
   private static readonly TILE_HEIGHT = 304;
   private static readonly TILE_GAP = 1;
-  private static readonly TILEMAP_PATH = "/images/tiles/isometric-tiles.png";
+  private static readonly TILEMAP_PATH = "/images/tiles/biomes-tiles.png";
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -50,11 +52,32 @@ export class TileRenderer {
       const tilesPerRow = Math.floor((TileRenderer.tileTexture.image.width + TileRenderer.TILE_GAP) / tileWidthWithGap);
 
       // Create materials for tile 1 and tile 2 (can be extended for more tiles)
-      this.createTileMaterial(1, 0, tilesPerRow, TileRenderer.tileTexture); // First tile (index 0)
-      this.createTileMaterial(2, 1, tilesPerRow, TileRenderer.tileTexture); // Second tile (index 1)
-      this.createTileMaterial(3, 2, tilesPerRow, TileRenderer.tileTexture); // Third tile (index 2)
-      this.createTileMaterial(4, 3, tilesPerRow, TileRenderer.tileTexture); // Fourth tile (index 3)
-      this.createTileMaterial(5, 4, tilesPerRow, TileRenderer.tileTexture); // Fifth tile (index 4)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.DeepOcean], 12, tilesPerRow, TileRenderer.tileTexture); // First tile (index 0)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Ocean], 3, tilesPerRow, TileRenderer.tileTexture); // Second tile (index 1)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Beach], 0, tilesPerRow, TileRenderer.tileTexture); // Third tile (index 2)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Scorched], 3, tilesPerRow, TileRenderer.tileTexture); // Fourth tile (index 3)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Bare], 11, tilesPerRow, TileRenderer.tileTexture); // Fifth tile (index 4)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Tundra], 10, tilesPerRow, TileRenderer.tileTexture); // Sixth tile (index 5)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Snow], 5, tilesPerRow, TileRenderer.tileTexture); // Seventh tile (index 6)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.TemperateDesert], 7, tilesPerRow, TileRenderer.tileTexture); // Eighth tile (index 7)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Shrubland], 4, tilesPerRow, TileRenderer.tileTexture); // Ninth tile (index 8)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Taiga], 6, tilesPerRow, TileRenderer.tileTexture); // Tenth tile (index 9)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.Grassland], 2, tilesPerRow, TileRenderer.tileTexture); // Eleventh tile (index 10)
+      this.createTileMaterial(
+        BiomeTypeToId[BiomeType.TemperateDeciduousForest],
+        1,
+        tilesPerRow,
+        TileRenderer.tileTexture,
+      ); // Twelfth tile (index 11)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.TemperateRainForest], 8, tilesPerRow, TileRenderer.tileTexture); // Thirteenth tile (index 12)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.SubtropicalDesert], 7, tilesPerRow, TileRenderer.tileTexture); // Fourteenth tile (index 13)
+      this.createTileMaterial(
+        BiomeTypeToId[BiomeType.TropicalSeasonalForest],
+        9,
+        tilesPerRow,
+        TileRenderer.tileTexture,
+      ); // Fifteenth tile (index 14)
+      this.createTileMaterial(BiomeTypeToId[BiomeType.TropicalRainForest], 9, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
 
       // Create prototype sprites for each tile type
       this.createPrototypeSprites();
@@ -128,22 +151,22 @@ export class TileRenderer {
     // Sort hexes by row for proper rendering order (higher row = higher render order)
     const sortedHexes = [...hexes].sort((a, b) => b.row - a.row);
 
-    sortedHexes.forEach(({ col, row }) => {
-      this.createTileSprite(col, row);
+    sortedHexes.forEach(({ col, row, biome }) => {
+      this.createTileSprite(col, row, biome);
     });
   }
 
-  private createTileSprite(col: number, row: number): void {
+  private createTileSprite(col: number, row: number, biome: BiomeType): void {
     const hexKey = `${col},${row}`;
     // Reuse tempVector3 instead of creating new Vector3
     getWorldPositionForTile({ col, row }, true, this.tempVector3);
 
-    // Choose tile based on row (even = tile1, odd = tile2)
-    const tileId = Math.floor(pseudoRandom(col, row) * 5) + 1;
+    // Use actual biome instead of pseudo-random
+    const tileId = BiomeTypeToId[biome];
     const prototypeSprite = this.prototypeSprites.get(tileId);
 
     if (!prototypeSprite) {
-      console.warn(`Prototype sprite for tile ${tileId} not found`);
+      console.warn(`Prototype sprite for biome ${biome} (tileId: ${tileId}) not found`);
       return;
     }
 
@@ -178,7 +201,7 @@ export class TileRenderer {
     }
   }
 
-  public addTile(col: number, row: number): void {
+  public addTile(col: number, row: number, biome: BiomeType): void {
     const hexKey = `${col},${row}`;
 
     // Don't create duplicate tiles
@@ -186,7 +209,7 @@ export class TileRenderer {
       return;
     }
 
-    this.createTileSprite(col, row);
+    this.createTileSprite(col, row, biome);
   }
 
   public updateTilesForHexes(hexes: TilePosition[]): void {
@@ -202,10 +225,10 @@ export class TileRenderer {
     });
 
     // Add new tiles
-    hexes.forEach(({ col, row }) => {
+    hexes.forEach(({ col, row, biome }) => {
       const hexKey = `${col},${row}`;
       if (!currentHexKeys.has(hexKey)) {
-        this.addTile(col, row);
+        this.addTile(col, row, biome);
       }
     });
   }
