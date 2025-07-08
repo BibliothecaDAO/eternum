@@ -10,7 +10,9 @@ import {
   realmsBridgeRequests, 
   realmsBridgeEvents, 
   realmsLordsClaims,
-  bridgeEventTypeEnum 
+  bridgeEventTypeEnum,
+  realmsBridgeRequestsRelations,
+  realmsBridgeEventsRelations
 } from "./schema/bridge";
 
 neonConfig.webSocketConstructor = ws;
@@ -33,6 +35,9 @@ const schema = {
   realmsBridgeEvents,
   realmsLordsClaims,
   bridgeEventTypeEnum,
+  // Include relations
+  realmsBridgeRequestsRelations,
+  realmsBridgeEventsRelations,
 };
 
 export const db = drizzle(pool, { schema });

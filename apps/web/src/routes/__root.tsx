@@ -15,16 +15,16 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import "@rainbow-me/rainbowkit/styles.css";
+//import "@rainbow-me/rainbowkit/styles.css";
 
 import type { QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { StarknetProvider } from "@/providers/starknet";
 import { seo } from "@/utils/seo";
-import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { env } from "env";
-import { WagmiProvider } from "wagmi";
-import { mainnet, sepolia } from "wagmi/chains";
+//import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+//import { env } from "env";
+//import { WagmiProvider } from "wagmi";
+//import { mainnet, sepolia } from "wagmi/chains";
 
 export interface RouterAppContext {
   session: {
@@ -87,12 +87,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
   //const isFetching = useRouterState({ select: (s) => s.isLoading });
-  const config = getDefaultConfig({
+ /* const config = getDefaultConfig({
     appName: "Realms.World",
     projectId: "c8d27e7d62b1bb4d1ea2e6d4ed1604ee",
     chains: [env.VITE_PUBLIC_CHAIN === "sepolia" ? sepolia : mainnet],
     ssr: false,
-  });
+  });*/
   return (
     <html lang="en">
       <head>
@@ -110,8 +110,8 @@ function RootComponent() {
         >
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>
-              <WagmiProvider config={config}>
-                <RainbowKitProvider>
+              {/*<WagmiProvider config={config}>
+                <RainbowKitProvider>*/}
                   <SidebarProvider className="flex h-full flex-col">
                     <Header />
                     <div className="flex min-h-0 flex-1">
@@ -122,8 +122,8 @@ function RootComponent() {
                     </div>
                     <Toaster />
                   </SidebarProvider>
-                </RainbowKitProvider>
-              </WagmiProvider>
+                {/*</RainbowKitProvider>
+              </WagmiProvider>*/}
             </StarknetProvider>
           </ThemeProvider>
         </div>

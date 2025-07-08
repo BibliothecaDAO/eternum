@@ -12,12 +12,16 @@ import {
   realmsBridgeRequests, 
   realmsBridgeEvents, 
   realmsLordsClaims,
-  bridgeEventTypeEnum 
+  bridgeEventTypeEnum,
+  realmsBridgeRequestsRelations,
+  realmsBridgeEventsRelations
 } from "./schema/bridge";
 import { 
   governances, 
   delegates, 
-  delegateProfiles 
+  delegateProfiles,
+  delegatesRelations,
+  delegateProfilesRelations
 } from "./schema/governance";
 import { velords_burns, velords_supply } from "./schema/dune";
 
@@ -47,6 +51,11 @@ const schema = {
   delegateProfiles,
   velords_burns,
   velords_supply,
+  // Include relations
+  realmsBridgeRequestsRelations,
+  realmsBridgeEventsRelations,
+  delegatesRelations,
+  delegateProfilesRelations,
 };
 
 // Lazy singleton pattern for database connection
