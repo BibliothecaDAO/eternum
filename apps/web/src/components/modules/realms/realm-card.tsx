@@ -1,32 +1,32 @@
-import type { CollectionToken, PortfolioToken } from "@/types/ark";
+import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import { Card, CardContent } from "@/components/ui/card";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-
-import { CollectionAddresses } from "@realms-world/constants";
 
 import Media from "./media";
 import RealmResources from "./realm-resources";
-export type RealmMetadata = {
+
+export interface RealmMetadata {
   name: string;
   description: string;
   image: string;
   attributes: {
     trait_type: string;
-    value: string | number;
+    value: string | number | undefined;
   }[];
-};
+}
 
 export const RealmCard = ({
   token,
   isGrid,
 }: {
-  token: PortfolioToken;
+  token: RawTokenBalanceWithMetadata;
   isGrid?: boolean;
 }) => {
-  const {tokenMetadata} = token.node
-  const parsedMetadata: RealmMetadata | null = tokenMetadata ? JSON.parse(tokenMetadata.metadata) : null;
-  const { attributes, name, image } = parsedMetadata ?? {};
+  const { metadata } = token;
+  const parsedMetadata = metadata
+    ? (JSON.parse(metadata) as RealmMetadata)
+    : null;
+  const { name, image } = parsedMetadata ?? {};
 
   return (
     <Card className="relative overflow-hidden">
@@ -34,7 +34,7 @@ export const RealmCard = ({
         {image ? (
           <Media
             src={image}
-            alt={name}
+            alt={name ?? ""}
             mediaKey={""}
             /*className={isGrid ? "mx-auto" : ""}
   width={imageSize}
@@ -47,7 +47,7 @@ export const RealmCard = ({
         )}
         {isGrid && (
           <span className="absolute bottom-1 right-1 bg-black px-1 py-1 text-xs">
-            #{Number(tokenMetadata.tokenId)}
+            #{Number(token.token_id)}
           </span>
         )}
       </div>
@@ -61,12 +61,12 @@ export const RealmCard = ({
 const GridDetails = ({
   token,
 }: {
-  token: CollectionToken | PortfolioToken;
+  token: RealmMetadata | null;
   address?: string;
 }) => (
   <div className="flex h-full w-full flex-col justify-between">
     <div className="flex justify-between pb-2">
-      <span className="truncate">{token.name ?? ""}</span>
+      <span className="truncate">{token?.name}</span>
       <div className="flex justify-between font-sans">
         {/*<Price token={token} />*/}
         {/*token.last_price && (
@@ -78,8 +78,7 @@ const GridDetails = ({
       </div>
     </div>
     <div className="h-[48px]">
-      {token.attributes &&
-         <RealmResources traits={token.attributes} />}
+      <RealmResources traits={token?.attributes ?? []} />
     </div>
   </div>
 );

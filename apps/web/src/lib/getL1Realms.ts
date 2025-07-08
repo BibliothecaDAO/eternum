@@ -24,7 +24,7 @@ const RESERVOIR_API_URL = new URL(
 /* -------------------------------------------------------------------------- */
 
 const GetL1RealmsInput = z.object({
-  address: z.string(),
+  address: z.string().optional(),
 });
 
 export const getL1Realms = createServerFn<
@@ -35,9 +35,6 @@ export const getL1Realms = createServerFn<
 >({ method: "GET" })
   .validator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
-    console.log(`${RESERVOIR_API_URL}users/${ctx.data.address}/tokens/v10?collection=${
-        CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]
-      }&limit=100&includeAttributes=true`)
     const response = await fetch(
       `${RESERVOIR_API_URL}users/${ctx.data.address.toLowerCase()}/tokens/v10?collection=${
         CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]

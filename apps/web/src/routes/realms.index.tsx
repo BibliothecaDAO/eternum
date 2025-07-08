@@ -62,7 +62,7 @@ function RealmsComponent() {
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery?.data;
+  const l2Realms = l2RealmsQuery.data;
   if (!address) {
     return <div>Connect Starknet Wallet to view your Realms</div>;
   }
@@ -85,7 +85,7 @@ function RealmsComponent() {
         {l2Realms?.length
           ? l2Realms.map((realm) => {
               return (
-                <RealmCard key={realm.tokenId} token={realm} isGrid={true} />
+                <RealmCard key={realm.token_id} token={realm} isGrid={true} />
               );
             })
           : "No Realms Found in wallet"}

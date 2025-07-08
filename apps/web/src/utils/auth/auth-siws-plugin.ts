@@ -7,9 +7,7 @@ import { setSessionCookie } from "better-auth/cookies";
 // Zod
 import { z } from "zod";
 
-import { eq, user as userTable } from "@realms-world/db";
-// Database Instance
-import { db } from "@realms-world/db/client";
+import { db, eq, user as userTable } from "@realms-world/db";
 // SIWE deps
 import { SiwsTypedData } from "@realms-world/siws";
 
@@ -92,7 +90,6 @@ export const siws = (options: SIWSPluginOptions) =>
               await ctx.context.internalAdapter.findVerificationValue(
                 `siws_${address.toLowerCase()}`,
               );
-            console.log(verification);
             // Ensure nonce is valid and not expired
             if (!verification || new Date() > verification.expiresAt) {
               throw new APIError("UNAUTHORIZED", {
@@ -122,7 +119,6 @@ export const siws = (options: SIWSPluginOptions) =>
                 ),
               },
             );
-            console.log(verified);
             if (!verified.success) {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Invalid SIWE signature",
@@ -161,10 +157,10 @@ export const siws = (options: SIWSPluginOptions) =>
 
             const session = await ctx.context.internalAdapter.createSession(
               user.id,
-              ctx.request,
+              ctx,
             );
-            console.log(session);
-            if (!session) {
+
+            if (!session.id) {
               return ctx.json(null, {
                 status: 500,
                 body: {

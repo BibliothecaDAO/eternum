@@ -71,3 +71,7 @@ export function shortenName(name: string, charLength?: number): string {
     return name.toLowerCase();
   }
 }
+export const trimAddress = (addr?: string): string => {
+  if (!addr?.startsWith("0x")) return addr ?? "";
+  return "0x" + addr.slice(2).replace(/^0+/, "");
+};

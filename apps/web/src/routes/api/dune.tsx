@@ -1,9 +1,8 @@
 import { DuneClient } from "@duneanalytics/client-sdk";
 import { json } from "@tanstack/react-start";
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { createServerFileRoute } from "@tanstack/react-start/server";
 
-import { db } from "@realms-world/db/client";
-import { velords_burns, velords_supply } from "@realms-world/db/schema";
+import { db, velords_burns, velords_supply } from "@realms-world/db";
 
 const { VITE_DUNE_API_KEY } = process.env;
 const client = new DuneClient(VITE_DUNE_API_KEY ?? "");
@@ -11,7 +10,7 @@ export const config = {
   cron: "0 */6 * * *",
 };
 
-export const APIRoute = createAPIFileRoute("/api/dune")({
+export const ServerRoute = createServerFileRoute("/api/dune").methods({
   GET: async () => {
     console.log("Fetching data from Dune");
     const queryID = 4101280;

@@ -143,13 +143,13 @@ export const delegateProfilesRelations = relations(
 export const CreateDelegateProfileSchema = createInsertSchema(
   delegateProfiles,
   {
-    statement: z.string(),
-    interests: z.string().array().optional(),
-    twitter: z.string().optional(),
-    github: z.string().optional(),
-    telegram: z.string().optional(),
-    discord: z.string().optional(),
-  },
+    statement: (schema) => schema, // no change, just for demonstration
+    interests: (schema) => schema.optional(),
+    twitter: (schema) => schema.optional(),
+    github: (schema) => schema.optional(),
+    telegram: (schema) => schema.optional(),
+    discord: (schema) => schema.optional(),
+  }
 ).omit({
   delegateId: true,
   createdAt: true,

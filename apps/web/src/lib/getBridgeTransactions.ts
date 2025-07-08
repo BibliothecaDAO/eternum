@@ -3,9 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { desc, eq, or } from "@realms-world/db";
-import { db } from "@realms-world/db/client";
-import { realmsBridgeRequests } from "@realms-world/db/schema";
+import { db, desc, eq, or, realmsBridgeRequests } from "@realms-world/db";
 
 /* -------------------------------------------------------------------------- */
 /*                         getBridgeTransactions Endpoint                     */

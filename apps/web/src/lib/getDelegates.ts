@@ -6,14 +6,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { getHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import { and, desc, eq, like, sql } from "@realms-world/db";
-// Make sure to import padAddress from its appropriate location
-import { db } from "@realms-world/db/client";
 import {
+  and,
   CreateDelegateProfileSchema,
+  db,
   delegateProfiles,
   delegates,
-} from "@realms-world/db/schema";
+  desc,
+  eq,
+  like,
+  sql,
+} from "@realms-world/db";
 
 /* -------------------------------------------------------------------------- */
 /*                          getDelegates (all) Endpoint                       */
@@ -116,8 +119,6 @@ export const getDelegateByIDQueryOptions = (
 export const createDelegateProfile = createServerFn({ method: "POST" })
   .validator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
-    console.log(ctx);
-
     const session = await auth.api.getSession({
       headers: getHeaders(),
       query: {
@@ -130,8 +131,7 @@ export const createDelegateProfile = createServerFn({ method: "POST" })
     if (!session) {
       return;
     }
-    const delegateId = formatAddress(session.user.name ?? "");
-    console.log(delegateId);
+    const delegateId = formatAddress(session.user.name);
     return db
       .insert(delegateProfiles)
       .values({ ...ctx.data, delegateId })

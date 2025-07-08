@@ -76,6 +76,7 @@ interface BridgeTableProps {
 }
 
 export const BridgeTable: React.FC<BridgeTableProps> = ({ table }) => {
+
   return (
     <div>
       <div className="rounded-md border">
