@@ -83,7 +83,7 @@ function RouteComponent() {
       });
     } 
   }, [selectedAsset, l2Realms, l1Realms]);
-  console.log(mappedRealms)
+  
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({

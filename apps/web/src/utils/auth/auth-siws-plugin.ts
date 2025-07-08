@@ -90,7 +90,6 @@ export const siws = (options: SIWSPluginOptions) =>
               await ctx.context.internalAdapter.findVerificationValue(
                 `siws_${address.toLowerCase()}`,
               );
-            console.log(verification);
             // Ensure nonce is valid and not expired
             if (!verification || new Date() > verification.expiresAt) {
               throw new APIError("UNAUTHORIZED", {
@@ -120,8 +119,6 @@ export const siws = (options: SIWSPluginOptions) =>
                 ),
               },
             );
-            console.log('verified')
-            console.log(verified);
             if (!verified.success) {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Invalid SIWE signature",
@@ -137,8 +134,6 @@ export const siws = (options: SIWSPluginOptions) =>
             let user = await db.query.user.findFirst({
               where: eq(userTable.id, address),
             });
-
-            console.log(user)
 
             if (!user) {
               const tempEmail = `${address}@${process.env.VITE_PUBLIC_BASE_URL}`;
