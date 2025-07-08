@@ -9,7 +9,7 @@ import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -257,6 +257,8 @@ export const ArmyChip = ({
                   resources={resources}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
+                  entityId={army.entityId}
+                  recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
                 />
               )}

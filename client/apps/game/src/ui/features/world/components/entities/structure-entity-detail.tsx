@@ -16,7 +16,7 @@ import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, MERCENARIES, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
 import { memo, useMemo } from "react";
@@ -260,6 +260,8 @@ export const StructureEntityDetail = memo(
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}
                 textSize={compact ? "xxs" : "xs"}
+                entityId={structureEntityId}
+                recipientType={RelicRecipientType.Structure}
               />
             )}
           </div>

@@ -8,7 +8,7 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
@@ -253,6 +253,8 @@ export const ArmyEntityDetail = memo(
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}
                 textSize={compact ? "xxs" : "xs"}
+                entityId={armyEntityId}
+                recipientType={RelicRecipientType.Explorer}
               />
             </div>
           )}
