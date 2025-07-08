@@ -3,7 +3,9 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { and, db, eq, velords_burns } from "@realms-world/db";
+import { and, eq } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
+import { velords_burns } from "@realms-world/db/schema";
 
 /* -------------------------------------------------------------------------- */
 /*                          getVelordsBurns Endpoint                          */

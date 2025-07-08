@@ -2,7 +2,8 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { db, desc, eq, realmsLordsClaims } from "@realms-world/db";
+import { desc, eq, realmsLordsClaims } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
 
 /* -------------------------------------------------------------------------- */
 /*                    getRealmsLordsClaims Endpoint                         */
