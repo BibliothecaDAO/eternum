@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "apps/account-portal/src/routes/api/**/*.tsx": {
-      "maxDuration": 30
-    }
-  },
   "build": {
     "env": {
       "NODE_OPTIONS": "--max-old-space-size=4096"
