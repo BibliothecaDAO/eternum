@@ -21,10 +21,10 @@ import type { QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { StarknetProvider } from "@/providers/starknet";
 import { seo } from "@/utils/seo";
+import { AppKitProvider } from "@/providers/ethereum";
 //import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 //import { env } from "env";
-//import { WagmiProvider } from "wagmi";
-//import { mainnet, sepolia } from "wagmi/chains";
+
 
 export interface RouterAppContext {
   session: {
@@ -93,6 +93,7 @@ function RootComponent() {
     chains: [env.VITE_PUBLIC_CHAIN === "sepolia" ? sepolia : mainnet],
     ssr: false,
   });*/
+
   return (
     <html lang="en">
       <head>
@@ -110,8 +111,8 @@ function RootComponent() {
         >
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <StarknetProvider>
-              {/*<WagmiProvider config={config}>
-                <RainbowKitProvider>*/}
+              <AppKitProvider>
+               {/*<RainbowKitProvider>*/}
                   <SidebarProvider className="flex h-full flex-col">
                     <Header />
                     <div className="flex min-h-0 flex-1">
@@ -122,8 +123,8 @@ function RootComponent() {
                     </div>
                     <Toaster />
                   </SidebarProvider>
-                {/*</RainbowKitProvider>
-              </WagmiProvider>*/}
+                {/*</RainbowKitProvider>*/}
+              </AppKitProvider>
             </StarknetProvider>
           </ThemeProvider>
         </div>

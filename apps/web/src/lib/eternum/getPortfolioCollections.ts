@@ -81,7 +81,13 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       .replace("{collectionId}", collectionId.toString())
       .replace("{accountAddress}", address ?? "")
       .replace("{trimmedAccountAddress}", trimAddress(address ?? ""));
-    return await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
+
+    const result = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
+    const resultsWithParsedTokenId = result.map(r => ({
+      ...r,
+      token_id: parseInt(r.token_id.split(":")[1], 16),
+    }));
+    return resultsWithParsedTokenId;
   });
 
 export const getAccountTokensQueryOptions = (

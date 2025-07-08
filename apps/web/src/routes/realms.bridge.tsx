@@ -9,11 +9,10 @@ import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
-import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   getCoreRowModel,
@@ -23,8 +22,9 @@ import {
 import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
-import { CollectionAddresses } from "@realms-world/constants";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
+import { CollectionAddresses } from "@realms-world/constants";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -38,49 +38,53 @@ function RouteComponent() {
     getL1RealmsQueryOptions({ address: l1Address }),
   );
   const l1Realms = l1RealmsQuery.data;
-  console.log(l1Realms);
-
   const l2RealmsQuery = useQuery(
     getAccountTokensQueryOptions({
       address: l2Address,
+      collectionAddress: CollectionAddresses.realms[
+        SUPPORTED_L2_CHAIN_ID
+      ] as string,
     }),
   );
   const l2Realms = l2RealmsQuery.data;
 
-console.log(l2Realms)
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
     "Ethereum",
   );
 
   const mappedRealms = useMemo(() => {
-    if (selectedAsset === "Ethereum" && l1Realms) {
+    if (selectedAsset === "Ethereum") {
       return (
-        l1Realms.tokens?.map((realm) => ({
-          token_id: realm.token?.tokenId,
+        l1Realms?.tokens?.map((realm: any) => ({
+          token_id: realm.token?.tokenId && typeof realm.token.tokenId === 'string'
+            ? parseInt(realm.token.tokenId.split(":")[1], 16)
+            : undefined,
           name: realm.token?.name,
           attributes:
-            realm.token?.attributes?.map((attribute) => ({
+            realm.token?.attributes?.map((attribute: any) => ({
               ...attribute,
               trait_type: attribute.key,
             })) ?? [],
         })) ?? []
       );
-    } else if (selectedAsset === "Starknet" && l2Realms) {
-      return l2Realms.map((realm) => {
-        const {tokenMetadata} = realm.node
-        const parsedMetadata: RealmMetadata | null = tokenMetadata ? JSON.parse(tokenMetadata.metadata) : null;
-        const { attributes, name, image } = parsedMetadata ?? {};
+    } else if (selectedAsset === "Starknet") {
+      return l2Realms?.map((realm: any) => {
+        let parsedMetadata: any = null;
+        try {
+          parsedMetadata = realm.metadata ? JSON.parse(realm.metadata) : null;
+        } catch {
+          parsedMetadata = null;
+        }
+        const { attributes, name } = parsedMetadata ?? {};
         return {
-
-        token_id: Number(tokenMetadata.tokenId),
-        name: name,
-        attributes: attributes,
-      }});
-    } else {
-      return [];
-    }
+          token_id: realm.token_id,
+          name: name,
+          attributes: attributes,
+        };
+      });
+    } 
   }, [selectedAsset, l2Realms, l1Realms]);
-
+  console.log(mappedRealms)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
