@@ -7,9 +7,7 @@ import { setSessionCookie } from "better-auth/cookies";
 // Zod
 import { z } from "zod";
 
-import { eq, user as userTable } from "@realms-world/db";
-// Database Instance
-import { db } from "@realms-world/db/client";
+import { db, eq, user as userTable } from "@realms-world/db";
 // SIWE deps
 import { SiwsTypedData } from "@realms-world/siws";
 

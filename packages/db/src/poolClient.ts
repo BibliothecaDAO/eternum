@@ -12,6 +12,12 @@ export const neonSql = neon(
   config.dbCredentials.url,
 ) satisfies NeonQueryFunction<boolean, boolean>;
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Optimize pool configuration for Vercel
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10, // Limit max connections
+  idleTimeoutMillis: 30000, // Close idle connections after 30s
+  connectionTimeoutMillis: 2000, // Connection timeout
+});
 
 export const db = drizzle(pool, { schema });

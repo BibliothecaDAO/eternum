@@ -18,7 +18,7 @@ import { fetchSQL } from "./apiClient";
 import { QUERIES } from "./queries";
 
 // Raw type for data fetched by fetchTokenBalancesWithMetadata
-interface RawTokenBalanceWithMetadata {
+export interface RawTokenBalanceWithMetadata {
   token_id: string;
   balance: string;
   contract_address: string;
@@ -36,7 +36,7 @@ interface RawTokenBalanceWithMetadata {
 /* -------------------------------------------------------------------------- */
 
 const GetAccountTokensInput = z.object({
-  address: z.string(),
+  address: z.string().optional(),
   collectionAddress: z.string().optional(),
   itemsPerPage: z.number().optional(),
   page: z.number().optional(),
@@ -48,8 +48,8 @@ export const getAccountTokens = createServerFn({ method: "GET" })
     const {
       address,
       collectionAddress,
-      itemsPerPage = 100,
-      page = 1,
+      /*itemsPerPage = 100,
+      page = 1,*/
     } = ctx.data;
     /*const queryParams = [
       `items_per_page=${itemsPerPage}`,
@@ -79,8 +79,8 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       trimAddress(collectionAddress),
     )
       .replace("{collectionId}", collectionId.toString())
-      .replace("{accountAddress}", address)
-      .replace("{trimmedAccountAddress}", trimAddress(address));
+      .replace("{accountAddress}", address ?? "")
+      .replace("{trimmedAccountAddress}", trimAddress(address ?? ""));
     return await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
   });
 

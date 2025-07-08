@@ -6,14 +6,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { getHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import { and, desc, eq, like, sql } from "@realms-world/db";
-// Make sure to import padAddress from its appropriate location
-import { db } from "@realms-world/db/client";
 import {
+  and,
   CreateDelegateProfileSchema,
+  db,
   delegateProfiles,
   delegates,
-} from "@realms-world/db/schema";
+  desc,
+  eq,
+  like,
+  sql,
+} from "@realms-world/db";
 
 /* -------------------------------------------------------------------------- */
 /*                          getDelegates (all) Endpoint                       */

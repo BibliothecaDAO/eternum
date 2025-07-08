@@ -1,9 +1,6 @@
-import type { CollectionToken, PortfolioToken } from "@/types/ark";
+import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import { Card, CardContent } from "@/components/ui/card";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-
-import { CollectionAddresses } from "@realms-world/constants";
 
 import Media from "./media";
 import RealmResources from "./realm-resources";
@@ -22,7 +19,7 @@ export const RealmCard = ({
   token,
   isGrid,
 }: {
-  token: PortfolioToken;
+  token: RawTokenBalanceWithMetadata;
   isGrid?: boolean;
 }) => {
   const { metadata } = token;
