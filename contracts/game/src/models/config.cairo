@@ -377,6 +377,99 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BlitzSettlementConfig {
+    pub base_distance: u32,
+    pub side: u32,
+    pub step: u32,
+    pub point: u32,
+}
+
+#[generate_trait]
+pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
+    fn new(base_distance: u32) -> BlitzSettlementConfig {
+        BlitzSettlementConfig { base_distance: base_distance, side: 0, step: 1, point: 1 }
+    }
+
+    fn next(ref self: BlitzSettlementConfig) {
+        if self.side == 5 {
+            if self.point == self.max_points() {
+                self.step += 1;
+                self.point = 1;
+            } else {
+                self.point += 1;
+            }
+            self.side = 0;
+        } else {
+            self.side += 1;
+        }
+    }
+
+    fn max_points(self: BlitzSettlementConfig) -> u32 {
+        self.step * 2
+    }
+
+    fn step_tile_distance() -> u32 {
+        18
+    }
+
+    fn realm_tile_radius() -> u32 {
+        6
+    }
+
+    fn mirror_first_step_tile_distance() -> u32 {
+        14
+    }
+
+    fn mirror_second_step_tile_distance() -> u32 {
+        4
+    }
+
+    fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(self.side);
+        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+
+        // get the coord of the first structure on step 1 of the selected side
+        let side_first_structure__step_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__step_x = side_first_structure__step_one
+            .neighbor_after_distance(start_direction, Self::step_tile_distance() * (self.step - 1));
+
+        let is_mirrored = self.point > self.max_points() / 2;
+        if !is_mirrored {
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (self.point - 1));
+            let a = destination_start_coord;
+            let b = destination_start_coord.neighbor_after_distance(start_direction, Self::realm_tile_radius());
+            let c = b.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
+            return array![a, b, c];
+        } else {
+            let start_point = self.max_points() - self.point + 1;
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (start_point - 1));
+
+            let a = destination_start_coord
+                .neighbor_after_distance(start_direction, Self::mirror_first_step_tile_distance())
+                .neighbor_after_distance(triangle_direction, Self::mirror_second_step_tile_distance());
+            let b = a.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
+            let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
+            return array![a, b, c];
+        }
+    }
+}
+
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
