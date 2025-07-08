@@ -180,3 +180,62 @@ export default function TroopMovementTable() {
     </div>
   );
 }
+
+export function BlitzTroopMovementTable() {
+  const config = ETERNUM_CONFIG();
+
+  return (
+    <div style={section.wrapper}>
+      <div style={section.accentedTitle}>Military Units</div>
+
+      {/* Common stats for all troops */}
+      <div style={section.commonCard}>
+        <div style={section.commonHeader}>
+          <span>🏃‍♂️</span> Troop Movement
+        </div>
+
+        <div style={section.sectionContent}>
+          <div>
+            <div style={section.sectionHeader}>
+              <span>💪</span> Capacity
+            </div>
+            <div style={section.sectionGrid}>
+              <StatItem
+                label="Carry Capacity"
+                value={`${Number(config.carryCapacityGram[CapacityConfig.Army]) / 1000}kg per troop`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div style={section.sectionHeader}>
+              <span>⚡</span> Stamina
+            </div>
+            <div style={section.sectionGrid}>
+              <StatItem label="Stamina on Deployment" value={config.troop.stamina.staminaInitial} />
+              <StatItem label="Gain Per Eternum Day" value={60} />
+            </div>
+          </div>
+        </div>
+
+        <div style={section.divider}></div>
+
+        <div style={section.sectionContent}>
+          <div>
+            <div style={section.sectionHeader}>
+              <span>🚶</span> Movement Costs
+            </div>
+            <div style={section.sectionGrid}>
+              <StatItem label="Travel Stamina Cost" value={`${config.troop.stamina.staminaTravelStaminaCost}/hex`} />
+              <StatItem label="Explore Stamina Cost" value={`${config.troop.stamina.staminaExploreStaminaCost}/hex`} />
+              <StatItem label="Biome Bonus/Penalty" value={`±${config.troop.stamina.staminaBonusValue}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Using the separate MaxStaminaTable component */}
+      <MaxStaminaTable />
+    </div>
+  );
+}

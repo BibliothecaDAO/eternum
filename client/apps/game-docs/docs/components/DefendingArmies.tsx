@@ -77,3 +77,38 @@ export const WorldStructureDefenseSlotsTable = () => {
     </div>
   );
 };
+
+// Component: Blitz World Structure Defense Slots Table (Hardcoded)
+export const BlitzWorldStructureDefenseSlotsTable = () => {
+  const worldStructures = [
+    { structure: "Camp", guardSlots: 1 },
+    { structure: "Essence Rift", guardSlots: 1 },
+    { structure: "Hyperstructure", guardSlots: 4 },
+  ];
+
+  return (
+    <div style={section.wrapper}>
+      <div style={section.accentedTitle}>
+        <span style={{ marginRight: "0.5rem" }}>🏛️</span>Guard Slots by Structure Type
+      </div>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
+            <tr>
+              <th style={table.headerCell}>World Structure</th>
+              <th style={table.headerCell}>Guard Slots</th>
+            </tr>
+          </thead>
+          <tbody>
+            {worldStructures.map((item) => (
+              <tr key={item.structure}>
+                <td style={table.cell}>{item.structure}</td>
+                <td style={{ ...table.cell, color: "#f0b060", fontWeight: "bold" }}>{item.guardSlots}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};

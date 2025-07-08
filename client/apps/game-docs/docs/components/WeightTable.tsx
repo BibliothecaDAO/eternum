@@ -100,6 +100,8 @@ const componentStyles = {
     backgroundColor: "rgba(40, 30, 25, 0.6)",
     borderRadius: "0.25rem",
     fontSize: "0.75rem",
+    whiteSpace: "nowrap" as const,
+    minWidth: "fit-content",
   },
   weightStyle: {
     marginLeft: "auto",
@@ -112,6 +114,7 @@ const componentStyles = {
     color: colors.secondary,
     fontWeight: 500,
     padding: "0.75rem 0.5rem",
+    whiteSpace: "nowrap" as const,
   },
 };
 
@@ -173,6 +176,128 @@ export const WeightTable = () => {
           })}
         </tbody>
       </table>
+    </div>
+  );
+};
+
+// Component for Blitz Mode Weight Table (Hardcoded)
+export const BlitzWeightTable = () => {
+  // Hardcoded weights for the 9 Blitz resources (in kg)
+  const blitzResources = [
+    { id: ResourcesIds.Wood, name: "Wood", weight: 1 },
+    { id: ResourcesIds.Coal, name: "Coal", weight: 1 },
+    { id: ResourcesIds.Copper, name: "Copper", weight: 1 },
+    { id: ResourcesIds.Ironwood, name: "Ironwood", weight: 1 },
+    { id: ResourcesIds.ColdIron, name: "Cold Iron", weight: 1 },
+    { id: ResourcesIds.Gold, name: "Gold", weight: 1 },
+    { id: ResourcesIds.Adamantine, name: "Adamantine", weight: 1 },
+    { id: ResourcesIds.Mithral, name: "Mithral", weight: 1 },
+    { id: ResourcesIds.Dragonhide, name: "Dragonhide", weight: 1 },
+  ];
+
+  // Wheat (Food)
+  const foodResources = [{ id: ResourcesIds.Wheat, name: "Wheat", weight: 1 }];
+
+  // Donkey (Transport)
+  const transportResources = [{ id: ResourcesIds.Donkey, name: "Donkey", weight: 50 }];
+
+  // Troops (Military Units)
+  const troopResources = [
+    { id: ResourcesIds.Knight, name: "T1 Knight", weight: 100 },
+    { id: ResourcesIds.KnightT2, name: "T2 Knight", weight: 100 },
+    { id: ResourcesIds.KnightT3, name: "T3 Knight", weight: 100 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", weight: 100 },
+    { id: ResourcesIds.CrossbowmanT2, name: "T2 Crossbowman", weight: 100 },
+    { id: ResourcesIds.CrossbowmanT3, name: "T3 Crossbowman", weight: 100 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", weight: 100 },
+    { id: ResourcesIds.PaladinT2, name: "T2 Paladin", weight: 100 },
+    { id: ResourcesIds.PaladinT3, name: "T3 Paladin", weight: 100 },
+  ];
+
+  return (
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Material Weights (kg)</div>
+      <table style={table.table}>
+        <thead>
+          <tr>
+            <th style={table.headerCell}>Category</th>
+            <th style={table.headerCell}>Resources</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #dfc296` }}>Resources</td>
+            <td style={table.cell}>
+              <div style={componentStyles.resourcesGroupStyle}>
+                {blitzResources.map((resource) => (
+                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <span style={{ color: colors.text.light }}>{resource.name}</span>
+                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #e5c687` }}>Food</td>
+            <td style={table.cell}>
+              <div style={componentStyles.resourcesGroupStyle}>
+                {foodResources.map((resource) => (
+                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <span style={{ color: colors.text.light }}>{resource.name}</span>
+                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #8c7853` }}>Transport</td>
+            <td style={table.cell}>
+              <div style={componentStyles.resourcesGroupStyle}>
+                {transportResources.map((resource) => (
+                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <span style={{ color: colors.text.light }}>{resource.name}</span>
+                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #8c7853` }}>Military Units</td>
+            <td style={table.cell}>
+              <div style={componentStyles.resourcesGroupStyle}>
+                {troopResources.map((resource) => (
+                  <div key={resource.id} style={componentStyles.resourceItemStyle}>
+                    <ResourceIcon id={resource.id} name={resource.name} size="sm" />
+                    <span style={{ color: colors.text.light }}>{resource.name}</span>
+                    <span style={componentStyles.weightStyle}>{resource.weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ ...componentStyles.categoryHeaderStyle, borderLeft: `3px solid #c0c0c0` }}>Special</td>
+            <td style={table.cell}>
+              <div style={componentStyles.resourcesGroupStyle}>
+                <div key={ResourcesIds.Essence} style={componentStyles.resourceItemStyle}>
+                  <ResourceIcon id={ResourcesIds.Essence} name="Essence" size="sm" />
+                  <span style={{ color: colors.text.light }}>Essence</span>
+                  <span style={componentStyles.weightStyle}>0.1 kg</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style={componentStyles.weightStyle}>
+        {/* DRAFTING NOTE: Hardcoded table for Blitz mode - replace with dynamic data when config is updated. Essence icon is a placeholder. */}
+      </div>
     </div>
   );
 };
