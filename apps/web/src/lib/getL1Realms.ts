@@ -36,7 +36,7 @@ export const getL1Realms = createServerFn<
   .validator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
     const response = await fetch(
-      `${RESERVOIR_API_URL}users/${ctx.data.address?.toLowerCase()}/tokens/v10?collection=${
+      `${RESERVOIR_API_URL}users/${ctx.data.address.toLowerCase()}/tokens/v10?collection=${
         CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]
       }&limit=100&includeAttributes=true`,
       {
@@ -58,7 +58,8 @@ export const getL1RealmsQueryOptions = (
 ) => {
   return queryOptions({
     queryKey: ["getL1Realms", input?.address],
-    queryFn: () => (input?.address ? getL1Realms({ data: input }) : null),
+    queryFn: () =>
+      input?.address != undefined ? getL1Realms({ data: input }) : null,
     refetchInterval: 10000,
     enabled: !!input?.address,
   });
@@ -97,5 +98,5 @@ export const getL1UsersRealmsQueryOptions = (
 ) =>
   queryOptions({
     queryKey: ["getL1UsersRealms", input?.address],
-    queryFn: () => (input?.address ? getL1UsersRealms({ data: input }) : null),
+    queryFn: () => getL1UsersRealms({ data: input ?? {} }),
   });
