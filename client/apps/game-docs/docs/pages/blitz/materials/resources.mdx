@@ -60,13 +60,7 @@ Food is the cornerstone of a Realm's economy:
   <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
 </div>
 
-{/\* TEMPORARY HARDCODED TROOP LIMITS TABLE - TODO: Update BlitzTroopsLimitTable once config is implemented.
-
-This table uses hardcoded values instead of reading from config files. Replace with standard TroopsLimitTable component
-once blitz configuration is complete. \*/}
-
 <BlitzTroopsLimitTable />
-{/* END TEMPORARY HARDCODED TROOP LIMITS TABLE */}
 
 Troops have unique properties:
 
@@ -97,8 +91,6 @@ Labor is a fundamental production material:
 - **Resource Burning**: Produced by burning resources, with rarer resources yielding more labor.
 
 ### Essence
-
-{/* TODO: Replace placeholder art with proper Essence icon once available */}
 
 <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
   <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
