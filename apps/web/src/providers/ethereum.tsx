@@ -1,3 +1,4 @@
+'use client'
 import { createAppKit } from '@reown/appkit/react'
 
 import { WagmiProvider } from 'wagmi'
@@ -13,8 +14,8 @@ const projectId = '3b2f679bd9ac7c6feb93d370ad0359d7'
 
 // 2. Create a metadata object - optional
 const metadata = {
-  name: 'Atlas',
-  description: 'AppKit Example',
+  name: 'Realms World',
+  description: 'Connect your Ethereum wallet to Realms World',
   url: 'https://reown.com/appkit', // origin must match your domain & subdomain
   icons: ['https://assets.reown.com/reown-profile-pic.png']
 }

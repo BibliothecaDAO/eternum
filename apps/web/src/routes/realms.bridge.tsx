@@ -10,7 +10,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
 
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -105,7 +104,7 @@ function RouteComponent() {
   const swapAssets = () => {
     setSelectedAsset((prev) => (prev === "Ethereum" ? "Starknet" : "Ethereum"));
   };
-  const { openConnectModal } = useConnectModal();
+  //const { openConnectModal } = useConnectModal();
   const { openStarknetKitModal } = useStarknetWallet();
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -167,7 +166,7 @@ function RouteComponent() {
               <Button
                 className="pl-0 pr-2"
                 variant={"link"}
-                onClick={openConnectModal}
+               // onClick={openConnectModal}
               >
                 Connect
               </Button>
