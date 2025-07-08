@@ -28,10 +28,10 @@ import { getWebRequest } from "@tanstack/react-start/server";
 import { Users, Vote } from "lucide-react";
 
 const getUser = createServerFn({ method: "GET" }).handler(async () => {
-  const { headers } = getWebRequest()!;
+  const { headers } = getWebRequest();
   const session = await auth.api.getSession({ headers });
 
-  return session?.address || null;
+  return session?.session.id ?? null;
 });
 
 export const Route = createFileRoute("/delegate/profile")({

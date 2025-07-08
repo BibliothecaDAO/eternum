@@ -119,8 +119,6 @@ export const getDelegateByIDQueryOptions = (
 export const createDelegateProfile = createServerFn({ method: "POST" })
   .validator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
-    console.log(ctx);
-
     const session = await auth.api.getSession({
       headers: getHeaders(),
       query: {
@@ -133,8 +131,7 @@ export const createDelegateProfile = createServerFn({ method: "POST" })
     if (!session) {
       return;
     }
-    const delegateId = formatAddress(session.user.name ?? "");
-    console.log(delegateId);
+    const delegateId = formatAddress(session.user.name);
     return db
       .insert(delegateProfiles)
       .values({ ...ctx.data, delegateId })

@@ -21,7 +21,6 @@ import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
-import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import {
@@ -42,7 +41,7 @@ import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import { LORDS, StakingAddresses } from "@realms-world/constants";
+import { CollectionAddresses, LORDS, StakingAddresses } from "@realms-world/constants";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -69,6 +68,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   const accountTokensQuery = useSuspenseQuery(
     getAccountTokensQueryOptions({
       address: address,
+      collectionAddress: CollectionAddresses.realms[
+        SUPPORTED_L2_CHAIN_ID
+      ] as string,
     }),
   );
   const accountTokens = accountTokensQuery.data;
@@ -152,7 +154,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-bold">
-                    {accountTokens.length}
+                    {accountTokens?.length ?? 0}
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />

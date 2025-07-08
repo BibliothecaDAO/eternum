@@ -120,6 +120,7 @@ export const siws = (options: SIWSPluginOptions) =>
                 ),
               },
             );
+            console.log('verified')
             console.log(verified);
             if (!verified.success) {
               throw new APIError("UNAUTHORIZED", {
@@ -136,6 +137,8 @@ export const siws = (options: SIWSPluginOptions) =>
             let user = await db.query.user.findFirst({
               where: eq(userTable.id, address),
             });
+
+            console.log(user)
 
             if (!user) {
               const tempEmail = `${address}@${process.env.VITE_PUBLIC_BASE_URL}`;
@@ -159,10 +162,10 @@ export const siws = (options: SIWSPluginOptions) =>
 
             const session = await ctx.context.internalAdapter.createSession(
               user.id,
-              ctx.request,
+              ctx,
             );
-            console.log(session);
-            if (!session) {
+
+            if (!session.id) {
               return ctx.json(null, {
                 status: 500,
                 body: {
