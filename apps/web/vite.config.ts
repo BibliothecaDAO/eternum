@@ -13,6 +13,18 @@ export default defineConfig({
     }),
     tanstackStart({
       target: "vercel",
+      react: {
+        babel: {
+          plugins: [
+            [
+              "babel-plugin-react-compiler",
+              {
+                target: "19",
+              },
+            ],
+          ],
+        },
+      },
     }),
     svgr({
       include: "**/*.svg?react",

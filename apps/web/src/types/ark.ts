@@ -21,7 +21,7 @@ export type CollectionTraits = Record<string, CollectionTrait>;
 export interface TokenMetadataAttribute {
   display_type?: string;
   trait_type?: string;
-  value?: string;
+  value?: string | number | undefined;
 }
 
 export interface TokenMetadata {
@@ -128,7 +128,7 @@ export interface PortfolioToken {
   owner: string;
   received_at?: string;
   token_id: string;
-  metadata?: TokenMetadata;
+  metadata?: string;
 }
 
 export interface PricesResult {

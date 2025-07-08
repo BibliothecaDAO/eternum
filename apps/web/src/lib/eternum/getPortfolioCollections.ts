@@ -1,41 +1,42 @@
 //import type { AccountTokensApiResponse } from "@/types/ark";
 import { graphql } from "@/gql/eternum";
-import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import {
+  formatAddress,
+  SUPPORTED_L2_CHAIN_ID,
+  trimAddress,
+} from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { CollectionAddresses } from "@realms-world/constants";
+import {
+  CollectionAddresses,
+  marketplaceCollections,
+} from "@realms-world/constants";
 
-import { executeTorii } from "../queries/torii";
+import { fetchSQL } from "./apiClient";
+import { QUERIES } from "./queries";
 
-export const GET_ACCOUNT_TOKENS = graphql(`
-  query getAccountTokens($address: String!) {
-    tokenBalances(accountAddress: $address, limit: 8000) {
-      edges {
-        node {
-          tokenMetadata {
-            __typename
-            ... on ERC721__Token {
-              tokenId
-              metadataDescription
-              imagePath
-              contractAddress
-              metadata
-            }
-          }
-        }
-      }
-    }
-  }
-`);
+// Raw type for data fetched by fetchTokenBalancesWithMetadata
+interface RawTokenBalanceWithMetadata {
+  token_id: string;
+  balance: string;
+  contract_address: string;
+  token_owner: string; // This is account_address in the final type
+  name?: string;
+  symbol?: string;
+  expiration?: number;
+  best_price_hex?: string; // Raw hex string for bigint
+  metadata?: string; // Raw JSON string
+  order_id?: string;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                             getAccountTokens Endpoint                             */
 /* -------------------------------------------------------------------------- */
 
 const GetAccountTokensInput = z.object({
-  address: z.string().optional(),
+  address: z.string(),
   collectionAddress: z.string().optional(),
   itemsPerPage: z.number().optional(),
   page: z.number().optional(),
@@ -58,7 +59,7 @@ export const getAccountTokens = createServerFn({ method: "GET" })
       .filter(Boolean)
       .join("&");*/
 
-    const response = await executeTorii(GET_ACCOUNT_TOKENS, {
+    /*const response = await executeTorii(GET_ACCOUNT_TOKENS, {
       address: formatAddress(address),
     });
     console.log(response?.tokenBalances?.edges.length);
@@ -70,7 +71,17 @@ export const getAccountTokens = createServerFn({ method: "GET" })
             (CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as string)
         );
       }) ?? []
-    );
+    );*/
+    const collectionId =
+      marketplaceCollections.realms.id[SUPPORTED_L2_CHAIN_ID];
+    const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll(
+      "{contractAddress}",
+      trimAddress(collectionAddress),
+    )
+      .replace("{collectionId}", collectionId.toString())
+      .replace("{accountAddress}", address)
+      .replace("{trimmedAccountAddress}", trimAddress(address));
+    return await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
   });
 
 export const getAccountTokensQueryOptions = (
@@ -86,6 +97,11 @@ export const getAccountTokensQueryOptions = (
     ],
     queryFn: () =>
       input.address
-        ? getAccountTokens({ data: { address: input.address } })
+        ? getAccountTokens({
+            data: {
+              address: input.address,
+              collectionAddress: input.collectionAddress,
+            },
+          })
         : null,
   });

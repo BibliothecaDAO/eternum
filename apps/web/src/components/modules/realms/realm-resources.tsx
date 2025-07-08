@@ -27,7 +27,7 @@ export default function RealmResources({
           className="bg-secondary flex items-center gap-2 rounded-lg p-2"
         >
           {resource.value && (
-            <ResourceIcon size="md" resource={resource.value} />
+            <ResourceIcon size="md" resource={resource.value.toString()} />
           )}
         </div>
       ))}
@@ -55,7 +55,7 @@ export default function RealmResources({
                           <ResourceIcon
                             size="md"
                             withTooltip={false}
-                            resource={resource.value}
+                            resource={resource.value.toString()}
                           />
                         )}
                       </div>
