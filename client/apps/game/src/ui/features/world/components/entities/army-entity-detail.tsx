@@ -1,3 +1,4 @@
+import { sqlApi } from "@/services/api";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { InventoryResources } from "@/ui/features/economy/resources";
@@ -8,7 +9,8 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
@@ -51,7 +53,11 @@ export const ArmyEntityDetail = memo(
       queryKey: ["explorer", String(armyEntityId)],
       queryFn: async () => {
         if (!toriiClient || !armyEntityId) return undefined;
-        return getExplorerFromToriiClient(toriiClient, armyEntityId);
+        const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        const relicEffects = (await sqlApi.fetchEntityRelicEffects(armyEntityId)) as ComponentValue<
+          ClientComponents["RelicEffect"]["schema"]
+        >[];
+        return { ...explorer, relicEffects };
       },
       staleTime: 30000, // 30 seconds
     });
@@ -249,6 +255,7 @@ export const ArmyEntityDetail = memo(
               <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
               <InventoryResources
                 resources={explorerResources}
+                relicEffects={explorerData?.relicEffects}
                 max={maxInventory}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}

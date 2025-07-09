@@ -28,10 +28,6 @@ export class ResourceManager {
     return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
 
-  public isRelic(resourceId: ResourcesIds): boolean {
-    return resourceId >= 39; // Relics start from ID 39 onwards
-  }
-
   public isActive(resourceId: ResourcesIds): boolean {
     const resource = this._getResource();
     if (!resource) return false;
@@ -66,12 +62,21 @@ export class ResourceManager {
   public getRelicEffect(
     resourceId: ResourcesIds,
   ): ComponentValue<ClientComponents["RelicEffect"]["schema"]> | undefined {
-    if (!this.isRelic(resourceId)) return undefined;
+    if (!ResourceManager.isRelic(resourceId)) return undefined;
     const relicEffect = getComponentValue(
       this.components.RelicEffect,
       getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
     );
     return relicEffect;
+  }
+
+  public isRelicActive(resourceId: ResourcesIds, currentTick: number): boolean {
+    if (!ResourceManager.isRelic(resourceId)) return false;
+
+    const relicEffect = this.getRelicEffect(resourceId);
+    if (!relicEffect) return false;
+
+    return ResourceManager.isRelicActive(relicEffect, currentTick);
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -872,6 +877,24 @@ export class ResourceManager {
       balance: Number(balance + amountProducedLimited),
       hasReachedMaxCapacity: amountProducedLimited < amountProduced,
     };
+  }
+
+  public static isRelic(resourceId: ResourcesIds): boolean {
+    return resourceId >= 39; // Relics start from ID 39 onwards
+  }
+
+  public static isRelicActive(
+    relicEffect: ComponentValue<ClientComponents["RelicEffect"]["schema"]>,
+    currentTick: number,
+  ): boolean {
+    // Check if the effect is within the active time window
+    const isWithinTimeWindow =
+      currentTick >= relicEffect.effect_start_tick && currentTick <= relicEffect.effect_end_tick;
+
+    // Check if there are remaining uses (if applicable)
+    const hasUsagesLeft = relicEffect.effect_usage_left > 0;
+
+    return isWithinTimeWindow && hasUsagesLeft;
   }
 
   private static _amountProducedStatic(

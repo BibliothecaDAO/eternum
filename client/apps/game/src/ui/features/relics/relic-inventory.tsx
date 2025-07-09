@@ -1,5 +1,6 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@/types/position";
-import { getEntityInfo } from "@bibliothecadao/eternum";
+import { getEntityInfo, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { ContractAddress, RelicRecipientType, StructureType } from "@bibliothecadao/types";
@@ -12,6 +13,8 @@ interface RelicInventoryProps {
 }
 
 export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
+  const { currentArmiesTick } = useBlockTimestamp();
+
   const getStructureIcon = (structureType: StructureType) => {
     switch (structureType) {
       case StructureType.Realm:
@@ -84,20 +87,26 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
                   <div className="text-sm text-gold/60 italic">No relics</div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                    {entity.relics.map((relic) => (
-                      <RelicCard
-                        key={`${entity.entityId}-${relic.resourceId}`}
-                        resourceId={relic.resourceId}
-                        amount={relic.amount}
-                        entityId={entity.entityId}
-                        entityType={entity.structureType ? RelicRecipientType.Structure : RelicRecipientType.Explorer}
-                        onActivate={(resourceId, amount) => {
-                          console.log(
-                            `Activating relic ${resourceId} (amount: ${amount}) on entity ${entity.entityId}`,
-                          );
-                        }}
-                      />
-                    ))}
+                    {entity.relics.map((relic) => {
+                      const resourceManager = new ResourceManager(components, entity.entityId);
+                      const isActive = resourceManager.isRelicActive(relic.resourceId, currentArmiesTick);
+
+                      return (
+                        <RelicCard
+                          key={`${entity.entityId}-${relic.resourceId}`}
+                          resourceId={relic.resourceId}
+                          amount={relic.amount}
+                          entityId={entity.entityId}
+                          entityType={entity.structureType ? RelicRecipientType.Structure : RelicRecipientType.Explorer}
+                          isActive={isActive}
+                          onActivate={(resourceId, amount) => {
+                            console.log(
+                              `Activating relic ${resourceId} (amount: ${amount}) on entity ${entity.entityId}`,
+                            );
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>

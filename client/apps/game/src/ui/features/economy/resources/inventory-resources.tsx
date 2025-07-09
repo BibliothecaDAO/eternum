@@ -1,13 +1,16 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
+import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { RelicActivationPopup } from "./relic-activation-popup";
 
 export const InventoryResources = ({
   resources,
+  relicEffects,
   max = Infinity,
   className = "flex flex-wrap gap-1",
   resourcesIconSize = "sm",
@@ -16,6 +19,7 @@ export const InventoryResources = ({
   recipientType,
 }: {
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  relicEffects: ComponentValue<ClientComponents["RelicEffect"]["schema"]>[];
   max?: number;
   className?: string;
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
@@ -25,6 +29,7 @@ export const InventoryResources = ({
 }) => {
   const [showAll, setShowAll] = useState(false);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const { currentArmiesTick } = useBlockTimestamp();
 
   const sortedResources = useMemo(() => {
     return ResourceManager.getResourceBalances(resources).sort((a, b) => b.amount - a.amount);
@@ -67,10 +72,17 @@ export const InventoryResources = ({
           ((recipientType === RelicRecipientType.Explorer && relicInfo.activation === "Army") ||
             (recipientType === RelicRecipientType.Structure && relicInfo.activation === "Structure"));
 
+        const relicEffect = relicEffects.find((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
+        // Check if relic effect is active
+        const isRelicActive =
+          resourceIsRelic && relicEffect && ResourceManager.isRelicActive(relicEffect, currentArmiesTick);
+
         return (
           <div
             key={resource.resourceId}
-            className="relative"
+            className={`relative ${
+              isRelicActive ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
+            }`}
             onClick={() => {
               if (isCompatibleRelic && entityId) {
                 handleRelicClick(resource.resourceId, divideByPrecision(Number(resource.amount)));
@@ -81,16 +93,21 @@ export const InventoryResources = ({
               size={resourcesIconSize}
               textSize={textSize}
               type="vertical"
-              color="text-green"
+              color={isRelicActive ? "text-purple-300" : "text-green"}
               resourceId={resource.resourceId}
               amount={divideByPrecision(Number(resource.amount))}
               className={`!p-1 ${
                 isCompatibleRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""
               }`}
             />
-            {isCompatibleRelic && (
+            {isCompatibleRelic && !isRelicActive && (
               <div className="absolute inset-0 pointer-events-none">
                 <div className="w-full h-full animate-pulse bg-gold/10 rounded" />
+              </div>
+            )}
+            {isRelicActive && (
+              <div className="absolute top-0 right-0 pointer-events-none">
+                <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
               </div>
             )}
           </div>

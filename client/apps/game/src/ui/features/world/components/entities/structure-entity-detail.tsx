@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
 import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
@@ -16,7 +17,15 @@ import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, MERCENARIES, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  ID,
+  MERCENARIES,
+  RelicRecipientType,
+  StructureType,
+} from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
 import { memo, useMemo } from "react";
@@ -56,6 +65,9 @@ export const StructureEntityDetail = memo(
         if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
 
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
+        const relicEffects = (await sqlApi.fetchEntityRelicEffects(structureEntityId)) as ComponentValue<
+          ClientComponents["RelicEffect"]["schema"]
+        >[];
         if (!structure)
           return {
             structure: null,
@@ -82,6 +94,7 @@ export const StructureEntityDetail = memo(
           isAlly,
           addressName,
           isMine,
+          relicEffects,
         };
       },
       staleTime: 30000, // 30 seconds
@@ -255,6 +268,7 @@ export const StructureEntityDetail = memo(
             <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
             {resources && (
               <InventoryResources
+                relicEffects={structureDetails?.relicEffects || []}
                 max={maxInventory}
                 resources={resources}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"

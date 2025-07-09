@@ -86,7 +86,7 @@ export const ResourceChip = ({
     if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
-        const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
+        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
 
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
@@ -203,17 +203,11 @@ export const ResourceChip = ({
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
     // Using type assertion until the build system picks up the new method
-    return (resourceManager as any).isRelic ? (resourceManager as any).isRelic(resourceId) : resourceId >= 39;
+    return ResourceManager.isRelic(resourceId);
   }, [resourceManager, resourceId]);
 
   const relicEffectActivated = useMemo(() => {
-    const effect = resourceManager.getRelicEffect(resourceId);
-    if (!effect) return false;
-    return (
-      effect.effect_usage_left > 0 &&
-      effect.effect_start_tick <= currentArmiesTick &&
-      effect.effect_end_tick >= currentArmiesTick
-    );
+    return resourceManager.isRelicActive(resourceId, currentArmiesTick);
   }, [resourceManager, resourceId, currentArmiesTick]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
