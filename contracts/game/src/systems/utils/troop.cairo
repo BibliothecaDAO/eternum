@@ -389,13 +389,18 @@ pub impl iExplorerImpl of iExplorerTrait {
         config: MapConfig,
         vrf_seed: u256,
     ) -> (u8, u128) {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
+        // let (resource_types, resources_probs) = split_resources_and_probs();
+        // let reward_resource_id: u8 = *random::choices(
+        //     resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
+        // )
+        //     .at(0);
+        // let mut exploration_reward_resource_amount: u128 = config.reward_resource_amount.into();
 
-        let mut exploration_reward_resource_amount: u128 = config.reward_resource_amount.into();
+        // todo: add game mode check
+        let reward_resource_id: u8 = ResourceTypes::ESSENCE;
+        let mut exploration_reward_resource_amount: u128 = 1
+            + random::random(vrf_seed, 98139, config.reward_resource_amount.into()).try_into().unwrap();
+
         match exploration_multiplier_relic_effect {
             Option::Some(relic_effect) => {
                 exploration_reward_resource_amount +=
