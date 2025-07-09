@@ -1,8 +1,9 @@
+import { HyperstructureRings } from "@/components/HyperstructureRings";
 import { importantNote } from "@/components/styles";
 
 # 🗺️ The World Map
 
-<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+<img src="/images/covers/blitz-march.png" alt="Troops Moving to a Hyperstructure" className="w-full rounded-lg my-6" />
 
 ## An Unexplored World
 
@@ -20,41 +21,19 @@ The number of registered Lords for a game of Blitz determines the size of the ma
 available for Lords to compete over. A single Hyperstructure marks the center of the map, around which other concentric
 Hyperstructure 'rings' are spawned every 18 hexes until all players are accommodated.
 
-The number of Hyperstructure rings is determined by:
-
-```
-r = √(P/6)
-```
-
-Where:
-
-- **P** is the number of players (Lords) registered to play in the session
-- **r** is the number of Hyperstructure rings
-- If **r** is not an integer, then it is rounded up to the nearest integer
-
-The number of Hyperstructures in a ring is determined by:
-
-```
-H<sub>r</sub> = 6r
-```
-
-Where:
-
-- **H<sub>r</sub>** is the number of Hyperstructures in ring **r**
-- **r** is the ring number (1, 2, 3, etc.)
+<HyperstructureRings />
 
 ### Realm Positioning
 
 Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
 bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
 sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
-opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualised below:
-
-<span style={{ color: "red" }}>DRAFTING NOTE: Insert gif of settling algorithm.</span>
+opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence is visualized below:
 
 The Realms of each participating Lord are positioned six hexes apart in a triangle formation. Each Realm is also located
 within eight hexes of a Hyperstructure, and eight hexes from the nearest Realm belonging to another Lord (assuming all
-available player positions are filled).
+available player positions are filled). More details of the positioning system are available in the
+[Realms](/blitz/realms/realm) section.
 
 <div style={importantNote.container}>
   <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
@@ -64,15 +43,13 @@ available player positions are filled).
   </p>
 </div>
 
-## Biomes
+## Relic Crates
 
-Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, with certain
-biomes naturally occurring more or less frequently than others.
+An unknown force occasionally reveals treasures from the past in random locations on the world map. As players explore
+hexes, there is a chance that a Relic Crate will be revealed on a different nearby tile, visible to all players. These
+crates can contain powerful boosts that can accelerate the production of your Realms, improve the stamina regeneration
+of your armies, or even give them combat damage boosts to give you an edge over your foes. The first army to reach and
+activate the crate will be receive the contents directly into their inventory, so be sure to secure them before your
+enemies do!
 
-Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
-potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the [Military](/blitz/military/stamina-and-biomes) section. Additionally, biomes have the
-potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
-differently as they move between hexes—this is explained further in the
-[Movement & Exploration](/blitz/worldmap-movement/movement) section below.
+<img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />

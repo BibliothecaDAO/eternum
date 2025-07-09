@@ -17,7 +17,15 @@ type Props = {
 
 export default function ResourceIcon({ name, id, size = "xl" }: Props) {
   return (
-    <div style={{ display: "flex", alignSelf: "center", justifyContent: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        alignSelf: "center",
+        justifyContent: "center",
+        position: "relative" as const,
+      }}
+      title={name}
+    >
       <img
         style={
           size === "xs"
