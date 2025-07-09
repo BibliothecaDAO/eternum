@@ -15,7 +15,7 @@ export default defineConfig({
     }),
     tanstackStart({
       target: "vercel",
-      customViteSolidPlugin: true,
+      customViteReactPlugin: true,
     }),
     viteReact(),
     svgr({
