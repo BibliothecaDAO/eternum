@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -17,6 +18,7 @@ export default defineConfig({
     svgr({
       include: "**/*.svg?react",
     }),
+    tailwindcss(),
   ],
   build: {
     chunkSizeWarningLimit: 1000,
