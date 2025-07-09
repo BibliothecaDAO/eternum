@@ -79,7 +79,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "starknet": "catalog:",
-    "starknet-types-07": "workspace:*",
+    "starknet-types-08": "workspace:*",
     "starknetkit": "2.12.1",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
