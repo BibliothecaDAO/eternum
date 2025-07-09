@@ -44,6 +44,8 @@
     "@reown/appkit-adapter-wagmi": "^1.7.13",
     "@reservoir0x/reservoir-sdk": "^2.5.7",
     "@snapshot-labs/pineapple": "^1.1.0",
+    "@starknet-io/starknet-types-07": "npm:@starknet-io/types-js@~0.7.10",
+    "@starknet-io/starknet-types-08": "npm:@starknet-io/types-js@~0.8.4",
     "@starknet-react/chains": "4.0.1-beta.3",
     "@starknet-react/core": "4.0.1-beta.4",
     "@tailwindcss/postcss": "^4.1.11",
