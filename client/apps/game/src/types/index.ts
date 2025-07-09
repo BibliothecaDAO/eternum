@@ -18,6 +18,7 @@ export enum LeftView {
   WorldStructuresView,
   ResourceArrivals,
   ResourceTable,
+  RelicsView,
 }
 
 export type BattleViewInfo = {

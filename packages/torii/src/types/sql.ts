@@ -1,4 +1,4 @@
-import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+import { Direction, EntityType, HexPosition, ID, Position, StructureType } from "@bibliothecadao/types";
 
 // API response types
 export interface StructureLocation {
@@ -257,4 +257,88 @@ export interface Guard {
 export enum EventType {
   SWAP = "AMM Swap",
   ORDERBOOK = "Orderbook",
+}
+
+export interface ChestTile {
+  col: number;
+  row: number;
+  entity_id: number;
+}
+
+export interface StructureRelicsData {
+  entity_id: number;
+  entity_type: number; // StructureType enum
+  coord_x: number;
+  coord_y: number;
+  realm_id?: number;
+  // Relic balances from Resource table
+  RELIC_E1_BALANCE?: string;
+  RELIC_E2_BALANCE?: string;
+  RELIC_E3_BALANCE?: string;
+  RELIC_E4_BALANCE?: string;
+  RELIC_E5_BALANCE?: string;
+  RELIC_E6_BALANCE?: string;
+  RELIC_E7_BALANCE?: string;
+  RELIC_E8_BALANCE?: string;
+  RELIC_E9_BALANCE?: string;
+  RELIC_E10_BALANCE?: string;
+  RELIC_S1_BALANCE?: string;
+  RELIC_S2_BALANCE?: string;
+  RELIC_S3_BALANCE?: string;
+  RELIC_S4_BALANCE?: string;
+  RELIC_S5_BALANCE?: string;
+  RELIC_S6_BALANCE?: string;
+  RELIC_S7_BALANCE?: string;
+  RELIC_S8_BALANCE?: string;
+}
+
+export interface ArmyRelicsData {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  troop_category?: number;
+  troop_tier?: number;
+  // Relic balances from Resource table
+  RELIC_E1_BALANCE?: string;
+  RELIC_E2_BALANCE?: string;
+  RELIC_E3_BALANCE?: string;
+  RELIC_E4_BALANCE?: string;
+  RELIC_E5_BALANCE?: string;
+  RELIC_E6_BALANCE?: string;
+  RELIC_E7_BALANCE?: string;
+  RELIC_E8_BALANCE?: string;
+  RELIC_E9_BALANCE?: string;
+  RELIC_E10_BALANCE?: string;
+  RELIC_S1_BALANCE?: string;
+  RELIC_S2_BALANCE?: string;
+  RELIC_S3_BALANCE?: string;
+  RELIC_S4_BALANCE?: string;
+  RELIC_S5_BALANCE?: string;
+  RELIC_S6_BALANCE?: string;
+  RELIC_S7_BALANCE?: string;
+  RELIC_S8_BALANCE?: string;
+}
+
+export interface ChestInfo {
+  entityId: ID;
+  position: Position;
+  distance: number;
+}
+
+export interface RelicInventory {
+  resourceId: ID;
+  amount: number;
+}
+
+export interface EntityWithRelics {
+  entityId: ID;
+  position: Position;
+  structureType?: StructureType | undefined;
+  type: EntityType;
+  relics: RelicInventory[];
+}
+
+export interface PlayerRelicsData {
+  structures: EntityWithRelics[];
+  armies: EntityWithRelics[];
 }

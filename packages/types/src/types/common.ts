@@ -231,8 +231,8 @@ export enum TickIds {
 
 export enum EntityType {
   DONKEY,
-  TROOP,
-  UNKNOWN,
+  ARMY,
+  STRUCTURE,
 }
 
 export enum Access {

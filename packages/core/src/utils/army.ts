@@ -12,8 +12,7 @@ import {
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { configManager, divideByPrecision, getAddressNameFromEntity, gramToKg, nanogramToKg } from "..";
+import { configManager, divideByPrecision, getAddressNameFromEntity, getArmyName, gramToKg, nanogramToKg } from "..";
 
 export const formatArmies = (
   armies: Entity[],
@@ -32,7 +31,6 @@ export const formatArmies = (
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
-      const name = getComponentValue(components.AddressName, armyEntity);
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;
@@ -58,7 +56,7 @@ export const formatArmies = (
         isMine,
         isMercenary,
         isHome,
-        name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
+        name: getArmyName(explorerTroops.explorer_id),
         hasAdjacentStructure,
       };
     })

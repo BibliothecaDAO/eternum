@@ -167,3 +167,14 @@ When creating new UI components:
 - All system calls MUST use `withAuth()` wrapper for authentication
 - ALWAYS update policies.ts when adding new entrypoints - this is required for user authorization
 - Build verification is mandatory before considering task complete
+
+## Torii Query Strategy
+
+When querying data from Torii:
+
+- **Use SQL queries by default** for better performance and consistency
+- SQL queries are located in `packages/torii/src/queries/sql/`
+- Only use torii-client queries when absolutely necessary (complex multi-model relationships)
+- Always follow existing SQL query patterns and naming conventions
+- Add new SQL query files to `packages/torii/src/queries/sql/` directory
+- Export SQL queries through the api.ts class methods

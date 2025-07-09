@@ -1,11 +1,17 @@
-import { ContractAddress, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
+import { extractRelicsFromResourceData } from ".";
 import {
+  ArmyRelicsData,
   BattleLogEvent,
+  ChestInfo,
+  ChestTile,
+  EntityWithRelics,
   EventType,
   Guard,
   GuardData,
   Hyperstructure,
+  PlayerRelicsData,
   PlayersData,
   PlayerStructure,
   QuestTileData,
@@ -14,6 +20,7 @@ import {
   SeasonEnded,
   StructureDetails,
   StructureLocation,
+  StructureRelicsData,
   SwapEventResponse,
   Tile,
   TokenTransfer,
@@ -28,6 +35,7 @@ import {
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { QUEST_QUERIES } from "./quest";
+import { RELICS_QUERIES } from "./relics";
 import { SEASON_QUERIES } from "./season";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
@@ -369,5 +377,104 @@ export class SqlApi {
     ];
 
     return guards;
+  }
+
+  /**
+   * Fetch chest tiles near a given position from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchChestsNearPosition(center: { x: number; y: number }, radius: number): Promise<ChestInfo[]> {
+    const query = RELICS_QUERIES.CHESTS_NEAR_POSITION.replace("{minX}", (center.x - radius).toString())
+      .replace("{maxX}", (center.x + radius).toString())
+      .replace("{minY}", (center.y - radius).toString())
+      .replace("{maxY}", (center.y + radius).toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const chestTiles = await fetchWithErrorHandling<ChestTile>(url, "Failed to fetch nearby chests");
+
+    const centerCoord = new Coord(center.x, center.y);
+
+    return chestTiles
+      .map((chest) => {
+        const chestCoord = new Coord(chest.col, chest.row);
+        const distance = centerCoord.distance(chestCoord);
+
+        return {
+          entityId: chest.entity_id,
+          position: { x: chest.col, y: chest.row },
+          distance: distance,
+        };
+      })
+      .sort((a, b) => a.distance - b.distance);
+  }
+
+  /**
+   * Fetch all relics owned by a player's structures from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchPlayerStructureRelics(owner: string): Promise<StructureRelicsData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = RELICS_QUERIES.PLAYER_STRUCTURE_RELICS.replace("{owner}", formattedOwner);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StructureRelicsData>(url, "Failed to fetch player structure relics");
+  }
+
+  /**
+   * Fetch all relics owned by a player's armies from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchPlayerArmyRelics(owner: string): Promise<ArmyRelicsData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = RELICS_QUERIES.PLAYER_ARMY_RELICS.replace("{owner}", formattedOwner);
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<ArmyRelicsData>(url, "Failed to fetch player army relics");
+  }
+
+  /**
+   * Get all relics owned by a player across all their entities
+   * @param sqlApi - The SQL API instance
+   * @param playerAddress - The player's contract address
+   * @returns All relics grouped by entity type
+   */
+  async fetchAllPlayerRelics(playerAddress: string): Promise<PlayerRelicsData> {
+    try {
+      const [structureRelics, armyRelics] = await Promise.all([
+        this.fetchPlayerStructureRelics(playerAddress),
+        this.fetchPlayerArmyRelics(playerAddress),
+      ]);
+
+      const structures: EntityWithRelics[] = structureRelics.map((structure) => {
+        const relics = extractRelicsFromResourceData(structure);
+
+        return {
+          entityId: structure.entity_id,
+          structureType: structure.entity_type,
+          type: EntityType.STRUCTURE,
+          position: { x: structure.coord_x, y: structure.coord_y },
+          relics,
+        };
+      });
+
+      const armies: EntityWithRelics[] = armyRelics.map((army) => {
+        const relics = extractRelicsFromResourceData(army);
+
+        return {
+          entityId: army.entity_id,
+          type: EntityType.ARMY,
+          position: { x: army.coord_x, y: army.coord_y },
+          relics,
+        };
+      });
+
+      return {
+        structures,
+        armies,
+      };
+    } catch (error) {
+      console.error("Error fetching player relics:", error);
+      return {
+        structures: [],
+        armies: [],
+      };
+    }
   }
 }
