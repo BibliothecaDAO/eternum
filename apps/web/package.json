@@ -7,7 +7,8 @@
     "build": "pnpm with-env vite build",
     "lint": "eslint",
     "start": "pnpm with-env node .output/server/index.mjs",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "postinstall": "rm -rf node_modules/@starknet-io/starknet-types-07 node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-07 node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 node_modules/@starknet-io/starknet-types-08"
   },
   "dependencies": {
     "@cartridge/connector": "^0.8.0",
@@ -44,8 +45,6 @@
     "@reown/appkit-adapter-wagmi": "^1.7.13",
     "@reservoir0x/reservoir-sdk": "^2.5.7",
     "@snapshot-labs/pineapple": "^1.1.0",
-    "@starknet-io/starknet-types-07": "npm:@starknet-io/types-js@~0.7.10",
-    "@starknet-io/starknet-types-08": "npm:@starknet-io/types-js@~0.8.4",
     "@starknet-react/chains": "4.0.1-beta.3",
     "@starknet-react/core": "4.0.1-beta.4",
     "@tailwindcss/postcss": "^4.1.11",
@@ -82,6 +81,8 @@
     "starknet": "catalog:",
     "starknetkit": "2.12.1",
     "@starknet-io/types-js": "^0.8.4",
+    "@starknet-io/starknet-types-07": "workspace:*",
+    "@starknet-io/starknet-types-08": "workspace:*",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "catalog:",
