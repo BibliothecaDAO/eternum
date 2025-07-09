@@ -19,7 +19,7 @@ standard and simple building modes._
 ### Standard Mode
 
 This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
+as building materials. Standard mode is more complex and involves a greater number of materials in storage, however it
 is far more efficient overall.
 
 ### Simple Mode
@@ -33,23 +33,23 @@ accessibility and simplifies gameplay overall, but is much less efficient in bot
 
 The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm,
 provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the upgrade level
-(i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+(Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
 
 ![Building Placement](/gifs/construction.gif)
 
 ### Population
 
-**Population** is the total population used to construct the current buildings on a Realm, while the **population
-capacity** is the maximum available population with which to construct buildings. Worker Huts can be built to increase
-population capacity, while all other buildings require population capacity to be available in order to construct. Lords
-must balance their construction to ensure there is enough population capacity available to construct their desired
-production buildings.
+**Population** is the total population used to construct the current buildings on a Realm, while **population capacity**
+is the maximum available population with which to construct buildings. Worker Huts can be built to increase population
+capacity, while all other buildings require population capacity to be available in order to construct. Lords must
+balance their construction to ensure there is enough population capacity available to construct their desired production
+buildings.
 
 ## Building Types
 
 ### The Keep
 
-All Realms start the game with a structure in the centre of the buildable hexes, known as the Keep. This structure
+All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
 represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
 production. This building cannot be destroyed and provides a baseline population capacity of 5.
 
@@ -71,10 +71,7 @@ have the same requirements in simple and standard mode.
   title="Wood Mill" 
   image="/images/buildings/construction/lumber_mill.png" 
   buildingType={5} 
-  description={[
-    "Produces Wood resource",
-    "Same construction cost in both simple and standard modes"
-  ]}
+  description={["Produces Wood resource"]}
   simpleCosts={[
     { resource: 23, amount: 400 } // Labor
   ]}
@@ -220,10 +217,7 @@ varying costs and population requirements:
   title="Farm"
   image="/images/buildings/construction/farm.png"
   buildingType={37}
-  description={[
-    "Produces Wheat (food)",
-    "Same construction cost in both simple and standard modes",
-  ]}
+  description={["Produces Wheat (food)"]}
   simpleCosts={[
     { resource: 23, amount: 200 } // Labor
   ]}
@@ -250,9 +244,7 @@ varying costs and population requirements:
   title="Storehouse"
   image="/images/buildings/construction/storehouse.png"
   buildingType={2}
-  description={[
-    `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse] / 1000)} kg for each material`,
-  ]}
+  description={["Increases storage capacity by 20,000 kg for each material"]}
   simpleCosts={[
     { resource: 23, amount: 1200 }, // Labor
   ]}
@@ -312,7 +304,7 @@ available for construction in standard mode.
   title="Barracks (T2)"
   image="/images/buildings/construction/barracks.png"
   buildingType={29}
-  description={["Produces T2 Knight units", "Only available in standard building mode"]}
+  description={["Produces T2 Knights", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 3600 }, // Labor
     { resource: 3, amount: 720 }, // Wood
@@ -326,7 +318,7 @@ available for construction in standard mode.
   title="Barracks (T3)"
   image="/images/buildings/construction/barracks.png"
   buildingType={30}
-  description={["Produces T3 Knight units", "Only available in standard building mode"]}
+  description={["Produces T3 Knights", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 7200 }, // Labor
     { resource: 3, amount: 1440 }, // Wood
@@ -336,11 +328,21 @@ available for construction in standard mode.
   ]}
 />
 
+<div
+  style={{
+    gridColumn: "1 / -1",
+    height: "1px",
+    backgroundColor: "#8b5a2b",
+    margin: "1rem 0",
+    opacity: 0.6,
+  }}
+/>
+
 <BlitzBuildingCard
   title="Archery Range (T1)"
   image="/images/buildings/construction/archery.png"
   buildingType={31}
-  description={["Produces T1 Crossbowman units", "Available in both simple and standard building modes"]}
+  description={["Produces T1 Crossbowmen", "Available in both simple and standard building modes"]}
   simpleCosts={[
     { resource: 23, amount: 3600 }, // Labor
   ]}
@@ -355,7 +357,7 @@ available for construction in standard mode.
   title="Archery Range (T2)"
   image="/images/buildings/construction/archery.png"
   buildingType={32}
-  description={["Produces T2 Crossbowman units", "Only available in standard building mode"]}
+  description={["Produces T2 Crossbowmen", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 3600 }, // Labor
     { resource: 3, amount: 720 }, // Wood
@@ -369,7 +371,7 @@ available for construction in standard mode.
   title="Archery Range (T3)"
   image="/images/buildings/construction/archery.png"
   buildingType={33}
-  description={["Produces T3 Crossbowman units", "Only available in standard building mode"]}
+  description={["Produces T3 Crossbowmen", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 7200 }, // Labor
     { resource: 3, amount: 1440 }, // Wood
@@ -379,11 +381,21 @@ available for construction in standard mode.
   ]}
 />
 
+<div
+  style={{
+    gridColumn: "1 / -1",
+    height: "1px",
+    backgroundColor: "#8b5a2b",
+    margin: "1rem 0",
+    opacity: 0.6,
+  }}
+/>
+
 <BlitzBuildingCard
   title="Stables (T1)"
   image="/images/buildings/construction/stable.png"
   buildingType={34}
-  description={["Produces T1 Paladin units", "Available in both simple and standard building modes"]}
+  description={["Produces T1 Paladins", "Available in both simple and standard building modes"]}
   simpleCosts={[
     { resource: 23, amount: 3600 }, // Labor
   ]}
@@ -398,7 +410,7 @@ available for construction in standard mode.
   title="Stables (T2)"
   image="/images/buildings/construction/stable.png"
   buildingType={35}
-  description={["Produces T2 Paladin units", "Only available in standard building mode"]}
+  description={["Produces T2 Paladins", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 3600 }, // Labor
     { resource: 3, amount: 720 }, // Wood
@@ -412,10 +424,7 @@ available for construction in standard mode.
   title="Stables (T3)" 
   image="/images/buildings/construction/stable.png" 
   buildingType={36} 
-  description={[
-    "Produces T3 Paladin units",
-    "Only available in standard building mode"
-  ]}
+  description={["Produces T3 Paladins", "Only available in standard building mode"]}
   standardCosts={[
     { resource: 23, amount: 7200 }, // Labor
     { resource: 3, amount: 1440 }, // Wood
@@ -448,5 +457,5 @@ Cost = Base Cost + (Base Cost × 0.1 × (2-1)²)
      = Base Cost × 1.1
 ```
 
-Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Coal Mine after a Wood
-Mill (both being resource buildings) would not be subject to this cost increase.
+_Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Coal Mine after a Wood
+Mill (both being resource buildings) would not be subject to this cost increase._

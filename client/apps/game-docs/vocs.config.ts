@@ -54,19 +54,6 @@ export default defineConfig({
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
         { text: "World Physics", link: "/blitz/world-physics" },
-        { text: "World Structures", link: "/blitz/world-structures" },
-        { text: "Victory", link: "/blitz/victory" },
-        { text: "Prize Pool", link: "/blitz/prize-pool" },
-        { text: "Achievements", link: "/blitz/achievements" },
-        {
-          text: "World Map & Movement",
-          link: "/blitz/worldmap-movement/worldmap",
-          collapsed: true,
-          items: [
-            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
-        },
         {
           text: "Realms",
           link: "/blitz/realms/realm",
@@ -84,6 +71,10 @@ export default defineConfig({
             { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Storage", link: "/blitz/materials/storage" },
+            { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
+            { text: "Bridging", link: "/blitz/materials/bridging" },
+            { text: "Relics", link: "/blitz/materials/relics" },
+            { text: "Automation", link: "/blitz/materials/automation" },
           ],
         },
         {
@@ -97,6 +88,19 @@ export default defineConfig({
             { text: "Damage", link: "/blitz/military/damage" },
           ],
         },
+        {
+          text: "World Map & Movement",
+          link: "/blitz/worldmap-movement/worldmap",
+          collapsed: true,
+          items: [
+            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
+          ],
+        },
+        { text: "World Structures", link: "/blitz/world-structures" },
+        { text: "Victory", link: "/blitz/victory" },
+        { text: "Prize Pool", link: "/blitz/prize-pool" },
+        { text: "Achievements", link: "/blitz/achievements" },
       ],
     },
     {
@@ -104,19 +108,6 @@ export default defineConfig({
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "World Physics", link: "/eternum/world-physics" },
-        { text: "World Structures", link: "/eternum/world-structures" },
-        { text: "Victory", link: "/eternum/victory" },
-        { text: "Prize Pool", link: "/eternum/prize-pool" },
-        { text: "Tribes", link: "/eternum/tribes" },
-        {
-          text: "World Map & Movement",
-          link: "/eternum/worldmap-movement/worldmap",
-          collapsed: true,
-          items: [
-            { text: "World Map", link: "/eternum/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
-          ],
-        },
         {
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
@@ -153,6 +144,19 @@ export default defineConfig({
             { text: "Raiding", link: "/eternum/military/raiding" },
           ],
         },
+        {
+          text: "World Map & Movement",
+          link: "/eternum/worldmap-movement/worldmap",
+          collapsed: true,
+          items: [
+            { text: "World Map", link: "/eternum/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
+          ],
+        },
+        { text: "World Structures", link: "/eternum/world-structures" },
+        { text: "Tribes", link: "/eternum/tribes" },
+        { text: "Victory", link: "/eternum/victory" },
+        { text: "Prize Pool", link: "/eternum/prize-pool" },
       ],
     },
     {

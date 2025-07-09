@@ -232,8 +232,8 @@ export const TroopTierDamageStats = () => {
           <thead style={table.tableHead}>
             <tr>
               <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
-              <th style={table.tableHeaderCell}>Cum. Damage Inc. over T1</th>
-              <th style={table.tableHeaderCell}>Diff. Between Tiers</th>
+              <th style={table.tableHeaderCell}>Cumulative Damage Increase Over T1</th>
+              <th style={table.tableHeaderCell}>Difference Between Tiers</th>
             </tr>
           </thead>
           <tbody>
@@ -244,8 +244,8 @@ export const TroopTierDamageStats = () => {
                   Base
                 </div>
               </td>
-              <td style={table.tableCell}> / </td>
-              <td style={table.tableCell}> / </td>
+              <td style={table.tableCell}> N/A </td>
+              <td style={table.tableCell}> N/A </td>
             </tr>
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
