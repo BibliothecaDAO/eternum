@@ -2,7 +2,7 @@
 
 rpc = "http://127.0.0.1:5050"
 
-world_address = "0x163234802a4f22507111a9bb9bb9a9bf5a30e5d29ea04a990a13c5824c57d04"
+world_address = "0x06a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561"
 
 db_dir = "torii-local"
 
@@ -19,10 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-      "erc721:0x4ee7164b73872753730a25207bdf644798ea70fcebc8d38a418e75085250758",
-      "erc721:0xa2df6d6be27ffeb6ecd4b903fe062ba0efc936032b13f5eb0fe9c640168216",
-	"erc721:0x20b51eee2fdcc050048937694e0b9e6414781479d4b1e1a849806e151b4ad9b",
-      "erc20:0x6ea6b69402a33a876c6e2d094b423a7fcd75ed952d6eab2713ed1fffa62d04",
+      "erc721:0x315759c6fdf380aa26cca07fb44300cf7c3c6d2e532869966216eee3f130e3b",
+      "erc721:0x3d3c978c25b3bced65995c2ad398ce72080b1336ecc766a7e8faba96701fcfe",
+	"erc721:0x538337f6ea693ac60ec7e5ddfd36f55137828baa4503f4580631505e9cd7052",
+      "erc20:0x3f233fd5ebfee295ae1b306824a9eff894cc4fe1251a739e3d7721d441d3880",
 ]
 
 namespaces = ["s1_eternum"]
