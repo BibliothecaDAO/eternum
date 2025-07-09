@@ -124,7 +124,7 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, onActivate
 
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-gold truncate">{resourceName}</div>
-        <div className="text-sm text-gold/70">Amount: {currencyFormat(divideByPrecision(amount), 0)}</div>
+        <div className="text-sm text-gold/70">Amount: {currencyFormat(amount, 0)}</div>
         {relicInfo && (
           <div className="text-xs text-gold/50 mt-1">
             {relicInfo.activation} • Level {relicInfo.level}

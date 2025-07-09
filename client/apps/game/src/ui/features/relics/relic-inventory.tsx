@@ -1,3 +1,4 @@
+import { Position } from "@/types/position";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
@@ -43,6 +44,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
       return entities.map((entity) => {
         return {
           ...entity,
+          position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
           info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components),
         };
       });
