@@ -1473,6 +1473,27 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    RelicEffect: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          effect_resource_id: RecsType.Number,
+          effect_rate: RecsType.Number,
+          effect_start_tick: RecsType.Number,
+          effect_end_tick: RecsType.Number,
+          effect_usage_left: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "RelicEffect",
+            types: ["u32", "u8", "u16", "u32", "u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

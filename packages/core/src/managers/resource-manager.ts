@@ -63,6 +63,17 @@ export class ResourceManager {
     };
   }
 
+  public getRelicEffect(
+    resourceId: ResourcesIds,
+  ): ComponentValue<ClientComponents["RelicEffect"]["schema"]> | undefined {
+    if (!this.isRelic(resourceId)) return undefined;
+    const relicEffect = getComponentValue(
+      this.components.RelicEffect,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
+    return relicEffect;
+  }
+
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
     const overrideId = uuid();
 

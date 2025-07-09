@@ -40,7 +40,7 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+  const { currentDefaultTick: currentTick, currentArmiesTick } = useBlockTimestamp();
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
@@ -74,10 +74,6 @@ export const ResourceChip = ({
   const productionEndsAt = useMemo(() => {
     return resourceManager.getProductionEndsAt(resourceId);
   }, [resourceManager]);
-
-  const productionAmountRemaining = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.output_amount_left || 0), false));
-  }, [production]);
 
   const isActive = useMemo(() => {
     return resourceManager.isActive(resourceId);
@@ -210,16 +206,27 @@ export const ResourceChip = ({
     return (resourceManager as any).isRelic ? (resourceManager as any).isRelic(resourceId) : resourceId >= 39;
   }, [resourceManager, resourceId]);
 
+  const relicEffectActivated = useMemo(() => {
+    const effect = resourceManager.getRelicEffect(resourceId);
+    if (!effect) return false;
+    return (
+      effect.effect_usage_left > 0 &&
+      effect.effect_start_tick <= currentArmiesTick &&
+      effect.effect_end_tick >= currentArmiesTick
+    );
+  }, [resourceManager, resourceId, currentArmiesTick]);
+
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {
     return null;
   }
-
   return (
     <div
       className={`flex relative group items-center ${
         size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/5`}
+      } hover:bg-gold/5 ${
+        relicEffectActivated ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
+      }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -227,9 +234,18 @@ export const ResourceChip = ({
         <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            <span className={`${isHovered ? "font-bold animate-pulse" : ""}`}>
+            <span
+              className={`${isHovered ? "font-bold animate-pulse" : ""} ${
+                relicEffectActivated ? "text-purple-300 font-semibold" : ""
+              }`}
+            >
               {currencyFormat(displayBalance, 2)}
             </span>{" "}
+            {relicEffectActivated && (
+              <div className="flex items-center ml-1">
+                <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
+              </div>
+            )}
           </div>
 
           {amountProduced > 0n && (

@@ -57,6 +57,7 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
     "s1_eternum-ProductionWonderBonus",
+    "s1_eternum-RelicEffect",
   ];
 
   // Create promises for all queries without awaiting them
@@ -361,7 +362,7 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
     },
     components,
     [],
-    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
+    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource", "s1_eternum-RelicEffect"],
     EVENT_QUERY_LIMIT,
     false,
   );
