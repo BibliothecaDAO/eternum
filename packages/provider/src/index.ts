@@ -2461,6 +2461,35 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
+    const {
+      fee_token,
+      fee_recipient,
+      fee_amount,
+      registration_count_max,
+      registration_start_at,
+      registration_end_at,
+      creation_start_at,
+      creation_end_at,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_registration_config",
+      calldata: [
+        fee_token,
+        fee_recipient,
+        fee_amount,
+        0,
+        registration_count_max,
+        registration_start_at,
+        registration_end_at,
+        creation_start_at,
+        creation_end_at,
+      ],
+    });
+  }
+
   public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
     const { quest_find_probability, quest_find_fail_probability, signer } = props;
     return await this.executeAndCheckTransaction(signer, {

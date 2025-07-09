@@ -1225,6 +1225,24 @@ export function defineContractComponents(world: World) {
             base_distance: RecsType.Number,
             subsequent_distance: RecsType.Number,
           },
+          blitz_settlement_config: {
+            base_distance: RecsType.Number,
+            side: RecsType.Number,
+            step: RecsType.Number,
+            point: RecsType.Number,
+          },
+          blitz_registration_config: {
+            fee_amount: RecsType.BigInt,
+            fee_token: RecsType.BigInt,
+            fee_recipient: RecsType.BigInt,
+            registration_count: RecsType.Number,
+            registration_count_max: RecsType.Number,
+            registration_start_at: RecsType.Number,
+            registration_end_at: RecsType.Number,
+            creation_start_at: RecsType.Number,
+            creation_end_at: RecsType.Number,
+            assigned_positions_count: RecsType.Number,
+          },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
           },
@@ -1381,6 +1399,20 @@ export function defineContractComponents(world: World) {
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig subsequent_distance
+              "u32", // BlitzSettlementConfig base_distance
+              "u32", // BlitzSettlementConfig side
+              "u32", // BlitzSettlementConfig step
+              "u32", // BlitzSettlementConfig point
+              "u128", // BlitzRegistrationConfig fee_amount
+              "ContractAddress", // BlitzRegistrationConfig fee_token
+              "ContractAddress", // BlitzRegistrationConfig fee_recipient
+              "u16", // BlitzRegistrationConfig registration_count
+              "u16", // BlitzRegistrationConfig registration_count_max
+              "u32", // BlitzRegistrationConfig registration_start_at
+              "u32", // BlitzRegistrationConfig registration_end_at
+              "u32", // BlitzRegistrationConfig creation_start_at
+              "u32", // BlitzRegistrationConfig creation_end_at
+              "u16", // BlitzRegistrationConfig assigned_positions_count
               "u64", // TickConfig armies_tick_in_seconds
               "u32", // BankConfig lp_fee_num
               "u32", // BankConfig lp_fee_denom

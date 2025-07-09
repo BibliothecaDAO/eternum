@@ -56,6 +56,9 @@ export class GameConfigDeployer {
     await setWorldConfig(config);
     await this.sleepNonLocal();
 
+    await setBlitzRegistrationConfig(config);
+    await this.sleepNonLocal();
+
     await setWonderBonusConfig(config);
     await this.sleepNonLocal();
 
@@ -1301,6 +1304,75 @@ export const setSettlementConfig = async (config: Config) => {
 
   const tx = await config.provider.set_settlement_config(calldata);
 
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setBlitzRegistrationConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Blitz Registration Configuration
+  ═══════════════════════════`),
+  );
+
+  let registration_delay_seconds = config.config.blitz.registration.registration_delay_seconds;
+  let registration_period_seconds = config.config.blitz.registration.registration_period_seconds;
+  let creation_period_seconds = config.config.blitz.registration.creation_period_seconds;
+
+  let registration_start_at = Math.floor(new Date().getTime() / 1000) + registration_delay_seconds;
+  let registration_end_at = registration_start_at + registration_period_seconds;
+  let creation_start_at = registration_end_at + 1;
+  let creation_end_at = creation_start_at + creation_period_seconds;
+  const calldata = {
+    signer: config.account,
+    fee_token: config.config.blitz.registration.fee_token,
+    fee_recipient: config.config.blitz.registration.fee_recipient,
+    fee_amount: config.config.blitz.registration.fee_amount,
+    registration_count_max: config.config.blitz.registration.registration_count_max,
+    registration_start_at: registration_start_at,
+    registration_end_at: registration_end_at,
+    creation_start_at: creation_start_at,
+    creation_end_at: creation_end_at,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Blitz Registration Configuration")}
+    │  ${chalk.gray("Fee Token:")} ${chalk.white(calldata.fee_token)}
+    │  ${chalk.gray("Fee Recipient:")} ${chalk.white(calldata.fee_recipient)}
+    │  ${chalk.gray("Fee Amount:")} ${chalk.white(calldata.fee_amount)}
+    │  ${chalk.gray("Registration Count Max:")} ${chalk.white(calldata.registration_count_max)}
+    │  ${chalk.gray("Registration Start At:")} ${chalk.white(
+      new Date(calldata.registration_start_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Registration End At:")} ${chalk.white(
+      new Date(calldata.registration_end_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Creation Start At:")} ${chalk.white(
+      new Date(calldata.creation_start_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Creation End At:")} ${chalk.white(
+      new Date(calldata.creation_end_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_blitz_registration_config(calldata);
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 

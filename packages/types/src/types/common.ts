@@ -548,6 +548,17 @@ export interface Config {
     levels: Level[];
     overwrite: boolean;
   }[];
+  blitz: {
+    registration: {
+      fee_token: string;
+      fee_recipient: string;
+      fee_amount: number;
+      registration_count_max: number;
+      registration_delay_seconds: number;
+      registration_period_seconds: number;
+      creation_period_seconds: number;
+    };
+  };
 
   // Config for calling the setup function
   setup?: {

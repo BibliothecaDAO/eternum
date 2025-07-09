@@ -63,6 +63,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             array![].span(),
             Default::default(),
             TileOccupier::FragmentMine,
+            false,
         );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha

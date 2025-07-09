@@ -626,7 +626,16 @@ export interface SetSettlementConfigProps extends SystemSigner {
   base_distance: num.BigNumberish;
   subsequent_distance: num.BigNumberish;
 }
-
+export interface SetBlitzRegistrationConfigProps extends SystemSigner {
+  fee_token: num.BigNumberish;
+  fee_recipient: num.BigNumberish;
+  fee_amount: num.BigNumberish;
+  registration_count_max: num.BigNumberish;
+  registration_start_at: num.BigNumberish;
+  registration_end_at: num.BigNumberish;
+  creation_start_at: num.BigNumberish;
+  creation_end_at: num.BigNumberish;
+}
 export interface MintTestRealmProps extends SystemSigner {
   token_id: num.BigNumberish;
   realms_address: num.BigNumberish;

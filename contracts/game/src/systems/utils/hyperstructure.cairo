@@ -102,6 +102,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             array![].span(),
             Default::default(),
             TileOccupier::HyperstructureLevel1,
+            false,
         );
 
         // add guards to structure

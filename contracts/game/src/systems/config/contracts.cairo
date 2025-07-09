@@ -169,6 +169,17 @@ pub trait IResourceBridgeConfig<T> {
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
     fn set_settlement_config(ref self: T, center: u32, base_distance: u32, subsequent_distance: u32);
+    fn set_blitz_registration_config(
+        ref self: T,
+        fee_token: starknet::ContractAddress,
+        fee_recipient: starknet::ContractAddress,
+        fee_amount: u256,
+        registration_count_max: u16,
+        registration_start_at: u32,
+        registration_end_at: u32,
+        creation_start_at: u32,
+        creation_end_at: u32,
+    );
 }
 
 #[starknet::interface]
@@ -205,13 +216,14 @@ pub mod config_systems {
     use s1_eternum::models::agent::AgentConfig;
 
     use s1_eternum::models::config::{
-        AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
-        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        AgentControllerConfig, BankConfig, BattleConfig, BlitzRegistrationConfig, BlitzSettlementConfigImpl,
+        BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig, HyperstructureConstructConfig,
+        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWhitelistConfig, ResourceFactoryConfig, ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig,
+        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig,
+        StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
+        TroopStaminaConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -796,6 +808,40 @@ pub mod config_systems {
                 ref world,
                 selector!("settlement_config"),
                 SettlementConfig { center, base_distance, subsequent_distance },
+            );
+
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("blitz_settlement_config"), BlitzSettlementConfigImpl::new(base_distance),
+            );
+        }
+
+        fn set_blitz_registration_config(
+            ref self: ContractState,
+            fee_token: starknet::ContractAddress,
+            fee_recipient: starknet::ContractAddress,
+            fee_amount: u256,
+            registration_count_max: u16,
+            registration_start_at: u32,
+            registration_end_at: u32,
+            creation_start_at: u32,
+            creation_end_at: u32,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
+            blitz_registration_config.registration_count_max = registration_count_max;
+            blitz_registration_config.registration_start_at = registration_start_at;
+            blitz_registration_config.registration_end_at = registration_end_at;
+            blitz_registration_config.creation_start_at = creation_start_at;
+            blitz_registration_config.creation_end_at = creation_end_at;
+            blitz_registration_config.fee_token = fee_token;
+            blitz_registration_config.fee_recipient = fee_recipient;
+            blitz_registration_config.fee_amount = fee_amount;
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
         }
     }

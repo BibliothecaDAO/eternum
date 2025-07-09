@@ -16,9 +16,15 @@ pub mod structure {
     mod tests;
 }
 pub mod realm {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
+    pub mod blitz {
+        pub mod contracts;
+    }
+    pub mod season {
+        pub mod contracts;
+    }
+    pub mod utils {
+        pub mod contracts;
+    }
 }
 pub mod trade {
     pub mod contracts;

@@ -24,6 +24,8 @@ pub struct WorldConfig {
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
+    pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_registration_config: BlitzRegistrationConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
@@ -467,6 +469,39 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
             let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
             return array![a, b, c];
         }
+    }
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BlitzRegistrationConfig {
+    pub fee_amount: u256,
+    pub fee_token: ContractAddress,
+    pub fee_recipient: ContractAddress,
+    pub registration_count: u16,
+    pub registration_count_max: u16,
+    pub registration_start_at: u32,
+    pub registration_end_at: u32,
+    pub creation_start_at: u32,
+    pub creation_end_at: u32,
+    pub assigned_positions_count: u16,
+}
+
+#[generate_trait]
+pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
+    fn is_registration_full(self: BlitzRegistrationConfig) -> bool {
+        self.registration_count >= self.registration_count_max
+    }
+
+    fn increase_registration_count(ref self: BlitzRegistrationConfig) {
+        self.registration_count += 1;
+    }
+
+    fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
+        now >= self.registration_start_at && now <= self.registration_end_at
+    }
+
+    fn is_creation_open(self: BlitzRegistrationConfig, now: u32) -> bool {
+        now >= self.creation_start_at && now <= self.creation_end_at
     }
 }
 

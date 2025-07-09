@@ -139,7 +139,7 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 12;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
@@ -194,6 +194,14 @@ export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
 export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83";
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
+
+const BLITZ_REGISTRATION_FEE_TOKEN = "0x0";
+const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x0";
+const BLITZ_REGISTRATION_FEE_AMOUNT = 0;
+const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
+const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
+const BLITZ_REGISTRATION_PERIOD_SECONDS = 10 * ONE_MINUTE_IN_SECONDS;
+const BLITZ_CREATION_PERIOD_SECONDS = 10 * ONE_MINUTE_IN_SECONDS;
 
 export const EternumGlobalConfig: Config = {
   agent: {
@@ -367,6 +375,17 @@ export const EternumGlobalConfig: Config = {
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
   questGames: QUEST_GAME_LEVELS,
+  blitz: {
+    registration: {
+      fee_token: BLITZ_REGISTRATION_FEE_TOKEN,
+      fee_recipient: BLITZ_REGISTRATION_FEE_RECIPIENT,
+      fee_amount: BLITZ_REGISTRATION_FEE_AMOUNT,
+      registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
+      registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
+      registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
+      creation_period_seconds: BLITZ_CREATION_PERIOD_SECONDS,
+    },
+  },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

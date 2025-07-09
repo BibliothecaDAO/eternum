@@ -39,6 +39,7 @@ pub impl iStructureImpl of IStructureTrait {
         resources: Span<u8>,
         metadata: StructureMetadata,
         tile_occupier: TileOccupier,
+        explore_village_coord: bool,
     ) {
         // ensure the tile is not occupied
         let mut tile: Tile = world.read_model((coord.x, coord.y));
@@ -117,7 +118,7 @@ pub impl iStructureImpl of IStructureTrait {
             }
 
             // only do village settings when category is realm
-            if category == StructureCategory::Realm {
+            if explore_village_coord {
                 // explore village tile so that no structure can be built on it
                 let village_coord = coord.neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
                 let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));

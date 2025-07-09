@@ -2,6 +2,8 @@ use alexandria_math::{BitShift, pow};
 use core::array::SpanTrait;
 use core::traits::Into;
 use s1_eternum::models::config::{WorldConfigUtilImpl};
+use s1_eternum::models::position::Coord;
+use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
@@ -175,6 +177,23 @@ pub impl RealmReferenceImpl of RealmReferenceTrait {
             _ => panic!("max wonder num exceeded"),
         }
     }
+}
+
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPositionRegister {
+    #[key]
+    pub spot_number: u16,
+    pub coords: Span<Coord>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPlayerRegister {
+    #[key]
+    pub player: ContractAddress,
+    pub registered: bool,
 }
 // #[cfg(test)]
 // mod test_realm_name_and_attrs_decode_impl {
