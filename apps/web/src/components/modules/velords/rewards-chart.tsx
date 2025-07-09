@@ -1,17 +1,25 @@
 import type { ChartConfig } from "@/components/ui/chart";
 import LordsIcon from "@/components/icons/lords.svg?react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
 } from "@/components/ui/chart";
+import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { Bar, BarChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
+import { formatUnits } from "viem";
+
+import { StakingAddresses } from "@realms-world/constants";
 
 const sourceColors = {
-  "Loot Survivor Fees": "hsl(36 88.9% 85.9%)",
-  "veLords Early Exit Fees": "hsl(240 88.9% 85.9%)",
-  Crypts: "hsl(120 88.9% 85.9%)",
+  "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5":
+    "hsl(36 88.9% 85.9%)",
+  "0x047230028629128ac5bfbb384d32f925e70e329b624fc5d82e9c60f5746795cd":
+    "hsl(120 88.9% 85.9%)",
+  //Crypts: "hsl(120 88.9% 85.9%)",
   // Add more sources and colors as needed
 } as const;
 
@@ -27,17 +35,31 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+function getSenderLabel(sender: string): string {
+  if (
+    sender ===
+    formatAddress(StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as string)
+  ) {
+    return "VeLords Exit Fees";
+  }
+  if (
+    sender ===
+    "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"
+  ) {
+    return "Loot Survivor + Eternum";
+  }
+  return sender;
+}
+
 export function VeLordsRewardsChart({
   data,
   totalSupply,
 }: {
   data?: {
-    source: string;
+    sender: string;
     amount: string;
     transaction_hash: string;
-    epoch: Date;
-    epoch_total_amount: string;
-    sender_epoch_total_amount: string;
+    timestamp: Date;
   }[];
   totalSupply?: number;
 }) {
@@ -45,15 +67,24 @@ export function VeLordsRewardsChart({
     ? data
         ?.reduce(
           (acc, item) => {
-            const week = new Date(item.epoch).toISOString().split("T")[0];
+            const timestamp =
+              typeof item.timestamp === "number"
+                ? item.timestamp
+                : new Date(item.timestamp).getTime() / 1000; // seconds
+
+            const weekStart = Math.floor(timestamp / 604800) * 604800; // seconds
+            const week = new Date(weekStart * 1000).toISOString().split("T")[0];
             const existingWeek = acc.find((d) => d.week === week);
 
+            const formattedAmount = Number(
+              formatUnits(BigInt(item.amount), 18),
+            );
+            const senderLabel = getSenderLabel(item.sender);
             if (existingWeek) {
               // Add to existing week
-              existingWeek.amounts[item.source] =
-                (existingWeek.amounts[item.source] || 0) +
-                parseFloat(item.amount);
-              existingWeek.total_amount += parseFloat(item.amount);
+              existingWeek.amounts[senderLabel] =
+                (existingWeek.amounts[senderLabel] || 0) + formattedAmount;
+              existingWeek.total_amount += formattedAmount;
               // Recalculate APY based on total
               existingWeek.apy =
                 ((existingWeek.total_amount * 52) / totalSupply) * 100;
@@ -62,10 +93,10 @@ export function VeLordsRewardsChart({
               acc.push({
                 week,
                 amounts: {
-                  [item.source]: parseFloat(item.amount),
+                  [senderLabel]: formattedAmount,
                 },
-                total_amount: parseFloat(item.amount),
-                apy: ((parseFloat(item.amount) * 52) / totalSupply) * 100,
+                total_amount: formattedAmount,
+                apy: ((formattedAmount * 52) / totalSupply) * 100,
               });
             }
             return acc;
@@ -79,12 +110,40 @@ export function VeLordsRewardsChart({
         )
         .sort((a, b) => a.week.localeCompare(b.week))
     : [];
+
+  // Build all unique sender labels (not addresses)
+  const allSenderLabels = Array.from(
+    new Set(data?.map((item) => getSenderLabel(item.sender)) ?? []),
+  );
+
+  // Build dynamic chart config using labels
+  const dynamicChartConfig: Record<
+    string,
+    { label: string; color: string; icon?: typeof LordsIcon }
+  > &
+    typeof chartConfig = {
+    ...chartConfig,
+    ...Object.fromEntries(
+      allSenderLabels.map((label) => [
+        `amounts.${label}`,
+        {
+          label,
+          color:
+            sourceColors[
+              data?.find((item) => getSenderLabel(item.sender) === label)
+                ?.sender as keyof typeof sourceColors
+            ],
+        },
+      ]),
+    ),
+  };
+
   return (
     <Card>
       <CardHeader>Lords Rewards per Week</CardHeader>
 
       <ChartContainer
-        config={chartConfig}
+        config={dynamicChartConfig}
         className="max-h-[800px] w-full overflow-x-auto"
       >
         <BarChart data={parsedData}>
@@ -117,20 +176,20 @@ export function VeLordsRewardsChart({
               offset: 25,
             }}
           />
-          {/*<ChartTooltip content={<ChartTooltipContent />} />*/}
+          <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
 
-          {/* Stacked bars for each source */}
-          {Object.keys(sourceColors).map((source, index) => (
+          {/* Stacked bars for each source (using labels) */}
+          {allSenderLabels.map((label, index) => (
             <Bar
-              key={source}
-              dataKey={`amounts.${source}`}
+              key={label}
+              dataKey={`amounts.${label}`}
               stackId="rewards"
               yAxisId="amount"
-              fill={sourceColors[source as keyof typeof sourceColors]}
-              stroke={sourceColors[source as keyof typeof sourceColors]}
+              fill={dynamicChartConfig[`amounts.${label}`].color}
+              stroke={dynamicChartConfig[`amounts.${label}`].color}
               radius={
-                index === Object.keys(sourceColors).length - 1
+                index === allSenderLabels.length - 1
                   ? [4, 4, 0, 0]
                   : [0, 0, 0, 0]
               }

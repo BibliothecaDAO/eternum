@@ -1,4 +1,5 @@
 import {
+  integer,
   numeric,
   pgTable,
   primaryKey,
@@ -34,7 +35,7 @@ export const velords_lords_locked = pgTable(
       mode: "date",
       precision: 3,
     }).notNull(),
-    end_time: timestamp("end_time", { mode: "string" }),
+    end_time: integer("end_time"),
   },
   (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })],
 );

@@ -39,7 +39,7 @@ export function createIndexer<
 
     finality: "pending",
     startingCursor: {
-      orderKey: env.VITE_PUBLIC_CHAIN === "sepolia" ? 76_103n : 664_161n,
+      orderKey: env.VITE_PUBLIC_CHAIN === "sepolia" ? 76_103n : 699_904n,
     },
     filter: {
       events: [
