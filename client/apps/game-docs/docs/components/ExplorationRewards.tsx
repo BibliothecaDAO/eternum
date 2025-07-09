@@ -18,7 +18,7 @@ export const ExplorationRewards = () => {
   return (
     <div style={section.wrapper}>
       <div style={section.accentedTitle}>Exploration Rewards</div>
-      
+
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
@@ -44,4 +44,4 @@ export const ExplorationRewards = () => {
       </div>
     </div>
   );
-}; 
+};

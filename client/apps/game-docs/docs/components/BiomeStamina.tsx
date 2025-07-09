@@ -136,7 +136,14 @@ export const BiomeStamina = () => {
     },
     {
       name: "Open Biomes",
-      biomes: [BiomeType.Grassland, BiomeType.Shrubland, BiomeType.SubtropicalDesert, BiomeType.TemperateDesert, BiomeType.Bare, BiomeType.Tundra],
+      biomes: [
+        BiomeType.Grassland,
+        BiomeType.Shrubland,
+        BiomeType.SubtropicalDesert,
+        BiomeType.TemperateDesert,
+        BiomeType.Bare,
+        BiomeType.Tundra,
+      ],
     },
     {
       name: "Forest Biomes",

@@ -10,7 +10,7 @@ export const StorageTable = () => {
   return (
     <div style={section.wrapper}>
       <div style={section.accentedTitle}>World Structure Storage</div>
-      
+
       <div style={table.container}>
         <table style={table.table}>
           <thead style={table.tableHead}>
@@ -31,4 +31,4 @@ export const StorageTable = () => {
       </div>
     </div>
   );
-}; 
+};

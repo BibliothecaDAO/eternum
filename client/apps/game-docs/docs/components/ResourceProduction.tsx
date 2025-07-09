@@ -1236,8 +1236,7 @@ export const BlitzDonkeyProduction = () => {
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />
-                    5
+                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
                   </div>
                 </div>
               </td>
