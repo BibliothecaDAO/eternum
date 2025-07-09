@@ -4,8 +4,9 @@ import { divideByPrecision } from "@/utils/resources";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { BlitzWeightTable } from "@/components/WeightTable";
+import { StorageTable } from "@/components/StorageTable";
 
-# 🏺 Storage System
+# 📦 Storage System
 
 Your available storage limits the amount of materials your Realm can hold. Each Realm begins with a base capacity of
 **20,000 kg**. You'll need to construct storehouses to expand your storage capabilities.
@@ -13,8 +14,6 @@ Your available storage limits the amount of materials your Realm can hold. Each 
 ## Material Weights
 
 Materials have different weights that affect storage:
-
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
 
 <BlitzWeightTable />
 
@@ -30,10 +29,4 @@ Realms, as any produced materials that cannot be stored will be permanently lost
 All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
 capacities are as follows:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Table requires update from config.</span>
-
-| Structure Type | Storage Capacity                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
-| Essence Rift   | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.EssenceRift]/1000)} kg             |
-| Camp           | {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Camp]/1000)} kg                    |
+<StorageTable />

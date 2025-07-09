@@ -20,7 +20,7 @@ export const getTroopName = (troopId: number) => {
 export const getTroopIcon = (troopId: number) => {
   switch (troopId) {
     case ResourcesIds.Paladin:
-      return "🛡️";
+      return "🐴";
     case ResourcesIds.Knight:
       return "⚔️";
     case ResourcesIds.Crossbowman:

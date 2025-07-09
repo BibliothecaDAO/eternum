@@ -1,6 +1,5 @@
 import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
-import BlitzTroopsLimitTable from "@/components/BlitzTroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🧱 Materials
@@ -17,14 +16,11 @@ Materials encompass all transportable assets in Blitz, including:
 - **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
 
 While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only
-bridge relics into the game.
+bridge Relics into the game.
 
 ## Material Categories
 
 ### Resources
-
-Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
-advanced military operations.
 
 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
   <ResourceIcon name="Wood" id={ResourcesIds.Wood} />
@@ -38,7 +34,8 @@ advanced military operations.
   <ResourceIcon name="Dragonhide" id={ResourcesIds.Dragonhide} />
 </div>
 
-![Produce from building](/gifs/produce-from-building-click.gif)
+Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
+advanced military operations.
 
 ### Food
 
@@ -46,11 +43,8 @@ advanced military operations.
   <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
 </div>
 
-Food is the cornerstone of a Realm's economy:
-
-- **Simplified System**: Only Wheat is available (no Fish).
-- **Basic Production**: Produced without additional resource inputs.
-- **Essential Resource**: Required for all production chains.
+Food is the cornerstone of a Realm's economy and is required in all production chains. Only wheat is available 
+in Blitz and it can be produced without inputs.
 
 ### Troops
 
@@ -60,12 +54,9 @@ Food is the cornerstone of a Realm's economy:
   <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
 </div>
 
-<BlitzTroopsLimitTable />
-
-Troops have unique properties:
-
-- **Donkey Transportable** - Can be moved in the same way as other materials before deployment.
-- **One Way Deployment**: Cannot be converted back to material form once deployed to an army.
+Troops are required to defend your holdings and strike out at your foes. When produced, they can be transported
+by donkey like any other material, but to be used they must be deployed to an army. Once deployed, they cannot be
+converted back into material form.
 
 ### Donkeys
 
@@ -73,11 +64,8 @@ Troops have unique properties:
   <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
 </div>
 
-Donkeys are essential for logistics:
-
-- **Food Cost Only**: Donkeys only cost food to produce (no $LORDS cost).
-- **Single Use**: Consumed after a single journey.
-- **Required Transport**: Essential for moving materials around the world.
+Donkeys are essential for moving materials between your Realms. They only require a market and wheat to produce,
+but are consumed after a single journey.
 
 ### Labor
 
@@ -85,10 +73,8 @@ Donkeys are essential for logistics:
   <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
 </div>
 
-Labor is a fundamental production material:
-
-- **Required for Construction**: A key component in the construction of all buildings.
-- **Resource Burning**: Produced by burning resources, with rarer resources yielding more labor.
+Labor is a key component in the construction of all buildings and required for 'simple mode' production. It is produced 
+by burning resources, with rarer resources yielding more labor.
 
 ### Essence
 
@@ -96,9 +82,6 @@ Labor is a fundamental production material:
   <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
 </div>
 
-**Essence** is a new strategic material in Blitz:
+Essence is a new material that can only be found by exploring the map and interacting with World Structures. It is
+required in all Realm upgrades, as well as for some building construction and production of high-tier troops.
 
-- **Exploration Required**: Cannot be produced. Found only by exploring the map and interacting with world structures.
-- **Upgrade Requirement**: Required for all Realm upgrades and some building construction.
-- **Troop Production**: Essential for producing T2 and T3 troops.
-- **Strategic Value**: Control of Essence sources provides competitive advantage.

@@ -13,8 +13,19 @@ export const BlitzBuildingCard = ({
   standardOnly = false,
 }) => {
   const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
-  const resourceId = buildingType - 2; // Resource buildings map to resource IDs
-  const resourceName = resources.find((r) => r.id === resourceId)?.trait || "";
+  
+  // Determine if this building produces a resource (exclude Worker's Hut and Storehouse)
+  const isResourceBuilding = buildingType !== 1 && buildingType !== 2; // 1 = Worker's Hut, 2 = Storehouse
+  
+  // Get the resource ID for resource buildings
+  const getResourceId = () => {
+    if (!isResourceBuilding) return undefined;
+    // For resource buildings, the resource ID is the building type - 2
+    return buildingType - 2;
+  };
+
+  const resourceId = getResourceId();
+  const resourceName = resourceId ? resources.find((r) => r.id === resourceId)?.trait || "" : "";
 
   const styles = {
     card: {
@@ -112,7 +123,7 @@ export const BlitzBuildingCard = ({
     <div style={styles.card}>
       <div style={styles.header}>
         <div style={styles.titleContainer}>
-          <ResourceIcon id={resourceId} name={resourceName} size="lg" />
+          {resourceId && <ResourceIcon id={resourceId} name={resourceName} size="lg" />}
           {title}
         </div>
         <div style={{ fontSize: "0.75rem", color: "#a89986" }}>ID: {buildingType}</div>

@@ -67,7 +67,7 @@ const getBiomeIcon = (biome: BiomeType): string => {
 const getTroopIcon = (troopType: TroopType): string => {
   switch (troopType) {
     case TroopType.Paladin:
-      return "🛡️";
+      return "🐴";
     case TroopType.Knight:
       return "⚔️";
     case TroopType.Crossbowman:
@@ -136,7 +136,7 @@ export const BiomeStamina = () => {
     },
     {
       name: "Open Biomes",
-      biomes: [BiomeType.Grassland, BiomeType.Shrubland, BiomeType.SubtropicalDesert, BiomeType.TemperateDesert],
+      biomes: [BiomeType.Grassland, BiomeType.Shrubland, BiomeType.SubtropicalDesert, BiomeType.TemperateDesert, BiomeType.Bare, BiomeType.Tundra],
     },
     {
       name: "Forest Biomes",
@@ -149,12 +149,8 @@ export const BiomeStamina = () => {
       ],
     },
     {
-      name: "Cold Biomes",
-      biomes: [BiomeType.Tundra, BiomeType.Snow],
-    },
-    {
       name: "Harsh Biomes",
-      biomes: [BiomeType.Bare, BiomeType.Scorched],
+      biomes: [BiomeType.Snow, BiomeType.Scorched],
     },
   ];
 

@@ -196,22 +196,22 @@ export const BlitzWeightTable = () => {
   ];
 
   // Wheat (Food)
-  const foodResources = [{ id: ResourcesIds.Wheat, name: "Wheat", weight: 1 }];
+  const foodResources = [{ id: ResourcesIds.Wheat, name: "Wheat", weight: 0.1 }];
 
   // Donkey (Transport)
-  const transportResources = [{ id: ResourcesIds.Donkey, name: "Donkey", weight: 50 }];
+  const transportResources = [{ id: ResourcesIds.Donkey, name: "Donkey", weight: 0 }];
 
   // Troops (Military Units)
   const troopResources = [
-    { id: ResourcesIds.Knight, name: "T1 Knight", weight: 100 },
-    { id: ResourcesIds.KnightT2, name: "T2 Knight", weight: 100 },
-    { id: ResourcesIds.KnightT3, name: "T3 Knight", weight: 100 },
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", weight: 100 },
-    { id: ResourcesIds.CrossbowmanT2, name: "T2 Crossbowman", weight: 100 },
-    { id: ResourcesIds.CrossbowmanT3, name: "T3 Crossbowman", weight: 100 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", weight: 100 },
-    { id: ResourcesIds.PaladinT2, name: "T2 Paladin", weight: 100 },
-    { id: ResourcesIds.PaladinT3, name: "T3 Paladin", weight: 100 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", weight: 5 },
+    { id: ResourcesIds.KnightT2, name: "T2 Knight", weight: 5 },
+    { id: ResourcesIds.KnightT3, name: "T3 Knight", weight: 5 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", weight: 5 },
+    { id: ResourcesIds.CrossbowmanT2, name: "T2 Crossbowman", weight: 5 },
+    { id: ResourcesIds.CrossbowmanT3, name: "T3 Crossbowman", weight: 5 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", weight: 5 },
+    { id: ResourcesIds.PaladinT2, name: "T2 Paladin", weight: 5 },
+    { id: ResourcesIds.PaladinT3, name: "T3 Paladin", weight: 5 },
   ];
 
   return (

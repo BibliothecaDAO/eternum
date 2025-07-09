@@ -3,6 +3,7 @@ import {
   WorldStructureDefenseSlotsTable,
   BlitzWorldStructureDefenseSlotsTable,
 } from "@/components/DefendingArmies";
+import BlitzTroopsLimitTable from "@/components/BlitzTroopsLimitTable";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -42,7 +43,7 @@ Guard armies do not appear on the world map; instead, they occupy defense slots 
 view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
 opening up the Details tab.
 
-Unlike Realms, world structures have a static number of defence slots:
+Unlike Realms, World Structures have a static number of defense slots:
 
 <BlitzWorldStructureDefenseSlotsTable />
 
@@ -61,3 +62,5 @@ target hex.
   <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
   <em>Attack field army with structure</em>
 </div>
+
+<BlitzTroopsLimitTable />

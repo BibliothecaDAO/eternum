@@ -1,5 +1,5 @@
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BlitzRealmDefenseSlotsTable } from "@/components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
 import { RealmLeveling } from "@/components/RealmLeveling";
 import ResourceIcon from "@/components/ResourceIcon";
@@ -21,7 +21,7 @@ and strategy of their Lord.
 
 ## Settling
 
-Realms are settled at the start of the 30-minute 'Settling Phase' prior to the start of the game. Lords who are
+Realms are settled during the 30-minute 'Settling Phase' prior to the start of the game. Lords who are
 registered to play are drawn at random from the pool and assigned spawn positions sequentially according to the settling
 algorithm. Once assigned a map position, Lords are required to confirm their participation in the session by initiating
 a 'Settle' transaction, which will place their three Realms in their drawn position. This must be done in the 30-minute
@@ -40,7 +40,7 @@ Once the size of the map and the number of Hyperstructures are determined, playe
 bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
 sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
 opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for an example of 24
-players is visualised below:
+players is visualized below:
 
 <img
   src="/images/gifs/blitz-map-build.gif"
@@ -102,16 +102,16 @@ players is visualised below:
   </div>
 </div>
 
-_Note: The type of troop received depends on the biome that the realm is spawned on. Starting troops will always have a
+_Note: The type of T1 troop depends on the biome that the realm is spawned on. Starting troops will always have a
 combat advantage when defending their home._
 
 ### Realm Progression
 
 Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
 additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
-your defences. Each progression requires specific materials, outlined in the table below:
+your defenses. Each progression requires specific materials, outlined in the table below:
 
 <BlitzRealmLeveling />
 
 <BuildableHexes />
-<RealmDefenseSlotsTable />
+<BlitzRealmDefenseSlotsTable />

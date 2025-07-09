@@ -1,5 +1,5 @@
-import React from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import React from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
 
 // Biome types enum to match the provided code
@@ -71,7 +71,7 @@ const getBiomeIcon = (biome: BiomeType): string => {
 const getTroopIcon = (troopType: TroopType): string => {
   switch (troopType) {
     case TroopType.Paladin:
-      return "🛡️";
+      return "🐴";
     case TroopType.Knight:
       return "⚔️";
     case TroopType.Crossbowman:
