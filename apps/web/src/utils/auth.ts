@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { env } from "env";
 
-import { db } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
 
 import { siws } from "./auth/auth-siws-plugin";
 
