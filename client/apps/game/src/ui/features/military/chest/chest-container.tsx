@@ -4,7 +4,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
 import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
-import { AnimatePresence, motion, useAnimation, useMotionValue } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Relic Card Component - Simplified without tooltip
@@ -33,22 +33,24 @@ const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean 
   );
 };
 
-// Horizontal Relic Carousel Component with Side Info Panel
+// Horizontal Relic Carousel Component with Drag Controls
 const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
-  const [isPaused, setIsPaused] = useState(false);
   const [hoveredRelic, setHoveredRelic] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Motion values for position-aware animation
   const x = useMotionValue(0);
-  const controls = useAnimation();
+
+  // Sound effect for hovering
+  const { play: playHoverSound } = useUiSounds(soundSelector.hoverClick);
 
   // Get relic info for found relics, or show all relics as preview
   const displayRelics = useMemo(() => {
     if (foundRelics.length > 0) {
       return foundRelics.map((id) => getRelicInfo(id)).filter(Boolean) as RelicInfo[];
     }
-    // Show a sample of relics for preview
-    return RELICS.slice(0, 8);
+    // Show all relics for preview
+    return RELICS;
   }, [foundRelics]);
 
   // Create multiple copies for seamless looping
@@ -59,38 +61,22 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
   // Get the currently hovered relic info
   const hoveredRelicInfo = hoveredRelic !== null ? extendedRelics[hoveredRelic] : null;
 
-  // Animation control effects
-  useEffect(() => {
-    if (!isPaused) {
-      // Start continuous animation from current position
-      const currentX = x.get();
-      const targetX = currentX - 1200;
+  // Calculate carousel dimensions
+  const itemWidth = 132; // 96px width + 24px margin each side
+  const totalWidth = displayRelics.length * itemWidth;
 
-      controls.start({
-        x: targetX,
-        transition: {
-          duration: (Math.abs(targetX - currentX) / 1200) * 20,
-          ease: "linear",
-          repeat: Infinity,
-          repeatType: "loop",
-        },
-      });
-    } else {
-      // Stop animation at current position
-      controls.stop();
-    }
-  }, [isPaused, controls, x]);
-
-  // Reset position when it goes too far
+  // Reset position for seamless looping
   useEffect(() => {
     const unsubscribe = x.on("change", (latest) => {
-      if (latest <= -1200) {
-        x.set(0);
+      if (latest < -totalWidth) {
+        x.set(latest + totalWidth);
+      } else if (latest > 0) {
+        x.set(latest - totalWidth);
       }
     });
 
     return unsubscribe;
-  }, [x]);
+  }, [x, totalWidth]);
 
   return (
     <div className="w-full">
@@ -103,19 +89,26 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
         {/* Carousel Container */}
         <div className="relative h-full flex items-center overflow-hidden">
           <motion.div
-            className="flex items-center"
+            className="flex items-center cursor-grab active:cursor-grabbing"
             style={{ x }}
-            animate={controls}
-            onHoverStart={() => setIsPaused(true)}
-            onHoverEnd={() => {
-              setIsPaused(false);
-              setHoveredRelic(null);
+            drag="x"
+            dragConstraints={{ left: -totalWidth * 2, right: totalWidth }}
+            dragElastic={0.2}
+            onDragStart={() => {
+              setIsDragging(true);
             }}
+            onDragEnd={() => setIsDragging(false)}
+            whileDrag={{ cursor: "grabbing" }}
           >
             {extendedRelics.map((relic, index) => (
               <div
                 key={`${relic.id}-${index}`}
-                onMouseEnter={() => setHoveredRelic(index)}
+                onMouseEnter={() => {
+                  if (!isDragging) { // Only play sound if not dragging
+                    playHoverSound();
+                  }
+                  setHoveredRelic(index);
+                }}
                 onMouseLeave={() => setHoveredRelic(null)}
               >
                 <RelicCard relic={relic} isHovered={hoveredRelic === index} />
@@ -191,8 +184,8 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                 className="w-full flex items-start justify-center pt-4"
               >
                 <div className="text-center text-gold/50">
-                  <div className="text-3xl mb-2">☝️</div>
-                  <p className="text-sm">Hover over a relic above to see its details</p>
+                  <div className="text-3xl mb-2">👆</div>
+                  <p className="text-sm">Drag to browse • Hover to see details</p>
                 </div>
               </motion.div>
             )}
@@ -506,11 +499,6 @@ export const ChestContainer = ({
 
   return (
     <div className="flex flex-col items-center justify-center p-8">
-      <div className="text-gold text-xl mb-4">📦 Relic Chest</div>
-      <p className="text-gold/80 mb-6 text-center max-w-md">
-        This chest contains valuable relics that can enhance your structures and armies. Click on the chest to open it!
-      </p>
-
       {/* Chest Image with Click Animation */}
       <motion.div
         className="cursor-pointer"
