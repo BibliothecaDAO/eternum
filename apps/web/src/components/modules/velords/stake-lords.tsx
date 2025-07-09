@@ -145,7 +145,7 @@ export const StakeLords = () => {
                       <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
                         <tspan
                           x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) - 16}
+                          y={(viewBox.cy ?? 0) + 15}
                           className="fill-foreground text-lg font-bold"
                         >
                           {ownerLordsLock?.amount
@@ -157,7 +157,7 @@ export const StakeLords = () => {
                         </tspan>
                         <tspan
                           x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) + 4}
+                          y={(viewBox.cy ?? 0) + 32}
                           className="fill-muted-foreground"
                         >
                           Staked / Total $LORDS

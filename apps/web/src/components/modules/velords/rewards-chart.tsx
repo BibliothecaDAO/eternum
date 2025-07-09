@@ -16,9 +16,9 @@ import { StakingAddresses } from "@realms-world/constants";
 
 const sourceColors = {
   "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5":
-    "hsl(36 88.9% 85.9%)",
-  "0x047230028629128ac5bfbb384d32f925e70e329b624fc5d82e9c60f5746795cd":
     "hsl(120 88.9% 85.9%)",
+  "0x047230028629128ac5bfbb384d32f925e70e329b624fc5d82e9c60f5746795cd":
+    "hsl(36 88.9% 85.9%)",
   //Crypts: "hsl(120 88.9% 85.9%)",
   // Add more sources and colors as needed
 } as const;
