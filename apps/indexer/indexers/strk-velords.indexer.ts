@@ -10,11 +10,7 @@ import { useLogger } from "@apibara/indexer/plugins";
 import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
-import {
-  ChainId,
-  CollectionAddresses,
-  StakingAddresses,
-} from "@realms-world/constants";
+import { ChainId, StakingAddresses } from "@realms-world/constants";
 import { db } from "@realms-world/db/poolClient";
 import {
   velords_lords_locked,
@@ -53,7 +49,7 @@ export function createIndexer<
         },
         {
           address: StakingAddresses.velords[l2ChainId] as `0x${string}`,
-          keys: [getSelector("Claimed")],
+          keys: [getSelector("ModifyLock")],
         },
       ],
     },
