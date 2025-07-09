@@ -174,7 +174,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Initialize the quest manager
     this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
-    
+
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
 
@@ -694,7 +694,7 @@ export default class WorldmapScene extends HexagonScene {
   public deleteChest(entityId: ID) {
     this.chestManager.removeChest(entityId);
     // Find and remove from chestHexes
-    this.chestHexes.forEach((rowMap, col) => {
+    this.chestHexes.forEach((rowMap) => {
       rowMap.forEach((hex, row) => {
         if (hex.id === entityId) {
           rowMap.delete(row);
@@ -774,7 +774,7 @@ export default class WorldmapScene extends HexagonScene {
   public updateChestHexes(update: ChestSystemUpdate) {
     const {
       hexCoords: { col, row },
-      entityId,
+      occupierId,
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
@@ -785,7 +785,7 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.chestHexes.has(newCol)) {
       this.chestHexes.set(newCol, new Map());
     }
-    this.chestHexes.get(newCol)?.set(newRow, { id: entityId, owner: 0n });
+    this.chestHexes.get(newCol)?.set(newRow, { id: occupierId, owner: 0n });
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {

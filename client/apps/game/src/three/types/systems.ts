@@ -63,7 +63,6 @@ export type QuestSystemUpdate = {
 };
 
 export type ChestSystemUpdate = {
-  entityId: ID;
   occupierId: ID;
   hexCoords: HexPosition;
 };

@@ -117,7 +117,7 @@ export class ChestManager {
   }
 
   async onUpdate(update: ChestSystemUpdate) {
-    const { entityId, occupierId, hexCoords } = update;
+    const { occupierId, hexCoords } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     // Add the chest to the map
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
@@ -129,7 +129,7 @@ export class ChestManager {
       this.chestHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
     }
 
-    this.chests.addChest(entityId, occupierId, position);
+    this.chests.addChest(occupierId, position);
 
     // Re-render if we have a current chunk
     if (this.currentChunkKey) {
@@ -169,7 +169,6 @@ export class ChestManager {
       })
       .map((chest) => ({
         entityId: chest.entityId,
-        occupierId: chest.occupierId,
         hexCoords: chest.hexCoords,
       }));
 
@@ -348,47 +347,13 @@ export class ChestManager {
   }
 
   public async removeChest(entityId: ID) {
-    const chest = this.chests.getChest(entityId);
-    if (!chest || !this.chestModel) return;
-
-    // Find the matrix index for this chest
-    let matrixIndex = -1;
-    this.entityIdMap.forEach((id, index) => {
-      if (id === entityId) {
-        matrixIndex = index;
-      }
-    });
-
-    if (matrixIndex === -1) return;
-
-    // Play open animation if available
-    const openClip = this.animationClips.find((clip) => clip.name === "Open");
-    if (openClip && this.chestModel.group.children[0]) {
-      const mixer = new THREE.AnimationMixer(this.chestModel.group.children[0]);
-      const action = mixer.clipAction(openClip);
-      action.clampWhenFinished = true;
-      action.setLoop(THREE.LoopOnce, 1);
-      action.play();
-
-      this.animations.set(entityId, mixer);
-
-      // Wait for animation to complete
-      await new Promise<void>((resolve) => {
-        const checkAnimation = () => {
-          if (!action.isRunning()) {
-            this.animations.delete(entityId);
-            mixer.stopAllAction();
-            resolve();
-          } else {
-            requestAnimationFrame(checkAnimation);
-          }
-        };
-        checkAnimation();
-      });
+    if (!this.chests.getChest(entityId)) {
+      return;
     }
 
     // Remove chest from tracking
     this.chests.removeChest(entityId);
+
     this.removeEntityIdLabel(entityId);
 
     // Re-render visible chests
@@ -408,20 +373,10 @@ export class ChestManager {
 class Chests {
   private chests: Map<ID, ChestData> = new Map();
 
-  addChest(entityId: ID, occupierId: ID, hexCoords: Position) {
-    this.chests.set(entityId, {
-      entityId,
-      occupierId,
+  addChest(occupierId: ID, hexCoords: Position) {
+    this.chests.set(occupierId, {
+      entityId: occupierId,
       hexCoords,
-    });
-  }
-
-  removeChestFromPosition(hexCoords: { x: number; y: number }) {
-    this.chests.forEach((chest) => {
-      const { x, y } = chest.hexCoords.getNormalized();
-      if (x === hexCoords.x && y === hexCoords.y) {
-        this.chests.delete(chest.entityId);
-      }
     });
   }
 

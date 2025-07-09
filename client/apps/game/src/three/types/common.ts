@@ -54,7 +54,6 @@ export interface QuestData {
 
 export interface ChestData {
   entityId: ID;
-  occupierId: ID;
   hexCoords: Position;
 }
 
