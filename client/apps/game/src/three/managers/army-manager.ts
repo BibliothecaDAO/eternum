@@ -39,6 +39,7 @@ export class ArmyManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
+  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; fx: { end: () => void } }>> = new Map();
 
   constructor(
     scene: THREE.Scene,
@@ -179,6 +180,12 @@ export class ArmyManager {
     // Reset all model instances
     this.armyModel.resetInstanceCounts();
 
+    // Clear existing relic effects before re-rendering
+    this.armyRelicEffects.forEach((effects, entityId) => {
+      effects.forEach((effect) => effect.fx.end());
+    });
+    this.armyRelicEffects.clear();
+
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
@@ -218,6 +225,9 @@ export class ArmyManager {
       } else {
         this.addEntityIdLabel(army, position);
       }
+
+      // Add random relic effects for demo
+      this.addRandomRelicEffects(army.entityId, position);
     });
 
     // Remove labels for armies that are no longer visible
@@ -350,12 +360,105 @@ export class ArmyManager {
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
+    // Update relic effects position when army moves
+    const relicEffects = this.armyRelicEffects.get(entityId);
+    if (relicEffects) {
+      // Remove old effects
+      relicEffects.forEach((effect) => effect.fx.end());
+      this.armyRelicEffects.delete(entityId);
+      
+      // Re-add effects at new position
+      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
+      this.addRandomRelicEffects(entityId, targetWorldPos);
+    }
+
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
+  private addRandomRelicEffects(entityId: ID, position: THREE.Vector3) {
+    // Generate random number of relics (1-3)
+    const numRelics = Math.floor(Math.random() * 3) + 1;
+    const relicEffects: Array<{ relicNumber: number; fx: { end: () => void } }> = [];
+
+    for (let i = 0; i < numRelics; i++) {
+      // Random relic between 40-56
+      const relicNumber = Math.floor(Math.random() * 17) + 40;
+      
+      // Register the relic FX if not already registered
+      this.fxManager.registerRelicFX(relicNumber);
+      
+      // Play the relic effect at army position, elevated above the label
+      const fx = this.fxManager.playFxAtCoords(
+        `relic_${relicNumber}`,
+        position.x,
+        position.y + 1.5, // Position closer to the character
+        position.z,
+        0.8, // Smaller size for relics
+        undefined,
+        true // Infinite effect
+      );
+      
+      relicEffects.push({ relicNumber, fx });
+    }
+
+    this.armyRelicEffects.set(entityId, relicEffects);
+  }
+
+  public addRelicEffect(entityId: ID, relicNumber: number) {
+    const army = this.armies.get(entityId);
+    if (!army) return;
+
+    const position = this.getArmyWorldPosition(entityId, army.hexCoords);
+    
+    // Register the relic FX if not already registered
+    this.fxManager.registerRelicFX(relicNumber);
+    
+    // Play the relic effect
+    const fx = this.fxManager.playFxAtCoords(
+      `relic_${relicNumber}`,
+      position.x,
+      position.y + 1.5,
+      position.z,
+      0.8,
+      undefined,
+      true
+    );
+
+    // Add to existing effects or create new array
+    const existingEffects = this.armyRelicEffects.get(entityId) || [];
+    existingEffects.push({ relicNumber, fx });
+    this.armyRelicEffects.set(entityId, existingEffects);
+  }
+
+  public removeRelicEffect(entityId: ID, relicNumber: number) {
+    const effects = this.armyRelicEffects.get(entityId);
+    if (!effects) return;
+
+    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
+    if (index !== -1) {
+      effects[index].fx.end();
+      effects.splice(index, 1);
+      
+      if (effects.length === 0) {
+        this.armyRelicEffects.delete(entityId);
+      }
+    }
+  }
+
+  public removeAllRelicEffects(entityId: ID) {
+    const effects = this.armyRelicEffects.get(entityId);
+    if (!effects) return;
+
+    effects.forEach((effect) => effect.fx.end());
+    this.armyRelicEffects.delete(entityId);
+  }
+
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
+
+    // Remove any relic effects
+    this.removeAllRelicEffects(entityId);
 
     const { promise } = this.fxManager.playFxAtCoords(
       "skull",
@@ -383,7 +486,7 @@ export class ArmyManager {
     this.armyModel.updateAnimations(deltaTime);
   }
 
-  private getArmyWorldPosition = (armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
+  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
     const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
 
@@ -498,6 +601,11 @@ export class ArmyManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+    // Clean up relic effects
+    this.armyRelicEffects.forEach((effects) => {
+      effects.forEach((effect) => effect.fx.end());
+    });
+    this.armyRelicEffects.clear();
     // Clean up any other resources...
   }
 }

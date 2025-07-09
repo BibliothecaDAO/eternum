@@ -17,7 +17,9 @@ class FXInstance {
   public clock: THREE.Clock;
   public animationFrameId?: number;
   public isDestroyed = false;
+  public initialX: number;
   public initialY: number;
+  public initialZ: number;
   public baseSize: number;
   public resolvePromise?: () => void;
   public label?: CSS2DObject;
@@ -45,7 +47,9 @@ class FXInstance {
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
+    this.initialX = x;
     this.initialY = y;
+    this.initialZ = z;
     this.baseSize = size;
     this.type = type;
     this.animateCallback = animateCallback;
@@ -238,6 +242,42 @@ export class FXManager {
         fx.group.position.y = fx.initialY + bob;
         fx.group.position.x += sway * 0.01;
         fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+
+        return true;
+      },
+      isInfinite: true,
+    });
+  }
+
+  public registerRelicFX(relicNumber: number) {
+    const type = `relic_${relicNumber}`;
+    this.registerFX(type, {
+      textureUrl: `images/resources/${relicNumber}.png`,
+      animate: (fx, t) => {
+        // Fade in animation
+        if (t < 0.5) {
+          fx.material.opacity = t / 0.5;
+          const scale = (t / 0.5) * fx.baseSize;
+          fx.sprite.scale.set(scale, scale, scale);
+        } else {
+          fx.material.opacity = 1;
+          fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+        }
+
+        // Get unique orbit parameters based on fx instance
+        const orbitSpeed = 0.5 + (fx.sprite.id % 3) * 0.2; // Different speeds
+        const orbitRadius = 0.5 + (fx.sprite.id % 2) * 0.3; // Different radii
+        const verticalOffset = (fx.sprite.id % 4) * 0.2; // Different heights
+        const phase = (fx.sprite.id % 6) * (Math.PI / 3); // Different starting positions
+
+        // Orbital motion
+        const angle = t * orbitSpeed + phase;
+        fx.group.position.x = fx.initialX + Math.cos(angle) * orbitRadius;
+        fx.group.position.z = fx.initialZ + Math.sin(angle) * orbitRadius;
+
+        // Vertical bobbing
+        const bob = Math.sin(t * 2 + phase) * 0.1;
+        fx.group.position.y = fx.initialY + verticalOffset + bob;
 
         return true;
       },
