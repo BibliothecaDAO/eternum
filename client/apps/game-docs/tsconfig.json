@@ -6,6 +6,7 @@
     "allowJs": true,
     "esModuleInterop": true,
     "jsx": "preserve",
+    "outDir": "./dist",
     "paths": {
       "@/*": ["./docs/*"],
       "@config/*": ["../../../config/utils/utils/*"],
@@ -15,5 +16,5 @@
     "skipLibCheck": true
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.md", "**/*.mdx"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist", "**/*.mjs"]
 }

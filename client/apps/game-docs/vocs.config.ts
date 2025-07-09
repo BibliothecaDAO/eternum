@@ -34,23 +34,77 @@ export default defineConfig({
     google: "Open Sans",
   },
 
-  title: "Eternum",
+  title: "Eternum (Season 1 - Concluded)",
   sidebar: [
     {
       text: "Overview",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
-        { text: "Key Concepts", link: "/overview/key-concepts" },
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "$LORDS Token", link: "/overview/lords" },
+        { text: "Loot Chests", link: "/overview/loot-chests" },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },
       ],
     },
     {
-      text: "Eternum (Full Game)",
+      text: "Blitz",
+      items: [
+        { text: "Key Concepts", link: "/blitz/key-concepts" },
+        { text: "World Physics", link: "/blitz/world-physics" },
+        {
+          text: "Realms",
+          link: "/blitz/realms/realm",
+          collapsed: true,
+          items: [
+            { text: "Realms", link: "/blitz/realms/realm" },
+            { text: "Buildings", link: "/blitz/realms/buildings" },
+          ],
+        },
+        {
+          text: "Materials",
+          link: "/blitz/materials/resources",
+          collapsed: true,
+          items: [
+            { text: "Materials", link: "/blitz/materials/resources" },
+            { text: "Production", link: "/blitz/materials/production" },
+            { text: "Storage", link: "/blitz/materials/storage" },
+            { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
+            { text: "Bridging", link: "/blitz/materials/bridging" },
+            { text: "Relics", link: "/blitz/materials/relics" },
+            { text: "Automation", link: "/blitz/materials/automation" },
+          ],
+        },
+        {
+          text: "Military",
+          link: "/blitz/military/armies",
+          collapsed: true,
+          items: [
+            { text: "Armies", link: "/blitz/military/armies" },
+            { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
+            { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
+            { text: "Damage", link: "/blitz/military/damage" },
+          ],
+        },
+        {
+          text: "World Map & Movement",
+          link: "/blitz/worldmap-movement/worldmap",
+          collapsed: true,
+          items: [
+            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
+          ],
+        },
+        { text: "World Structures", link: "/blitz/world-structures" },
+        { text: "Victory", link: "/blitz/victory" },
+        { text: "Prize Pool", link: "/blitz/prize-pool" },
+        { text: "Achievements", link: "/blitz/achievements" },
+      ],
+    },
+    {
+      text: "Eternum (Season 1 - Concluded)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "World Physics", link: "/eternum/world-physics" },
@@ -66,11 +120,11 @@ export default defineConfig({
           ],
         },
         {
-          text: "Resources",
+          text: "Materials",
           link: "/eternum/resources/resources",
           collapsed: true,
           items: [
-            { text: "Resources", link: "/eternum/resources/resources" },
+            { text: "Materials", link: "/eternum/resources/resources" },
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
             { text: "Storage", link: "/eternum/resources/storage" },
@@ -100,70 +154,13 @@ export default defineConfig({
           ],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
+        { text: "Tribes", link: "/eternum/tribes" },
         { text: "Victory", link: "/eternum/victory" },
         { text: "Prize Pool", link: "/eternum/prize-pool" },
-        { text: "Achievements", link: "/eternum/achievements" },
-        { text: "Tribes", link: "/eternum/tribes" },
-        { text: "Agents", link: "/eternum/agents" },
-      ],
-    },
-    {
-      text: "Blitz (Fast-Paced)",
-      items: [
-        { text: "Key Concepts", link: "/blitz/key-concepts" },
-        { text: "World Physics", link: "/blitz/world-physics" },
-        {
-          text: "Realms",
-          link: "/blitz/realms/realm",
-          collapsed: true,
-          items: [
-            { text: "Realms", link: "/blitz/realms/realm" },
-            { text: "Buildings", link: "/blitz/realms/buildings" },
-          ],
-        },
-        {
-          text: "Materials",
-          link: "/blitz/materials/resources",
-          collapsed: true,
-          items: [
-            { text: "Resources", link: "/blitz/materials/resources" },
-            { text: "Production", link: "/blitz/materials/production" },
-            { text: "Automation", link: "/blitz/materials/automation" },
-            { text: "Storage", link: "/blitz/materials/storage" },
-            { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
-            { text: "Bridging", link: "/blitz/materials/bridging" },
-          ],
-        },
-        {
-          text: "Military",
-          link: "/blitz/military/armies",
-          collapsed: true,
-          items: [
-            { text: "Armies", link: "/blitz/military/armies" },
-            { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
-            { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
-            { text: "Damage", link: "/blitz/military/damage" },
-            { text: "Raiding", link: "/blitz/military/raiding" },
-          ],
-        },
-        {
-          text: "World Map & Movement",
-          link: "/blitz/worldmap-movement/worldmap",
-          collapsed: true,
-          items: [
-            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
-        },
-        { text: "World Structures", link: "/blitz/world-structures" },
-        { text: "Victory", link: "/blitz/victory" },
-        { text: "Prize Pool", link: "/blitz/prize-pool" },
-        { text: "Achievements", link: "/blitz/achievements" },
       ],
     },
     {
       text: "Development",
-      link: "/development",
       collapsed: true,
       items: [
         { text: "Getting Started", link: "/development/getting-started" },

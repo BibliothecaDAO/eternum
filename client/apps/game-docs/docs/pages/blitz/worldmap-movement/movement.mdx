@@ -1,9 +1,10 @@
-import TroopMovementTable from "@/components/TroopMovementTable";
+import { BlitzTroopMovementTable } from "@/components/TroopMovementTable";
 import { BiomeStamina } from "@/components/BiomeStamina";
+import { ExplorationRewards } from "@/components/ExplorationRewards";
 
 # 🧭 Movement & Exploration
 
-<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+<img src="/images/covers/04.png" alt="Troops Moving Across the World" className="w-full rounded-lg my-6" />
 
 ## Stamina
 
@@ -12,22 +13,22 @@ against enemy forces. Each of these actions has a specific stamina cost, making 
 maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +60 stamina per Eternum Day. Each
 troop type possesses different maximum stamina capacities, outlined in the table below:
 
-<TroopMovementTable />
+<BlitzTroopMovementTable />
 
 Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
 themselves severely disadvantaged if attacked by enemy forces.
 
 ## Movement
 
+Armies can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a Realm, another
+army, or a world structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
+continuous path of adjacent, unoccupied hexes leading to the destination, and the army has sufficient stamina available
+for the entire journey.
+
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/moving-army.gif" alt="Moving Army" />
   <em>Moving armies in the client</em>
 </div>
-
-Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
-Realm, another army, or a world structure such as a Hyperstructure, Camp, or essence Rift. Armies may also move to more
-distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the destination, and the
-army has sufficient stamina available for the entire journey.
 
 The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
 within the army. The table below details biome-specific stamina costs for each troop type:
@@ -37,22 +38,22 @@ within the army. The table below details biome-specific stamina costs for each t
 ## Exploring
 
 Exploring your surroundings is a necessary part of Blitz as it allows Lords to reveal paths to objectives, find valuable
-essence or other bonuses, and uncover beneficial world structures.
+Essence or other bonuses, and uncover beneficial world structures.
 
 When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords. If the newly explored
-hex contains a world structure, the exploring army will automatically be pushed back to the hex from which they started
-without any additional stamina penalty.
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
+the known boundaries of the world. If the newly explored hex contains a World Structure, the exploring army will
+automatically be pushed back to the hex from which they started without any additional stamina penalty.
 
 During exploration, armies gather any valuables they encounter, receiving the goods directly into their inventory. The
 reward chances for any explored hex are as follows:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Require table of materials that can be found and their stack size.</span>
+<ExplorationRewards />
 
-If an army becomes overencumbered, they will not be able to collect any materials found when exploring. Instead, the
-materials will remain on that tile and will be able to be collected by another army with enough capacity. Armies can
+If an army doesn't have sufficient carrying capacity to store the discovered materials, the materials will be
+permanently lost (burned) but the army will be able to continue exploring provided they have enough stamina. Armies can
 return to a structure to offload the materials, or drop them to free up space. Note that any materials discarded in the
-field will be permanently lost (burned).
+field will also be burned.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/explore.gif" alt="Explore" />
