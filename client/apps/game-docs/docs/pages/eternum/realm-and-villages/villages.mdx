@@ -1,0 +1,63 @@
+import ResourceProbability from "@/components/ResourceProbability";
+import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+
+# 🛖 Villages
+
+Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
+surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
+settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
+wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
+Villages in Season 1!
+
+<img
+  src="/images/buildings/construction/village.png"
+  width="800"
+  style={{ margin: "0 auto", transform: "scale(1.2)" }}
+/>
+
+### Settling
+
+Villages are settled by minting a Village token. Aspiring settlers can choose to place their Village next to a specific
+Realm by entering the asset ID of a settled Realm, or let fate guide them to a random Realm's outskirts - either way,
+the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
+possible hexes they spawn on by selecting a compass direction.
+
+<img src="/screenshots/villages.png" alt="Village Settling Screen" width="600" className="mx-auto" />
+
+<span style={{ fontSize: "0.9rem", display: "block", textAlign: "center" }}>
+  _Three villages settled next to a realm_
+</span>
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Village} />
+
+### Starting Military
+
+Each Village starts with the majority of the starting troops deployed to the first defense slot as a guard army. A small
+number of troops remain within the Village’s storage to be deployed as a field army should the Village Lord wish to
+explore beyond their walls. Troops can be transferred from the guard army to the field army using the troop transfer
+process explained in the [Movement & Exploration](/eternum/worldmap-movement/movement) section. The specific type of
+military unit is determined by your Village's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary amount={1000} structureType={StructureType.Village} />
+
+### Resource Roll
+
+When minting a Village, a random number is rolled to determine the single resource that it can produce.
+
+<ResourceProbability />
+
+### Limitations
+
+Villages produce food, resources, troops, donkeys, and labor at 50% the rate of Realms. They can receive and purchase
+food, labor, donkeys and resources without restriction, but can only receive troops from their parent Realm - this
+limitation is in place to prevent players from spawning a Village on their rival's Realm and 'teleporting' troops there
+by using the donkey network.
+
+### Village Progression
+
+Villages have a limited progression path and may only upgrade once from Settlement to City. The cost and benefits of
+this progression is the same as that of a Realm.

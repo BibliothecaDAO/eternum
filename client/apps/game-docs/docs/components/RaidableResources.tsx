@@ -3,6 +3,16 @@ import { ResourcesIds, STEALABLE_RESOURCES, resources } from "@bibliothecadao/ty
 import ResourceIcon from "./ResourceIcon";
 
 export const RaidableResources = () => {
+  if (!STEALABLE_RESOURCES) {
+    console.error("STEALABLE_RESOURCES is undefined");
+    return <div>Error: STEALABLE_RESOURCES not found</div>;
+  }
+
+  if (!resources) {
+    console.error("resources is undefined");
+    return <div>Error: resources not found</div>;
+  }
+
   return (
     <div style={table.container}>
       <div style={table.wrapper}>
