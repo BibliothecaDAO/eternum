@@ -1,5 +1,13 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  ClientComponents,
+  ID,
+  RelicEffect,
+  Resource,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -76,7 +84,14 @@ export class ResourceManager {
     const relicEffect = this.getRelicEffect(resourceId);
     if (!relicEffect) return false;
 
-    return ResourceManager.isRelicActive(relicEffect, currentTick);
+    return ResourceManager.isRelicActive(
+      {
+        start_tick: relicEffect.effect_start_tick,
+        end_tick: relicEffect.effect_end_tick,
+        usage_left: relicEffect.effect_usage_left,
+      },
+      currentTick,
+    );
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -883,16 +898,12 @@ export class ResourceManager {
     return resourceId >= 39; // Relics start from ID 39 onwards
   }
 
-  public static isRelicActive(
-    relicEffect: ComponentValue<ClientComponents["RelicEffect"]["schema"]>,
-    currentTick: number,
-  ): boolean {
+  public static isRelicActive({ start_tick, end_tick, usage_left }: RelicEffect, currentTick: number): boolean {
     // Check if the effect is within the active time window
-    const isWithinTimeWindow =
-      currentTick >= relicEffect.effect_start_tick && currentTick <= relicEffect.effect_end_tick;
+    const isWithinTimeWindow = currentTick >= start_tick && currentTick <= end_tick;
 
     // Check if there are remaining uses (if applicable)
-    const hasUsagesLeft = relicEffect.effect_usage_left > 0;
+    const hasUsagesLeft = usage_left > 0;
 
     return isWithinTimeWindow && hasUsagesLeft;
   }

@@ -600,16 +600,25 @@ export class SystemManager {
               // Check if we have a current state
               if (currentState) {
                 const { currentArmiesTick } = getBlockTimestamp();
-                const isActive = ResourceManager.isRelicActive(currentState, currentArmiesTick);
+                const effect = {
+                  start_tick: currentState.effect_start_tick,
+                  end_tick: currentState.effect_end_tick,
+                  usage_left: currentState.effect_usage_left,
+                };
+                const isActive = ResourceManager.isRelicActive(effect, currentArmiesTick);
 
-                console.log("RelicEffectSystemManager: currentState exists, isActive", { isActive, currentArmiesTick });
+                console.log("RelicEffectSystemManager: currentState exists, isActive", {
+                  isActive,
+                  currentArmiesTick,
+                  relicResourceId,
+                  effect,
+                });
 
                 return {
                   entityId,
                   relicResourceId,
                   isActive,
-                  effectStartTick: currentState.effect_start_tick,
-                  effectEndTick: currentState.effect_end_tick,
+                  effect,
                 };
               } else if (prevState && !currentState) {
                 // Relic effect was removed
@@ -618,8 +627,11 @@ export class SystemManager {
                   entityId,
                   relicResourceId,
                   isActive: false,
-                  effectStartTick: 0,
-                  effectEndTick: 0,
+                  effect: {
+                    start_tick: 0,
+                    end_tick: 0,
+                    usage_left: 0,
+                  },
                 };
               } else {
                 console.log("RelicEffectSystemManager: No relevant state found", { currentState, prevState });

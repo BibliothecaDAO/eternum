@@ -3,6 +3,7 @@ import {
   BuildingType,
   HexPosition,
   ID,
+  RelicEffect,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -71,6 +72,5 @@ export type RelicEffectSystemUpdate = {
   entityId: ID;
   relicResourceId: ResourcesIds;
   isActive: boolean;
-  effectStartTick: number;
-  effectEndTick: number;
+  effect: RelicEffect;
 };
