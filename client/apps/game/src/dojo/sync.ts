@@ -6,6 +6,7 @@ import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
+  getActiveRelicEffectsFromTorii,
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
   getConfigFromTorii,
@@ -159,6 +160,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
+// Sync active relic effects
+export const syncRelicEffects = async (setup: SetupResult, currentTick: number) => {
+  return getActiveRelicEffectsFromTorii(
+    setup.network.toriiClient,
+    setup.network.contractComponents as any,
+    currentTick,
+  );
+};
+
 // initial sync runs before the game is playable and should sync minimal data
 export const initialSync = async (
   setup: SetupResult,
@@ -209,5 +219,12 @@ export const initialSync = async (
   await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] guilds query", end - start);
+  setInitialSyncProgress(95);
+
+  // RELIC EFFECTS
+  start = performance.now();
+  await syncRelicEffects(setup, 0);
+  end = performance.now();
+  console.log("[sync] relic effects query", end - start);
   setInitialSyncProgress(100);
 };

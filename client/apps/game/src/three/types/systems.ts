@@ -66,3 +66,11 @@ export type ChestSystemUpdate = {
   occupierId: ID;
   hexCoords: HexPosition;
 };
+
+export type RelicEffectSystemUpdate = {
+  entityId: ID;
+  relicResourceId: ResourcesIds;
+  isActive: boolean;
+  effectStartTick: number;
+  effectEndTick: number;
+};

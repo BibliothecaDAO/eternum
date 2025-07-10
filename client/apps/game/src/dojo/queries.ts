@@ -362,7 +362,7 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
     },
     components,
     [],
-    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource", "s1_eternum-RelicEffect"],
+    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -422,4 +422,15 @@ export const getQuestsFromTorii = async (client: ToriiClient, components: Compon
   };
 
   return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
+};
+
+export const getActiveRelicEffectsFromTorii = async (
+  client: ToriiClient,
+  components: Component<Schema, Metadata, undefined>[],
+  currentTick: number,
+) => {
+  // Filter for active relic effects where effect_end_tick >= currentTick
+  const query = MemberClause("s1_eternum-RelicEffect", "effect_end_tick", "Gte", currentTick).build();
+
+  return getEntities(client, query, components as any, [], ["s1_eternum-RelicEffect"], EVENT_QUERY_LIMIT, false);
 };

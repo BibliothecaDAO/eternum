@@ -226,8 +226,8 @@ export class ArmyManager {
         this.addEntityIdLabel(army, position);
       }
 
-      // Add random relic effects for demo
-      this.addRandomRelicEffects(army.entityId, position);
+      // Add random relic effects for demo (commented out - now using actual relic effects from game system)
+      // this.addRandomRelicEffects(army.entityId, position);
     });
 
     // Remove labels for armies that are no longer visible
@@ -366,17 +366,18 @@ export class ArmyManager {
       // Remove old effects
       relicEffects.forEach((effect) => effect.fx.end());
       this.armyRelicEffects.delete(entityId);
-      
-      // Re-add effects at new position
-      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
-      this.addRandomRelicEffects(entityId, targetWorldPos);
+
+      // Re-add effects at new position (commented out - now using actual relic effects from game system)
+      // const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
+      // this.addRandomRelicEffects(entityId, targetWorldPos);
     }
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
-  private addRandomRelicEffects(entityId: ID, position: THREE.Vector3) {
+  // Demo method for random relic effects - kept for future use but commented out in favor of actual game system relics
+  private async addRandomRelicEffects(entityId: ID, position: THREE.Vector3) {
     // Generate random number of relics (1-3)
     const numRelics = Math.floor(Math.random() * 3) + 1;
     const relicEffects: Array<{ relicNumber: number; fx: { end: () => void } }> = [];
@@ -384,51 +385,60 @@ export class ArmyManager {
     for (let i = 0; i < numRelics; i++) {
       // Random relic between 40-56
       const relicNumber = Math.floor(Math.random() * 17) + 40;
-      
-      // Register the relic FX if not already registered
-      this.fxManager.registerRelicFX(relicNumber);
-      
-      // Play the relic effect at army position, elevated above the label
-      const fx = this.fxManager.playFxAtCoords(
-        `relic_${relicNumber}`,
-        position.x,
-        position.y + 1.5, // Position closer to the character
-        position.z,
-        0.8, // Smaller size for relics
-        undefined,
-        true // Infinite effect
-      );
-      
-      relicEffects.push({ relicNumber, fx });
+
+      try {
+        // Register the relic FX if not already registered (wait for texture to load)
+        await this.fxManager.registerRelicFX(relicNumber);
+
+        // Play the relic effect at army position, elevated above the label
+        const fx = this.fxManager.playFxAtCoords(
+          `relic_${relicNumber}`,
+          position.x,
+          position.y + 1.5, // Position closer to the character
+          position.z,
+          0.8, // Smaller size for relics
+          undefined,
+          true, // Infinite effect
+        );
+
+        relicEffects.push({ relicNumber, fx });
+      } catch (error) {
+        console.error(`Failed to add random relic effect ${relicNumber}:`, error);
+      }
     }
 
     this.armyRelicEffects.set(entityId, relicEffects);
   }
 
-  public addRelicEffect(entityId: ID, relicNumber: number) {
+  public async addRelicEffect(entityId: ID, relicNumber: number) {
+    console.log("addRelicEffect", { entityId, relicNumber });
     const army = this.armies.get(entityId);
     if (!army) return;
 
     const position = this.getArmyWorldPosition(entityId, army.hexCoords);
-    
-    // Register the relic FX if not already registered
-    this.fxManager.registerRelicFX(relicNumber);
-    
-    // Play the relic effect
-    const fx = this.fxManager.playFxAtCoords(
-      `relic_${relicNumber}`,
-      position.x,
-      position.y + 1.5,
-      position.z,
-      0.8,
-      undefined,
-      true
-    );
 
-    // Add to existing effects or create new array
-    const existingEffects = this.armyRelicEffects.get(entityId) || [];
-    existingEffects.push({ relicNumber, fx });
-    this.armyRelicEffects.set(entityId, existingEffects);
+    try {
+      // Register the relic FX if not already registered (wait for texture to load)
+      await this.fxManager.registerRelicFX(relicNumber);
+
+      // Play the relic effect
+      const fx = this.fxManager.playFxAtCoords(
+        `relic_${relicNumber}`,
+        position.x,
+        position.y + 1.5,
+        position.z,
+        0.8,
+        undefined,
+        true,
+      );
+
+      // Add to existing effects or create new array
+      const existingEffects = this.armyRelicEffects.get(entityId) || [];
+      existingEffects.push({ relicNumber, fx });
+      this.armyRelicEffects.set(entityId, existingEffects);
+    } catch (error) {
+      console.error(`Failed to add relic effect ${relicNumber} for army ${entityId}:`, error);
+    }
   }
 
   public removeRelicEffect(entityId: ID, relicNumber: number) {
@@ -439,7 +449,7 @@ export class ArmyManager {
     if (index !== -1) {
       effects[index].fx.end();
       effects.splice(index, 1);
-      
+
       if (effects.length === 0) {
         this.armyRelicEffects.delete(entityId);
       }
@@ -595,6 +605,15 @@ export class ArmyManager {
       this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
     });
   };
+
+  public hasArmy(entityId: ID): boolean {
+    return this.armies.has(entityId);
+  }
+
+  public getArmyRelicEffects(entityId: ID): number[] {
+    const effects = this.armyRelicEffects.get(entityId);
+    return effects ? effects.map((effect) => effect.relicNumber) : [];
+  }
 
   public destroy() {
     // Clean up camera view listener

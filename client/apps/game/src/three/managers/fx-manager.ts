@@ -249,10 +249,43 @@ export class FXManager {
     });
   }
 
-  public registerRelicFX(relicNumber: number) {
+  public async registerRelicFX(relicNumber: number): Promise<void> {
     const type = `relic_${relicNumber}`;
+    const textureUrl = `images/resources/${relicNumber}.png`;
+    
+    // Pre-load the texture and wait for it to load
+    if (!this.textures.has(textureUrl)) {
+      const texture = await new Promise<THREE.Texture>((resolve, _reject) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          textureUrl,
+          (loadedTexture) => {
+            loadedTexture.colorSpace = THREE.SRGBColorSpace;
+            loadedTexture.minFilter = THREE.LinearFilter;
+            loadedTexture.magFilter = THREE.LinearFilter;
+            resolve(loadedTexture);
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load relic texture ${textureUrl}:`, error);
+            // Create a fallback white texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const context = canvas.getContext('2d')!;
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, 64, 64);
+            const fallbackTexture = new THREE.CanvasTexture(canvas);
+            fallbackTexture.colorSpace = THREE.SRGBColorSpace;
+            resolve(fallbackTexture);
+          }
+        );
+      });
+      this.textures.set(textureUrl, texture);
+    }
+    
     this.registerFX(type, {
-      textureUrl: `images/resources/${relicNumber}.png`,
+      textureUrl,
       animate: (fx, t) => {
         // Fade in animation
         if (t < 0.5) {
@@ -338,6 +371,10 @@ export class FXManager {
         config.animate,
         isInfinite || config.isInfinite,
       );
+      
+      // Set initial position for orbital effects
+      fxInstance.initialX = x;
+      fxInstance.initialZ = z;
 
       fxInstance.onComplete(resolve);
       this.activeFX.add(fxInstance);

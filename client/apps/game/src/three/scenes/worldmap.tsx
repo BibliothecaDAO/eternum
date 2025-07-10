@@ -51,6 +51,7 @@ import {
   ChestSystemUpdate,
   ExplorerRewardSystemUpdate,
   QuestSystemUpdate,
+  RelicEffectSystemUpdate,
   SceneName,
   StructureSystemUpdate,
   TileSystemUpdate,
@@ -170,7 +171,13 @@ export default class WorldmapScene extends HexagonScene {
     this.chestLabelsGroup.name = "ChestLabelsGroup";
 
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup, this);
-    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup, this);
+    this.structureManager = new StructureManager(
+      this.scene,
+      this.renderChunkSize,
+      this.structureLabelsGroup,
+      this,
+      this.fxManager,
+    );
 
     // Initialize the quest manager
     this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
@@ -234,6 +241,11 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.Chest.onDeadChest((entityId) => {
       // If the chest is opened, remove it from the map
       this.deleteChest(entityId);
+    });
+
+    // Store the unsubscribe function for Relic Effect updates
+    this.systemManager.RelicEffect.onUpdate((update: RelicEffectSystemUpdate) => {
+      this.handleRelicEffectUpdate(update);
     });
 
     this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
@@ -1194,6 +1206,48 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
+  }
+
+  /**
+   * Handle relic effect updates from the game system
+   * @param update The relic effect update containing entity ID, relic resource ID, and active status
+   */
+  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate) {
+    const { entityId, relicResourceId, isActive } = update;
+    console.log({ updateWorldmap: update });
+
+    // Check if this is an army entity
+    if (this.armyManager.hasArmy(entityId)) {
+      console.log(
+        `Relic effect update for Army entityId: ${entityId}, relicResourceId: ${relicResourceId}, isActive: ${isActive}`,
+      );
+      if (isActive) {
+        console.log(`Adding relic effect to army: entityId=${entityId}, relicResourceId=${relicResourceId}`);
+        await this.armyManager.addRelicEffect(entityId, relicResourceId);
+      } else {
+        console.log(`Removing relic effect from army: entityId=${entityId}, relicResourceId=${relicResourceId}`);
+        this.armyManager.removeRelicEffect(entityId, relicResourceId);
+      }
+    }
+
+    // Check if this is a structure entity
+    const structureHexes = this.structureManager.structures.getStructures();
+    for (const [col, structures] of structureHexes) {
+      console.log({ structures });
+      if (structures.has(entityId)) {
+        console.log(
+          `Relic effect update for Structure entityId: ${entityId}, relicResourceId: ${relicResourceId}, isActive: ${isActive}, col: ${col}`,
+        );
+        if (isActive) {
+          console.log(`Adding relic effect to structure: entityId=${entityId}, relicResourceId=${relicResourceId}`);
+          await this.structureManager.addRelicEffect(entityId, relicResourceId);
+        } else {
+          console.log(`Removing relic effect from structure: entityId=${entityId}, relicResourceId=${relicResourceId}`);
+          this.structureManager.removeRelicEffect(entityId, relicResourceId);
+        }
+        break;
+      }
+    }
   }
 
   destroy() {
