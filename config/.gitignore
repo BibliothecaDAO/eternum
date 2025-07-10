@@ -174,5 +174,3 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 
-# Local configuration files
-environments/data/local.json
