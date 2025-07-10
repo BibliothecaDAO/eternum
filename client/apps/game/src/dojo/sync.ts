@@ -160,15 +160,6 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
-// Sync active relic effects
-export const syncRelicEffects = async (setup: SetupResult, currentTick: number) => {
-  return getActiveRelicEffectsFromTorii(
-    setup.network.toriiClient,
-    setup.network.contractComponents as any,
-    currentTick,
-  );
-};
-
 // initial sync runs before the game is playable and should sync minimal data
 export const initialSync = async (
   setup: SetupResult,
@@ -223,7 +214,8 @@ export const initialSync = async (
 
   // RELIC EFFECTS
   start = performance.now();
-  await syncRelicEffects(setup, 0);
+  // todo: find a way to get the current armies tick before config has synced
+  await getActiveRelicEffectsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, 0);
   end = performance.now();
   console.log("[sync] relic effects query", end - start);
   setInitialSyncProgress(100);

@@ -1,11 +1,14 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Position } from "@/types/position";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
-import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
+import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getChestName } from "../../relics";
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -104,7 +107,8 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
               <div
                 key={`${relic.id}-${index}`}
                 onMouseEnter={() => {
-                  if (!isDragging) { // Only play sound if not dragging
+                  if (!isDragging) {
+                    // Only play sound if not dragging
                     playHoverSound();
                   }
                   setHoveredRelic(index);
@@ -203,6 +207,10 @@ export const ChestContainer = ({
   explorerEntityId: ID;
   chestHex: { x: number; y: number };
 }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const [isShaking, setIsShaking] = useState(false);
   const [hasClicked, setHasClicked] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -210,6 +218,14 @@ export const ChestContainer = ({
   const [showResult, setShowResult] = useState(false);
 
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const chestName = useMemo(() => {
+    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(chestHex.x), BigInt(chestHex.y)]));
+    if (!tile) return "Unknown Chest";
+    return getChestName(tile.occupier_id);
+  }, [chestHex.x, chestHex.y]);
+
+  const chestPositionNormalized = new Position({ x: chestHex.x, y: chestHex.y }).getNormalized();
 
   // Sound effects
   const { play: playChestSound1 } = useUiSounds(soundSelector.relicChest1);
@@ -325,9 +341,28 @@ export const ChestContainer = ({
             initial={{ y: -20 }}
             animate={{ y: 0 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="text-gold text-3xl mb-6 font-bold"
+            className="text-center mb-6"
           >
-            🎉 Chest Opened!
+            <div className="text-gold text-3xl mb-4 font-bold">🎉 Chest Opened!</div>
+            <motion.h2
+              className="text-gold text-xl font-bold mb-2 bg-gradient-to-r from-gold via-yellow-400 to-gold bg-clip-text text-transparent"
+              animate={{
+                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              {chestName}
+            </motion.h2>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="h-px bg-gradient-to-r from-transparent via-gold to-transparent mx-auto max-w-md"
+            />
           </motion.div>
 
           <motion.img
@@ -499,9 +534,45 @@ export const ChestContainer = ({
 
   return (
     <div className="flex flex-col items-center justify-center p-8">
+      {/* Chest Name Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+        className="text-center mb-8"
+      >
+        <motion.h2
+          className="text-gold text-2xl font-bold mb-2 bg-gradient-to-r from-gold via-yellow-400 to-gold bg-clip-text text-transparent"
+          animate={{
+            backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          {chestName}
+        </motion.h2>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="h-px bg-gradient-to-r from-transparent via-gold to-transparent"
+        />
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-gold/70 text-sm mt-2"
+        >
+          Located at ({chestPositionNormalized.x}, {chestPositionNormalized.y})
+        </motion.p>
+      </motion.div>
+
       {/* Chest Image with Click Animation */}
       <motion.div
-        className="cursor-pointer"
+        className="cursor-pointer relative"
         onClick={handleChestClick}
         animate={
           isShaking
@@ -519,7 +590,56 @@ export const ChestContainer = ({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <img src="/images/relic-chest/chest-closed.png" alt="Closed Chest" className="w-48 h-48 mb-4" />
+        {/* Glowing aura around chest */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-radial from-gold/20 via-gold/10 to-transparent blur-xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        {/* Floating particles around chest */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={false}
+          animate={{
+            rotate: 360,
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-gold rounded-full"
+              style={{
+                left: `${50 + 30 * Math.cos((i * 60 * Math.PI) / 180)}%`,
+                top: `${50 + 30 * Math.sin((i * 60 * Math.PI) / 180)}%`,
+              }}
+              animate={{
+                scale: [0.5, 1, 0.5],
+                opacity: [0.2, 0.8, 0.2],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.3,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </motion.div>
+
+        <img src="/images/relic-chest/chest-closed.png" alt="Closed Chest" className="w-48 h-48 mb-4 relative z-10" />
       </motion.div>
 
       {hasClicked && (

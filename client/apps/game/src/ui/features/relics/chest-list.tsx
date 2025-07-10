@@ -4,6 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ChestInfo } from "@bibliothecadao/torii";
 import { MapPin, Navigation } from "lucide-react";
 import { useMemo } from "react";
+import { getChestName } from "./index";
 
 interface ChestListProps {
   chests: ChestInfo[];
@@ -26,7 +27,7 @@ export const ChestList = ({ chests }: ChestListProps) => {
         .sort((a, b) => a.distance - b.distance)
         .map((chest) => ({
           ...chest,
-          // name: generateFantasyName(chest.entityId),
+          name: getChestName(chest.entityId),
           position: new Position({ x: chest.position.x, y: chest.position.y }).getNormalized(),
         })),
     [chests],
@@ -55,7 +56,7 @@ export const ChestList = ({ chests }: ChestListProps) => {
             >
               <div className="flex items-center gap-3">
                 <div>
-                  <div className="font-semibold text-gold">Relic Chest #{chest.entityId}</div>
+                  <div className="font-semibold text-gold">{chest.name}</div>
                   <div className="text-sm text-gold/70">
                     Position: ({chest.position.x}, {chest.position.y})
                   </div>

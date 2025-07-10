@@ -9,5 +9,4 @@ export { RealmResourcesIO } from "./realm-resources-io";
 export { RealmTransferManager } from "./realm-transfer-manager";
 export { StructureArrivals as ResourceArrival } from "./resource-arrival";
 export { ResourceChip } from "./resource-chip";
-export { RelicActivationPopup } from "./relic-activation-popup";
 export { ResourceWeight, TravelInfo } from "./travel-info";
