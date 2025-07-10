@@ -252,7 +252,7 @@ export class FXManager {
   public async registerRelicFX(relicNumber: number): Promise<void> {
     const type = `relic_${relicNumber}`;
     const textureUrl = `images/resources/${relicNumber}.png`;
-    
+
     // Pre-load the texture and wait for it to load
     if (!this.textures.has(textureUrl)) {
       const texture = await new Promise<THREE.Texture>((resolve, _reject) => {
@@ -269,21 +269,21 @@ export class FXManager {
           (error) => {
             console.warn(`Failed to load relic texture ${textureUrl}:`, error);
             // Create a fallback white texture
-            const canvas = document.createElement('canvas');
+            const canvas = document.createElement("canvas");
             canvas.width = 64;
             canvas.height = 64;
-            const context = canvas.getContext('2d')!;
-            context.fillStyle = '#ffffff';
+            const context = canvas.getContext("2d")!;
+            context.fillStyle = "#ffffff";
             context.fillRect(0, 0, 64, 64);
             const fallbackTexture = new THREE.CanvasTexture(canvas);
             fallbackTexture.colorSpace = THREE.SRGBColorSpace;
             resolve(fallbackTexture);
-          }
+          },
         );
       });
       this.textures.set(textureUrl, texture);
     }
-    
+
     this.registerFX(type, {
       textureUrl,
       animate: (fx, t) => {
@@ -371,7 +371,7 @@ export class FXManager {
         config.animate,
         isInfinite || config.isInfinite,
       );
-      
+
       // Set initial position for orbital effects
       fxInstance.initialX = x;
       fxInstance.initialZ = z;

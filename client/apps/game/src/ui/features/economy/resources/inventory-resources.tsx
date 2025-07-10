@@ -75,11 +75,16 @@ export const InventoryResources = ({
         const relicEffect = relicEffects.find((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
         // Check if relic effect is active
         const isRelicActive =
-          resourceIsRelic && relicEffect && ResourceManager.isRelicActive({
-            start_tick: relicEffect.effect_start_tick,
-            end_tick: relicEffect.effect_end_tick,
-            usage_left: relicEffect.effect_usage_left
-          }, currentArmiesTick);
+          resourceIsRelic &&
+          relicEffect &&
+          ResourceManager.isRelicActive(
+            {
+              start_tick: relicEffect.effect_start_tick,
+              end_tick: relicEffect.effect_end_tick,
+              usage_left: relicEffect.effect_usage_left,
+            },
+            currentArmiesTick,
+          );
 
         return (
           <div
