@@ -427,6 +427,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
         4
     }
 
+    // Python implementation reference: contracts/game/ext/formulas/blitz_settlement_visualizer.py
     fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
