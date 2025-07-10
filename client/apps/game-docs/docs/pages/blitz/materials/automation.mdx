@@ -22,7 +22,6 @@ priorities.
 - **Entity-Specific**: Automation is configured on a per-entity basis.
 - **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
   function.
-- **10-Minute Cycles**: All automation is processed every 10 minutes.
 
 ## How It Works
 
@@ -31,7 +30,7 @@ The automation system periodically checks and processes active orders for each e
 1. **Processing Interval**: All orders are evaluated every 10 minutes.
 2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
 3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
-4. **Order Processing**: The system processes different order types:
+4. **Order Processing**: The system also processes different order types.
 
 ### Production Order Processing
 
@@ -85,21 +84,18 @@ Transfer automation allows you to automatically move resources between your enti
 
    - Transfers resources at regular intervals.
    - Minimum interval: 10 minutes (due to automation cycle).
-   - Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
-   - _[GIF placeholder: Setting up a recurring transfer]_
+   - Example: Transfer 1,000 Food from Realm A to Realm B every 2 hours.
 
 2. **Maintain Stock Transfers**:
 
    - Transfers when the destination entity falls below a threshold.
-   - Example: Transfer 500 Wood to Village when it has less than 1,000 Wood.
+   - Example: Transfer 500 Wood to Realm B when it has less than 1,000 Wood.
    - Helps keep important entities well-supplied.
-   - _[GIF placeholder: Setting up a maintain stock transfer]_
 
 3. **Depletion Transfers**:
    - Transfers when the source entity exceeds a threshold.
    - Example: Transfer excess Stone when Realm has more than 5,000 Stone.
    - Prevents resource overflow and distributes surplus.
-   - _[GIF placeholder: Setting up a depletion transfer]_
 
 ## Managing Automation Orders (UI)
 
@@ -109,8 +105,6 @@ Automations" view.
 ### Production Automation
 
 Production automation is managed within individual realm interfaces.
-
-_[GIF placeholder: Navigating to realm automation tab]_
 
 #### Adding a New Production Order
 
@@ -135,13 +129,9 @@ _[GIF placeholder: Navigating to realm automation tab]_
      - Production starts when balance drops below target minus buffer percentage.
 3. Click "Add Automation".
 
-_[GIF placeholder: Creating a production automation order]_
-
 ### Transfer Automation
 
 Transfer automation allows you to move resources between any of your entities.
-
-_[GIF placeholder: Accessing transfer automation]_
 
 #### Adding a New Transfer Order
 
@@ -164,14 +154,10 @@ _[GIF placeholder: Accessing transfer automation]_
 
 3. Click "Add Transfer Automation".
 
-_[GIF placeholder: Creating a transfer automation order]_
-
 #### Transfer Interval Guidelines
 
-- **Minimum Interval**: 10 minutes (matches automation processing cycle)
-- **Common Intervals**:
-  - 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
-  - Custom intervals can be set in minutes
+- **Minimum Interval**: TBC (matches automation processing cycle)
+- **Custom Intervals**: Custom intervals can be set in minutes
 - **Effective Timing**: Transfers occur when automation cycles align with your interval
 
 ### Viewing and Managing Orders
@@ -188,8 +174,6 @@ Each entity shows its automation orders in a table with:
 - **Type**: Order type (production or transfer)
 - **Actions**: Remove button
 
-_[GIF placeholder: Viewing automation orders in entity interface]_
-
 #### Global Automation View
 
 The "All Automations" view shows orders from all entities:
@@ -199,8 +183,6 @@ The "All Automations" view shows orders from all entities:
 - **Countdown Timer**: Shows time until next automation cycle
 - **Bulk Actions**: Pause/resume or delete orders
 
-_[GIF placeholder: Using the global automation view]_
-
 ### Pausing Automation
 
 You can pause automation at different levels:
@@ -209,14 +191,12 @@ You can pause automation at different levels:
 2. **Individual Order**: Remove specific orders
 3. **Global Control**: Manage all orders from the global view
 
-_[GIF placeholder: Pausing and resuming automation]_
-
 ## Important Considerations
 
 ### General Requirements
 
 - **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
-  automation will stop.
+  automated processes will stop.
 - **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
 - **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
   blockchain transaction, which incurs network transaction fees.
@@ -253,5 +233,3 @@ _[GIF placeholder: Pausing and resuming automation]_
 4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
 5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource
    distributions.
-
-_[GIF placeholder: Monitoring automation performance and adjusting orders]_
