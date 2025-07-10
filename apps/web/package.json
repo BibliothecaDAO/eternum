@@ -6,7 +6,7 @@
     "dev": "pnpm with-env vite dev",
     "build": "pnpm with-env vite build && pnpm postbuild",
     "lint": "eslint",
-    "start": "pnpm with-env node .output/server/index.mjs",
+    "start": "pnpm with-env vite start",
     "with-env": "dotenv -e ../../.env --",
     "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08"
   },
