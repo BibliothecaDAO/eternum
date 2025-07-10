@@ -477,7 +477,15 @@ pub mod hyperstructure_discovery_systems {
             );
             if hyps_lottery_won {
                 iHyperstructureDiscoveryImpl::create(
-                    ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                    ref world,
+                    tile.into(),
+                    caller,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    vrf_seed,
+                    false,
+                    false,
                 );
                 return (true, ExploreFind::Hyperstructure);
             }

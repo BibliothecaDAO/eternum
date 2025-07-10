@@ -17,18 +17,18 @@ pub mod blitz_realm_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
     use s1_eternum::models::config::{
-        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig, BlitzSettlementConfigImpl,
-        RealmCountConfig, SeasonConfigImpl, WorldConfigUtilImpl,
+        BlitzHyperstructureRegister, BlitzHyperstructureRegisterImpl, BlitzRealmPlayerRegister,
+        BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
+        BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl};
     use s1_eternum::models::name::{AddressName};
     use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::realm::{
-        BlitzRealmPlayerRegister, BlitzRealmPositionRegister, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl,
-    };
+    use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
     use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
@@ -40,6 +40,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureBlitzDiscoveryImpl;
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -103,6 +104,11 @@ pub mod blitz_realm_systems {
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
 
+            ////////////////////////////////////////////////
+            /// Generate the next 3 possible spawn points
+            /// for any player and store it
+            ////////////////////////////////////////////////
+
             // generate the next possible spawn point (3 coords) for any player and store it
             let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_settlement_config"),
@@ -116,6 +122,64 @@ pub mod blitz_realm_systems {
             // save the updated blitz settlement config
             blitz_settlement_config.next();
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
+
+            ////////////////////////////////////////////////
+            /// Create hyperstructures if condition is met
+            ///
+            /// hyperstructure Ring Count (R)  = Math.ceil(sqrt(P/6)),
+            /// where P is num registered players
+            ////////////////////////////////////////////////
+
+            // obtain vrf seed
+            let caller: ContractAddress = starknet::get_caller_address();
+            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
+                world, selector!("vrf_provider_address"),
+            );
+            let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+
+            // retrieve relevant configs
+            let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+            let troop_limit_config: TroopLimitConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("troop_limit_config"),
+            );
+            let troop_stamina_config: TroopStaminaConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("troop_stamina_config"),
+            );
+
+            // create center hyperstructure [when num hyperstructures is 0]
+            let mut blitz_hyperstructure_register: BlitzHyperstructureRegister = world
+                .read_model(BlitzHyperstructureRegisterImpl::ID());
+            if blitz_hyperstructure_register.ring_count.is_zero() {
+                iHyperstructureBlitzDiscoveryImpl::create_ring(
+                    ref world,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    blitz_hyperstructure_register.ring_count,
+                    vrf_seed,
+                );
+            };
+
+            // create rings of hyperstructures [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
+            let registration_count = blitz_registration_config.registration_count.into();
+            let ring_count = blitz_hyperstructure_register.ring_count;
+            let ring_count_squared = ring_count * ring_count;
+            if ring_count_squared.is_zero()
+                || (ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
+                // increase ring count
+                blitz_hyperstructure_register.ring_count += 1;
+                world.write_model(@blitz_hyperstructure_register);
+
+                // create next ring of hyperstructures
+                iHyperstructureBlitzDiscoveryImpl::create_ring(
+                    ref world,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    blitz_hyperstructure_register.ring_count,
+                    vrf_seed,
+                );
+            }
 
             // emit registration event
             world.emit_event(@BlitzRegistrationEvent { player: owner, timestamp: now.into() });
@@ -178,10 +242,19 @@ pub mod blitz_realm_systems {
             let mut structure_ids: Array<ID> = array![];
             while coords.len() > 0 {
                 realm_count.count += 1;
-                // println!("\n realm_count.count: {}", realm_count.count);
                 let realm_id = realm_count.count.into();
                 let coord = *coords.pop_front().unwrap();
-                let resources = array![1, 2, 3, 4];
+                let resources = array![
+                    ResourceTypes::WOOD,
+                    ResourceTypes::COAL,
+                    ResourceTypes::COPPER,
+                    ResourceTypes::IRONWOOD,
+                    ResourceTypes::COLD_IRON,
+                    ResourceTypes::GOLD,
+                    ResourceTypes::ADAMANTINE,
+                    ResourceTypes::MITHRAL,
+                    ResourceTypes::DRAGONHIDE,
+                ];
                 let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(caller, realm_id, resources, 0, 1, coord, false);

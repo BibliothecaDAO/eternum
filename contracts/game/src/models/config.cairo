@@ -767,3 +767,35 @@ pub struct StructureLevelConfig {
     pub required_resources_id: ID,
     pub required_resource_count: u8,
 }
+
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPositionRegister {
+    #[key]
+    pub spot_number: u16,
+    pub coords: Span<Coord>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPlayerRegister {
+    #[key]
+    pub player: ContractAddress,
+    pub registered: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzHyperstructureRegister {
+    #[key]
+    pub id: ID,
+    pub ring_count: u32,
+}
+
+#[generate_trait]
+pub impl BlitzHyperstructureRegisterImpl of BlitzHyperstructureRegisterTrait {
+    fn ID() -> ID {
+        WORLD_CONFIG_ID
+    }
+}

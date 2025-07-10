@@ -178,23 +178,6 @@ pub impl RealmReferenceImpl of RealmReferenceTrait {
         }
     }
 }
-
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzRealmPositionRegister {
-    #[key]
-    pub spot_number: u16,
-    pub coords: Span<Coord>,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzRealmPlayerRegister {
-    #[key]
-    pub player: ContractAddress,
-    pub registered: bool,
-}
 // #[cfg(test)]
 // mod test_realm_name_and_attrs_decode_impl {
 //     use super::{RealmNameAndAttrsDecodingImpl};
