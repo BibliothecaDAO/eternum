@@ -7,7 +7,6 @@ import {
   primaryKey,
   text,
   timestamp,
-
 } from "drizzle-orm/pg-core";
 
 export const bridgeEventTypeEnum = pgEnum("BridgeEventType", [
@@ -55,7 +54,6 @@ export const realmsBridgeEventsRelations = relations(
   }),
 );
 
-
 export const realmsLordsClaims = pgTable(
   "realms_lords_claims",
   {
@@ -67,53 +65,3 @@ export const realmsLordsClaims = pgTable(
   },
   (t) => [primaryKey({ columns: [t.amount, t.hash] })],
 );
-
-
-/* UNCOMMENT THIS TO PUSH TO DB*/
-
-/*export const reorgRollback = pgTable(
-  "__reorg_rollback",
-  {
-    n: serial().primaryKey().notNull(),
-    op: char({ length: 1 }).notNull(),
-    tableName: text("table_name").notNull(),
-    cursor: integer().notNull(),
-    rowId: text("row_id"),
-    rowValue: jsonb("row_value"),
-    indexerId: text("indexer_id").notNull(),
-  },
-  (table) => [
-    index("idx_reorg_rollback_indexer_id_cursor").using(
-      "btree",
-      table.indexerId.asc().nullsLast().op("int4_ops"),
-      table.cursor.asc().nullsLast().op("int4_ops"),
-    ),
-  ],
-);
-export const indexerFilters = pgTable(
-  "__indexer_filters",
-  {
-    id: text().notNull(),
-    filter: text().notNull(),
-    fromBlock: integer("from_block").notNull(),
-    toBlock: integer("to_block"),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.id, table.fromBlock],
-      name: "__indexer_filters_pkey",
-    }),
-  ],
-);
-
-export const indexerSchemaVersion = pgTable("__indexer_schema_version", {
-  k: integer().primaryKey().notNull(),
-  version: integer().notNull(),
-});
-
-export const indexerCheckpoints = pgTable("__indexer_checkpoints", {
-  id: text().primaryKey().notNull(),
-  orderKey: integer("order_key").notNull(),
-  uniqueKey: text("unique_key").default("").notNull(),
-});
-*/

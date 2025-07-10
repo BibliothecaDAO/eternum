@@ -2,7 +2,8 @@ import { DuneClient } from "@duneanalytics/client-sdk";
 import { json } from "@tanstack/react-start";
 import { createServerFileRoute } from "@tanstack/react-start/server";
 
-import { db, velords_burns, velords_supply } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
+import { velords_burns, velords_supply } from "@realms-world/db/schema";
 
 const { VITE_DUNE_API_KEY } = process.env;
 const client = new DuneClient(VITE_DUNE_API_KEY ?? "");

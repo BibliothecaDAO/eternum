@@ -18,6 +18,7 @@ export function useStarknetWallet() {
   }, [isConnected, connectors]);
 
   async function openStarknetKitModal() {
+    console.log(connectors);
     const { connector } = await starknetkitConnectModal();
     if (!connector) return;
     await connectAsync({ connector });

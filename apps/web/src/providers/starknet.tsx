@@ -9,6 +9,7 @@ import {
   braavos,
   InjectedConnector,
   jsonRpcProvider,
+  publicProvider,
   StarknetConfig,
   useInjectedConnectors,
   voyager,
@@ -65,6 +66,8 @@ const cartridgeController =
 
 const getConnectors = () => {
   const connectors = [
+    new InjectedConnector({ options: { id: "argentX" } }),
+    new InjectedConnector({ options: { id: "braavos" } }),
     new InjectedConnector({ options: { id: "okxwallet" } }),
     new InjectedConnector({ options: { id: "bitkeep" } }),
     new InjectedConnector({ options: { id: "keplr" } }),

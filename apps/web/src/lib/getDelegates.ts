@@ -8,16 +8,13 @@ import { z } from "zod";
 
 import {
   and,
-  CreateDelegateProfileSchema,
-  db,
-  delegateProfiles,
-  delegates,
   desc,
   eq,
   like,
   sql,
 } from "@realms-world/db";
-
+import {db} from "@realms-world/db/client"
+import { CreateDelegateProfileSchema, delegateProfiles, delegates } from "@realms-world/db/schema";
 /* -------------------------------------------------------------------------- */
 /*                          getDelegates (all) Endpoint                       */
 /* -------------------------------------------------------------------------- */

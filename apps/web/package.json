@@ -4,10 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm with-env vite dev",
-    "build": "pnpm with-env vite build",
+    "build": "pnpm run ensure-starknet-types && pnpm with-env vite build && pnpm postbuild",
     "lint": "eslint",
     "start": "pnpm with-env node .output/server/index.mjs",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "postinstall": "rm -rf node_modules/@starknet-io/starknet-types-07 node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-07 node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 node_modules/@starknet-io/starknet-types-08",
+    "ensure-starknet-types": "rm -rf node_modules/@starknet-io/starknet-types-07 node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-07 node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 node_modules/@starknet-io/starknet-types-08",
+    "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08"
   },
   "dependencies": {
     "@cartridge/connector": "^0.8.0",
@@ -44,9 +47,8 @@
     "@reown/appkit-adapter-wagmi": "^1.7.13",
     "@reservoir0x/reservoir-sdk": "^2.5.7",
     "@snapshot-labs/pineapple": "^1.1.0",
-    "@starknet-io/types-js": "^0.7.10",
-    "@starknet-react/chains": "^3.1.3",
-    "@starknet-react/core": "^3.7.4",
+    "@starknet-react/chains": "4.0.1-beta.3",
+    "@starknet-react/core": "4.0.1-beta.4",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.81.5",
@@ -54,7 +56,7 @@
     "@tanstack/react-router": "^1.125.6",
     "@tanstack/react-router-devtools": "^1.125.6",
     "@tanstack/react-router-with-query": "^1.125.6",
-    "@tanstack/react-start": "^1.125.6",
+    "@tanstack/react-start": "^1.126.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.125.6",
     "add": "^2.0.6",
@@ -73,14 +75,16 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.55.0",
     "react-markdown": "^10.1.0",
-    "recharts": "^2.15.3",
+    "recharts": "^3.1.0",
     "redaxios": "^0.5.1",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "starknet": "catalog:",
-    "starknet-types-07": "workspace:*",
     "starknetkit": "2.12.1",
+    "@starknet-io/types-js": "^0.8.4",
+    "@starknet-io/starknet-types-07": "workspace:*",
+    "@starknet-io/starknet-types-08": "workspace:*",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "catalog:",
@@ -90,6 +94,7 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
+    "@vitejs/plugin-react": "^4.6.0",
     "@types/node": "^22.13.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
@@ -100,8 +105,5 @@
     "typescript": "catalog:",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4"
-  },
-  "overrides": {
-    "react-is": "^19.0.0"
   }
 }

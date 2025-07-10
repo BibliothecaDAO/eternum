@@ -1,24 +1,19 @@
-import { useMemo } from "react";
-import type {
-  Invocations} from "starknet";
-import {
-  
-  
-  
-  
-  TransactionType
-} from "starknet";
-import type {AccountInterface, Call, SimulateTransactionResponse, SimulateTransactionDetails} from "starknet";
-
-import { useAccount, useInvalidateOnBlock } from "@starknet-react/core";
 import type {
   QueryKey,
-  UseQueryResult} from "@tanstack/react-query";
-import {
-  useQuery
-  
+  UseQueryOptions as UseQueryOptions_,
+  UseQueryResult,
 } from "@tanstack/react-query";
-import type {UseQueryOptions as UseQueryOptions_} from "@tanstack/react-query";
+import type {
+  AccountInterface,
+  Call,
+  Invocations,
+  SimulateTransactionDetails,
+  SimulateTransactionResponse,
+} from "starknet";
+import { useMemo } from "react";
+import { useAccount, useInvalidateOnBlock } from "@starknet-react/core";
+import { useQuery } from "@tanstack/react-query";
+import { TransactionType } from "starknet";
 
 export interface SimulateTransactionsArgs {
   /** List of smart contract calls to simulate. */
@@ -71,7 +66,7 @@ export function useSimulateTransactions({
 
   const queryKey_ = useMemo(
     () => queryKey({ calls, options }),
-    [calls, options]
+    [calls, options],
   );
 
   const enabled = useMemo(() => Boolean(enabled_ && calls), [enabled_, calls]);

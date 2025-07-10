@@ -1,4 +1,5 @@
 import type { Address } from "@starknet-react/core";
+import { useMemo } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
 import { VelordsRewards } from "@/components/modules/velords/claim-rewards";
 import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
@@ -16,13 +17,17 @@ import { StakingAddresses } from "@realms-world/constants";
 
 export const Route = createFileRoute("/velords/")({
   component: RouteComponent,
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(getVelordsBurnsQueryOptions({}));
-  },
 });
 
 function RouteComponent() {
-  const veLordsBurnsQuery = useQuery(getVelordsBurnsQueryOptions({}));
+  const startTimestamp = useMemo(
+    () => new Date(Date.now() - 15 * 7 * 24 * 60 * 60 * 1000),
+    [],
+  );
+
+  const veLordsBurnsQuery = useQuery(
+    getVelordsBurnsQueryOptions({ startTimestamp }),
+  );
   const veLordsBurns = veLordsBurnsQuery.data ?? [];
   const { data: totalSupply, error } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
