@@ -46,7 +46,7 @@ function getSenderLabel(sender: string): string {
     sender ===
     "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"
   ) {
-    return "Loot Survivor + Eternum";
+    return "Game + Marketplace Fees";
   }
   return sender;
 }

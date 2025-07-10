@@ -39,3 +39,17 @@ export const velords_lords_locked = pgTable(
   },
   (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })],
 );
+export const velords_burner_transfers = pgTable(
+  "velords_burner_transfers",
+  {
+    sender: text("sender").notNull(),
+    amount: numeric("amount").notNull(),
+    transaction_hash: text("transaction_hash").notNull(),
+    //block_time: timestamp("block_time").notNull(),
+    timestamp: timestamp("timestamp", {
+      mode: "date",
+      precision: 3,
+    }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.amount, t.transaction_hash] })],
+);
