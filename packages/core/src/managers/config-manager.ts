@@ -762,6 +762,59 @@ export class ClientConfigManager {
     );
   }
 
+  getBlitzConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const blitzSettlementConfig = config?.blitz_settlement_config;
+        const blitzRegistrationConfig = config?.blitz_registration_config;
+
+        if (!blitzSettlementConfig || !blitzRegistrationConfig) return;
+
+        return {
+          blitz_settlement_config: {
+            base_distance: Number(blitzSettlementConfig.base_distance),
+            side: Number(blitzSettlementConfig.side),
+            step: Number(blitzSettlementConfig.step),
+            point: Number(blitzSettlementConfig.point),
+          },
+          blitz_registration_config: {
+            fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
+            fee_token: BigInt(blitzRegistrationConfig.fee_token),
+            fee_recipient: BigInt(blitzRegistrationConfig.fee_recipient),
+            registration_count: Number(blitzRegistrationConfig.registration_count),
+            registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
+            registration_start_at: Number(blitzRegistrationConfig.registration_start_at),
+            registration_end_at: Number(blitzRegistrationConfig.registration_end_at),
+            creation_start_at: Number(blitzRegistrationConfig.creation_start_at),
+            creation_end_at: Number(blitzRegistrationConfig.creation_end_at),
+            assigned_positions_count: Number(blitzRegistrationConfig.assigned_positions_count),
+          },
+        };
+      },
+      {
+        blitz_settlement_config: {
+          base_distance: 0,
+          side: 0,
+          step: 0,
+          point: 0,
+        },
+        blitz_registration_config: {
+          fee_amount: BigInt(0),
+          fee_token: BigInt(0),
+          fee_recipient: BigInt(0),
+          registration_count: 0,
+          registration_count_max: 0,
+          registration_start_at: 0,
+          registration_end_at: 0,
+          creation_start_at: 0,
+          creation_end_at: 0,
+          assigned_positions_count: 0,
+        },
+      },
+    );
+  }
+
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {

@@ -13,3 +13,4 @@ export * from "./hints/utils";
 
 // Onboarding System - Exports used externally
 export { LocalStepOne, StepOne, SpectateButton, SettleRealm } from "./onboarding/steps";
+export { BlitzOnboarding } from "./onboarding/blitz-steps";

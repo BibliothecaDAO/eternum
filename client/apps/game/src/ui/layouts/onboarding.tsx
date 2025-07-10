@@ -2,8 +2,9 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { IS_BLITZ } from "@/ui/constants";
 import { Button } from "@/ui/design-system/atoms";
-import { LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
+import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
 import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
@@ -158,8 +159,8 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
         </OnboardingContainer>
       ) : (
         <OnboardingContainer backgroundImage={backgroundImage}>
-          <StepContainer bottomChildren={bottomChildren}>
-            <StepOne />
+          <StepContainer bottomChildren={IS_BLITZ ? undefined : bottomChildren}>
+            {IS_BLITZ ? <BlitzOnboarding /> : <StepOne />}
           </StepContainer>
         </OnboardingContainer>
       )}
