@@ -40,12 +40,16 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private armyRelicEffects: Map<ID, Array<{ relicNumber: number; fx: { end: () => void } }>> = new Map();
+  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
+  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: { width: number; height: number },
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
+    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
@@ -57,6 +61,8 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
+    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
+    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -155,9 +161,9 @@ export class ArmyManager {
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      await this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent, update.isAlly);
+      await this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent, update.isAlly);
     }
     return false;
   }
@@ -278,7 +284,7 @@ export class ArmyManager {
     return visibleArmies;
   }
 
-  public addArmy(
+  public async addArmy(
     entityId: ID,
     hexCoords: Position,
     owner: { address: bigint; ownerName: string; guildName: string },
@@ -324,9 +330,18 @@ export class ArmyManager {
       isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
+
+    // Apply any pending relic effects for this army
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+      }
+    }
   }
 
-  public moveArmy(
+  public async moveArmy(
     entityId: ID,
     hexCoords: Position,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -363,13 +378,22 @@ export class ArmyManager {
     // Update relic effects position when army moves
     const relicEffects = this.armyRelicEffects.get(entityId);
     if (relicEffects) {
+      // Store current relic effects to re-apply at new position
+      const currentRelics = relicEffects.map((effect) => effect.relicNumber);
+      
       // Remove old effects
       relicEffects.forEach((effect) => effect.fx.end());
       this.armyRelicEffects.delete(entityId);
 
-      // Re-add effects at new position (commented out - now using actual relic effects from game system)
-      // const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
-      // this.addRandomRelicEffects(entityId, targetWorldPos);
+      // Re-add effects at new position
+      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
+      for (const relicNumber of currentRelics) {
+        try {
+          await this.addRelicEffect(entityId, relicNumber);
+        } catch (error) {
+          console.error(`Failed to re-apply relic effect ${relicNumber} for army ${entityId} during movement:`, error);
+        }
+      }
     }
 
     // Start movement in ArmyModel with troop information
@@ -469,6 +493,11 @@ export class ArmyManager {
 
     // Remove any relic effects
     this.removeAllRelicEffects(entityId);
+
+    // Clear any pending relic effects
+    if (this.clearPendingRelicEffectsCallback) {
+      this.clearPendingRelicEffectsCallback(entityId);
+    }
 
     const { promise } = this.fxManager.playFxAtCoords(
       "skull",

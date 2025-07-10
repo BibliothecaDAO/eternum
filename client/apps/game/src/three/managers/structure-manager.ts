@@ -112,6 +112,8 @@ export class StructureManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private structureRelicEffects: Map<ID, Array<{ relicNumber: number; fx: { end: () => void } }>> = new Map();
+  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
+  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
   constructor(
     scene: THREE.Scene,
@@ -119,6 +121,8 @@ export class StructureManager {
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
+    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
+    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
@@ -126,6 +130,8 @@ export class StructureManager {
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = fxManager || new FXManager(scene);
+    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
+    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
     this.loadModels();
 
     // Subscribe to camera view changes if scene is provided
@@ -296,6 +302,15 @@ export class StructureManager {
       hasWonder,
       update.isAlly,
     );
+
+    // Apply any pending relic effects for this structure
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+      }
+    }
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
