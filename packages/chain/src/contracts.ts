@@ -156,7 +156,7 @@ export const StakingAddresses: Readonly<
     [ChainId.MAINNET]: "",
     [ChainId.SEPOLIA]: "",
     [ChainId.SN_MAIN]:
-      "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
+      "0x0          45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
     [ChainId.SN_SEPOLIA]:
       "",
   },

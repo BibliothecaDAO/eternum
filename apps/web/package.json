@@ -4,12 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm with-env vite dev",
-    "build": "pnpm run ensure-starknet-types && pnpm with-env vite build && pnpm postbuild",
+    "build": "pnpm with-env vite build && pnpm postbuild",
     "lint": "eslint",
-    "start": "pnpm with-env node .output/server/index.mjs",
+    "start": "pnpm with-env vite start",
     "with-env": "dotenv -e ../../.env --",
-    "postinstall": "rm -rf node_modules/@starknet-io/starknet-types-07 node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-07 node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 node_modules/@starknet-io/starknet-types-08",
-    "ensure-starknet-types": "rm -rf node_modules/@starknet-io/starknet-types-07 node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-07 node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 node_modules/@starknet-io/starknet-types-08",
     "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08"
   },
   "dependencies": {
@@ -68,7 +66,7 @@
     "framer-motion": "^11.18.2",
     "graphql-request": "^7.1.2",
     "ipfs-http-client": "^60.0.1",
-    "lucide-react": "0.501.0",
+    "lucide-react": "0.525.0",
     "react": "^19.1.0",
     "react-confetti": "^6.4.0",
     "react-day-picker": "8.10.1",

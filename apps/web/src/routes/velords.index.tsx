@@ -1,11 +1,9 @@
 import type { Address } from "@starknet-react/core";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
 import { VelordsRewards } from "@/components/modules/velords/claim-rewards";
 import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
 import { StakeLords } from "@/components/modules/velords/stake-lords";
-import { Card, CardContent } from "@/components/ui/card";
-import { useVelordsData } from "@/hooks/use-velords-data";
 import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useReadContract } from "@starknet-react/core";
@@ -20,10 +18,17 @@ export const Route = createFileRoute("/velords/")({
 });
 
 function RouteComponent() {
-  const startTimestamp = useMemo(
-    () => new Date(Date.now() - 15 * 7 * 24 * 60 * 60 * 1000),
-    [],
-  );
+  const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">("3m");
+
+  const startTimestamp = useMemo(() => {
+    const now = Date.now();
+    const periods = {
+      "3m": 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
+      "6m": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
+      "1y": 12 * 30 * 24 * 60 * 60 * 1000, // 1 year
+    };
+    return new Date(now - periods[selectedPeriod]);
+  }, [selectedPeriod]);
 
   const veLordsBurnsQuery = useQuery(
     getVelordsBurnsQueryOptions({ startTimestamp }),
@@ -36,6 +41,10 @@ function RouteComponent() {
     args: [],
   });
   // const { lordsLocked } = useVelordsData();
+
+  const handleTimePeriodChange = (period: "3m" | "6m" | "1y") => {
+    setSelectedPeriod(period);
+  };
 
   return (
     <div className="bg-background min-h-screen">
@@ -79,6 +88,7 @@ function RouteComponent() {
                     : undefined
                 }
                 data={veLordsBurns}
+                onTimePeriodChange={handleTimePeriodChange}
               />
             </div>
           </div>
