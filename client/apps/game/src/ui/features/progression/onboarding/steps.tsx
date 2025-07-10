@@ -198,7 +198,6 @@ export const StepOne = () => {
   const { connector } = useAccount();
 
   const realmEntities = usePlayerOwnedRealmEntities();
-
   const villageEntities = usePlayerOwnedVillageEntities();
 
   const hasRealmsOrVillages = useMemo(() => {
@@ -238,7 +237,6 @@ export const StepOne = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const onSpectatorModeClick = useSpectatorModeClick(components);
   const goToStructure = useGoToStructure();
 
   const onPlayModeClick = () => {
@@ -271,14 +269,41 @@ export const StepOne = () => {
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      <SpectateButton onClick={hasRealmsOrVillages ? onPlayModeClick : onSpectatorModeClick} />
+      <SpectateButton onClick={onPlayModeClick} />
     </div>
   );
 };
 
-export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
+export const SpectateButton = ({ onClick, forceSpectatorMode = false }: { onClick?: () => void; forceSpectatorMode?: boolean }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+  
+  const realmEntities = usePlayerOwnedRealmEntities();
+  const villageEntities = usePlayerOwnedVillageEntities();
+  const hasRealmsOrVillages = useMemo(() => {
+    return realmEntities.length > 0 || villageEntities.length > 0;
+  }, [realmEntities, villageEntities]);
+  
+  const defaultSpectatorClick = useSpectatorModeClick(components);
+  const goToStructure = useGoToStructure();
+  
+  const onPlayModeClick = () => {
+    const randomRealmEntityOrVillageEntity =
+      realmEntities.length > 0 ? realmEntities[0] : villageEntities.length > 0 ? villageEntities[0] : undefined;
+
+    const structure = randomRealmEntityOrVillageEntity
+      ? getComponentValue(components.Structure, randomRealmEntityOrVillageEntity)
+      : undefined;
+
+    if (!structure) return;
+    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+  };
+  
+  const handleClick = onClick || (hasRealmsOrVillages && !forceSpectatorMode ? onPlayModeClick : defaultSpectatorClick);
+  
   return (
-    <Button className="w-full" onClick={onClick} size="lg">
+    <Button className="w-full" onClick={handleClick} size="lg">
       <div className="flex items-center justify-start w-full">
         <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
       </div>
