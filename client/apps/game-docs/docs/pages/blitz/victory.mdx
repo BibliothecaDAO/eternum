@@ -1,15 +1,51 @@
+import { table } from "@/components/styles";
+
 # 👑 Victory
 
 <img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
 
 ## Scoring System
 
-Leaderboard placing is determined by Score, a measure of the Lord's ability to explore the map and control
-Hyperstructures. Score is determined by:
+Leaderboard placing is determined by total accumulated Victory Points (VP), a measure of a Lord's ability to explore the map and 
+control World Structures. Victory Points are awarded for:
 
-- Number of tiles explored
-- Unique World Structures claimed
-- Unique Hyperstructures claimed
-- Hyperstructure points accumulated
+- Exploring tiles
+- Claiming World Structures (Essence Rifts and Camps)
+- Claiming Hyperstructures
+- Holding Hyperstructures throughout the game
 
-_Note: Details of the weightings that these feats will have on a Lord's Score are yet to be finalized._
+_Note: Wolrd Structure claim VP are only rewarded the first time a World Structure is captured (from bandit forces)._
+
+The number of VP awarded for each feat described above is as follows:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Action</th>
+          <th style={table.headerCell}>VP Awarded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Explore a tile</td>
+          <td style={table.cell}>5 VP</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a World Structure from bandits</td>
+          <td style={table.cell}>200 VP</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
+          <td style={table.cell}>500 VP</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Control a Hyperstructure</td>
+          <td style={table.cell}>1 VP/second</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
