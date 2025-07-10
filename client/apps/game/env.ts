@@ -43,6 +43,8 @@ const envSchema = z.object({
 
   VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("m.eternum.realms.world"),
 
+  VITE_ETERNUM_MODE: z.enum(["blitz", "normal"]).optional().default("normal"),
+
   // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
     .string()

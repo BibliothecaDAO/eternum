@@ -30,7 +30,7 @@
     "villagepass:deploy:local": "cd ./contracts/village_pass/ext/scripts && ./deploy.sh",
     "seasonresources:deploy:local": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh",
     "toml:update:local": "cd ./contracts/game && ./ext/scripts/update-toml.sh torii-local.toml ../common/addresses/local.json",
-    "indexer:start:local": "pnpm run toml:update:local && cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080 --world 0x163234802a4f22507111a9bb9bb9a9bf5a30e5d29ea04a990a13c5824c57d04",
+    "indexer:start:local": "pnpm run toml:update:local && cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080 --world 0x06a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561",
     "config:deploy:local": "pnpm run build:packages && pnpm --dir ./config run local",
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
