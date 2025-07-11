@@ -233,6 +233,20 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
     }
 }
 
+pub fn blitz_produceable_resources() -> Array<u8> {
+    array![
+        ResourceTypes::WOOD,
+        ResourceTypes::COAL,
+        ResourceTypes::COPPER,
+        ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON,
+        ResourceTypes::GOLD,
+        ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL,
+        ResourceTypes::DRAGONHIDE,
+    ]
+}
+
 
 pub mod ResourceTiers {
     pub const LORDS: u8 = 1;

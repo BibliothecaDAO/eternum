@@ -8,7 +8,6 @@
 
 import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -38,10 +37,12 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 1_000,
-    shardsMinesFailProbability: 15_000,
-    hyperstructureWinProbAtCenter: 20_000,
-    hyperstructureFailProbAtCenter: 100_000,
+    shardsMinesWinProbability: 1,
+    shardsMinesFailProbability: 9,
+    hyperstructureWinProbAtCenter: 0,
+    hyperstructureFailProbAtCenter: 1,
+    villageFindProbability: 1,
+    villageFindFailProbability: 8,
     // hyperstructureFailProbIncreasePerHexDistance: 20,
     agentFindProbability: 3_000,
     agentFindFailProbability: 10_000,
@@ -55,7 +56,6 @@ export const LocalEternumGlobalConfig: Config = {
       resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
       amount: 500,
     },
-    hyperstructurePointsForWin: 100n,
     hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
       (cost) => ({
         ...cost,

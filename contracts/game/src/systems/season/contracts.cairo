@@ -8,7 +8,7 @@ pub trait ISeasonSystems<T> {
     /// This function can only be called when the following conditions are met:
     /// - The season has started and is not yet over
     /// - The calling player has accumulated enough registered points to end the game
-    ///   (based on the 'points_for_win' threshold defined in hyperstructure_config)
+    ///   (based on the 'points_for_win' threshold defined in victory_points_win_config)
     ///
     /// # Effects:
     /// - Marks the season as ended
@@ -30,7 +30,7 @@ pub mod season_systems {
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::{
         models::{
-            config::{HyperstructureConfig, SeasonConfigImpl, WorldConfigUtilImpl},
+            config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl},
             hyperstructure::{PlayerRegisteredPoints},
         },
     };
@@ -51,15 +51,20 @@ pub mod season_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
+            // ensure season game mode is on
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            assert!(blitz_mode_on == false, "Eternum: Not Season Game Mode");
+
             // ensure the the caller's points are enough to end the game
             let player_address = starknet::get_caller_address();
             let player_points: PlayerRegisteredPoints = world.read_model(player_address);
-            let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("hyperstructure_config"),
+            let victory_points_win_config: VictoryPointsWinConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("victory_points_win_config"),
             );
+            assert!(victory_points_win_config.points_for_win > 0, "Eternum: Points for win must be greater than 0");
             assert!(
-                player_points.registered_points >= hyperstructure_config.points_for_win,
-                "Not enough points to end the game",
+                player_points.registered_points >= victory_points_win_config.points_for_win,
+                "Eternum: Not enough points to end the game",
             );
 
             // end the season

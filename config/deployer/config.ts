@@ -5,6 +5,7 @@ import {
   CapacityConfig,
   type Config as EternumConfig,
   HexGrid,
+  RESOURCE_PRECISION,
   type ResourceInputs,
   type ResourceOutputs,
   type ResourceWhitelistConfig,
@@ -54,6 +55,15 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await this.sleepNonLocal();
+
+    await setGameModeConfig(config);
+    await this.sleepNonLocal();
+
+    await setVictoryPointsConfig(config);
+    await this.sleepNonLocal();
+
+    await setDiscoverableVillageSpawnResourcesConfig(config);
     await this.sleepNonLocal();
 
     await setBlitzRegistrationConfig(config);
@@ -853,6 +863,8 @@ export const setupGlobals = async (config: Config) => {
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     agent_find_probability: config.config.exploration.agentFindProbability,
     agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
+    village_find_probability: config.config.exploration.villageFindProbability,
+    village_find_fail_probability: config.config.exploration.villageFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
@@ -866,6 +878,14 @@ export const setupGlobals = async (config: Config) => {
     (mapCalldata.shards_mines_fail_probability /
       (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
     100;
+  const villageFindFailRate =
+    (mapCalldata.village_find_fail_probability /
+      (mapCalldata.village_find_fail_probability + mapCalldata.village_find_probability)) *
+    100;
+  const agentFindFailRate =
+    (mapCalldata.agent_find_fail_probability /
+      (mapCalldata.agent_find_fail_probability + mapCalldata.agent_find_probability)) *
+    100;
   const hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   const hyperstructureFailRateIncreasePerHex = (mapCalldata.hyps_fail_prob_increase_p_hex / 10_000) * 100;
@@ -876,6 +896,8 @@ export const setupGlobals = async (config: Config) => {
     ┌─ ${chalk.yellow("Map Parameters")}
     │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
+    │  ${chalk.gray("Village Find Fail Probability:")} ${chalk.white(villageFindFailRate) + "%"}
+    │  ${chalk.gray("Agent Find Fail Probability:")} ${chalk.white(agentFindFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
@@ -1240,9 +1262,7 @@ export const setHyperstructureConfig = async (config: Config) => {
   );
 
   const {
-    hyperstructurePointsPerCycle,
     hyperstructureConstructionCost,
-    hyperstructurePointsForWin,
     hyperstructureInitializationShardsCost,
   } = config.config.hyperstructures;
 
@@ -1251,16 +1271,11 @@ export const setHyperstructureConfig = async (config: Config) => {
     signer: config.account,
     initialize_shards_amount: initializationShardsAmount * config.config.resources.resourcePrecision,
     construction_resources: hyperstructureConstructionCost,
-    points_per_second: hyperstructurePointsPerCycle,
-    points_for_win: hyperstructurePointsForWin,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Hyperstructure Points System")}
-    │  ${chalk.gray("Per Second:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_second))}
-    │  ${chalk.gray("For Win:")}          ${chalk.white(addCommas(hyperstructureCalldata.points_for_win))}
-    │
     │  ${chalk.gray("Initialization Shards:")}     ${chalk.white(inGameAmount(hyperstructureCalldata.initialize_shards_amount, config.config))}
     │
     │  ${chalk.gray("Construction Cost")}${hyperstructureCalldata.construction_resources
@@ -1306,6 +1321,69 @@ export const setSettlementConfig = async (config: Config) => {
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
+
+export const setGameModeConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Game Mode Configuration
+  ═══════════════════════════`),
+  );
+
+
+  const gameModeTx = await config.provider.set_game_mode_config({
+    signer: config.account,
+    blitz_mode_on: config.config.blitz.mode.on,
+  });
+  console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
+};
+
+
+export const setVictoryPointsConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏆  Victory Points Configuration
+  ═══════════════════════════`),
+  );
+
+
+  const victoryPointsTx = await config.provider.set_victory_points_config({
+    signer: config.account,
+    points_for_win: config.config.victoryPoints.pointsForWin,
+    hyperstructure_points_per_second: config.config.victoryPoints.hyperstructurePointsPerCycle,
+    points_for_hyperstructure_claim_against_bandits: config.config.victoryPoints.pointsForHyperstructureClaimAgainstBandits,
+    points_for_non_hyperstructure_claim_against_bandits: config.config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
+    points_for_tile_exploration: config.config.victoryPoints.pointsForTileExploration,
+  });
+  console.log(chalk.green(`\n    ✔ Victory points configured `) + chalk.gray(victoryPointsTx.statusReceipt) + "\n");
+};
+
+
+export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+  🏘️  Discoverable Village Spawn Resources Configuration
+  ═══════════════════════════`),
+  );
+
+  // log the resources
+  console.log(chalk.cyan(`
+    ┌─ ${chalk.yellow("Discoverable Village Spawn Resources")}
+    │  ${chalk.gray("Resources:")} ${chalk.white(config.config.discoverableVillageStartingResources.map((resource) => `${resource.resource}: ${resource.min_amount} - ${resource.max_amount}`).join(", "))}
+    └────────────────────────────────`),
+  );
+
+  const discoverableVillageSpawnResourcesTx = await config.provider.set_discoverable_village_starting_resources_config({
+    signer: config.account,
+    resources: config.config.discoverableVillageStartingResources.map((resource) => ({
+      resource: resource.resource,
+      min_amount: resource.min_amount * RESOURCE_PRECISION,
+      max_amount: resource.max_amount * RESOURCE_PRECISION,
+    })) ,
+  });
+  console.log(chalk.green(`\n    ✔ Discoverable village spawn resources configured `) + chalk.gray(discoverableVillageSpawnResourcesTx.statusReceipt) + "\n");
+};
+
+
 
 export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(
@@ -1372,8 +1450,8 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_blitz_registration_config(calldata);
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+  const blitzRegistrationTx = await config.provider.set_blitz_registration_config(calldata);
+  console.log(chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {

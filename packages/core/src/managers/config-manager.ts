@@ -765,16 +765,26 @@ export class ClientConfigManager {
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
-        const hyperstructureConfig = getComponentValue(
+        // const hyperstructureConfig = getComponentValue(
+        //   this.components.WorldConfig,
+        //   getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        // )?.hyperstructure_config;
+
+        const victoryPointsGrantConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.hyperstructure_config;
+        )?.victory_points_grant_config;
+
+        const victoryPointsWinConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.victory_points_win_config;
 
         return {
           // todo: need to fix this
           timeBetweenSharesChange: 0,
-          pointsPerCycle: (Number(hyperstructureConfig?.points_per_second) ?? 0) / 1_000_000,
-          pointsForWin: (Number(hyperstructureConfig?.points_for_win) ?? 0) / 1_000_000,
+          pointsPerCycle: (Number(victoryPointsGrantConfig?.hyp_points_per_second) ?? 0) / 1_000_000,
+          pointsForWin: (Number(victoryPointsWinConfig?.points_for_win) ?? 0) / 1_000_000,
         };
       },
       {

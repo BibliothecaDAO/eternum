@@ -1,7 +1,8 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, StructureCapacityConfig, TradeConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig,
+    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
+    VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -107,11 +108,7 @@ pub trait ITransportConfig<T> {
 #[starknet::interface]
 pub trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
-        ref self: T,
-        initialize_shards_amount: u128,
-        construction_resources: Span<HyperstructureConstructConfig>,
-        points_per_second: u128,
-        points_for_win: u128,
+        ref self: T, initialize_shards_amount: u128, construction_resources: Span<HyperstructureConstructConfig>,
     );
 }
 
@@ -124,6 +121,22 @@ pub trait IBankConfig<T> {
 #[starknet::interface]
 pub trait IMapConfig<T> {
     fn set_map_config(ref self: T, map_config: MapConfig);
+}
+
+#[starknet::interface]
+pub trait IGameModeConfig<T> {
+    fn set_game_mode_config(ref self: T, blitz_mode_on: bool);
+}
+
+#[starknet::interface]
+pub trait IVillageFoundResourcesConfig<T> {
+    fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
+}
+
+#[starknet::interface]
+pub trait IVictoryPointsConfig<T> {
+    fn set_victory_points_grant_config(ref self: T, victory_points_grant_config: VictoryPointsGrantConfig);
+    fn set_victory_points_win_config(ref self: T, victory_points_win_config: VictoryPointsWinConfig);
 }
 
 
@@ -222,12 +235,12 @@ pub mod config_systems {
         ResourceBridgeWhitelistConfig, ResourceFactoryConfig, ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig,
         StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-        TroopStaminaConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig,
+        VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
-    use s1_eternum::models::resource::resource::{ResourceList};
+    use s1_eternum::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use s1_eternum::utils::achievements::index::AchievementTrait;
 
     // Constuctor
@@ -569,8 +582,6 @@ pub mod config_systems {
             ref self: ContractState,
             initialize_shards_amount: u128,
             mut construction_resources: Span<HyperstructureConstructConfig>,
-            points_per_second: u128,
-            points_for_win: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -586,9 +597,7 @@ pub mod config_systems {
             };
 
             // save general hyperstructure config
-            let hyperstructure_config = HyperstructureConfig {
-                initialize_shards_amount, points_per_second, points_for_win,
-            };
+            let hyperstructure_config = HyperstructureConfig { initialize_shards_amount };
             WorldConfigUtilImpl::set_member(ref world, selector!("hyperstructure_config"), hyperstructure_config);
 
             // save hyperstructure construction cost resource types
@@ -863,6 +872,79 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), quest_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IGameModeConfig of super::IGameModeConfig<ContractState> {
+        fn set_game_mode_config(ref self: ContractState, blitz_mode_on: bool) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            WorldConfigUtilImpl::set_member(ref world, selector!("blitz_mode_on"), blitz_mode_on);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IVillageFoundResourcesConfig of super::IVillageFoundResourcesConfig<ContractState> {
+        fn set_village_found_resources_config(
+            ref self: ContractState, village_found_resources: Span<(u8, u128, u128)>,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let resources_mm_list_id = world.dispatcher.uuid();
+            let resources_mm_list_count = village_found_resources.len();
+            let mut index = 0;
+            for (resource_type, resource_min_amount, resource_max_amount) in village_found_resources {
+                let (resource_type, resource_min_amount, resource_max_amount) = (
+                    *resource_type, *resource_min_amount, *resource_max_amount,
+                );
+                assert(resource_min_amount > 0, 'min amount must not be 0');
+                assert(resource_max_amount > 0, 'max amount must not be 0');
+                assert(resource_max_amount >= resource_min_amount, 'max less than min');
+
+                world
+                    .write_model(
+                        @ResourceMinMaxList {
+                            entity_id: resources_mm_list_id,
+                            index,
+                            resource_type,
+                            min_amount: resource_min_amount,
+                            max_amount: resource_max_amount,
+                        },
+                    );
+
+                index += 1;
+            };
+
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                selector!("village_find_resources_config"),
+                VillageFoundResourcesConfig {
+                    resources_mm_list_id, resources_mm_list_count: resources_mm_list_count.try_into().unwrap(),
+                },
+            );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IVictoryPointsConfig of super::IVictoryPointsConfig<ContractState> {
+        fn set_victory_points_grant_config(
+            ref self: ContractState, victory_points_grant_config: VictoryPointsGrantConfig,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("victory_points_grant_config"), victory_points_grant_config,
+            );
+        }
+
+        fn set_victory_points_win_config(ref self: ContractState, victory_points_win_config: VictoryPointsWinConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("victory_points_win_config"), victory_points_win_config,
+            );
         }
     }
 }

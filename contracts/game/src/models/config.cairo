@@ -24,6 +24,7 @@ pub struct WorldConfig {
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
+    pub blitz_mode_on: bool,
     pub blitz_settlement_config: BlitzSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationConfig,
     pub tick_config: TickConfig,
@@ -43,11 +44,14 @@ pub struct WorldConfig {
     pub agent_controller_config: AgentControllerConfig,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
+    pub village_find_resources_config: VillageFoundResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
     pub wonder_production_bonus_config: WonderProductionBonusConfig,
     pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
+    pub victory_points_grant_config: VictoryPointsGrantConfig,
+    pub victory_points_win_config: VictoryPointsWinConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -87,7 +91,11 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
     }
 
     fn has_ended(self: SeasonConfig) -> bool {
-        self.end_at.is_non_zero()
+        let now = starknet::get_block_timestamp();
+        if self.end_at == 0 {
+            return false;
+        }
+        now >= self.end_at
     }
 
     fn has_settling_started(self: SeasonConfig) -> bool {
@@ -205,8 +213,6 @@ pub struct HyperstructureConstructConfig {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct HyperstructureConfig {
     pub initialize_shards_amount: u128,
-    pub points_per_second: u128,
-    pub points_for_win: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -252,6 +258,8 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub agent_discovery_prob: u16,
     pub agent_discovery_fail_prob: u16,
+    pub village_win_probability: u16,
+    pub village_fail_probability: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -506,6 +514,20 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct VictoryPointsGrantConfig {
+    pub hyp_points_per_second: u32,
+    // Only granted when claim hyperstructure from bandits
+    pub claim_hyperstructure_points: u32,
+    // Only granted when claim non hyperstructure from bandits
+    pub claim_otherstructure_points: u32,
+    pub explore_tiles_points: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct VictoryPointsWinConfig {
+    pub points_for_win: u128,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
@@ -709,6 +731,11 @@ pub struct StartingResourcesConfig {
     pub resources_list_count: u8,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct VillageFoundResourcesConfig {
+    pub resources_mm_list_id: ID,
+    pub resources_mm_list_count: u8,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct ResourceBridgeConfig {

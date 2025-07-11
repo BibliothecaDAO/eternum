@@ -1197,8 +1197,6 @@ export function defineContractComponents(world: World) {
           },
           hyperstructure_config: {
             initialize_shards_amount: RecsType.BigInt,
-            points_per_second: RecsType.BigInt,
-            points_for_win: RecsType.BigInt,
           },
           hyperstructure_cost_config: {
             construction_resources_ids: RecsType.NumberArray,
@@ -1212,6 +1210,8 @@ export function defineContractComponents(world: World) {
             shards_mines_fail_probability: RecsType.Number,
             agent_discovery_prob: RecsType.Number,
             agent_discovery_fail_prob: RecsType.Number,
+            village_find_prob: RecsType.Number,
+            village_find_fail_prob: RecsType.Number,
             hyps_win_prob: RecsType.Number,
             hyps_fail_prob: RecsType.Number,
             hyps_fail_prob_increase_p_hex: RecsType.Number,
@@ -1225,6 +1225,7 @@ export function defineContractComponents(world: World) {
             base_distance: RecsType.Number,
             subsequent_distance: RecsType.Number,
           },
+          blitz_mode_on: RecsType.Boolean,
           blitz_settlement_config: {
             base_distance: RecsType.Number,
             side: RecsType.Number,
@@ -1345,6 +1346,10 @@ export function defineContractComponents(world: World) {
             resources_list_id: RecsType.Number,
             resources_list_count: RecsType.Number,
           },
+          village_find_resources_config: {
+            resources_mm_list_id: RecsType.Number,
+            resources_mm_list_count: RecsType.Number,
+          },
           village_controller_config: RecsType.BigIntArray,
           village_pass_config: {
             token_address: RecsType.BigInt,
@@ -1365,6 +1370,15 @@ export function defineContractComponents(world: World) {
             fragment_mine_capacity: RecsType.BigInt,
             bank_structure_capacity: RecsType.BigInt,
           },
+          victory_points_grant_config: {
+            hyp_points_per_second: RecsType.BigInt,
+            claim_hyperstructure_points: RecsType.BigInt,
+            claim_otherstructure_points: RecsType.BigInt,
+            explore_tiles_points: RecsType.BigInt,
+          },
+          victory_points_win_config: {
+            points_for_win: RecsType.BigInt,
+          },
         },
         {
           metadata: {
@@ -1378,8 +1392,6 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address
               "u128", // HyperstructureConfig initialize_shards_amount
-              "u128", // HyperstructureConfig points_per_second
-              "u128", // HyperstructureConfig points_for_win
               "Span<u8>", // HyperstructureCostConfig construction_resources_ids
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // MapConfig reward_resource_amount
@@ -1387,6 +1399,8 @@ export function defineContractComponents(world: World) {
               "u16", // MapConfig shards_mines_fail_probability
               "u16", // MapConfig agent_discovery_prob
               "u16", // MapConfig agent_discovery_fail_prob
+              "u16", // MapConfig village_find_prob
+              "u16", // MapConfig village_find_fail_prob
               "u32", // MapConfig hyps_win_prob
               "u32", // MapConfig hyps_fail_prob
               "u16", // MapConfig hyps_fail_prob_increase_p_hex
@@ -1399,6 +1413,7 @@ export function defineContractComponents(world: World) {
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig subsequent_distance
+              "bool", // blitz_mode_on
               "u32", // BlitzSettlementConfig base_distance
               "u32", // BlitzSettlementConfig side
               "u32", // BlitzSettlementConfig step
@@ -1483,6 +1498,8 @@ export function defineContractComponents(world: World) {
               "u8", // realm StartingResourcesConfig resources_list_count
               "u32", // village StartingResourcesConfig resources_list_id
               "u8", // village StartingResourcesConfig resources_list_count
+              "u32", // village_find_resources_config resources_mm_list_id
+              "u8", // village_find_resources_config resources_mm_list_count
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
@@ -1495,6 +1512,11 @@ export function defineContractComponents(world: World) {
               "u64", // StructureCapacityConfig hyperstructure_structure_capacity
               "u64", // StructureCapacityConfig fragment_mine_structure_capacity
               "u64", // StructureCapacityConfig bank_structure_capacity
+              "u32", // VictoryPointsGrantConfig hyp_points_per_second
+              "u32", // VictoryPointsGrantConfig claim_hyperstructure_points
+              "u32", // VictoryPointsGrantConfig claim_otherstructure_points
+              "u32", // VictoryPointsGrantConfig explore_tiles_points
+              "u128", // VictoryPointsWinConfig points_for_win
             ],
             customTypes: [],
           },

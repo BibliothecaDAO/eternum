@@ -21,9 +21,10 @@ pub mod troop_movement_systems {
     use s1_eternum::models::{
         config::{
             CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
-            WorldConfigUtilImpl,
+            VictoryPointsGrantConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl, TileOccupier}, position::{CoordTrait, Direction},
+        hyperstructure::PlayerRegisteredPointsImpl, map::{Tile, TileImpl, TileOccupier},
+        position::{CoordTrait, Direction},
         resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
         structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl}, troop::{ExplorerTroops, GuardImpl},
         weight::{Weight},
@@ -49,6 +50,7 @@ pub mod troop_movement_systems {
         Mine,
         Agent,
         Quest,
+        Village,
     }
 
     #[derive(Copy, Drop, Serde)]
@@ -98,6 +100,11 @@ pub mod troop_movement_systems {
             let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("victory_points_grant_config"),
+            );
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let season_mode_on = !blitz_mode_on;
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
@@ -122,6 +129,11 @@ pub mod troop_movement_systems {
                     // set tile as explored
                     IMapImpl::explore(ref world, ref tile, biome);
 
+                    // register points for player
+                    PlayerRegisteredPointsImpl::register_points(
+                        ref world, caller, victory_points_grant_config.explore_tiles_points.into(),
+                    );
+
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
                     let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
@@ -142,6 +154,7 @@ pub mod troop_movement_systems {
                             troop_limit_config,
                             troop_stamina_config,
                             current_tick,
+                            season_mode_on,
                         );
 
                     explore_find = _explore_find;
@@ -203,6 +216,10 @@ pub mod troop_movement_systems {
                             AchievementTrait::progress(
                                 world, caller.into(), Tasks::QUEST_DISCOVER, 1, starknet::get_block_timestamp(),
                             );
+                        },
+                        ExploreFind::Village => { // AchievementTrait::progress(
+                        //     world, caller.into(), Tasks::VILLAGE_DISCOVER, 1, starknet::get_block_timestamp(),
+                        // );
                         },
                     }
 
@@ -296,6 +313,7 @@ pub trait ITroopMovementUtilSystems<T> {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         current_tick: u64,
+        season_mode_on: bool,
     ) -> (bool, ExploreFind);
 }
 
@@ -332,6 +350,7 @@ pub mod troop_movement_util_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
+            season_mode_on: bool,
         ) -> (bool, ExploreFind) {
             // ensure caller is the troop movement systems because this changes state
             let mut world = self.world(DEFAULT_NS());
@@ -352,7 +371,14 @@ pub mod troop_movement_util_systems {
             };
             relic_chest_discovery_systems
                 .find_treasure(
-                    vrf_seed, tile, caller, map_config, troop_limit_config, troop_stamina_config, current_tick,
+                    vrf_seed,
+                    tile,
+                    caller,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    current_tick,
+                    season_mode_on,
                 );
 
             //////////////////////////////////////
@@ -373,6 +399,7 @@ pub mod troop_movement_util_systems {
                     troop_limit_config,
                     troop_stamina_config,
                     current_tick,
+                    season_mode_on,
                 );
             if found_hyperstructure {
                 return (true, ExploreFind::Hyperstructure);
@@ -391,16 +418,17 @@ pub mod troop_movement_util_systems {
                         troop_limit_config,
                         troop_stamina_config,
                         current_tick,
+                        season_mode_on,
                     );
                 if found_mine {
                     return (true, ExploreFind::Mine);
                 } else {
-                    let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
-                    let agent_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-                        contract_address: agent_discovery_systems,
+                    // perform lottery to discover village
+                    let (village_discovery_systems, _) = world.dns(@"village_discovery_systems").unwrap();
+                    let village_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                        contract_address: village_discovery_systems,
                     };
-
-                    let (found_agent, _) = agent_discovery_systems
+                    let (found_village, _) = village_discovery_systems
                         .find_treasure(
                             vrf_seed,
                             tile,
@@ -409,26 +437,50 @@ pub mod troop_movement_util_systems {
                             troop_limit_config,
                             troop_stamina_config,
                             current_tick,
+                            season_mode_on,
                         );
-                    if found_agent {
-                        return (true, ExploreFind::Agent);
+                    if found_village {
+                        return (true, ExploreFind::Village);
                     } else {
-                        let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
-                            world, selector!("quest_config"),
-                        );
-                        let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-                        let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-                        let quest_game_count = quest_game_registry.games.len();
-                        if quest_game_count > 0 && feature_toggle.enabled {
-                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
-                            if quest_lottery_won {
-                                let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
-                                let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_address };
-                                quest_system.create_quest(tile, vrf_seed);
-                                return (true, ExploreFind::Quest);
+                        // perform lottery to discover agent
+                        let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
+                        let agent_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                            contract_address: agent_discovery_systems,
+                        };
+
+                        let (found_agent, _) = agent_discovery_systems
+                            .find_treasure(
+                                vrf_seed,
+                                tile,
+                                starknet::get_caller_address(),
+                                map_config,
+                                troop_limit_config,
+                                troop_stamina_config,
+                                current_tick,
+                                season_mode_on,
+                            );
+                        if found_agent {
+                            return (true, ExploreFind::Agent);
+                        } else {
+                            let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
+                                world, selector!("quest_config"),
+                            );
+                            let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
+                            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+                            let quest_game_count = quest_game_registry.games.len();
+                            if quest_game_count > 0 && feature_toggle.enabled {
+                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
+                                if quest_lottery_won {
+                                    let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
+                                    let quest_system = IQuestSystemsDispatcher {
+                                        contract_address: quest_system_address,
+                                    };
+                                    quest_system.create_quest(tile, vrf_seed);
+                                    return (true, ExploreFind::Quest);
+                                }
                             }
+                            return (false, ExploreFind::None);
                         }
-                        return (false, ExploreFind::None);
                     }
                 }
             }
@@ -461,6 +513,7 @@ pub mod hyperstructure_discovery_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
+            season_mode_on: bool,
         ) -> (bool, ExploreFind) {
             // ensure caller is the troop utils systems because this changes state
             let mut world = self.world(DEFAULT_NS());
@@ -519,6 +572,7 @@ pub mod mine_discovery_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
+            season_mode_on: bool,
         ) -> (bool, ExploreFind) {
             // ensure caller is the troop utils systems because this changes state
             let mut world = self.world(DEFAULT_NS());
@@ -533,9 +587,64 @@ pub mod mine_discovery_systems {
             let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
             if mine_lottery_won {
                 iMineDiscoveryImpl::create(
-                    ref world, tile.into(), map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                    ref world,
+                    tile.into(),
+                    season_mode_on,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    vrf_seed,
                 );
                 return (true, ExploreFind::Mine);
+            }
+            return (false, ExploreFind::None);
+        }
+    }
+}
+
+
+#[dojo::contract]
+pub mod village_discovery_systems {
+    use dojo::world::{WorldStorageTrait};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::utils::{
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
+        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl}, village::iVillageDiscoveryImpl,
+    };
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+
+    #[abi(embed_v0)]
+    impl VillageDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+            season_mode_on: bool,
+        ) -> (bool, ExploreFind) {
+            // ensure caller is the troop utils systems because this changes state
+            let mut world = self.world(DEFAULT_NS());
+
+            // ensure caller is the troop utils movement systems
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed);
+            if village_lottery_won {
+                iVillageDiscoveryImpl::create(
+                    ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
+                );
+                return (true, ExploreFind::Village);
             }
             return (false, ExploreFind::None);
         }
@@ -568,6 +677,7 @@ pub mod agent_discovery_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
+            season_mode_on: bool,
         ) -> (bool, ExploreFind) {
             // ensure caller is the troop utils systems because this changes state
             let mut world = self.world(DEFAULT_NS());
@@ -618,6 +728,7 @@ pub mod relic_chest_discovery_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
+            season_mode_on: bool,
         ) -> (bool, ExploreFind) {
             // ensure caller is the troop utils systems because this changes state
             let mut world = self.world(DEFAULT_NS());
