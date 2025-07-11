@@ -1,4 +1,4 @@
-import { ResourcesIds, type ResourceCost, type ResourceInputs, type ResourceOutputs } from "@bibliothecadao/types";
+import { ResourcesIds, type ResourceCost, type ResourceInputs, type ResourceMinMax, type ResourceOutputs } from "@bibliothecadao/types";
 
 // weight in kg
 // grams / 10^9
@@ -27,6 +27,7 @@ export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Dragonhide]: 1000,
   [ResourcesIds.Labor]: 1000,
   [ResourcesIds.AncientFragment]: 100, // 0.1 kg
+  [ResourcesIds.Essence]: 100, // 0.1 kg
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 5000,
   [ResourcesIds.KnightT2]: 5000,
@@ -79,6 +80,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Wheat]: 50,
   [ResourcesIds.Fish]: 50,
   [ResourcesIds.AncientFragment]: 3,
+  [ResourcesIds.Essence]: 5,
   [ResourcesIds.Labor]: 30,
 };
 
@@ -267,6 +269,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
   [ResourcesIds.AncientFragment]: [],
+  [ResourcesIds.Essence]: [],
   [ResourcesIds.Labor]: [],
 };
 
@@ -291,6 +294,14 @@ export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Crossbowman, amount: 1_000 },
   { resource: ResourcesIds.Paladin, amount: 1_000 },
 ];
+
+export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
+  { resource: ResourcesIds.Wheat, min_amount: 300, max_amount: 600 },
+  { resource: ResourcesIds.Labor, min_amount: 400, max_amount: 800 },
+  { resource: ResourcesIds.Donkey, min_amount: 20, max_amount: 50 },
+  { resource: ResourcesIds.Knight, min_amount: 100, max_amount: 150 },
+];
+
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {
   [ResourcesIds.Wood]: 1,
@@ -329,6 +340,7 @@ export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs 
   [ResourcesIds.Wheat]: 0,
   [ResourcesIds.Fish]: 0,
   [ResourcesIds.AncientFragment]: 0,
+  [ResourcesIds.Essence]: 0,
   [ResourcesIds.Labor]: 0,
 };
 export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs = RESOURCE_PRODUCTION_OUTPUT_AMOUNTS;
@@ -448,6 +460,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
   [ResourcesIds.AncientFragment]: [],
+  [ResourcesIds.Essence]: [],
   [ResourcesIds.Labor]: [],
 };
 

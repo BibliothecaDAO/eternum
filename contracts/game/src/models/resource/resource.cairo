@@ -116,13 +116,6 @@ pub impl RelicResourceImpl of RelicResourceTrait {
 }
 
 #[generate_trait]
-pub impl EssenceResourceImpl of EssenceResourceTrait {
-    fn is_essence(resource_type: u8) -> bool {
-        resource_type == ResourceTypes::ESSENCE
-    }
-}
-
-#[generate_trait]
 pub impl TroopResourceImpl of TroopResourceTrait {
     fn is_troop(resource_type: u8) -> bool {
         resource_type == ResourceTypes::KNIGHT_T1
@@ -289,6 +282,7 @@ pub struct Resource {
     WHEAT_PRODUCTION: Production,
     FISH_PRODUCTION: Production,
     LORDS_PRODUCTION: Production,
+    ESSENCE_PRODUCTION: Production,
 }
 
 
@@ -306,7 +300,7 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
-        if RelicResourceImpl::is_relic(resource_type) || EssenceResourceImpl::is_essence(resource_type) {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return Zero::zero();
         }
         return world
@@ -322,7 +316,7 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
-        if RelicResourceImpl::is_relic(resource_type) || EssenceResourceImpl::is_essence(resource_type) {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return;
         }
         world
@@ -430,6 +424,7 @@ pub impl ResourceImpl of ResourceTrait {
             35 => selector!("WHEAT_PRODUCTION"),
             36 => selector!("FISH_PRODUCTION"),
             37 => selector!("LORDS_PRODUCTION"),
+            38 => selector!("ESSENCE_PRODUCTION"),
             _ => panic!("Invalid resource type"),
         }
     }
@@ -454,7 +449,7 @@ pub struct ResourceAllowance {
     pub amount: u128,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceList {
     #[key]
@@ -463,4 +458,17 @@ pub struct ResourceList {
     pub index: u32,
     pub resource_type: u8,
     pub amount: u128,
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct ResourceMinMaxList {
+    #[key]
+    pub entity_id: ID,
+    #[key]
+    pub index: u32,
+    pub resource_type: u8,
+    pub min_amount: u128,
+    pub max_amount: u128,
 }

@@ -17,7 +17,7 @@ pub mod blitz_realm_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
+    use s1_eternum::constants::{DEFAULT_NS, blitz_produceable_resources};
     use s1_eternum::models::config::{
         BlitzHyperstructureRegister, BlitzHyperstructureRegisterImpl, BlitzRealmPlayerRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
@@ -244,17 +244,7 @@ pub mod blitz_realm_systems {
                 realm_count.count += 1;
                 let realm_id = realm_count.count.into();
                 let coord = *coords.pop_front().unwrap();
-                let resources = array![
-                    ResourceTypes::WOOD,
-                    ResourceTypes::COAL,
-                    ResourceTypes::COPPER,
-                    ResourceTypes::IRONWOOD,
-                    ResourceTypes::COLD_IRON,
-                    ResourceTypes::GOLD,
-                    ResourceTypes::ADAMANTINE,
-                    ResourceTypes::MITHRAL,
-                    ResourceTypes::DRAGONHIDE,
-                ];
+                let resources = blitz_produceable_resources();
                 let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(caller, realm_id, resources, 0, 1, coord, false);
