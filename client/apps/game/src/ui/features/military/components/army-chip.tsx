@@ -9,8 +9,9 @@ import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
 import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
+import { ActorType, ArmyInfo, ClientComponents, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { ComponentValue, getComponentValue, HasValue } from "@dojoengine/recs";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -84,6 +85,21 @@ export const ArmyChip = ({
   const isOnMap = useMemo(() => location.includes("map"), [location]);
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
+  const relicEffectsEntities = useEntityQuery([
+    HasValue(components.RelicEffect, {
+      entity_id: army.entityId,
+    }),
+  ]);
+
+  const relicEffects = useMemo(() => {
+    return relicEffectsEntities
+      .map((entity) => {
+        return getComponentValue(components.RelicEffect, entity);
+      })
+      .filter((relicEffect) => relicEffect !== undefined) as ComponentValue<
+      ClientComponents["RelicEffect"]["schema"]
+    >[];
+  }, [relicEffectsEntities]);
 
   const { currentArmiesTick } = useBlockTimestamp();
 
@@ -255,8 +271,11 @@ export const ArmyChip = ({
               {army.troops.count > 0n && resources && (
                 <InventoryResources
                   resources={resources}
+                  relicEffects={relicEffects}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
+                  entityId={army.entityId}
+                  recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
                 />
               )}

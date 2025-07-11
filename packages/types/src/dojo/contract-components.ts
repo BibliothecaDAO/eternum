@@ -590,6 +590,10 @@ export function defineContractComponents(world: World) {
           WHEAT_BALANCE: RecsType.BigInt,
           FISH_BALANCE: RecsType.BigInt,
           LORDS_BALANCE: RecsType.BigInt,
+          ESSENCE_BALANCE: RecsType.BigInt,
+          RELIC_E1_BALANCE: RecsType.BigInt,
+          RELIC_E2_BALANCE: RecsType.BigInt,
+          RELIC_E3_BALANCE: RecsType.BigInt,
           weight: {
             capacity: RecsType.BigInt,
             weight: RecsType.BigInt,
@@ -823,7 +827,7 @@ export function defineContractComponents(world: World) {
             name: "Resource",
             types: [
               "u32", // entity_id
-              ...Array(37).fill("u128"), // balances
+              ...Array(40).fill("u128"), // balances
               "u128",
               "u128", // weight
               ...Array(37).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
@@ -1535,6 +1539,27 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "BlitzRealmPlayerRegister",
             types: ["ContractAddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RelicEffect: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          effect_resource_id: RecsType.Number,
+          effect_rate: RecsType.Number,
+          effect_start_tick: RecsType.Number,
+          effect_end_tick: RecsType.Number,
+          effect_usage_left: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "RelicEffect",
+            types: ["u32", "u8", "u16", "u32", "u32", "u16"],
             customTypes: [],
           },
         },

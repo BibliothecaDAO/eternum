@@ -1,0 +1,32 @@
+import { WeightTable } from "@/components/WeightTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { divideByPrecision } from "@/utils/resources";
+import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { BlitzWeightTable } from "@/components/WeightTable";
+import { StorageTable } from "@/components/StorageTable";
+
+# 📦 Storage System
+
+Your available storage limits the amount of materials your Realm can hold. Each Realm begins with a base capacity of
+**20,000 kg**. You'll need to construct storehouses to expand your storage capabilities.
+
+## Material Weights
+
+Materials have different weights that affect storage:
+
+<BlitzWeightTable />
+
+## Storehouses
+
+<img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
+
+Each storehouse adds 20,000 kg of storage capacity. Lords must be careful not to exceed the storage capacity of their
+Realms, as any produced materials that cannot be stored will be permanently lost.
+
+## World Structure Storage
+
+All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
+capacities are as follows:
+
+<StorageTable />

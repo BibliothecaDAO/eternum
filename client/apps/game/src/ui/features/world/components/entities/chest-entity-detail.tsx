@@ -1,3 +1,4 @@
+import { getChestName } from "@/ui/features/relics";
 import { ID } from "@bibliothecadao/types";
 import { memo } from "react";
 
@@ -7,10 +8,12 @@ interface ChestEntityDetailProps {
 }
 
 export const ChestEntityDetail = memo(({ chestEntityId, compact = false }: ChestEntityDetailProps) => {
+  const chestName = getChestName(chestEntityId);
+
   if (compact) {
     return (
       <div className="flex flex-col items-center space-y-1">
-        <div className="text-gold font-bold">Chest</div>
+        <div className="text-gold font-bold">{chestName}</div>
         <div className="text-xs text-gray-300">ID: #{chestEntityId}</div>
       </div>
     );
@@ -18,7 +21,7 @@ export const ChestEntityDetail = memo(({ chestEntityId, compact = false }: Chest
 
   return (
     <div className="flex flex-col space-y-2">
-      <div className="text-gold font-bold text-lg">Treasure Chest</div>
+      <div className="text-gold font-bold text-lg">{chestName}</div>
       <div className="text-sm text-gray-300">
         <div>Entity ID: #{chestEntityId}</div>
         <div className="text-xs text-gray-400 mt-1">Click to open the chest and claim rewards</div>

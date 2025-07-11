@@ -3,6 +3,7 @@ import {
   BuildingType,
   HexPosition,
   ID,
+  RelicEffect,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -63,7 +64,13 @@ export type QuestSystemUpdate = {
 };
 
 export type ChestSystemUpdate = {
-  entityId: ID;
   occupierId: ID;
   hexCoords: HexPosition;
+};
+
+export type RelicEffectSystemUpdate = {
+  entityId: ID;
+  relicResourceId: ResourcesIds;
+  isActive: boolean;
+  effect: RelicEffect;
 };

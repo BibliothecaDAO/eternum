@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 
 const TIER_DISPLAY_NAMES: Record<string, string> = {
   lords: "Lords & Fragments",
+  relics: "Relics",
   labor: "Labor",
   military: "Military",
   transport: "Transport",

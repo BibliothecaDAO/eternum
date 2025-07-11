@@ -9,6 +9,7 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getArmyName } from "@bibliothecadao/eternum";
 import { findResourceById, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   ChevronLeft,
@@ -137,7 +138,7 @@ const useEntityData = (battleLogs: ProcessedBattleLogEvent[]) => {
             let playerName = cleanPlayerName(playerData.ownerName);
             newEntities.set(entityId, {
               id: entityId,
-              name: `${playerName} Army #${entityId}`,
+              name: `${playerName} ${getArmyName(entityId)}`,
               type: "army",
               playerName: playerName,
               isResolved: true,
@@ -152,7 +153,7 @@ const useEntityData = (battleLogs: ProcessedBattleLogEvent[]) => {
             let playerName = cleanPlayerName(playerData.ownerName);
             newEntities.set(entityId, {
               id: entityId,
-              name: `${playerName} Army #${entityId} [DEAD]`,
+              name: `${playerName} ${getArmyName(entityId)} [DEAD]`,
               type: "army",
               playerName: playerName,
               isResolved: true,

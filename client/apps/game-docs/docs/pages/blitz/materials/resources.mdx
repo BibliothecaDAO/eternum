@@ -1,0 +1,86 @@
+import RarityResourceTable from "@/components/RarityResourceTable";
+import ResourceIcon from "@/components/ResourceIcon";
+import { ResourcesIds } from "@bibliothecadao/types";
+
+# 🧱 Materials
+
+## Materials Overview
+
+Materials encompass all transportable assets in Blitz, including:
+
+- **Resources**: 9 distinct resource types that can be produced on Realms.
+- **Food**: Essential wheat that fuels production and troop movement.
+- **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies.
+- **Donkeys**: One-time-use transport units required for moving materials across the world.
+- **Labor**: A special material that enables construction and production.
+- **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
+
+While all materials can be transported within the game, **no materials can be bridged out** of Blitz. Players may only
+bridge Relics into the game.
+
+## Material Categories
+
+### Resources
+
+<div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+  <ResourceIcon name="Wood" id={ResourcesIds.Wood} />
+  <ResourceIcon name="Coal" id={ResourcesIds.Coal} />
+  <ResourceIcon name="Copper" id={ResourcesIds.Copper} />
+  <ResourceIcon name="Ironwood" id={ResourcesIds.Ironwood} />
+  <ResourceIcon name="Cold Iron" id={ResourcesIds.ColdIron} />
+  <ResourceIcon name="Gold" id={ResourcesIds.Gold} />
+  <ResourceIcon name="Adamantine" id={ResourcesIds.Adamantine} />
+  <ResourceIcon name="Mithral" id={ResourcesIds.Mithral} />
+  <ResourceIcon name="Dragonhide" id={ResourcesIds.Dragonhide} />
+</div>
+
+Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
+advanced military operations.
+
+### Food
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
+</div>
+
+Food is the cornerstone of a Realm's economy and is required in all production chains. Only wheat is available in Blitz
+and it can be produced without inputs.
+
+### Troops
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
+  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
+  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
+</div>
+
+Troops are required to defend your holdings and strike out at your foes. When produced, they can be transported by
+donkey like any other material, but to be used they must be deployed to an army. Once deployed, they cannot be converted
+back into material form.
+
+### Donkeys
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
+</div>
+
+Donkeys are essential for moving materials between your Realms. They only require a market and wheat to produce, but are
+consumed after a single journey.
+
+### Labor
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
+</div>
+
+Labor is a key component in the construction of all buildings and required for 'simple mode' production. It is produced
+by burning resources, with rarer resources yielding more labor.
+
+### Essence
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
+</div>
+
+Essence is a new material that can only be found by exploring the map and interacting with World Structures. It is
+required in all Realm upgrades, as well as for some building construction and production of high-tier troops.

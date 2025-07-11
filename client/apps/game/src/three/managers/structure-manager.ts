@@ -4,13 +4,14 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getLevelName, ID, RelicEffect, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createContentContainer, createLabelBase, createOwnerDisplayElement, transitionManager } from "../utils/";
+import { FXManager } from "./fx-manager";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -109,18 +110,29 @@ export class StructureManager {
   private labelsGroup: THREE.Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
+  private fxManager: FXManager;
+  private structureRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>> =
+    new Map();
+  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
+  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: { width: number; height: number },
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    fxManager?: FXManager,
+    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
+    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.fxManager = fxManager || new FXManager(scene);
+    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
+    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
     this.loadModels();
 
     // Subscribe to camera view changes if scene is provided
@@ -201,6 +213,14 @@ export class StructureManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+    // Clean up all relic effects
+    this.structureRelicEffects.forEach((_effects, entityId) => {
+      this.removeAllRelicEffects(entityId);
+      // Clear any pending relic effects
+      if (this.clearPendingRelicEffectsCallback) {
+        this.clearPendingRelicEffectsCallback(entityId);
+      }
+    });
   }
 
   getTotalStructures() {
@@ -221,7 +241,6 @@ export class StructureManager {
           loader.load(
             modelPath,
             (gltf) => {
-              const model = gltf.scene as THREE.Group;
               const instancedModel = new InstancedModel(
                 gltf,
                 MAX_INSTANCES,
@@ -256,6 +275,7 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureSystemUpdate) {
+    console.log("StructureManager: onUpdate", update);
     await Promise.all(this.modelLoadPromises);
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
@@ -288,6 +308,21 @@ export class StructureManager {
       hasWonder,
       update.isAlly,
     );
+
+    // Clear existing relic effects for this specific structure before re-rendering
+    // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
+    console.log(`StructureManager: onUpdate: clearing relic effects for entity ${entityId}`);
+    this.removeAllRelicEffects(entityId);
+
+    // Apply any pending relic effects for this structure
+    console.log(`StructureManager: onUpdate: applying pending relic effects for entity ${entityId}`);
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+      }
+    }
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -386,7 +421,7 @@ export class StructureManager {
     }
 
     const labelsToRemove: ID[] = [];
-    this.entityIdLabels.forEach((label, entityId) => {
+    this.entityIdLabels.forEach((_label, entityId) => {
       if (!visibleStructureIds.has(entityId)) {
         labelsToRemove.push(entityId);
       }
@@ -484,7 +519,7 @@ export class StructureManager {
   }
 
   public removeLabelsFromScene() {
-    this.entityIdLabels.forEach((label, entityId) => {
+    this.entityIdLabels.forEach((label, _entityId) => {
       this.labelsGroup.remove(label);
       // Dispose of the label's DOM element
       if (label.element && label.element.parentNode) {
@@ -508,6 +543,73 @@ export class StructureManager {
     this.removeLabelsFromScene();
     // Update visible structures which will create new labels as needed
     this.updateVisibleStructures();
+  }
+
+  // Relic effect management methods
+  public async addRelicEffect(entityId: ID, relicNumber: number, effect: RelicEffect) {
+    const structure = this.structures.getStructureByEntityId(entityId);
+    if (!structure) return;
+
+    const position = getWorldPositionForHex(structure.hexCoords);
+    position.y += 1.5; // Position above structure
+
+    try {
+      // Register the relic FX type if not already registered (wait for texture to load)
+      await this.fxManager.registerRelicFX(relicNumber);
+
+      // Create the FX at the structure position
+      const fx = this.fxManager.playFxAtCoords(
+        `relic_${relicNumber}`,
+        position.x,
+        position.y,
+        position.z,
+        1,
+        undefined,
+        true,
+      );
+
+      if (fx) {
+        // Store the effect
+        if (!this.structureRelicEffects.has(entityId)) {
+          this.structureRelicEffects.set(entityId, []);
+        }
+        this.structureRelicEffects.get(entityId)!.push({ relicNumber, effect, fx });
+      }
+    } catch (error) {
+      console.error(`Failed to add relic effect ${relicNumber} for structure ${entityId}:`, error);
+    }
+  }
+
+  public removeRelicEffect(entityId: ID, relicNumber: number) {
+    const effects = this.structureRelicEffects.get(entityId);
+    if (!effects) return;
+
+    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
+    if (index !== -1) {
+      const effect = effects[index];
+      effect.fx.end();
+      effects.splice(index, 1);
+
+      if (effects.length === 0) {
+        this.structureRelicEffects.delete(entityId);
+      }
+    }
+  }
+
+  public removeAllRelicEffects(entityId: ID) {
+    const effects = this.structureRelicEffects.get(entityId);
+    if (!effects) return;
+
+    effects.forEach((effect) => {
+      effect.fx.end();
+    });
+
+    this.structureRelicEffects.delete(entityId);
+  }
+
+  public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
+    const effects = this.structureRelicEffects.get(entityId);
+    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 }
 
@@ -575,6 +677,16 @@ class Structures {
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
     return this.structures;
+  }
+
+  getStructureByEntityId(entityId: ID): StructureInfo | undefined {
+    for (const [_, structures] of this.structures) {
+      const structure = structures.get(entityId);
+      if (structure) {
+        return structure;
+      }
+    }
+    return undefined;
   }
 
   recheckOwnership() {

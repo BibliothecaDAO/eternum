@@ -9,7 +9,8 @@ import {
   getTotalResourceWeightKg,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { findResourceById, ID, TickIds } from "@bibliothecadao/types";
+import { findResourceById, ID, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -30,6 +31,7 @@ export const ResourceChip = ({
   storageCapacityUsed?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
@@ -38,7 +40,7 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+  const { currentDefaultTick: currentTick, currentArmiesTick } = useBlockTimestamp();
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
@@ -73,10 +75,6 @@ export const ResourceChip = ({
     return resourceManager.getProductionEndsAt(resourceId);
   }, [resourceManager]);
 
-  const productionAmountRemaining = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.output_amount_left || 0), false));
-  }, [production]);
-
   const isActive = useMemo(() => {
     return resourceManager.isActive(resourceId);
   }, [resourceManager]);
@@ -88,7 +86,7 @@ export const ResourceChip = ({
     if (isActive && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
-        const { balance, hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
+        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
 
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
@@ -100,7 +98,7 @@ export const ResourceChip = ({
     return (
       <ResourceIcon
         withTooltip={false}
-        resource={findResourceById(resourceId)?.trait as string}
+        resource={ResourcesIds[resourceId]}
         size={size === "large" ? "md" : "sm"}
         className=" self-center"
       />
@@ -202,16 +200,27 @@ export const ResourceChip = ({
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
+  // Check if this resource is a relic
+  const isRelic = useMemo(() => {
+    // Using type assertion until the build system picks up the new method
+    return ResourceManager.isRelic(resourceId);
+  }, [resourceManager, resourceId]);
+
+  const relicEffectActivated = useMemo(() => {
+    return resourceManager.isRelicActive(resourceId, currentArmiesTick);
+  }, [resourceManager, resourceId, currentArmiesTick]);
+
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {
     return null;
   }
-
   return (
     <div
       className={`flex relative group items-center ${
         size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/5`}
+      } hover:bg-gold/5 ${
+        relicEffectActivated ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
+      }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -219,9 +228,18 @@ export const ResourceChip = ({
         <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
           <div className="flex items-center gap-2">
             {icon}
-            <span className={`${isHovered ? "font-bold animate-pulse" : ""}`}>
+            <span
+              className={`${isHovered ? "font-bold animate-pulse" : ""} ${
+                relicEffectActivated ? "text-purple-300 font-semibold" : ""
+              }`}
+            >
               {currencyFormat(displayBalance, 2)}
             </span>{" "}
+            {relicEffectActivated && (
+              <div className="flex items-center ml-1">
+                <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
+              </div>
+            )}
           </div>
 
           {amountProduced > 0n && (
@@ -284,6 +302,33 @@ export const ResourceChip = ({
               d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
             />
           </svg>
+        </button>
+      )}
+      {isRelic && balance > 0 && (
+        <button
+          onClick={() => {
+            import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
+              toggleModal(
+                <RelicActivationPopup
+                  structureEntityId={resourceManager.entityId}
+                  recipientType={RelicRecipientType.Structure}
+                  relicId={resourceId}
+                  relicBalance={divideByPrecision(balance)}
+                  onClose={() => toggleModal(null)}
+                />,
+              );
+            });
+          }}
+          onMouseEnter={() =>
+            setTooltip({
+              content: "Activate Relic",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="ml-2 p-1 hover:bg-gold/20 rounded"
+        >
+          <Sparkles className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
         </button>
       )}
     </div>

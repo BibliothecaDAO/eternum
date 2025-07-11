@@ -64,10 +64,18 @@ When making changes to project rules and guidelines:
 
 Keep changes focused to their respective domains and avoid cross-contamination between rule files.
 
-# Frontend Guidelines
+## 🎯 Key Documentation References
 
-@.claude/frontend-rules.md
+- **Frontend Guidelines**: `.claude/frontend-rules.md` 🎨
+- **Contracts Guidelines**: `.claude/contracts-rules.md` ⚡
 
-# Contracts Guidelines
+## 📚 CRITICAL DOCUMENTATION PATTERN
 
-@.claude/contracts-rules.md
+**ALWAYS ADD IMPORTANT DOCS HERE!** When you create or discover:
+
+- Architecture diagrams → Add reference path here
+- Database schemas → Add reference path here
+- Problem solutions → Add reference path here
+- Setup guides → Add reference path here
+
+This prevents context loss! Update this file IMMEDIATELY when creating important docs.

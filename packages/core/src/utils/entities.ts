@@ -3,7 +3,6 @@ import {
   ClientComponents,
   ContractAddress,
   DirectionName,
-  EntityType,
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
@@ -26,7 +25,11 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
 
   let name = undefined;
   if (explorer) {
-    name = `Army ${explorer.explorer_id}`;
+    const armyName = getArmyName(explorer.explorer_id);
+    name = {
+      name: armyName,
+      originalName: armyName,
+    };
   } else {
     if (structure) {
       name = getStructureName(structure);
@@ -64,11 +67,14 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
         : undefined,
     owner,
     isMine: ContractAddress(owner || 0n) === playerAccount,
-    entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
     structureCategory: structure?.base.category,
     structure,
     name,
   };
+};
+
+export const getArmyName = (armyEntityId: ID) => {
+  return `Army ${armyEntityId}`;
 };
 
 const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {

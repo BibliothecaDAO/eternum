@@ -430,6 +430,26 @@ export const policies = toSessionPolicies({
         },
       ],
     },
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "relic_systems").address]: {
+      methods: [
+        {
+          name: "open_chest",
+          entrypoint: "open_chest",
+        },
+        {
+          name: "apply_relic",
+          entrypoint: "apply_relic",
+        },
+        {
+          name: "dojo_name",
+          entrypoint: "dojo_name",
+        },
+        {
+          name: "world_dispatcher",
+          entrypoint: "world_dispatcher",
+        },
+      ],
+    },
     [getContractByName(dojoConfig.manifest, "s1_eternum", "season_systems").address]: {
       methods: [
         {

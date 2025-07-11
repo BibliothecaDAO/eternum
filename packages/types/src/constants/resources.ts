@@ -53,6 +53,9 @@ export const STEALABLE_RESOURCES = [
   ResourcesIds.Wheat,
 ];
 
+// Alias for backward compatibility with documentation
+export const RAIDABLE_RESOURCES = STEALABLE_RESOURCES;
+
 export const resources: Array<Resources> = [
   {
     trait: "Stone",
@@ -408,7 +411,7 @@ export const resources: Array<Resources> = [
 
   // Relics - Army Enhancement Items
   {
-    trait: "Stamina Relic I",
+    trait: "Stamina Relic 1",
     value: 39,
     colour: "#4ade80",
     id: ResourcesIds.StaminaRelic1,
@@ -417,7 +420,7 @@ export const resources: Array<Resources> = [
     ticker: "$STAM1",
   },
   {
-    trait: "Stamina Relic II",
+    trait: "Stamina Relic 2",
     value: 40,
     colour: "#22c55e",
     id: ResourcesIds.StaminaRelic2,
@@ -426,7 +429,7 @@ export const resources: Array<Resources> = [
     ticker: "$STAM2",
   },
   {
-    trait: "Damage Relic I",
+    trait: "Damage Relic 1",
     value: 41,
     colour: "#f87171",
     id: ResourcesIds.DamageRelic1,
@@ -435,7 +438,7 @@ export const resources: Array<Resources> = [
     ticker: "$DMG1",
   },
   {
-    trait: "Damage Relic II",
+    trait: "Damage Relic 2",
     value: 42,
     colour: "#ef4444",
     id: ResourcesIds.DamageRelic2,
@@ -444,7 +447,7 @@ export const resources: Array<Resources> = [
     ticker: "$DMG2",
   },
   {
-    trait: "Damage Reduction Relic I",
+    trait: "Damage Reduction Relic 1",
     value: 43,
     colour: "#60a5fa",
     id: ResourcesIds.DamageReductionRelic1,
@@ -453,7 +456,7 @@ export const resources: Array<Resources> = [
     ticker: "$DEF1",
   },
   {
-    trait: "Damage Reduction Relic II",
+    trait: "Damage Reduction Relic 2",
     value: 44,
     colour: "#3b82f6",
     id: ResourcesIds.DamageReductionRelic2,
@@ -462,7 +465,7 @@ export const resources: Array<Resources> = [
     ticker: "$DEF2",
   },
   {
-    trait: "Exploration Relic I",
+    trait: "Exploration Relic 1",
     value: 45,
     colour: "#a78bfa",
     id: ResourcesIds.ExplorationRelic1,
@@ -471,7 +474,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXP1",
   },
   {
-    trait: "Exploration Relic II",
+    trait: "Exploration Relic 2",
     value: 46,
     colour: "#8b5cf6",
     id: ResourcesIds.ExplorationRelic2,
@@ -480,7 +483,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXP2",
   },
   {
-    trait: "Exploration Reward Relic I",
+    trait: "Exploration Reward Relic 1",
     value: 47,
     colour: "#fbbf24",
     id: ResourcesIds.ExplorationRewardRelic1,
@@ -489,7 +492,7 @@ export const resources: Array<Resources> = [
     ticker: "$EXPR1",
   },
   {
-    trait: "Exploration Reward Relic II",
+    trait: "Exploration Reward Relic 2",
     value: 48,
     colour: "#f59e0b",
     id: ResourcesIds.ExplorationRewardRelic2,
@@ -500,7 +503,7 @@ export const resources: Array<Resources> = [
 
   // Relics - Structure Enhancement Items
   {
-    trait: "Structure Defense Relic I",
+    trait: "Damage Reduction Relic 1",
     value: 49,
     colour: "#94a3b8",
     id: ResourcesIds.StructureDamageReductionRelic1,
@@ -509,7 +512,7 @@ export const resources: Array<Resources> = [
     ticker: "$SDEF1",
   },
   {
-    trait: "Structure Defense Relic II",
+    trait: "Damage Reduction Relic 2",
     value: 50,
     colour: "#64748b",
     id: ResourcesIds.StructureDamageReductionRelic2,
@@ -518,7 +521,7 @@ export const resources: Array<Resources> = [
     ticker: "$SDEF2",
   },
   {
-    trait: "Production Relic I",
+    trait: "Production Relic 1",
     value: 51,
     colour: "#10b981",
     id: ResourcesIds.ProductionRelic1,
@@ -527,7 +530,7 @@ export const resources: Array<Resources> = [
     ticker: "$PROD1",
   },
   {
-    trait: "Production Relic II",
+    trait: "Production Relic 2",
     value: 52,
     colour: "#059669",
     id: ResourcesIds.ProductionRelic2,
@@ -536,7 +539,7 @@ export const resources: Array<Resources> = [
     ticker: "$PROD2",
   },
   {
-    trait: "Labor Production Relic I",
+    trait: "Labor Production Relic 1",
     value: 53,
     colour: "#f472b6",
     id: ResourcesIds.LaborProductionRelic1,
@@ -545,7 +548,7 @@ export const resources: Array<Resources> = [
     ticker: "$LAB1",
   },
   {
-    trait: "Labor Production Relic II",
+    trait: "Labor Production Relic 2",
     value: 54,
     colour: "#ec4899",
     id: ResourcesIds.LaborProductionRelic2,
@@ -554,7 +557,7 @@ export const resources: Array<Resources> = [
     ticker: "$LAB2",
   },
   {
-    trait: "Troop Production Relic I",
+    trait: "Troop Production Relic 1",
     value: 55,
     colour: "#fb923c",
     id: ResourcesIds.TroopProductionRelic1,
@@ -563,7 +566,7 @@ export const resources: Array<Resources> = [
     ticker: "$TROOP1",
   },
   {
-    trait: "Troop Production Relic II",
+    trait: "Troop Production Relic 2",
     value: 56,
     colour: "#ea580c",
     id: ResourcesIds.TroopProductionRelic2,
@@ -687,6 +690,28 @@ export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
 
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
+  relics: [
+    // Army Enhancement Relics
+    ResourcesIds.StaminaRelic1,
+    ResourcesIds.StaminaRelic2,
+    ResourcesIds.DamageRelic1,
+    ResourcesIds.DamageRelic2,
+    ResourcesIds.DamageReductionRelic1,
+    ResourcesIds.DamageReductionRelic2,
+    ResourcesIds.ExplorationRelic1,
+    ResourcesIds.ExplorationRelic2,
+    ResourcesIds.ExplorationRewardRelic1,
+    ResourcesIds.ExplorationRewardRelic2,
+    // Structure Enhancement Relics
+    ResourcesIds.StructureDamageReductionRelic1,
+    ResourcesIds.StructureDamageReductionRelic2,
+    ResourcesIds.ProductionRelic1,
+    ResourcesIds.ProductionRelic2,
+    ResourcesIds.LaborProductionRelic1,
+    ResourcesIds.LaborProductionRelic2,
+    ResourcesIds.TroopProductionRelic1,
+    ResourcesIds.TroopProductionRelic2,
+  ],
   labor: [ResourcesIds.Labor],
   military: [
     ResourcesIds.Knight,
@@ -713,26 +738,4 @@ export const RESOURCE_TIERS = {
     ResourcesIds.AlchemicalSilver,
   ],
   mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
-  relics: [
-    // Army Enhancement Relics
-    ResourcesIds.StaminaRelic1,
-    ResourcesIds.StaminaRelic2,
-    ResourcesIds.DamageRelic1,
-    ResourcesIds.DamageRelic2,
-    ResourcesIds.DamageReductionRelic1,
-    ResourcesIds.DamageReductionRelic2,
-    ResourcesIds.ExplorationRelic1,
-    ResourcesIds.ExplorationRelic2,
-    ResourcesIds.ExplorationRewardRelic1,
-    ResourcesIds.ExplorationRewardRelic2,
-    // Structure Enhancement Relics
-    ResourcesIds.StructureDamageReductionRelic1,
-    ResourcesIds.StructureDamageReductionRelic2,
-    ResourcesIds.ProductionRelic1,
-    ResourcesIds.ProductionRelic2,
-    ResourcesIds.LaborProductionRelic1,
-    ResourcesIds.LaborProductionRelic2,
-    ResourcesIds.TroopProductionRelic1,
-    ResourcesIds.TroopProductionRelic2,
-  ],
 };

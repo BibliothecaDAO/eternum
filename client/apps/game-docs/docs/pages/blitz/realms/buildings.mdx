@@ -1,0 +1,461 @@
+import BuildingCard from "../../../components/BuildingCard";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
+
+# 🪓 Buildings
+
+## Standard vs. Simple
+
+Blitz offers two building systems. Lords can switch between standard and simple building modes at any time by clicking
+the toggle at the top of the construction tab.
+
+![Simple Mode Production](/gifs/simple-mode.gif)
+
+_Note: Some buildings only require labor to construct. Farms and Wood Mills have the same construction cost in both
+standard and simple building modes._
+
+### Standard Mode
+
+This is the classic building experience. Construction requires a combination of labor and a particular set of resources
+as building materials. Standard mode is more complex and involves a greater number of materials in storage, however it
+is far more efficient overall.
+
+### Simple Mode
+
+This mode allows players to utilize Labor as the singular input for construction. Simple mode greatly improves
+accessibility and simplifies gameplay overall, but is much less efficient in both time and materials.
+
+## Placement & Population
+
+### Placement
+
+The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm,
+provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the upgrade level
+(Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+
+![Building Placement](/gifs/construction.gif)
+
+### Population
+
+**Population** is the total population used to construct the current buildings on a Realm, while **population capacity**
+is the maximum available population with which to construct buildings. Worker Huts can be built to increase population
+capacity, while all other buildings require population capacity to be available in order to construct. Lords must
+balance their construction to ensure there is enough population capacity available to construct their desired production
+buildings.
+
+## Building Types
+
+### The Keep
+
+All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
+represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
+production. This building cannot be destroyed and provides a baseline population capacity of 5.
+
+<BuildingCard
+  title="Keep"
+  image="/images/buildings/construction/castleZero.png"
+  buildingType={25}
+  description={["Produces Labor", "Provides a baseline population capacity of 5", "Cannot be constructed or destroyed"]}
+/>
+
+### Resource Buildings
+
+There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
+buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
+have the same requirements in simple and standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BlitzBuildingCard 
+  title="Wood Mill" 
+  image="/images/buildings/construction/lumber_mill.png" 
+  buildingType={5} 
+  description={["Produces Wood resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 400 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 } // Labor
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Coal Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={4}
+  description={["Produces Coal resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 560 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 }, // Labor
+    { resource: 3, amount: 80 }, // Wood
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Copper Smelter"
+  image="/images/buildings/construction/forge.png"
+  buildingType={6}
+  description={["Produces Copper resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 }, // Wood
+    { resource: 2, amount: 90 }, // Coal
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Ironwood Mill"
+  image="/images/buildings/construction/lumber_mill.png"
+  buildingType={7}
+  description={["Produces Ironwood resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Cold Iron Foundry"
+  image="/images/buildings/construction/forge.png"
+  buildingType={13}
+  description={["Produces Cold Iron resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Gold Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={9}
+  description={["Produces Gold resource"]}
+  simpleCosts={[
+    { resource: 23, amount: 3120 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+    { resource: 3, amount: 240 }, // Wood
+    { resource: 2, amount: 180 }, // Coal
+    { resource: 4, amount: 180 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Adamantine Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={21}
+  description={["Produces Adamantine resource", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 5, amount: 540 }, // Ironwood
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+  ]}
+  standardOnly={true}
+/>
+
+<BlitzBuildingCard
+  title="Mithral Forge"
+  image="/images/buildings/construction/forge.png"
+  buildingType={11}
+  description={["Produces Mithral resource", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 11, amount: 540 }, // Cold Iron
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+  ]}
+  standardOnly={true}
+/>
+
+<BlitzBuildingCard
+  title="Dragonhide Tannery"
+  image="/images/buildings/construction/dragonhide.png"
+  buildingType={24}
+  description={[
+    "Produces Dragonhide resource",
+    "Only available in standard building mode",
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 7, amount: 540 }, // Gold
+    { resource: ResourcesIds.Essence, amount: 600 } // Essence
+  ]}
+  standardOnly={true}
+/>
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, population
+capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+varying costs and population requirements:
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BlitzBuildingCard
+  title="Farm"
+  image="/images/buildings/construction/farm.png"
+  buildingType={37}
+  description={["Produces Wheat (food)"]}
+  simpleCosts={[
+    { resource: 23, amount: 200 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 200 } // Labor
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Worker's Hut"
+  image="/images/buildings/construction/workers_hut.png"
+  buildingType={1}
+  description={["Increases population capacity by 5"]}
+  simpleCosts={[
+    { resource: 23, amount: 560 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 400 }, // Labor
+    { resource: 3, amount: 80 }, // Wood
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Storehouse"
+  image="/images/buildings/construction/storehouse.png"
+  buildingType={2}
+  description={["Increases storage capacity by 20,000 kg for each material"]}
+  simpleCosts={[
+    { resource: 23, amount: 1200 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 }, // Wood
+    { resource: 4, amount: 90 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Market"
+  image="/images/buildings/construction/market.png"
+  buildingType={27}
+  description={[
+    "Produces Donkeys for transportation of materials",
+  ]}
+  simpleCosts={[
+    { resource: 23, amount: 840 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 600 }, // Labor
+    { resource: 3, amount: 120 } // Wood
+  ]}
+/>
+</div>
+
+### Military Buildings
+
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
+available for construction in standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BlitzBuildingCard 
+  title="Barracks (T1)" 
+  image="/images/buildings/construction/barracks.png" 
+  buildingType={28} 
+  description={[
+    "Produces T1 Knights",
+    "Available in both simple and standard building modes"
+  ]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 } // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 } // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Barracks (T2)"
+  image="/images/buildings/construction/barracks.png"
+  buildingType={29}
+  description={["Produces T2 Knights", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 6, amount: 540 }, // Cold Iron
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Barracks (T3)"
+  image="/images/buildings/construction/barracks.png"
+  buildingType={30}
+  description={["Produces T3 Knights", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 6, amount: 1080 }, // Cold Iron
+    { resource: 8, amount: 1080 }, // Mithral
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
+  ]}
+/>
+
+<div
+  style={{
+    gridColumn: "1 / -1",
+    height: "1px",
+    backgroundColor: "#8b5a2b",
+    margin: "1rem 0",
+    opacity: 0.6,
+  }}
+/>
+
+<BlitzBuildingCard
+  title="Archery Range (T1)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={31}
+  description={["Produces T1 Crossbowmen", "Available in both simple and standard building modes"]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Archery Range (T2)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={32}
+  description={["Produces T2 Crossbowmen", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 7, amount: 540 }, // Ironwood
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Archery Range (T3)"
+  image="/images/buildings/construction/archery.png"
+  buildingType={33}
+  description={["Produces T3 Crossbowmen", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 7, amount: 1080 }, // Ironwood
+    { resource: 9, amount: 1080 }, // Adamantine
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
+  ]}
+/>
+
+<div
+  style={{
+    gridColumn: "1 / -1",
+    height: "1px",
+    backgroundColor: "#8b5a2b",
+    margin: "1rem 0",
+    opacity: 0.6,
+  }}
+/>
+
+<BlitzBuildingCard
+  title="Stables (T1)"
+  image="/images/buildings/construction/stable.png"
+  buildingType={34}
+  description={["Produces T1 Paladins", "Available in both simple and standard building modes"]}
+  simpleCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+  ]}
+  standardCosts={[
+    { resource: 23, amount: 1800 }, // Labor
+    { resource: 3, amount: 360 }, // Wood
+    { resource: 4, amount: 70 }, // Copper
+  ]}
+/>
+
+<BlitzBuildingCard
+  title="Stables (T2)"
+  image="/images/buildings/construction/stable.png"
+  buildingType={35}
+  description={["Produces T2 Paladins", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 3600 }, // Labor
+    { resource: 3, amount: 720 }, // Wood
+    { resource: 4, amount: 540 }, // Copper
+    { resource: 10, amount: 540 }, // Gold
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
+  ]}
+/>
+
+<BlitzBuildingCard 
+  title="Stables (T3)" 
+  image="/images/buildings/construction/stable.png" 
+  buildingType={36} 
+  description={["Produces T3 Paladins", "Only available in standard building mode"]}
+  standardCosts={[
+    { resource: 23, amount: 7200 }, // Labor
+    { resource: 3, amount: 1440 }, // Wood
+    { resource: 10, amount: 1080 }, // Gold
+    { resource: 11, amount: 1080 }, // Dragonhide
+    { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
+  ]}
+/>
+</div>
+
+### Same Building Cost Increase
+
+Building multiple buildings of the same type will cost progressively more each time. The cost increase is calculated
+using the following formula:
+
+```
+Cost = Base Cost + (Base Cost × 0.1 × (N-1)²)
+```
+
+Where:
+
+- **Base Cost** is the initial cost of the building (from the tables above)
+- **N** is the number of the same buildings already constructed
+
+For example, if you build a second building of the same type (N=2), the cost will be:
+
+```
+Cost = Base Cost + (Base Cost × 0.1 × (2-1)²)
+     = Base Cost + (Base Cost × 0.1 × 1)
+     = Base Cost × 1.1
+```
+
+_Note: Buildings need to be exactly the same type for this rule to apply. For example, building a Coal Mine after a Wood
+Mill (both being resource buildings) would not be subject to this cost increase._

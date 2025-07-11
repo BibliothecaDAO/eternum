@@ -12,6 +12,12 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 
+export interface RelicEffect {
+  start_tick: number;
+  end_tick: number;
+  usage_left: number;
+}
+
 export enum ActorType {
   Explorer = "explorer",
   Structure = "structure",
@@ -231,8 +237,8 @@ export enum TickIds {
 
 export enum EntityType {
   DONKEY,
-  TROOP,
-  UNKNOWN,
+  ARMY,
+  STRUCTURE,
 }
 
 export enum Access {

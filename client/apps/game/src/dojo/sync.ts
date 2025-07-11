@@ -6,6 +6,7 @@ import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
+  getActiveRelicEffectsFromTorii,
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
   getConfigFromTorii,
@@ -208,5 +209,13 @@ export const initialSync = async (
   await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] guilds query", end - start);
+  setInitialSyncProgress(95);
+
+  // RELIC EFFECTS
+  start = performance.now();
+  // todo: find a way to get the current armies tick before config has synced
+  await getActiveRelicEffectsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, 0);
+  end = performance.now();
+  console.log("[sync] relic effects query", end - start);
   setInitialSyncProgress(100);
 };
