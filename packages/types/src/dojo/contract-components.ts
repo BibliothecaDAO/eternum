@@ -590,6 +590,10 @@ export function defineContractComponents(world: World) {
           WHEAT_BALANCE: RecsType.BigInt,
           FISH_BALANCE: RecsType.BigInt,
           LORDS_BALANCE: RecsType.BigInt,
+          ESSENCE_BALANCE: RecsType.BigInt,
+          RELIC_E1_BALANCE: RecsType.BigInt,
+          RELIC_E2_BALANCE: RecsType.BigInt,
+          RELIC_E3_BALANCE: RecsType.BigInt,
           weight: {
             capacity: RecsType.BigInt,
             weight: RecsType.BigInt,
@@ -823,7 +827,7 @@ export function defineContractComponents(world: World) {
             name: "Resource",
             types: [
               "u32", // entity_id
-              ...Array(37).fill("u128"), // balances
+              ...Array(40).fill("u128"), // balances
               "u128",
               "u128", // weight
               ...Array(37).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
@@ -1197,8 +1201,6 @@ export function defineContractComponents(world: World) {
           },
           hyperstructure_config: {
             initialize_shards_amount: RecsType.BigInt,
-            points_per_second: RecsType.BigInt,
-            points_for_win: RecsType.BigInt,
           },
           hyperstructure_cost_config: {
             construction_resources_ids: RecsType.NumberArray,
@@ -1212,17 +1214,39 @@ export function defineContractComponents(world: World) {
             shards_mines_fail_probability: RecsType.Number,
             agent_discovery_prob: RecsType.Number,
             agent_discovery_fail_prob: RecsType.Number,
+            village_find_prob: RecsType.Number,
+            village_find_fail_prob: RecsType.Number,
             hyps_win_prob: RecsType.Number,
             hyps_fail_prob: RecsType.Number,
             hyps_fail_prob_increase_p_hex: RecsType.Number,
             hyps_fail_prob_increase_p_fnd: RecsType.Number,
-            mine_wheat_grant_amount: RecsType.Number,
-            mine_fish_grant_amount: RecsType.Number,
+            relic_discovery_interval_sec: RecsType.Number,
+            relic_hex_dist_from_center: RecsType.Number,
+            relic_chest_relics_per_chest: RecsType.Number,
           },
           settlement_config: {
             center: RecsType.Number,
             base_distance: RecsType.Number,
             subsequent_distance: RecsType.Number,
+          },
+          blitz_mode_on: RecsType.Boolean,
+          blitz_settlement_config: {
+            base_distance: RecsType.Number,
+            side: RecsType.Number,
+            step: RecsType.Number,
+            point: RecsType.Number,
+          },
+          blitz_registration_config: {
+            fee_amount: RecsType.BigInt,
+            fee_token: RecsType.BigInt,
+            fee_recipient: RecsType.BigInt,
+            registration_count: RecsType.Number,
+            registration_count_max: RecsType.Number,
+            registration_start_at: RecsType.Number,
+            registration_end_at: RecsType.Number,
+            creation_start_at: RecsType.Number,
+            creation_end_at: RecsType.Number,
+            assigned_positions_count: RecsType.Number,
           },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
@@ -1326,6 +1350,10 @@ export function defineContractComponents(world: World) {
             resources_list_id: RecsType.Number,
             resources_list_count: RecsType.Number,
           },
+          village_find_resources_config: {
+            resources_mm_list_id: RecsType.Number,
+            resources_mm_list_count: RecsType.Number,
+          },
           village_controller_config: RecsType.BigIntArray,
           village_pass_config: {
             token_address: RecsType.BigInt,
@@ -1346,6 +1374,15 @@ export function defineContractComponents(world: World) {
             fragment_mine_capacity: RecsType.BigInt,
             bank_structure_capacity: RecsType.BigInt,
           },
+          victory_points_grant_config: {
+            hyp_points_per_second: RecsType.BigInt,
+            claim_hyperstructure_points: RecsType.BigInt,
+            claim_otherstructure_points: RecsType.BigInt,
+            explore_tiles_points: RecsType.BigInt,
+          },
+          victory_points_win_config: {
+            points_for_win: RecsType.BigInt,
+          },
         },
         {
           metadata: {
@@ -1359,8 +1396,6 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address
               "u128", // HyperstructureConfig initialize_shards_amount
-              "u128", // HyperstructureConfig points_per_second
-              "u128", // HyperstructureConfig points_for_win
               "Span<u8>", // HyperstructureCostConfig construction_resources_ids
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // MapConfig reward_resource_amount
@@ -1368,15 +1403,35 @@ export function defineContractComponents(world: World) {
               "u16", // MapConfig shards_mines_fail_probability
               "u16", // MapConfig agent_discovery_prob
               "u16", // MapConfig agent_discovery_fail_prob
+              "u16", // MapConfig village_find_prob
+              "u16", // MapConfig village_find_fail_prob
               "u32", // MapConfig hyps_win_prob
               "u32", // MapConfig hyps_fail_prob
               "u16", // MapConfig hyps_fail_prob_increase_p_hex
               "u16", // MapConfig hyps_fail_prob_increase_p_fnd
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
+              "u16", // MapConfig relic_discovery_interval_sec
+              "u8", // MapConfig relic_hex_dist_from_center
+              "u8", // MapConfig relic_chest_relics_per_chest
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig subsequent_distance
+              "bool", // blitz_mode_on
+              "u32", // BlitzSettlementConfig base_distance
+              "u32", // BlitzSettlementConfig side
+              "u32", // BlitzSettlementConfig step
+              "u32", // BlitzSettlementConfig point
+              "u128", // BlitzRegistrationConfig fee_amount
+              "ContractAddress", // BlitzRegistrationConfig fee_token
+              "ContractAddress", // BlitzRegistrationConfig fee_recipient
+              "u16", // BlitzRegistrationConfig registration_count
+              "u16", // BlitzRegistrationConfig registration_count_max
+              "u32", // BlitzRegistrationConfig registration_start_at
+              "u32", // BlitzRegistrationConfig registration_end_at
+              "u32", // BlitzRegistrationConfig creation_start_at
+              "u32", // BlitzRegistrationConfig creation_end_at
+              "u16", // BlitzRegistrationConfig assigned_positions_count
               "u64", // TickConfig armies_tick_in_seconds
               "u32", // BankConfig lp_fee_num
               "u32", // BankConfig lp_fee_denom
@@ -1447,6 +1502,8 @@ export function defineContractComponents(world: World) {
               "u8", // realm StartingResourcesConfig resources_list_count
               "u32", // village StartingResourcesConfig resources_list_id
               "u8", // village StartingResourcesConfig resources_list_count
+              "u32", // village_find_resources_config resources_mm_list_id
+              "u8", // village_find_resources_config resources_mm_list_count
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
@@ -1459,7 +1516,50 @@ export function defineContractComponents(world: World) {
               "u64", // StructureCapacityConfig hyperstructure_structure_capacity
               "u64", // StructureCapacityConfig fragment_mine_structure_capacity
               "u64", // StructureCapacityConfig bank_structure_capacity
+              "u32", // VictoryPointsGrantConfig hyp_points_per_second
+              "u32", // VictoryPointsGrantConfig claim_hyperstructure_points
+              "u32", // VictoryPointsGrantConfig claim_otherstructure_points
+              "u32", // VictoryPointsGrantConfig explore_tiles_points
+              "u128", // VictoryPointsWinConfig points_for_win
             ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    BlitzRealmPlayerRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmPlayerRegister",
+            types: ["ContractAddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RelicEffect: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.Number,
+          effect_resource_id: RecsType.Number,
+          effect_rate: RecsType.Number,
+          effect_start_tick: RecsType.Number,
+          effect_end_tick: RecsType.Number,
+          effect_usage_left: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "RelicEffect",
+            types: ["u32", "u8", "u16", "u32", "u32", "u16"],
             customTypes: [],
           },
         },
@@ -1645,6 +1745,29 @@ const eventsComponents = (world: World) => {
               name: "ExplorerRaidEvent",
               types: ["u32", "u32", "bool", "u64"],
               customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      OpenRelicChestEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            chest_coord: {
+              x: RecsType.Number,
+              y: RecsType.Number,
+            },
+            relics: RecsType.NumberArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "OpenRelicChestEvent",
+              types: ["u32", "u32", "u32", "Span<u8>", "u64"],
+              customTypes: ["Coord"],
             },
           },
         );

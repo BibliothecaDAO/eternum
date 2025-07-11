@@ -58,7 +58,6 @@ export const TopLeftNavigation = memo(() => {
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  console.log({ structureEntityId });
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");

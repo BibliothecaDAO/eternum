@@ -69,6 +69,7 @@ pub mod bank_systems {
                     array![].span(),
                     Default::default(),
                     TileOccupier::Bank,
+                    false,
                 );
 
                 // save bank name model

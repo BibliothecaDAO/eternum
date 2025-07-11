@@ -5,7 +5,8 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{ResourceFactoryConfig};
+use s1_eternum::models::config::{ResourceFactoryConfig, TickConfig, TickImpl};
+use s1_eternum::models::relic::{RelicEffect};
 
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -117,7 +118,9 @@ pub impl ProductionImpl of ProductionTrait {
 
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(ref resource: SingleResource) -> u128 {
+    fn harvest(
+        ref resource: SingleResource, tick_config: TickConfig, production_multiplier_relic_effect: Option<RelicEffect>,
+    ) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
         let start_at = resource.production.last_updated_at;
@@ -142,6 +145,24 @@ pub impl ProductionImpl of ProductionTrait {
         if !Self::is_free_production(resource.resource_type) {
             total_produced_amount = min(total_produced_amount, resource.production.output_amount_left);
             resource.production.decrease_output_amout_left(total_produced_amount);
+        }
+
+        // apply production multiplier relic effect
+        match production_multiplier_relic_effect {
+            Option::Some(relic_effect) => {
+                // ensure bonus amount is only applied after the relic effect has started
+                let relic_start_at = tick_config.convert_to_estimated_timestamp(relic_effect.effect_start_tick.into());
+                let total_produced_amount_used_for_bonus = if relic_start_at <= start_at.into() {
+                    total_produced_amount
+                } else {
+                    let bonus_num_seconds_produced: u128 = (now.into() - relic_start_at).into();
+                    min(bonus_num_seconds_produced * resource.production.production_rate.into(), total_produced_amount)
+                };
+
+                total_produced_amount += (total_produced_amount_used_for_bonus * relic_effect.effect_rate.into())
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
         }
 
         // todo add event here

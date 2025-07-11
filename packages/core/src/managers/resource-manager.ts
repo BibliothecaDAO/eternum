@@ -1,5 +1,13 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  ClientComponents,
+  ID,
+  RelicEffect,
+  Resource,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -57,6 +65,33 @@ export class ResourceManager {
       amountProduced,
       amountProducedLimited,
     };
+  }
+
+  public getRelicEffect(
+    resourceId: ResourcesIds,
+  ): ComponentValue<ClientComponents["RelicEffect"]["schema"]> | undefined {
+    if (!ResourceManager.isRelic(resourceId)) return undefined;
+    const relicEffect = getComponentValue(
+      this.components.RelicEffect,
+      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+    );
+    return relicEffect;
+  }
+
+  public isRelicActive(resourceId: ResourcesIds, currentTick: number): boolean {
+    if (!ResourceManager.isRelic(resourceId)) return false;
+
+    const relicEffect = this.getRelicEffect(resourceId);
+    if (!relicEffect) return false;
+
+    return ResourceManager.isRelicActive(
+      {
+        start_tick: relicEffect.effect_start_tick,
+        end_tick: relicEffect.effect_end_tick,
+        usage_left: relicEffect.effect_usage_left,
+      },
+      currentTick,
+    );
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -650,6 +685,12 @@ export class ResourceManager {
       last_updated_at: number;
     };
   } {
+    const noProduction = {
+      building_count: 0,
+      production_rate: 0n,
+      output_amount_left: 0n,
+      last_updated_at: 0,
+    };
     switch (resourceId) {
       case ResourcesIds.Stone:
         return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
@@ -725,6 +766,26 @@ export class ResourceManager {
         return { balance: resource.FISH_BALANCE, production: resource.FISH_PRODUCTION };
       case ResourcesIds.Lords:
         return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
+      case ResourcesIds.Essence:
+        return {
+          balance: resource.ESSENCE_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StaminaRelic1:
+        return {
+          balance: resource.RELIC_E1_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StaminaRelic2:
+        return {
+          balance: resource.RELIC_E2_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageRelic1:
+        return {
+          balance: resource.RELIC_E3_BALANCE,
+          production: noProduction,
+        };
       default:
         return {
           balance: 0n,
@@ -779,6 +840,10 @@ export class ResourceManager {
       ["WHEAT_BALANCE", ResourcesIds.Wheat],
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
+      ["ESSENCE_BALANCE", ResourcesIds.Essence],
+      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
+      ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
+      ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
     ];
   }
 
@@ -827,6 +892,20 @@ export class ResourceManager {
       balance: Number(balance + amountProducedLimited),
       hasReachedMaxCapacity: amountProducedLimited < amountProduced,
     };
+  }
+
+  public static isRelic(resourceId: ResourcesIds): boolean {
+    return resourceId >= 39; // Relics start from ID 39 onwards
+  }
+
+  public static isRelicActive({ start_tick, end_tick, usage_left }: RelicEffect, currentTick: number): boolean {
+    // Check if the effect is within the active time window
+    const isWithinTimeWindow = currentTick >= start_tick && currentTick <= end_tick;
+
+    // Check if there are remaining uses (if applicable)
+    const hasUsagesLeft = usage_left > 0;
+
+    return isWithinTimeWindow && hasUsagesLeft;
   }
 
   private static _amountProducedStatic(

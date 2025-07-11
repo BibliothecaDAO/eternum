@@ -1,14 +1,31 @@
 use core::num::traits::Zero;
-use dojo::world::WorldStorage;
+use dojo::model::{ModelStorage};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes};
-use s1_eternum::models::config::{WorldConfigUtilImpl};
+use s1_eternum::constants::{ResourceTypes, blitz_produceable_resources};
+use s1_eternum::models::config::TickImpl;
+use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{VillageFoundResourcesConfig, WorldConfigUtilImpl};
+use s1_eternum::models::map::{TileOccupier};
+use s1_eternum::models::position::{Coord};
 use s1_eternum::models::position::{TravelImpl};
-use s1_eternum::models::structure::{StructureBaseImpl, StructureMetadata, StructureOwnerStoreImpl};
+use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use s1_eternum::models::resource::production::production::{ProductionImpl};
+use s1_eternum::models::resource::resource::{ResourceMinMaxList};
+use s1_eternum::models::resource::resource::{
+    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+};
+use s1_eternum::models::structure::{
+    StructureBaseImpl, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
+};
+use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+use s1_eternum::models::weight::Weight;
+
+use s1_eternum::systems::utils::structure::iStructureImpl;
+use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
-
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -104,5 +121,101 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
             0_185, // 0.185%
             0_093 // 0.093%
         ]
+    }
+}
+
+
+#[generate_trait]
+pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+        // make sure seed is different for each lottery system to prevent same outcome for same probability
+        let VRF_OFFSET: u256 = 4;
+        let village_vrf_seed = if vrf_seed > VRF_OFFSET {
+            vrf_seed - VRF_OFFSET
+        } else {
+            vrf_seed + VRF_OFFSET
+        };
+
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![map_config.village_win_probability.into(), map_config.village_fail_probability.into()].span(),
+            array![].span(),
+            1,
+            true,
+            // make sure seed is different for each lottery system to prevent same outcome for same probability
+            village_vrf_seed,
+        )[0];
+
+        return success;
+    }
+
+    fn create(
+        ref world: WorldStorage,
+        coord: Coord,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        vrf_seed: u256,
+    ) -> bool {
+        // make discoverable village structure
+        let structure_id = world.dispatcher.uuid();
+        iStructureImpl::create(
+            ref world,
+            coord,
+            Zero::zero(),
+            structure_id,
+            StructureCategory::Village,
+            blitz_produceable_resources().span(),
+            Default::default(),
+            TileOccupier::Village,
+            false,
+        );
+
+        // add guards to structure
+        // slot must start from delta, to charlie, to beta, to alpha
+        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
+        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
+        iMercenariesImpl::add(
+            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
+        );
+
+        // add starting resources to village structure
+        let village_find_resources_config: VillageFoundResourcesConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("village_find_resources_config"),
+        );
+        let starting_resources_id = village_find_resources_config.resources_mm_list_id;
+        let starting_resources_count = village_find_resources_config.resources_mm_list_count;
+
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+
+        for i in 0..starting_resources_count {
+            let starting_resource_min_max: ResourceMinMaxList = world.read_model((starting_resources_id, i));
+            let starting_resource_amount_range = starting_resource_min_max.max_amount
+                - starting_resource_min_max.min_amount;
+            let starting_resource_amount = starting_resource_min_max.min_amount
+                + random::random(vrf_seed, i.into(), starting_resource_amount_range);
+            let starting_resource_type = starting_resource_min_max.resource_type;
+
+            // add starting resource to structure
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, starting_resource_type);
+            let mut starting_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, starting_resource_type, ref structure_weight, resource_weight_grams, true,
+            );
+            starting_resource.add(starting_resource_amount, ref structure_weight, resource_weight_grams);
+            starting_resource.store(ref world);
+        };
+
+        // update structure weight
+        structure_weight.store(ref world, structure_id);
+
+        // place castle building
+        BuildingImpl::create(
+            ref world,
+            structure_id,
+            StructureCategory::Village.into(),
+            coord,
+            BuildingCategory::ResourceLabor,
+            BuildingImpl::center(),
+        );
+        return true;
     }
 }

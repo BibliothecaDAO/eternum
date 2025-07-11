@@ -65,6 +65,8 @@ pub mod troop_management_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{RESOURCE_PRECISION};
+    use s1_eternum::models::relic::{RelicEffect, RelicEffectStoreImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::{
         config::{
             CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
@@ -126,12 +128,17 @@ pub mod troop_management_systems {
             let tick = TickImpl::get_tick_config(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
+            let guard_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, for_structure_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
             iGuardImpl::add(
                 ref world,
                 for_structure_id,
                 ref structure_base,
                 ref guards,
                 ref troops,
+                guard_stamina_relic_effect,
                 slot,
                 category,
                 tier,
@@ -395,14 +402,32 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let from_explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, from_explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
+            let to_explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, to_explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    from_explorer_stamina_relic_effect,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    to_explorer_stamina_relic_effect,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -503,10 +528,19 @@ pub mod troop_management_systems {
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let from_explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, from_explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    from_explorer_stamina_relic_effect,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -534,9 +568,18 @@ pub mod troop_management_systems {
             /////////////////////////////////////////////
 
             // ensure there is no stamina advantage gained by swapping
+            let to_structure_troops_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, to_structure_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
             to_structure_troops
                 .stamina
-                .refill(to_structure_troops.category, to_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    to_structure_troops_stamina_relic_effect,
+                    to_structure_troops.category,
+                    to_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
@@ -550,6 +593,7 @@ pub mod troop_management_systems {
                 ref to_structure_base,
                 ref to_structure_guards,
                 ref to_structure_troops,
+                to_structure_troops_stamina_relic_effect,
                 to_guard_slot,
                 from_explorer.troops.category,
                 from_explorer.troops.tier,
@@ -637,13 +681,31 @@ pub mod troop_management_systems {
 
             // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let to_explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, to_explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
+            let from_structure_troops_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                ref world, from_structure_id, StaminaImpl::relic_effect_id(), current_tick,
+            );
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    to_explorer_stamina_relic_effect,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             from_structure_troops
                 .stamina
-                .refill(from_structure_troops.category, from_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    from_structure_troops_stamina_relic_effect,
+                    from_structure_troops.category,
+                    from_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;

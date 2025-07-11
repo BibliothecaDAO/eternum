@@ -27,6 +27,11 @@ const WorldStructuresMenu = lazy(() =>
     default: module.WorldStructuresMenu,
   })),
 );
+const RelicsModule = lazy(() =>
+  import("@/ui/features/relics").then((module) => ({
+    default: module.RelicsModule,
+  })),
+);
 
 export const LeftNavigationModule = memo(() => {
   const {
@@ -67,6 +72,9 @@ export const LeftNavigationModule = memo(() => {
       switch (event.key.toLowerCase()) {
         case "e":
           setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView);
+          break;
+        case "r":
+          setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView);
           break;
       }
     };
@@ -188,6 +196,20 @@ export const LeftNavigationModule = memo(() => {
         ),
       },
       {
+        name: MenuEnum.relics,
+        button: (
+          <CircleButton
+            disabled={disableButtons}
+            image={BuildingThumbs.relics}
+            tooltipLocation="top"
+            label="Relics"
+            active={view === LeftView.RelicsView}
+            size={"xl"}
+            onClick={() => setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView)}
+          />
+        ),
+      },
+      {
         name: MenuEnum.resourceTable,
         button: (
           <CircleButton
@@ -209,6 +231,7 @@ export const LeftNavigationModule = memo(() => {
         ...(isMapView ? [] : [MenuEnum.construction]),
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
+        MenuEnum.relics,
         MenuEnum.trade,
       ].includes(item.name as MenuEnum),
     );
@@ -251,6 +274,7 @@ export const LeftNavigationModule = memo(() => {
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
+              {view === LeftView.RelicsView && <RelicsModule />}
             </Suspense>
           </BaseContainer>
           {ConnectedAccount && (

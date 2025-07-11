@@ -77,6 +77,82 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
 
+  // Relics - Army Enhancement Items
+  StaminaRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.StaminaRelic1}.png`} />,
+    name: "Stamina Relic 1",
+  },
+  StaminaRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.StaminaRelic2}.png`} />,
+    name: "Stamina Relic 2",
+  },
+  DamageRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageRelic1}.png`} />,
+    name: "Damage Relic 1",
+  },
+  DamageRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageRelic2}.png`} />,
+    name: "Damage Relic 2",
+  },
+  DamageReductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageReductionRelic1}.png`} />,
+    name: "Damage Reduction Relic 1",
+  },
+  DamageReductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.DamageReductionRelic2}.png`} />,
+    name: "Damage Reduction Relic 2",
+  },
+  ExplorationRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRelic1}.png`} />,
+    name: "Exploration Relic 1",
+  },
+  ExplorationRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRelic2}.png`} />,
+    name: "Exploration Relic 2",
+  },
+  ExplorationRewardRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRewardRelic1}.png`} />,
+    name: "Exploration Reward Relic 1",
+  },
+  ExplorationRewardRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ExplorationRewardRelic2}.png`} />,
+    name: "Exploration Reward Relic 2",
+  },
+
+  // Relics - Structure Enhancement Items
+  StructureDefenseRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic1}.png`} />,
+    name: "Structure Defense Relic 1",
+  },
+  StructureDefenseRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic2}.png`} />,
+    name: "Structure Defense Relic 2",
+  },
+  ProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.ProductionRelic1}.png`} />,
+    name: "Production Relic 1",
+  },
+  ProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.ProductionRelic2}.png`} />,
+    name: "Production Relic 2",
+  },
+  LaborProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.LaborProductionRelic1}.png`} />,
+    name: "Labor Production Relic 1",
+  },
+  LaborProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.LaborProductionRelic2}.png`} />,
+    name: "Labor Production Relic 2",
+  },
+  TroopProductionRelic1: {
+    component: <img src={`/images/resources/${ResourcesIds.TroopProductionRelic1}.png`} />,
+    name: "Troop Production Relic 1",
+  },
+  TroopProductionRelic2: {
+    component: <img src={`/images/resources/${ResourcesIds.TroopProductionRelic2}.png`} />,
+    name: "Troop Production Relic 2",
+  },
+
   Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
   House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
   Silo: { component: <img src={`/images/buildings/thumb/silo.png`} />, name: "Silo" },

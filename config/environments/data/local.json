@@ -6,12 +6,12 @@
     "controller_address": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
     "max_lifetime_count": 10000,
     "max_current_count": 1000,
-    "min_spawn_lords_amount": 5,
-    "max_spawn_lords_amount": 10
+    "min_spawn_lords_amount": 10,
+    "max_spawn_lords_amount": 35
   },
   "village": {
-    "village_pass_nft_address": "0x5b26322a75aafb6b8019e0eced67125676c75d11953bedc4b65a067edf3a0b9",
-    "village_mint_initial_recipient": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
+    "village_pass_nft_address": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
+    "village_mint_initial_recipient": "0x054f2b25070d70d49f1c1f7c10Ef2639889fDAc15894D3FBa1a03caF5603eCA3"
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -40,7 +40,7 @@
           "amount": 3.2
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -54,7 +54,7 @@
           "amount": 3.9
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -68,7 +68,7 @@
           "amount": 3
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -124,7 +124,7 @@
           "amount": 2.9
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -166,7 +166,7 @@
           "amount": 3.7
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -180,7 +180,7 @@
           "amount": 3.7
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -222,7 +222,7 @@
           "amount": 2.1
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -250,7 +250,7 @@
           "amount": 3.7
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -278,7 +278,7 @@
           "amount": 2.8
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -292,7 +292,7 @@
           "amount": 3.9
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -306,7 +306,7 @@
           "amount": 4.1
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -320,7 +320,7 @@
           "amount": 4.4
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -333,7 +333,7 @@
         },
         {
           "resource": 37,
-          "amount": 0.01
+          "amount": 0.005
         }
       ],
       "26": [
@@ -550,7 +550,7 @@
       "21": 30,
       "22": 30,
       "23": 30,
-      "24": 1,
+      "24": 3,
       "25": 0.5,
       "26": 0.05,
       "27": 0.05,
@@ -569,7 +569,7 @@
       "1": [
         {
           "resource": 23,
-          "amount": 10.4
+          "amount": 14
         },
         {
           "resource": 35,
@@ -579,37 +579,37 @@
       "2": [
         {
           "resource": 23,
-          "amount": 13.1
-        },
-        {
-          "resource": 35,
-          "amount": 5
-        }
-      ],
-      "3": [
-        {
-          "resource": 23,
-          "amount": 10.4
-        },
-        {
-          "resource": 35,
-          "amount": 5
-        }
-      ],
-      "4": [
-        {
-          "resource": 23,
-          "amount": 16.35
+          "amount": 17.9
         },
         {
           "resource": 36,
           "amount": 5
         }
       ],
+      "3": [
+        {
+          "resource": 23,
+          "amount": 14
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "4": [
+        {
+          "resource": 23,
+          "amount": 21.7
+        },
+        {
+          "resource": 35,
+          "amount": 5
+        }
+      ],
       "5": [
         {
           "resource": 23,
-          "amount": 39.91
+          "amount": 53.73
         },
         {
           "resource": 36,
@@ -619,7 +619,7 @@
       "6": [
         {
           "resource": 23,
-          "amount": 25.61
+          "amount": 34.48
         },
         {
           "resource": 36,
@@ -629,7 +629,7 @@
       "7": [
         {
           "resource": 23,
-          "amount": 62.92
+          "amount": 84.7
         },
         {
           "resource": 36,
@@ -639,17 +639,17 @@
       "8": [
         {
           "resource": 23,
-          "amount": 29.12
+          "amount": 39.2
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "9": [
         {
           "resource": 23,
-          "amount": 1075.75
+          "amount": 1448.13
         },
         {
           "resource": 36,
@@ -659,7 +659,7 @@
       "10": [
         {
           "resource": 23,
-          "amount": 504.01
+          "amount": 678.48
         },
         {
           "resource": 36,
@@ -669,27 +669,27 @@
       "11": [
         {
           "resource": 23,
-          "amount": 48.49
+          "amount": 65.28
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "12": [
         {
           "resource": 23,
-          "amount": 213.98
+          "amount": 288.05
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "13": [
         {
           "resource": 23,
-          "amount": 185.12
+          "amount": 249.2
         },
         {
           "resource": 36,
@@ -699,7 +699,7 @@
       "14": [
         {
           "resource": 23,
-          "amount": 121.18
+          "amount": 156.28
         },
         {
           "resource": 36,
@@ -709,17 +709,17 @@
       "15": [
         {
           "resource": 23,
-          "amount": 79.82
+          "amount": 107.45
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "16": [
         {
           "resource": 23,
-          "amount": 222.95
+          "amount": 300.13
         },
         {
           "resource": 36,
@@ -729,17 +729,17 @@
       "17": [
         {
           "resource": 23,
-          "amount": 367.25
+          "amount": 494.38
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "18": [
         {
           "resource": 23,
-          "amount": 319.54
+          "amount": 430.15
         },
         {
           "resource": 36,
@@ -749,40 +749,40 @@
       "19": [
         {
           "resource": 23,
-          "amount": 652.08
+          "amount": 877.8
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "20": [
         {
           "resource": 23,
-          "amount": 172.12
+          "amount": 231.7
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "21": [
         {
           "resource": 23,
-          "amount": 281.58
+          "amount": 379.05
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
       "22": [
         {
           "resource": 23,
-          "amount": 1199
+          "amount": 1569.15
         },
         {
-          "resource": 36,
+          "resource": 35,
           "amount": 5
         }
       ],
@@ -800,7 +800,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "27": [],
@@ -816,7 +816,7 @@
         },
         {
           "resource": 23,
-          "amount": 30
+          "amount": 60
         }
       ],
       "30": [],
@@ -832,7 +832,7 @@
         },
         {
           "resource": 23,
-          "amount": 26
+          "amount": 60
         }
       ],
       "33": [],
@@ -865,7 +865,7 @@
       "21": 30,
       "22": 30,
       "23": 30,
-      "24": 1,
+      "24": 3,
       "25": 0.5,
       "26": 0.05,
       "27": 0.05,
@@ -970,7 +970,7 @@
       "9": 135.53,
       "10": 53.92,
       "11": 5.24,
-      "12": 20.98,
+      "12": 20.99,
       "13": 20.98,
       "14": 16.72,
       "15": 8.44,
@@ -1003,31 +1003,31 @@
     "ownerFeesDenominator": 100,
     "maxNumBanks": 6,
     "ammStartingLiquidity": {
-      "1": 500000,
-      "2": 500000,
-      "3": 500000,
-      "4": 500000,
-      "5": 200000,
-      "6": 500000,
-      "7": 200000,
-      "8": 500000,
-      "9": 50000,
-      "10": 50000,
-      "11": 200000,
-      "12": 75000,
-      "13": 100000,
-      "14": 100000,
-      "15": 200000,
-      "16": 75000,
-      "17": 50000,
-      "18": 50000,
+      "1": 1600000,
+      "2": 1600000,
+      "3": 2000000,
+      "4": 1200000,
+      "5": 600000,
+      "6": 1000000,
+      "7": 400000,
+      "8": 800000,
+      "9": 40000,
+      "10": 80000,
+      "11": 500000,
+      "12": 120000,
+      "13": 140000,
+      "14": 160000,
+      "15": 300000,
+      "16": 120000,
+      "17": 80000,
+      "18": 80000,
       "19": 50000,
-      "20": 100000,
-      "21": 50000,
-      "22": 50000,
-      "25": 10000
+      "20": 140000,
+      "21": 120000,
+      "22": 30000,
+      "25": 120000
     },
-    "lordsLiquidityPerResource": 1000
+    "lordsLiquidityPerResource": 2000
   },
   "populationCapacity": {
     "workerHuts": 5,
@@ -1035,22 +1035,22 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 15000,
-    "shardsMinesWinProbability": 1000,
-    "agentFindProbability": 3000,
-    "agentFindFailProbability": 10000,
-    "hyperstructureWinProbAtCenter": 20000,
-    "hyperstructureFailProbAtCenter": 100000,
-    "hyperstructureFailProbIncreasePerHexDistance": 9750,
+    "shardsMinesFailProbability": 199,
+    "shardsMinesWinProbability": 1,
+    "agentFindProbability": 5,
+    "agentFindFailProbability": 95,
+    "hyperstructureWinProbAtCenter": 2000,
+    "hyperstructureFailProbAtCenter": 98000,
+    "hyperstructureFailProbIncreasePerHexDistance": 9820,
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
-    "questFindProbability": 1000,
-    "questFindFailProbability": 10000
+    "questFindProbability": 1,
+    "questFindFailProbability": 10
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
-    "armiesTickIntervalInSeconds": 300
+    "armiesTickIntervalInSeconds": 120
   },
   "carryCapacityGram": {
     "0": 0,
@@ -1060,15 +1060,15 @@
     "4": 1000000000,
     "5": 1000000000,
     "6": 3000000000,
-    "7": 1000000000,
+    "7": 2000000000,
     "8": 500000000
   },
   "speed": {
-    "donkey": 0,
+    "donkey": 9,
     "army": 1
   },
   "battle": {
-    "graceTickCount": 0,
+    "graceTickCount": 40,
     "graceTickCountHyp": 0,
     "delaySeconds": 0
   },
@@ -1079,7 +1079,7 @@
       "t3DamageMultiplier": "129127208515966861312",
       "damageRaidPercentNum": 1000,
       "damageBiomeBonusNum": 3000,
-      "damageScalingFactor": "64563604257983430656",
+      "damageScalingFactor": "55340232221128654848",
       "damageBetaSmall": "4611686018427387904",
       "damageBetaLarge": "2213609288845146193",
       "damageC0": "1844674407370955161600000",
@@ -1088,7 +1088,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 0,
+      "staminaBonusValue": 10,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -1096,17 +1096,17 @@
       "staminaAttackMax": 60,
       "staminaExploreWheatCost": 6,
       "staminaExploreFishCost": 6,
-      "staminaExploreStaminaCost": 0,
+      "staminaExploreStaminaCost": 30,
       "staminaTravelWheatCost": 3,
       "staminaTravelFishCost": 3,
-      "staminaTravelStaminaCost": 0
+      "staminaTravelStaminaCost": 20
     },
     "limit": {
       "explorerMaxPartyCount": 10,
       "explorerAndGuardMaxTroopCount": 100000,
       "guardResurrectionDelay": 43200,
       "mercenariesTroopLowerBound": 100,
-      "mercenariesTroopUpperBound": 200,
+      "mercenariesTroopUpperBound": 1500,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000
     }
@@ -1196,7 +1196,7 @@
       "34": 3,
       "35": 3,
       "36": 3,
-      "37": 0,
+      "37": 1,
       "38": 1
     },
     "buildingResourceProduced": {
@@ -1675,7 +1675,7 @@
       "37": [
         {
           "resource": 36,
-          "amount": 1
+          "amount": 500000
         }
       ],
       "38": [
@@ -1842,7 +1842,7 @@
       "28": [
         {
           "resource": 23,
-          "amount": 250000
+          "amount": 560000
         }
       ],
       "29": [],
@@ -1850,7 +1850,7 @@
       "31": [
         {
           "resource": 23,
-          "amount": 300000
+          "amount": 590000
         }
       ],
       "32": [],
@@ -1858,7 +1858,7 @@
       "34": [
         {
           "resource": 23,
-          "amount": 600000
+          "amount": 590000
         }
       ],
       "35": [],
@@ -1881,170 +1881,171 @@
   "hyperstructures": {
     "hyperstructureInitializationShardsCost": {
       "resource": 24,
-      "amount": 500
+      "amount": 20000000
     },
     "hyperstructureConstructionCost": [
       {
         "resource_type": 3,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 250000000,
+        "max_amount": 400000000
       },
       {
         "resource_type": 1,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 250000000,
+        "max_amount": 400000000
       },
       {
         "resource_type": 2,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 250000000,
+        "max_amount": 400000000
       },
       {
         "resource_type": 4,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 175000000,
+        "max_amount": 250000000
       },
       {
         "resource_type": 6,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 175000000,
+        "max_amount": 250000000
       },
       {
         "resource_type": 8,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 175000000,
+        "max_amount": 250000000
       },
       {
         "resource_type": 5,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 75000000,
+        "max_amount": 125000000
       },
       {
         "resource_type": 11,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 75000000,
+        "max_amount": 125000000
       },
       {
         "resource_type": 7,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 75000000,
+        "max_amount": 125000000
       },
       {
         "resource_type": 15,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 45000000,
+        "max_amount": 60000000
       },
       {
         "resource_type": 14,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 45000000,
+        "max_amount": 60000000
       },
       {
         "resource_type": 20,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 45000000,
+        "max_amount": 60000000
       },
       {
         "resource_type": 13,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 45000000,
+        "max_amount": 60000000
       },
       {
         "resource_type": 12,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 35000000,
+        "max_amount": 45000000
       },
       {
         "resource_type": 16,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 35000000,
+        "max_amount": 45000000
       },
       {
         "resource_type": 21,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 35000000,
+        "max_amount": 45000000
       },
       {
         "resource_type": 18,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 30000000,
+        "max_amount": 35000000
       },
       {
         "resource_type": 17,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 30000000,
+        "max_amount": 35000000
       },
       {
         "resource_type": 10,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 30000000,
+        "max_amount": 35000000
       },
       {
         "resource_type": 19,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 25000000,
+        "max_amount": 30000000
       },
       {
         "resource_type": 9,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 25000000,
+        "max_amount": 30000000
       },
       {
         "resource_type": 22,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 25000000,
+        "max_amount": 30000000
       },
       {
         "resource_type": 23,
         "resource_completion_points": 21732000000,
-        "min_amount": 120000,
-        "max_amount": 120000
+        "min_amount": 50000000,
+        "max_amount": 50000000
       }
     ],
     "hyperstructurePointsPerCycle": 7000000,
-    "hyperstructurePointsForWin": "100"
+    "hyperstructurePointsForWin": "9620000000000"
   },
   "season": {
-    "startSettlingAfterSeconds": 59,
-    "startMainAfterSeconds": 60,
-    "bridgeCloseAfterEndSeconds": 172800
+    "startSettlingAfterSeconds": 1800,
+    "startMainAfterSeconds": 3600,
+    "bridgeCloseAfterEndSeconds": 3600,
+    "pointRegistrationCloseAfterEndSeconds": 3600
   },
   "bridge": {
-    "velords_fee_on_dpt_percent": 400,
-    "velords_fee_on_wtdr_percent": 400,
-    "season_pool_fee_on_dpt_percent": 400,
-    "season_pool_fee_on_wtdr_percent": 400,
-    "client_fee_on_dpt_percent": 200,
-    "client_fee_on_wtdr_percent": 200,
+    "velords_fee_on_dpt_percent": 250,
+    "velords_fee_on_wtdr_percent": 250,
+    "season_pool_fee_on_dpt_percent": 250,
+    "season_pool_fee_on_wtdr_percent": 250,
+    "client_fee_on_dpt_percent": 250,
+    "client_fee_on_wtdr_percent": 250,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x7b7da3c2423edb47af26fea43b4e08d01e2054250e925401baa3be32cbffd89",
+    "season_pool_fee_recipient": "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553",
     "realm_fee_dpt_percent": 500,
     "realm_fee_wtdr_percent": 500
   },
   "vrf": {
-    "vrfProviderAddress": "0x0"
+    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
   },
   "wonderProductionBonus": {
     "within_tile_distance": 12,
@@ -2114,210 +2115,275 @@
     "0": [],
     "1": [
       {
+        "resource": 23,
+        "amount": 100000
+      },
+      {
         "resource": 35,
-        "amount": 1
+        "amount": 1500000
       },
       {
         "resource": 36,
-        "amount": 1
+        "amount": 1500000
+      },
+      {
+        "resource": 3,
+        "amount": 150000
+      },
+      {
+        "resource": 1,
+        "amount": 150000
+      },
+      {
+        "resource": 2,
+        "amount": 150000
       }
     ],
     "2": [
       {
-        "resource": 11,
-        "amount": 1
-      },
-      {
-        "resource": 15,
-        "amount": 1
-      },
-      {
-        "resource": 14,
-        "amount": 1
-      },
-      {
-        "resource": 20,
-        "amount": 1
-      },
-      {
-        "resource": 12,
-        "amount": 1
+        "resource": 23,
+        "amount": 500000
       },
       {
         "resource": 35,
-        "amount": 1
+        "amount": 3000000
       },
       {
         "resource": 36,
-        "amount": 1
+        "amount": 3000000
+      },
+      {
+        "resource": 4,
+        "amount": 500000
+      },
+      {
+        "resource": 6,
+        "amount": 500000
+      },
+      {
+        "resource": 8,
+        "amount": 500000
+      },
+      {
+        "resource": 15,
+        "amount": 250000
       }
     ],
     "3": [
       {
-        "resource": 10,
-        "amount": 1
-      },
-      {
-        "resource": 19,
-        "amount": 1
-      },
-      {
-        "resource": 9,
-        "amount": 1
-      },
-      {
-        "resource": 22,
-        "amount": 1
+        "resource": 23,
+        "amount": 1000000
       },
       {
         "resource": 35,
-        "amount": 1
+        "amount": 6000000
       },
       {
         "resource": 36,
-        "amount": 1
+        "amount": 6000000
+      },
+      {
+        "resource": 15,
+        "amount": 750000
+      },
+      {
+        "resource": 14,
+        "amount": 500000
+      },
+      {
+        "resource": 20,
+        "amount": 500000
+      },
+      {
+        "resource": 13,
+        "amount": 500000
+      },
+      {
+        "resource": 18,
+        "amount": 100000
+      },
+      {
+        "resource": 17,
+        "amount": 100000
+      },
+      {
+        "resource": 10,
+        "amount": 100000
       }
     ]
   },
   "realmMaxLevel": 4,
   "villageMaxLevel": 2,
+  "questGames": [
+    {
+      "address": "0x2418e02ae43901d8aa8ab5c4b676740dccdcf1c94f13344a978ebe6077b109",
+      "levels": [
+        {
+          "target_score": 26,
+          "settings_id": 1,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 2,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
+          "settings_id": 3,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 51,
+          "settings_id": 4,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 101,
+          "settings_id": 5,
+          "time_limit": 86400
+        }
+      ],
+      "overwrite": true
+    }
+  ],
   "setup": {
-    "chain": "local",
+    "chain": "sepolia",
     "addresses": {
-      "seasonPass": "0x37b82dc5b85bf0ea1bebee2460860ae5bd9b1778f533a5cb64ca6aecdcf687",
-      "realms": "0x3dd9f0ef16a36f174bb901c11497eb956f01464643b61929528d1e31ba12e35",
-      "lords": "0x66228a1bc3bb58322c0d17a2d59aaf666486944a425cea1b1442f70dcb9a260",
-      "villagePass": "0x5b26322a75aafb6b8019e0eced67125676c75d11953bedc4b65a067edf3a0b9",
-      "marketplace": "",
+      "seasonPass": "0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",
+      "realms": "0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0",
+      "lords": "0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a",
+      "villagePass": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
+      "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
       "resources": {
         "STONE": [
           1,
-          "0x17dde2831c36bb2c5f3defccbaa899f7e30f750161dd125f439cb8f7939dcd4"
+          "0x58f1eee9b29ffe06f5cc6295552fda6045e7a73995c6bc8213582239ed03683"
         ],
         "COAL": [
           2,
-          "0x4da20c7cede2317bebee88d85c84864de60c02bb20dc03b7be8563d78efb5db"
+          "0x2a900f7fef3d87ee05f12859970ba5c4f07182c6b9cac98128403cd1a790db2"
         ],
         "WOOD": [
           3,
-          "0x3510e702e1cfdd335314effdc5e5d9b9bb65d3b6998d89db3c0c0487926bfcc"
+          "0x2d41d37c22ea21ad4b4fb04e8863767849b1b7d0e85e4afaab992857f066cb1"
         ],
         "COPPER": [
           4,
-          "0x56dcc657f22b99251e6f98ac930177574bb7efd51d61d133cf661c4e1ad20fd"
+          "0x541a9685856e3c51331db9280ef0b12ccd51c82f78903f8ae9a37c2f96697e2"
         ],
         "IRONWOOD": [
           5,
-          "0x15ffa740ff609e4e20bbbd6b4c0dd9c07a71f3ca00894c8c71b81089865cb22"
+          "0x5b26d40d69d59b407becb398df50bdcb94c7f7977e02fd339c43881c641dd88"
         ],
         "OBSIDIAN": [
           6,
-          "0x56b4ede08a73688a821941089cb20a612c35a49bd12c174d6f1fc7905de556d"
+          "0x29b9924c41d82a22ab7e269cb08b15873e92361ed6e72fb575ce33686596b04"
         ],
         "GOLD": [
           7,
-          "0x71203d06d7913866bf0d33c28a448eb824fee374e14d55a81da430d8771b58c"
+          "0x3faf5f97e708f6e4a15fd814743d16eb65cac9b9c100fbc1d62cce07bac6dcf"
         ],
         "SILVER": [
           8,
-          "0x7a1be6dd19f89297a76565d8faa5b944cb7f489eed4bb7f3abc7acebf19428b"
+          "0x774398954c50238386e78f815747e1cace4445784b374f6ec69f164b7b8f186"
         ],
         "MITHRAL": [
           9,
-          "0x33463aa116ca71670d980e07da02ac3375160d47f8f20b064ce007ea94ed017"
+          "0x165114f291c3fd4f7c40266503db85f8648eaeb2f3e7e89f295ddbce8a1da1b"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x85fd8f1c105aa6e70f4f7799e95ee1ec80e0b784fe38b66c2cbe6b2cd8a0a"
+          "0x3e899aa5fb724ddd54e782bb305df8e141f31c840788a577f28782f327fb8b4"
         ],
         "COLDIRON": [
           11,
-          "0x129e9fba0c44f83fe3773b7ebf3ef741ddad337ce7bd0896d39c20e9d0ee1c1"
+          "0x461e223423d5309075bda1f0c24c30e5a1fcc964538c7f94796bd551248066e"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x6d49c42c9dab9009fd00c72c89844043c9473ce02199ee7289d5d9377a26bc7"
+          "0x5a9d7ec4fe6633c159cbc671bd4e2bb6fc99a944aa1fd405592715d546e9a37"
         ],
         "RUBY": [
           13,
-          "0x54810de662cc5d15b994fb846c5d8efb2ad0c78f97285321c509fa9dfd69da5"
+          "0x24734ba704f3c00996022b1a09fbf21b404443a78fe64f4045226985b985d37"
         ],
         "DIAMONDS": [
           14,
-          "0x6d643b8c9a611921bac0642c5ab75e80222b321ff6c596e4b11d4a54d3e6372"
+          "0x1fee506ec438d76128f76c8a1010a6eb75d43b3b473891b13243afd52f1a76b"
         ],
         "HARTWOOD": [
           15,
-          "0x228b2542bad5b559296860d6d4d61b10b96581a75250c8ded984eff17deaf7a"
+          "0x252997b750d62550b18c8cfcf750605c5213f55597e99c168f92fb09e5a109a"
         ],
         "IGNIUM": [
           16,
-          "0x1bee0c3b0329242f53478e32fc664c3921dacc8f004711e9bc3819d4be728b8"
+          "0x505f8dbaa407362bddaf85cf327cce1427a5cde81dfcd41f096a441ecaca9f9"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x785720a275ad20d48dedf7beaf861a0761f83c07c1b70688d75b1f7a8584172"
+          "0x4da024a8d30aadfb4c953cd4b43e4768be172d0f19fbe4d2098c1e03d517fe1"
         ],
         "TRUEICE": [
           18,
-          "0x4d32e469b893351dab89da65ff3ca5436ffb1eec52a28c96049038d61646015"
+          "0x79abcf7394e7d63d15e09fa3699b0eca14bafd08cf5f395b611824df02e679c"
         ],
         "ADAMANTINE": [
           19,
-          "0x4128572741371d738e497a19039db9dbd363aab67ee8648fca685c1edd5206e"
+          "0x3edc7bac94d6b96c12ca215c81f0905cf42c54c2e4b1826af150503c1590352"
         ],
         "SAPPHIRE": [
           20,
-          "0x3efc821432c6852584f0582eacfe01265e1411d169d86db2372171f3cf6e25c"
+          "0x37401458d719f21ee15b51fac1978eb8c42d5e90d39364cd505a40142934e17"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x2762e776a0f38560cf64a29422272805e45b78d78064ff0b5b6b3d373939519"
+          "0x55a2577ec9a7a33980d74f0f766aac958969571bf06f54c6b2497c902cecb9"
         ],
         "DRAGONHIDE": [
           22,
-          "0x4632456c5e75464863c147f89f272097f53bdb6e824219791eb38cfcd35f21"
+          "0xf28382e9ba3f34fec2d5988912da5fb0bb92e971bebb14a8af313e2c4c8119"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x75a1cd0871690c7cce7daae91c8580b14c60e86a0dbce5da7a545ef08bb7069"
+          "0x2b1b2630b4edd2d9295e1ed75a5ea289548fa309366c12a6b0997ac7cf0b0e1"
         ],
         "DONKEY": [
           25,
-          "0x39ed739c0171058d42ba5fff2feb6b07bfb0b737071c849f0a06687db1db7d5"
+          "0x6a3df549988d241124e45830365976e42358091b523ddc944378825c45af417"
         ],
         "KNIGHT": [
           26,
-          "0x30b18ec938399cb39f3aca736f087761dfd5c6afd27fbae3d308b757faddc45"
+          "0x5d42a21877794f3bb5f3b21cd80ae1d8d598f3394a13d446a6fbe9712ab5c12"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x69aebd4965188bbc60cbf6250f4dcfa9cf9ec0bd41d0799f0e7dc7660b61f8f"
+          "0x284840fc0a10595ffac44e0ce2db38b9b9af8133b2b8f23969ccc27045b39eb"
         ],
         "PALADIN": [
           32,
-          "0x45e0ad9985804b4bfb99e9d02aa3b7d6612e6b7e229fae963deda0f99d502d7"
+          "0x5002b64e2415bbf5ca5e1e23f40744958827698d5c54242168c9046b214d3e5"
         ],
         "WHEAT": [
           35,
-          "0x4fe091b3bf51b7a65699375ed4a49c7d3f605705f691be3708a35fb8fb5591"
+          "0x762a27f3098a230b3bd7f2ce482ac0192e972550955dc938a96cfd5503aa724"
         ],
         "FISH": [
           36,
-          "0x51c9da154cf3a9da85ce630eadcba53d9c7ac15cd5aa4a6510aaaaf97aab18b"
+          "0x3a0fc99f71068e9bac390d9a3743fedca8e242074c24d7b932698234aa10bea"
         ],
         "LORDS": [
           37,
-          "0x66228a1bc3bb58322c0d17a2d59aaf666486944a425cea1b1442f70dcb9a260"
+          "0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a"
         ]
       }
     },
     "manifest": {
       "world": {
         "class_hash": "0x75fc75bcd1a7f8b4bf64b74978b0f89c8cee44bb755c1dae6f82284756451ec",
-        "address": "0x6a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561",
-        "seed": "s1_eternum",
-        "name": "Realms: Eternum",
+        "address": "0x198cbb29ed691e3e143da013736cb32d2eb35835414e0c5ba758f44265d7a52",
+        "seed": "eternum-sepolia.454545456",
+        "name": "Eternum Sepolia",
         "entrypoints": [
           "uuid",
           "set_metadata",
@@ -3626,8 +3692,8 @@
       },
       "contracts": [
         {
-          "address": "0x2f149a7e141ea47c71a6968da6e4963cf23d2b8c5685d7f8854ae4d8a2f0b4d",
-          "class_hash": "0x6f634ae9cd8bd5ac94309bcbf7a14c981c906fa9c9bdffe723103420b6821e3",
+          "address": "0x56862c119cca2c85d93c37582032a26eac4ebddedaefd1bfee943fe521f2a71",
+          "class_hash": "0x51a22d180dc6517216ce112c965fe2c01f6cbbc8cacfc72630ced3e66c627fe",
           "abi": [
             {
               "type": "impl",
@@ -4083,8 +4149,8 @@
           ]
         },
         {
-          "address": "0xd2fdfa85ce3202f76b23b331238fefde57d2c5f9cef9c4415a749be049747a",
-          "class_hash": "0x29e257fab0de7d6e464b2a042cfea66c192bb0afe317c816451d9942e6d5fca",
+          "address": "0x1a886fdf22e5da5335384677e6c45fa8d4f0cc045542b7ab27f5a26afb87ebb",
+          "class_hash": "0x469a2b7f3d3b560bb7604aecf3a540d7eeeff90e5685a2926dfc66aa36edc19",
           "abi": [
             {
               "type": "impl",
@@ -4335,8 +4401,8 @@
           ]
         },
         {
-          "address": "0x745bfc828812d12a8d3fe96ae488f1d23cc4e148a546d5dc197e041c7d9fa50",
-          "class_hash": "0x2d166c96540b45eb33d4147b24ff7ccd00acaf7c3145481364186c74ab7940",
+          "address": "0x28bb47b2735753c57e6dc0e8ef3994f189643ce104290b28d7b9297c2cee2e0",
+          "class_hash": "0x4eef4f1315ea47ed4c163dee60e75d4906d5642f78cbd299d43078b288ae97",
           "abi": [
             {
               "type": "impl",
@@ -4578,7 +4644,11 @@
                       "type": "core::integer::u64"
                     },
                     {
-                      "name": "end_grace_seconds",
+                      "name": "bridge_close_end_grace_seconds",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "point_registration_grace_seconds",
                       "type": "core::integer::u32"
                     }
                   ],
@@ -5819,12 +5889,6 @@
             },
             {
               "type": "event",
-              "name": "achievement::components::achievable::AchievableComponent::Event",
-              "kind": "enum",
-              "variants": []
-            },
-            {
-              "type": "event",
               "name": "s1_eternum::systems::config::contracts::config_systems::Event",
               "kind": "enum",
               "variants": [
@@ -5837,11 +5901,6 @@
                   "name": "WorldProviderEvent",
                   "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
                   "kind": "nested"
-                },
-                {
-                  "name": "AchievableEvent",
-                  "type": "achievement::components::achievable::AchievableComponent::Event",
-                  "kind": "flat"
                 }
               ]
             }
@@ -5882,8 +5941,8 @@
           ]
         },
         {
-          "address": "0x705f237c7891c525b2e1a41fd0d8db2ed03e99509b660f4a3d5b737043ba013",
-          "class_hash": "0x3193df5e630883e7e8e507ac40304a5e829254ce2ae301d2d3088da94351e67",
+          "address": "0x138b3587f503f1fdc0c01d953ba41679b53caa00b4ee4c61031c3f14963141f",
+          "class_hash": "0x54931f80b16f4fa9cfb3340ff651d90df4f6f26737647768b63112a238f758d",
           "abi": [
             {
               "type": "impl",
@@ -6096,7 +6155,7 @@
           ]
         },
         {
-          "address": "0x5e85b7a538646cb683f239f526491c2b4654479fdfb7734bfffd641957ae71a",
+          "address": "0x27e715065f6881d5ba828a7cce367316f3dd408e8e901becb21d43bead791da",
           "class_hash": "0x65909389b21c1ee7d5cfdbe7c5167ef2f438d809a8d6b27f196918c18bf99b9",
           "abi": [
             {
@@ -7182,8 +7241,8 @@
           ]
         },
         {
-          "address": "0x5b05c148b5177931dc70e499c5b45a457e345741115de0d3096b90ee101af8b",
-          "class_hash": "0x241adac0909488690833c517319732541018b029d6a7c730ed15e0606fbbf33",
+          "address": "0x3f8b30018777bcb26012ea281c01a17190fc356f7a253a33570593292d438b6",
+          "class_hash": "0x6f73e1f0430458bac92d32a17679d3b981337d96497cacee8380d4d2da5c982",
           "abi": [
             {
               "type": "impl",
@@ -7451,8 +7510,8 @@
           ]
         },
         {
-          "address": "0x75ed9ab48dd21aee3c66017519f61fe295444e3e981683d333a20339a0c2b91",
-          "class_hash": "0x7865ca2764c70c1306a47dc570e001344b16635d17cee45194e9ba117a395c",
+          "address": "0x73dfbb912ebbcd5634beebef86775c6ed66795e3bf6b68a035a8d3109aa6922",
+          "class_hash": "0x11a2c872fc18b1f4e60d2341649b337e570c6aa60d45b726c52d895b6c38bf4",
           "abi": [
             {
               "type": "impl",
@@ -7908,8 +7967,8 @@
           ]
         },
         {
-          "address": "0x679374c5dd80edcb2c066224095294b0a06deee869fabf89c58f1168984494",
-          "class_hash": "0x6b7fdf0af38be95bc464f7537f76fe981a86d4b8aef9d909027fd661dc39cae",
+          "address": "0x485e03730694cf6583e3559852ed91f3e67674fbbcde8aa8c83eaa3e6ab4cb3",
+          "class_hash": "0x147eabaed02793e71cd7dc79da8bb6578e043abb38fd4e4790be813d10f06e",
           "abi": [
             {
               "type": "impl",
@@ -8224,8 +8283,8 @@
           ]
         },
         {
-          "address": "0x19e455d458ffaeaf39ebcf2f68ee0605c97db69b86e59b46bdfbd828ebeab6a",
-          "class_hash": "0x5551fec499e8aeadc655b1d9fa5aedcb67709698c52543d2f741a491fa47ff6",
+          "address": "0x1b73a0c58302f13cc4c5892a43ec6aad6dae2a8801e6414883e3bcedfebe25",
+          "class_hash": "0x4845e36db56e4c64ce89cc8450958c5b790490a99940a1cc3e3cd2b6769faf3",
           "abi": [
             {
               "type": "impl",
@@ -8465,8 +8524,8 @@
           ]
         },
         {
-          "address": "0x179a497339ced1da09fc783de948b5c5d320d7b8bbeb0fa85aaf0e8166c43a6",
-          "class_hash": "0x2ff27fba5fca1b357ee6aeafa3d8aaf86d3ecbb71c0e43ecde2ab561b281141",
+          "address": "0x5c9e123546195734708f69d9a70abde8596bd3730d4a4c215fcb069b14d1aee",
+          "class_hash": "0x66b7e706ebad94c4b19f6b1fdae7bb281f631885698b3329c6682dcdfdc6965",
           "abi": [
             {
               "type": "impl",
@@ -8922,8 +8981,8 @@
           ]
         },
         {
-          "address": "0x18911ee9beeaeb5e07a49d23e4fef9c5aa81529cdeac3d7124de31309fa3f88",
-          "class_hash": "0x373265870f00973c058838a0f5a0de32ad30a33d7c8de23580e153d121d827c",
+          "address": "0x30b19b4a4f903f53780128d370b88f27431c336e692ee24a223e45d886967a6",
+          "class_hash": "0x7e3804b581e391f6fccc1a5e05cdb02b2c9a5e30528e334780999adce43168e",
           "abi": [
             {
               "type": "impl",
@@ -9122,8 +9181,8 @@
           ]
         },
         {
-          "address": "0x5f3927233ac5e6fe04fa47c8caaee23db80148287458f73a07752afa0a1e51",
-          "class_hash": "0x750a452f3eed9dd87fb184081021b7436e94687b214436cce1d408be5e6a732",
+          "address": "0x74e7dc42c736b070165fab30177209265d16b76a3c6cce1ba5f29b3e07492bd",
+          "class_hash": "0x63ee5e6d9d28a5d332670d543f4d5b5f786041bf2084b9a92e548ea3de4cd35",
           "abi": [
             {
               "type": "impl",
@@ -9343,8 +9402,8 @@
           ]
         },
         {
-          "address": "0x6baee1de9a330a11be3c1117459367fb46c325b536b0c301c1907c0cf694454",
-          "class_hash": "0x37195f7a03c5593cdade25d9f234987ff66a332bf44b0707d8b1548d2bad742",
+          "address": "0x52b69ec80294b5d0169d31dffa3ef43f76f902ffee5baccef5007d8990ee9f3",
+          "class_hash": "0x5f210fffcbc2743371bd11432d56428f9f10e97e44fd25897453e6c7fcc937b",
           "abi": [
             {
               "type": "impl",
@@ -9936,8 +9995,8 @@
           ]
         },
         {
-          "address": "0x496a78cd131bd4b529573904b744b35ea98e77ceeeeceee6ceafda4a50a088b",
-          "class_hash": "0x4e675f9c486dbe63315fe13f6adf251c8b01cc65cc9d19758bd284e9c47d68b",
+          "address": "0x237b1349ef60280414275e814dc463f240d467312809bc63aaa588be0402791",
+          "class_hash": "0xb39b58225e5d3405a00931c3f7d9c39aa71429713257718525bd5477c4fea5",
           "abi": [
             {
               "type": "impl",
@@ -10517,8 +10576,8 @@
           ]
         },
         {
-          "address": "0x44770d3fb7e36c2c860479037c97f14da58d443e4b66c747defdcef046b1339",
-          "class_hash": "0x25cd22561c832b13a299713cb72b4d89a34ea98b28d6d1f7405db99a25a086c",
+          "address": "0x1c83d00a25ead744886a577512bceddfddcdaa0a9e573ece2a74c6adfbb9aa6",
+          "class_hash": "0x539e0b16f91429f4f4062337b138df4d680486da8f87f3f88f101fcfadb81e3",
           "abi": [
             {
               "type": "impl",
@@ -10755,8 +10814,8 @@
           ]
         },
         {
-          "address": "0x4add724e2304e938faf27d894b406cf0324b0b161a1dc72dc9402b38ef70adb",
-          "class_hash": "0x6a585a63655b334700a3c7a0cc5ccea71100547e163233a5ee59a6775ec2d8b",
+          "address": "0xeba9dfa5a96d78799aadbb9a39dc42d78f00b42efaf20b204598983b1fc815",
+          "class_hash": "0x4ea45093b333892b70d46e97dc799cf5d3e33955afaa912f4acdf99158753a8",
           "abi": [
             {
               "type": "impl",
@@ -10989,8 +11048,8 @@
           ]
         },
         {
-          "address": "0x7e5df7b274b6f3d36ad6e1cad5b242981fe22d46fc2bcbb73acf7672b151f2b",
-          "class_hash": "0x13c701124561a8f69c3d17fca2ba4b0bb635a0c6ddc9df7c001d831eabe13eb",
+          "address": "0xa4c27342f3997c4125ea82fbc24451af142bfd144dfb07a5e432edc536f704",
+          "class_hash": "0x4f4be137c592c4ec9cf4031c748a8512c7feb9302b465ce9ec439f4ed64cdee",
           "abi": [
             {
               "type": "impl",
@@ -11140,6 +11199,13 @@
                   ],
                   "outputs": [],
                   "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "velords_claim",
+                  "inputs": [],
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -11265,12 +11331,13 @@
             "deposit",
             "withdraw",
             "lp_withdraw",
+            "velords_claim",
             "upgrade"
           ]
         },
         {
-          "address": "0x1a74c0e55fddb37b0061fab665fd96e7b0511639a56d815c57669384eb083f2",
-          "class_hash": "0x380b821ee8db44747546d0783dd3dbedbdee1b55b5d6effa3d511930a25ca17",
+          "address": "0xebc386d5a2b76188512987b037eba74053e646da9dcec72a27d296daf17b99",
+          "class_hash": "0x39550ae29bb7a2d432f3ead56e683fb4dc039802d66260c9c17dcbee06a39b7",
           "abi": [
             {
               "type": "impl",
@@ -11634,8 +11701,8 @@
           ]
         },
         {
-          "address": "0x7b7da3c2423edb47af26fea43b4e08d01e2054250e925401baa3be32cbffd89",
-          "class_hash": "0x21c63625f664fdc07f2ef23dd8bc8973debb347953fb1e0d86d08de3c75cc0a",
+          "address": "0x3efefb1b8f18a9ce3fe21cba2718581fa953fdc6714a1ac4656e6c5a611620b",
+          "class_hash": "0x4381f8ef8b0ab9cffd8164cc918a78bc5ef4c7cc3decf8f480aacbf7c1cc66e",
           "abi": [
             {
               "type": "impl",
@@ -11699,20 +11766,6 @@
                 {
                   "type": "function",
                   "name": "season_close",
-                  "inputs": [],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "season_prize_claim",
-                  "inputs": [],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "season_transfer_unclaimed_lords",
                   "inputs": [],
                   "outputs": [],
                   "state_mutability": "external"
@@ -11839,14 +11892,12 @@
           "selector": "0x44e1edf9ca51b11a8c1d6ffc341d3248fdbeebc7e7d3ee6314fee33174860c4",
           "systems": [
             "season_close",
-            "season_prize_claim",
-            "season_transfer_unclaimed_lords",
             "upgrade"
           ]
         },
         {
-          "address": "0xc988d517119c41d005b5708597bd888059a79c719b9c1993317b1eef6de22d",
-          "class_hash": "0x6ee86eb1ab02129d6444e7a5520e3128c0c7b3be9c7c4f5f4eb1bd705626c24",
+          "address": "0x5df20b3f8ad84958bff259d16edac93061280a48ad2e0fcd18d73719cb4c55b",
+          "class_hash": "0x167ce0fdfa02eb978933460f1cdfd78ca5d57a991ac66e247ebe7fc8c1e6f76",
           "abi": [
             {
               "type": "impl",
@@ -12045,8 +12096,8 @@
           ]
         },
         {
-          "address": "0x53c1fa349af00acd021790ab3b96f01e17a68a87569332b78d8d63156f4e81c",
-          "class_hash": "0x246d8324787ad03feca125d77389372e479088974a9312d28889bbd8321219",
+          "address": "0x141e48018fb87562c461cf2799c270123e01ffff5707817d2870b86d7fd04a1",
+          "class_hash": "0x6586482012efbfef18ee4385a7a1c8401f113621cc53e4a233ec85671260c78",
           "abi": [
             {
               "type": "impl",
@@ -12282,8 +12333,8 @@
           ]
         },
         {
-          "address": "0x4311851dd264102f605e6ee6e78953ac09a458a80dbb36793d4846297f36a1a",
-          "class_hash": "0x6acdcee999592efe93fc84451af4ff68643a14778d8124b0dbbc63caeb65e17",
+          "address": "0x156eeb4199922bfe681b01e61c09a802e84d958598170575cbce549485d3bbb",
+          "class_hash": "0x1977037eac01a1f45bdf642063d4e070e6c7cb4c3305cb9f47fe0c4f5c2b4a5",
           "abi": [
             {
               "type": "impl",
@@ -12366,7 +12417,7 @@
                     },
                     {
                       "name": "maker_gives_min_resource_amount",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u64"
                     },
                     {
                       "name": "maker_gives_max_count",
@@ -12374,7 +12425,7 @@
                     },
                     {
                       "name": "taker_pays_min_resource_amount",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u64"
                     },
                     {
                       "name": "expires_at",
@@ -12548,8 +12599,8 @@
           ]
         },
         {
-          "address": "0x55f14a3b7c37870189d7eddd9030e33666c7fdce550b5680ec0130766e6dd74",
-          "class_hash": "0x1ed8750eff2a23b1c7aba2c88e5d59bbb3f93ce3bc9765dcde0025ca325492d",
+          "address": "0x1c7be557310b9195891c0f2cebbd9c056e9cf682f9e2a8d2c98307c9e14e7b",
+          "class_hash": "0x5f0e67b1597033be9b35edc5b14e31f1f5581b0656c8512b9f778324bba78f9",
           "abi": [
             {
               "type": "impl",
@@ -12868,8 +12919,8 @@
           ]
         },
         {
-          "address": "0x1a2d480087e96f2d2b3a371b12e34b9d7259af3b017c9c36d6ee6aceb9e0f77",
-          "class_hash": "0x8478c42869f75108273da41ffe564b13aceb2eb206a0040ec4ebac05dbd288",
+          "address": "0x7a2338339125cc39542046b6f91af0c1c747ce90e8500d49f87091905d14877",
+          "class_hash": "0x38175b3028f7c9480ebdf6a40f931437a143bb6f9084fd821a272f2e57ab0f0",
           "abi": [
             {
               "type": "impl",
@@ -13339,8 +13390,8 @@
           ]
         },
         {
-          "address": "0x39634043ae2ca9096a1905a2514a7105aaa5bfafaad38f116af7b82a0807f94",
-          "class_hash": "0x788b81b3a27f63105ed647c6cbf78421a73a51e0325788fd06955e45a7c2cde",
+          "address": "0x37eb93bad6cdac3e18ba9ee83649adf8717133dda67fb86c0d0fa0f71ee4e9a",
+          "class_hash": "0x6f70f97be370445a53f2ad2850df3fcba24befa683978035f5b8173006523bf",
           "abi": [
             {
               "type": "impl",
@@ -13645,7 +13696,7 @@
           ]
         },
         {
-          "address": "0x5587dc241087fe7f3fd2f1ac2c34cd0e0824646318646f10b5b553b98bcf6ba",
+          "address": "0x30c6e37dde70ddd69f4b354e86cec1e9516f184875817eb8d07e7440f78ee65",
           "class_hash": "0x7a3f65b46a0cad0ebf7a248e6cc8a372c4e1bf43fd75c70ace90364be7c690c",
           "abi": [
             {
@@ -14102,8 +14153,8 @@
           ]
         },
         {
-          "address": "0x14242e5bda31203f7182ab13c9729d674951ae0ee87848f3ade05cc6625a5",
-          "class_hash": "0x3dbe73c20b6cce25d0ee7b4d5e69e152f31d82ff8a66bcc6a324e62bd581e35",
+          "address": "0x59cb89f05e7baad61b68c46ec73c9c73e91855933bc5d6b932f75faf49fc20",
+          "class_hash": "0x12975edb6cc989c08f14cb4e145f3e2ef5de92a8eb6d10d4f687c4b09c9bed3",
           "abi": [
             {
               "type": "impl",
@@ -14354,8 +14405,8 @@
           ]
         },
         {
-          "address": "0x7acd93bae1fc4be05c0706e7f9528c8e78252bcf2d5e53a95dedd788800ad65",
-          "class_hash": "0x3be35026ecc7f2e0e9c266d5b79083788112335b2c7e5d54f35927ee8d26bd",
+          "address": "0x2961c87e5b85c15a7f09b7c981af1fdfe92d6b6cea377abb29f8c3f0c18b3",
+          "class_hash": "0x4c5e18ea3aa122f99f444c4ba24baa8d5101ac12b86b79e78c69b2e1fd66895",
           "abi": [
             {
               "type": "impl",
@@ -14636,6 +14687,18 @@
         },
         {
           "members": [],
+          "class_hash": "0x5826cab045c105f80a401f5dc55e86a0e081a22a583b6301b3c9d234c3abec3",
+          "tag": "s1_eternum-AntiBot",
+          "selector": "0x344804b2eb95394730da8909ac2aa5d50715b8ed1715e0eef00953b34345183"
+        },
+        {
+          "members": [],
+          "class_hash": "0x64fb1b1b4734d1c5b2fefc4fafb330adf1217c8c23ec2cacbe4d08eabde35c4",
+          "tag": "s1_eternum-BiomeDiscovered",
+          "selector": "0x30f7247a43bd9908a15927a45887898d2926a4b68fefe9ea339d6534a3ba8b"
+        },
+        {
+          "members": [],
           "class_hash": "0x6a2c6cd83cb7aa1097f650ff5d65c318d40554e2a7f056da4532d8b1311daf8",
           "tag": "s1_eternum-Building",
           "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
@@ -14888,7 +14951,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x3b97b2e158e90760aa4a944ec1d88c28c44447bc91ac09e703094bf2109c8af",
+          "class_hash": "0x357581b582ea4c9588e1a80b9c62e9d6c931212ddfe03cb7ffdc98a582b91f6",
           "tag": "s1_eternum-StructureOwnerStats",
           "selector": "0x1d52c8d6f2bdc7f57662f1790b92a4900fe725cc3e8277418acdde65bb1cd5b"
         },
@@ -14912,7 +14975,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x50455844011a907cf466415a68d75436d0e39650e1d703f45f63d0db6453863",
+          "class_hash": "0x4993a4f08290979552396ae8fba89f51116fa3c31628bd31f89d9da4d4d004a",
           "tag": "s1_eternum-Trade",
           "selector": "0x6ddb8e334e9c33541fce1e72774d6c43c1057a1057a570f2eb12426f51291"
         },

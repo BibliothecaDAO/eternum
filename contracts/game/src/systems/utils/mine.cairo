@@ -47,6 +47,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     fn create(
         ref world: WorldStorage,
         coord: Coord,
+        season_mode_on: bool,
         map_config: MapConfig,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
@@ -63,6 +64,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             array![].span(),
             Default::default(),
             TileOccupier::FragmentMine,
+            false,
         );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
@@ -72,63 +74,55 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
         );
 
-        // allow fragment mine to produce limited amount of shards
-        let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let shards_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
-        let mut shards_resource = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true,
-        );
-        let mut shards_resource_production: Production = shards_resource.production;
-        shards_resource_production.increase_output_amout_left(shards_reward_amount);
-        shards_resource.production = shards_resource_production;
-        shards_resource.store(ref world);
+        // allow fragment mine to produce limited amount of resource
+        let (
+            reward_resource_building_category, reward_resource_type, reward_resource_amount,
+        ): (BuildingCategory, u8, u128) =
+            if season_mode_on {
+            (
+                BuildingCategory::ResourceEarthenShard,
+                ResourceTypes::EARTHEN_SHARD,
+                Self::_season_mode_reward_amount(ref world, vrf_seed),
+            )
+        } else {
+            (BuildingCategory::ResourceEssence, ResourceTypes::ESSENCE, Self::_blitz_mode_reward_amount(ref world))
+        };
 
-        // // grant wheat to structure
-        // let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
-        // let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-        //     ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
-        // );
-        // wheat_resource
-        //     .add(
-        //         map_config.mine_wheat_grant_amount.into() * RESOURCE_PRECISION,
-        //         ref structure_weight,
-        //         wheat_weight_grams,
-        //     );
-        // wheat_resource.store(ref world);
-        // // grant fish to structure
-        // let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
-        // let mut fish_resource = SingleResourceStoreImpl::retrieve(
-        //     ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
-        // );
-        // fish_resource
-        //     .add(
-        //         map_config.mine_fish_grant_amount.into() * RESOURCE_PRECISION, ref structure_weight,
-        //         fish_weight_grams,
-        //     );
-        // fish_resource.store(ref world);
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let reward_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
+        let mut reward_resource_resource = SingleResourceStoreImpl::retrieve(
+            ref world, structure_id, reward_resource_type, ref structure_weight, reward_resource_weight_grams, true,
+        );
+        let mut reward_resource_resource_production: Production = reward_resource_resource.production;
+        reward_resource_resource_production.increase_output_amout_left(reward_resource_amount);
+        reward_resource_resource.production = reward_resource_resource_production;
+        reward_resource_resource.store(ref world);
 
         // update structure weight
         structure_weight.store(ref world, structure_id);
-        // create shards production building
+        // create reward resource production building
         BuildingImpl::create(
             ref world,
             structure_id,
             StructureCategory::FragmentMine.into(),
             coord,
-            BuildingCategory::ResourceEarthenShard,
+            reward_resource_building_category,
             BuildingImpl::center(),
         );
 
         return true;
     }
 
-    fn _reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
+    fn _season_mode_reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
         let multipliers: Array<u128> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let random_index: u128 = random::random(randomness, 124, multipliers.len().into());
         let random_multiplier: u128 = *multipliers.at(random_index.try_into().unwrap());
         let minimum_amount: u128 = 300_000 * RESOURCE_PRECISION;
         let actual_amount: u128 = minimum_amount * random_multiplier;
         return actual_amount;
+    }
+
+    fn _blitz_mode_reward_amount(ref world: WorldStorage) -> u128 {
+        36_000 * RESOURCE_PRECISION
     }
 }

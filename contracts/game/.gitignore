@@ -1,6 +1,5 @@
 target/*
 torii.db
-KATANA.toml
 logs/*
 pids/*
 .DS_Store

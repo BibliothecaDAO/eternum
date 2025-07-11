@@ -8,7 +8,6 @@
 
 import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -38,10 +37,12 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 1_000,
-    shardsMinesFailProbability: 15_000,
-    hyperstructureWinProbAtCenter: 20_000,
-    hyperstructureFailProbAtCenter: 100_000,
+    shardsMinesWinProbability: 1,
+    shardsMinesFailProbability: 9,
+    hyperstructureWinProbAtCenter: 0,
+    hyperstructureFailProbAtCenter: 1,
+    villageFindProbability: 1,
+    villageFindFailProbability: 8,
     // hyperstructureFailProbIncreasePerHexDistance: 20,
     agentFindProbability: 3_000,
     agentFindFailProbability: 10_000,
@@ -55,7 +56,6 @@ export const LocalEternumGlobalConfig: Config = {
       resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
       amount: 500,
     },
-    hyperstructurePointsForWin: 100n,
     hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
       (cost) => ({
         ...cost,
@@ -71,27 +71,20 @@ export const LocalEternumGlobalConfig: Config = {
     graceTickCountHyp: 0,
     delaySeconds: 0,
   },
-  // starting resources x1000
-  // startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
-  // villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-  //   if (
-  //     resource.resource === ResourcesIds.Knight ||
-  //     resource.resource === ResourcesIds.Paladin ||
-  //     resource.resource === ResourcesIds.Crossbowman
-  //   ) {
-  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-  //   }
-  //   return resource;
-  // }),
+  startingResources: [
+    ...CommonEternumGlobalConfig.startingResources,
+    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
+  villageStartingResources: [
+    ...CommonEternumGlobalConfig.villageStartingResources,
+    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
+    { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
+    { resource: ResourcesIds.DamageRelic1, amount: 1000 },
+  ],
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
