@@ -1,4 +1,3 @@
-import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
@@ -6,12 +5,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Clock, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { SpectateButton } from "./spectate-button";
 
 // Game state enum
 enum GameState {
@@ -82,7 +82,12 @@ const RegistrationState = ({
   isRegistered: boolean;
   onRegister: () => Promise<void>;
 }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const [isRegistering, setIsRegistering] = useState(false);
+  const onSpectatorModeClick = useSpectatorModeClick(components);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -130,7 +135,7 @@ const RegistrationState = ({
           </Button>
         )}
 
-        <SpectateButton />
+        <SpectateButton onClick={onSpectatorModeClick} />
       </div>
     </motion.div>
   );
@@ -156,6 +161,7 @@ const SettlementState = ({
 
   const goToStructure = useGoToStructure();
   const realmEntities = usePlayerOwnedRealmEntities();
+  const onSpectatorModeClick = useSpectatorModeClick(components);
 
   const handleSettle = async () => {
     setIsSettling(true);
@@ -229,14 +235,14 @@ const SettlementState = ({
             </>
           )}
 
-          <SpectateButton />
+          <SpectateButton onClick={onSpectatorModeClick} />
         </div>
       ) : (
         <div className="space-y-4">
           <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
             <p className="text-gold/70">You are not registered for this game</p>
           </div>
-          <SpectateButton />
+          <SpectateButton onClick={onSpectatorModeClick} />
         </div>
       )}
     </motion.div>
@@ -251,6 +257,7 @@ const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
 
   const goToStructure = useGoToStructure();
   const realmEntities = usePlayerOwnedRealmEntities();
+  const onSpectatorModeClick = useSpectatorModeClick(components);
 
   const handlePlay = () => {
     const firstRealm = realmEntities[0];
@@ -278,63 +285,18 @@ const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
                 <span>Play Blitz</span>
               </div>
             </Button>
-            <SpectateButton />
+            <SpectateButton onClick={onSpectatorModeClick} />
           </>
         ) : (
           <>
             <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
               <p className="text-gold/70">You did not settle in this game</p>
             </div>
-            <SpectateButton />
+            <SpectateButton onClick={onSpectatorModeClick} />
           </>
         )}
       </div>
     </motion.div>
-  );
-};
-
-// Spectate button component (reusing from steps.tsx)
-export const SpectateButton = ({
-  onClick,
-  forceSpectatorMode = false,
-}: {
-  onClick?: () => void;
-  forceSpectatorMode?: boolean;
-}) => {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const realmEntities = usePlayerOwnedRealmEntities();
-  const villageEntities = usePlayerOwnedVillageEntities();
-  const hasRealmsOrVillages = useMemo(() => {
-    return realmEntities.length > 0 || villageEntities.length > 0;
-  }, [realmEntities, villageEntities]);
-
-  const defaultSpectatorClick = useSpectatorModeClick(components);
-  const goToStructure = useGoToStructure();
-
-  const onPlayModeClick = () => {
-    const randomRealmEntityOrVillageEntity =
-      realmEntities.length > 0 ? realmEntities[0] : villageEntities.length > 0 ? villageEntities[0] : undefined;
-
-    const structure = randomRealmEntityOrVillageEntity
-      ? getComponentValue(components.Structure, randomRealmEntityOrVillageEntity)
-      : undefined;
-
-    if (!structure) return;
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
-  };
-
-  const handleClick = onClick || (hasRealmsOrVillages && !forceSpectatorMode ? onPlayModeClick : defaultSpectatorClick);
-
-  return (
-    <Button className="w-full h-12" onClick={handleClick} size="lg">
-      <div className="flex items-center justify-center">
-        <Eye className="w-6 fill-current mr-2" />
-        <span>Spectate</span>
-      </div>
-    </Button>
   );
 };
 
