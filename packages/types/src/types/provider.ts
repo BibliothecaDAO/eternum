@@ -368,7 +368,6 @@ export interface SetVictoryPointsConfigProps extends SystemSigner {
   points_for_tile_exploration: num.BigNumberish;
 }
 
-
 export interface SetBlitzModeConfigProps extends SystemSigner {
   blitz_mode_on: boolean;
 }
@@ -380,8 +379,6 @@ export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSig
     max_amount: num.BigNumberish;
   }[];
 }
-
-
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
   config_id: num.BigNumberish;

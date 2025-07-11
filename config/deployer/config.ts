@@ -1261,10 +1261,7 @@ export const setHyperstructureConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const {
-    hyperstructureConstructionCost,
-    hyperstructureInitializationShardsCost,
-  } = config.config.hyperstructures;
+  const { hyperstructureConstructionCost, hyperstructureInitializationShardsCost } = config.config.hyperstructures;
 
   const initializationShardsAmount = hyperstructureInitializationShardsCost.amount;
   const hyperstructureCalldata = {
@@ -1329,14 +1326,12 @@ export const setGameModeConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-
   const gameModeTx = await config.provider.set_game_mode_config({
     signer: config.account,
     blitz_mode_on: config.config.blitz.mode.on,
   });
   console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
 };
-
 
 export const setVictoryPointsConfig = async (config: Config) => {
   console.log(
@@ -1345,18 +1340,18 @@ export const setVictoryPointsConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-
   const victoryPointsTx = await config.provider.set_victory_points_config({
     signer: config.account,
     points_for_win: config.config.victoryPoints.pointsForWin,
     hyperstructure_points_per_second: config.config.victoryPoints.hyperstructurePointsPerCycle,
-    points_for_hyperstructure_claim_against_bandits: config.config.victoryPoints.pointsForHyperstructureClaimAgainstBandits,
-    points_for_non_hyperstructure_claim_against_bandits: config.config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
+    points_for_hyperstructure_claim_against_bandits:
+      config.config.victoryPoints.pointsForHyperstructureClaimAgainstBandits,
+    points_for_non_hyperstructure_claim_against_bandits:
+      config.config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
     points_for_tile_exploration: config.config.victoryPoints.pointsForTileExploration,
   });
   console.log(chalk.green(`\n    ✔ Victory points configured `) + chalk.gray(victoryPointsTx.statusReceipt) + "\n");
 };
-
 
 export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config) => {
   console.log(
@@ -1366,7 +1361,8 @@ export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config)
   );
 
   // log the resources
-  console.log(chalk.cyan(`
+  console.log(
+    chalk.cyan(`
     ┌─ ${chalk.yellow("Discoverable Village Spawn Resources")}
     │  ${chalk.gray("Resources:")} ${chalk.white(config.config.discoverableVillageStartingResources.map((resource) => `${resource.resource}: ${resource.min_amount} - ${resource.max_amount}`).join(", "))}
     └────────────────────────────────`),
@@ -1378,12 +1374,14 @@ export const setDiscoverableVillageSpawnResourcesConfig = async (config: Config)
       resource: resource.resource,
       min_amount: resource.min_amount * RESOURCE_PRECISION,
       max_amount: resource.max_amount * RESOURCE_PRECISION,
-    })) ,
+    })),
   });
-  console.log(chalk.green(`\n    ✔ Discoverable village spawn resources configured `) + chalk.gray(discoverableVillageSpawnResourcesTx.statusReceipt) + "\n");
+  console.log(
+    chalk.green(`\n    ✔ Discoverable village spawn resources configured `) +
+      chalk.gray(discoverableVillageSpawnResourcesTx.statusReceipt) +
+      "\n",
+  );
 };
-
-
 
 export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(
@@ -1451,7 +1449,9 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   );
 
   const blitzRegistrationTx = await config.provider.set_blitz_registration_config(calldata);
-  console.log(chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n");
+  console.log(
+    chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
+  );
 };
 
 export const createBanks = async (config: Config) => {

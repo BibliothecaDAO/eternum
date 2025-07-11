@@ -1,4 +1,10 @@
-import { ResourcesIds, type ResourceCost, type ResourceInputs, type ResourceMinMax, type ResourceOutputs } from "@bibliothecadao/types";
+import {
+  ResourcesIds,
+  type ResourceCost,
+  type ResourceInputs,
+  type ResourceMinMax,
+  type ResourceOutputs,
+} from "@bibliothecadao/types";
 
 // weight in kg
 // grams / 10^9
@@ -301,7 +307,6 @@ export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
   { resource: ResourcesIds.Donkey, min_amount: 20, max_amount: 50 },
   { resource: ResourcesIds.Knight, min_amount: 100, max_amount: 150 },
 ];
-
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {
   [ResourcesIds.Wood]: 1,
