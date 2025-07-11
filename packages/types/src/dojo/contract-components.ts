@@ -1501,6 +1501,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzRealmPlayerRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmPlayerRegister",
+            types: ["ContractAddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

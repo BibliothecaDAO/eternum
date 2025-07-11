@@ -278,6 +278,41 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Register a player for Blitz Realm
+   *
+   * @param props - Properties for registration
+   * @param props.owner - Contract address of the player to register
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
+    const { owner, signer } = props;
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "register",
+      calldata: [owner],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Create Blitz Realms
+   *
+   * @param props - Properties for creation
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_create(props: SystemProps.BlitzRealmCreateProps) {
+    const { signer } = props;
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "create",
+      calldata: [],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
    * Wait for a transaction to complete and check for errors
    *
    * @param transactionHash - Hash of transaction to wait for
@@ -314,24 +349,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     }));
     return await this.executeAndCheckTransaction(signer, calls);
   }
-
-  /*public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
-    const { donkey_resources, through_bank_id, recipient_address, client_fee_recipient, signer } = props;
-
-    const calls = donkey_resources.map((donkey_resource) => ({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-      entrypoint: "finish_withdraw",
-      calldata: [
-        through_bank_id,
-        donkey_resource.from_entity_id,
-        donkey_resource.tokenAddress,
-        recipient_address,
-        client_fee_recipient,
-      ],
-    }));
-
-    return await this.executeAndCheckTransaction(signer, calls);
-  }*/
 
   public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
     const { resources, recipient_structure_id, client_fee_recipient, signer } = props;

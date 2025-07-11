@@ -25,6 +25,12 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
   };
 }
 
+export interface BlitzRealmRegisterProps extends SystemSigner {
+  owner: num.BigNumberish;
+}
+
+export interface BlitzRealmCreateProps extends SystemSigner {}
+
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: num.BigNumberish;

@@ -5,22 +5,13 @@ import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-nav
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
+import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Clock, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-// Dummy data for development
-const DUMMY_DATA = {
-  nextGameStart: Date.now() / 1000 + 10, // 10 seconds from now
-  registrationCutoff: Date.now() / 1000 + 20, // 20 seconds from now
-  settlementEnd: Date.now() / 1000 + 30, // 30 seconds from now
-  registeredPlayers: 42,
-  isRegistered: true,
-  hasSettled: false,
-  gameActive: false,
-};
 
 // Game state enum
 enum GameState {
@@ -30,24 +21,6 @@ enum GameState {
   GAME_ACTIVE = "GAME_ACTIVE",
 }
 
-// Helper function to format time
-const formatTimeRemaining = (seconds: number): string => {
-  if (seconds <= 0) return "0s";
-
-  const days = Math.floor(seconds / (60 * 60 * 24));
-  const hours = Math.floor((seconds % (60 * 60 * 24)) / (60 * 60));
-  const minutes = Math.floor((seconds % (60 * 60)) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-
-  return parts.join(" ");
-};
-
 // Countdown timer component
 const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: string }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -56,7 +29,7 @@ const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: stri
     const updateTimer = () => {
       const now = Date.now() / 1000;
       const timeLeft = targetTime - now;
-      setTimeRemaining(formatTimeRemaining(timeLeft));
+      setTimeRemaining(formatTime(timeLeft));
     };
 
     updateTimer();
@@ -83,7 +56,7 @@ const PlayerCount = ({ count }: { count: number }) => {
 };
 
 // No game state component
-const NoGameState = () => {
+const NoGameState = ({ registrationStartAt }: { registrationStartAt: number }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
       <div className="py-8">
@@ -92,30 +65,42 @@ const NoGameState = () => {
         <p className="text-gold/70">The next Blitz game will start soon!</p>
       </div>
 
-      <CountdownTimer targetTime={DUMMY_DATA.nextGameStart} label="Next game starts in:" />
+      <CountdownTimer targetTime={registrationStartAt} label="Next game starts in:" />
     </motion.div>
   );
 };
 
 // Registration state component
-const RegistrationState = () => {
+const RegistrationState = ({
+  registrationCount,
+  registrationEndAt,
+  isRegistered,
+  onRegister,
+}: {
+  registrationCount: number;
+  registrationEndAt: number;
+  isRegistered: boolean;
+  onRegister: () => Promise<void>;
+}) => {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(DUMMY_DATA.isRegistered);
 
   const handleRegister = async () => {
     setIsRegistering(true);
-    // TODO: Implement actual registration logic
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
-    setIsRegistered(true);
-    setIsRegistering(false);
+    try {
+      await onRegister();
+    } catch (error) {
+      console.error("Registration failed:", error);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Registration Open</h3>
-        <PlayerCount count={DUMMY_DATA.registeredPlayers} />
-        <CountdownTimer targetTime={DUMMY_DATA.registrationCutoff} label="Registration closes in:" />
+        <PlayerCount count={registrationCount} />
+        <CountdownTimer targetTime={registrationEndAt} label="Registration closes in:" />
       </div>
 
       <div className="space-y-4">
@@ -152,13 +137,21 @@ const RegistrationState = () => {
 };
 
 // Settlement state component
-const SettlementState = () => {
+const SettlementState = ({
+  creationEndAt,
+  isRegistered,
+  hasSettled,
+  onSettle,
+}: {
+  creationEndAt: number;
+  isRegistered: boolean;
+  hasSettled: boolean;
+  onSettle: () => Promise<void>;
+}) => {
   const {
     setup: { components },
   } = useDojo();
 
-  const [isRegistered] = useState(DUMMY_DATA.isRegistered);
-  const [hasSettled, setHasSettled] = useState(DUMMY_DATA.hasSettled);
   const [isSettling, setIsSettling] = useState(false);
 
   const goToStructure = useGoToStructure();
@@ -166,10 +159,13 @@ const SettlementState = () => {
 
   const handleSettle = async () => {
     setIsSettling(true);
-    // TODO: Implement actual settlement logic - location will be assigned automatically
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setHasSettled(true);
-    setIsSettling(false);
+    try {
+      await onSettle();
+    } catch (error) {
+      console.error("Settlement failed:", error);
+    } finally {
+      setIsSettling(false);
+    }
   };
 
   const handlePlay = () => {
@@ -186,7 +182,7 @@ const SettlementState = () => {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Settlement Phase</h3>
-        <CountdownTimer targetTime={DUMMY_DATA.settlementEnd} label="Settlement phase ends in:" />
+        <CountdownTimer targetTime={creationEndAt} label="Settlement phase ends in:" />
       </div>
 
       {isRegistered ? (
@@ -248,12 +244,11 @@ const SettlementState = () => {
 };
 
 // Game active state component
-const GameActiveState = () => {
+const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
   const {
     setup: { components },
   } = useDojo();
 
-  const [hasSettled] = useState(DUMMY_DATA.hasSettled);
   const goToStructure = useGoToStructure();
   const realmEntities = usePlayerOwnedRealmEntities();
 
@@ -347,21 +342,39 @@ export const SpectateButton = ({
 export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
 
+  const {
+    setup: {
+      account: { account },
+      components,
+      systemCalls: { blitz_realm_register, blitz_realm_create },
+    },
+  } = useDojo();
+
+  const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
+  const playerRegistered = useComponentValue(
+    components.BlitzRealmPlayerRegister,
+    getEntityIdFromKeys([BigInt(account.address)]),
+  );
+
+  const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
+
   // Determine current game state based on time
   useEffect(() => {
+    if (!blitzConfig) return;
+
     const updateGameState = () => {
       const now = Date.now() / 1000;
 
-      if (now < DUMMY_DATA.nextGameStart - 43200) {
-        // More than 12 hours before next game
+      if (now < blitzConfig.registration_start_at) {
+        // Before registration starts
         setGameState(GameState.NO_GAME);
-      } else if (now < DUMMY_DATA.registrationCutoff) {
+      } else if (now >= blitzConfig.registration_start_at && now < blitzConfig.registration_end_at) {
         // Registration period
         setGameState(GameState.REGISTRATION);
-      } else if (now < DUMMY_DATA.settlementEnd) {
+      } else if (now >= blitzConfig.creation_start_at && now < blitzConfig.creation_end_at) {
         // Settlement period
         setGameState(GameState.SETTLEMENT);
-      } else {
+      } else if (now >= blitzConfig.creation_end_at) {
         // Game is active
         setGameState(GameState.GAME_ACTIVE);
       }
@@ -370,10 +383,22 @@ export const BlitzOnboarding = () => {
     updateGameState();
     const interval = setInterval(updateGameState, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [blitzConfig]);
 
   const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
   const setShowToS = useUIStore((state) => state.setShowToS);
+
+  // Registration handler
+  const handleRegister = async () => {
+    if (!account?.address) return;
+    await blitz_realm_register({ owner: account.address, signer: account });
+  };
+
+  // Settlement handler
+  const handleSettle = async () => {
+    if (!account?.address) return;
+    await blitz_realm_create({ signer: account });
+  };
 
   if (!hasAcceptedTS) {
     return (
@@ -383,12 +408,34 @@ export const BlitzOnboarding = () => {
     );
   }
 
+  if (!blitzConfig) {
+    return (
+      <div className="text-center text-gold/70">
+        <p>Loading Blitz configuration...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {gameState === GameState.NO_GAME && <NoGameState />}
-      {gameState === GameState.REGISTRATION && <RegistrationState />}
-      {gameState === GameState.SETTLEMENT && <SettlementState />}
-      {gameState === GameState.GAME_ACTIVE && <GameActiveState />}
+      {gameState === GameState.NO_GAME && <NoGameState registrationStartAt={blitzConfig.registration_start_at} />}
+      {gameState === GameState.REGISTRATION && (
+        <RegistrationState
+          registrationCount={blitzConfig.registration_count}
+          registrationEndAt={blitzConfig.registration_end_at}
+          isRegistered={playerRegistered?.registered || false}
+          onRegister={handleRegister}
+        />
+      )}
+      {gameState === GameState.SETTLEMENT && (
+        <SettlementState
+          creationEndAt={blitzConfig.creation_end_at}
+          isRegistered={playerRegistered?.registered || !!playerSettled}
+          hasSettled={!!playerSettled}
+          onSettle={handleSettle}
+        />
+      )}
+      {gameState === GameState.GAME_ACTIVE && <GameActiveState hasSettled={!!playerSettled} />}
     </div>
   );
 };

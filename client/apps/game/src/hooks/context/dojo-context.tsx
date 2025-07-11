@@ -2,6 +2,7 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { IS_BLITZ } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
@@ -14,6 +15,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
+import { useSpectatorModeClick } from "../helpers/use-navigate";
 
 const NULL_ACCOUNT = {
   address: "0x0",
@@ -140,6 +142,8 @@ const DojoContextProvider = ({
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
   );
 
+  const onSpectatorModeClick = useSpectatorModeClick(value.components);
+
   useEffect(() => {
     if (controllerAccount) {
       setAccountToUse(controllerAccount);
@@ -201,16 +205,23 @@ const DojoContextProvider = ({
                       <span className="flex-grow text-center">Log In</span>
                     </div>
                   </Button>
-                  <SpectateButton />
+                  <SpectateButton onClick={onSpectatorModeClick} />
 
-                  <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
-                    <Button className="w-full" size="lg">
-                      <div className="flex items-center justify-start w-full">
-                        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
-                        <span className="flex-grow text-center">Mint Season Pass</span>
-                      </div>
-                    </Button>
-                  </a>
+                  {!IS_BLITZ && (
+                    <a
+                      className="cursor-pointer mt-auto w-full"
+                      href={mintUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full" size="lg">
+                        <div className="flex items-center justify-start w-full">
+                          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                          <span className="flex-grow text-center">Mint Season Pass</span>
+                        </div>
+                      </Button>
+                    </a>
+                  )}
                 </>
               )}
             </div>

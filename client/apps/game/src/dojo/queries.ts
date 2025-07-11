@@ -108,6 +108,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
+    "s1_eternum-BlitzRealmPlayerRegister",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];
