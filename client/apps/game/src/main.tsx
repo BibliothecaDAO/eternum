@@ -1,13 +1,13 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
+import { captureSystemError, initPostHog } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { initPostHog, captureSystemError } from "@/posthog";
 
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";

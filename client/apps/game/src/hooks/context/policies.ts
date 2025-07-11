@@ -6,6 +6,18 @@ import { messages } from "./signing-policy";
 
 export const policies = toSessionPolicies({
   contracts: {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "blitz_realm_systems").address]: {
+      methods: [
+        {
+          name: "register",
+          entrypoint: "register",
+        },
+        {
+          name: "create",
+          entrypoint: "create",
+        },
+      ],
+    },
     [getContractByName(dojoConfig.manifest, "s1_eternum", "bank_systems").address]: {
       methods: [
         {

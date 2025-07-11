@@ -8,14 +8,18 @@ import {
   COMPLEX_BUILDING_COSTS,
   SIMPLE_BUILDING_COSTS,
 } from "./utils/building";
+import { HYPERSTRUCTURE_COSTS, HYPERSTRUCTURE_SHARDS_COST } from "./utils/hyperstructure";
 import {
-  HYPERSTRUCTURE_COSTS,
-  HYPERSTRUCTURE_POINTS_FOR_WIN,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_SHARDS_COST,
-} from "./utils/hyperstructure";
+  AWARDED_POINTS_FOR_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+  AWARDED_POINTS_FOR_HYPERSTRUCTURE_HODL_PER_SECOND,
+  AWARDED_POINTS_FOR_NON_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+  AWARDED_POINTS_FOR_TILE_EXPLORATION,
+  VICTORY_POINTS_FOR_WIN,
+} from "./utils/points";
+
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
+  DISCOVERABLE_VILLAGE_STARTING_RESOURCES,
   LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
@@ -96,6 +100,9 @@ export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
 export const AGENT_FIND_FAIL_PROBABILITY = 95; // 95/100 = 95%
 
+export const VILLAGE_FIND_PROBABILITY = 1; // 1/100 = 1%
+export const VILLAGE_FIND_FAIL_PROBABILITY = 99; // 99/100 = 99%
+
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 2_000; // 2_000 / 100_000 = 2%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 98_000; // 98_000 / 100_000 = 98%
 // Without considering the hex distance, this is a linear multiplier for every
@@ -139,7 +146,7 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 8;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
@@ -195,6 +202,14 @@ export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
+const BLITZ_REGISTRATION_FEE_TOKEN = "0x0";
+const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x0";
+const BLITZ_REGISTRATION_FEE_AMOUNT = 0;
+const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
+const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
+const BLITZ_REGISTRATION_PERIOD_SECONDS = 10 * ONE_MINUTE_IN_SECONDS;
+const BLITZ_CREATION_PERIOD_SECONDS = 10 * ONE_MINUTE_IN_SECONDS;
+
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -241,6 +256,8 @@ export const EternumGlobalConfig: Config = {
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
     agentFindProbability: AGENT_FIND_PROBABILITY,
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
+    villageFindProbability: VILLAGE_FIND_PROBABILITY,
+    villageFindFailProbability: VILLAGE_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
@@ -333,8 +350,13 @@ export const EternumGlobalConfig: Config = {
   hyperstructures: {
     hyperstructureInitializationShardsCost: HYPERSTRUCTURE_SHARDS_COST,
     hyperstructureConstructionCost: HYPERSTRUCTURE_COSTS,
-    hyperstructurePointsPerCycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
-    hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
+  },
+  victoryPoints: {
+    pointsForWin: VICTORY_POINTS_FOR_WIN,
+    hyperstructurePointsPerCycle: AWARDED_POINTS_FOR_HYPERSTRUCTURE_HODL_PER_SECOND,
+    pointsForHyperstructureClaimAgainstBandits: AWARDED_POINTS_FOR_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+    pointsForNonHyperstructureClaimAgainstBandits: AWARDED_POINTS_FOR_NON_HYPERSTRUCTURE_CLAIM_AGAINST_BANDITS,
+    pointsForTileExploration: AWARDED_POINTS_FOR_TILE_EXPLORATION,
   },
   season: {
     startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
@@ -363,10 +385,25 @@ export const EternumGlobalConfig: Config = {
   },
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,
+  discoverableVillageStartingResources: DISCOVERABLE_VILLAGE_STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
   questGames: QUEST_GAME_LEVELS,
+  blitz: {
+    mode: {
+      on: true,
+    },
+    registration: {
+      fee_token: BLITZ_REGISTRATION_FEE_TOKEN,
+      fee_recipient: BLITZ_REGISTRATION_FEE_RECIPIENT,
+      fee_amount: BLITZ_REGISTRATION_FEE_AMOUNT,
+      registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
+      registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
+      registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
+      creation_period_seconds: BLITZ_CREATION_PERIOD_SECONDS,
+    },
+  },
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

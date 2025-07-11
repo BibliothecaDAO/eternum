@@ -10,8 +10,8 @@ import { trimAddress } from "./lib/utils";
 export const lordsAddress = getLordsAddress();
 export const seasonPassAddress = getSeasonPassAddress();
 export const realmsAddress = getRealmsAddress();
-export const marketplaceAddress = getMarketplaceAddress();
-const lootChestsAddress = getLootChestsAddress();
+export const marketplaceAddress = getMarketplaceAddress()!;
+const lootChestsAddress = getLootChestsAddress()!;
 // Collection IDs for different networks
 const COLLECTION_IDS = {
   mainnet: {

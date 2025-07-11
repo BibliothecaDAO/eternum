@@ -1,12 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
 use starknet::ContractAddress;
-
-
-#[starknet::interface]
-pub trait IERC20<TState> {
-    fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
-}
 
 #[derive(Copy, Drop, Serde)]
 pub struct RealmSettlement {
@@ -25,20 +18,6 @@ pub trait IRealmSystems<T> {
         settlement: RealmSettlement,
     ) -> ID;
 }
-
-#[starknet::interface]
-pub trait IRealmInternalSystems<T> {
-    fn create_internal(
-        ref self: T,
-        owner: starknet::ContractAddress,
-        realm_id: ID,
-        resources: Array<u8>,
-        order: u8,
-        wonder: u8,
-        coord: Coord,
-    ) -> ID;
-}
-
 
 #[dojo::contract]
 pub mod realm_systems {
@@ -66,13 +45,15 @@ pub mod realm_systems {
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
+    use s1_eternum::systems::realm::utils::contracts::{
+        IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
+    };
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     use starknet::TxInfo;
     use super::RealmSettlement;
-    use super::{IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait};
 
 
     #[derive(Introspect, Copy, Drop, Serde)]
@@ -149,7 +130,7 @@ pub mod realm_systems {
             // create realm
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
-                .create_internal(owner, realm_id, resources, order, wonder, coord);
+                .create_internal(owner, realm_id, resources, order, wonder, coord, true);
 
             // collect lords attached to season pass and bridge into the realm
             // let lords_amount_attached: u256 =
@@ -194,39 +175,6 @@ pub mod realm_systems {
                 world, owner.into(), Tasks::REALM_SETTLEMENT, 1, starknet::get_block_timestamp(),
             );
 
-            structure_id.into()
-        }
-    }
-}
-
-
-#[dojo::contract]
-pub mod realm_internal_systems {
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::systems::utils::realm::iRealmImpl;
-    use starknet::ContractAddress;
-
-    #[abi(embed_v0)]
-    impl RealmInternalSystemsImpl of super::IRealmInternalSystems<ContractState> {
-        fn create_internal(
-            ref self: ContractState,
-            owner: ContractAddress,
-            realm_id: ID,
-            resources: Array<u8>,
-            order: u8,
-            wonder: u8,
-            coord: Coord,
-        ) -> ID {
-            // ensure caller is the realm systems
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
-            assert!(starknet::get_caller_address() == realm_systems, "caller must be the realm_systems");
-
-            // create realm
-            let structure_id = iRealmImpl::create_realm(ref world, owner, realm_id, resources, order, 0, wonder, coord);
             structure_id.into()
         }
     }

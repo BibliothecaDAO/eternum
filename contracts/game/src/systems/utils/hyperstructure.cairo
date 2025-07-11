@@ -7,7 +7,7 @@ use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
 use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord, CoordImpl, TravelImpl};
+use s1_eternum::models::position::{Coord, CoordImpl, Direction, TravelImpl};
 
 use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
@@ -90,8 +90,17 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         vrf_seed: u256,
+        hyperstructure_initialized: bool,
+        hyperstructure_completed: bool,
     ) {
         // make hyper structure
+        let mut hyperstructure_tile_occupier: TileOccupier = TileOccupier::HyperstructureLevel1;
+        if hyperstructure_initialized {
+            hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel2;
+        }
+        if hyperstructure_completed {
+            hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel3;
+        }
         let structure_id = world.dispatcher.uuid();
         iStructureImpl::create(
             ref world,
@@ -101,7 +110,8 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             StructureCategory::Hyperstructure,
             array![].span(),
             Default::default(),
-            TileOccupier::HyperstructureLevel1,
+            hyperstructure_tile_occupier,
+            false,
         );
 
         // add guards to structure
@@ -127,8 +137,8 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             .write_model(
                 @Hyperstructure {
                     hyperstructure_id: structure_id,
-                    initialized: false,
-                    completed: false,
+                    initialized: hyperstructure_initialized,
+                    completed: hyperstructure_completed,
                     access: ConstructionAccess::Private,
                     randomness: vrf_seed.try_into().unwrap(),
                 },
@@ -138,5 +148,63 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         hyperstructure_globals.created_count += 1;
         world.write_model(@hyperstructure_globals);
+    }
+}
+
+#[generate_trait]
+pub impl iHyperstructureBlitzDiscoveryImpl of iHyperstructureBlitzDiscoveryTrait {
+    fn ring_distance(ring_count: u32) -> u32 {
+        ring_count * 18
+    }
+
+    fn create_ring(
+        ref world: WorldStorage,
+        map_config: MapConfig,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        ring_count: u32,
+        vrf_seed: u256,
+    ) {
+        let center_coord: Coord = CoordImpl::center();
+        if ring_count == 0 {
+            iHyperstructureDiscoveryImpl::create(
+                ref world,
+                center_coord,
+                Zero::zero(),
+                map_config,
+                troop_limit_config,
+                troop_stamina_config,
+                vrf_seed,
+                true,
+                true,
+            );
+            // create center hyperstructure
+        } else {
+            // create ring of hyperstructures (6 coords)
+            let distance_from_center = Self::ring_distance(ring_count);
+            let ring_coords = array![
+                center_coord.neighbor_after_distance(Direction::East, distance_from_center),
+                center_coord.neighbor_after_distance(Direction::NorthEast, distance_from_center),
+                center_coord.neighbor_after_distance(Direction::NorthWest, distance_from_center),
+                center_coord.neighbor_after_distance(Direction::SouthWest, distance_from_center),
+                center_coord.neighbor_after_distance(Direction::West, distance_from_center),
+                center_coord.neighbor_after_distance(Direction::SouthEast, distance_from_center),
+            ];
+            let mut salt = 3;
+            for coord in ring_coords {
+                iHyperstructureDiscoveryImpl::create(
+                    ref world,
+                    coord,
+                    Zero::zero(),
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    vrf_seed + salt.into(),
+                    true,
+                    true,
+                );
+                salt += 1;
+            }
+        }
     }
 }

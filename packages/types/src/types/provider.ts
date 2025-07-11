@@ -25,6 +25,12 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
   };
 }
 
+export interface BlitzRealmRegisterProps extends SystemSigner {
+  owner: num.BigNumberish;
+}
+
+export interface BlitzRealmCreateProps extends SystemSigner {}
+
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: num.BigNumberish;
@@ -343,6 +349,8 @@ export interface SetMapConfigProps extends SystemSigner {
   shards_mines_fail_probability: num.BigNumberish;
   agent_find_probability: num.BigNumberish;
   agent_find_fail_probability: num.BigNumberish;
+  village_find_probability: num.BigNumberish;
+  village_find_fail_probability: num.BigNumberish;
   hyps_win_prob: num.BigNumberish;
   hyps_fail_prob: num.BigNumberish;
   hyps_fail_prob_increase_p_hex: num.BigNumberish;
@@ -350,6 +358,26 @@ export interface SetMapConfigProps extends SystemSigner {
   relic_discovery_interval_sec: num.BigNumberish;
   relic_hex_dist_from_center: num.BigNumberish;
   relic_chest_relics_per_chest: num.BigNumberish;
+}
+
+export interface SetVictoryPointsConfigProps extends SystemSigner {
+  points_for_win: num.BigNumberish;
+  hyperstructure_points_per_second: num.BigNumberish;
+  points_for_hyperstructure_claim_against_bandits: num.BigNumberish;
+  points_for_non_hyperstructure_claim_against_bandits: num.BigNumberish;
+  points_for_tile_exploration: num.BigNumberish;
+}
+
+export interface SetBlitzModeConfigProps extends SystemSigner {
+  blitz_mode_on: boolean;
+}
+
+export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
+  resources: {
+    resource: ResourcesIds;
+    min_amount: num.BigNumberish;
+    max_amount: num.BigNumberish;
+  }[];
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
@@ -559,8 +587,6 @@ export interface SetHyperstructureConfig extends SystemSigner {
     min_amount: number;
     max_amount: number;
   }[];
-  points_per_second: num.BigNumberish;
-  points_for_win: num.BigNumberish;
 }
 
 export interface SetQuestConfigProps extends SystemSigner {
@@ -626,7 +652,16 @@ export interface SetSettlementConfigProps extends SystemSigner {
   base_distance: num.BigNumberish;
   subsequent_distance: num.BigNumberish;
 }
-
+export interface SetBlitzRegistrationConfigProps extends SystemSigner {
+  fee_token: num.BigNumberish;
+  fee_recipient: num.BigNumberish;
+  fee_amount: num.BigNumberish;
+  registration_count_max: num.BigNumberish;
+  registration_start_at: num.BigNumberish;
+  registration_end_at: num.BigNumberish;
+  creation_start_at: num.BigNumberish;
+  creation_end_at: num.BigNumberish;
+}
 export interface MintTestRealmProps extends SystemSigner {
   token_id: num.BigNumberish;
   realms_address: num.BigNumberish;

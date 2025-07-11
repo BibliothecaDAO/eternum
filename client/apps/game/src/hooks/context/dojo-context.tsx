@@ -8,6 +8,7 @@ import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboar
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
+import { configManager } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -113,6 +114,8 @@ const DojoContextProvider = ({
   const accountName = useAccountStore((state) => state.accountName);
   const setAccountName = useAccountStore((state) => state.setAccountName);
 
+  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
+
   useEffect(() => {
     const getUsername = async () => {
       let username = await (connector as unknown as ControllerConnector)?.username();
@@ -206,14 +209,21 @@ const DojoContextProvider = ({
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
 
-                  <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
-                    <Button className="w-full" size="lg">
-                      <div className="flex items-center justify-start w-full">
-                        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
-                        <span className="flex-grow text-center">Mint Season Pass</span>
-                      </div>
-                    </Button>
-                  </a>
+                  {!isBlitz && (
+                    <a
+                      className="cursor-pointer mt-auto w-full"
+                      href={mintUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full" size="lg">
+                        <div className="flex items-center justify-start w-full">
+                          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                          <span className="flex-grow text-center">Mint Season Pass</span>
+                        </div>
+                      </Button>
+                    </a>
+                  )}
                 </>
               )}
             </div>

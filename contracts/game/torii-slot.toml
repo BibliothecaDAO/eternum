@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/hello/katana"
 
-world_address = "0x163234802a4f22507111a9bb9bb9a9bf5a30e5d29ea04a990a13c5824c57d04"
+world_address = "0x06a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561"
 
 db_dir = "torii-slot-9"
 

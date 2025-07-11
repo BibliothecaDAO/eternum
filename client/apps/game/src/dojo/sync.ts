@@ -172,13 +172,12 @@ export const initialSync = async (
   let end;
 
   // BANKS
-  // todo: this is not needed for initial sync, should be placed to market sync but currently not working
   await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] bank structures query", end - start);
   setInitialSyncProgress(10);
 
-  // SPECTATOR REALM
+  // // SPECTATOR REALM
   const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   if (firstNonOwnedStructure) {

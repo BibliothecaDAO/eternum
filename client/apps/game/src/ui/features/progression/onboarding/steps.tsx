@@ -1,5 +1,4 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
@@ -7,8 +6,14 @@ import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
-import { MintVillagePassModal, SettlementLocation, SettlementMinimapModal } from "@/ui/features/settlement";
-import { getUnusedSeasonPasses, queryRealmCount, SeasonPassRealm } from "@/ui/features/settlement";
+import {
+  getUnusedSeasonPasses,
+  MintVillagePassModal,
+  queryRealmCount,
+  SeasonPassRealm,
+  SettlementLocation,
+  SettlementMinimapModal,
+} from "@/ui/features/settlement";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
@@ -17,6 +22,7 @@ import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
+import { SpectateButton } from "./spectate-button";
 
 export const LocalStepOne = () => {
   const {
@@ -197,6 +203,8 @@ export const StepOne = () => {
   const setShowToS = useUIStore((state) => state.setShowToS);
   const { connector } = useAccount();
 
+  const onSpectatorModeClick = useSpectatorModeClick(components);
+
   const realmEntities = usePlayerOwnedRealmEntities();
 
   const villageEntities = usePlayerOwnedVillageEntities();
@@ -238,7 +246,6 @@ export const StepOne = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const onSpectatorModeClick = useSpectatorModeClick(components);
   const goToStructure = useGoToStructure();
 
   const onPlayModeClick = () => {
@@ -271,18 +278,8 @@ export const StepOne = () => {
           <div className="text-black flex-grow text-center">Accept ToS</div>
         </Button>
       )}
-      <SpectateButton onClick={hasRealmsOrVillages ? onPlayModeClick : onSpectatorModeClick} />
+      <SpectateButton onClick={onSpectatorModeClick} />
     </div>
-  );
-};
-
-export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <Button className="w-full" onClick={onClick} size="lg">
-      <div className="flex items-center justify-start w-full">
-        <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
-      </div>
-    </Button>
   );
 };
 

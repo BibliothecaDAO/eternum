@@ -372,6 +372,12 @@ export interface ResourceCostMinMax {
   min_amount: number;
   max_amount: number;
 }
+
+export interface ResourceMinMax {
+  resource: ResourcesIds;
+  min_amount: number;
+  max_amount: number;
+}
 export interface HyperstructureResourceCostMinMax {
   resource_type: ResourcesIds;
   resource_completion_points: number;
@@ -434,6 +440,8 @@ export interface Config {
     shardsMinesWinProbability: number;
     agentFindProbability: number;
     agentFindFailProbability: number;
+    villageFindProbability: number;
+    villageFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -537,8 +545,13 @@ export interface Config {
   hyperstructures: {
     hyperstructureInitializationShardsCost: ResourceCost;
     hyperstructureConstructionCost: HyperstructureResourceCostMinMax[];
-    hyperstructurePointsPerCycle: number;
-    hyperstructurePointsForWin: bigint;
+  };
+  victoryPoints: {
+    pointsForWin: bigint;
+    hyperstructurePointsPerCycle: bigint;
+    pointsForHyperstructureClaimAgainstBandits: bigint;
+    pointsForNonHyperstructureClaimAgainstBandits: bigint;
+    pointsForTileExploration: bigint;
   };
   wonderProductionBonus: {
     within_tile_distance: number;
@@ -546,6 +559,7 @@ export interface Config {
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
+  discoverableVillageStartingResources: ResourceMinMax[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
@@ -554,6 +568,20 @@ export interface Config {
     levels: Level[];
     overwrite: boolean;
   }[];
+  blitz: {
+    mode: {
+      on: boolean;
+    };
+    registration: {
+      fee_token: string;
+      fee_recipient: string;
+      fee_amount: number;
+      registration_count_max: number;
+      registration_delay_seconds: number;
+      registration_period_seconds: number;
+      creation_period_seconds: number;
+    };
+  };
 
   // Config for calling the setup function
   setup?: {

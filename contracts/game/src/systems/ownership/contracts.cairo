@@ -30,6 +30,10 @@ mod ownership_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, structure_id).assert_caller_owner();
 
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let season_mode_on = !blitz_mode_on;
+            assert!(season_mode_on, "Eternum: cannot transfer ownership of structure");
+
             // ensure new_owner is non zero
             assert!(new_owner.is_non_zero(), "new owner is zero");
 

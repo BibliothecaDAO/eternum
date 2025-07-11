@@ -278,6 +278,41 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Register a player for Blitz Realm
+   *
+   * @param props - Properties for registration
+   * @param props.owner - Contract address of the player to register
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
+    const { owner, signer } = props;
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "register",
+      calldata: [owner],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Create Blitz Realms
+   *
+   * @param props - Properties for creation
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_create(props: SystemProps.BlitzRealmCreateProps) {
+    const { signer } = props;
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "create",
+      calldata: [],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
    * Wait for a transaction to complete and check for errors
    *
    * @param transactionHash - Hash of transaction to wait for
@@ -314,24 +349,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     }));
     return await this.executeAndCheckTransaction(signer, calls);
   }
-
-  /*public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
-    const { donkey_resources, through_bank_id, recipient_address, client_fee_recipient, signer } = props;
-
-    const calls = donkey_resources.map((donkey_resource) => ({
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-      entrypoint: "finish_withdraw",
-      calldata: [
-        through_bank_id,
-        donkey_resource.from_entity_id,
-        donkey_resource.tokenAddress,
-        recipient_address,
-        client_fee_recipient,
-      ],
-    }));
-
-    return await this.executeAndCheckTransaction(signer, calls);
-  }*/
 
   public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
     const { resources, recipient_structure_id, client_fee_recipient, signer } = props;
@@ -1899,6 +1916,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       shards_mines_fail_probability,
       agent_find_probability,
       agent_find_fail_probability,
+      village_find_probability,
+      village_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -1918,6 +1937,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         shards_mines_fail_probability,
         agent_find_probability,
         agent_find_fail_probability,
+        village_find_probability,
+        village_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -1926,6 +1947,60 @@ export class EternumProvider extends EnhancedDojoProvider {
         relic_hex_dist_from_center,
         relic_chest_relics_per_chest,
       ],
+    });
+  }
+
+  public async set_discoverable_village_starting_resources_config(
+    props: SystemProps.SetDiscoveredVillageSpawnResourcesConfigProps,
+  ) {
+    const { resources, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_village_found_resources_config",
+      calldata: [
+        resources.length,
+        ...resources.flatMap(({ resource, min_amount, max_amount }) => [resource, min_amount, max_amount]),
+      ],
+    });
+  }
+
+  public async set_victory_points_config(props: SystemProps.SetVictoryPointsConfigProps) {
+    const {
+      points_for_win,
+      hyperstructure_points_per_second,
+      points_for_hyperstructure_claim_against_bandits,
+      points_for_non_hyperstructure_claim_against_bandits,
+      points_for_tile_exploration,
+      signer,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_victory_points_grant_config",
+        calldata: [
+          hyperstructure_points_per_second,
+          points_for_hyperstructure_claim_against_bandits,
+          points_for_non_hyperstructure_claim_against_bandits,
+          points_for_tile_exploration,
+        ],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_victory_points_win_config",
+        calldata: [points_for_win],
+      },
+    ]);
+  }
+
+  public async set_game_mode_config(props: SystemProps.SetBlitzModeConfigProps) {
+    const { blitz_mode_on, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_game_mode_config",
+      calldata: [blitz_mode_on],
     });
   }
 
@@ -2324,15 +2399,9 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
-    const { initialize_shards_amount, construction_resources, points_per_second, points_for_win, signer } = props;
+    const { initialize_shards_amount, construction_resources, signer } = props;
 
-    const calldata = [
-      initialize_shards_amount,
-      construction_resources.length,
-      ...construction_resources,
-      points_per_second,
-      points_for_win,
-    ];
+    const calldata = [initialize_shards_amount, construction_resources.length, ...construction_resources];
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
@@ -2458,6 +2527,35 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
       calldata: [center, base_distance, subsequent_distance],
+    });
+  }
+
+  public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
+    const {
+      fee_token,
+      fee_recipient,
+      fee_amount,
+      registration_count_max,
+      registration_start_at,
+      registration_end_at,
+      creation_start_at,
+      creation_end_at,
+      signer,
+    } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_registration_config",
+      calldata: [
+        fee_token,
+        fee_recipient,
+        fee_amount,
+        0,
+        registration_count_max,
+        registration_start_at,
+        registration_end_at,
+        creation_start_at,
+        creation_end_at,
+      ],
     });
   }
 
