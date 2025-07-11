@@ -2,11 +2,11 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { IS_BLITZ } from "@/ui/constants";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
 import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
+import { configManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
@@ -149,6 +149,8 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
     return <SeasonPassButton setSettleRealm={setSettleRealm} />;
   }, [setSettleRealm]);
 
+  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
+
   return (
     <>
       {settleRealm ? (
@@ -159,8 +161,8 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
         </OnboardingContainer>
       ) : (
         <OnboardingContainer backgroundImage={backgroundImage}>
-          <StepContainer bottomChildren={IS_BLITZ ? undefined : bottomChildren}>
-            {IS_BLITZ ? <BlitzOnboarding /> : <StepOne />}
+          <StepContainer bottomChildren={isBlitz ? undefined : bottomChildren}>
+            {isBlitz ? <BlitzOnboarding /> : <StepOne />}
           </StepContainer>
         </OnboardingContainer>
       )}

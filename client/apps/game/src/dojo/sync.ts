@@ -2,7 +2,6 @@ import type { AppStore } from "@/hooks/store/use-ui-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
-import { IS_BLITZ } from "@/ui/constants";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -172,7 +171,7 @@ export const initialSync = async (
   let end;
 
   // BANKS
-  !IS_BLITZ && (await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any));
+  await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] bank structures query", end - start);
   setInitialSyncProgress(10);
@@ -206,7 +205,7 @@ export const initialSync = async (
   setInitialSyncProgress(90);
 
   start = performance.now();
-  !IS_BLITZ && (await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any));
+  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] guilds query", end - start);
   setInitialSyncProgress(100);

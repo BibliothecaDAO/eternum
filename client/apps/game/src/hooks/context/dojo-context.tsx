@@ -2,13 +2,13 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { IS_BLITZ } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
+import { configManager } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -114,6 +114,8 @@ const DojoContextProvider = ({
   const accountName = useAccountStore((state) => state.accountName);
   const setAccountName = useAccountStore((state) => state.setAccountName);
 
+  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
+
   useEffect(() => {
     const getUsername = async () => {
       let username = await (connector as unknown as ControllerConnector)?.username();
@@ -207,7 +209,7 @@ const DojoContextProvider = ({
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
 
-                  {!IS_BLITZ && (
+                  {!isBlitz && (
                     <a
                       className="cursor-pointer mt-auto w-full"
                       href={mintUrl}

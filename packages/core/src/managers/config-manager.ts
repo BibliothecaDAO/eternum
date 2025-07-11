@@ -766,12 +766,13 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-        const blitzSettlementConfig = config?.blitz_settlement_config;
-        const blitzRegistrationConfig = config?.blitz_registration_config;
+        if (!config) return;
 
-        if (!blitzSettlementConfig || !blitzRegistrationConfig) return;
+        const blitzSettlementConfig = config.blitz_settlement_config;
+        const blitzRegistrationConfig = config.blitz_registration_config;
 
         return {
+          blitz_mode_on: config?.blitz_mode_on ?? false,
           blitz_settlement_config: {
             base_distance: Number(blitzSettlementConfig.base_distance),
             side: Number(blitzSettlementConfig.side),
@@ -793,6 +794,7 @@ export class ClientConfigManager {
         };
       },
       {
+        blitz_mode_on: false,
         blitz_settlement_config: {
           base_distance: 0,
           side: 0,
@@ -818,11 +820,6 @@ export class ClientConfigManager {
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
-        // const hyperstructureConfig = getComponentValue(
-        //   this.components.WorldConfig,
-        //   getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        // )?.hyperstructure_config;
-
         const victoryPointsGrantConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
