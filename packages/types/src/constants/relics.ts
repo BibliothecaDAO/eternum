@@ -42,7 +42,7 @@ export const RELICS: RelicInfo[] = [
     activation: "Army",
     level: 1,
     craftable: false,
-    effect: "Increases damage by 20%",
+    effect: "Increases damage by 30%",
     duration: "3 Eternum Days",
   },
   {
@@ -64,7 +64,7 @@ export const RELICS: RelicInfo[] = [
     activation: "Army",
     level: 1,
     craftable: false,
-    effect: "Reduces damage taken by 20%",
+    effect: "Reduces damage taken by 30%",
     duration: "3 Eternum Days",
   },
   {

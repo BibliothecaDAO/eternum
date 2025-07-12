@@ -3,7 +3,7 @@
       "message": "This file was generated from the .ts file and should not be edited manually",
       "configuration": {
   "agent": {
-    "controller_address": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
+    "controller_address": "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
     "max_lifetime_count": 10000,
     "max_current_count": 1000,
     "min_spawn_lords_amount": 10,
@@ -11,7 +11,7 @@
   },
   "village": {
     "village_pass_nft_address": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
-    "village_mint_initial_recipient": "0x054f2b25070d70d49f1c1f7c10Ef2639889fDAc15894D3FBa1a03caF5603eCA3"
+    "village_mint_initial_recipient": "0x03f7f4e5a23a712787f0c100f02934c4a88606b7f0c880c2fd43e817e6275d83"
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -524,7 +524,8 @@
       ],
       "35": [],
       "36": [],
-      "37": []
+      "37": [],
+      "38": []
     },
     "productionByComplexRecipeOutputs": {
       "1": 30,
@@ -563,7 +564,8 @@
       "34": 0.05,
       "35": 50,
       "36": 50,
-      "37": 0
+      "37": 0,
+      "38": 5
     },
     "productionBySimpleRecipe": {
       "1": [
@@ -839,7 +841,8 @@
       "34": [],
       "35": [],
       "36": [],
-      "37": []
+      "37": [],
+      "38": []
     },
     "productionBySimpleRecipeOutputs": {
       "1": 30,
@@ -878,7 +881,8 @@
       "34": 0.05,
       "35": 50,
       "36": 50,
-      "37": 0
+      "37": 0,
+      "38": 5
     },
     "laborOutputPerResource": {
       "1": 1,
@@ -917,7 +921,8 @@
       "34": 0,
       "35": 0,
       "36": 0,
-      "37": 0
+      "37": 0,
+      "38": 0
     },
     "resourceWeightsGrams": {
       "1": 1000,
@@ -956,7 +961,8 @@
       "34": 5000,
       "35": 100,
       "36": 100,
-      "37": 0
+      "37": 0,
+      "38": 100
     },
     "resourceRarity": {
       "1": 1.27,
@@ -1035,22 +1041,27 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 199,
+    "shardsMinesFailProbability": 9,
     "shardsMinesWinProbability": 1,
-    "agentFindProbability": 5,
-    "agentFindFailProbability": 95,
-    "hyperstructureWinProbAtCenter": 2000,
-    "hyperstructureFailProbAtCenter": 98000,
+    "agentFindProbability": 3000,
+    "agentFindFailProbability": 10000,
+    "villageFindProbability": 1,
+    "villageFindFailProbability": 8,
+    "hyperstructureWinProbAtCenter": 0,
+    "hyperstructureFailProbAtCenter": 1,
     "hyperstructureFailProbIncreasePerHexDistance": 9820,
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
-    "questFindProbability": 1,
-    "questFindFailProbability": 10
+    "questFindProbability": 1000,
+    "questFindFailProbability": 10000,
+    "relicDiscoveryIntervalSeconds": 180,
+    "relicHexDistanceFromCenter": 3,
+    "relicChestRelicsPerChest": 3
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
-    "armiesTickIntervalInSeconds": 120
+    "armiesTickIntervalInSeconds": 300
   },
   "carryCapacityGram": {
     "0": 0,
@@ -1064,11 +1075,11 @@
     "8": 500000000
   },
   "speed": {
-    "donkey": 9,
+    "donkey": 0,
     "army": 1
   },
   "battle": {
-    "graceTickCount": 40,
+    "graceTickCount": 0,
     "graceTickCountHyp": 0,
     "delaySeconds": 0
   },
@@ -1088,7 +1099,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 10,
+      "staminaBonusValue": 0,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -1096,24 +1107,24 @@
       "staminaAttackMax": 60,
       "staminaExploreWheatCost": 6,
       "staminaExploreFishCost": 6,
-      "staminaExploreStaminaCost": 30,
+      "staminaExploreStaminaCost": 0,
       "staminaTravelWheatCost": 3,
       "staminaTravelFishCost": 3,
-      "staminaTravelStaminaCost": 20
+      "staminaTravelStaminaCost": 0
     },
     "limit": {
       "explorerMaxPartyCount": 10,
       "explorerAndGuardMaxTroopCount": 100000,
       "guardResurrectionDelay": 43200,
       "mercenariesTroopLowerBound": 100,
-      "mercenariesTroopUpperBound": 1500,
+      "mercenariesTroopUpperBound": 200,
       "agentTroopLowerBound": 500,
       "agentTroopUpperBound": 15000
     }
   },
   "settlement": {
     "center": 2147483646,
-    "base_distance": 30,
+    "base_distance": 8,
     "subsequent_distance": 10
   },
   "buildings": {
@@ -1196,7 +1207,7 @@
       "34": 3,
       "35": 3,
       "36": 3,
-      "37": 1,
+      "37": 0,
       "38": 1
     },
     "buildingResourceProduced": {
@@ -1675,7 +1686,7 @@
       "37": [
         {
           "resource": 36,
-          "amount": 500000
+          "amount": 1
         }
       ],
       "38": [
@@ -1881,156 +1892,161 @@
   "hyperstructures": {
     "hyperstructureInitializationShardsCost": {
       "resource": 24,
-      "amount": 20000000
+      "amount": 500
     },
     "hyperstructureConstructionCost": [
       {
         "resource_type": 3,
         "resource_completion_points": 21732000000,
-        "min_amount": 250000000,
-        "max_amount": 400000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 1,
         "resource_completion_points": 21732000000,
-        "min_amount": 250000000,
-        "max_amount": 400000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 2,
         "resource_completion_points": 21732000000,
-        "min_amount": 250000000,
-        "max_amount": 400000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 4,
         "resource_completion_points": 21732000000,
-        "min_amount": 175000000,
-        "max_amount": 250000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 6,
         "resource_completion_points": 21732000000,
-        "min_amount": 175000000,
-        "max_amount": 250000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 8,
         "resource_completion_points": 21732000000,
-        "min_amount": 175000000,
-        "max_amount": 250000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 5,
         "resource_completion_points": 21732000000,
-        "min_amount": 75000000,
-        "max_amount": 125000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 11,
         "resource_completion_points": 21732000000,
-        "min_amount": 75000000,
-        "max_amount": 125000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 7,
         "resource_completion_points": 21732000000,
-        "min_amount": 75000000,
-        "max_amount": 125000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 15,
         "resource_completion_points": 21732000000,
-        "min_amount": 45000000,
-        "max_amount": 60000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 14,
         "resource_completion_points": 21732000000,
-        "min_amount": 45000000,
-        "max_amount": 60000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 20,
         "resource_completion_points": 21732000000,
-        "min_amount": 45000000,
-        "max_amount": 60000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 13,
         "resource_completion_points": 21732000000,
-        "min_amount": 45000000,
-        "max_amount": 60000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 12,
         "resource_completion_points": 21732000000,
-        "min_amount": 35000000,
-        "max_amount": 45000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 16,
         "resource_completion_points": 21732000000,
-        "min_amount": 35000000,
-        "max_amount": 45000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 21,
         "resource_completion_points": 21732000000,
-        "min_amount": 35000000,
-        "max_amount": 45000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 18,
         "resource_completion_points": 21732000000,
-        "min_amount": 30000000,
-        "max_amount": 35000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 17,
         "resource_completion_points": 21732000000,
-        "min_amount": 30000000,
-        "max_amount": 35000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 10,
         "resource_completion_points": 21732000000,
-        "min_amount": 30000000,
-        "max_amount": 35000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 19,
         "resource_completion_points": 21732000000,
-        "min_amount": 25000000,
-        "max_amount": 30000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 9,
         "resource_completion_points": 21732000000,
-        "min_amount": 25000000,
-        "max_amount": 30000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 22,
         "resource_completion_points": 21732000000,
-        "min_amount": 25000000,
-        "max_amount": 30000000
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_type": 23,
         "resource_completion_points": 21732000000,
-        "min_amount": 50000000,
-        "max_amount": 50000000
+        "min_amount": 120000,
+        "max_amount": 120000
       }
-    ],
-    "hyperstructurePointsPerCycle": 7000000,
-    "hyperstructurePointsForWin": "9620000000000"
+    ]
+  },
+  "victoryPoints": {
+    "pointsForWin": "0",
+    "hyperstructurePointsPerCycle": "1000000",
+    "pointsForHyperstructureClaimAgainstBandits": "500000000",
+    "pointsForNonHyperstructureClaimAgainstBandits": "200000000",
+    "pointsForTileExploration": "5000000"
   },
   "season": {
-    "startSettlingAfterSeconds": 1800,
-    "startMainAfterSeconds": 3600,
-    "bridgeCloseAfterEndSeconds": 3600,
-    "pointRegistrationCloseAfterEndSeconds": 3600
+    "startSettlingAfterSeconds": 59,
+    "startMainAfterSeconds": 60,
+    "bridgeCloseAfterEndSeconds": 604800,
+    "pointRegistrationCloseAfterEndSeconds": 604800
   },
   "bridge": {
     "velords_fee_on_dpt_percent": 250,
@@ -2045,7 +2061,7 @@
     "realm_fee_wtdr_percent": 500
   },
   "vrf": {
-    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
+    "vrfProviderAddress": "0x0"
   },
   "wonderProductionBonus": {
     "within_tile_distance": 12,
@@ -2079,6 +2095,22 @@
     {
       "resource": 32,
       "amount": 5000
+    },
+    {
+      "resource": 38,
+      "amount": 1000
+    },
+    {
+      "resource": 43,
+      "amount": 1000
+    },
+    {
+      "resource": 39,
+      "amount": 1000
+    },
+    {
+      "resource": 40,
+      "amount": 1000
     }
   ],
   "villageStartingResources": [
@@ -2109,106 +2141,112 @@
     {
       "resource": 32,
       "amount": 1000
+    },
+    {
+      "resource": 38,
+      "amount": 1000
+    },
+    {
+      "resource": 43,
+      "amount": 1000
+    },
+    {
+      "resource": 39,
+      "amount": 1000
+    },
+    {
+      "resource": 40,
+      "amount": 1000
+    }
+  ],
+  "discoverableVillageStartingResources": [
+    {
+      "resource": 35,
+      "min_amount": 300,
+      "max_amount": 600
+    },
+    {
+      "resource": 23,
+      "min_amount": 400,
+      "max_amount": 800
+    },
+    {
+      "resource": 25,
+      "min_amount": 20,
+      "max_amount": 50
+    },
+    {
+      "resource": 26,
+      "min_amount": 100,
+      "max_amount": 150
     }
   ],
   "realmUpgradeCosts": {
     "0": [],
     "1": [
       {
-        "resource": 23,
-        "amount": 100000
-      },
-      {
         "resource": 35,
-        "amount": 1500000
+        "amount": 1
       },
       {
         "resource": 36,
-        "amount": 1500000
-      },
-      {
-        "resource": 3,
-        "amount": 150000
-      },
-      {
-        "resource": 1,
-        "amount": 150000
-      },
-      {
-        "resource": 2,
-        "amount": 150000
+        "amount": 1
       }
     ],
     "2": [
       {
-        "resource": 23,
-        "amount": 500000
-      },
-      {
-        "resource": 35,
-        "amount": 3000000
-      },
-      {
-        "resource": 36,
-        "amount": 3000000
-      },
-      {
-        "resource": 4,
-        "amount": 500000
-      },
-      {
-        "resource": 6,
-        "amount": 500000
-      },
-      {
-        "resource": 8,
-        "amount": 500000
+        "resource": 11,
+        "amount": 1
       },
       {
         "resource": 15,
-        "amount": 250000
+        "amount": 1
+      },
+      {
+        "resource": 14,
+        "amount": 1
+      },
+      {
+        "resource": 20,
+        "amount": 1
+      },
+      {
+        "resource": 12,
+        "amount": 1
+      },
+      {
+        "resource": 35,
+        "amount": 1
+      },
+      {
+        "resource": 36,
+        "amount": 1
       }
     ],
     "3": [
       {
-        "resource": 23,
-        "amount": 1000000
+        "resource": 10,
+        "amount": 1
+      },
+      {
+        "resource": 19,
+        "amount": 1
+      },
+      {
+        "resource": 9,
+        "amount": 1
+      },
+      {
+        "resource": 22,
+        "amount": 1
       },
       {
         "resource": 35,
-        "amount": 6000000
+        "amount": 1
       },
       {
         "resource": 36,
-        "amount": 6000000
-      },
-      {
-        "resource": 15,
-        "amount": 750000
-      },
-      {
-        "resource": 14,
-        "amount": 500000
-      },
-      {
-        "resource": 20,
-        "amount": 500000
-      },
-      {
-        "resource": 13,
-        "amount": 500000
-      },
-      {
-        "resource": 18,
-        "amount": 100000
-      },
-      {
-        "resource": 17,
-        "amount": 100000
-      },
-      {
-        "resource": 10,
-        "amount": 100000
+        "amount": 1
       }
     ]
   },
@@ -2216,26 +2254,26 @@
   "villageMaxLevel": 2,
   "questGames": [
     {
-      "address": "0x2418e02ae43901d8aa8ab5c4b676740dccdcf1c94f13344a978ebe6077b109",
+      "address": "0x01e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
       "levels": [
-        {
-          "target_score": 26,
-          "settings_id": 1,
-          "time_limit": 86400
-        },
-        {
-          "target_score": 26,
-          "settings_id": 2,
-          "time_limit": 86400
-        },
         {
           "target_score": 26,
           "settings_id": 3,
           "time_limit": 86400
         },
         {
-          "target_score": 51,
+          "target_score": 26,
+          "settings_id": 6,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 26,
           "settings_id": 4,
+          "time_limit": 86400
+        },
+        {
+          "target_score": 51,
+          "settings_id": 1,
           "time_limit": 86400
         },
         {
@@ -2247,143 +2285,182 @@
       "overwrite": true
     }
   ],
+  "blitz": {
+    "mode": {
+      "on": true
+    },
+    "registration": {
+      "fee_token": "0x0",
+      "fee_recipient": "0x0",
+      "fee_amount": 0,
+      "registration_count_max": 5000,
+      "registration_delay_seconds": 10,
+      "registration_period_seconds": 600,
+      "creation_period_seconds": 600
+    }
+  },
   "setup": {
-    "chain": "sepolia",
+    "chain": "local",
     "addresses": {
       "seasonPass": "0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",
       "realms": "0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0",
-      "lords": "0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a",
+      "lords": "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
       "villagePass": "0x7ce83857ef878e3ccedb48c982c78c6978c5d50483904d07f38834546548aa4",
       "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
+      "lootChests": "",
       "resources": {
         "STONE": [
           1,
-          "0x58f1eee9b29ffe06f5cc6295552fda6045e7a73995c6bc8213582239ed03683"
+          "0x27dbfe27fc79ed10bc7e8c0889dd01d2b5e9d1c4e471a32d447b156f0a6fea1"
         ],
         "COAL": [
           2,
-          "0x2a900f7fef3d87ee05f12859970ba5c4f07182c6b9cac98128403cd1a790db2"
+          "0x68540b2989cb86c9f73f2615c41a53818598a4ee29731403dad2fcd3974e005"
         ],
         "WOOD": [
           3,
-          "0x2d41d37c22ea21ad4b4fb04e8863767849b1b7d0e85e4afaab992857f066cb1"
+          "0x4a4c05882e134e9887d242559a0dad369bd66cf6d0dca1e281aa5e1f2237da7"
         ],
         "COPPER": [
           4,
-          "0x541a9685856e3c51331db9280ef0b12ccd51c82f78903f8ae9a37c2f96697e2"
+          "0x7145a651518ba8d3fba6fd32f26ffc7fed82c4adc132e2fdb870eedf3bb7388"
         ],
         "IRONWOOD": [
           5,
-          "0x5b26d40d69d59b407becb398df50bdcb94c7f7977e02fd339c43881c641dd88"
+          "0x135fcb4f92d3de5db0e3066423b4cf0ba8ca34d0396b16bbfb900c6f44f4aa1"
         ],
         "OBSIDIAN": [
           6,
-          "0x29b9924c41d82a22ab7e269cb08b15873e92361ed6e72fb575ce33686596b04"
+          "0xe859b7b07540f28180e82db0719504d20fc8992dfe60018376f4c2e2bf23e"
         ],
         "GOLD": [
           7,
-          "0x3faf5f97e708f6e4a15fd814743d16eb65cac9b9c100fbc1d62cce07bac6dcf"
+          "0x200f431ab1de40a831c8f34f49f5639784f209516dfac2de194a313752f0577"
         ],
         "SILVER": [
           8,
-          "0x774398954c50238386e78f815747e1cace4445784b374f6ec69f164b7b8f186"
+          "0x6ffefcf8fd3be79579527ff98a383fce055433bd5c3bf0c58b90b492720e9a2"
         ],
         "MITHRAL": [
           9,
-          "0x165114f291c3fd4f7c40266503db85f8648eaeb2f3e7e89f295ddbce8a1da1b"
+          "0x30128c654d9e45e7f0778fd8db8901a9f0730e0f1c801443d3a5dd9dd3d1fe"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x3e899aa5fb724ddd54e782bb305df8e141f31c840788a577f28782f327fb8b4"
+          "0x5da7db4f14c4383b4ff8fe987373b30f354c2691f1f7981520fef901744803"
         ],
         "COLDIRON": [
           11,
-          "0x461e223423d5309075bda1f0c24c30e5a1fcc964538c7f94796bd551248066e"
+          "0x6d230da2e30fec6316d00d667af5e5e1f57e75fe88a648e77fd726867a3ba4e"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x5a9d7ec4fe6633c159cbc671bd4e2bb6fc99a944aa1fd405592715d546e9a37"
+          "0x3f8036b429ca0e87ad49b753e842f9a6d5cd9b4d9ae2bcac39f31fd09442142"
         ],
         "RUBY": [
           13,
-          "0x24734ba704f3c00996022b1a09fbf21b404443a78fe64f4045226985b985d37"
+          "0x1f9134e263e2eeaea0d3ec61463f7cfab93f801357ebc22cf549471e006cad4"
         ],
         "DIAMONDS": [
           14,
-          "0x1fee506ec438d76128f76c8a1010a6eb75d43b3b473891b13243afd52f1a76b"
+          "0x3c30c6fac6d13c81df192e96e0106f3d96bb6124b1633de16a8e9f1d3007b04"
         ],
         "HARTWOOD": [
           15,
-          "0x252997b750d62550b18c8cfcf750605c5213f55597e99c168f92fb09e5a109a"
+          "0x6871164e7c3c0388b433c4327804f8c0f49a89e550ee7cb05c365a8ead425b8"
         ],
         "IGNIUM": [
           16,
-          "0x505f8dbaa407362bddaf85cf327cce1427a5cde81dfcd41f096a441ecaca9f9"
+          "0x5dded871841041de02f49959847e28b697b5c8a7694b76bf536794f4c579096"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x4da024a8d30aadfb4c953cd4b43e4768be172d0f19fbe4d2098c1e03d517fe1"
+          "0x1b2b5e5ce9e683febd51eac131d19f41d05febdd1ef965df3ec29bcd7b06af4"
         ],
         "TRUEICE": [
           18,
-          "0x79abcf7394e7d63d15e09fa3699b0eca14bafd08cf5f395b611824df02e679c"
+          "0x451392b77ee0f2acd1fdd6e9e9b3fda683c2b98e25dcae9d83cb4db4590dc11"
         ],
         "ADAMANTINE": [
           19,
-          "0x3edc7bac94d6b96c12ca215c81f0905cf42c54c2e4b1826af150503c1590352"
+          "0x66b3ee1b6654250c92c21c1778be501b4916e3565cdf5f0fcd447a23f4a3e53"
         ],
         "SAPPHIRE": [
           20,
-          "0x37401458d719f21ee15b51fac1978eb8c42d5e90d39364cd505a40142934e17"
+          "0x2da88199cc10602127f0da07bd7efd9be07cd5227afe73cc193e78db5848635"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x55a2577ec9a7a33980d74f0f766aac958969571bf06f54c6b2497c902cecb9"
+          "0x46493bae2179fed9cdfb0164d5de0420c2a71a763c0acc21888daa8f0fc4894"
         ],
         "DRAGONHIDE": [
           22,
-          "0xf28382e9ba3f34fec2d5988912da5fb0bb92e971bebb14a8af313e2c4c8119"
+          "0x6828ed3e046a2915f3c933e6cef06a01aa01d1c12dcbdb71b2c21924d6332d3"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x2b1b2630b4edd2d9295e1ed75a5ea289548fa309366c12a6b0997ac7cf0b0e1"
+          "0x12ae4d3be23585efc6ed8bff7db6113c85e5bc1bffe85bc07a0156a27e6f473"
         ],
         "DONKEY": [
           25,
-          "0x6a3df549988d241124e45830365976e42358091b523ddc944378825c45af417"
+          "0x71751ee8b7e4a6bc93aa47fe6b993549142f316c85dd522fd2300c9b958aa23"
         ],
         "KNIGHT": [
           26,
-          "0x5d42a21877794f3bb5f3b21cd80ae1d8d598f3394a13d446a6fbe9712ab5c12"
+          "0x96e1f074f7eb66076ee2d4daa26974d8d4e9fcbe667eafa0b74a393852750f"
+        ],
+        "KNIGHT2": [
+          27,
+          "0x437422f8b15719c0141568220801c0bc6b68115feb5ecd559f8ca329d9c2380"
+        ],
+        "KNIGHT3": [
+          28,
+          "0xaef5d836a0d0b63b0ac2e6c422594834d66604c76cb82136f4de2132badd7f"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x284840fc0a10595ffac44e0ce2db38b9b9af8133b2b8f23969ccc27045b39eb"
+          "0x1b79851c36e6246dc4a8a8ecbc23c5cac899d3c1ef95edea8b9f4344ace4fec"
+        ],
+        "CROSSBOWMAN2": [
+          30,
+          "0x27661f2a7a9733f710c920d926ab9770e7674e7ed5eaf772c9efefb9bcdcd1d"
+        ],
+        "CROSSBOWMAN3": [
+          31,
+          "0xd55e3884e04c68c5423a1088b926034f2c105a5570590526a4a4eaba6ea6aa"
         ],
         "PALADIN": [
           32,
-          "0x5002b64e2415bbf5ca5e1e23f40744958827698d5c54242168c9046b214d3e5"
+          "0x3f3a408dab52b6ec375c3a63eedcdb5b8ac7b693515a541992feee49bc1516"
+        ],
+        "PALADIN2": [
+          33,
+          "0x110831540430a5cca6a4907832161bb4b932a2ca4393fa2cbba66e82c6c77b2"
+        ],
+        "PALADIN3": [
+          34,
+          "0x66f0e6a75c52f6aa4bcf3fc1a05867fc86a2f270487ae6549b6f3c926700ff2"
         ],
         "WHEAT": [
           35,
-          "0x762a27f3098a230b3bd7f2ce482ac0192e972550955dc938a96cfd5503aa724"
+          "0x1baba18714aba42870dc249e53a5f707157142928c7d249e02be62f942aa2"
         ],
         "FISH": [
           36,
-          "0x3a0fc99f71068e9bac390d9a3743fedca8e242074c24d7b932698234aa10bea"
+          "0x4fe5ab57b2f85dae411e63523102701912cbb95c63935d80f7e1eb188624077"
         ],
         "LORDS": [
           37,
-          "0x7468d428a5559fe2f0e40b1c9d032881267e13c1b43cc75e26abdab485c000a"
+          "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c"
         ]
       }
     },
     "manifest": {
       "world": {
         "class_hash": "0x75fc75bcd1a7f8b4bf64b74978b0f89c8cee44bb755c1dae6f82284756451ec",
-        "address": "0x198cbb29ed691e3e143da013736cb32d2eb35835414e0c5ba758f44265d7a52",
-        "seed": "eternum-sepolia.454545456",
-        "name": "Eternum Sepolia",
+        "address": "0x6a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561",
+        "seed": "s1_eternum",
+        "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
           "set_metadata",
@@ -3692,8 +3769,8 @@
       },
       "contracts": [
         {
-          "address": "0x56862c119cca2c85d93c37582032a26eac4ebddedaefd1bfee943fe521f2a71",
-          "class_hash": "0x51a22d180dc6517216ce112c965fe2c01f6cbbc8cacfc72630ced3e66c627fe",
+          "address": "0x11047593c6b5bdcfa0a902a8dc825781ced80d8256b0dcd344166c7ff30df65",
+          "class_hash": "0x35774c6e5eb20dcb009298f0a61c9e37ee70880e12fdbaffa4c402386b94c23",
           "abi": [
             {
               "type": "impl",
@@ -3833,6 +3910,14 @@
                   "type": "core::integer::u16"
                 },
                 {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
                   "name": "hyps_win_prob",
                   "type": "core::integer::u32"
                 },
@@ -3849,12 +3934,16 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
                 }
               ]
             },
@@ -3977,6 +4066,10 @@
                 {
                   "name": "Quest",
                   "type": "()"
+                },
+                {
+                  "name": "Village",
+                  "type": "()"
                 }
               ]
             },
@@ -4015,6 +4108,10 @@
                     {
                       "name": "current_tick",
                       "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "season_mode_on",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [
@@ -4149,8 +4246,8 @@
           ]
         },
         {
-          "address": "0x1a886fdf22e5da5335384677e6c45fa8d4f0cc045542b7ab27f5a26afb87ebb",
-          "class_hash": "0x469a2b7f3d3b560bb7604aecf3a540d7eeeff90e5685a2926dfc66aa36edc19",
+          "address": "0x4d79322f6f73941166e9cd6c171452dec0fc7c9fed673a2e63047d079748e04",
+          "class_hash": "0x62532d8c031fafb8895e64852c901b6b4c1400880ac4f1d413fd8f4d31c514b",
           "abi": [
             {
               "type": "impl",
@@ -4401,8 +4498,220 @@
           ]
         },
         {
-          "address": "0x28bb47b2735753c57e6dc0e8ef3994f189643ce104290b28d7b9297c2cee2e0",
-          "class_hash": "0x4eef4f1315ea47ed4c163dee60e75d4906d5642f78cbd299d43078b288ae97",
+          "address": "0x4ccd6a7758f67741520c40840ca9ce99b5d7bcb8d6fa756d0a26a909f9ecc4b",
+          "class_hash": "0x3211a7f89a1ea29bc559f4233a8192f1c44bc91047ec61568c1914f8e5d7d44",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "blitz_realm_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "blitz_realm_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "BlitzRealmSystemsImpl",
+              "interface_name": "s1_eternum::systems::realm::blitz::contracts::IBlitzRealmSystems"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::realm::blitz::contracts::IBlitzRealmSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "register",
+                  "inputs": [
+                    {
+                      "name": "owner",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "create",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::array::Array::<core::integer::u32>"
+                    }
+                  ],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::realm::blitz::contracts::blitz_realm_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-blitz_realm_systems",
+          "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
+          "systems": [
+            "register",
+            "create",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x4871b9361bbb30f7f6720f1054445914b9fedf8a19b557b13047be51112451c",
+          "class_hash": "0x1d57d06789f4338c1ffbf0f4240795d3472cc5bf78bef0a9f27b64c81e57ff0",
           "abi": [
             {
               "type": "impl",
@@ -4747,6 +5056,14 @@
                   "type": "core::integer::u16"
                 },
                 {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
                   "name": "hyps_win_prob",
                   "type": "core::integer::u32"
                 },
@@ -4763,12 +5080,16 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
                 }
               ]
             },
@@ -5078,14 +5399,6 @@
                     {
                       "name": "construction_resources",
                       "type": "core::array::Span::<s1_eternum::models::config::HyperstructureConstructConfig>"
-                    },
-                    {
-                      "name": "points_per_second",
-                      "type": "core::integer::u128"
-                    },
-                    {
-                      "name": "points_for_win",
-                      "type": "core::integer::u128"
                     }
                   ],
                   "outputs": [],
@@ -5465,6 +5778,10 @@
                 {
                   "name": "ResourceFish",
                   "type": "()"
+                },
+                {
+                  "name": "ResourceEssence",
+                  "type": "()"
                 }
               ]
             },
@@ -5702,6 +6019,20 @@
               "interface_name": "s1_eternum::systems::config::contracts::ISettlementConfig"
             },
             {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
               "type": "interface",
               "name": "s1_eternum::systems::config::contracts::ISettlementConfig",
               "items": [
@@ -5719,6 +6050,46 @@
                     },
                     {
                       "name": "subsequent_distance",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "set_blitz_registration_config",
+                  "inputs": [
+                    {
+                      "name": "fee_token",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "fee_recipient",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "fee_amount",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "registration_count_max",
+                      "type": "core::integer::u16"
+                    },
+                    {
+                      "name": "registration_start_at",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "registration_end_at",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "creation_start_at",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "creation_end_at",
                       "type": "core::integer::u32"
                     }
                   ],
@@ -5790,6 +6161,129 @@
                     {
                       "name": "quest_config",
                       "type": "s1_eternum::models::config::QuestConfig"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "IGameModeConfig",
+              "interface_name": "s1_eternum::systems::config::contracts::IGameModeConfig"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IGameModeConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_game_mode_config",
+                  "inputs": [
+                    {
+                      "name": "blitz_mode_on",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "IVillageFoundResourcesConfig",
+              "interface_name": "s1_eternum::systems::config::contracts::IVillageFoundResourcesConfig"
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<(core::integer::u8, core::integer::u128, core::integer::u128)>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<(core::integer::u8, core::integer::u128, core::integer::u128)>"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IVillageFoundResourcesConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_village_found_resources_config",
+                  "inputs": [
+                    {
+                      "name": "village_found_resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "IVictoryPointsConfig",
+              "interface_name": "s1_eternum::systems::config::contracts::IVictoryPointsConfig"
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::VictoryPointsGrantConfig",
+              "members": [
+                {
+                  "name": "hyp_points_per_second",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "claim_hyperstructure_points",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "claim_otherstructure_points",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "explore_tiles_points",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::VictoryPointsWinConfig",
+              "members": [
+                {
+                  "name": "points_for_win",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IVictoryPointsConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_victory_points_grant_config",
+                  "inputs": [
+                    {
+                      "name": "victory_points_grant_config",
+                      "type": "s1_eternum::models::config::VictoryPointsGrantConfig"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "set_victory_points_win_config",
+                  "inputs": [
+                    {
+                      "name": "victory_points_win_config",
+                      "type": "s1_eternum::models::config::VictoryPointsWinConfig"
                     }
                   ],
                   "outputs": [],
@@ -5935,14 +6429,19 @@
             "set_structure_max_level_config",
             "set_structure_level_config",
             "set_settlement_config",
+            "set_blitz_registration_config",
             "set_trade_config",
             "set_quest_config",
+            "set_game_mode_config",
+            "set_village_found_resources_config",
+            "set_victory_points_grant_config",
+            "set_victory_points_win_config",
             "upgrade"
           ]
         },
         {
-          "address": "0x138b3587f503f1fdc0c01d953ba41679b53caa00b4ee4c61031c3f14963141f",
-          "class_hash": "0x54931f80b16f4fa9cfb3340ff651d90df4f6f26737647768b63112a238f758d",
+          "address": "0x120128528e6c2faf16fab63532c3ef9f90a96edb60e388fde76fd233a87c5c",
+          "class_hash": "0x4be919ea02c8459e76a48ce9335fd77537eed0753399e2a006dd1d3498bf885",
           "abi": [
             {
               "type": "impl",
@@ -6155,7 +6654,7 @@
           ]
         },
         {
-          "address": "0x27e715065f6881d5ba828a7cce367316f3dd408e8e901becb21d43bead791da",
+          "address": "0x5e85b7a538646cb683f239f526491c2b4654479fdfb7734bfffd641957ae71a",
           "class_hash": "0x65909389b21c1ee7d5cfdbe7c5167ef2f438d809a8d6b27f196918c18bf99b9",
           "abi": [
             {
@@ -7241,8 +7740,8 @@
           ]
         },
         {
-          "address": "0x3f8b30018777bcb26012ea281c01a17190fc356f7a253a33570593292d438b6",
-          "class_hash": "0x6f73e1f0430458bac92d32a17679d3b981337d96497cacee8380d4d2da5c982",
+          "address": "0x3467d8e30b08343395b387692e8e7d432f30e91bdb31b94659b3aa03c3bb888",
+          "class_hash": "0x12869a8d13539b4ba4f3ebdad47e341d4e729b0d09435067b37bdfb2c8cd0e8",
           "abi": [
             {
               "type": "impl",
@@ -7510,8 +8009,8 @@
           ]
         },
         {
-          "address": "0x73dfbb912ebbcd5634beebef86775c6ed66795e3bf6b68a035a8d3109aa6922",
-          "class_hash": "0x11a2c872fc18b1f4e60d2341649b337e570c6aa60d45b726c52d895b6c38bf4",
+          "address": "0x1aa15cff830c07b46940d82e9511ad781cf66e05f6293b104ae81f6f957260e",
+          "class_hash": "0x7bdcb223ad2f2c247180180eab6d20bdcdd4dd6c9a90a4edb047a03b3507a4b",
           "abi": [
             {
               "type": "impl",
@@ -7651,6 +8150,14 @@
                   "type": "core::integer::u16"
                 },
                 {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
                   "name": "hyps_win_prob",
                   "type": "core::integer::u32"
                 },
@@ -7667,12 +8174,16 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
                 }
               ]
             },
@@ -7795,6 +8306,10 @@
                 {
                   "name": "Quest",
                   "type": "()"
+                },
+                {
+                  "name": "Village",
+                  "type": "()"
                 }
               ]
             },
@@ -7833,6 +8348,10 @@
                     {
                       "name": "current_tick",
                       "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "season_mode_on",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [
@@ -7967,8 +8486,8 @@
           ]
         },
         {
-          "address": "0x485e03730694cf6583e3559852ed91f3e67674fbbcde8aa8c83eaa3e6ab4cb3",
-          "class_hash": "0x147eabaed02793e71cd7dc79da8bb6578e043abb38fd4e4790be813d10f06e",
+          "address": "0xf0c959a7b1ed73f1ab262e7925bfa453f7dca811defa90aabf78c69145b938",
+          "class_hash": "0x46de713774a271d412cdd334a4bd5a48bb9b8d6fb441f3cd752720e0d9a5256",
           "abi": [
             {
               "type": "impl",
@@ -8283,8 +8802,8 @@
           ]
         },
         {
-          "address": "0x1b73a0c58302f13cc4c5892a43ec6aad6dae2a8801e6414883e3bcedfebe25",
-          "class_hash": "0x4845e36db56e4c64ce89cc8450958c5b790490a99940a1cc3e3cd2b6769faf3",
+          "address": "0x74570d5abdd6d1e6c83909bf6b086916b1e5c67b228a2b0b736d7f26c532f3c",
+          "class_hash": "0x436ba75590279270bb85e499ecc2278f9a841189da78c3a2636492450e256f6",
           "abi": [
             {
               "type": "impl",
@@ -8524,8 +9043,8 @@
           ]
         },
         {
-          "address": "0x5c9e123546195734708f69d9a70abde8596bd3730d4a4c215fcb069b14d1aee",
-          "class_hash": "0x66b7e706ebad94c4b19f6b1fdae7bb281f631885698b3329c6682dcdfdc6965",
+          "address": "0x32bcca19640576a8305ecd44937aa0cf94f6cbaff559c8ef66c91ceaddd1411",
+          "class_hash": "0x3a2f57b34f392da40a8963d39ec2023a30ea4428ca7c7f1fb9d26454368e569",
           "abi": [
             {
               "type": "impl",
@@ -8665,6 +9184,14 @@
                   "type": "core::integer::u16"
                 },
                 {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
                   "name": "hyps_win_prob",
                   "type": "core::integer::u32"
                 },
@@ -8681,12 +9208,16 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
                 }
               ]
             },
@@ -8809,6 +9340,10 @@
                 {
                   "name": "Quest",
                   "type": "()"
+                },
+                {
+                  "name": "Village",
+                  "type": "()"
                 }
               ]
             },
@@ -8847,6 +9382,10 @@
                     {
                       "name": "current_tick",
                       "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "season_mode_on",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [
@@ -8981,8 +9520,8 @@
           ]
         },
         {
-          "address": "0x30b19b4a4f903f53780128d370b88f27431c336e692ee24a223e45d886967a6",
-          "class_hash": "0x7e3804b581e391f6fccc1a5e05cdb02b2c9a5e30528e334780999adce43168e",
+          "address": "0x18e3ebad583aed8282fbeb7b6ce84a66a6efcf5ec9523c1dd62b457a6e7c8b4",
+          "class_hash": "0x3e443518d310ddd19712bbf7bb556855a80691aea8b38e053cebc1c2222ae31",
           "abi": [
             {
               "type": "impl",
@@ -9181,8 +9720,8 @@
           ]
         },
         {
-          "address": "0x74e7dc42c736b070165fab30177209265d16b76a3c6cce1ba5f29b3e07492bd",
-          "class_hash": "0x63ee5e6d9d28a5d332670d543f4d5b5f786041bf2084b9a92e548ea3de4cd35",
+          "address": "0x47f8c1a27c9bc752b583caae6f4d4c45bf95ca4b0a24995ff0687d1a4f9844b",
+          "class_hash": "0xf138b89c6801d9856c80a8216e0a8915b295909749ad8776a6ca5cf377a157",
           "abi": [
             {
               "type": "impl",
@@ -9402,8 +9941,8 @@
           ]
         },
         {
-          "address": "0x52b69ec80294b5d0169d31dffa3ef43f76f902ffee5baccef5007d8990ee9f3",
-          "class_hash": "0x5f210fffcbc2743371bd11432d56428f9f10e97e44fd25897453e6c7fcc937b",
+          "address": "0x24205edd96111805f1326f299d19c350cbed395253f6389d9c7e04bde6414c5",
+          "class_hash": "0x3663f99cc12aafc7979119d7be1075a7418b2898f33df3816abe87711b86434",
           "abi": [
             {
               "type": "impl",
@@ -9658,6 +10197,10 @@
                 },
                 {
                   "name": "ResourceFish",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceEssence",
                   "type": "()"
                 }
               ]
@@ -9995,8 +10538,8 @@
           ]
         },
         {
-          "address": "0x237b1349ef60280414275e814dc463f240d467312809bc63aaa588be0402791",
-          "class_hash": "0xb39b58225e5d3405a00931c3f7d9c39aa71429713257718525bd5477c4fea5",
+          "address": "0x20e47b50caf71b73a73fc076b5687e999e227d246d3e4c47e1ff1c7a93d8c77",
+          "class_hash": "0x2c4862dbc7060c94de7ef56ddc2b0c6dd1080e00ba80803ae01376693d8ef78",
           "abi": [
             {
               "type": "impl",
@@ -10576,8 +11119,8 @@
           ]
         },
         {
-          "address": "0x1c83d00a25ead744886a577512bceddfddcdaa0a9e573ece2a74c6adfbb9aa6",
-          "class_hash": "0x539e0b16f91429f4f4062337b138df4d680486da8f87f3f88f101fcfadb81e3",
+          "address": "0x73efbfedaa2b70fa7c90eb260a75df269892147ee9ac5cf7e4abeee91193c49",
+          "class_hash": "0xda8cd8983a039ac69a6ff359be1f09b3552f9877fd53b36dd5bf4391a15c68",
           "abi": [
             {
               "type": "impl",
@@ -10632,7 +11175,7 @@
             {
               "type": "impl",
               "name": "RealmInternalSystemsImpl",
-              "interface_name": "s1_eternum::systems::realm::contracts::IRealmInternalSystems"
+              "interface_name": "s1_eternum::systems::realm::utils::contracts::IRealmInternalSystems"
             },
             {
               "type": "struct",
@@ -10649,8 +11192,22 @@
               ]
             },
             {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
               "type": "interface",
-              "name": "s1_eternum::systems::realm::contracts::IRealmInternalSystems",
+              "name": "s1_eternum::systems::realm::utils::contracts::IRealmInternalSystems",
               "items": [
                 {
                   "type": "function",
@@ -10679,6 +11236,10 @@
                     {
                       "name": "coord",
                       "type": "s1_eternum::models::position::Coord"
+                    },
+                    {
+                      "name": "season",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [
@@ -10789,7 +11350,7 @@
             },
             {
               "type": "event",
-              "name": "s1_eternum::systems::realm::contracts::realm_internal_systems::Event",
+              "name": "s1_eternum::systems::realm::utils::contracts::realm_internal_systems::Event",
               "kind": "enum",
               "variants": [
                 {
@@ -10814,8 +11375,8 @@
           ]
         },
         {
-          "address": "0xeba9dfa5a96d78799aadbb9a39dc42d78f00b42efaf20b204598983b1fc815",
-          "class_hash": "0x4ea45093b333892b70d46e97dc799cf5d3e33955afaa912f4acdf99158753a8",
+          "address": "0x5e0c97afdac4054e364aaea40e36272ed9b8e69a7704a22fcdb0583341527f5",
+          "class_hash": "0x733c4ebc209d5a4a0edfdfa96da123e74b9db7939d6ee58c1e9c5e2d83fb455",
           "abi": [
             {
               "type": "impl",
@@ -10870,11 +11431,11 @@
             {
               "type": "impl",
               "name": "RealmSystemsImpl",
-              "interface_name": "s1_eternum::systems::realm::contracts::IRealmSystems"
+              "interface_name": "s1_eternum::systems::realm::season::contracts::IRealmSystems"
             },
             {
               "type": "struct",
-              "name": "s1_eternum::systems::realm::contracts::RealmSettlement",
+              "name": "s1_eternum::systems::realm::season::contracts::RealmSettlement",
               "members": [
                 {
                   "name": "side",
@@ -10892,7 +11453,7 @@
             },
             {
               "type": "interface",
-              "name": "s1_eternum::systems::realm::contracts::IRealmSystems",
+              "name": "s1_eternum::systems::realm::season::contracts::IRealmSystems",
               "items": [
                 {
                   "type": "function",
@@ -10912,7 +11473,7 @@
                     },
                     {
                       "name": "settlement",
-                      "type": "s1_eternum::systems::realm::contracts::RealmSettlement"
+                      "type": "s1_eternum::systems::realm::season::contracts::RealmSettlement"
                     }
                   ],
                   "outputs": [
@@ -11023,7 +11584,7 @@
             },
             {
               "type": "event",
-              "name": "s1_eternum::systems::realm::contracts::realm_systems::Event",
+              "name": "s1_eternum::systems::realm::season::contracts::realm_systems::Event",
               "kind": "enum",
               "variants": [
                 {
@@ -11048,8 +11609,738 @@
           ]
         },
         {
-          "address": "0xa4c27342f3997c4125ea82fbc24451af142bfd144dfb07a5e432edc536f704",
-          "class_hash": "0x4f4be137c592c4ec9cf4031c748a8512c7feb9302b465ce9ec439f4ed64cdee",
+          "address": "0x6b85f96f4f2f22fc4202180deb192b11f78690c6225cf4ce208e41a43a346b9",
+          "class_hash": "0x21f21ac9aeb20d56fcc1b8426f925379ee710fb539155924e37f3797bc7f9a7",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "relic_chest_discovery_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "relic_chest_discovery_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "RelicChestDiscoveryImpl",
+              "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::MapConfig",
+              "members": [
+                {
+                  "name": "reward_resource_amount",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_fail_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_win_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_hex",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_fnd",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopLimitConfig",
+              "members": [
+                {
+                  "name": "explorer_max_party_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "explorer_guard_max_troop_count",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "guard_resurrection_delay",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_upper_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_upper_bound",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopStaminaConfig",
+              "members": [
+                {
+                  "name": "stamina_gain_per_tick",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_initial",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_bonus_value",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_knight_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_paladin_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_crossbowman_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_req",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_stamina_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_stamina_cost",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "Hyperstructure",
+                  "type": "()"
+                },
+                {
+                  "name": "Mine",
+                  "type": "()"
+                },
+                {
+                  "name": "Agent",
+                  "type": "()"
+                },
+                {
+                  "name": "Quest",
+                  "type": "()"
+                },
+                {
+                  "name": "Village",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "find_treasure",
+                  "inputs": [
+                    {
+                      "name": "vrf_seed",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "tile",
+                      "type": "s1_eternum::models::map::Tile"
+                    },
+                    {
+                      "name": "caller",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "map_config",
+                      "type": "s1_eternum::models::config::MapConfig"
+                    },
+                    {
+                      "name": "troop_limit_config",
+                      "type": "s1_eternum::models::config::TroopLimitConfig"
+                    },
+                    {
+                      "name": "troop_stamina_config",
+                      "type": "s1_eternum::models::config::TroopStaminaConfig"
+                    },
+                    {
+                      "name": "current_tick",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "season_mode_on",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::relic_chest_discovery_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-relic_chest_discovery_systems",
+          "selector": "0x6c7d7c49c05a128b5ef90b795f638288b11b478ce950a706f6c1db5356ef6a6",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x32a9a140c4b49ac898a196a01418c5780b25512af70cdd1fc1790f4d4ea1267",
+          "class_hash": "0x388517cccbcf10a4a752edf847e4d602c4faee9cae992fc94a568d3a86f0299",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "relic_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "relic_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "RelicSystemsImpl",
+              "interface_name": "s1_eternum::systems::relic::contracts::IRelicSystems"
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::position::Coord",
+              "members": [
+                {
+                  "name": "x",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "y",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam",
+              "variants": [
+                {
+                  "name": "Explorer",
+                  "type": "()"
+                },
+                {
+                  "name": "Structure",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::relic::contracts::IRelicSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "open_chest",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "chest_coord",
+                      "type": "s1_eternum::models::position::Coord"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "apply_relic",
+                  "inputs": [
+                    {
+                      "name": "entity_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "relic_resource_id",
+                      "type": "core::integer::u8"
+                    },
+                    {
+                      "name": "recipient_type",
+                      "type": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::relic::contracts::relic_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-relic_systems",
+          "selector": "0x632480e29dba9c95a8b4e4ba0c7ad48bd5abdd3906211ec6f8a5350249b9d0",
+          "systems": [
+            "open_chest",
+            "apply_relic",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x16dd5314820e0f36a33db0ee2b243cf8b46084178336092efff2be624cb8fe0",
+          "class_hash": "0x37e2cf2c60c953c49d8d54696d548e8f4b5ba5b64ee7f4cd048e5efc2e9e85c",
           "abi": [
             {
               "type": "impl",
@@ -11336,8 +12627,8 @@
           ]
         },
         {
-          "address": "0xebc386d5a2b76188512987b037eba74053e646da9dcec72a27d296daf17b99",
-          "class_hash": "0x39550ae29bb7a2d432f3ead56e683fb4dc039802d66260c9c17dcbee06a39b7",
+          "address": "0x7fd4718f6d467408775b9ab7abb11112fd37b7a4407db6c1240b49f254d00a4",
+          "class_hash": "0x40ab0cd16c0caea3a62f36937e294f056720a6cd7e2095da2166e5c5584079f",
           "abi": [
             {
               "type": "impl",
@@ -11567,6 +12858,34 @@
                   ],
                   "outputs": [],
                   "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "structure_burn",
+                  "inputs": [
+                    {
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "structure_regularize_weight",
+                  "inputs": [
+                    {
+                      "name": "structure_ids",
+                      "type": "core::array::Array::<core::integer::u32>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -11697,12 +13016,14 @@
             "troop_structure_adjacent_transfer",
             "structure_troop_adjacent_transfer",
             "troop_burn",
+            "structure_burn",
+            "structure_regularize_weight",
             "upgrade"
           ]
         },
         {
-          "address": "0x3efefb1b8f18a9ce3fe21cba2718581fa953fdc6714a1ac4656e6c5a611620b",
-          "class_hash": "0x4381f8ef8b0ab9cffd8164cc918a78bc5ef4c7cc3decf8f480aacbf7c1cc66e",
+          "address": "0x2633cc596b6d17d1c770c5663b1705ecba92d7921bc3f3b1244ac59cac7bd56",
+          "class_hash": "0x1b153f1c3d564a7ff1a05047b1a9ba2687958a6ab2e1869c65e9f76c8a6608d",
           "abi": [
             {
               "type": "impl",
@@ -11896,8 +13217,8 @@
           ]
         },
         {
-          "address": "0x5df20b3f8ad84958bff259d16edac93061280a48ad2e0fcd18d73719cb4c55b",
-          "class_hash": "0x167ce0fdfa02eb978933460f1cdfd78ca5d57a991ac66e247ebe7fc8c1e6f76",
+          "address": "0x22c29f5d0b8186693450f7f27240949c604bbcfee3a05a0fec0ead9bde2e98a",
+          "class_hash": "0x69007c4562711d2f5873da06ea0da07278c9303e09be992dcd597fa22e4d7ed",
           "abi": [
             {
               "type": "impl",
@@ -12096,8 +13417,8 @@
           ]
         },
         {
-          "address": "0x141e48018fb87562c461cf2799c270123e01ffff5707817d2870b86d7fd04a1",
-          "class_hash": "0x6586482012efbfef18ee4385a7a1c8401f113621cc53e4a233ec85671260c78",
+          "address": "0x42c5517f781b47807dcbdb402ab9020a3925372ddef3d4e55d13ec78b04ac44",
+          "class_hash": "0x59bb109ff04c89e093f106bc5c757af4dac6e8ccd2b0ca5415026855f507b9c",
           "abi": [
             {
               "type": "impl",
@@ -12333,8 +13654,8 @@
           ]
         },
         {
-          "address": "0x156eeb4199922bfe681b01e61c09a802e84d958598170575cbce549485d3bbb",
-          "class_hash": "0x1977037eac01a1f45bdf642063d4e070e6c7cb4c3305cb9f47fe0c4f5c2b4a5",
+          "address": "0x613f0e1af0a2f64c7daa5e17e85e5d2560215a90a7a75265987e64d06fbf106",
+          "class_hash": "0x49785c57e80a982508683649f8671053e5463f4fb9b173bcde47c551db8b2f4",
           "abi": [
             {
               "type": "impl",
@@ -12599,8 +13920,8 @@
           ]
         },
         {
-          "address": "0x1c7be557310b9195891c0f2cebbd9c056e9cf682f9e2a8d2c98307c9e14e7b",
-          "class_hash": "0x5f0e67b1597033be9b35edc5b14e31f1f5581b0656c8512b9f778324bba78f9",
+          "address": "0x231a2d99eae9ad6a992ff573402a24a99eddf694b1828a8a8eadb4f6c01bc51",
+          "class_hash": "0x66cf48cab3b20e95276643ff3c12c48d30becce919db7cea282a30acb7b9b1d",
           "abi": [
             {
               "type": "impl",
@@ -12919,8 +14240,8 @@
           ]
         },
         {
-          "address": "0x7a2338339125cc39542046b6f91af0c1c747ce90e8500d49f87091905d14877",
-          "class_hash": "0x38175b3028f7c9480ebdf6a40f931437a143bb6f9084fd821a272f2e57ab0f0",
+          "address": "0xa458a5617bb48c3d35939f57400c403208bd8946d65481d1d0b5371666df00",
+          "class_hash": "0xe103d2d4da28fc5b5729ed2deceef70b419e5f471cd3b6163fd77c0cb52d56",
           "abi": [
             {
               "type": "impl",
@@ -13390,8 +14711,8 @@
           ]
         },
         {
-          "address": "0x37eb93bad6cdac3e18ba9ee83649adf8717133dda67fb86c0d0fa0f71ee4e9a",
-          "class_hash": "0x6f70f97be370445a53f2ad2850df3fcba24befa683978035f5b8173006523bf",
+          "address": "0x7a8374bc0ae8975056eb5d2f58a267174c29eb6fc55a16cabb09ceee5f65a37",
+          "class_hash": "0x5e7e62f169064a2c28a21a9c4ff07f3722b3a25f0283622ebf5e62e6068b46d",
           "abi": [
             {
               "type": "impl",
@@ -13696,8 +15017,8 @@
           ]
         },
         {
-          "address": "0x30c6e37dde70ddd69f4b354e86cec1e9516f184875817eb8d07e7440f78ee65",
-          "class_hash": "0x7a3f65b46a0cad0ebf7a248e6cc8a372c4e1bf43fd75c70ace90364be7c690c",
+          "address": "0x2f0111740fab42321bcb6fe1d9366569f18041b30c28bc3e6ba322d92ec1492",
+          "class_hash": "0x5c0d05469c38a2a96720328bad8cc50b3ae01f6fcc9d1f6ff7db2e8cfbe3b9c",
           "abi": [
             {
               "type": "impl",
@@ -13837,6 +15158,14 @@
                   "type": "core::integer::u16"
                 },
                 {
+                  "name": "village_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "village_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
                   "name": "hyps_win_prob",
                   "type": "core::integer::u32"
                 },
@@ -13853,12 +15182,16 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_discovery_interval_sec",
+                  "type": "core::integer::u16"
                 },
                 {
-                  "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u32"
+                  "name": "relic_hex_dist_from_center",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "relic_chest_relics_per_chest",
+                  "type": "core::integer::u8"
                 }
               ]
             },
@@ -13981,6 +15314,10 @@
                 {
                   "name": "Quest",
                   "type": "()"
+                },
+                {
+                  "name": "Village",
+                  "type": "()"
                 }
               ]
             },
@@ -14019,6 +15356,10 @@
                     {
                       "name": "current_tick",
                       "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "season_mode_on",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [
@@ -14153,8 +15494,8 @@
           ]
         },
         {
-          "address": "0x59cb89f05e7baad61b68c46ec73c9c73e91855933bc5d6b932f75faf49fc20",
-          "class_hash": "0x12975edb6cc989c08f14cb4e145f3e2ef5de92a8eb6d10d4f687c4b09c9bed3",
+          "address": "0x6f6611a558f3b05324e51e76d1813dd1f5befe3b8d700bff8b6252b7d090754",
+          "class_hash": "0x1ad7cce1b403698b0f8751ecf85fbfae5f4dea5d82391be984b6bc54466fc8b",
           "abi": [
             {
               "type": "impl",
@@ -14405,8 +15746,8 @@
           ]
         },
         {
-          "address": "0x2961c87e5b85c15a7f09b7c981af1fdfe92d6b6cea377abb29f8c3f0c18b3",
-          "class_hash": "0x4c5e18ea3aa122f99f444c4ba24baa8d5101ac12b86b79e78c69b2e1fd66895",
+          "address": "0x69784ecbb82b18c9b6a07f9fd2863c1ce7859775afab248e126e1c79d72912f",
+          "class_hash": "0x2402c75ae38a0778520b68aeba30f54c8306c5c9ff46bb00c8da76b1fb39f60",
           "abi": [
             {
               "type": "impl",
@@ -14687,7 +16028,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x5826cab045c105f80a401f5dc55e86a0e081a22a583b6301b3c9d234c3abec3",
+          "class_hash": "0x1f0061fd689c1a22c36dc16cfd677de2579aef35b3b8f9fb09ce610277c7476",
           "tag": "s1_eternum-AntiBot",
           "selector": "0x344804b2eb95394730da8909ac2aa5d50715b8ed1715e0eef00953b34345183"
         },
@@ -14696,6 +16037,24 @@
           "class_hash": "0x64fb1b1b4734d1c5b2fefc4fafb330adf1217c8c23ec2cacbe4d08eabde35c4",
           "tag": "s1_eternum-BiomeDiscovered",
           "selector": "0x30f7247a43bd9908a15927a45887898d2926a4b68fefe9ea339d6534a3ba8b"
+        },
+        {
+          "members": [],
+          "class_hash": "0x28f9716bc9b4229f11ae01d4c557a74c930045f373b676cf3c50fbb3d684847",
+          "tag": "s1_eternum-BlitzHyperstructureRegister",
+          "selector": "0x1d5e386acb9a1026ea7b8ff4bc8d52442312c88c3e8376be07d1496aac8f712"
+        },
+        {
+          "members": [],
+          "class_hash": "0x59ebd30e8cd069c729122c77053fab5ad034452db75cad8d7643b93e0953af0",
+          "tag": "s1_eternum-BlitzRealmPlayerRegister",
+          "selector": "0x1a232ed9fa951f1b2cf53e4af4828cbc50e2b5487543c4d7fb73431dd2f2692"
+        },
+        {
+          "members": [],
+          "class_hash": "0x5f297e65901dffe55f589d251869ac1f117aa5b4e2c5a85d1cf97d5a02488c2",
+          "tag": "s1_eternum-BlitzRealmPositionRegister",
+          "selector": "0x36793f519bb40db4966acc7fd52cb2472de0c19aa14cdedaf9793ca0ceb5098"
         },
         {
           "members": [],
@@ -14861,7 +16220,13 @@
         },
         {
           "members": [],
-          "class_hash": "0x4e64c770d8e115b419fab0d8a16cc1d09a9f234d9c199c0fa5088316fc91c4",
+          "class_hash": "0x1aa59d5c33e72aee030087006b2e80d008cc40f400da4f6ef7752fb2f53b826",
+          "tag": "s1_eternum-RelicEffect",
+          "selector": "0x67b3f39d396aa9377fef642a79196fd0dbe9ef01662e13bbc120ebc95fdc0a5"
+        },
+        {
+          "members": [],
+          "class_hash": "0x409177325b9cddab840078e90b3476ac266dabe775198fb0ce98e5971efcf14",
           "tag": "s1_eternum-Resource",
           "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
         },
@@ -14891,9 +16256,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x2e570cda12481825da4a5edd1e022c293ef6f021fc44c3a0a3fe0fc9c0b8440",
+          "class_hash": "0x2f1a829de55899ca19be5f18a610d954295a8426df8b33182a8f84f2bea76f1",
           "tag": "s1_eternum-ResourceList",
           "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
+        },
+        {
+          "members": [],
+          "class_hash": "0x1f747af89c0b1646292a5c44b10397e697605a0292ee66bc1963a0a6de6b7a4",
+          "tag": "s1_eternum-ResourceMinMaxList",
+          "selector": "0x1a425d4fc8a02c21517dc93678c528f2b6feda411e2862b354019ca5172de35"
         },
         {
           "members": [],
@@ -14999,9 +16370,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x4fee9e054fee3a08d0aa772b79771d4f1adb627072fd91d4d1e523fea618cba",
+          "class_hash": "0x2ea049e7bf7d96b971395e104fc239e7aa260a4b897bb8e9d1feba69f1d79bb",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
+        },
+        {
+          "members": [],
+          "class_hash": "0x3a2aa45003b1e3d535ce9e11664782a7eea061933f63bdefb00d1afd2552bac",
+          "tag": "s1_eternum-WorldRecord",
+          "selector": "0x5552db17f364593e8325cad73660bba16b27bbde7413f2b5dc2ae1aff7bf6e1"
         }
       ],
       "events": [
@@ -15016,6 +16393,18 @@
           "class_hash": "0x39665219881a0043d439cf6ecc09171725089520a52d88a2b19a8cca551a3ef",
           "tag": "s1_eternum-AgentCreatedEvent",
           "selector": "0x4843fbb65c717bb5ece80d635a568aa1c688f880f0519e3de18bf3bae89abf8"
+        },
+        {
+          "members": [],
+          "class_hash": "0xeaa6456b4e65743c07a67d0e52e3b9cd0457194700f45d66dc5d14ef5cf214",
+          "tag": "s1_eternum-BattleEvent",
+          "selector": "0x5b576ae0561754ac01a5f26e47e72dc3ff073142585dcb5094445cb5532d2f5"
+        },
+        {
+          "members": [],
+          "class_hash": "0x7233f897eb481d3ce450a42af1714b58b298a5238ea5b8f4b2de633db6888de",
+          "tag": "s1_eternum-BlitzRegistrationEvent",
+          "selector": "0x25fc8ab9cb74bc43a28965993246723101f1e29ccec761bfc21dd12fb7816d2"
         },
         {
           "members": [],
@@ -15043,9 +16432,21 @@
         },
         {
           "members": [],
-          "class_hash": "0x2cfb4665ae327d6d0109989cd298a4091e6ab6753e70d2f6aabff9d3739650a",
+          "class_hash": "0x18bbc3ba86ec9e1c0508e58ff036e1bf59621295dde521d81b52ccc5dfd5578",
+          "tag": "s1_eternum-ExplicitResourceBurn",
+          "selector": "0x7d2a21953851db68ba009a2ffcd952dbb586bc2c50780b99264d238a3a3943f"
+        },
+        {
+          "members": [],
+          "class_hash": "0x409659a32b39c3feda0deedcfe9737d00f1f56c6b0fe775f5d4148836c2c75d",
           "tag": "s1_eternum-ExplorerMoveEvent",
           "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
+        },
+        {
+          "members": [],
+          "class_hash": "0x4871bc20c2b3dd83623ef4857e486bfacba7b67f857a0ca2a1d9ba94029e487",
+          "tag": "s1_eternum-ExplorerNewRaidEvent",
+          "selector": "0x46d3b67bf9064e701e812b922f1bb4598603be7765b91d93ae562a2cd2f1afb"
         },
         {
           "members": [],
@@ -15064,6 +16465,12 @@
           "class_hash": "0x1417d34c4a087e980d87f7161f70be25e17a2addb4ce315d936cae5fd322939",
           "tag": "s1_eternum-LiquidityEvent",
           "selector": "0x4e19f323259ff883daf1f685cfb94306159cde4c8cb46155a290a9b9c91df8c"
+        },
+        {
+          "members": [],
+          "class_hash": "0xbc8b189b693df10001f92096ab3533c89f38fb9cb261206ed5d5b664131ac7",
+          "tag": "s1_eternum-OpenRelicChestEvent",
+          "selector": "0x2c6e059401fe3c02f6ab3d716c01567a3cfddb4ccf7b6cdc699724d9246fda0"
         },
         {
           "members": [],

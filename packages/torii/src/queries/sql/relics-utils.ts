@@ -9,11 +9,11 @@ export const extractRelicsFromResourceData = (data: any): RelicInventory[] => {
 
   // Map relic balance fields to ResourcesIds
   const relicMappings = [
-    { field: "RELIC_E1_BALANCE", resourceId: ResourcesIds.StaminaRelic1 },
-    { field: "RELIC_E2_BALANCE", resourceId: ResourcesIds.StaminaRelic2 },
-    { field: "RELIC_E3_BALANCE", resourceId: ResourcesIds.DamageRelic1 },
+    { field: "RELIC_E1_BALANCE", resourceId: ResourcesIds.StaminaRelic2 },
+    { field: "RELIC_E2_BALANCE", resourceId: ResourcesIds.DamageRelic1 },
+    { field: "RELIC_E3_BALANCE", resourceId: ResourcesIds.DamageReductionRelic1 },
     { field: "RELIC_E4_BALANCE", resourceId: ResourcesIds.DamageRelic2 },
-    { field: "RELIC_E5_BALANCE", resourceId: ResourcesIds.DamageReductionRelic1 },
+    { field: "RELIC_E5_BALANCE", resourceId: ResourcesIds.StaminaRelic1 },
     { field: "RELIC_E6_BALANCE", resourceId: ResourcesIds.DamageReductionRelic2 },
     { field: "RELIC_E7_BALANCE", resourceId: ResourcesIds.ExplorationRelic1 },
     { field: "RELIC_E8_BALANCE", resourceId: ResourcesIds.ExplorationRelic2 },
