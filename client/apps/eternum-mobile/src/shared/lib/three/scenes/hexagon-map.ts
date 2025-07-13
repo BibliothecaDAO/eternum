@@ -22,7 +22,7 @@ export class HexagonMap {
   private structureHexes: Map<number, Map<number, { id: number; owner: bigint }>> = new Map();
   private armiesPositions: Map<number, { col: number; row: number }> = new Map();
 
-  private instanceMesh: THREE.InstancedMesh | null = null;
+  private hexagonMesh: THREE.InstancedMesh | null = null;
   private tileRenderer: TileRenderer;
   private raycaster: THREE.Raycaster;
   private matrix = new THREE.Matrix4();
@@ -86,7 +86,7 @@ export class HexagonMap {
       HexagonMap.hexagonMaterial = new THREE.MeshLambertMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0,
+        opacity: 0.5,
       });
     }
   }
@@ -193,9 +193,9 @@ export class HexagonMap {
   }
 
   private renderHexes(): void {
-    if (this.instanceMesh) {
-      this.scene.remove(this.instanceMesh);
-      this.instanceMesh.dispose();
+    if (this.hexagonMesh) {
+      this.scene.remove(this.hexagonMesh);
+      this.hexagonMesh.dispose();
     }
 
     // Process all visible hexes (both explored and unexplored)
@@ -212,14 +212,10 @@ export class HexagonMap {
     }
 
     // Use cached geometry and material
-    this.instanceMesh = new THREE.InstancedMesh(
-      HexagonMap.hexagonGeometry!,
-      HexagonMap.hexagonMaterial!,
-      instanceCount,
-    );
+    this.hexagonMesh = new THREE.InstancedMesh(HexagonMap.hexagonGeometry!, HexagonMap.hexagonMaterial!, instanceCount);
 
     // Set up per-instance colors
-    this.instanceMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
+    this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
     // Sort by row (higher row = higher render order)
     allVisibleHexes.sort((a, b) => b.row - a.row);
@@ -236,11 +232,11 @@ export class HexagonMap {
       this.dummy.position.y = 0.1;
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
-      this.instanceMesh!.setMatrixAt(index, this.dummy.matrix);
+      this.hexagonMesh!.setMatrixAt(index, this.dummy.matrix);
 
       // Reuse tempColor instead of creating new Color
       this.tempColor.setHex(0x4a90e2);
-      this.instanceMesh!.setColorAt(index, this.tempColor);
+      this.hexagonMesh!.setColorAt(index, this.tempColor);
 
       // Check if hex is explored and get biome data
       const biome = this.exploredTiles.get(col)?.get(row);
@@ -257,11 +253,11 @@ export class HexagonMap {
     });
 
     // Update instance colors
-    if (this.instanceMesh!.instanceColor) {
-      this.instanceMesh!.instanceColor.needsUpdate = true;
+    if (this.hexagonMesh!.instanceColor) {
+      this.hexagonMesh!.instanceColor.needsUpdate = true;
     }
 
-    this.scene.add(this.instanceMesh);
+    this.scene.add(this.hexagonMesh);
 
     // Render tiles using the TileRenderer
     this.tileRenderer.renderTilesForHexes(tilePositions);
@@ -300,13 +296,13 @@ export class HexagonMap {
   }
 
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
-    if (!this.instanceMesh) return;
+    if (!this.hexagonMesh) return;
 
     // Update raycaster
     this.raycaster.setFromCamera(mouse, camera);
 
     // Check for intersections
-    const intersects = this.raycaster.intersectObjects([this.instanceMesh], true);
+    const intersects = this.raycaster.intersectObjects([this.hexagonMesh], true);
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
@@ -326,25 +322,25 @@ export class HexagonMap {
   }
 
   private showClickFeedback(instanceId: number): void {
-    if (!this.instanceMesh) return;
+    if (!this.hexagonMesh) return;
 
     // Reuse tempColor objects instead of creating new ones
     const originalColor = this.tempColor;
-    this.instanceMesh.getColorAt(instanceId, originalColor);
+    this.hexagonMesh.getColorAt(instanceId, originalColor);
 
     // Create a copy for restoration (we need to store the original value)
     const originalColorCopy = originalColor.clone();
 
     // Set clicked instance to red using reusable color object
     this.tempColor.setHex(0xff6b6b);
-    this.instanceMesh.setColorAt(instanceId, this.tempColor);
-    this.instanceMesh.instanceColor!.needsUpdate = true;
+    this.hexagonMesh.setColorAt(instanceId, this.tempColor);
+    this.hexagonMesh.instanceColor!.needsUpdate = true;
 
     // Restore original color after 200ms
     setTimeout(() => {
-      if (this.instanceMesh) {
-        this.instanceMesh.setColorAt(instanceId, originalColorCopy);
-        this.instanceMesh.instanceColor!.needsUpdate = true;
+      if (this.hexagonMesh) {
+        this.hexagonMesh.setColorAt(instanceId, originalColorCopy);
+        this.hexagonMesh.instanceColor!.needsUpdate = true;
       }
     }, 200);
   }
@@ -391,9 +387,9 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    if (this.instanceMesh) {
-      this.scene.remove(this.instanceMesh);
-      this.instanceMesh.dispose();
+    if (this.hexagonMesh) {
+      this.scene.remove(this.hexagonMesh);
+      this.hexagonMesh.dispose();
     }
 
     // Dispose tile renderer
