@@ -409,6 +409,16 @@ export const resources: Array<Resources> = [
     ticker: "$LORDS",
   },
 
+  {
+    trait: "Essence",
+    value: 38,
+    colour: "#ec4899",
+    id: ResourcesIds.Essence,
+    description: "Essence.",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/262.png?raw=true",
+    ticker: "$ESSENCE",
+  },
+
   // Relics - Army Enhancement Items
   {
     trait: "Stamina Relic 1",
@@ -712,6 +722,7 @@ export const RESOURCE_TIERS = {
     ResourcesIds.TroopProductionRelic1,
     ResourcesIds.TroopProductionRelic2,
   ],
+  essence: [ResourcesIds.Essence],
   labor: [ResourcesIds.Labor],
   military: [
     ResourcesIds.Knight,

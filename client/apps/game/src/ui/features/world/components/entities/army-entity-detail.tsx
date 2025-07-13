@@ -16,6 +16,7 @@ import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
+import { ActiveRelicEffects } from "./active-relic-effects";
 
 interface ArmyEntityDetailProps {
   armyEntityId: ID;
@@ -264,6 +265,15 @@ export const ArmyEntityDetail = memo(
                 recipientType={RelicRecipientType.Explorer}
               />
             </div>
+          )}
+
+          {/* Active Relic Effects section */}
+          {explorerData?.relicEffects && (
+            <ActiveRelicEffects
+              relicEffects={explorerData.relicEffects}
+              entityId={armyEntityId}
+              compact={compact}
+            />
           )}
 
           {/* Troops section */}

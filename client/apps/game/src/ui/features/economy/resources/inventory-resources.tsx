@@ -2,7 +2,14 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  getRelicInfo,
+  ID,
+  isRelic,
+  RelicActivation,
+  RelicRecipientType,
+} from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -69,8 +76,12 @@ export const InventoryResources = ({
         const isCompatibleRelic =
           resourceIsRelic &&
           relicInfo &&
-          ((recipientType === RelicRecipientType.Explorer && relicInfo.activation === "Army") ||
-            (recipientType === RelicRecipientType.Structure && relicInfo.activation === "Structure"));
+          ((recipientType === RelicRecipientType.Explorer &&
+            (relicInfo.activation === RelicActivation.Army ||
+              relicInfo.activation === RelicActivation.ArmyAndStructure)) ||
+            (recipientType === RelicRecipientType.Structure &&
+              (relicInfo.activation === RelicActivation.Structure ||
+                relicInfo.activation === RelicActivation.ArmyAndStructure)));
 
         const relicEffect = relicEffects.find((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
         // Check if relic effect is active
@@ -93,7 +104,7 @@ export const InventoryResources = ({
               isRelicActive ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
             }`}
             onClick={() => {
-              if (isCompatibleRelic && entityId) {
+              if (resourceIsRelic && entityId) {
                 handleRelicClick(resource.resourceId, divideByPrecision(Number(resource.amount)));
               }
             }}
@@ -106,7 +117,7 @@ export const InventoryResources = ({
               resourceId={resource.resourceId}
               amount={divideByPrecision(Number(resource.amount))}
               className={`!p-1 ${
-                isCompatibleRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""
+                resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""
               }`}
             />
             {isCompatibleRelic && !isRelicActive && (

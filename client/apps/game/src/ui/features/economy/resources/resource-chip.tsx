@@ -40,7 +40,7 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick: currentTick, currentArmiesTick } = useBlockTimestamp();
+  const { currentDefaultTick: currentTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
@@ -210,6 +210,29 @@ export const ResourceChip = ({
     return resourceManager.isRelicActive(resourceId, currentArmiesTick);
   }, [resourceManager, resourceId, currentArmiesTick]);
 
+  // Calculate time remaining for active relic with real-time countdown
+  const relicTimeRemaining = useMemo(() => {
+    if (!isRelic || !relicEffectActivated) return 0;
+
+    // Get the relic effect data to access end_tick
+    const relicEffect = resourceManager.getRelicEffect(resourceId);
+    if (!relicEffect) return 0;
+
+    // Calculate remaining ticks until effect ends
+    const remainingTicks = Math.max(0, relicEffect.effect_end_tick - currentArmiesTick);
+
+    console.log({ remainingTicks });
+
+    // Get tick interval for armies (relics use army ticks)
+    const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
+
+    // Calculate total remaining time: (full remaining ticks * tick duration) + time left in current tick
+    // Only add current tick time remaining if there are remaining ticks
+    const remainingSeconds = remainingTicks > 0 ? remainingTicks * armyTickInterval + armiesTickTimeRemaining : 0;
+
+    return Math.max(0, remainingSeconds);
+  }, [isRelic, relicEffectActivated, resourceManager, resourceId, currentArmiesTick, armiesTickTimeRemaining]);
+
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
   if (hideZeroBalance && balance <= 0) {
     return null;
@@ -236,8 +259,26 @@ export const ResourceChip = ({
               {currencyFormat(displayBalance, 2)}
             </span>{" "}
             {relicEffectActivated && (
-              <div className="flex items-center ml-1">
+              <div className="flex items-center ml-1 gap-1">
                 <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
+                <span
+                  className="text-xs text-purple-400 font-medium"
+                  onMouseEnter={(e) => {
+                    e.stopPropagation();
+                    setTooltip({
+                      position: "top",
+                      content: (
+                        <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>
+                      ),
+                    });
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation();
+                    setTooltip(null);
+                  }}
+                >
+                  {formatTime(relicTimeRemaining)}
+                </span>
               </div>
             )}
           </div>

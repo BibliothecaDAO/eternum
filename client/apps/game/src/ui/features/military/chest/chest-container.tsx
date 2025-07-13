@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
-import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicActivation, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
@@ -155,9 +155,11 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                     </span>
                     <span
                       className={`px-2 py-1 rounded text-xs font-semibold ${
-                        hoveredRelicInfo.activation === "Army"
+                        hoveredRelicInfo.activation === RelicActivation.Army
                           ? "bg-red-600/20 text-red-400"
-                          : "bg-green-600/20 text-green-400"
+                          : hoveredRelicInfo.activation === RelicActivation.Structure
+                          ? "bg-green-600/20 text-green-400"
+                          : "bg-orange-600/20 text-orange-400"
                       }`}
                     >
                       {hoveredRelicInfo.activation}

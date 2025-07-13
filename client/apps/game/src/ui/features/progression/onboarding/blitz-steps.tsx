@@ -313,7 +313,6 @@ export const BlitzOnboarding = () => {
   } = useDojo();
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
-  console.log({ blitzConfig });
 
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,

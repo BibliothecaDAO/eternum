@@ -1,7 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
-import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import { findResourceById, getRelicInfo, ID, RelicActivation, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
@@ -35,6 +35,14 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const resourceName = useMemo(() => {
     return findResourceById(relicId)?.trait || "Unknown Relic";
   }, [relicId]);
+
+  const isCompatible = useMemo(() => {
+    if (!relicInfo) return false;
+    return (
+      (recipientType === RelicRecipientType.Explorer && (relicInfo.activation === RelicActivation.Army || relicInfo.activation === RelicActivation.ArmyAndStructure)) ||
+      (recipientType === RelicRecipientType.Structure && (relicInfo.activation === RelicActivation.Structure || relicInfo.activation === RelicActivation.ArmyAndStructure))
+    );
+  }, [relicInfo, recipientType]);
 
   const handleConfirm = async () => {
     if (!account) {
@@ -114,7 +122,11 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
               </span>
               <span
                 className={`px-2 py-1 rounded text-xs font-semibold ${
-                  relicInfo.activation === "Army" ? "bg-red-600/20 text-red-400" : "bg-green-600/20 text-green-400"
+                  relicInfo.activation === RelicActivation.Army
+                    ? "bg-red-600/20 text-red-400"
+                    : relicInfo.activation === RelicActivation.Structure
+                    ? "bg-green-600/20 text-green-400"
+                    : "bg-orange-600/20 text-orange-400"
                 }`}
               >
                 {relicInfo.activation}
@@ -130,17 +142,28 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           </div>
         )}
 
-        <div className="w-full p-3 bg-red-900/20 border border-red-600/30 rounded mb-4">
-          <p className="text-xs text-red-400 font-semibold text-center">
-            ⚠️ Warning: Relic activation is permanent and cannot be undone!
-          </p>
-        </div>
+        {!isCompatible ? (
+          <div className="w-full p-3 bg-red-900/20 border border-red-600/30 rounded mb-4">
+            <p className="text-xs text-red-400 font-semibold text-center">
+              ⚠️ This relic cannot be activated by {recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
+            </p>
+            <p className="text-xs text-red-300 text-center mt-1">
+              {relicInfo?.activation} relics can only be activated by {relicInfo?.activation === RelicActivation.Army ? "explorers" : relicInfo?.activation === RelicActivation.Structure ? "structures" : "explorers and structures"}
+            </p>
+          </div>
+        ) : (
+          <div className="w-full p-3 bg-red-900/20 border border-red-600/30 rounded mb-4">
+            <p className="text-xs text-red-400 font-semibold text-center">
+              ⚠️ Warning: Relic activation is permanent and cannot be undone!
+            </p>
+          </div>
+        )}
 
         <div className="flex justify-center space-x-4">
           <Button variant="default" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button disabled={isLoading || !!error} isLoading={isLoading} variant="gold" onClick={handleConfirm}>
+          <Button disabled={isLoading || !!error || !isCompatible} isLoading={isLoading} variant="gold" onClick={handleConfirm}>
             Activate Relic
           </Button>
         </div>

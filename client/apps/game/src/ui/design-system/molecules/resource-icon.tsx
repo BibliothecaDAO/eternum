@@ -77,6 +77,8 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
 
+  Essence: { component: <img src={`/images/resources/${ResourcesIds.Essence}.png`} />, name: "Essence" },
+
   // Relics - Army Enhancement Items
   StaminaRelic1: {
     component: <img src={`/images/resources/${ResourcesIds.StaminaRelic1}.png`} />,

@@ -7,6 +7,7 @@ import {
   Resource,
   RESOURCE_PRECISION,
   ResourcesIds,
+  TickIds,
 } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -92,6 +93,22 @@ export class ResourceManager {
       },
       currentTick,
     );
+  }
+
+  public getRelicTimeUntilExpiry(resourceId: ResourcesIds, currentTick: number): number {
+    if (!ResourceManager.isRelic(resourceId)) return 0;
+
+    const relicEffect = this.getRelicEffect(resourceId);
+    if (!relicEffect) return 0;
+
+    // Check if relic is still active
+    if (!this.isRelicActive(resourceId, currentTick)) return 0;
+
+    // Get tick interval for armies (since relics use army ticks)
+    const tickInterval = configManager.getTick(TickIds.Armies) || 1;
+
+    // Calculate time remaining in seconds
+    return ResourceManager.relicsTimeLeft(relicEffect.effect_end_tick, currentTick, tickInterval);
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -771,17 +788,17 @@ export class ResourceManager {
           balance: resource.ESSENCE_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.StaminaRelic1:
+      case ResourcesIds.StaminaRelic2:
         return {
           balance: resource.RELIC_E1_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.StaminaRelic2:
+      case ResourcesIds.DamageRelic1:
         return {
           balance: resource.RELIC_E2_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.DamageRelic1:
+      case ResourcesIds.DamageReductionRelic1:
         return {
           balance: resource.RELIC_E3_BALANCE,
           production: noProduction,
@@ -841,9 +858,9 @@ export class ResourceManager {
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
       ["ESSENCE_BALANCE", ResourcesIds.Essence],
-      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
-      ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
-      ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
+      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic2],
+      ["RELIC_E2_BALANCE", ResourcesIds.DamageRelic1],
+      ["RELIC_E3_BALANCE", ResourcesIds.DamageReductionRelic1],
     ];
   }
 
@@ -862,7 +879,7 @@ export class ResourceManager {
     currentTick: number,
   ): Resource[] {
     const resourceMapping = ResourceManager.getResourceMapping(resource);
-    return resourceMapping.map(([key, resourceId]) => {
+    return resourceMapping.map(([_, resourceId]) => {
       const { balance } = ResourceManager.balanceWithProduction(resource, currentTick, resourceId);
       return {
         resourceId,
@@ -906,6 +923,14 @@ export class ResourceManager {
     const hasUsagesLeft = usage_left > 0;
 
     return isWithinTimeWindow && hasUsagesLeft;
+  }
+
+  public static relicsArmiesTicksLeft(end_tick: number, currentArmiesTick: number): number {
+    return end_tick - currentArmiesTick;
+  }
+
+  public static relicsTimeLeft(end_tick: number, currentTick: number, secondsPerTick: number): number {
+    return (end_tick - currentTick) * secondsPerTick;
   }
 
   private static _amountProducedStatic(

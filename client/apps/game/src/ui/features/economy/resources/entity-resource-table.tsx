@@ -9,6 +9,7 @@ import React, { useMemo, useState } from "react";
 const TIER_DISPLAY_NAMES: Record<string, string> = {
   lords: "Lords & Fragments",
   relics: "Relics",
+  essence: "Essence",
   labor: "Labor",
   military: "Military",
   transport: "Transport",
@@ -23,6 +24,7 @@ const TIER_DISPLAY_NAMES: Record<string, string> = {
 const alwaysShowResources = [
   ResourcesIds.Lords,
   ResourcesIds.Labor,
+  ResourcesIds.Essence,
   ResourcesIds.Donkey,
   ResourcesIds.Fish,
   ResourcesIds.Wheat,

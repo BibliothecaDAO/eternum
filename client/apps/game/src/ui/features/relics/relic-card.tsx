@@ -2,7 +2,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import {
+  findResourceById,
+  getRelicInfo,
+  ID,
+  RelicActivation,
+  RelicRecipientType,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
@@ -27,16 +34,8 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
     return findResourceById(resourceId)?.trait || "Unknown Relic";
   }, [resourceId]);
 
-  const isCompatible = useMemo(() => {
-    if (!relicInfo) return false;
-    return (
-      (entityType === RelicRecipientType.Explorer && relicInfo.activation === "Army") ||
-      (entityType === RelicRecipientType.Structure && relicInfo.activation === "Structure")
-    );
-  }, [relicInfo, entityType]);
-
   const handleClick = () => {
-    if (!isCompatible || !onActivate) return;
+    if (!onActivate) return;
 
     import("../economy/resources/relic-activation-popup").then(({ RelicActivationPopup }) => {
       const recipientType =
@@ -58,7 +57,7 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
     <div
       className={`
         relative flex items-center gap-3 p-3 bg-gold/5 rounded-lg border border-gold/10
-        ${isCompatible ? "cursor-pointer hover:bg-gold/10 transition-all duration-200" : "opacity-60"}
+        cursor-pointer hover:bg-gold/10 transition-all duration-200
         ${isActive ? "bg-purple-500/20 border-purple-500/50 animate-pulse" : ""}
       `}
       onClick={handleClick}
@@ -90,9 +89,11 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
                     </span>
                     <span
                       className={`px-2 py-1 rounded text-xs font-semibold ${
-                        relicInfo.activation === "Army"
+                        relicInfo.activation === RelicActivation.Army
                           ? "bg-red-600/20 text-red-400"
-                          : "bg-green-600/20 text-green-400"
+                          : relicInfo.activation === RelicActivation.Structure
+                            ? "bg-green-600/20 text-green-400"
+                            : "bg-orange-600/20 text-orange-400"
                       }`}
                     >
                       {relicInfo.activation}
@@ -105,15 +106,7 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
                       Level {relicInfo.level}
                     </span>
                   </div>
-                  {!isCompatible && (
-                    <div className="text-red-400 text-xs font-semibold">
-                      This relic cannot be activated by{" "}
-                      {entityType === RelicRecipientType.Explorer ? "armies" : "structures"}
-                    </div>
-                  )}
-                  {isCompatible && (
-                    <div className="text-green-400 text-xs font-semibold">Click to activate this relic</div>
-                  )}
+                  <div className="text-gold/80 text-xs font-semibold">Click to view this relic</div>
                 </>
               )}
             </div>
@@ -140,12 +133,6 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
           </div>
         )}
       </div>
-
-      {isCompatible && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="w-full h-full animate-pulse bg-gold/5 rounded-lg" />
-        </div>
-      )}
     </div>
   );
 };

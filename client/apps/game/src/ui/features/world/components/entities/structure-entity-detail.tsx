@@ -30,6 +30,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
 import { memo, useMemo } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
+import { ActiveRelicEffects } from "./active-relic-effects";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -279,6 +280,15 @@ export const StructureEntityDetail = memo(
               />
             )}
           </div>
+
+          {/* Active Relic Effects section */}
+          {structureDetails?.relicEffects && (
+            <ActiveRelicEffects
+              relicEffects={structureDetails.relicEffects}
+              entityId={structureEntityId}
+              compact={compact}
+            />
+          )}
         </div>
 
         {/* Immunity timer */}
