@@ -125,6 +125,68 @@ export abstract class ObjectRenderer<T extends MapObject> {
     });
   }
 
+  public moveObjectAlongPath(
+    objectId: number,
+    path: Array<{ col: number; row: number }>,
+    stepDuration: number = 300,
+  ): Promise<void> {
+    const object = this.objects.get(objectId);
+    const sprite = this.sprites.get(objectId);
+
+    if (!object || !sprite || path.length === 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      let currentStep = 0;
+
+      const moveToNextStep = () => {
+        if (currentStep >= path.length) {
+          resolve();
+          return;
+        }
+
+        const targetHex = path[currentStep];
+        getWorldPositionForTile({ col: targetHex.col, row: targetHex.row }, true, this.tempVector3);
+
+        const startPosition = sprite.position.clone();
+        const endPosition = this.tempVector3.clone();
+        endPosition.y = 0.2;
+        endPosition.z -= HEX_SIZE * 0.825;
+
+        const startTime = performance.now();
+
+        const animate = () => {
+          const elapsed = performance.now() - startTime;
+          const progress = Math.min(elapsed / stepDuration, 1);
+
+          // Chess-like movement: quick movement with slight arc
+          const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+          // Add slight vertical arc for chess-like movement
+          const arcHeight = 0.1;
+          const arcProgress = Math.sin(progress * Math.PI) * arcHeight;
+
+          sprite.position.lerpVectors(startPosition, endPosition, easeProgress);
+          sprite.position.y += arcProgress;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            object.col = targetHex.col;
+            object.row = targetHex.row;
+            currentStep++;
+            setTimeout(moveToNextStep, 50); // Small delay between steps
+          }
+        };
+
+        animate();
+      };
+
+      moveToNextStep();
+    });
+  }
+
   public selectObject(objectId: number): void {
     this.selectedObjectId = objectId;
     const sprite = this.sprites.get(objectId);

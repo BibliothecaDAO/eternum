@@ -3,6 +3,7 @@ import { BiomeType, FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { GUIManager } from "../helpers/gui-manager";
+import { findShortestPath } from "../helpers/pathfinding";
 import { SystemManager } from "../system/system-manager";
 import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
@@ -278,11 +279,26 @@ export class HexagonMap {
     }
   }
 
-  private handleHexClick(col: number, row: number): void {
+  private async handleHexClick(col: number, row: number): Promise<void> {
     const armies = this.armyRenderer.getObjectsAtHex(col, row);
     const structures = this.structureRenderer.getObjectsAtHex(col, row);
     const quests = this.questRenderer.getObjectsAtHex(col, row);
 
+    // Check if we have a selected army and clicked on a highlighted hex
+    const selectedObject = this.selectionManager.getSelectedObject();
+    if (selectedObject && selectedObject.type === "army") {
+      const highlightedHexes = this.selectionManager.getHighlightedHexes();
+      const isHighlighted = highlightedHexes.some((hex) => hex.col === col && hex.row === row);
+
+      if (isHighlighted) {
+        // Move the army to the clicked hex
+        await this.moveArmyToHex(selectedObject.id, col, row);
+        this.selectionManager.clearSelection();
+        return;
+      }
+    }
+
+    // Normal selection logic
     if (armies.length > 0) {
       this.selectionManager.selectObject(armies[0].id, "army");
     } else if (structures.length > 0) {
@@ -291,6 +307,62 @@ export class HexagonMap {
       this.selectionManager.selectObject(quests[0].id, "quest");
     } else {
       this.selectionManager.clearSelection();
+    }
+  }
+
+  private async moveArmyToHex(armyId: number, targetCol: number, targetRow: number): Promise<void> {
+    const army = this.armyRenderer.getObject(armyId);
+    if (!army) return;
+
+    // Create data structures for pathfinding
+    const structureHexes = new Map<number, Map<number, { id: number; owner: bigint }>>();
+    const armyHexes = new Map<number, Map<number, { id: number; owner: bigint }>>();
+
+    // Populate structure hexes
+    this.structureRenderer.getAllObjects().forEach((structure) => {
+      if (!structureHexes.has(structure.col)) {
+        structureHexes.set(structure.col, new Map());
+      }
+      structureHexes.get(structure.col)!.set(structure.row, { id: structure.id, owner: structure.owner! });
+    });
+
+    // Populate army hexes (excluding the moving army)
+    this.armyRenderer.getAllObjects().forEach((armyObj) => {
+      if (armyObj.id !== armyId) {
+        if (!armyHexes.has(armyObj.col)) {
+          armyHexes.set(armyObj.col, new Map());
+        }
+        armyHexes.get(armyObj.col)!.set(armyObj.row, { id: armyObj.id, owner: armyObj.owner! });
+      }
+    });
+
+    // Find path using pathfinding
+    const startPosition = new Position({ x: army.col, y: army.row });
+    const endPosition = new Position({ x: targetCol, y: targetRow });
+    const maxDistance = 10; // Adjust as needed
+
+    const path = findShortestPath(
+      startPosition,
+      endPosition,
+      this.exploredTiles,
+      structureHexes,
+      armyHexes,
+      maxDistance,
+    );
+
+    if (path.length > 0) {
+      // Skip the first position (current position) and convert to col/row format
+      const movementPath = path.slice(1).map((pos) => {
+        const normalized = pos.getNormalized();
+        return { col: normalized.x, row: normalized.y };
+      });
+
+      // Move army along the path with chess-like animation
+      await this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+
+      console.log(`Army ${armyId} moved from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`);
+    } else {
+      console.log(`No path found for army ${armyId} to (${targetCol}, ${targetRow})`);
     }
   }
 

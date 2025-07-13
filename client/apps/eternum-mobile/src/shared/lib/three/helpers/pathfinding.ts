@@ -1,5 +1,5 @@
-import { Position } from "@/types/position";
-import { BiomeType, getNeighborOffsets, HexEntityInfo, HexPosition } from "@bibliothecadao/types";
+import { BiomeType, getNeighborOffsets } from "@bibliothecadao/types";
+import { Position } from "../types/position";
 
 interface Node {
   col: number;
@@ -7,6 +7,11 @@ interface Node {
   f: number;
   g: number;
   parent?: Node;
+}
+
+interface HexEntityInfo {
+  id: number;
+  owner: bigint;
 }
 
 export function findShortestPath(
@@ -17,12 +22,11 @@ export function findShortestPath(
   armyHexes: Map<number, Map<number, HexEntityInfo>>,
   maxDistance: number,
 ): Position[] {
-  // Check if target is within maximum distance before starting pathfinding
   const oldPos = oldPosition.getNormalized();
   const newPos = newPosition.getNormalized();
   const initialDistance = getHexDistance({ col: oldPos.x, row: oldPos.y }, { col: newPos.x, row: newPos.y });
   if (initialDistance > maxDistance) {
-    return []; // Return empty path if target is too far
+    return [];
   }
 
   const openSet: Node[] = [];
@@ -37,40 +41,32 @@ export function findShortestPath(
   openSet.push(startNode);
 
   while (openSet.length > 0) {
-    // Find node with lowest f score
     const current = openSet.reduce((min, node) => (node.f < min.f ? node : min), openSet[0]);
 
-    // Reached end
     if (current.col === newPos.x && current.row === newPos.y) {
       return reconstructPath(current);
     }
 
-    // Move current node from open to closed set
     openSet.splice(openSet.indexOf(current), 1);
     closedSet.add(`${current.col},${current.row}`);
 
-    // Check neighbors
     const neighbors = getNeighborOffsets(current.row);
     for (const { i, j } of neighbors) {
       const neighborCol = current.col + i;
       const neighborRow = current.row + j;
 
-      // Skip if path is getting too long
       if (current.g + 1 > maxDistance) {
         continue;
       }
 
-      // Skip if not explored or already in closed set
       if (!exploredTiles.get(neighborCol)?.has(neighborRow) || closedSet.has(`${neighborCol},${neighborRow}`)) {
         continue;
       }
 
-      // skip if the neighbor is a structure hex
       if (structureHexes.get(neighborCol)?.has(neighborRow)) {
         continue;
       }
 
-      // skip if the neighbor is an army hex and not the end hex (where the unit is going)
       if (armyHexes.get(neighborCol)?.has(neighborRow) && !(neighborCol === newPos.x && neighborRow === newPos.y)) {
         continue;
       }
@@ -99,7 +95,7 @@ export function findShortestPath(
     }
   }
 
-  return []; // No path found
+  return [];
 }
 
 function reconstructPath(endNode: Node): Position[] {
@@ -114,7 +110,7 @@ function reconstructPath(endNode: Node): Position[] {
   return path;
 }
 
-function getHexDistance(a: HexPosition, b: HexPosition): number {
+function getHexDistance(a: { col: number; row: number }, b: { col: number; row: number }): number {
   const dx = Math.abs(a.col - b.col);
   const dy = Math.abs(a.row - b.row);
   return Math.max(dx, dy);
