@@ -7,6 +7,9 @@ import { SystemManager } from "../system/system-manager";
 import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
 import { createHexagonShape } from "./hexagon-geometry";
+import { HighlightRenderer } from "./highlight-renderer";
+import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./object-renderer";
+import { SelectionManager } from "./selection-manager";
 import { TilePosition, TileRenderer } from "./tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
@@ -17,42 +20,38 @@ export class HexagonMap {
   private visibleHexes: Set<string> = new Set();
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
-  // Army and structure tracking
-  private armyHexes: Map<number, Map<number, { id: number; owner: bigint }>> = new Map();
-  private structureHexes: Map<number, Map<number, { id: number; owner: bigint }>> = new Map();
-  private armiesPositions: Map<number, { col: number; row: number }> = new Map();
-
   private hexagonMesh: THREE.InstancedMesh | null = null;
   private tileRenderer: TileRenderer;
+  private highlightRenderer: HighlightRenderer;
+  private armyRenderer: ArmyRenderer;
+  private structureRenderer: StructureRenderer;
+  private questRenderer: QuestRenderer;
+  private selectionManager: SelectionManager;
+
   private raycaster: THREE.Raycaster;
   private matrix = new THREE.Matrix4();
   private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
   private systemManager: SystemManager;
-  // Reusable objects to avoid creation in loops
+
   private tempVector3 = new THREE.Vector3();
   private tempColor = new THREE.Color();
   private tempQuaternion = new THREE.Quaternion();
   private tempMatrix = new THREE.Matrix4();
 
-  // Cached geometry and material
   private static hexagonGeometry: THREE.ShapeGeometry | null = null;
   private static hexagonMaterial: THREE.MeshLambertMaterial | null = null;
 
-  // Chunk loading optimization
   private lastChunkX: number = -999;
   private lastChunkZ: number = -999;
 
-  // Map constants - removed MAP_SIZE since map is infinite
-  private static readonly CHUNK_LOAD_RADIUS_X = 2; // Load chunks within this radius horizontally
-  private static readonly CHUNK_LOAD_RADIUS_Z = 3; // Load chunks within this radius vertically
-  private static readonly CHUNK_SIZE = 5; // 5x5 hexagons per chunk
+  private static readonly CHUNK_LOAD_RADIUS_X = 2;
+  private static readonly CHUNK_LOAD_RADIUS_Z = 3;
+  private static readonly CHUNK_SIZE = 5;
 
-  // Dynamic chunk loading radius (can be adjusted based on screen size)
   private chunkLoadRadiusX = HexagonMap.CHUNK_LOAD_RADIUS_X;
   private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
 
-  // Chunk fetching tracking
   private fetchedChunks: Set<string> = new Set();
 
   constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager) {
@@ -60,13 +59,22 @@ export class HexagonMap {
     this.dojo = dojo;
     this.systemManager = systemManager;
     this.raycaster = new THREE.Raycaster();
+
     this.tileRenderer = new TileRenderer(scene);
+    this.highlightRenderer = new HighlightRenderer(scene);
+    this.armyRenderer = new ArmyRenderer(scene);
+    this.structureRenderer = new StructureRenderer(scene);
+    this.questRenderer = new QuestRenderer(scene);
+
+    this.selectionManager = new SelectionManager(this.highlightRenderer);
+    this.selectionManager.registerObjectRenderer("army", this.armyRenderer);
+    this.selectionManager.registerObjectRenderer("structure", this.structureRenderer);
+    this.selectionManager.registerObjectRenderer("quest", this.questRenderer);
+
     this.initializeStaticAssets();
     this.initializeMap();
 
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
-
-    // TODO: Uncomment these when Army and Structure system managers are implemented
     this.systemManager.Army.onUpdate((update) => this.updateArmyHexes(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
     this.systemManager.Structure.onUpdate((update) => this.updateStructureHexes(update));
@@ -76,7 +84,6 @@ export class HexagonMap {
   }
 
   private initializeStaticAssets(): void {
-    // Create shared geometry and material only once
     if (!HexagonMap.hexagonGeometry) {
       const hexagonShape = createHexagonShape(HEX_SIZE);
       HexagonMap.hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
@@ -92,28 +99,20 @@ export class HexagonMap {
   }
 
   private initializeMap(): void {
-    // No need to pre-populate allHexes since map is infinite
-    // Hexes will be generated dynamically as chunks are loaded
-
-    // Load initial chunks (start at center 0,0)
     const centerChunkX = 0;
     const centerChunkZ = 0;
 
-    // Set initial chunk position
     this.lastChunkX = centerChunkX;
     this.lastChunkZ = centerChunkZ;
 
     this.updateVisibleHexes(centerChunkX, centerChunkZ);
-    //this.moveCameraToColRow(-32, -15);
   }
 
-  // Add hex to the global collection of all hexagons (now dynamic)
   private addHex(hex: { col: number; row: number }): void {
     const key = `${hex.col},${hex.row}`;
     this.allHexes.add(key);
   }
 
-  // Filter visible hexes for the current chunk area
   private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
     this.visibleHexes.clear();
 
@@ -123,15 +122,12 @@ export class HexagonMap {
       `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
     );
 
-    // Compute tile entities for the current chunk
     const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
     await this.computeTileEntities(chunkKey);
 
     for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
       for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
-        // Check if chunk is within map bounds
         if (this.isChunkInBounds(x, z)) {
-          // console.log(`Processing chunk (${x}, ${z})`);
           this.loadChunkHexes(x, z);
         } else {
           console.log(`Skipping chunk (${x}, ${z}) - out of bounds`);
@@ -139,7 +135,6 @@ export class HexagonMap {
       }
     }
 
-    // Log summary of loaded hexes
     if (this.visibleHexes.size > 0) {
       const hexArray = Array.from(this.visibleHexes).map((hexString) => {
         const [col, row] = hexString.split(",").map(Number);
@@ -159,37 +154,26 @@ export class HexagonMap {
     }
     console.log("=== End update ===\n");
 
-    // Render only the visible hexes
     this.renderHexes();
   }
 
   private isChunkInBounds(chunkX: number, chunkZ: number): boolean {
-    // For infinite map, all chunks are always in bounds
     return true;
   }
 
   private loadChunkHexes(chunkX: number, chunkZ: number): void {
-    // Calculate chunk boundaries
     const startCol = chunkX * HexagonMap.CHUNK_SIZE;
     const startRow = chunkZ * HexagonMap.CHUNK_SIZE;
     const endCol = startCol + HexagonMap.CHUNK_SIZE;
     const endRow = startRow + HexagonMap.CHUNK_SIZE;
 
-    // For infinite map, no clamping needed - generate hexes dynamically
     for (let col = startCol; col < endCol; col++) {
       for (let row = startRow; row < endRow; row++) {
         const hexKey = `${col},${row}`;
-        // Add hex to allHexes if it doesn't exist (dynamic generation)
         this.allHexes.add(hexKey);
-        // Add to visible hexes
         this.visibleHexes.add(hexKey);
       }
     }
-
-    // Debug logging to help understand what's being loaded
-    // console.log(
-    //   `Loading chunk (${chunkX}, ${chunkZ}): hex range (${startCol}-${endCol - 1}, ${startRow}-${endRow - 1})`,
-    // );
   }
 
   private renderHexes(): void {
@@ -198,7 +182,6 @@ export class HexagonMap {
       this.hexagonMesh.dispose();
     }
 
-    // Process all visible hexes (both explored and unexplored)
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
       return { col, row, hexString };
@@ -211,82 +194,59 @@ export class HexagonMap {
       return;
     }
 
-    // Use cached geometry and material
     this.hexagonMesh = new THREE.InstancedMesh(HexagonMap.hexagonGeometry!, HexagonMap.hexagonMaterial!, instanceCount);
-
-    // Set up per-instance colors
     this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
-    // Sort by row (higher row = higher render order)
     allVisibleHexes.sort((a, b) => b.row - a.row);
 
     let index = 0;
     const tilePositions: TilePosition[] = [];
 
     allVisibleHexes.forEach(({ col, row, hexString }) => {
-      // Reuse tempVector3 instead of creating new Vector3
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
 
-      // Position hex shape
       this.dummy.position.copy(this.tempVector3);
       this.dummy.position.y = 0.1;
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
       this.hexagonMesh!.setMatrixAt(index, this.dummy.matrix);
 
-      // Reuse tempColor instead of creating new Color
       this.tempColor.setHex(0x4a90e2);
       this.hexagonMesh!.setColorAt(index, this.tempColor);
 
-      // Check if hex is explored and get biome data
       const biome = this.exploredTiles.get(col)?.get(row);
       const isExplored = biome !== undefined;
 
-      // Check for structures and armies at this hex
-      const hasStructure = this.hasStructureAtHex(col, row);
-      const hasArmy = this.hasArmyAtHex(col, row);
-
-      // Add to tile positions for rendering
-      tilePositions.push({ col, row, biome, isExplored, hasStructure, hasArmy });
+      tilePositions.push({ col, row, biome, isExplored });
 
       index++;
     });
 
-    // Update instance colors
     if (this.hexagonMesh!.instanceColor) {
       this.hexagonMesh!.instanceColor.needsUpdate = true;
     }
 
     this.scene.add(this.hexagonMesh);
-
-    // Render tiles using the TileRenderer
     this.tileRenderer.renderTilesForHexes(tilePositions);
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3): void {
-    // Convert camera position to hex coordinates using the same logic as getHexForWorldPosition
     const hexRadius = HEX_SIZE;
     const hexHeight = hexRadius * 2;
-    const hexWidth = hexHeight * 1.6; // width = height * 1.6
-    const vertDist = hexHeight * 0.75; // Vertical distance between row centers
-    const horizDist = hexWidth; // Horizontal distance between column centers
+    const hexWidth = hexHeight * 1.6;
+    const vertDist = hexHeight * 0.75;
+    const horizDist = hexWidth;
 
-    // Calculate row first
     const row = Math.round(cameraPosition.z / vertDist);
-    // Calculate row offset for hexagon staggering
     const rowOffset = ((row % 2) * Math.sign(row) * horizDist) / 2;
-    // Calculate column using the offset
     const col = Math.round((cameraPosition.x + rowOffset) / horizDist);
 
-    // Get chunk coordinates
     const chunkX = Math.floor(col / HexagonMap.CHUNK_SIZE);
     const chunkZ = Math.floor(row / HexagonMap.CHUNK_SIZE);
 
-    // Only update if we've moved to a different chunk
     if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ) {
       console.log(`Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})`);
       console.log(`Camera at (${cameraPosition.x.toFixed(2)}, ${cameraPosition.z.toFixed(2)}) -> Hex (${col}, ${row})`);
-      // Don't await here to avoid blocking the render loop
       this.updateVisibleHexes(chunkX, chunkZ).catch((error) => {
         console.error("Error updating visible hexes:", error);
       });
@@ -298,10 +258,7 @@ export class HexagonMap {
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
     if (!this.hexagonMesh) return;
 
-    // Update raycaster
     this.raycaster.setFromCamera(mouse, camera);
-
-    // Check for intersections
     const intersects = this.raycaster.intersectObjects([this.hexagonMesh], true);
 
     if (intersects.length > 0) {
@@ -314,29 +271,41 @@ export class HexagonMap {
           const hexData = getHexagonCoordinates(intersectedObject, instanceId);
           console.log(`Hexagon clicked: col=${hexData.hexCoords.col}, row=${hexData.hexCoords.row}`);
 
-          // Visual feedback - temporarily change color of the instance
+          this.handleHexClick(hexData.hexCoords.col, hexData.hexCoords.row);
           this.showClickFeedback(instanceId);
         }
       }
     }
   }
 
+  private handleHexClick(col: number, row: number): void {
+    const armies = this.armyRenderer.getObjectsAtHex(col, row);
+    const structures = this.structureRenderer.getObjectsAtHex(col, row);
+    const quests = this.questRenderer.getObjectsAtHex(col, row);
+
+    if (armies.length > 0) {
+      this.selectionManager.selectObject(armies[0].id, "army");
+    } else if (structures.length > 0) {
+      this.selectionManager.selectObject(structures[0].id, "structure");
+    } else if (quests.length > 0) {
+      this.selectionManager.selectObject(quests[0].id, "quest");
+    } else {
+      this.selectionManager.clearSelection();
+    }
+  }
+
   private showClickFeedback(instanceId: number): void {
     if (!this.hexagonMesh) return;
 
-    // Reuse tempColor objects instead of creating new ones
     const originalColor = this.tempColor;
     this.hexagonMesh.getColorAt(instanceId, originalColor);
 
-    // Create a copy for restoration (we need to store the original value)
     const originalColorCopy = originalColor.clone();
 
-    // Set clicked instance to red using reusable color object
     this.tempColor.setHex(0xff6b6b);
     this.hexagonMesh.setColorAt(instanceId, this.tempColor);
     this.hexagonMesh.instanceColor!.needsUpdate = true;
 
-    // Restore original color after 200ms
     setTimeout(() => {
       if (this.hexagonMesh) {
         this.hexagonMesh.setColorAt(instanceId, originalColorCopy);
@@ -346,7 +315,6 @@ export class HexagonMap {
   }
 
   public getMapBounds(): { minCol: number; maxCol: number; minRow: number; maxRow: number } {
-    // For infinite map, return current visible bounds
     if (this.visibleHexes.size === 0) {
       return { minCol: 0, maxCol: 0, minRow: 0, maxRow: 0 };
     }
@@ -364,16 +332,13 @@ export class HexagonMap {
     return { minCol, maxCol, minRow, maxRow };
   }
 
-  // Debug helper method to test chunk calculations
   public debugChunkCalculations(chunkX: number, chunkZ: number): void {
     console.log(`\n=== DEBUG: Chunk (${chunkX}, ${chunkZ}) calculations ===`);
 
-    // Test if chunk is in bounds
     const inBounds = this.isChunkInBounds(chunkX, chunkZ);
     console.log(`Chunk in bounds: ${inBounds}`);
 
     if (inBounds) {
-      // Calculate what hexes would be loaded
       const startCol = chunkX * HexagonMap.CHUNK_SIZE;
       const startRow = chunkZ * HexagonMap.CHUNK_SIZE;
       const endCol = startCol + HexagonMap.CHUNK_SIZE;
@@ -392,19 +357,17 @@ export class HexagonMap {
       this.hexagonMesh.dispose();
     }
 
-    // Dispose tile renderer
     this.tileRenderer.dispose();
+    this.highlightRenderer.dispose();
+    this.armyRenderer.dispose();
+    this.structureRenderer.dispose();
+    this.questRenderer.dispose();
+    this.selectionManager.dispose();
 
     this.allHexes.clear();
     this.visibleHexes.clear();
-    this.armyHexes.clear();
-    this.structureHexes.clear();
-    this.armiesPositions.clear();
-
-    // Don't dispose static assets here as they might be used by other instances
   }
 
-  // Static method to dispose shared resources when no longer needed
   public static disposeStaticAssets(): void {
     if (HexagonMap.hexagonGeometry) {
       HexagonMap.hexagonGeometry.dispose();
@@ -416,25 +379,14 @@ export class HexagonMap {
     }
   }
 
-  /**
-   * Adjust chunk loading radius based on screen dimensions and camera settings
-   * @param screenWidth - Screen width in pixels
-   * @param screenHeight - Screen height in pixels
-   * @param cameraDistance - Distance of camera from the map
-   */
   public adjustChunkLoadingRadius(screenWidth: number, screenHeight: number, cameraDistance: number = 10): void {
-    // Calculate aspect ratio
     const aspectRatio = screenWidth / screenHeight;
-
-    // Base radius calculation - adjust these multipliers as needed
     const baseRadius = Math.max(1, Math.ceil(cameraDistance / 10));
 
     if (aspectRatio > 1) {
-      // Landscape orientation - load more chunks horizontally
       this.chunkLoadRadiusX = Math.ceil(baseRadius * aspectRatio);
       this.chunkLoadRadiusZ = baseRadius;
     } else {
-      // Portrait orientation - load more chunks vertically
       this.chunkLoadRadiusX = baseRadius;
       this.chunkLoadRadiusZ = Math.ceil(baseRadius / aspectRatio);
     }
@@ -488,7 +440,6 @@ export class HexagonMap {
 
     if (controls) {
       console.log("Moving camera to col", col, "row", row);
-      // Set the target position for the controls
       controls.target.copy(worldPosition);
       controls.update();
     }
@@ -521,7 +472,6 @@ export class HexagonMap {
     return this.exploredTiles.has(col) && this.exploredTiles.get(col)!.has(row);
   }
 
-  // Army tracking methods
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
@@ -531,22 +481,16 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.armiesPositions.get(entityId);
 
-    this.armiesPositions.set(entityId, newPos);
+    const army: ArmyObject = {
+      id: entityId,
+      col: newPos.col,
+      row: newPos.row,
+      owner: address,
+      type: "army",
+    };
 
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-    }
-
-    if (!this.armyHexes.has(newPos.col)) {
-      this.armyHexes.set(newPos.col, new Map());
-    }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+    this.armyRenderer.updateObject(army);
   }
 
   public updateStructureHexes(update: StructureSystemUpdate) {
@@ -558,48 +502,59 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
-    const newCol = normalized.x;
-    const newRow = normalized.y;
+    const structure: StructureObject = {
+      id: entityId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: address,
+      type: "structure",
+    };
 
-    if (!this.structureHexes.has(newCol)) {
-      this.structureHexes.set(newCol, new Map());
-    }
-    this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
+    this.structureRenderer.updateObject(structure);
   }
 
   public deleteArmy(entityId: number) {
-    const oldPos = this.armiesPositions.get(entityId);
-    if (oldPos) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.armiesPositions.delete(entityId);
-    }
+    this.armyRenderer.removeObject(entityId);
   }
 
-  // Helper methods to check if hex has army or structure
   public hasArmyAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyHexes.get(normalized.x)?.has(normalized.y) || false;
+    return this.armyRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
   }
 
   public hasStructureAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureHexes.get(normalized.x)?.has(normalized.y) || false;
+    return this.structureRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
   }
 
   public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyHexes.get(normalized.x)?.get(normalized.y);
+    const armies = this.armyRenderer.getObjectsAtHex(normalized.x, normalized.y);
+    return armies.length > 0 ? { id: armies[0].id, owner: armies[0].owner! } : undefined;
   }
 
   public getStructureAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureHexes.get(normalized.x)?.get(normalized.y);
+    const structures = this.structureRenderer.getObjectsAtHex(normalized.x, normalized.y);
+    return structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined;
   }
 
   public getHexagonEntity(hexCoords: { col: number; row: number }) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
-    const army = this.armyHexes.get(hex.x)?.get(hex.y);
-    const structure = this.structureHexes.get(hex.x)?.get(hex.y);
-    return { army, structure };
+    const armies = this.armyRenderer.getObjectsAtHex(hex.x, hex.y);
+    const structures = this.structureRenderer.getObjectsAtHex(hex.x, hex.y);
+
+    return {
+      army: armies.length > 0 ? { id: armies[0].id, owner: armies[0].owner! } : undefined,
+      structure: structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined,
+    };
+  }
+
+  public getSelectionManager(): SelectionManager {
+    return this.selectionManager;
+  }
+
+  public async moveArmy(armyId: number, targetCol: number, targetRow: number): Promise<void> {
+    await this.armyRenderer.moveObject(armyId, targetCol, targetRow);
   }
 }

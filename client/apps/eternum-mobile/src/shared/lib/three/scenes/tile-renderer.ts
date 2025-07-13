@@ -7,13 +7,9 @@ export interface TilePosition {
   row: number;
   biome?: BiomeType;
   isExplored: boolean;
-  hasStructure?: boolean;
-  hasArmy?: boolean;
 }
 
 const OUTLINE_TILE_ID = 17;
-const STRUCTURE_TILE_ID = 18;
-const ARMY_TILE_ID = 19;
 export class TileRenderer {
   private scene: THREE.Scene;
   private materials: Map<number, THREE.SpriteMaterial> = new Map();
@@ -85,8 +81,6 @@ export class TileRenderer {
       ); // Fifteenth tile (index 14)
       this.createTileMaterial(BiomeTypeToId[BiomeType.TropicalRainForest], 9, tilesPerRow, TileRenderer.tileTexture); // Sixteenth tile (index 15)
       this.createTileMaterial(OUTLINE_TILE_ID, 13, tilesPerRow, TileRenderer.tileTexture, 0.3); // Outline tile for unexplored hexes
-      this.createTileMaterial(STRUCTURE_TILE_ID, 14, tilesPerRow, TileRenderer.tileTexture); // Structure tile for structures
-      this.createTileMaterial(ARMY_TILE_ID, 15, tilesPerRow, TileRenderer.tileTexture); // Army tile for armies
 
       // Create prototype sprites for each tile type
       this.createPrototypeSprites();
@@ -167,28 +161,19 @@ export class TileRenderer {
     // Sort hexes by row for proper rendering order (higher row = higher render order)
     const sortedHexes = [...hexes].sort((a, b) => b.row - a.row);
 
-    sortedHexes.forEach(({ col, row, biome, isExplored, hasStructure, hasArmy }) => {
-      this.createTileSprite(col, row, biome, isExplored, hasStructure, hasArmy);
+    sortedHexes.forEach(({ col, row, biome, isExplored }) => {
+      this.createTileSprite(col, row, biome, isExplored);
     });
   }
 
-  private createTileSprite(
-    col: number,
-    row: number,
-    biome?: BiomeType,
-    isExplored: boolean = true,
-    hasStructure: boolean = false,
-    hasArmy: boolean = false,
-  ): void {
+  private createTileSprite(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
     // Reuse tempVector3 instead of creating new Vector3
     getWorldPositionForTile({ col, row }, true, this.tempVector3);
 
-    // Base tile logic: structure replaces biome, otherwise use biome or outline for unexplored
+    // Base tile logic: use biome or outline for unexplored
     let baseTileId: number;
-    if (hasStructure) {
-      baseTileId = STRUCTURE_TILE_ID;
-    } else if (isExplored && biome) {
+    if (isExplored && biome) {
       baseTileId = BiomeTypeToId[biome];
     } else {
       baseTileId = OUTLINE_TILE_ID;
@@ -196,12 +181,6 @@ export class TileRenderer {
 
     // Create base tile
     this.createSingleTileSprite(hexKey, baseTileId, this.tempVector3, row, false);
-
-    // Create army tile on top if needed
-    if (hasArmy) {
-      const armyKey = `${hexKey}_army`;
-      this.createSingleTileSprite(armyKey, ARMY_TILE_ID, this.tempVector3, row, false);
-    }
   }
 
   private createSingleTileSprite(
@@ -243,7 +222,6 @@ export class TileRenderer {
 
   public removeTile(col: number, row: number): void {
     const hexKey = `${col},${row}`;
-    const armyKey = `${hexKey}_army`;
 
     // Remove base tile
     const sprite = this.sprites.get(hexKey);
@@ -251,23 +229,9 @@ export class TileRenderer {
       this.scene.remove(sprite);
       this.sprites.delete(hexKey);
     }
-
-    // Remove army tile if it exists
-    const armySprite = this.sprites.get(armyKey);
-    if (armySprite) {
-      this.scene.remove(armySprite);
-      this.sprites.delete(armyKey);
-    }
   }
 
-  public addTile(
-    col: number,
-    row: number,
-    biome?: BiomeType,
-    isExplored: boolean = true,
-    hasStructure: boolean = false,
-    hasArmy: boolean = false,
-  ): void {
+  public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
 
     // Don't create duplicate tiles
@@ -275,11 +239,11 @@ export class TileRenderer {
       return;
     }
 
-    this.createTileSprite(col, row, biome, isExplored, hasStructure, hasArmy);
+    this.createTileSprite(col, row, biome, isExplored);
   }
 
   public updateTilesForHexes(hexes: TilePosition[]): void {
-    const currentHexKeys = new Set(Array.from(this.sprites.keys()).filter((key) => !key.includes("_army")));
+    const currentHexKeys = new Set(Array.from(this.sprites.keys()));
     const newHexKeys = new Set(hexes.map(({ col, row }) => `${col},${row}`));
 
     // Remove tiles that are no longer needed
@@ -291,10 +255,10 @@ export class TileRenderer {
     });
 
     // Add new tiles
-    hexes.forEach(({ col, row, biome, isExplored, hasStructure, hasArmy }) => {
+    hexes.forEach(({ col, row, biome, isExplored }) => {
       const hexKey = `${col},${row}`;
       if (!currentHexKeys.has(hexKey)) {
-        this.addTile(col, row, biome, isExplored, hasStructure, hasArmy);
+        this.addTile(col, row, biome, isExplored);
       }
     });
   }
