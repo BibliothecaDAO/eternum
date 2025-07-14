@@ -4,8 +4,16 @@ import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, Resource, STEALABLE_RESOURCES, StructureType, Troops } from "@bibliothecadao/types";
+import { EntityRelicEffect, getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
+import {
+  ContractAddress,
+  ID,
+  Resource,
+  ResourcesIds,
+  STEALABLE_RESOURCES,
+  StructureType,
+  Troops,
+} from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
 import { CombatContainer } from "./combat-container";
@@ -65,6 +73,35 @@ export const AttackContainer = ({
   const [target, setTarget] = useState<AttackTarget | null>(null);
   const [targetResources, setTargetResources] = useState<Array<{ resourceId: number; amount: number }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [attackerRelicEffects, setAttackerRelicEffects] = useState<EntityRelicEffect[]>([]);
+  const [targetRelicEffects, setTargetRelicEffects] = useState<EntityRelicEffect[]>([]);
+
+  // Query attacker relic effects
+  useEffect(() => {
+    const fetchAttackerRelicEffects = async () => {
+      const { currentArmiesTick } = getBlockTimestamp();
+      try {
+        const effects = await sqlApi.fetchEntityRelicEffects(attackerEntityId);
+        setAttackerRelicEffects(
+          effects.filter((effect) =>
+            ResourceManager.isRelicActive(
+              {
+                start_tick: effect.effect_start_tick,
+                end_tick: effect.effect_end_tick,
+                usage_left: effect.effect_usage_left,
+              },
+              currentArmiesTick,
+            ),
+          ),
+        );
+      } catch (error) {
+        console.error("Failed to fetch attacker relic effects:", error);
+        setAttackerRelicEffects([]);
+      }
+    };
+
+    fetchAttackerRelicEffects();
+  }, [attackerEntityId]);
 
   // target not synced so need to fetch from torii
   useEffect(() => {
@@ -74,6 +111,32 @@ export const AttackContainer = ({
     const getTarget = async () => {
       setIsLoading(true);
       const { currentArmiesTick, currentBlockTimestamp } = getBlockTimestamp();
+
+      // Fetch target relic effects
+      let targetEffects: EntityRelicEffect[] = [];
+      try {
+        targetEffects = (await sqlApi.fetchEntityRelicEffects(targetTile.occupier_id)) || [];
+        targetEffects.filter((effect) =>
+          ResourceManager.isRelicActive(
+            {
+              start_tick: effect.effect_start_tick,
+              end_tick: effect.effect_end_tick,
+              usage_left: effect.effect_usage_left,
+            },
+            currentArmiesTick,
+          ),
+        );
+        setTargetRelicEffects(targetEffects);
+      } catch (error) {
+        console.error("Failed to fetch target relic effects:", error);
+        setTargetRelicEffects([]);
+      }
+
+      // Convert relic effects to resource IDs for StaminaManager
+      const targetRelicResourceIds = targetEffects
+        .filter((effect) => effect.effect_end_tick > currentArmiesTick)
+        .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+
       if (isStructure) {
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
         if (structure) {
@@ -81,7 +144,7 @@ export const AttackContainer = ({
           setTarget({
             info: guards.map((guard) => ({
               ...guard.troops,
-              stamina: StaminaManager.getStamina(guard.troops, currentArmiesTick),
+              stamina: StaminaManager.getStamina(guard.troops, currentArmiesTick, targetRelicResourceIds),
             })),
             id: targetTile?.occupier_id,
             targetType: TargetType.Structure,
@@ -107,7 +170,12 @@ export const AttackContainer = ({
         if (explorer) {
           const addressOwner = await sqlApi.fetchExplorerAddressOwner(targetTile.occupier_id);
           setTarget({
-            info: [explorer.troops],
+            info: [
+              {
+                ...explorer.troops,
+                stamina: StaminaManager.getStamina(explorer.troops, currentArmiesTick, targetRelicResourceIds),
+              },
+            ],
             id: targetTile?.occupier_id,
             targetType: TargetType.Army,
             structureCategory: null,
@@ -177,9 +245,17 @@ export const AttackContainer = ({
                   attackerEntityId={attackerEntityId}
                   target={target}
                   targetResources={targetResources}
+                  attackerActiveRelicEffects={attackerRelicEffects}
+                  targetActiveRelicEffects={targetRelicEffects}
                 />
               ) : (
-                <RaidContainer attackerEntityId={attackerEntityId} target={target} targetResources={targetResources} />
+                <RaidContainer
+                  attackerEntityId={attackerEntityId}
+                  target={target}
+                  targetResources={targetResources}
+                  attackerActiveRelicEffects={attackerRelicEffects}
+                  targetActiveRelicEffects={targetRelicEffects}
+                />
               )}
             </div>
           ) : (

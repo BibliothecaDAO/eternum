@@ -1,8 +1,10 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ArmyChip } from "@/ui/features/military";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { Entity, getComponentValue, HasValue } from "@dojoengine/recs";
 import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) => {
@@ -11,6 +13,16 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
   } = useDojo();
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.explorer.owner)]));
   const explorerResources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.entityId)]));
+  const activeRelicEntities = useEntityQuery([HasValue(components.RelicEffect, { entity_id: playerArmy.entityId })]);
+
+  const { currentArmiesTick } = useBlockTimestamp();
+
+  const activeRelicEffects = Array.from(activeRelicEntities)
+    .map((entity) => {
+      return getComponentValue(components.RelicEffect, entity as Entity);
+    })
+    .filter((relic) => relic !== undefined)
+    .filter((relic) => relic.effect_end_tick > currentArmiesTick);
 
   return (
     <div
@@ -28,6 +40,7 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
             army={playerArmy.explorer}
             explorerResources={explorerResources}
             structureResources={resources}
+            relicEffects={activeRelicEffects}
           />
         )}
         <ArmyChip className="bg-black/90" army={playerArmy} showButtons={false} />

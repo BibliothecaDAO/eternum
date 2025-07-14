@@ -16,9 +16,8 @@ import {
   getBalance,
   getGuardsByStructure,
   getRemainingCapacityInKg,
-  StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient, QuestTileData } from "@bibliothecadao/torii";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -212,10 +211,13 @@ const AttackInfo = memo(
       return guardTroops;
     }, [explorer, structure]);
 
+    const staminaManager = useStaminaManager(selectedEntityId);
+
     const stamina = useMemo(() => {
       if (!targetTroops) return { amount: 0n, updated_tick: 0n };
-      return StaminaManager.getStamina(targetTroops, currentArmiesTick);
-    }, [targetTroops, currentArmiesTick]);
+      // No relic effects available in this context, pass empty array
+      return staminaManager.getStamina(currentArmiesTick);
+    }, [targetTroops, currentArmiesTick, staminaManager]);
 
     const combatParams = useMemo(() => configManager.getCombatConfig(), []);
 

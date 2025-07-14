@@ -1,4 +1,4 @@
-import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TroopTier, TroopType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "../managers";
 import { divideWithPrecision } from "./utils";
 
@@ -86,11 +86,13 @@ export class CombatSimulator {
   }
 
   /**
-   * Simulates a battle between two armies in a specific biome
+   * Simulates a battle between two armies in a specific biome, with support for relic effects.
    *
    * @param attacker - The attacking army with troopCount, tier, troopType, and stamina
    * @param defender - The defending army with troopCount, tier, troopType, and stamina
    * @param biome - The biome type where the battle takes place, affecting troop bonuses
+   * @param attackerRelics - Array of resource IDs representing attacker's active relic effects
+   * @param defenderRelics - Array of resource IDs representing defender's active relic effects
    * @returns An object containing the damage dealt by each side:
    *          - attackerDamage: Amount of damage dealt by the attacker
    *          - defenderDamage: Amount of damage dealt by the defender
@@ -99,6 +101,8 @@ export class CombatSimulator {
     attacker: Army,
     defender: Army,
     biome: BiomeType,
+    attackerRelics: ResourcesIds[] = [],
+    defenderRelics: ResourcesIds[] = [],
   ): { attackerDamage: number; defenderDamage: number } {
     const totalTroops = attacker.troopCount + defender.troopCount;
     const betaEff = this.calculateEffectiveBeta();
@@ -107,8 +111,33 @@ export class CombatSimulator {
       return { attackerDamage: 0, defenderDamage: 0 };
     }
 
-    // Calculate attacker damage
-    const attackerDamage =
+    // Calculate relic effects
+    // Attacker damage relics increase damage output
+    const attackerDamageRelics = RELICS.filter(r => attackerRelics.includes(r.id) && r.type === "Damage");
+    const attackerDamageMultiplier = attackerDamageRelics.length > 0 
+      ? Math.max(...attackerDamageRelics.map(r => r.bonus)) 
+      : 1;
+
+    // Defender damage reduction relics reduce incoming damage
+    const defenderReductionRelics = RELICS.filter(r => defenderRelics.includes(r.id) && r.type === "Damage Reduction");
+    const defenderReductionMultiplier = defenderReductionRelics.length > 0 
+      ? Math.min(...defenderReductionRelics.map(r => r.bonus)) 
+      : 1;
+
+    // Defender damage relics increase damage output
+    const defenderDamageRelics = RELICS.filter(r => defenderRelics.includes(r.id) && r.type === "Damage");
+    const defenderDamageMultiplier = defenderDamageRelics.length > 0 
+      ? Math.max(...defenderDamageRelics.map(r => r.bonus)) 
+      : 1;
+
+    // Attacker damage reduction relics reduce incoming damage
+    const attackerReductionRelics = RELICS.filter(r => attackerRelics.includes(r.id) && r.type === "Damage Reduction");
+    const attackerReductionMultiplier = attackerReductionRelics.length > 0 
+      ? Math.min(...attackerReductionRelics.map(r => r.bonus)) 
+      : 1;
+
+    // Calculate base damage for attacker
+    const baseAttackerDamage =
       (this.baseDamageFactor *
         attacker.troopCount *
         (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
@@ -116,14 +145,18 @@ export class CombatSimulator {
         configManager.getBiomeCombatBonus(attacker.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
 
-    // Calculate defender damage
-    const defenderDamage =
+    // Calculate base damage for defender
+    const baseDefenderDamage =
       (this.baseDamageFactor *
         defender.troopCount *
         (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
         this.calculateStaminaModifier(defender.stamina, false) *
         configManager.getBiomeCombatBonus(defender.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
+
+    // Apply relic modifiers
+    const attackerDamage = baseAttackerDamage * attackerDamageMultiplier * defenderReductionMultiplier;
+    const defenderDamage = baseDefenderDamage * defenderDamageMultiplier * attackerReductionMultiplier;
 
     return {
       attackerDamage,
@@ -152,7 +185,9 @@ export class CombatSimulator {
     attacker: Army,
     defender: Army,
     biome: BiomeType,
+    attackerRelics: ResourcesIds[] = [],
+    defenderRelics: ResourcesIds[] = [],
   ): { attackerDamage: number; defenderDamage: number } {
-    return this.simulateBattle(attacker, defender, biome);
+    return this.simulateBattle(attacker, defender, biome, attackerRelics, defenderRelics);
   }
 }

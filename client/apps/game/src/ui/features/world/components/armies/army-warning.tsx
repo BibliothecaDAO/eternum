@@ -19,9 +19,10 @@ interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   explorerResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   structureResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  relicEffects: ComponentValue<ClientComponents["RelicEffect"]["schema"]>[];
 }
 
-export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
+export const ArmyWarning = ({ army, explorerResources, structureResources, relicEffects }: ArmyWarningProps) => {
   const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
   const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
 
@@ -63,8 +64,12 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
   const { currentArmiesTick } = useBlockTimestamp();
 
   const stamina = useMemo(() => {
-    return StaminaManager.getStamina(army.troops, currentArmiesTick);
-  }, [army, currentArmiesTick]);
+    return StaminaManager.getStamina(
+      army.troops,
+      currentArmiesTick,
+      relicEffects.map((relic) => relic.effect_resource_id),
+    );
+  }, [army, currentArmiesTick, relicEffects]);
 
   const minStaminaNeeded = useMemo(() => {
     const neighbors = getNeighborHexes(army.coord.x, army.coord.y);

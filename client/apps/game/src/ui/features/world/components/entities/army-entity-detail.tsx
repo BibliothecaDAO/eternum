@@ -9,7 +9,15 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ClientComponents, ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  ID,
+  RelicRecipientType,
+  ResourcesIds,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
@@ -87,7 +95,14 @@ export const ArmyEntityDetail = memo(
       if (!explorer) return undefined;
 
       const { currentArmiesTick } = getBlockTimestamp();
-      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+
+      // Convert relic effects to resource IDs for StaminaManager
+      const relicResourceIds =
+        (explorerData?.relicEffects
+          ?.filter((effect) => effect.effect_end_tick > currentArmiesTick)
+          ?.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[]) || [];
+
+      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick, relicResourceIds);
       const maxStamina = StaminaManager.getMaxStamina(
         explorer.troops.category as TroopType,
         explorer.troops.tier as TroopTier,
@@ -113,7 +128,7 @@ export const ArmyEntityDetail = memo(
         isMine,
         structureOwnerName: structureOwnerName,
       };
-    }, [explorer, structure, components, userAddress, armyEntityId]);
+    }, [explorer, structure, components, userAddress, armyEntityId, explorerData?.relicEffects]);
 
     const handleDeleteExplorer = async () => {
       setIsLoadingDelete(true);
@@ -226,6 +241,7 @@ export const ArmyEntityDetail = memo(
                 army={explorer}
                 explorerResources={explorerResources}
                 structureResources={structureResources}
+                relicEffects={explorerData?.relicEffects}
               />
             )}
 
@@ -269,11 +285,7 @@ export const ArmyEntityDetail = memo(
 
           {/* Active Relic Effects section */}
           {explorerData?.relicEffects && (
-            <ActiveRelicEffects
-              relicEffects={explorerData.relicEffects}
-              entityId={armyEntityId}
-              compact={compact}
-            />
+            <ActiveRelicEffects relicEffects={explorerData.relicEffects} entityId={armyEntityId} compact={compact} />
           )}
 
           {/* Troops section */}

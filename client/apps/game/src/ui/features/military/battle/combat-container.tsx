@@ -22,6 +22,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { EntityRelicEffect } from "@bibliothecadao/torii";
 import {
   CapacityConfig,
   ClientComponents,
@@ -30,6 +31,7 @@ import {
   ID,
   RESOURCE_PRECISION,
   resources,
+  ResourcesIds,
   StructureType,
   Troops,
   TroopTier,
@@ -37,6 +39,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
+import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
 import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
 
@@ -79,10 +82,14 @@ export const CombatContainer = ({
   attackerEntityId,
   target,
   targetResources,
+  attackerActiveRelicEffects = [],
+  targetActiveRelicEffects = [],
 }: {
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
+  attackerActiveRelicEffects: EntityRelicEffect[];
+  targetActiveRelicEffects: EntityRelicEffect[];
 }) => {
   const {
     account: { account },
@@ -126,7 +133,24 @@ export const CombatContainer = ({
     return structure ? getGuardsByStructure(structure) : [];
   }, [attackerType, attackerEntityId, Structure]);
 
+  // Convert relic effects to resource IDs
+  const attackerRelicResourceIds = useMemo(() => {
+    const { currentArmiesTick } = getBlockTimestamp();
+    return attackerActiveRelicEffects
+      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
+      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+  }, [attackerActiveRelicEffects]);
+
+  const targetRelicResourceIds = useMemo(() => {
+    const { currentArmiesTick } = getBlockTimestamp();
+    return targetActiveRelicEffects
+      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
+      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+  }, [targetActiveRelicEffects]);
+
   const attackerStamina = useMemo(() => {
+    const { currentArmiesTick } = getBlockTimestamp();
+
     if (attackerType === AttackerType.Structure) {
       if (selectedGuardSlot === null && structureGuards.length > 0) {
         // Auto-select the first guard if none is selected
@@ -136,17 +160,17 @@ export const CombatContainer = ({
         const guard = structureGuards[0];
         if (!guard.troops.stamina) return 0n;
 
-        return StaminaManager.getStamina(guard.troops, getBlockTimestamp().currentArmiesTick).amount;
+        return StaminaManager.getStamina(guard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
       } else if (selectedGuardSlot !== null) {
         const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
         if (selectedGuard && selectedGuard.troops.stamina) {
-          return StaminaManager.getStamina(selectedGuard.troops, getBlockTimestamp().currentArmiesTick).amount;
+          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
         }
       }
       return 0n;
     }
-    return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
+    return new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
+  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, attackerActiveRelicEffects]);
 
   // Get the current army states for display
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
@@ -222,7 +246,13 @@ export const CombatContainer = ({
       tier: targetArmyData.troops.tier as TroopTier,
     };
 
-    const result = combatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome);
+    const result = combatSimulator.simulateBattleWithParams(
+      attackerArmy,
+      defenderArmy,
+      biome,
+      attackerRelicResourceIds,
+      targetRelicResourceIds,
+    );
 
     const attackerTroopsLost = result.defenderDamage;
     const defenderTroopsLost = result.attackerDamage;
@@ -268,6 +298,8 @@ export const CombatContainer = ({
     biome,
     combatConfig,
     combatSimulator,
+    attackerRelicResourceIds,
+    targetRelicResourceIds,
   ]);
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
@@ -481,6 +513,12 @@ export const CombatContainer = ({
         {/* Attacker Panel */}
         <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
           <h4>Attacker Forces (You)</h4>
+
+          {/* Attacker Relic Effects */}
+          {attackerActiveRelicEffects.length > 0 && (
+            <ActiveRelicEffects relicEffects={attackerActiveRelicEffects} entityId={attackerEntityId} compact={true} />
+          )}
+
           {attackerArmyData && (
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
@@ -519,6 +557,12 @@ export const CombatContainer = ({
         {/* Defender Panel */}
         <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg  backdrop-blur-sm panel-wood">
           <h4>Defender Forces</h4>
+
+          {/* Defender Relic Effects */}
+          {targetActiveRelicEffects.length > 0 && (
+            <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
+          )}
+
           {targetArmyData ? (
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
@@ -754,7 +798,11 @@ export const CombatContainer = ({
                 isWinner: winner === attackerEntityId,
                 originalTroops: attackerArmyData.troops,
                 currentStamina: attackerArmyData.troops
-                  ? StaminaManager.getStamina(attackerArmyData.troops, getBlockTimestamp().currentArmiesTick).amount
+                  ? StaminaManager.getStamina(
+                      attackerArmyData.troops,
+                      getBlockTimestamp().currentArmiesTick,
+                      attackerRelicResourceIds,
+                    ).amount
                   : 0,
                 newStamina: battleSimulation?.newAttackerStamina || 0,
                 isAttacker: true,
@@ -766,7 +814,11 @@ export const CombatContainer = ({
                 originalTroops: targetArmyData.troops,
                 currentStamina: Number(
                   targetArmyData.troops
-                    ? StaminaManager.getStamina(targetArmyData.troops, getBlockTimestamp().currentArmiesTick).amount
+                    ? StaminaManager.getStamina(
+                        targetArmyData.troops,
+                        getBlockTimestamp().currentArmiesTick,
+                        targetRelicResourceIds,
+                      ).amount
                     : 0,
                 ),
                 newStamina: battleSimulation?.newDefenderStamina || 0,

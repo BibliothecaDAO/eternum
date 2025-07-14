@@ -1,13 +1,13 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
+import { EntityRelicEffect } from "@bibliothecadao/torii";
 import { getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
-  relicEffects: ComponentValue<any>[];
+  relicEffects: EntityRelicEffect[];
   entityId: ID;
   compact?: boolean;
   className?: string;
@@ -53,7 +53,6 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
   }, [relicEffects, currentArmiesTick, armiesTickTimeRemaining]);
 
   const smallTextClass = compact ? "text-xxs" : "text-xs";
-  const headerTextClass = compact ? "text-xs" : "text-sm";
 
   if (activeEffects.length === 0) {
     return (

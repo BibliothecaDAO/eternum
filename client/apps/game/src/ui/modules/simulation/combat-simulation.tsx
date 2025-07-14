@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/features/progression";
-import { battleSimulation, OSWindow, CombatSimulationPanel } from "@/ui/features/world";
+import { battleSimulation, CombatSimulationPanel, OSWindow } from "@/ui/features/world";
 
 export const CombatSimulation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -13,7 +13,8 @@ export const CombatSimulation = () => {
       show={isOpen}
       title={"Combat simulation"}
       hintSection={HintSection.Combat}
-      width="800px"
+      width="1000px"
+      height="1000px"
     >
       <CombatSimulationPanel />
     </OSWindow>
