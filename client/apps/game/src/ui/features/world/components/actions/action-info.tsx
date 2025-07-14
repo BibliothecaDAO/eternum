@@ -409,11 +409,11 @@ const ChestInfo = memo(() => {
       <div className="flex flex-row text-xs ml-1">
         <div className="text-lg p-1 pr-3">📦</div>
         <div className="flex flex-col p-1 text-xs">
-          <div className="font-semibold text-gold mb-1">Relic Chest</div>
+          <div className="font-semibold text-gold mb-1">Relic Crate</div>
           <div className="text-gray-300 mb-1">
             Contains valuable relics that can enhance your structures and armies.
           </div>
-          <div className="text-xs text-gray-400">Click to open the chest and collect relics.</div>
+          <div className="text-xs text-gray-400">Click to open the crate and collect relics.</div>
         </div>
       </div>
     </div>

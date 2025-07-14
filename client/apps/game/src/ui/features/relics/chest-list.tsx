@@ -37,15 +37,15 @@ export const ChestList = ({ chests }: ChestListProps) => {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-5 h-5 text-gold" />
-        <h3 className="text-lg font-bold text-gold">Nearby Chests</h3>
+        <h3 className="text-lg font-bold text-gold">Nearby Crates</h3>
         <span className="text-sm text-gold/60">({chests.length} found)</span>
       </div>
-      <div className="text-xs text-gold/50 mb-2 ml-7">Chests are sorted by distance: closest to furthest.</div>
+      <div className="text-xs text-gold/50 mb-2 ml-7">Crates are sorted by distance: closest to furthest.</div>
       {chests.length === 0 ? (
         <div className="text-center py-8 text-gold/60">
           <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <div>No chests found in this area</div>
-          <div className="text-sm mt-1">Explore more to discover treasure chests!</div>
+          <div>No crates found in this area</div>
+          <div className="text-sm mt-1">Explore more to discover Relic Crates!</div>
         </div>
       ) : (
         <div className="space-y-2">
@@ -71,7 +71,7 @@ export const ChestList = ({ chests }: ChestListProps) => {
                   onClick={() => handleNavigateToChest(chest)}
                   onMouseEnter={() =>
                     setTooltip({
-                      content: "Navigate to this chest location",
+                      content: "Navigate to this crate location",
                       position: "top",
                     })
                   }

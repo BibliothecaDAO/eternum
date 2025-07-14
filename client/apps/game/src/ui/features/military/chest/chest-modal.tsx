@@ -20,7 +20,7 @@ export const ChestModal = ({
       <div className="production-modal-selector container mx-auto h-full rounded-2xl relative flex flex-col">
         {/* Header */}
         <div className="flex justify-center border-b border-gold/30">
-          <div className="px-6 py-3 text-lg font-semibold text-gold">Open Relic Chest</div>
+          <div className="px-6 py-3 text-lg font-semibold text-gold">Open Relic Crate</div>
         </div>
 
         {/* Content */}

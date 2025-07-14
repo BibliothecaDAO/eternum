@@ -63,7 +63,7 @@ export const RelicsModule = () => {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gold">Relics & Chests</h1>
+        <h1 className="text-2xl font-bold text-gold">Relics & Crates</h1>
         <button
           onClick={handleRefresh}
           disabled={isLoading}
@@ -105,7 +105,7 @@ export const RelicsModule = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Loader className="w-8 h-8 animate-spin mx-auto mb-2 text-gold" />
-              <div className="text-gold/70">Loading {activeTab === "chests" ? "nearby chests" : "your relics"}...</div>
+              <div className="text-gold/70">Loading {activeTab === "chests" ? "nearby crates" : "your relics"}...</div>
             </div>
           </div>
         ) : (

@@ -239,14 +239,14 @@ export function getChestName(entityId: number): string {
     let finalName: string;
 
     if (possessiveWords.includes(selectedNameSuffix)) {
-      // For words like "Bane", "Shadow" - use pattern: "Doom Chest's Bane"
-      finalName = `${namePrefixes[prefixIndex]} Chest's ${selectedNameSuffix}`;
+      // For words like "Bane", "Shadow" - use pattern: "Doom Crate's Bane"
+      finalName = `${namePrefixes[prefixIndex]} Crate's ${selectedNameSuffix}`;
     } else if (standaloneWords.includes(selectedNameSuffix)) {
-      // For words like "Keeper", "Guardian" - use pattern: "Doom Chest Guardian"
-      finalName = `${namePrefixes[prefixIndex]} Chest ${selectedNameSuffix}`;
+      // For words like "Keeper", "Guardian" - use pattern: "Doom Crate Guardian"
+      finalName = `${namePrefixes[prefixIndex]} Crate ${selectedNameSuffix}`;
     } else {
       // Default pattern for other words
-      finalName = `${namePrefixes[prefixIndex]} Chest of ${selectedNameSuffix}`;
+      finalName = `${namePrefixes[prefixIndex]} Crate of ${selectedNameSuffix}`;
     }
 
     chestName = finalName;

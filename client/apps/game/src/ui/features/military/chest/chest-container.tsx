@@ -158,8 +158,8 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                         hoveredRelicInfo.activation === RelicActivation.Army
                           ? "bg-red-600/20 text-red-400"
                           : hoveredRelicInfo.activation === RelicActivation.Structure
-                          ? "bg-green-600/20 text-green-400"
-                          : "bg-orange-600/20 text-orange-400"
+                            ? "bg-green-600/20 text-green-400"
+                            : "bg-orange-600/20 text-orange-400"
                       }`}
                     >
                       {hoveredRelicInfo.activation}
@@ -223,7 +223,7 @@ export const ChestContainer = ({
 
   const chestName = useMemo(() => {
     const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(chestHex.x), BigInt(chestHex.y)]));
-    if (!tile) return "Unknown Chest";
+    if (!tile) return "Unknown Crate";
     return getChestName(tile.occupier_id);
   }, [chestHex.x, chestHex.y]);
 
@@ -345,7 +345,7 @@ export const ChestContainer = ({
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="text-center mb-6"
           >
-            <div className="text-gold text-3xl mb-4 font-bold">🎉 Chest Opened!</div>
+            <div className="text-gold text-3xl mb-4 font-bold">🎉 Crate Opened!</div>
             <motion.h2
               className="text-gold text-xl font-bold mb-2 bg-gradient-to-r from-gold via-yellow-400 to-gold bg-clip-text text-transparent"
               animate={{
@@ -369,7 +369,7 @@ export const ChestContainer = ({
 
           <motion.img
             src="/images/relic-chest/chest-opened.png"
-            alt="Open Chest"
+            alt="Open Crate"
             className="w-56 h-56 mb-6"
             initial={{ rotate: -5 }}
             animate={{ rotate: 5 }}
@@ -641,19 +641,19 @@ export const ChestContainer = ({
           ))}
         </motion.div>
 
-        <img src="/images/relic-chest/chest-closed.png" alt="Closed Chest" className="w-48 h-48 mb-4 relative z-10" />
+        <img src="/images/relic-chest/chest-closed.png" alt="Closed Crate" className="w-48 h-48 mb-4 relative z-10" />
       </motion.div>
 
       {hasClicked && (
         <div className="text-center mt-4">
           <p className="text-gold/70 text-sm animate-pulse">
-            {showResult ? "Chest opened!" : "Opening chest... waiting for transaction..."}
+            {showResult ? "Crate opened!" : "Opening crate... waiting for transaction..."}
           </p>
         </div>
       )}
 
       <p className="text-gold/60 text-xs mt-4 text-center">
-        Click the chest to open it. Each click will shake the chest!
+        Click the crate to open it. Each click will shake the crate!
       </p>
 
       {/* Horizontal Relic Carousel - Only show before opening */}
@@ -664,7 +664,7 @@ export const ChestContainer = ({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            <h3 className="text-center text-gold text-lg font-semibold mb-4">Possible Relics in This Chest</h3>
+            <h3 className="text-center text-gold text-lg font-semibold mb-4">Possible Relics in This Crate</h3>
             <RelicCarousel foundRelics={[]} />
           </motion.div>
         </div>

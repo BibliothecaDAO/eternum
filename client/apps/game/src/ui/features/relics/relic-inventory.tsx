@@ -142,7 +142,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
       {totalRelics === 0 && (
         <div className="text-center py-12 text-gold/60">
           <div className="text-lg mb-2">No relics found</div>
-          <div className="text-sm">Explore the world and open chests to collect powerful relics!</div>
+          <div className="text-sm">Explore the world and open crates to collect powerful relics!</div>
         </div>
       )}
     </div>
