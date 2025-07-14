@@ -514,6 +514,7 @@ export interface Config {
   };
   season: {
     startSettlingAfterSeconds: number;
+    durationSeconds: number;
     startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;

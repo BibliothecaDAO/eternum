@@ -46,6 +46,7 @@ pub trait ISeasonConfig<T> {
         lords_address: starknet::ContractAddress,
         start_settling_at: u64,
         start_main_at: u64,
+        end_at: u64,
         bridge_close_end_grace_seconds: u32,
         point_registration_grace_seconds: u32,
     );
@@ -359,6 +360,7 @@ pub mod config_systems {
             lords_address: starknet::ContractAddress,
             start_settling_at: u64,
             start_main_at: u64,
+            end_at: u64,
             bridge_close_end_grace_seconds: u32,
             point_registration_grace_seconds: u32,
         ) {
@@ -376,6 +378,7 @@ pub mod config_systems {
                 assert!(start_settling_at < start_main_at, "start_settling_at must be before start_main_at");
                 season_config.start_settling_at = start_settling_at;
                 season_config.start_main_at = start_main_at;
+                season_config.end_at = end_at;
                 season_config.end_grace_seconds = bridge_close_end_grace_seconds;
                 season_config.registration_grace_seconds = point_registration_grace_seconds;
                 WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);

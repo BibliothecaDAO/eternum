@@ -1086,14 +1086,16 @@ export const setSeasonConfig = async (config: Config) => {
   const now = Math.floor(new Date().getTime() / 1000);
   const startMainAt = now + config.config.season.startMainAfterSeconds;
   const startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
+  const endAt = startMainAt + config.config.season.durationSeconds;
 
   const seasonCalldata = {
     signer: config.account,
     season_pass_address: config.config.setup!.addresses.seasonPass,
     realms_address: config.config.setup!.addresses.realms,
     lords_address: config.config.setup!.addresses.lords,
-    start_settling_at: 1746795600,
-    start_main_at: 1747227600,
+    start_settling_at: startSettlingAt,
+    start_main_at: startMainAt,
+    end_at: endAt,
     bridge_close_end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
