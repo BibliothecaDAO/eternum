@@ -1,7 +1,7 @@
 import { RealmLevels, ResourcesIds, type ResourceCost } from "@bibliothecadao/types";
 
 export const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
-export const VILLAGE_MAX_LEVEL = 2;
+export const VILLAGE_MAX_LEVEL = 1;
 export const REALM_UPGRADE_COSTS: { [key in RealmLevels]: ResourceCost[] } = {
   [RealmLevels.Settlement]: [],
   [RealmLevels.City]: [
