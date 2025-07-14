@@ -7,6 +7,7 @@ import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } f
 import { BattleLogsTable } from "@/ui/features/military";
 import { ProductionModal } from "@/ui/features/settlement";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
+import { configManager } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 
@@ -23,6 +24,8 @@ export const RightNavigationModule = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const structures = useUIStore((state) => state.playerStructures);
+
+  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -128,6 +131,17 @@ export const RightNavigationModule = () => {
 
   const isOffscreen = view === RightView.None;
 
+  const filteredNavigation = navigation.filter((item) =>
+    [
+      MenuEnum.resourceTable,
+      MenuEnum.production,
+      MenuEnum.automation,
+      ...(isBlitz ? [] : [MenuEnum.bridge]),
+      MenuEnum.logs,
+      MenuEnum.transfer,
+    ].includes(item.name as MenuEnum),
+  );
+
   return (
     <div
       className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[500px] right-4 pointer-events-none pt-16 ${
@@ -146,7 +160,7 @@ export const RightNavigationModule = () => {
             className="flex flex-col justify-start pointer-events-auto h-[60vh]"
           >
             <div className="flex flex-col mb-auto">
-              {navigation.map((item, index) => (
+              {filteredNavigation.map((item, index) => (
                 <div key={index}>{item.button}</div>
               ))}
             </div>

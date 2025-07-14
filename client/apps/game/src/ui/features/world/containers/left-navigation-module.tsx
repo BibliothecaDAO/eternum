@@ -7,7 +7,7 @@ import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/featu
 import { ChatModule } from "@/ui/features/social";
 import { construction, military, trade, worldStructures } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { getEntityInfo } from "@bibliothecadao/eternum";
+import { configManager, getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
@@ -50,6 +50,8 @@ export const LeftNavigationModule = memo(() => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
@@ -232,7 +234,7 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.relics,
-        MenuEnum.trade,
+        ...(isBlitz ? [] : [MenuEnum.trade]),
       ].includes(item.name as MenuEnum),
     );
 
