@@ -25,63 +25,95 @@ interface ArmyInputProps {
 const MAX_TROOPS_PER_ARMY = 500_000;
 
 const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputProps) => {
+  const isAttacker = label === "Attacker";
+  
   return (
-    <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
+    <div className="group relative flex flex-col gap-4 p-6 border-2 border-gold/30 rounded-xl bg-gradient-to-br from-dark-brown/95 to-dark-brown/80 backdrop-blur-md shadow-2xl transition-all duration-300 hover:border-gold/50 hover:shadow-gold/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
       <div className="relative z-10">
-        <h3 className="text-lg font-semibold text-gold">{label}</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-gold/80 mb-1">Stamina</span>
-            <NumberInput
-              value={army.stamina}
-              onChange={(value) => onChange({ ...army, stamina: value })}
-              min={0}
-              max={200}
-              step={1}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-gold/80 mb-1">Troop Count</span>
-            <NumberInput
-              value={army.troopCount}
-              onChange={(value) => onChange({ ...army, troopCount: value })}
-              min={1}
-              max={MAX_TROOPS_PER_ARMY}
-              step={200}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-gold/80 mb-1">Troop Type</span>
-            <SelectTroop
-              onSelect={(troopType) => {
-                if (troopType) {
-                  onChange({ ...army, troopType });
-                }
-              }}
-              defaultValue={army.troopType}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-gold/80 mb-1">Tier</span>
-            <SelectTier
-              onSelect={(tier) => {
-                if (tier) {
-                  onChange({ ...army, tier: tier });
-                }
-              }}
-              defaultValue={army.tier}
-            />
-          </label>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-3 h-3 rounded-full ${isAttacker ? 'bg-red-500' : 'bg-blue-500'} shadow-lg`} />
+          <h3 className="text-xl font-bold text-gold tracking-wide">{label}</h3>
+          <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
         </div>
-        <div className="mt-3 col-span-2">
-          <SelectRelic
-            label="Active Relics"
-            onSelect={onRelicsChange}
-            defaultValue={relics}
-            allowMultiple={true}
-            filterTypes={["Damage", "Damage Reduction", "Stamina"]}
-            className="w-full"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="group/input">
+            <label className="flex flex-col">
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                ⚡ Stamina
+                <span className="text-xs text-gold/60">({army.stamina}/200)</span>
+              </span>
+              <NumberInput
+                value={army.stamina}
+                onChange={(value) => onChange({ ...army, stamina: value })}
+                min={0}
+                max={200}
+                step={1}
+              />
+            </label>
+          </div>
+          <div className="group/input">
+            <label className="flex flex-col">
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                🗡️ Troop Count
+                <span className="text-xs text-gold/60">({army.troopCount.toLocaleString()})</span>
+              </span>
+              <NumberInput
+                value={army.troopCount}
+                onChange={(value) => onChange({ ...army, troopCount: value })}
+                min={1}
+                max={MAX_TROOPS_PER_ARMY}
+                step={200}
+              />
+            </label>
+          </div>
+          <div className="group/input">
+            <label className="flex flex-col">
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                🛡️ Troop Type
+              </span>
+              <SelectTroop
+                onSelect={(troopType) => {
+                  if (troopType) {
+                    onChange({ ...army, troopType });
+                  }
+                }}
+                defaultValue={army.troopType}
+              />
+            </label>
+          </div>
+          <div className="group/input">
+            <label className="flex flex-col">
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                ⭐ Tier
+              </span>
+              <SelectTier
+                onSelect={(tier) => {
+                  if (tier) {
+                    onChange({ ...army, tier: tier });
+                  }
+                }}
+                defaultValue={army.tier}
+              />
+            </label>
+          </div>
+        </div>
+        <div className="col-span-2 mt-2">
+          <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+            <SelectRelic
+              label="🔮 Active Relics"
+              onSelect={onRelicsChange}
+              defaultValue={relics}
+              allowMultiple={true}
+              filterTypes={["Damage", "Damage Reduction", "Stamina"]}
+              className="w-full"
+            />
+            {relics.length > 0 && (
+              <div className="mt-2 text-xs text-purple-400">
+                {relics.length} relic{relics.length > 1 ? 's' : ''} equipped
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -98,8 +130,12 @@ const ParametersPanel = ({ parameters, onParametersChange, show }: ParametersPan
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 right-4 p-4 bg-dark-brown/95 border border-gold/20 rounded-lg shadow-lg z-50 w-80">
-      <h3 className="text-lg font-bold text-gold mb-4">Combat Parameters</h3>
+    <div className="fixed top-4 right-4 p-6 bg-gradient-to-br from-dark-brown/98 to-black/95 border-2 border-gold/30 rounded-xl shadow-2xl z-50 w-96 backdrop-blur-lg animate-in slide-in-from-right-2 duration-300">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-2 bg-gold rounded-full animate-pulse" />
+        <h3 className="text-xl font-bold text-gold">Combat Parameters</h3>
+        <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
+      </div>
       <div className="space-y-3">
         {Object.entries(parameters).map(([key, value]) => (
           <label key={key} className="flex flex-col">
@@ -123,10 +159,10 @@ const ParametersPanel = ({ parameters, onParametersChange, show }: ParametersPan
           </label>
         ))}
         <button
-          className="w-full mt-4 px-4 py-2 bg-gold/20 hover:bg-gold/30 text-gold rounded"
+          className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-gold/20 to-gold/30 hover:from-gold/30 hover:to-gold/40 text-gold rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-gold/20 border border-gold/20 hover:border-gold/40"
           onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}
         >
-          Reset to Defaults
+          🔄 Reset to Defaults
         </button>
       </div>
     </div>
@@ -210,11 +246,28 @@ export const CombatSimulationPanel = () => {
   const defenderRelicBonuses = getRelicBonuses(defenderRelics);
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-8 p-8 max-w-6xl mx-auto">
       <ParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
-      <div>
+      
+      {/* Header Section */}
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold text-gold bg-gradient-to-r from-gold to-yellow-400 bg-clip-text text-transparent">
+          ⚔️ Combat Simulator
+        </h1>
+        <p className="text-gold/70 text-lg">Test your armies against different opponents and scenarios</p>
+        <div className="flex items-center justify-center gap-2 text-sm text-gold/50">
+          <span>Press</span>
+          <kbd className="px-2 py-1 bg-dark-brown/50 border border-gold/20 rounded text-xs">Ctrl+Shift+S</kbd>
+          <span>for advanced parameters</span>
+        </div>
+      </div>
+
+      {/* Biome Selection */}
+      <div className="p-6 bg-gradient-to-r from-dark-brown/80 to-dark-brown/60 border-2 border-gold/20 rounded-xl backdrop-blur-sm">
         <label className="flex flex-col">
-          <span className="text-sm font-medium text-gold/80 mb-1">Select Biome</span>
+          <span className="text-lg font-semibold text-gold mb-3 flex items-center gap-2">
+            🌍 Battle Environment
+          </span>
           <SelectBiome
             combatSimulator={combatSimulator}
             onSelect={(newBiome) => {
@@ -227,7 +280,8 @@ export const CombatSimulationPanel = () => {
         </label>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* Army Configuration */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ArmyInput
           label="Attacker"
           army={attacker}
@@ -235,6 +289,9 @@ export const CombatSimulationPanel = () => {
           relics={attackerRelics}
           onRelicsChange={setAttackerRelics}
         />
+        <div className="flex items-center justify-center lg:hidden">
+          <div className="text-4xl text-gold/60 animate-pulse">⚔️</div>
+        </div>
         <ArmyInput
           label="Defender"
           army={defender}
@@ -244,10 +301,25 @@ export const CombatSimulationPanel = () => {
         />
       </div>
 
+      {/* VS Divider for larger screens */}
+      <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+        <div className="bg-dark-brown/90 border-2 border-gold/30 rounded-full p-4 shadow-2xl">
+          <span className="text-2xl font-bold text-gold">VS</span>
+        </div>
+      </div>
+
       {
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg">
-          <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Battle Results</h3>
-          <div className="grid grid-cols-2 gap-8">
+        <div className="relative mt-8 p-8 border-2 border-gold/30 rounded-2xl bg-gradient-to-br from-dark-brown/95 to-black/90 backdrop-blur-md shadow-2xl animate-in fade-in-50 duration-500">
+          <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent rounded-2xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-1 h-8 bg-gradient-to-b from-gold to-yellow-600 rounded-full" />
+              <h3 className="text-3xl font-bold text-gold bg-gradient-to-r from-gold to-yellow-400 bg-clip-text text-transparent">
+                ⚔️ Battle Results
+              </h3>
+              <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {[
               {
                 label: "Attacker",
@@ -278,20 +350,35 @@ export const CombatSimulationPanel = () => {
             ].map(({ label, data }) => (
               <div
                 key={label}
-                className="relative p-4 rounded-lg border border-gold/10"
+                className={`relative p-6 rounded-xl border-2 transition-all duration-500 ${
+                  data.isWinner 
+                    ? 'border-green-500/50 bg-gradient-to-br from-green-900/30 to-green-800/20 shadow-green-500/20 shadow-lg' 
+                    : data.troopsLeft <= 0 
+                    ? 'border-red-500/50 bg-gradient-to-br from-red-900/30 to-red-800/20'
+                    : 'border-gold/20 bg-gradient-to-br from-dark-brown/80 to-dark-brown/60'
+                }`}
                 style={{
-                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
+                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
               >
-                <div className="relative z-10 space-y-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent rounded-xl" />
+                <div className="relative z-10 space-y-5">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-xl text-gold">{label}</h4>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${label === 'Attacker' ? 'bg-red-500' : 'bg-blue-500'} shadow-lg`} />
+                      <h4 className="font-bold text-2xl text-gold">{label}</h4>
+                    </div>
                     {data.isWinner && (
-                      <span className="px-2 py-1 bg-green-900/50 text-green-400 text-sm font-medium rounded border border-green-400/30">
-                        Victory!
-                      </span>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-green-900/60 text-green-400 text-sm font-bold rounded-lg border border-green-400/40 shadow-lg animate-pulse">
+                        👑 Victory!
+                      </div>
+                    )}
+                    {data.troopsLeft <= 0 && !data.isWinner && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-red-900/60 text-red-400 text-sm font-bold rounded-lg border border-red-400/40">
+                        💀 Defeated
+                      </div>
                     )}
                   </div>
 
@@ -305,39 +392,82 @@ export const CombatSimulationPanel = () => {
 
                   {/* Relic Effects Display */}
                   {data.relicBonuses.activeRelics.length > 0 && (
-                    <div className="mt-3 p-2 bg-purple-900/20 border border-purple-500/30 rounded">
-                      <div className="text-sm font-medium text-purple-400 mb-1">Active Relic Effects:</div>
-                      <div className="space-y-1">
+                    <div className="p-4 bg-purple-900/30 border border-purple-500/40 rounded-lg backdrop-blur-sm">
+                      <div className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
+                        🔮 Active Relic Effects
+                        <span className="text-xs bg-purple-600/30 px-2 py-1 rounded-full">
+                          {data.relicBonuses.activeRelics.length}
+                        </span>
+                      </div>
+                      <div className="grid gap-2">
                         {data.relicBonuses.damageBonus > 1 && (
-                          <div className="text-xs text-order-giants">
-                            ⚔️ Damage: +{Math.round((data.relicBonuses.damageBonus - 1) * 100)}%
+                          <div className="flex items-center justify-between p-2 bg-red-900/30 border border-red-500/30 rounded text-sm">
+                            <span className="text-red-300 flex items-center gap-2">
+                              ⚔️ Damage Bonus
+                            </span>
+                            <span className="text-red-400 font-bold">
+                              +{Math.round((data.relicBonuses.damageBonus - 1) * 100)}%
+                            </span>
                           </div>
                         )}
                         {data.relicBonuses.reductionBonus < 1 && (
-                          <div className="text-xs text-order-brilliance">
-                            🛡️ Damage Reduction: -{Math.round((1 - data.relicBonuses.reductionBonus) * 100)}%
+                          <div className="flex items-center justify-between p-2 bg-blue-900/30 border border-blue-500/30 rounded text-sm">
+                            <span className="text-blue-300 flex items-center gap-2">
+                              🛡️ Damage Reduction
+                            </span>
+                            <span className="text-blue-400 font-bold">
+                              -{Math.round((1 - data.relicBonuses.reductionBonus) * 100)}%
+                            </span>
                           </div>
                         )}
                         {data.relicBonuses.staminaBonus > 1 && (
-                          <div className="text-xs text-order-power">
-                            ⚡ Stamina Regen: +{Math.round((data.relicBonuses.staminaBonus - 1) * 100)}%
+                          <div className="flex items-center justify-between p-2 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm">
+                            <span className="text-yellow-300 flex items-center gap-2">
+                              ⚡ Stamina Bonus
+                            </span>
+                            <span className="text-yellow-400 font-bold">
+                              +{Math.round((data.relicBonuses.staminaBonus - 1) * 100)}%
+                            </span>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="text-gold/80">
-                        <div className="text-sm font-medium mb-1">Damage Dealt</div>
-                        <div className="text-xl font-bold">{data.damage.toFixed(1)}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
+                        <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                          ⚔️ Damage Dealt
+                        </div>
+                        <div className="text-3xl font-bold text-gold flex items-baseline">
+                          {data.damage.toFixed(1)}
+                          <span className="text-sm ml-2 text-gold/60">dmg</span>
+                        </div>
                       </div>
-                      <div className="text-gold/80">
-                        <div className="text-sm font-medium mb-1">Troops Left</div>
-                        <div className="text-xl font-bold flex items-baseline">
-                          {Math.max(0, data.troopsLeft)}
-                          <span className="text-xs ml-2 text-gold/50">/ {data.army.troopCount}</span>
+                      <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
+                        <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                          🗡️ Troops Remaining
+                        </div>
+                        <div className="text-3xl font-bold flex items-baseline">
+                          <span className={`${
+                            data.troopsLeft <= 0 ? 'text-red-400' : 
+                            data.troopsLeft < data.army.troopCount * 0.5 ? 'text-yellow-400' : 
+                            'text-green-400'
+                          }`}>
+                            {Math.max(0, data.troopsLeft).toLocaleString()}
+                          </span>
+                          <span className="text-sm ml-2 text-gold/60">/ {data.army.troopCount.toLocaleString()}</span>
+                        </div>
+                        <div className="mt-2 w-full bg-dark-brown/50 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-1000 ${
+                              data.troopsLeft <= 0 ? 'bg-red-500' : 
+                              data.troopsLeft < data.army.troopCount * 0.5 ? 'bg-yellow-500' : 
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.max(0, (data.troopsLeft / data.army.troopCount) * 100)}%` }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -349,14 +479,36 @@ export const CombatSimulationPanel = () => {
             ))}
           </div>
 
-          {(attackerTroopsLeft <= 0 || defenderTroopsLeft <= 0) && (
-            <div className="mt-6 p-4 bg-green-900/30 border border-green-400/30 rounded-lg">
-              <p className="text-green-400 font-bold text-center text-lg">
-                {attackerTroopsLeft <= 0 ? "Defender" : "Attacker"} Wins!
-                <span className="text-green-400/80 text-base ml-2">(+30 stamina bonus)</span>
-              </p>
-            </div>
-          )}
+            {(attackerTroopsLeft <= 0 || defenderTroopsLeft <= 0) && (
+              <div className="mt-8 p-6 bg-gradient-to-r from-green-900/40 to-green-800/30 border-2 border-green-400/40 rounded-xl text-center animate-in zoom-in-50 duration-500">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="text-3xl animate-bounce">🎉</div>
+                  <p className="text-green-300 font-bold text-2xl">
+                    {attackerTroopsLeft <= 0 ? "Defender" : "Attacker"} Wins!
+                  </p>
+                  <div className="text-3xl animate-bounce">🏆</div>
+                </div>
+                <p className="text-green-400/80 text-lg">
+                  Victory Bonus: +30 Stamina
+                </p>
+              </div>
+            )}
+            
+            {attackerTroopsLeft > 0 && defenderTroopsLeft > 0 && (
+              <div className="mt-8 p-6 bg-gradient-to-r from-yellow-900/40 to-orange-800/30 border-2 border-yellow-400/40 rounded-xl text-center">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="text-2xl">⚔️</div>
+                  <p className="text-yellow-300 font-bold text-xl">
+                    Battle Continues - Both Armies Survive!
+                  </p>
+                  <div className="text-2xl">🛡️</div>
+                </div>
+                <p className="text-yellow-400/80 text-base">
+                  No decisive victory - consider reinforcements or tactical changes
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       }
     </div>
