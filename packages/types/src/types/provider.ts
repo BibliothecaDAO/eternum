@@ -550,6 +550,7 @@ export interface SetSeasonConfigProps extends SystemSigner {
   lords_address: num.BigNumberish;
   start_settling_at: num.BigNumberish;
   start_main_at: num.BigNumberish;
+  end_at: num.BigNumberish;
   bridge_close_end_grace_seconds: num.BigNumberish;
   point_registration_grace_seconds: num.BigNumberish;
 }
