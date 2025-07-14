@@ -18,7 +18,7 @@ export default defineConfig({
   description: "Your Complete Guide to Mastering Eternum",
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
-  ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984378",
+  ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
   theme: {
     colorScheme: "dark",
     variables: {
