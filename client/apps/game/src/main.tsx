@@ -1,6 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-b.svg";
 import { captureSystemError, initPostHog } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";

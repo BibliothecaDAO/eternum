@@ -18,7 +18,7 @@ export default defineConfig({
   description: "Your Complete Guide to Mastering Eternum",
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
-  ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984378",
+  ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
   theme: {
     colorScheme: "dark",
     variables: {
@@ -56,7 +56,6 @@ export default defineConfig({
         { text: "World Physics", link: "/blitz/world-physics" },
         {
           text: "Realms",
-          link: "/blitz/realms/realm",
           collapsed: true,
           items: [
             { text: "Realms", link: "/blitz/realms/realm" },
@@ -65,7 +64,6 @@ export default defineConfig({
         },
         {
           text: "Materials",
-          link: "/blitz/materials/resources",
           collapsed: true,
           items: [
             { text: "Materials", link: "/blitz/materials/resources" },
@@ -79,7 +77,6 @@ export default defineConfig({
         },
         {
           text: "Military",
-          link: "/blitz/military/armies",
           collapsed: true,
           items: [
             { text: "Armies", link: "/blitz/military/armies" },
@@ -90,7 +87,6 @@ export default defineConfig({
         },
         {
           text: "World Map & Movement",
-          link: "/blitz/worldmap-movement/worldmap",
           collapsed: true,
           items: [
             { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },

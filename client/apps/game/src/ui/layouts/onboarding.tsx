@@ -1,5 +1,5 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-b.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";

@@ -1,4 +1,4 @@
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-w.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { CollectionCard } from "@/components/modules/collection-card";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
