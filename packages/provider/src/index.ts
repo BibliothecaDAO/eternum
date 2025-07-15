@@ -286,11 +286,11 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
-    const { owner, signer } = props;
+    const { owner, signer, name } = props;
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "register",
-      calldata: [owner],
+      calldata: [owner, name],
     });
     return await this.promiseQueue.enqueue(call);
   }

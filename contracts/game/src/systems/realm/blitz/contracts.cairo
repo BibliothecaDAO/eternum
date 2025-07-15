@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
-    fn register(ref self: T, owner: ContractAddress);
+    fn register(ref self: T, owner: ContractAddress, name: felt252);
     fn create(ref self: T) -> Array<ID>;
 }
 
@@ -60,7 +60,10 @@ pub mod blitz_realm_systems {
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
         // Register for the game and pay the registration fee
         // Owner is the address that is going to own the realm
-        fn register(ref self: ContractState, owner: ContractAddress) {
+        fn register(ref self: ContractState, owner: ContractAddress, name: felt252) {
+            assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
+            assert!(owner.is_non_zero(), "Eternum: Owner cannot be zero address");
+
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
@@ -180,6 +183,13 @@ pub mod blitz_realm_systems {
                     vrf_seed,
                 );
             }
+
+            // set name for the player
+            //note: this can be abused. as you can pay to set the name for any player
+
+            let mut address_name: AddressName = world.read_model(owner);
+            address_name.name = name;
+            world.write_model(@address_name);
 
             // emit registration event
             world.emit_event(@BlitzRegistrationEvent { player: owner, timestamp: now.into() });
