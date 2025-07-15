@@ -3,10 +3,11 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { getAddressName, getAllArrivals, getEntityIdFromKeys, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
@@ -194,6 +195,28 @@ const SeasonWinnerStoreManager = () => {
   return null;
 };
 
+const SeasonTimerStoreManager = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const setSeasonEndAt = useUIStore((state) => state.setSeasonEndAt);
+  const setSeasonStartMainAt = useUIStore((state) => state.setSeasonStartMainAt);
+
+  useEffect(() => {
+    // Try to get season_config.end_at from WorldConfig
+    const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const endAt = worldConfig?.season_config?.end_at;
+    if (endAt && typeof endAt === "number") {
+      setSeasonEndAt(endAt);
+    }
+    const startMainAt = worldConfig?.season_config?.start_main_at;
+    if (startMainAt && typeof startMainAt === "number") {
+      setSeasonStartMainAt(startMainAt);
+    }
+  }, [components, setSeasonEndAt, setSeasonStartMainAt]);
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
@@ -203,6 +226,7 @@ export const StoreManagers = () => {
       <PlayerDataStoreManager />
       <BattleLogsStoreManager />
       <SeasonWinnerStoreManager />
+      <SeasonTimerStoreManager />
     </>
   );
 };

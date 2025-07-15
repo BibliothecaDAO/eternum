@@ -23,6 +23,10 @@ interface UIStore {
   setDisableButtons: (disable: boolean) => void;
   seasonWinner: { address: ContractAddress; name: string; guildName: string } | null;
   setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
+  seasonEndAt: number | null;
+  setSeasonEndAt: (seasonEndAt: number | null) => void;
+  seasonStartMainAt: number | null;
+  setSeasonStartMainAt: (seasonStartMainAt: number | null) => void;
   spectatorRealmEntityId: ID | null;
   setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
@@ -87,6 +91,10 @@ export const useUIStore = create(
     seasonWinner: null,
     setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
       set({ seasonWinner: winner }),
+    seasonEndAt: null,
+    setSeasonEndAt: (seasonEndAt: number | null) => set({ seasonEndAt }),
+    seasonStartMainAt: null,
+    setSeasonStartMainAt: (seasonStartMainAt: number | null) => set({ seasonStartMainAt }),
     spectatorRealmEntityId: null,
     setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
