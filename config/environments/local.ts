@@ -100,25 +100,17 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
     [RealmLevels.Settlement]: [],
     [RealmLevels.City]: [
+      { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
     ],
     [RealmLevels.Kingdom]: [
-      { resource: ResourcesIds.ColdIron, amount: 1 },
-      { resource: ResourcesIds.Hartwood, amount: 1 },
-      { resource: ResourcesIds.Diamonds, amount: 1 },
-      { resource: ResourcesIds.Sapphire, amount: 1 },
-      { resource: ResourcesIds.DeepCrystal, amount: 1 },
-      { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
+      { resource: ResourcesIds.Labor, amount: 2 },
+      { resource: ResourcesIds.Wheat, amount: 2 },
     ],
     [RealmLevels.Empire]: [
-      { resource: ResourcesIds.AlchemicalSilver, amount: 1 },
-      { resource: ResourcesIds.Adamantine, amount: 1 },
-      { resource: ResourcesIds.Mithral, amount: 1 },
-      { resource: ResourcesIds.Dragonhide, amount: 1 },
-      { resource: ResourcesIds.Wheat, amount: 1 },
-      { resource: ResourcesIds.Fish, amount: 1 },
+      { resource: ResourcesIds.Labor, amount: 3 },
+      { resource: ResourcesIds.Wheat, amount: 3 },
+      { resource: ResourcesIds.Wood, amount: 3},
     ],
   },
   buildings: {
@@ -130,6 +122,15 @@ export const LocalEternumGlobalConfig: Config = {
     buildingPopulation: {
       ...CommonEternumGlobalConfig.buildings.buildingPopulation,
       [BuildingType.ResourceWheat]: 0,
+    },
+  },
+  blitz: {
+    ...CommonEternumGlobalConfig.blitz,
+    registration: {
+      ...CommonEternumGlobalConfig.blitz.registration,
+      registration_delay_seconds: 20,
+      registration_period_seconds: 60 * 1,
+      creation_period_seconds: 60 * 2,
     },
   },
 };

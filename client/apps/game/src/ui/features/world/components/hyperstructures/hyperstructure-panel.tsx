@@ -447,7 +447,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
       <div className="overflow-y-auto no-scrollbar h-[40vh] bg-gold/10">
-        {progresses.percentage === 100 ? (
+        {hyperstructure?.completed ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
           <div className="relative">
@@ -471,7 +471,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           </div>
         )}
       </div>
-      {progresses.percentage !== 100 && (
+      {!hyperstructure?.completed && (
         <div className="flex justify-end w-full mt-2">
           <div
             onMouseEnter={() => {

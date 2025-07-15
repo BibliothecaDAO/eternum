@@ -101,6 +101,9 @@ pub mod relic_systems {
             ref self: ContractState, entity_id: ID, relic_resource_id: u8, recipient_type: RelicRecipientTypeParam,
         ) {
             let mut world = self.world(DEFAULT_NS());
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
+
             // ensure caller owns entity
             match recipient_type {
                 RelicRecipientTypeParam::Explorer => {

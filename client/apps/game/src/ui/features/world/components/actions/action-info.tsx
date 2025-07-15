@@ -104,7 +104,7 @@ const TooltipContent = memo(
           <div className="flex flex-row text-xs ml-1">
             <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
             <div className="flex flex-col p-1 text-xs">
-              <div>+{configManager.getExploreReward()} Random resource</div>
+              <div>+{configManager.getExploreReward().resource_amount} Random resource</div>
             </div>
           </div>
         )}

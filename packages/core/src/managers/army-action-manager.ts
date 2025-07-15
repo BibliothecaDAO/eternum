@@ -73,7 +73,7 @@ export class ArmyActionManager {
     if (!resource) return false;
 
     const remainingCapacity = getRemainingCapacityInKg(resource);
-    const requiredCapacity = configManager.getExploreReward();
+    const requiredCapacity = configManager.getExploreReward().resource_weight;
 
     return remainingCapacity >= requiredCapacity;
   }

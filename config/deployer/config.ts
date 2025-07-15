@@ -1077,6 +1077,11 @@ export const setTradeConfig = async (config: Config) => {
 };
 
 export const setSeasonConfig = async (config: Config) => {
+  if (config.config.blitz.mode.on) {
+    console.log(chalk.yellow("Blitz mode is on, skipping season configuration \n"));
+    return;
+  }
+
   console.log(
     chalk.cyan(`
   🎮 Season Configuration
@@ -1391,6 +1396,10 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   🏘️  Blitz Registration Configuration
   ═══════════════════════════`),
   );
+  if (!config.config.blitz.mode.on) {
+    console.log(chalk.yellow("Blitz mode is off, skipping blitz registration configuration \n"));
+    return;
+  }
 
   let registration_delay_seconds = config.config.blitz.registration.registration_delay_seconds;
   let registration_period_seconds = config.config.blitz.registration.registration_period_seconds;
@@ -1400,7 +1409,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   let registration_end_at = registration_start_at + registration_period_seconds;
   let creation_start_at = registration_end_at + 1;
   let creation_end_at = creation_start_at + creation_period_seconds;
-  const calldata = {
+  const registrationCalldata = {
     signer: config.account,
     fee_token: config.config.blitz.registration.fee_token,
     fee_recipient: config.config.blitz.registration.fee_recipient,
@@ -1415,33 +1424,33 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Blitz Registration Configuration")}
-    │  ${chalk.gray("Fee Token:")} ${chalk.white(calldata.fee_token)}
-    │  ${chalk.gray("Fee Recipient:")} ${chalk.white(calldata.fee_recipient)}
-    │  ${chalk.gray("Fee Amount:")} ${chalk.white(calldata.fee_amount)}
-    │  ${chalk.gray("Registration Count Max:")} ${chalk.white(calldata.registration_count_max)}
+    │  ${chalk.gray("Fee Token:")} ${chalk.white(registrationCalldata.fee_token)}
+    │  ${chalk.gray("Fee Recipient:")} ${chalk.white(registrationCalldata.fee_recipient)}
+    │  ${chalk.gray("Fee Amount:")} ${chalk.white(registrationCalldata.fee_amount)}
+    │  ${chalk.gray("Registration Count Max:")} ${chalk.white(registrationCalldata.registration_count_max)}
     │  ${chalk.gray("Registration Start At:")} ${chalk.white(
-      new Date(calldata.registration_start_at * 1000).toLocaleString("en-US", {
+      new Date(registrationCalldata.registration_start_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
       }),
     )} UTC
     │  ${chalk.gray("Registration End At:")} ${chalk.white(
-      new Date(calldata.registration_end_at * 1000).toLocaleString("en-US", {
+      new Date(registrationCalldata.registration_end_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
       }),
     )} UTC
     │  ${chalk.gray("Creation Start At:")} ${chalk.white(
-      new Date(calldata.creation_start_at * 1000).toLocaleString("en-US", {
+      new Date(registrationCalldata.creation_start_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
       }),
     )} UTC
     │  ${chalk.gray("Creation End At:")} ${chalk.white(
-      new Date(calldata.creation_end_at * 1000).toLocaleString("en-US", {
+      new Date(registrationCalldata.creation_end_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
@@ -1450,10 +1459,63 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  const blitzRegistrationTx = await config.provider.set_blitz_registration_config(calldata);
+  const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);
   console.log(
     chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
   );
+
+
+
+
+  console.log(
+    chalk.cyan(`\n\n
+  🎮 Blitz Season Configuration
+  ═══════════════════════`),
+  );
+
+
+  const seasonCalldata = {
+    signer: config.account,
+    season_pass_address: "0x0",
+    realms_address: "0x0",
+    lords_address: config.config.setup!.addresses.lords,
+    start_settling_at: registration_start_at,
+    start_main_at: creation_end_at,
+    end_at: creation_end_at + config.config.season.durationSeconds,
+    bridge_close_end_grace_seconds: 0,
+    point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
+  };
+
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Season Parameters")}
+    │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Start Main Game Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_main_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
+    │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
+    │
+    │  ${chalk.yellow("Contract Addresses")}
+    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
+    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
+    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
+    └────────────────────────────────`),
+  );
+
+  const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
+  console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
 };
 
 export const createBanks = async (config: Config) => {

@@ -27,11 +27,11 @@ export const ArmyWarning = ({ army, explorerResources, structureResources, relic
   const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
 
   const hasNoRemainingCapacityToExplore = useMemo(() => {
-    return remainingCapacity < configManager.getExploreReward();
+    return remainingCapacity < configManager.getExploreReward().resource_weight;
   }, [totalCapacity, remainingCapacity]);
 
   const hasNoTotalCapacityToExplore = useMemo(() => {
-    return totalCapacity < configManager.getExploreReward();
+    return totalCapacity < configManager.getExploreReward().resource_weight;
   }, [totalCapacity]);
 
   const food = useMemo(() => {
