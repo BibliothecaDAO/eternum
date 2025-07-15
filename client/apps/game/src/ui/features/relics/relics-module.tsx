@@ -1,8 +1,9 @@
 import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
-import { Loader, RefreshCw } from "lucide-react";
+import { Loader } from "lucide-react";
 import { useState } from "react";
 import { ChestList } from "./chest-list";
 import { RelicInventory } from "./relic-inventory";
@@ -64,14 +65,7 @@ export const RelicsModule = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gold">Relics & Crates</h1>
-        <button
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="p-2 rounded-lg bg-gold/10 hover:bg-gold/20 transition-colors disabled:opacity-50"
-          title="Refresh data"
-        >
-          <RefreshCw className={`w-4 h-4 text-gold ${isLoading ? "animate-spin" : ""}`} />
-        </button>
+        <RefreshButton onClick={handleRefresh} isLoading={isLoading} />
       </div>
 
       {/* Tab Navigation */}

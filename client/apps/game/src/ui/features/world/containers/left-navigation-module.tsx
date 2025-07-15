@@ -6,7 +6,7 @@ import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { ChatModule } from "@/ui/features/social";
-import { construction, military, trade, worldStructures } from "@/ui/features/world";
+import { construction, hyperstructures, military, trade } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -23,9 +23,9 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
-const WorldStructuresMenu = lazy(() =>
+const HyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
-    default: module.WorldStructuresMenu,
+    default: module.HyperstructuresMenu,
   })),
 );
 const RelicsModule = lazy(() =>
@@ -166,17 +166,17 @@ export const LeftNavigationModule = memo(() => {
         ),
       },
       {
-        name: MenuEnum.worldStructures,
+        name: MenuEnum.hyperstructures,
         button: (
           <CircleButton
             disabled={disableButtons}
-            image={BuildingThumbs.worldStructures}
+            image={BuildingThumbs.hyperstructures}
             tooltipLocation="top"
-            label={worldStructures}
-            active={view === LeftView.WorldStructuresView}
+            label={hyperstructures}
+            active={view === LeftView.HyperstructuresView}
             size={"xl"}
             onClick={() =>
-              setView(view === LeftView.WorldStructuresView ? LeftView.None : LeftView.WorldStructuresView)
+              setView(view === LeftView.HyperstructuresView ? LeftView.None : LeftView.HyperstructuresView)
             }
           />
         ),
@@ -230,7 +230,7 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.entityDetails,
         MenuEnum.military,
         ...(isMapView ? [] : [MenuEnum.construction]),
-        MenuEnum.worldStructures,
+        MenuEnum.hyperstructures,
         MenuEnum.resourceArrivals,
         MenuEnum.relics,
         ...(getIsBlitz() ? [] : [MenuEnum.trade]),
@@ -273,7 +273,7 @@ export const LeftNavigationModule = memo(() => {
               {!isMapView && view === LeftView.ConstructionView && (
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
-              {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
+              {view === LeftView.HyperstructuresView && <HyperstructuresMenu />}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
               {view === LeftView.RelicsView && <RelicsModule />}
             </Suspense>

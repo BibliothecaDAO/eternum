@@ -1,9 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import Button from "@/ui/design-system/atoms/button";
+import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
 import { getCrateName } from "@bibliothecadao/eternum";
 import { ChestInfo } from "@bibliothecadao/torii";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useMemo } from "react";
 
 interface ChestListProps {
@@ -65,9 +65,9 @@ export const ChestList = ({ chests }: ChestListProps) => {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  size="xs"
-                  variant="outline"
+                <NavigationButton
+                  size="sm"
+                  showText={true}
                   onClick={() => handleNavigateToChest(chest)}
                   onMouseEnter={() =>
                     setTooltip({
@@ -76,11 +76,8 @@ export const ChestList = ({ chests }: ChestListProps) => {
                     })
                   }
                   onMouseLeave={() => setTooltip(null)}
-                  className="flex items-center gap-1"
-                >
-                  <Navigation className="w-3 h-3" />
-                  Go
-                </Button>
+                  title="Navigate to this crate location"
+                />
               </div>
             </div>
           ))}

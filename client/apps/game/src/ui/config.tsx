@@ -109,6 +109,7 @@ export const BuildingThumbs = {
   resources: `${prefix}resources.png`,
   banks: `${prefix}banks.png`,
   worldStructures: `${prefix}world.png`,
+  hyperstructures: `${prefix}hyperstructure.png`,
   leaderboard: `${prefix}leaderboard.png`,
   worldMap: `${prefix}world.png`,
   squire: `${prefix}squire.png`,
@@ -133,7 +134,7 @@ export const BuildingThumbs = {
 export enum MenuEnum {
   military = "military",
   construction = "construction",
-  worldStructures = "worldStructures",
+  hyperstructures = "hyperstructures",
   entityDetails = "entityDetails",
   resourceArrivals = "resourceArrivals",
   trade = "trade",

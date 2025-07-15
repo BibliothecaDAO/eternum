@@ -1,7 +1,7 @@
 import { HintSection } from "@/ui/features/progression";
 
 type OSWindows =
-  | "World Structures"
+  | "Hyperstructures"
   | "Settings"
   | "Military"
   | "Trade"
@@ -29,7 +29,7 @@ export interface ExpandableOSInterface extends OSInterface {
   isExpanded?: boolean;
 }
 
-export const worldStructures: OSWindows = "World Structures";
+export const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";
