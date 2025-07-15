@@ -23,9 +23,14 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
-const HyperstructuresMenu = lazy(() =>
+const BlitzHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
-    default: module.HyperstructuresMenu,
+    default: module.BlitzHyperstructuresMenu,
+  })),
+);
+const EternumHyperstructuresMenu = lazy(() =>
+  import("@/ui/features/world").then((module) => ({
+    default: module.EternumHyperstructuresMenu,
   })),
 );
 const RelicsModule = lazy(() =>
@@ -256,6 +261,8 @@ export const LeftNavigationModule = memo(() => {
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
+  const isBlitz = getIsBlitz();
+
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
@@ -273,7 +280,8 @@ export const LeftNavigationModule = memo(() => {
               {!isMapView && view === LeftView.ConstructionView && (
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
-              {view === LeftView.HyperstructuresView && <HyperstructuresMenu />}
+              {view === LeftView.HyperstructuresView &&
+                (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
               {view === LeftView.RelicsView && <RelicsModule />}
             </Suspense>

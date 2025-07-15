@@ -17,7 +17,8 @@ export { CapacityInfo } from "./containers/capacity-info";
 export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
 // Hyperstructures - Exports used externally
-export { HyperstructuresMenu } from "./components/hyperstructures/hyperstructures-menu";
+export { BlitzHyperstructuresMenu } from "./components/hyperstructures/blitz-hyperstructures-menu";
+export { EternumHyperstructuresMenu } from "./components/hyperstructures/eternum-hyperstructures-menu";
 
 // Navigation Config - Exports used externally
 export * from "./components/config";

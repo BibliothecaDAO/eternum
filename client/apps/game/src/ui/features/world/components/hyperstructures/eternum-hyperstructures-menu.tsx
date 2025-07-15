@@ -27,7 +27,7 @@ import { useCallback, useMemo, useState } from "react";
 // Define filter options
 type FilterOption = "all" | "mine" | "my-guild" | "public" | "completed" | "in-progress" | "initialized" | "favorites";
 
-export const WorldStructuresMenu = ({ className }: { className?: string }) => {
+export const EternumHyperstructuresMenu = ({ className }: { className?: string }) => {
   const {
     setup: { components },
     account: { account },

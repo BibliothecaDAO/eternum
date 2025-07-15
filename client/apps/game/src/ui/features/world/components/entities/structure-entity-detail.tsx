@@ -216,7 +216,7 @@ export const StructureEntityDetail = memo(
             </div>
 
             {/* Progress bar for hyperstructures */}
-            {isHyperstructure && (
+            {isHyperstructure && !getIsBlitz() && (
               <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
                 <div className="flex justify-between items-center">
                   <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Construction Progress</div>

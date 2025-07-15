@@ -18,7 +18,7 @@ import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
 import { Loader, MapPin, MessageCircle, Shield } from "lucide-react";
 import { useMemo, useState } from "react";
 
-export const HyperstructuresMenu = () => {
+export const BlitzHyperstructuresMenu = () => {
   const {
     account: { account },
     setup: { components },
@@ -35,7 +35,6 @@ export const HyperstructuresMenu = () => {
   const userPosition = hexPosition ? new Position({ x: hexPosition.col, y: hexPosition.row }) : null;
 
   const hyperstructures = useHyperstructures();
-  console.log({ hyperstructures });
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
   const openChat = useChatStore((state) => state.actions.openChat);
   const addTab = useChatStore((state) => state.actions.addTab);
