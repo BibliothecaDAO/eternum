@@ -6,23 +6,23 @@ interface RefreshButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md" | "lg";
 }
 
-export const RefreshButton = ({ 
-  isLoading = false, 
+export const RefreshButton = ({
+  isLoading = false,
   size = "md",
   className = "",
   disabled,
-  ...props 
+  ...props
 }: RefreshButtonProps) => {
   const sizeClasses = {
     sm: "p-1.5",
     md: "p-2",
-    lg: "p-3"
+    lg: "p-3",
   };
 
   const iconSizes = {
     sm: "w-3 h-3",
     md: "w-4 h-4",
-    lg: "w-5 h-5"
+    lg: "w-5 h-5",
   };
 
   return (

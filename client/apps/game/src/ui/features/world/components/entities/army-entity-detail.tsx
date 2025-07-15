@@ -96,18 +96,16 @@ export const ArmyEntityDetail = memo(
 
     const handleRefresh = useCallback(async () => {
       const now = Date.now();
-      if (now - lastRefresh < 10000) { // 10 second cooldown
+      if (now - lastRefresh < 10000) {
+        // 10 second cooldown
         return;
       }
-      
+
       setIsRefreshing(true);
       setLastRefresh(now);
-      
+
       try {
-        await Promise.all([
-          refetchExplorer(),
-          explorer?.owner ? refetchStructure() : Promise.resolve()
-        ]);
+        await Promise.all([refetchExplorer(), explorer?.owner ? refetchStructure() : Promise.resolve()]);
       } finally {
         setTimeout(() => setIsRefreshing(false), 1000); // Show loading for at least 1 second
       }

@@ -107,13 +107,14 @@ export const StructureEntityDetail = memo(
 
     const handleRefresh = useCallback(async () => {
       const now = Date.now();
-      if (now - lastRefresh < 10000) { // 10 second cooldown
+      if (now - lastRefresh < 10000) {
+        // 10 second cooldown
         return;
       }
-      
+
       setIsRefreshing(true);
       setLastRefresh(now);
-      
+
       try {
         await refetchStructure();
       } finally {
