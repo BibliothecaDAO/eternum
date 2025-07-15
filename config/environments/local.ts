@@ -110,7 +110,7 @@ export const LocalEternumGlobalConfig: Config = {
     [RealmLevels.Empire]: [
       { resource: ResourcesIds.Labor, amount: 3 },
       { resource: ResourcesIds.Wheat, amount: 3 },
-      { resource: ResourcesIds.Wood, amount: 3},
+      { resource: ResourcesIds.Wood, amount: 3 },
     ],
   },
   buildings: {

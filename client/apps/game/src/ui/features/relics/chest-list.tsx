@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
+import { getCrateName } from "@bibliothecadao/eternum";
 import { ChestInfo } from "@bibliothecadao/torii";
 import { MapPin, Navigation } from "lucide-react";
 import { useMemo } from "react";
-import { getChestName } from "./index";
 
 interface ChestListProps {
   chests: ChestInfo[];
@@ -27,7 +27,7 @@ export const ChestList = ({ chests }: ChestListProps) => {
         .sort((a, b) => a.distance - b.distance)
         .map((chest) => ({
           ...chest,
-          name: getChestName(chest.entityId),
+          name: getCrateName(chest.entityId),
           position: new Position({ x: chest.position.x, y: chest.position.y }).getNormalized(),
         })),
     [chests],

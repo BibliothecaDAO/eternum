@@ -99,7 +99,13 @@ export class RaidSimulator {
     // and damage to each defender
     for (const defender of defenders) {
       if (defender.troopCount > 0) {
-        const combat = this.combatSimulator.simulateBattle(dividedRaider, defender, biome, raiderRelics, defenderRelics);
+        const combat = this.combatSimulator.simulateBattle(
+          dividedRaider,
+          defender,
+          biome,
+          raiderRelics,
+          defenderRelics,
+        );
         // damage done by attacker
         const attackerDamage = Math.min(
           Math.floor((combat.attackerDamage * this.params.damage_raid_percent_num) / 10_000),

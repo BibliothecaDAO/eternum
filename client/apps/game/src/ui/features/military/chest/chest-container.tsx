@@ -2,13 +2,13 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getCrateName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicActivation, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getChestName } from "../../relics";
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -224,7 +224,7 @@ export const ChestContainer = ({
   const chestName = useMemo(() => {
     const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(chestHex.x), BigInt(chestHex.y)]));
     if (!tile) return "Unknown Crate";
-    return getChestName(tile.occupier_id);
+    return getCrateName(tile.occupier_id);
   }, [chestHex.x, chestHex.y]);
 
   const chestPositionNormalized = new Position({ x: chestHex.x, y: chestHex.y }).getNormalized();

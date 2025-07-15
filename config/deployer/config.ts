@@ -1464,15 +1464,11 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
   );
 
-
-
-
   console.log(
     chalk.cyan(`\n\n
   🎮 Blitz Season Configuration
   ═══════════════════════`),
   );
-
 
   const seasonCalldata = {
     signer: config.account,
@@ -1485,7 +1481,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     bridge_close_end_grace_seconds: 0,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
-
 
   console.log(
     chalk.cyan(`

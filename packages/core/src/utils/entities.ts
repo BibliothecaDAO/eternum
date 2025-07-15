@@ -13,6 +13,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
+import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
@@ -100,6 +101,8 @@ export const getStructureName = (
     originalName = getRealmName(structure);
   } else if (structure.base.category === StructureType.Village && parentRealmContractPosition) {
     originalName = getVillageName(structure, parentRealmContractPosition);
+  } else if (structure.base.category === StructureType.Hyperstructure) {
+    originalName = getHyperstructureName(structure);
   } else {
     if (isBlitz) {
       originalName = `${BlitzStructureTypeToNameMapping[structure.base.category as StructureType]} ${structure.entity_id}`;

@@ -113,28 +113,28 @@ export class CombatSimulator {
 
     // Calculate relic effects
     // Attacker damage relics increase damage output
-    const attackerDamageRelics = RELICS.filter(r => attackerRelics.includes(r.id) && r.type === "Damage");
-    const attackerDamageMultiplier = attackerDamageRelics.length > 0 
-      ? Math.max(...attackerDamageRelics.map(r => r.bonus)) 
-      : 1;
+    const attackerDamageRelics = RELICS.filter((r) => attackerRelics.includes(r.id) && r.type === "Damage");
+    const attackerDamageMultiplier =
+      attackerDamageRelics.length > 0 ? Math.max(...attackerDamageRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage reduction relics reduce incoming damage
-    const defenderReductionRelics = RELICS.filter(r => defenderRelics.includes(r.id) && r.type === "Damage Reduction");
-    const defenderReductionMultiplier = defenderReductionRelics.length > 0 
-      ? Math.min(...defenderReductionRelics.map(r => r.bonus)) 
-      : 1;
+    const defenderReductionRelics = RELICS.filter(
+      (r) => defenderRelics.includes(r.id) && r.type === "Damage Reduction",
+    );
+    const defenderReductionMultiplier =
+      defenderReductionRelics.length > 0 ? Math.min(...defenderReductionRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage relics increase damage output
-    const defenderDamageRelics = RELICS.filter(r => defenderRelics.includes(r.id) && r.type === "Damage");
-    const defenderDamageMultiplier = defenderDamageRelics.length > 0 
-      ? Math.max(...defenderDamageRelics.map(r => r.bonus)) 
-      : 1;
+    const defenderDamageRelics = RELICS.filter((r) => defenderRelics.includes(r.id) && r.type === "Damage");
+    const defenderDamageMultiplier =
+      defenderDamageRelics.length > 0 ? Math.max(...defenderDamageRelics.map((r) => r.bonus)) : 1;
 
     // Attacker damage reduction relics reduce incoming damage
-    const attackerReductionRelics = RELICS.filter(r => attackerRelics.includes(r.id) && r.type === "Damage Reduction");
-    const attackerReductionMultiplier = attackerReductionRelics.length > 0 
-      ? Math.min(...attackerReductionRelics.map(r => r.bonus)) 
-      : 1;
+    const attackerReductionRelics = RELICS.filter(
+      (r) => attackerRelics.includes(r.id) && r.type === "Damage Reduction",
+    );
+    const attackerReductionMultiplier =
+      attackerReductionRelics.length > 0 ? Math.min(...attackerReductionRelics.map((r) => r.bonus)) : 1;
 
     // Calculate base damage for attacker
     const baseAttackerDamage =

@@ -1,4 +1,4 @@
-import { getChestName } from "@/ui/features/relics";
+import { getCrateName } from "@bibliothecadao/eternum";
 import { ID } from "@bibliothecadao/types";
 import { memo } from "react";
 
@@ -8,7 +8,7 @@ interface ChestEntityDetailProps {
 }
 
 export const ChestEntityDetail = memo(({ chestEntityId, compact = false }: ChestEntityDetailProps) => {
-  const chestName = getChestName(chestEntityId);
+  const chestName = getCrateName(chestEntityId);
 
   if (compact) {
     return (

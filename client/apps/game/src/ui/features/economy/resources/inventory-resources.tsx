@@ -116,9 +116,7 @@ export const InventoryResources = ({
               color={isRelicActive ? "text-purple-300" : "text-green"}
               resourceId={resource.resourceId}
               amount={divideByPrecision(Number(resource.amount))}
-              className={`!p-1 ${
-                resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""
-              }`}
+              className={`!p-1 ${resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""}`}
             />
             {isCompatibleRelic && !isRelicActive && (
               <div className="absolute inset-0 pointer-events-none">
