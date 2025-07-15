@@ -13,10 +13,10 @@ packages:
   - "contracts/season_resources/scripts/deployment"
 
 catalog:
-  starknet: 7.6.2
+  starknet: ^7.6.2
   starknetkit: ^2.10.4
-  "@cartridge/controller": ^0.8.0
-  "@cartridge/connector": ^0.8.0
+  "@cartridge/controller": ^0.9.0
+  "@cartridge/connector": ^0.9.0
   "@starknet-react/core": "3.5.0"
   "@starknet-react/chains": 3.1.2
   "@metamask/sdk": ^0.32.1
