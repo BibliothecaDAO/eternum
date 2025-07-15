@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
@@ -57,7 +58,7 @@ export const PlayersPanel = ({
           const structure = getComponentValue(Structure, entityId);
           if (!structure) return undefined;
 
-          return getStructureName(structure).name;
+          return getStructureName(structure, getIsBlitz()).name;
         })
         .filter((structure): structure is string => structure !== undefined);
 

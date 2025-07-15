@@ -2,12 +2,13 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { ChatModule } from "@/ui/features/social";
 import { construction, military, trade, worldStructures } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { configManager, getEntityInfo } from "@bibliothecadao/eternum";
+import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
@@ -51,13 +52,11 @@ export const LeftNavigationModule = memo(() => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
-
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
     [structureEntityId, account.address, components],
   );
 
@@ -234,7 +233,7 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.relics,
-        ...(isBlitz ? [] : [MenuEnum.trade]),
+        ...(getIsBlitz() ? [] : [MenuEnum.trade]),
       ].includes(item.name as MenuEnum),
     );
 

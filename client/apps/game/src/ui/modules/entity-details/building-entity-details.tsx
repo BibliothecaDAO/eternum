@@ -1,9 +1,9 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
-import { BuildingInfo, ResourceInfo } from "@/ui/features/settlement";
-import { ProductionModal } from "@/ui/features/settlement";
+import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settlement";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
@@ -56,6 +56,7 @@ export const BuildingEntityDetails = () => {
     structureEntityId,
     ContractAddress(dojo.account.account.address),
     dojo.setup.components,
+    getIsBlitz(),
   );
 
   const isCastleSelected = useMemo(

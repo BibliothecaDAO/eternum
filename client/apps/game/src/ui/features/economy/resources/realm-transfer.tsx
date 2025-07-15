@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -64,7 +65,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const playerStructuresFiltered = useMemo(() => {
     const playerStructuresWithName = playerStructures.map((structure) => ({
       ...structure,
-      name: getStructureName(structure.structure).name,
+      name: getStructureName(structure.structure, getIsBlitz()).name,
     }));
 
     // For military resources, we need special handling
@@ -517,7 +518,7 @@ const RealmTransferBalance = memo(
           sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
           recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
           resources: [resource, maxAmount],
-          realmName: getStructureName(structure.structure).name,
+          realmName: getStructureName(structure.structure, getIsBlitz()).name,
         };
         return existingIndex === -1
           ? [...prev, newCall]
@@ -533,7 +534,9 @@ const RealmTransferBalance = memo(
       <div className="flex flex-col gap-2 border-b-2 mt-2 pb-2 border-gold/20">
         <div className="flex flex-row gap-4 items-start">
           <div className="self-center w-full">
-            <div className="uppercase font-bold h4 truncate">{getStructureName(structure.structure).name}</div>
+            <div className="uppercase font-bold h4 truncate">
+              {getStructureName(structure.structure, getIsBlitz()).name}
+            </div>
           </div>
         </div>
         <div className="w-full">
@@ -547,7 +550,9 @@ const RealmTransferBalance = memo(
                 !canCarry || relevantDonkeyBalance === 0 ? "text-red" : "text-green"
               }`}
             >
-              {type === "send" ? "Your Donkeys:" : `${getStructureName(structure.structure)}'s Donkeys:`}{" "}
+              {type === "send"
+                ? "Your Donkeys:"
+                : `${getStructureName(structure.structure, getIsBlitz()).name}'s Donkeys:`}{" "}
               {currencyFormat(relevantDonkeyBalance, 0).toLocaleString()} / <br /> Needs:{" "}
               {neededDonkeysForThisTransfer.toLocaleString()} 🐴
             </div>
@@ -579,7 +584,7 @@ const RealmTransferBalance = memo(
                       sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
                       recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                       resources: [resource, clampedValue],
-                      realmName: getStructureName(structure.structure).name,
+                      realmName: getStructureName(structure.structure, getIsBlitz()).name,
                     };
 
                     return existingIndex === -1

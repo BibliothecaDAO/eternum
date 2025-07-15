@@ -4,13 +4,13 @@ import {
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
   getStructureName,
-  getStructureTypeName,
   unpackValue,
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
@@ -112,7 +112,6 @@ export const StructureEntityDetail = memo(
     const isRealmOrVillage =
       structure?.base.category === StructureType.Realm || structure?.base.category === StructureType.Village;
     const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
-    const structureTypeName = structure ? getStructureTypeName(structure?.category) : undefined;
 
     const goToStructure = useGoToStructure();
 
@@ -144,7 +143,7 @@ export const StructureEntityDetail = memo(
     };
 
     const structureName = useMemo(() => {
-      return structure ? getStructureName(structure).name : undefined;
+      return structure ? getStructureName(structure, getIsBlitz()).name : undefined;
     }, [structure]);
 
     const resourcesProduced = useMemo(() => {
@@ -213,9 +212,6 @@ export const StructureEntityDetail = memo(
             <div className="flex flex-col gap-0.5">
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                 <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
-              </div>
-              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
-                {structureTypeName}
               </div>
             </div>
 

@@ -3,13 +3,20 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getAllArrivals, getEntityIdFromKeys, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import {
+  getAddressName,
+  getAllArrivals,
+  getEntityIdFromKeys,
+  getEntityInfo,
+  getGuildFromPlayerAddress,
+} from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
+import { getIsBlitz } from "./constants";
 
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
@@ -63,7 +70,7 @@ const ButtonStateStoreManager = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
     [structureEntityId, account.address, components],
   );
 

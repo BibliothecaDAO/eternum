@@ -2,12 +2,12 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
 import { BattleLogsTable } from "@/ui/features/military";
 import { ProductionModal } from "@/ui/features/settlement";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { configManager } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 
@@ -24,8 +24,6 @@ export const RightNavigationModule = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const structures = useUIStore((state) => state.playerStructures);
-
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -136,7 +134,7 @@ export const RightNavigationModule = () => {
       MenuEnum.resourceTable,
       MenuEnum.production,
       MenuEnum.automation,
-      ...(isBlitz ? [] : [MenuEnum.bridge]),
+      ...(getIsBlitz() ? [] : [MenuEnum.bridge]),
       MenuEnum.logs,
       MenuEnum.transfer,
     ].includes(item.name as MenuEnum),

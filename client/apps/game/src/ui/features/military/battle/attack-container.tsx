@@ -1,8 +1,9 @@
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
+import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityRelicEffect, getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -75,8 +76,6 @@ export const AttackContainer = ({
   const [isLoading, setIsLoading] = useState(false);
   const [attackerRelicEffects, setAttackerRelicEffects] = useState<EntityRelicEffect[]>([]);
   const [targetRelicEffects, setTargetRelicEffects] = useState<EntityRelicEffect[]>([]);
-
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
 
   // Query attacker relic effects
   useEffect(() => {
@@ -200,7 +199,7 @@ export const AttackContainer = ({
         <>
           {/* Attack Type Selection */}
           <div className="flex justify-center mb-6 mx-auto mt-4">
-            {!isBlitz && (
+            {!getIsBlitz() && (
               <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
                 <button
                   className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${

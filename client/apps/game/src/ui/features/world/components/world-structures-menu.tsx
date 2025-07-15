@@ -1,5 +1,6 @@
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
@@ -59,7 +60,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     return hyperstructures
       .map((hyperstructure) => ({
         ...hyperstructure,
-        name: getStructureName(hyperstructure.structure).name,
+        name: getStructureName(hyperstructure.structure, getIsBlitz()).name,
         isFavorite: favorites.includes(Number(hyperstructure.entity_id)),
       }))
       .sort((a, b) => Number(a.entity_id) - Number(b.entity_id));

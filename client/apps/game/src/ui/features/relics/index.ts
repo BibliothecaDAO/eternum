@@ -182,7 +182,7 @@ export function getChestName(entityId: number): string {
 
   // Base chest name
   const adjIndex = rand % adjectives.length;
-  let chestName = `${adjectives[adjIndex]} Chest`;
+  let chestName = `${adjectives[adjIndex]} Crate`;
 
   // Determine "greatness" like in Loot - affects rarity and naming complexity
   const greatness = rand % 21;

@@ -1,4 +1,5 @@
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
@@ -60,6 +61,7 @@ export class PlayerDataStore {
   }
 
   private async fetchAndStoreData(): Promise<void> {
+    const isBlitz = getIsBlitz();
     const result = await sqlApi.fetchGlobalStructureExplorerAndGuildDetails();
     let realmsData = realms as Record<string, { name: string }>;
     await Promise.all(
@@ -91,7 +93,9 @@ export class PlayerDataStore {
           let actualCategory = structureId.split(":")[2];
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
-            actualRealmId === "0" ? getStructureTypeName(Number(actualCategory)) : realmsData[actualRealmId].name;
+            actualRealmId === "0"
+              ? getStructureTypeName(Number(actualCategory), isBlitz)
+              : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });
 

@@ -1,4 +1,5 @@
 import {
+  BlitzStructureTypeToNameMapping,
   CapacityConfig,
   ClientComponents,
   ContractAddress,
@@ -16,7 +17,12 @@ import { getRealmNameById } from "./realm";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
-export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
+export const getEntityInfo = (
+  entityId: ID,
+  playerAccount: ContractAddress,
+  components: ClientComponents,
+  isBlitz: boolean,
+) => {
   const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
@@ -32,7 +38,7 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
     };
   } else {
     if (structure) {
-      name = getStructureName(structure);
+      name = getStructureName(structure, isBlitz);
     }
   }
 
@@ -84,6 +90,7 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
 
 export const getStructureName = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
+  isBlitz: boolean,
   parentRealmContractPosition?: { col: number; row: number },
 ) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
@@ -94,7 +101,11 @@ export const getStructureName = (
   } else if (structure.base.category === StructureType.Village && parentRealmContractPosition) {
     originalName = getVillageName(structure, parentRealmContractPosition);
   } else {
-    originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
+    if (isBlitz) {
+      originalName = `${BlitzStructureTypeToNameMapping[structure.base.category as StructureType]} ${structure.entity_id}`;
+    } else {
+      originalName = `${StructureType[structure.base.category]} ${structure.entity_id}`;
+    }
   }
 
   return { name: cachedName || originalName, originalName };

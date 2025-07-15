@@ -6,13 +6,13 @@ import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
 import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
-import { configManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
+import { getIsBlitz } from "../constants";
 
 interface OnboardingOverlayProps {
   controller?: boolean;
@@ -149,7 +149,7 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
     return <SeasonPassButton setSettleRealm={setSettleRealm} />;
   }, [setSettleRealm]);
 
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
+  const isBlitz = getIsBlitz();
 
   return (
     <>

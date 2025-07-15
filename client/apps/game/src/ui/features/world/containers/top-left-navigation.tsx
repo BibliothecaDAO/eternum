@@ -3,6 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -68,7 +69,7 @@ export const TopLeftNavigation = memo(() => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
     [structureEntityId, currentDefaultTick, account.address],
   );
 
@@ -83,7 +84,7 @@ export const TopLeftNavigation = memo(() => {
   const structuresWithFavorites = useMemo(() => {
     return structures
       .map((structure) => {
-        const { name, originalName } = getStructureName(structure.structure);
+        const { name, originalName } = getStructureName(structure.structure, getIsBlitz());
         return {
           ...structure,
           isFavorite: favorites.includes(structure.entityId),
@@ -279,7 +280,11 @@ export const TopLeftNavigation = memo(() => {
                       : selectedStructure.structureCategory
                         ? structureIcons[selectedStructure.structureCategory]
                         : structureIcons.None}
-                    <span>{selectedStructure.structure ? getStructureName(selectedStructure.structure).name : ""}</span>
+                    <span>
+                      {selectedStructure.structure
+                        ? getStructureName(selectedStructure.structure, getIsBlitz()).name
+                        : ""}
+                    </span>
                   </>
                 </h5>
               </div>
@@ -353,8 +358,8 @@ export const TopLeftNavigation = memo(() => {
 
         {structureNameChange && selectedStructure.structure && (
           <NameChangePopup
-            currentName={getStructureName(structureNameChange).name}
-            originalName={getStructureName(structureNameChange).originalName}
+            currentName={getStructureName(structureNameChange, getIsBlitz()).name}
+            originalName={getStructureName(structureNameChange, getIsBlitz()).originalName}
             onConfirm={(newName) => handleNameChange(structureNameChange.entity_id, newName)}
             onCancel={() => setStructureNameChange(null)}
             onDelete={() => handleNameDelete(structureNameChange.entity_id)}

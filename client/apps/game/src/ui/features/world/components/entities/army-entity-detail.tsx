@@ -1,4 +1,5 @@
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { InventoryResources } from "@/ui/features/economy/resources";
@@ -117,7 +118,7 @@ export const ArmyEntityDetail = memo(
         ? getAddressName(structure?.owner, components)
         : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
-      const structureOwnerName = structure ? getStructureName(structure).name : undefined;
+      const structureOwnerName = structure ? getStructureName(structure, getIsBlitz()).name : undefined;
 
       return {
         stamina,

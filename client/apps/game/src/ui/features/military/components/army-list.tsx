@@ -1,6 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
@@ -67,7 +68,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
     return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
   }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
 
-  const name = useMemo(() => getStructureName(structure).name, [structure]);
+  const name = useMemo(() => getStructureName(structure, getIsBlitz()).name, [structure]);
 
   return (
     <div className="military-panel-selector p-4">

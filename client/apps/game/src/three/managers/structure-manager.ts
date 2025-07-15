@@ -4,6 +4,8 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
+import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { getLevelName, ID, RelicEffect, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -40,7 +42,7 @@ const ICONS = {
 };
 
 // Create structure info label
-const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView) => {
+const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView, isBlitz: boolean) => {
   // Create label div using the shared base
   const labelDiv = createLabelBase({
     isMine: structure.isMine,
@@ -82,7 +84,7 @@ const createStructureInfoElement = (structure: StructureInfo, cameraView: Camera
 
   // Add structure type and level
   const typeText = document.createElement("strong");
-  typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+  typeText.textContent = `${getStructureTypeName(structure.structureType, isBlitz)} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
     structure.structureType === StructureType.Hyperstructure
       ? structure.initialized
         ? `(Stage ${structure.stage + 1})`
@@ -115,6 +117,7 @@ export class StructureManager {
     new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private isBlitz: boolean;
 
   constructor(
     scene: THREE.Scene,
@@ -133,6 +136,7 @@ export class StructureManager {
     this.fxManager = fxManager || new FXManager(scene);
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
+    this.isBlitz = getIsBlitz();
     this.loadModels();
 
     // Subscribe to camera view changes if scene is provided
@@ -484,7 +488,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    const labelDiv = createStructureInfoElement(structure, this.currentCameraView);
+    const labelDiv = createStructureInfoElement(structure, this.currentCameraView, this.isBlitz);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
