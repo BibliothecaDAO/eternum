@@ -27,6 +27,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
-    include: ["@realms-world/db"],
+    include: [
+      "@realms-world/db",
+      "@reown/appkit",
+      "@reown/appkit-adapter-wagmi",
+    ],
   },
 });
