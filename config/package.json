@@ -25,7 +25,7 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "starknet": "6.23.1",
+    "starknet": "7.6.2",
     "typescript": "^5.0.0"
   }
 }

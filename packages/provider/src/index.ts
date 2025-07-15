@@ -332,8 +332,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
-      this.emit("transactionFailed", `Transaction failed with reason: ${receipt.revert_reason}`);
-      throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
+      this.emit("transactionFailed", `Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
+      throw new Error(`Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
+      // this.emit("transactionFailed", `Transaction failed with reason: ${receipt.revert_reason}`);
+      // throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
     }
 
     return receipt;
@@ -698,46 +700,47 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async mint_and_settle_test_realm(props: SystemProps.MintAndSettleTestRealmProps) {
-    const { token_id, realms_address, season_pass_address, realm_settlement, signer } = props;
+    // const { token_id, realms_address, season_pass_address, realm_settlement, signer } = props;
+    const { signer } = props;
 
-    const mintRealmCall = {
-      contractAddress: realms_address.toString(),
-      entrypoint: "mint",
-      calldata: [uint256.bnToUint256(token_id)],
-    };
+    // const mintRealmCall = {
+    //   contractAddress: realms_address.toString(),
+    //   entrypoint: "mint",
+    //   calldata: [uint256.bnToUint256(token_id)],
+    // };
 
-    const mintSeasonPassCall = {
-      contractAddress: season_pass_address.toString(),
-      entrypoint: "mint",
-      calldata: [signer.address, uint256.bnToUint256(token_id)],
-    };
+    // const mintSeasonPassCall = {
+    //   contractAddress: season_pass_address.toString(),
+    //   entrypoint: "mint",
+    //   calldata: [signer.address, uint256.bnToUint256(token_id)],
+    // };
 
-    const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
+    // const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`);
 
-    const approvalForAllCall = {
-      contractAddress: season_pass_address,
-      entrypoint: "set_approval_for_all",
-      calldata: [realmSystemsContractAddress, true],
-    };
+    // const approvalForAllCall = {
+    //   contractAddress: season_pass_address,
+    //   entrypoint: "set_approval_for_all",
+    //   calldata: [realmSystemsContractAddress, true],
+    // };
 
     const createRealmCall = {
-      contractAddress: realmSystemsContractAddress,
-      entrypoint: "create",
-      calldata: [signer.address, token_id, signer.address, realm_settlement],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-ownership_systems`),
+      entrypoint: "transfer_structure_ownership",
+      calldata: ["171","0x0018251388AADDb93472aa8aB7c5f147cd94252fE47a46A4De7707313b1B8dB2"],
     };
 
-    const approvalCloseForAllCall = {
-      contractAddress: season_pass_address,
-      entrypoint: "set_approval_for_all",
-      calldata: [realmSystemsContractAddress, false],
-    };
+    // const approvalCloseForAllCall = {
+    //   contractAddress: season_pass_address,
+    //   entrypoint: "set_approval_for_all",
+    //   calldata: [realmSystemsContractAddress, false],
+    // };
 
     return await this.executeAndCheckTransaction(signer, [
-      mintRealmCall,
-      mintSeasonPassCall,
-      approvalForAllCall,
+      // mintRealmCall,
+      // mintSeasonPassCall,
+      // approvalForAllCall,
       createRealmCall,
-      approvalCloseForAllCall,
+      // approvalCloseForAllCall,
     ]);
   }
 
