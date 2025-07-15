@@ -54,11 +54,11 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   const resourceManager = useResourceManager(entityId);
 
   const storageRemaining = useMemo(() => {
-    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
+    if (!realmInfo?.storehouses) {
       return 0;
     }
-    return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
-  }, [realmInfo?.storehouses?.capacityUsedKg, realmInfo?.storehouses?.capacityKg]);
+    return realmInfo.storehouses.capacityKg - realmInfo.storehouses.capacityUsedKg;
+  }, [realmInfo?.storehouses]);
 
   const isStorageFull = useMemo(() => {
     return storageRemaining <= 0;
