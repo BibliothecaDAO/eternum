@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
-import { BiomeInfoPanel, ArmyEntityDetail, QuestEntityDetail, StructureEntityDetail } from "@/ui/features/world";
+import { ArmyEntityDetail, BiomeInfoPanel, QuestEntityDetail, StructureEntityDetail } from "@/ui/features/world";
 import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";
@@ -14,12 +14,10 @@ export const HexEntityDetails = () => {
   // Get tile data based on selected hex
   const tile = useMemo(() => {
     if (!selectedHex) return null;
-
     const selectedHexContract = new PositionInterface({
       x: selectedHex.col || 0,
       y: selectedHex.row || 0,
     }).getContract();
-
     return getComponentValue(
       dojo.setup.components.Tile,
       getEntityIdFromKeys([BigInt(selectedHexContract.x), BigInt(selectedHexContract.y)]),
@@ -39,19 +37,26 @@ export const HexEntityDetails = () => {
   }, [tile]);
 
   return (
-    <div className="h-full overflow-auto p-2">
-      <div className={`${hasOccupier ? "h-50" : "h-full"}`}>
-        {selectedHex && (
-          <div className="mb-2 text-sm font-medium text-center">
-            <span className="px-2 py-1 bg-gray-800 rounded-md">
-              Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
-            </span>
-          </div>
-        )}
-        <BiomeInfoPanel biome={biome} compact={hasOccupier} />
+    <div className="h-full flex flex-col overflow-auto p-2">
+      {/* Header with hex coordinates */}
+      {selectedHex && (
+        <div className="mb-2 text-sm font-medium text-center flex-shrink-0">
+          <span className="px-2 py-1 bg-gray-800 rounded-md">
+            Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
+          </span>
+        </div>
+      )}
+
+      {/* Biome panel - takes remaining space when no occupier */}
+      <div className={hasOccupier ? "flex-shrink-0 mb-4" : "flex-1 min-h-0"}>
+        <div className={hasOccupier ? "" : "h-full"}>
+          <BiomeInfoPanel biome={biome} compact={hasOccupier} />
+        </div>
       </div>
+
+      {/* Occupier details - only shown when there's an occupier */}
       {hasOccupier && tile && (
-        <div>
+        <div className="flex-shrink-0">
           {isStructure ? (
             <StructureEntityDetail
               structureEntityId={tile.occupier_id}
