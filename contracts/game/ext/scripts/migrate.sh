@@ -109,7 +109,7 @@ echo -e ""
 
 echo -e "${YELLOW}► Migrating Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"\
        "and world contract: ${BOLD}${WORLD_CONTRACT:-(unspecified)}${YELLOW}${NC}"
-COMMAND="sozo migrate --profile $PROFILE $WORLD_CONTRACT --fee eth"
+COMMAND="sozo migrate --profile $PROFILE $WORLD_CONTRACT"
 echo -e ""
 echo -e "${BLUE}► Running command: ${BOLD}${COMMAND}${BLUE}${NC}"
 echo -e ""
