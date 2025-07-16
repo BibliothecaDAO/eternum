@@ -185,7 +185,7 @@ function timeStringToSeconds(timeStr: string): number {
 
 export const getRandomBackgroundImage = () => {
   const timestamp = Math.floor(Date.now() / 1000);
-  const imageNumber = (timestamp % 6) + 1;
+  const imageNumber = (timestamp % 7) + 1;
   const paddedNumber = imageNumber.toString().padStart(2, "0");
   return paddedNumber;
 };
