@@ -176,7 +176,7 @@ const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
   } = useDojo();
-  const setSeasonWinner = useUIStore((state) => state.setSeasonWinner);
+  const setSeasonWinner = useUIStore((state) => state.setGameWinner);
   const [seasonEnded, setSeasonEnded] = useState<SeasonEnded | null>(null);
 
   useEffect(() => {
@@ -206,21 +206,21 @@ const SeasonTimerStoreManager = () => {
   const {
     setup: { components },
   } = useDojo();
-  const setSeasonEndAt = useUIStore((state) => state.setSeasonEndAt);
-  const setSeasonStartMainAt = useUIStore((state) => state.setSeasonStartMainAt);
+  const setGameEndAt = useUIStore((state) => state.setGameEndAt);
+  const setSeasonStartMainAt = useUIStore((state) => state.setGameStartMainAt);
 
   useEffect(() => {
     // Try to get season_config.end_at from WorldConfig
     const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     const endAt = worldConfig?.season_config?.end_at;
     if (endAt && typeof endAt === "number") {
-      setSeasonEndAt(endAt);
+      setGameEndAt(endAt);
     }
     const startMainAt = worldConfig?.season_config?.start_main_at;
     if (startMainAt && typeof startMainAt === "number") {
       setSeasonStartMainAt(startMainAt);
     }
-  }, [components, setSeasonEndAt, setSeasonStartMainAt]);
+  }, [components, setGameEndAt, setSeasonStartMainAt]);
   return null;
 };
 

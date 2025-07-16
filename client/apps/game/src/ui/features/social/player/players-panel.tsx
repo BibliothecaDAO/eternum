@@ -33,7 +33,7 @@ export const PlayersPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const seasonWinner = useUIStore((state) => state.seasonWinner);
+  const seasonWinner = useUIStore((state) => state.gameWinner);
 
   const isSeasonOver = Boolean(seasonWinner);
 

@@ -21,12 +21,12 @@ type TooltipType = {
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
-  seasonWinner: { address: ContractAddress; name: string; guildName: string } | null;
-  setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
-  seasonEndAt: number | null;
-  setSeasonEndAt: (seasonEndAt: number | null) => void;
-  seasonStartMainAt: number | null;
-  setSeasonStartMainAt: (seasonStartMainAt: number | null) => void;
+  gameWinner: { address: ContractAddress; name: string; guildName: string } | null;
+  setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
+  gameEndAt: number | null;
+  setGameEndAt: (seasonEndAt: number | null) => void;
+  gameStartMainAt: number | null;
+  setGameStartMainAt: (seasonStartMainAt: number | null) => void;
   spectatorRealmEntityId: ID | null;
   setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
@@ -93,13 +93,13 @@ export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
     setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
-    seasonWinner: null,
-    setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
-      set({ seasonWinner: winner }),
-    seasonEndAt: null,
-    setSeasonEndAt: (seasonEndAt: number | null) => set({ seasonEndAt }),
-    seasonStartMainAt: null,
-    setSeasonStartMainAt: (seasonStartMainAt: number | null) => set({ seasonStartMainAt }),
+    gameWinner: null,
+    setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
+      set({ gameWinner: winner }),
+    gameEndAt: null,
+    setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
+    gameStartMainAt: null,
+    setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
     spectatorRealmEntityId: null,
     setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",

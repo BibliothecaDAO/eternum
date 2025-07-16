@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export const SeasonEndCountdown = () => {
-  const seasonEndAt = useUIStore((state) => state.seasonEndAt);
-  const seasonStartMainAt = useUIStore((state) => state.seasonStartMainAt);
+  const seasonEndAt = useUIStore((state) => state.gameEndAt);
+  const seasonStartMainAt = useUIStore((state) => state.gameStartMainAt);
   const [timeLeft, setTimeLeft] = useState("");
   const [seasonEnded, setSeasonEnded] = useState(false);
   const [now, setNow] = useState(0);

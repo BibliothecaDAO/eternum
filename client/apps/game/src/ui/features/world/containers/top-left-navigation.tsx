@@ -9,7 +9,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -27,6 +26,7 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import {
+  Clock,
   Crown,
   EyeIcon,
   EyeOffIcon,
@@ -306,24 +306,15 @@ export const TopLeftNavigation = memo(() => {
             )}
           </div>
         </div>
-        <div className="flex storage-selector  py-1 flex-col md:flex-row gap-1  ">
-          <ViewOnMapIcon
-            className={`self-center ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-            position={new Position(selectedStructurePosition)}
-          />
-          <CoordinateNavigationInput
-            position={new Position(selectedStructurePosition)}
-            className={!isMapView ? "opacity-50 pointer-events-none" : ""}
-          />
-        </div>
 
         <CapacityInfo
           structureEntityId={structureEntityId}
           className="storage-selector flex flex-col md:flex-row gap-1  self-center"
         />
         <div className="world-navigation-selector text-xs md:text-base flex md:flex-row gap-2 md:gap-2 justify-between p-1 md:px-4 relative ">
-          <div className="cycle-selector flex justify-center md:justify-start">
+          <div className="cycle-selector flex justify-center md:justify-start gap-2">
             <TickProgress />
+            <GameEndTimer />
           </div>
           <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 panel-wood-small px-4">
             <span
@@ -549,6 +540,75 @@ const TickProgress = memo(() => {
         <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
       </CircularProgress>
       <span className="text-sm">{progress.toFixed()}%</span>
+    </div>
+  );
+});
+
+const GameEndTimer = memo(() => {
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const { currentBlockTimestamp } = getBlockTimestamp();
+
+  const [secondsRemaining, setSecondsRemaining] = useState(gameEndAt ? gameEndAt - currentBlockTimestamp : 0);
+
+  // Update countdown every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate time components
+  const { hours, minutes, seconds } = useMemo(() => {
+    const hrs = Math.floor(secondsRemaining / 3600);
+    const mins = Math.floor((secondsRemaining % 3600) / 60);
+    const secs = secondsRemaining % 60;
+    return { hours: hrs, minutes: mins, seconds: secs };
+  }, [secondsRemaining]);
+
+  // Format time display
+  const timeDisplay = useMemo(() => {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+  }, [hours, minutes, seconds]);
+
+  // Memoize tooltip content
+  const tooltipContent = useMemo(
+    () => (
+      <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
+        <div className="font-bold">Game Ends In</div>
+        <div>
+          Time remaining: <span className="font-bold">{timeDisplay}</span>
+        </div>
+      </div>
+    ),
+    [timeDisplay],
+  );
+
+  // Handle tooltip visibility
+  const handleMouseEnter = useCallback(() => {
+    setTooltip({
+      position: "bottom",
+      content: tooltipContent,
+    });
+  }, [setTooltip, tooltipContent]);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+  }, [setTooltip]);
+
+  return (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="self-center text-center px-2 py-1 flex gap-1 text-xl items-center border-l border-gold/20"
+    >
+      <Clock className="w-4 h-4 text-gold" />
+      <span className="text-sm text-gold font-semibold">{timeDisplay}</span>
     </div>
   );
 });

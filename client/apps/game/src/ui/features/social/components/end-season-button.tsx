@@ -23,7 +23,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
-  const seasonWinner = useUIStore((state) => state.seasonWinner);
+  const seasonWinner = useUIStore((state) => state.gameWinner);
 
   const isSeasonOver = Boolean(seasonWinner);
 
