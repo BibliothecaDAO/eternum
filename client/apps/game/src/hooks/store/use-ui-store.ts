@@ -81,6 +81,8 @@ interface UIStore {
   // camera follow
   followArmyMoves: boolean;
   setFollowArmyMoves: (follow: boolean) => void;
+  isFollowingArmy: boolean;
+  setIsFollowingArmy: (following: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -175,6 +177,10 @@ export const useUIStore = create(
     followArmyMoves: false,
     setFollowArmyMoves: (follow: boolean) => {
       set({ followArmyMoves: follow });
+    },
+    isFollowingArmy: false,
+    setIsFollowingArmy: (following: boolean) => {
+      set({ isFollowingArmy: following });
     },
   })),
 );

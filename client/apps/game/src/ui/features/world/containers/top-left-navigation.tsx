@@ -26,7 +26,19 @@ import { ClientComponents, ContractAddress, ID, TickIds } from "@bibliothecadao/
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, EyeOffIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import {
+  Crown,
+  EyeIcon,
+  EyeOffIcon,
+  Landmark,
+  Pencil,
+  Pickaxe,
+  Search,
+  ShieldQuestion,
+  Sparkles,
+  Star,
+  X,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -61,6 +73,7 @@ export const TopLeftNavigation = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const followArmyMoves = useUIStore((state) => state.followArmyMoves);
   const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
+  const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -353,17 +366,38 @@ export const TopLeftNavigation = memo(() => {
             >
               World
             </span>
-            <button
-              className={`rounded-full p-2 transition-all duration-300 ${followArmyMoves ? "bg-gold/20 hover:bg-gold/30" : "bg-gold/10 hover:bg-gold/20"}`}
-              onClick={() => setFollowArmyMoves(!followArmyMoves)}
-              title={followArmyMoves ? "Stop following army moves" : "Follow army moves"}
-            >
-              {followArmyMoves ? <EyeIcon className="w-4 h-4 text-gold" /> : <EyeOffIcon className="w-4 h-4 text-gold/60" />}
-            </button>
+            <div className="relative">
+              <button
+                className={`rounded-full p-2 transition-all duration-300 border-2 ${
+                  followArmyMoves
+                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
+                    : "bg-gold/10 hover:bg-gold/20 border-gold/30"
+                }`}
+                onClick={() => setFollowArmyMoves(!followArmyMoves)}
+              >
+                {followArmyMoves ? (
+                  <EyeIcon className="w-4 h-4 text-gold animate-pulse" />
+                ) : (
+                  <EyeOffIcon className="w-4 h-4 text-gold/60" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
         <SecondaryMenuItems />
+
+        {/* Camera Following Status Indicator */}
+        {isFollowingArmy && (
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-5 z-50">
+            <div className="bg-dark-wood text-gold px-4 py-2 rounded-lg shadow-lg border-2 border-gold animate-bounce">
+              <div className="flex items-center gap-2">
+                <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+                <span className="text-sm font-semibold text-gold">Following Army Movement</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {structureNameChange && selectedStructure.structure && (
           <NameChangePopup

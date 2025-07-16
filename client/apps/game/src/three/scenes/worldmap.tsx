@@ -268,20 +268,27 @@ export default class WorldmapScene extends HexagonScene {
     this.systemManager.ExplorerMove.onUpdate((update: ExplorerMoveSystemUpdate) => {
       const { explorerId, resourceId, amount } = update;
 
-      const armyPosition = this.armiesPositions.get(explorerId);
-
-      // Check if user has camera follow enabled and is on worldmap
-      const followArmyMoves = useUIStore.getState().followArmyMoves;
-      const currentScene = this.sceneManager.getCurrentScene();
-
-      if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
-        // Move camera to the reward location when follow is enabled
-        this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
-      }
-
       // Find the army position using explorerId
       setTimeout(() => {
+        const armyPosition = this.armiesPositions.get(explorerId);
+
         if (armyPosition) {
+          // Check if user has camera follow enabled and is on worldmap
+          const followArmyMoves = useUIStore.getState().followArmyMoves;
+          const currentScene = this.sceneManager.getCurrentScene();
+
+          if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
+            // Move camera to the reward location when follow is enabled
+            this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
+            
+            // Set the following state to true temporarily
+            useUIStore.getState().setIsFollowingArmy(true);
+            
+            // Clear the following state after camera movement
+            setTimeout(() => {
+              useUIStore.getState().setIsFollowingArmy(false);
+            }, 3000); // Show for 3 seconds
+          }
           if (resourceId === 0) {
             return;
           }
