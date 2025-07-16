@@ -1,5 +1,5 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-g.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
@@ -103,7 +103,7 @@ export const StepContainer = ({
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-brown w-32 sm:w-24 lg:w-32 xl:w-48 mx-auto" />
+                  <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-96 mx-auto" />
                 )}
               </div>
             </div>
