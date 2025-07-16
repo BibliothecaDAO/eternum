@@ -113,7 +113,7 @@ export const StepContainer = ({
                 <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg pt-2">
                   <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing <br /> to Eternum's{" "}
+                    By continuing you are agreeing <br /> to Realms's{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
@@ -340,7 +340,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://x.com/RealmsEternum"
+            href="https://x.com/realms_gg"
             target="_blank"
             rel="noopener noreferrer"
           >

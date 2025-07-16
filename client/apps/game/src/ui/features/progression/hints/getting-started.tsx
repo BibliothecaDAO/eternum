@@ -8,11 +8,11 @@ export const GettingStarted = () => {
     {
       title: "Seasons & Victory",
       content:
-        "Eternum is played in seasons. Each season is a fresh campaign with specific rules and victory conditions, primarily achieved by accumulating Victory Points through constructing and owning Hyperstructures. In-game assets can often be bridged forward, allowing progress to carry over between seasons.",
+        "Realms is played in seasons. Each season is a fresh campaign with specific rules and victory conditions, primarily achieved by accumulating Victory Points through constructing and owning Hyperstructures. In-game assets can often be bridged forward, allowing progress to carry over between seasons.",
     },
     {
-      title: "The Eternum Day",
-      content: `Time in Eternum is measured in Eternum Days. An Eternum Day is exactly ${
+      title: "The Realms Day",
+      content: `Time in Realms is measured in Realms Days. An Realms Day is exactly ${
         configManager.getTick(TickIds.Armies) / 60
       } minute(s) in the real world. Many game mechanics, like resource production and stamina regeneration, are tied to this cycle.`,
     },
@@ -22,7 +22,7 @@ export const GettingStarted = () => {
         "Players start by settling a Realm (8,000 unique NFTs, requiring a Season Pass to settle) or establishing a Village around a settled Realm. Realms can be upgraded (Settlement → City → Kingdom → Empire) unlocking more buildable hexes and defensive slots, produce 1-7 resources, and can be claimed if defenses fall. Villages offer simpler entry, produce at 50% the rate of Realms (1 resource type), are tied to a parent Realm, have limited upgrades, and cannot be claimed (but can be raided).",
     },
     {
-      title: "Materials: The Lifeblood of Eternum",
+      title: "Materials: The Lifeblood of Realms",
       content:
         "Materials are tangible, tokenized assets. Categories include: Food (Wheat, Fish - vital for production and armies), Resources (22 types, e.g., Wood, Stone, Dragonhide), Troops (units for armies), Donkeys (for transport), Labor (for 'simple mode' building/production, acquired by burning resources), and Ancient Fragments (for Hyperstructures). All materials (except Labor) can be bridged out as ERC20 tokens via Realms/Banks and have weight affecting storage and transport.",
     },
@@ -39,7 +39,7 @@ export const GettingStarted = () => {
     {
       title: "The World Map & Exploration",
       content:
-        "Eternum unfolds on an infinite, procedurally generated hexagonal map. The world starts shrouded and is revealed through exploration by armies. The map features 16 unique biome types that affect combat and troop movement. Exploring a hex costs stamina (typically 30 per hex) and may reveal resources, world structures, or enemy agents.",
+        "Realms unfolds on an infinite, procedurally generated hexagonal map. The world starts shrouded and is revealed through exploration by armies. The map features 16 unique biome types that affect combat and troop movement. Exploring a hex costs stamina (typically 30 per hex) and may reveal resources, world structures, or enemy agents.",
     },
     {
       title: "Trading & Transport",
@@ -54,7 +54,7 @@ export const GettingStarted = () => {
     {
       title: "Travel & Stamina",
       content:
-        "Deployed armies use stamina for movement on the map and for performing actions like attacking or exploring. Stamina regenerates partially each Eternum Day (e.g., +20). Different troop types have varying maximum stamina, and movement costs can differ by biome.",
+        "Deployed armies use stamina for movement on the map and for performing actions like attacking or exploring. Stamina regenerates partially each Realms Day (e.g., +20). Different troop types have varying maximum stamina, and movement costs can differ by biome.",
     },
   ];
 

@@ -68,7 +68,7 @@ export const SeasonWinnerMessage = () => {
             Season Over!
             <br />
             <span className="text-lg md:text-xl">
-              {seasonWinner.name} &amp; the {seasonWinner.guildName} tribe conquered Eternum.
+              {seasonWinner.name} &amp; the {seasonWinner.guildName} tribe conquered Realms.
             </span>
           </div>
           <div className="mt-3 pt-3 border-t border-gold-600/20">

@@ -516,7 +516,7 @@ const TickProgress = memo(() => {
     () => (
       <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
         <div>
-          A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+          A day in Realms is <span className="font-bold">{formatTime(cycleTime)}</span>
         </div>
         <div>
           Time left until next cycle:{" "}

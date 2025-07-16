@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import "../../index.css";
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
-    "Syncing Eternum...",
+    "Syncing Realms...",
     "Gathering Dragonhide...",
     "Stepping the world...",
     "Painting the Sky...",
@@ -88,7 +88,7 @@ export function CountdownTimer({ backgroundImage }: { backgroundImage: string })
               src="/images/logos/eternum-loader.png"
               className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
             />
-            <h1 className="tracking-wider">Eternum is Launching in</h1>
+            <h1 className="tracking-wider">Realms is Launching in</h1>
             <div className="flex gap-4 text-center mt-4 mx-auto">
               <TimeUnit value={days} label="Days" />
               <TimeUnit value={hours} label="Hours" />
