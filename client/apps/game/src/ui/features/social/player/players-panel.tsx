@@ -157,7 +157,7 @@ export const PlayersPanel = ({
             </div> */}
             <div className="flex gap-2 justify-center">
               <RegisterPointsButton className="flex-1" />
-              <EndSeasonButton className="flex-1" />
+              {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
             </div>
           </>
         ) : (

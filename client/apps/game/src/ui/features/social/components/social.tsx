@@ -2,12 +2,12 @@ import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { PlayerDataTransformed } from "@/three/managers/player-data-store";
-import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
+import { getIsBlitz, LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { HintSection } from "@/ui/features/progression";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
-import { social, ExpandableOSWindow } from "@/ui/features/world";
+import { ExpandableOSWindow, social } from "@/ui/features/world";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -39,6 +39,8 @@ export const Social = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
   const players = usePlayers();
+
+  const isBlitz = getIsBlitz();
 
   useEffect(() => {
     // update first time - initialize with interval on first call
@@ -172,8 +174,12 @@ export const Social = () => {
       >
         <div className="flex flex-col h-full">
           <Tabs.List className="">
-            {tabs.map((tab) => (
-              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+            {tabs.map((tab, idx) => (
+              <Tabs.Tab
+                key={tab.key}
+                className={`py-3 px-6 flex items-center justify-center ${isBlitz && tab.key === "Tribes" ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
+                disabled={isBlitz && tab.key === "Tribes"}
+              >
                 {tab.label}
               </Tabs.Tab>
             ))}
