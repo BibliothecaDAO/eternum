@@ -77,7 +77,7 @@ export function CountdownTimer({ backgroundImage }: { backgroundImage: string })
     <div className="relative min-h-screen w-full pointer-events-auto">
       <img
         className="absolute h-screen w-screen object-cover"
-        src={`/images/covers/${backgroundImage}.png`}
+        src={`/images/covers/blitz/${backgroundImage}.png`}
         alt="Cover"
       />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">

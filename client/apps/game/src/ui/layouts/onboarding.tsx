@@ -1,5 +1,5 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-b.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-g.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
@@ -130,7 +130,7 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
   <div className="relative min-h-screen w-full pointer-events-auto">
     <img
       className="absolute h-screen w-screen object-cover"
-      src={`/images/covers/${backgroundImage}.png`}
+      src={`/images/covers/blitz/${backgroundImage}.png`}
       alt="Cover"
     />
     <div className="absolute z-10 w-screen h-screen">
