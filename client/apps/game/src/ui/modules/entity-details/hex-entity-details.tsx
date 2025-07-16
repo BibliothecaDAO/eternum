@@ -50,7 +50,7 @@ export const HexEntityDetails = () => {
       {/* Biome panel - takes remaining space when no occupier */}
       <div className={hasOccupier ? "flex-shrink-0 mb-4" : "flex-1 min-h-0"}>
         <div className={hasOccupier ? "" : "h-full"}>
-          <BiomeInfoPanel biome={biome} compact={hasOccupier} />
+          <BiomeInfoPanel biome={biome} />
         </div>
       </div>
 
