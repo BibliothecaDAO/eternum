@@ -51,7 +51,7 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import {
   ArmySystemUpdate,
   ChestSystemUpdate,
-  ExplorerRewardSystemUpdate,
+  ExplorerMoveSystemUpdate,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
   SceneName,
@@ -265,11 +265,22 @@ export default class WorldmapScene extends HexagonScene {
       this.handleRelicEffectUpdate(update);
     });
 
-    this.systemManager.ExplorerReward.onUpdate((update: ExplorerRewardSystemUpdate) => {
+    this.systemManager.ExplorerMove.onUpdate((update: ExplorerMoveSystemUpdate) => {
       const { explorerId, resourceId, amount } = update;
+
+      const armyPosition = this.armiesPositions.get(explorerId);
+
+      // Check if user has camera follow enabled and is on worldmap
+      const followArmyMoves = useUIStore.getState().followArmyMoves;
+      const currentScene = this.sceneManager.getCurrentScene();
+
+      if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
+        // Move camera to the reward location when follow is enabled
+        this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
+      }
+
       // Find the army position using explorerId
       setTimeout(() => {
-        const armyPosition = this.armiesPositions.get(explorerId);
         if (armyPosition) {
           if (resourceId === 0) {
             return;
@@ -373,7 +384,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  protected onHexagonDoubleClick(hexCoords: HexPosition) {}
+  protected onHexagonDoubleClick() {}
 
   protected getHexagonEntity(hexCoords: HexPosition) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
@@ -482,7 +493,7 @@ export default class WorldmapScene extends HexagonScene {
       const effectType = isExplored ? "travel" : "compass";
       const effectLabel = isExplored ? "Traveling" : "Exploring";
 
-      const { promise, end } = this.fxManager.playFxAtCoords(
+      const { end } = this.fxManager.playFxAtCoords(
         effectType,
         position.x,
         position.y + 2.5,
@@ -956,7 +967,7 @@ export default class WorldmapScene extends HexagonScene {
     const chunks: string[] = [];
     for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
       for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
-        const { x, y, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
+        const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
         const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
         const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
         if (!chunks.includes(_chunkKey)) {
@@ -1257,7 +1268,7 @@ export default class WorldmapScene extends HexagonScene {
     // Check if this is a structure entity
     if (!entityFound) {
       const structureHexes = this.structureManager.structures.getStructures();
-      for (const [_, structures] of structureHexes) {
+      for (const [, structures] of structureHexes) {
         if (structures.has(entityId)) {
           console.log(
             `Relic effect update for Structure entityId: ${entityId}, relicResourceId: ${relicResourceId}, isActive: ${isActive}`,
@@ -1385,7 +1396,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if this is a structure entity
     const structureHexes = this.structureManager.structures.getStructures();
-    for (const [_, structures] of structureHexes) {
+    for (const [, structures] of structureHexes) {
       if (structures.has(entityId)) {
         for (const pendingRelic of pendingRelics) {
           try {
@@ -1501,8 +1512,8 @@ export default class WorldmapScene extends HexagonScene {
 
       // Validate structure relic effects
       const structureHexes = this.structureManager.structures.getStructures();
-      for (const [_, structures] of structureHexes) {
-        for (const [entityId, _structure] of structures) {
+      for (const [, structures] of structureHexes) {
+        for (const [entityId] of structures) {
           const currentRelics = this.structureManager.getStructureRelicEffects(entityId);
           if (currentRelics.length > 0) {
             for (const relic of currentRelics) {

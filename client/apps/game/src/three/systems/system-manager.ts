@@ -19,7 +19,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
-  ExplorerRewardSystemUpdate,
+  ExplorerMoveSystemUpdate,
   type RelicEffectSystemUpdate,
   StructureProgress,
   type StructureSystemUpdate,
@@ -484,9 +484,9 @@ export class SystemManager {
     };
   }
 
-  public get ExplorerReward() {
+  public get ExplorerMove() {
     return {
-      onUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+      onUpdate: (callback: (value: ExplorerMoveSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.events.ExplorerMoveEvent,
           callback,
@@ -495,7 +495,7 @@ export class SystemManager {
               const [currentState, _prevState] = update.value;
               if (!currentState) return undefined;
 
-              const result: ExplorerRewardSystemUpdate = {
+              const result: ExplorerMoveSystemUpdate = {
                 explorerId: currentState.explorer_id,
                 resourceId: currentState.reward_resource_type,
                 amount: divideByPrecision(Number(currentState.reward_resource_amount)),

@@ -78,6 +78,9 @@ interface UIStore {
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
+  // camera follow
+  followArmyMoves: boolean;
+  setFollowArmyMoves: (follow: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -168,5 +171,11 @@ export const useUIStore = create(
     // labor
     useSimpleCost: true,
     setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
+    // camera follow
+    followArmyMoves: localStorage.getItem("followArmyMoves") === "true" || false,
+    setFollowArmyMoves: (follow: boolean) => {
+      set({ followArmyMoves: follow });
+      localStorage.setItem("followArmyMoves", follow.toString());
+    },
   })),
 );

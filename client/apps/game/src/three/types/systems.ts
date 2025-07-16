@@ -47,7 +47,7 @@ export type BuildingSystemUpdate = {
   paused: boolean;
 };
 
-export type ExplorerRewardSystemUpdate = {
+export type ExplorerMoveSystemUpdate = {
   explorerId: ID;
   resourceId: ResourcesIds | 0;
   amount: number;

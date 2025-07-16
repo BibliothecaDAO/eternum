@@ -26,7 +26,7 @@ import { ClientComponents, ContractAddress, ID, TickIds } from "@bibliothecadao/
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import { Crown, EyeIcon, EyeOffIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -59,6 +59,8 @@ export const TopLeftNavigation = memo(() => {
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const followArmyMoves = useUIStore((state) => state.followArmyMoves);
+  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -243,7 +245,7 @@ export const TopLeftNavigation = memo(() => {
                       {searchTerm ? "No structures found" : "No structures available"}
                     </div>
                   ) : (
-                    filteredStructures.map((structure, index) => (
+                    filteredStructures.map((structure) => (
                       <div key={structure.entityId} className="flex flex-row items-center">
                         <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                           {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
@@ -351,6 +353,13 @@ export const TopLeftNavigation = memo(() => {
             >
               World
             </span>
+            <button
+              className={`rounded-full p-2 transition-all duration-300 ${followArmyMoves ? "bg-gold/20 hover:bg-gold/30" : "bg-gold/10 hover:bg-gold/20"}`}
+              onClick={() => setFollowArmyMoves(!followArmyMoves)}
+              title={followArmyMoves ? "Stop following army moves" : "Follow army moves"}
+            >
+              {followArmyMoves ? <EyeIcon className="w-4 h-4 text-gold" /> : <EyeOffIcon className="w-4 h-4 text-gold/60" />}
+            </button>
           </div>
         </div>
 
