@@ -172,10 +172,9 @@ export const useUIStore = create(
     useSimpleCost: true,
     setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
     // camera follow
-    followArmyMoves: localStorage.getItem("followArmyMoves") === "true" || false,
+    followArmyMoves: false,
     setFollowArmyMoves: (follow: boolean) => {
       set({ followArmyMoves: follow });
-      localStorage.setItem("followArmyMoves", follow.toString());
     },
   })),
 );
