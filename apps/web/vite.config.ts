@@ -1,7 +1,9 @@
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
+import importGraph from "vite-plugin-import-graph";
 import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -22,6 +24,7 @@ export default defineConfig({
       include: "**/*.svg?react",
     }),
     tailwindcss(),
+    visualizer({ open: true }),
   ],
   build: {
     chunkSizeWarningLimit: 1000,
@@ -43,5 +46,11 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ["@realms-world/db", "@realms-world/constants"],
+    external: [
+      "wagmi",
+      "@reown/appkit/react",
+      "@reown/appkit",
+      "@reown/appkit-adapter-wagmi",
+    ],
   },
 });
