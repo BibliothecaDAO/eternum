@@ -2,6 +2,7 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -18,6 +19,8 @@ import {
   getEntityNameFromLocalStorage,
   getGuildFromPlayerAddress,
   getRealmNameById,
+  getStructureTypeName,
+  isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useDojo, useGuildMembers } from "@bibliothecadao/react";
 import {
@@ -43,6 +46,7 @@ type EntityIdFormat = {
 interface SelectedEntity {
   name: string;
   entityId: ID;
+  category: StructureType;
 }
 
 interface SelectedResource {
@@ -88,6 +92,26 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay]);
 
   return debouncedValue;
+}
+
+// Helper function to check if a transfer is allowed based on new rules
+function isTransferAllowed(
+  sourceCategory: StructureType,
+  destinationCategory: StructureType,
+  resourceId: ResourcesIds,
+): boolean {
+  // TRANSFER RULES:
+  // 1. Realms can transfer ALL materials (including troops) to other Realms
+  // 2. Other structures (Camp/Village, Essence Rift/FragmentMine, Hyperstructure)
+  //    can transfer all materials EXCEPT troops
+
+  if (isMilitaryResource(resourceId)) {
+    // Military resources (troops) can ONLY be transferred between Realms
+    return sourceCategory === StructureType.Realm && destinationCategory === StructureType.Realm;
+  }
+
+  // Non-military resources can be transferred between ALL structures
+  return true;
 }
 
 export const AutomationTransferTable: React.FC = () => {
@@ -239,6 +263,8 @@ export const AutomationTransferTable: React.FC = () => {
     };
   };
 
+  const isBlitz = getIsBlitz();
+
   // Create entity lists
   const entitiesList = useMemo(
     () => [
@@ -246,31 +272,31 @@ export const AutomationTransferTable: React.FC = () => {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Realm)
           .map(mapToEntityIdFormat),
-        name: "Your Realms",
+        name: `Your ${getStructureTypeName(StructureType.Realm, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Village)
           .map(mapToEntityIdFormat),
-        name: "Your Villages",
+        name: `Your ${getStructureTypeName(StructureType.Village, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Hyperstructure)
           .map(mapToEntityIdFormat),
-        name: "Your Hyperstructures",
+        name: `Your ${getStructureTypeName(StructureType.Hyperstructure, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.FragmentMine)
           .map(mapToEntityIdFormat),
-        name: "Your Fragment Mines",
+        name: `Your ${getStructureTypeName(StructureType.FragmentMine, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Bank)
           .map(mapToEntityIdFormat),
-        name: "Your Banks",
+        name: `Your ${getStructureTypeName(StructureType.Bank, isBlitz)}s`,
       },
       {
         entities: otherRealms.filter((a: EntityIdFormat) => {
@@ -279,7 +305,7 @@ export const AutomationTransferTable: React.FC = () => {
 
           return shouldInclude;
         }),
-        name: "Other Realms",
+        name: `Other ${getStructureTypeName(StructureType.Realm, isBlitz)}s`,
       },
       {
         entities: otherVillages.filter((a: EntityIdFormat) =>
@@ -287,7 +313,7 @@ export const AutomationTransferTable: React.FC = () => {
             ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
             : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
-        name: "Other Villages",
+        name: `Other ${getStructureTypeName(StructureType.Village, isBlitz)}s`,
       },
       {
         entities: otherHyperstructures.filter((a: EntityIdFormat) =>
@@ -295,7 +321,7 @@ export const AutomationTransferTable: React.FC = () => {
             ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
             : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
-        name: "Other Hyperstructures",
+        name: `Other ${getStructureTypeName(StructureType.Hyperstructure, isBlitz)}s`,
       },
       {
         entities: otherFragmentMines.filter((a: EntityIdFormat) =>
@@ -303,7 +329,7 @@ export const AutomationTransferTable: React.FC = () => {
             ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
             : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
-        name: "Other Fragment Mines",
+        name: `Other ${getStructureTypeName(StructureType.FragmentMine, isBlitz)}s`,
       },
       {
         entities: otherBanks.filter((a: EntityIdFormat) =>
@@ -311,7 +337,7 @@ export const AutomationTransferTable: React.FC = () => {
             ? playersInPlayersGuildAddress.includes(BigInt(a.owner))
             : !playersInPlayersGuildAddress.includes(BigInt(a.owner)),
         ),
-        name: "Other Banks",
+        name: `Other ${getStructureTypeName(StructureType.Bank, isBlitz)}s`,
       },
     ],
     [
@@ -323,6 +349,7 @@ export const AutomationTransferTable: React.FC = () => {
       otherBanks,
       guildOnly,
       playersInPlayersGuildAddress,
+      isBlitz,
     ],
   );
 
@@ -333,42 +360,45 @@ export const AutomationTransferTable: React.FC = () => {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Realm)
           .map(mapToEntityIdFormat),
-        name: "Your Realms",
+        name: `Your ${getStructureTypeName(StructureType.Realm, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Village)
           .map(mapToEntityIdFormat),
-        name: "Your Villages",
+        name: `Your ${getStructureTypeName(StructureType.Village, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Hyperstructure)
           .map(mapToEntityIdFormat),
-        name: "Your Hyperstructures",
+        name: `Your ${getStructureTypeName(StructureType.Hyperstructure, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.FragmentMine)
           .map(mapToEntityIdFormat),
-        name: "Your Fragment Mines",
+        name: `Your ${getStructureTypeName(StructureType.FragmentMine, isBlitz)}s`,
       },
       {
         entities: playerStructures
           .filter((structure) => structure.structure.base.category === StructureType.Bank)
           .map(mapToEntityIdFormat),
-        name: "Your Banks",
+        name: `Your ${getStructureTypeName(StructureType.Bank, isBlitz)}s`,
       },
     ],
     [playerStructures],
   );
 
   const entitiesListWithAccountNames = useMemo(() => {
+    const isBlitz = getIsBlitz();
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => {
         const entityName =
           getEntityNameFromLocalStorage(entity.entityId) ||
-          (entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`);
+          (entity.realmId
+            ? getRealmNameById(entity.realmId)
+            : `${getStructureTypeName(entity.category, isBlitz)} ${entity.entityId}`);
 
         return {
           ...entity,
@@ -379,7 +409,7 @@ export const AutomationTransferTable: React.FC = () => {
       name,
       totalCount: entities.length, // Keep track of total count
     }));
-  }, [entitiesList, components]);
+  }, [entitiesList, components, isBlitz]);
 
   // Create source entities list with account names (only player-owned)
   const sourceEntitiesListWithAccountNames = useMemo(() => {
@@ -387,7 +417,9 @@ export const AutomationTransferTable: React.FC = () => {
       entities: entities.map((entity) => {
         const entityName =
           getEntityNameFromLocalStorage(entity.entityId) ||
-          (entity.realmId ? getRealmNameById(entity.realmId) : `${StructureType[entity.category]} ${entity.entityId}`);
+          (entity.realmId
+            ? getRealmNameById(entity.realmId)
+            : `${getStructureTypeName(entity.category, isBlitz)} ${entity.entityId}`);
 
         return {
           ...entity,
@@ -398,7 +430,7 @@ export const AutomationTransferTable: React.FC = () => {
       name,
       totalCount: entities.length,
     }));
-  }, [sourceEntitiesList, components]);
+  }, [sourceEntitiesList, components, isBlitz]);
 
   // Create entity type options
   const entityTypeOptions = useMemo(() => {
@@ -474,6 +506,20 @@ export const AutomationTransferTable: React.FC = () => {
       return;
     }
 
+    // Check if transfer is allowed based on new rules
+    if (
+      selectedSource &&
+      selectedDestination &&
+      !isTransferAllowed(selectedSource.category, selectedDestination.category, resourceId)
+    ) {
+      if (isMilitaryResource(resourceId)) {
+        alert("Troops can only be transferred between Realms. This transfer is not allowed.");
+      } else {
+        alert("This resource transfer is not allowed between the selected structure types.");
+      }
+      return;
+    }
+
     // Add the resource to selectedResources
     setSelectedResources([...selectedResources, { resourceId, amount }]);
   };
@@ -483,6 +529,17 @@ export const AutomationTransferTable: React.FC = () => {
 
     if (!selectedSource || !selectedDestination || selectedResources.length === 0) {
       alert("Please select source and destination entities and at least one resource to transfer.");
+      return;
+    }
+
+    // Check if all selected resources are allowed for transfer
+    const invalidResources = selectedResources.filter(
+      (resource) => !isTransferAllowed(selectedSource.category, selectedDestination.category, resource.resourceId),
+    );
+
+    if (invalidResources.length > 0) {
+      const resourceNames = invalidResources.map((r) => ResourcesIds[r.resourceId]).join(", ");
+      alert(`The following resources cannot be transferred between these structure types: ${resourceNames}`);
       return;
     }
 
@@ -560,6 +617,20 @@ export const AutomationTransferTable: React.FC = () => {
   };
 
   const handleAddOneOffResource = (resourceId: ResourcesIds, amount: number) => {
+    // Check if transfer is allowed based on new rules
+    if (
+      selectedSource &&
+      selectedDestination &&
+      !isTransferAllowed(selectedSource.category, selectedDestination.category, resourceId)
+    ) {
+      if (isMilitaryResource(resourceId)) {
+        alert("Troops can only be transferred between Realms. This transfer is not allowed.");
+      } else {
+        alert("This resource transfer is not allowed between the selected structure types.");
+      }
+      return;
+    }
+
     if (!oneOffSelectedResourceIds.includes(resourceId)) {
       setOneOffSelectedResourceIds([...oneOffSelectedResourceIds, resourceId]);
     }
@@ -604,12 +675,12 @@ export const AutomationTransferTable: React.FC = () => {
     );
 
     if (exactMatch) {
-      setSelectedSource({ name: exactMatch.name, entityId: exactMatch.entityId });
+      setSelectedSource({ name: exactMatch.name, entityId: exactMatch.entityId, category: exactMatch.category });
       setSourceSearchTerm("");
     } else if (filteredSourceEntities.length === 1) {
       // Auto-select if there's only one result
       const entity = filteredSourceEntities[0];
-      setSelectedSource({ name: entity.name, entityId: entity.entityId });
+      setSelectedSource({ name: entity.name, entityId: entity.entityId, category: entity.category });
       setSourceSearchTerm("");
     }
   }, [filteredSourceEntities, debouncedSourceSearchTerm, sourceEntityType]);
@@ -625,12 +696,12 @@ export const AutomationTransferTable: React.FC = () => {
     );
 
     if (exactMatch) {
-      setSelectedDestination({ name: exactMatch.name, entityId: exactMatch.entityId });
+      setSelectedDestination({ name: exactMatch.name, entityId: exactMatch.entityId, category: exactMatch.category });
       setDestinationSearchTerm("");
     } else if (filteredDestinationEntities.length === 1) {
       // Auto-select if there's only one result
       const entity = filteredDestinationEntities[0];
-      setSelectedDestination({ name: entity.name, entityId: entity.entityId });
+      setSelectedDestination({ name: entity.name, entityId: entity.entityId, category: entity.category });
       setDestinationSearchTerm("");
     }
   }, [filteredDestinationEntities, debouncedDestinationSearchTerm, destinationEntityType]);
@@ -680,6 +751,25 @@ export const AutomationTransferTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Transfer Rules Info */}
+      <div className="mb-4 p-3 border border-gold/30 rounded-md bg-gold/5">
+        <div className="font-bold text-sm mb-2 text-gold">Transfer Rules:</div>
+        <div className="text-xs space-y-1">
+          <div className="flex items-start gap-1">
+            <span className="text-green">✓</span>
+            <span>Realms can transfer ALL materials (including troops) to other Realms</span>
+          </div>
+          <div className="flex items-start gap-1">
+            <span className="text-green">✓</span>
+            <span>Camps, Essence Rifts, and Hyperstructures can transfer all materials EXCEPT troops</span>
+          </div>
+          <div className="flex items-start gap-1">
+            <span className="text-red">✗</span>
+            <span>Troops cannot be transferred from/to non-Realm structures</span>
+          </div>
+        </div>
+      </div>
+
       {/* <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
         {transferType === "automation"
           ? "IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes."
@@ -716,7 +806,11 @@ export const AutomationTransferTable: React.FC = () => {
                   if (e.key === "Enter" && filteredSourceEntities.length > 0) {
                     e.preventDefault();
                     const firstEntity = filteredSourceEntities[0];
-                    setSelectedSource({ name: firstEntity.name, entityId: firstEntity.entityId });
+                    setSelectedSource({
+                      name: firstEntity.name,
+                      entityId: firstEntity.entityId,
+                      category: firstEntity.category,
+                    });
                     setSourceSearchTerm("");
                   }
                 }}
@@ -729,7 +823,7 @@ export const AutomationTransferTable: React.FC = () => {
                       .find(({ name }) => name === sourceEntityType)
                       ?.entities.find((e) => e.entityId.toString() === value);
                     if (entity) {
-                      setSelectedSource({ name: entity.name, entityId: entity.entityId });
+                      setSelectedSource({ name: entity.name, entityId: entity.entityId, category: entity.category });
                     }
                   }}
                 >
@@ -834,7 +928,11 @@ export const AutomationTransferTable: React.FC = () => {
                       if (e.key === "Enter" && filteredDestinationEntities.length > 0) {
                         e.preventDefault();
                         const firstEntity = filteredDestinationEntities[0];
-                        setSelectedDestination({ name: firstEntity.name, entityId: firstEntity.entityId });
+                        setSelectedDestination({
+                          name: firstEntity.name,
+                          entityId: firstEntity.entityId,
+                          category: firstEntity.category,
+                        });
                         setDestinationSearchTerm("");
                       }
                     }}
@@ -847,7 +945,11 @@ export const AutomationTransferTable: React.FC = () => {
                           .find(({ name }) => name === destinationEntityType)
                           ?.entities.find((e) => e.entityId.toString() === value);
                         if (entity) {
-                          setSelectedDestination({ name: entity.name, entityId: entity.entityId });
+                          setSelectedDestination({
+                            name: entity.name,
+                            entityId: entity.entityId,
+                            category: entity.category,
+                          });
                         }
                       }}
                     >
@@ -952,17 +1054,28 @@ export const AutomationTransferTable: React.FC = () => {
                           No resources available or source not selected
                         </div>
                       ) : (
-                        orderedResourcesWithBalances.map((resource) => (
-                          <SelectItem key={resource.id} value={resource.id.toString()}>
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center">
-                                <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
-                                {resource.trait}
+                        orderedResourcesWithBalances.map((resource) => {
+                          const isAllowed =
+                            !selectedSource ||
+                            !selectedDestination ||
+                            isTransferAllowed(selectedSource.category, selectedDestination.category, resource.id);
+                          const isMilitary = isMilitaryResource(resource.id);
+
+                          return (
+                            <SelectItem key={resource.id} value={resource.id.toString()} disabled={!isAllowed}>
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center">
+                                  <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
+                                  <span className={!isAllowed ? "text-red/70" : ""}>{resource.trait}</span>
+                                  {!isAllowed && isMilitary && (
+                                    <span className="text-xs text-red/70 ml-2">(Troops: Realms only)</span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
                               </div>
-                              <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
-                            </div>
-                          </SelectItem>
-                        ))
+                            </SelectItem>
+                          );
+                        })
                       )}
                     </SelectContent>
                   </Select>
@@ -993,7 +1106,12 @@ export const AutomationTransferTable: React.FC = () => {
                     variant="outline"
                     size="xs"
                     disabled={
-                      !newResourceId || orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance === 0
+                      !newResourceId ||
+                      (orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 0) === 0 ||
+                      (selectedSource &&
+                        selectedDestination &&
+                        typeof newResourceId === "number" &&
+                        !isTransferAllowed(selectedSource.category, selectedDestination.category, newResourceId))
                     }
                   >
                     Add
@@ -1183,17 +1301,28 @@ export const AutomationTransferTable: React.FC = () => {
                             No resources available or source not selected
                           </div>
                         ) : (
-                          orderedResourcesWithBalances.map((resource) => (
-                            <SelectItem key={resource.id} value={resource.id.toString()}>
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center">
-                                  <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
-                                  {resource.trait}
+                          orderedResourcesWithBalances.map((resource) => {
+                            const isAllowed =
+                              !selectedSource ||
+                              !selectedDestination ||
+                              isTransferAllowed(selectedSource.category, selectedDestination.category, resource.id);
+                            const isMilitary = isMilitaryResource(resource.id);
+
+                            return (
+                              <SelectItem key={resource.id} value={resource.id.toString()} disabled={!isAllowed}>
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center">
+                                    <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
+                                    <span className={!isAllowed ? "text-red/70" : ""}>{resource.trait}</span>
+                                    {!isAllowed && isMilitary && (
+                                      <span className="text-xs text-red/70 ml-2">(Troops: Realms only)</span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
                                 </div>
-                                <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
-                              </div>
-                            </SelectItem>
-                          ))
+                              </SelectItem>
+                            );
+                          })
                         )}
                       </SelectContent>
                     </Select>
@@ -1225,7 +1354,11 @@ export const AutomationTransferTable: React.FC = () => {
                       size="xs"
                       disabled={
                         !newResourceId ||
-                        orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance === 0
+                        (orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 0) === 0 ||
+                        (selectedSource &&
+                          selectedDestination &&
+                          typeof newResourceId === "number" &&
+                          !isTransferAllowed(selectedSource.category, selectedDestination.category, newResourceId))
                       }
                     >
                       Add

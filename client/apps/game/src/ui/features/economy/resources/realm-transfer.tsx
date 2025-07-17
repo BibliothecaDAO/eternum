@@ -68,22 +68,27 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       name: getStructureName(structure.structure, getIsBlitz()).name,
     }));
 
-    // For military resources, we need special handling
+    // TRANSFER RULES:
+    // 1. Realms can transfer ALL materials (including troops) to other Realms
+    // 2. Other structures (Camp/Village, Essence Rift/FragmentMine, Hyperstructure) 
+    //    can transfer all materials EXCEPT troops
+
     if (isMilitaryResource(resource)) {
-      // If the selected structure is a village, only show the connected realm
-      if (selectedStructure?.category === StructureType.Village) {
-        const realmEntityId = selectedStructure.metadata.village_realm;
-        return playerStructuresWithName.filter((structure) => structure.structure.entity_id === realmEntityId);
-      } else {
+      // Military resources (troops) can ONLY be transferred between Realms
+      
+      if (selectedStructure?.category === StructureType.Realm) {
+        // Source is a Realm: only show other Realms as valid destinations
         return playerStructuresWithName.filter(
-          (structure) =>
-            structure.category !== StructureType.Village ||
-            structure.structure.metadata.village_realm === selectedStructureEntityId,
+          (structure) => structure.category === StructureType.Realm
         );
+      } else {
+        // Source is NOT a Realm (Camp, Essence Rift, Hyperstructure, etc.)
+        // These structures cannot transfer troops at all
+        return [];
       }
     }
 
-    // Default case: return all player structures
+    // Non-military resources can be transferred between ALL structures
     return playerStructuresWithName;
   }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
 
@@ -254,6 +259,23 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         </div>
         {/* End Dedicated Burn Section */}
 
+        {/* Transfer Constraints Info */}
+        {isMilitaryResource(resource) && (
+          <div className="mb-4 p-3 border border-gold/30 rounded-md bg-gold/5">
+            <div className="font-bold text-sm mb-1 text-gold">Transfer Rules for Troops:</div>
+            <div className="text-xs space-y-1">
+              <div className="flex items-start gap-1">
+                <span className="text-green">✓</span>
+                <span>Realm → Realm transfers allowed</span>
+              </div>
+              <div className="flex items-start gap-1">
+                <span className="text-red">✗</span>
+                <span>Camps, Essence Rifts, and Hyperstructures cannot transfer troops</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Scrollable content area */}
         <div className="flex-grow overflow-y-auto pr-2">
           <div className="flex items-center gap-2 mb-2">
@@ -293,6 +315,16 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               ? "Structures are sorted by distance (closest to furthest)"
               : "Structures are sorted by name"}
           </div>
+          {playerStructuresFiltered.length === 0 && isMilitaryResource(resource) && selectedStructure && selectedStructure.category !== StructureType.Realm && (
+            <div className="text-center py-8 text-gold/60">
+              <div className="text-lg mb-2">No Valid Destinations</div>
+              <div className="text-sm">
+                {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops.
+                <br />
+                Only Realms can transfer military units.
+              </div>
+            </div>
+          )}
           {playerStructuresFiltered
             .sort((a, b) => {
               if (!sortByDistance) {
@@ -451,12 +483,6 @@ const RealmTransferBalance = memo(
     const sourceResourceManager = useMemo(
       () =>
         new ResourceManager(components, type === "send" ? selectedStructureEntityId : structure.structure.entity_id),
-      [components, structure.structure.entity_id, selectedStructureEntityId, type],
-    );
-
-    const destinationResourceManager = useMemo(
-      () =>
-        new ResourceManager(components, type === "receive" ? selectedStructureEntityId : structure.structure.entity_id),
       [components, structure.structure.entity_id, selectedStructureEntityId, type],
     );
 
