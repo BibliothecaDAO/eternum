@@ -31,10 +31,10 @@ export default defineConfig({
           // Group blockchain libraries together
           blockchain: [
             "viem",
-            "wagmi",
+            "wagmi", 
             "starknet",
             "@starknet-react/core",
-            "@starknet-react/chains",
+            "@starknet-react/chains"
           ],
           // Group UI libraries
           ui: [
@@ -60,17 +60,17 @@ export default defineConfig({
             "@radix-ui/react-toast",
             "@radix-ui/react-toggle",
             "@radix-ui/react-toggle-group",
-            "@radix-ui/react-tooltip",
+            "@radix-ui/react-tooltip"
           ],
           // Group graphql and query libraries
           graphql: [
             "graphql-request",
             "@tanstack/react-query",
-            "@tanstack/react-query-devtools",
-          ],
-        },
-      },
-    },
+            "@tanstack/react-query-devtools"
+          ]
+        }
+      }
+    }
   },
   optimizeDeps: {
     include: [
@@ -80,14 +80,17 @@ export default defineConfig({
       "viem",
       "wagmi",
       "starknet",
-      "@starknet-react/core",
+      "@starknet-react/core"
     ],
     exclude: [
       "@starknet-io/starknet-types-07",
-      "@starknet-io/starknet-types-08",
-    ],
+      "@starknet-io/starknet-types-08"
+    ]
   },
   ssr: {
-    noExternal: ["@realms-world/db", "@realms-world/constants"],
-  },
+    noExternal: [
+      "@realms-world/db",
+      "@realms-world/constants"
+    ]
+  }
 });
