@@ -730,7 +730,7 @@
     "questFindProbability": 1000,
     "questFindFailProbability": 10000,
     "relicDiscoveryIntervalSeconds": 300,
-    "relicHexDistanceFromCenter": 40,
+    "relicHexDistanceFromCenter": 10,
     "relicChestRelicsPerChest": 3
   },
   "tick": {
@@ -881,7 +881,7 @@
       "34": 3,
       "35": 3,
       "36": 3,
-      "37": 0,
+      "37": 1,
       "38": 1
     },
     "buildingResourceProduced": {
@@ -1302,16 +1302,11 @@
       ],
       "37": [
         {
-          "resource": 36,
-          "amount": 1
-        }
-      ],
-      "38": [
-        {
           "resource": 23,
           "amount": 200
         }
-      ]
+      ],
+      "38": []
     },
     "simpleBuildingCost": {
       "0": [],
@@ -1417,12 +1412,7 @@
           "amount": 200
         }
       ],
-      "38": [
-        {
-          "resource": 23,
-          "amount": 200
-        }
-      ]
+      "38": []
     },
     "buildingFixedCostScalePercent": 5000
   },
@@ -1608,23 +1598,23 @@
   "startingResources": [
     {
       "resource": 23,
-      "amount": 300000
+      "amount": 5000
     },
     {
       "resource": 25,
-      "amount": 3000
+      "amount": 200
     },
     {
       "resource": 26,
-      "amount": 5000
+      "amount": 3000
     },
     {
       "resource": 29,
-      "amount": 5000
+      "amount": 3000
     },
     {
       "resource": 32,
-      "amount": 5000
+      "amount": 3000
     }
   ],
   "villageStartingResources": [

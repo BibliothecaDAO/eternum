@@ -1,18 +1,32 @@
 import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { getStructureTypeName } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { Map as MapIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // Define entity types for the toggle controls
-const ENTITY_TOGGLES = [
-  { id: "realms", label: "Realms", imagePath: "/images/labels/realm.png" },
+const ENTITY_TOGGLES = (isBlitz: boolean) => [
+  { id: "realms", label: getStructureTypeName(StructureType.Realm, isBlitz), imagePath: "/images/labels/realm.png" },
   { id: "armies", label: "Armies", imagePath: "/images/labels/army.png" },
-  { id: "hyperstructures", label: "Hyperstructures", imagePath: "/images/labels/hyperstructure.png" },
-  { id: "banks", label: "Banks", imagePath: `images/resources/${ResourcesIds.Lords}.png` },
-  { id: "fragmentMines", label: "Fragment Mines", imagePath: "/images/labels/fragment_mine.png" },
+  {
+    id: "hyperstructures",
+    label: getStructureTypeName(StructureType.Hyperstructure, isBlitz),
+    imagePath: "/images/labels/hyperstructure.png",
+  },
+  {
+    id: "banks",
+    label: getStructureTypeName(StructureType.Bank, isBlitz),
+    imagePath: `images/resources/${ResourcesIds.Lords}.png`,
+  },
+  {
+    id: "fragmentMines",
+    label: getStructureTypeName(StructureType.FragmentMine, isBlitz),
+    imagePath: "/images/labels/fragment_mine.png",
+  },
   { id: "quests", label: "Quests", imagePath: "/images/labels/quest.png" },
 ];
 
@@ -204,7 +218,7 @@ export const MiniMapNavigation = () => {
           {!isMinimized && (
             <div className="flex flex-wrap p-1 justify-between items-center gap-2 bg-black/70 border-b border-amber-900/50">
               <div className="flex flex-wrap justify-start gap-2">
-                {ENTITY_TOGGLES.map((entity) => (
+                {ENTITY_TOGGLES(getIsBlitz()).map((entity) => (
                   <div
                     key={entity.id}
                     className="flex items-center gap-1"

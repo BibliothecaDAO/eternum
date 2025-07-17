@@ -63,6 +63,10 @@ import {
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
+const ONE_MINUTE_IN_SECONDS = 60;
+const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+
 // ----- Buildings ----- //
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
@@ -93,8 +97,8 @@ export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 // ----- Relic Discovery ----- //
-export const RELIC_DISCOVERY_INTERVAL_SECONDS = 60 * 5; // 5 minutes
-export const RELIC_HEX_DISTANCE_FROM_CENTER = 40;
+export const RELIC_DISCOVERY_INTERVAL_SECONDS = 5 * ONE_MINUTE_IN_SECONDS; // 5 minutes
+export const RELIC_HEX_DISTANCE_FROM_CENTER = 10;
 export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
@@ -174,10 +178,6 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 
 export const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553";
 export const MAX_NUM_BANKS = 6;
-
-const ONE_MINUTE_IN_SECONDS = 60;
-const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
-const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
 export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
