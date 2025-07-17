@@ -4,15 +4,14 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 
 import config from "../drizzle.config";
-
 // Import only the specific schema tables that are actually used
-import { 
-  realmsBridgeRequests, 
-  realmsBridgeEvents, 
-  realmsLordsClaims,
+import {
   bridgeEventTypeEnum,
+  realmsBridgeEvents,
+  realmsBridgeEventsRelations,
+  realmsBridgeRequests,
   realmsBridgeRequestsRelations,
-  realmsBridgeEventsRelations
+  realmsLordsClaims,
 } from "./schema/bridge";
 
 neonConfig.webSocketConstructor = ws;
@@ -22,7 +21,7 @@ export const neonSql = neon(
 ) satisfies NeonQueryFunction<boolean, boolean>;
 
 // Optimize pool configuration for Vercel
-const pool = new Pool({ 
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10, // Limit max connections
   idleTimeoutMillis: 30000, // Close idle connections after 30s

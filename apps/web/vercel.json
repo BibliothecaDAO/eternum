@@ -1,11 +1,16 @@
 {
   "build": {
     "env": {
-      "NODE_OPTIONS": "--max-old-space-size=4096"
+      "NODE_OPTIONS": "--max-old-space-size=4096 --max-http-header-size=16384"
     }
   },
   "env": {
     "NODE_ENV": "production",
     "VERCEL_ENV": "production"
+  },
+  "functions": {
+    "apps/account-portal/src/routes/api/**/*.{js,ts}": {
+      "maxDuration": 10
+    }
   }
 }
