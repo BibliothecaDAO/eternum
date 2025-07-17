@@ -1,17 +1,17 @@
 import type { ChartConfig } from "@/components/ui/chart";
+import { useState } from "react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartLegend,
-                                   ChartLegendContent,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
 import { formatUnits } from "viem";
 
@@ -49,8 +49,8 @@ function getSenderLabel(sender: string): string {
     sender ===
     "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5"
   ) {
-     return "Game + Marketplace Fees";
-   }
+    return "Game + Marketplace Fees";
+  }
   return sender;
 }
 
@@ -68,7 +68,9 @@ export function VeLordsRewardsChart({
   totalSupply?: number;
   onTimePeriodChange?: (period: "3m" | "6m" | "1y") => void;
 }) {
-  const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">("3m");
+  const [selectedPeriod, setSelectedPeriod] = useState<"3m" | "6m" | "1y">(
+    "3m",
+  );
 
   const handlePeriodChange = (value: string) => {
     const period = value as "3m" | "6m" | "1y";
@@ -78,27 +80,34 @@ export function VeLordsRewardsChart({
 
   const parsedData = totalSupply
     ? (() => {
-        if (!data || data.length === 0) return []; 
+        if (!data || data.length === 0) return [];
 
         // Find the date range
-        const timestamps = data.map(item => 
+        const timestamps = data.map((item) =>
           typeof item.timestamp === "number"
             ? item.timestamp
-            : new Date(item.timestamp).getTime() / 1000
+            : new Date(item.timestamp).getTime() / 1000,
         );
         const minTimestamp = Math.min(...timestamps);
         const maxTimestamp = Math.max(...timestamps);
 
         // Generate all weeks in the range
-        const allWeeks: Record<string, {
-          week: string;
-          amounts: Record<string, number>;
-          total_amount: number;
-          apy: number;
-        }> = {};
+        const allWeeks: Record<
+          string,
+          {
+            week: string;
+            amounts: Record<string, number>;
+            total_amount: number;
+            apy: number;
+          }
+        > = {};
 
         // Pre-populate all weeks with zero values
-        for (let timestamp = minTimestamp; timestamp <= maxTimestamp; timestamp += 604800) {
+        for (
+          let timestamp = minTimestamp;
+          timestamp <= maxTimestamp;
+          timestamp += 604800
+        ) {
           const weekStart = Math.floor(timestamp / 604800) * 604800;
           const week = new Date(weekStart * 1000).toISOString().split("T")[0];
           allWeeks[week] = {
@@ -110,7 +119,7 @@ export function VeLordsRewardsChart({
         }
 
         // Fill in the actual data
-        data.forEach(item => {
+        data.forEach((item) => {
           const timestamp =
             typeof item.timestamp === "number"
               ? item.timestamp
@@ -118,19 +127,29 @@ export function VeLordsRewardsChart({
 
           const weekStart = Math.floor(timestamp / 604800) * 604800;
           const week = new Date(weekStart * 1000).toISOString().split("T")[0];
-          
-          const formattedAmount = Number(
-            formatUnits(BigInt(item.amount), 18),
-          );
+
+          const formattedAmount = Number(formatUnits(BigInt(item.amount), 18));
           const senderLabel = getSenderLabel(item.sender);
 
+          if (!allWeeks[week]) {
+            allWeeks[week] = {
+              week,
+              amounts: {},
+              total_amount: 0,
+              apy: 0,
+            };
+          }
+          if (!allWeeks[week].amounts) allWeeks[week].amounts = {};
           allWeeks[week].amounts[senderLabel] =
             (allWeeks[week].amounts[senderLabel] || 0) + formattedAmount;
           allWeeks[week].total_amount += formattedAmount;
-          allWeeks[week].apy = ((allWeeks[week].total_amount * 52) / totalSupply) * 100;
+          allWeeks[week].apy =
+            ((allWeeks[week].total_amount * 52) / totalSupply) * 100;
         });
 
-        return Object.values(allWeeks).sort((a, b) => a.week.localeCompare(b.week));
+        return Object.values(allWeeks).sort((a, b) =>
+          a.week.localeCompare(b.week),
+        );
       })()
     : [];
 
@@ -176,15 +195,21 @@ export function VeLordsRewardsChart({
           >
             <div className="flex items-center space-x-1">
               <RadioGroupItem value="3m" id="3m" />
-              <Label htmlFor="3m" className="text-sm">3m</Label>
+              <Label htmlFor="3m" className="text-sm">
+                3m
+              </Label>
             </div>
             <div className="flex items-center space-x-1">
               <RadioGroupItem value="6m" id="6m" />
-              <Label htmlFor="6m" className="text-sm">6m</Label>
+              <Label htmlFor="6m" className="text-sm">
+                6m
+              </Label>
             </div>
             <div className="flex items-center space-x-1">
               <RadioGroupItem value="1y" id="1y" />
-              <Label htmlFor="1y" className="text-sm">1y</Label>
+              <Label htmlFor="1y" className="text-sm">
+                1y
+              </Label>
             </div>
           </RadioGroup>
         </div>
@@ -225,7 +250,7 @@ export function VeLordsRewardsChart({
             }}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />}/>
+          <ChartLegend content={<ChartLegendContent />} />
 
           {/* Stacked bars for each source (using labels) */}
           {allSenderLabels.map((label, index) => (
