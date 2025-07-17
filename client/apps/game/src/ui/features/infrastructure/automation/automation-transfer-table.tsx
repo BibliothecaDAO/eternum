@@ -26,8 +26,8 @@ import { useDojo, useGuildMembers } from "@bibliothecadao/react";
 import {
   ContractAddress,
   EntityType,
+  getResourceTiers,
   ID,
-  RESOURCE_TIERS,
   ResourcesIds,
   Structure,
   StructureType,
@@ -651,7 +651,7 @@ export const AutomationTransferTable: React.FC = () => {
   const orderedResourcesWithBalances = useMemo(() => {
     if (!selectedSource) return [];
 
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(getResourceTiers(getIsBlitz()))
       .flat()
       .map((resourceId) => {
         const balance = getBalance(selectedSource.entityId, resourceId, currentDefaultTick, components);
@@ -1109,7 +1109,7 @@ export const AutomationTransferTable: React.FC = () => {
                       !newResourceId ||
                       (orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 0) === 0 ||
                       (selectedSource &&
-                        selectedDestination &&
+                        selectedDestination !== null &&
                         typeof newResourceId === "number" &&
                         !isTransferAllowed(selectedSource.category, selectedDestination.category, newResourceId))
                     }

@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import { LiquidityResourceRow } from "@/ui/features/economy/banking";
-import { useDojo } from "@bibliothecadao/react";
-import { ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
+import { ID, ResourcesIds, getResourceTiers, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -20,13 +20,9 @@ export const LiquidityTableHeader = () => (
 );
 
 export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
-  const {
-    account: { account },
-  } = useDojo();
-
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
+  const filteredResources = Object.entries(getResourceTiers(getIsBlitz())).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
       (resourceId) =>
         resourceId !== ResourcesIds.Lords &&

@@ -1625,10 +1625,6 @@
     {
       "resource": 32,
       "amount": 5000
-    },
-    {
-      "resource": 38,
-      "amount": 1000
     }
   ],
   "villageStartingResources": [
@@ -1658,10 +1654,6 @@
     },
     {
       "resource": 32,
-      "amount": 1000
-    },
-    {
-      "resource": 38,
       "amount": 1000
     }
   ],
@@ -1769,8 +1761,8 @@
       "fee_amount": 0,
       "registration_count_max": 5000,
       "registration_delay_seconds": 20,
-      "registration_period_seconds": 60,
-      "creation_period_seconds": 120
+      "registration_period_seconds": 300,
+      "creation_period_seconds": 600
     }
   },
   "setup": {

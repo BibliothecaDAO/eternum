@@ -73,14 +73,14 @@ export const LocalEternumGlobalConfig: Config = {
   },
   startingResources: [
     ...CommonEternumGlobalConfig.startingResources,
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.Essence, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
     // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
   ],
   villageStartingResources: [
     ...CommonEternumGlobalConfig.villageStartingResources,
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.Essence, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
     // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
@@ -129,8 +129,8 @@ export const LocalEternumGlobalConfig: Config = {
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 1,
-      creation_period_seconds: 60 * 2,
+      registration_period_seconds: 60 * 5,
+      creation_period_seconds: 60 * 10,
     },
   },
 };
