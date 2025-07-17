@@ -11,7 +11,7 @@ import { WagmiProvider } from "wagmi";
 const queryClient = new QueryClient();
 
 // 1. Get projectId from https://cloud.reown.com
-const projectId = "3b2f679bd9ac7c6feb93d370ad0359d7";
+const projectId = "d80d873dcad4b8636dd7314223238a59";
 
 // 2. Create a metadata object - optional
 const metadata = {
