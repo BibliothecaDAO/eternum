@@ -7,7 +7,7 @@ import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settl
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -44,8 +44,6 @@ export const BuildingEntityDetails = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-
-  const resourceManager = useResourceManager(structureEntityId);
 
   const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
   const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
@@ -152,18 +150,6 @@ export const BuildingEntityDetails = () => {
     );
     return (population?.population.max || 0) - (population?.population.current || 0) >= populationImpact;
   }, [buildingState.buildingType, buildingState.ownerEntityId]);
-
-  const productionEndsAt = useMemo(() => {
-    if (!buildingState.resource) return 0;
-    return resourceManager.getProductionEndsAt(buildingState.resource || 0);
-  }, [resourceManager, buildingState.resource]);
-
-  const isActive = useMemo(() => {
-    if (!buildingState.resource) return false;
-    return resourceManager.isActive(buildingState.resource || 0);
-  }, [resourceManager, buildingState.resource]);
-
-  console.log(productionEndsAt, isActive);
 
   return (
     <div className="building-entity-details-selector flex flex-col h-full">

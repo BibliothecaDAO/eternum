@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -115,14 +115,14 @@ export const LocalEternumGlobalConfig: Config = {
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    complexBuildingCosts: {
-      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
-      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
-    },
-    buildingPopulation: {
-      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
-      [BuildingType.ResourceWheat]: 0,
-    },
+    // complexBuildingCosts: {
+    //   ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
+    //   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    // },
+    // buildingPopulation: {
+    //   ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+    //   [BuildingType.ResourceWheat]: 0,
+    // },
   },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,

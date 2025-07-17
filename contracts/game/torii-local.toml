@@ -19,10 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-      "erc721:0x5e935e1a56f074e2adf8b4269f2126d89195f051996ae9f273be4e5265748b6",
-      "erc721:0x446ba3dce3f8070540050d3cb3aa6f6fbaaa794c5a2b561805f5a6d15d0cb1d",
-	"erc721:0x72d1d5fd44303f927958cb1f753ce1b017ca6bbb9e26b0004ba00f52773f2c",
-      "erc20:0x4268db0a754f285768e20bf569a83eb8afd0aaf3715c0efabcf0c07c17a655c",
+      "erc721:0x5c7d2d225fcd746a797f0a6adf16312b03be896fa0d13da7c6870e76c06ba35",
+      "erc721:0x58a1714d738ac2dd2c06e949d573c14ff1e49f40e5c5f1a983a1e486f233d26",
+	"erc721:0x79a5a6da4bbf73eb75aa64e0e037b5142c29fb17990b8e1493a5b0c32f290ec",
+      "erc20:0x5485590ba1002bde234f91bc36c8c53b4e1e4a380b0124203309c2f5f14189b",
 ]
 
 namespaces = ["s1_eternum"]

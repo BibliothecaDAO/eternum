@@ -4,7 +4,7 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
-import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
@@ -14,10 +14,6 @@ import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { getIsBlitz } from "../constants";
-
-interface OnboardingOverlayProps {
-  controller?: boolean;
-}
 
 interface StepContainerProps {
   children: React.ReactNode;
@@ -219,14 +215,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     return realmsEntities.length > 0 || villageEntities.length > 0;
   }, [realmsEntities, villageEntities]);
 
-  const handleVillagePassClick = () => {
-    toggleModal(<MintVillagePassModal onClose={() => toggleModal(null)} />);
-  };
-
-  const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
-
   const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
-  const [showVillagePassButton, setShowVillagePassButton] = useState<boolean>(true);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -262,38 +251,8 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             Settling will being in <br /> <span className="text-gold font-bold">{settlingStartTimeRemaining}</span>
           </div>
         )}
-        {/* {seasonPassRealms.length > 0 && !settlingStartTimeRemaining && (
-          <Button
-            isPulsing={true}
-            size="lg"
-            onClick={handleClick}
-            className={`w-full !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-              !hasRealmsOrVillages ? "animate-pulse" : ""
-            }`}
-          >
-            <div className="flex items-center justify-start w-full">
-              <div className="w-7 h-7 bg-black/20 rounded-full mr-2 md:mr-3 flex justify-center items-center font-semibold">
-                {seasonPassRealms.length}
-              </div>
-              <span className="text-lg font-medium flex-grow text-center">Redeem Season Pass</span>
-            </div>
-          </Button>
-        )} */}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            {/* <a className="w-full" target="_blank" rel="noopener noreferrer">
-              <Button
-                size="lg"
-                onClick={handleVillagePassClick}
-                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
-              >
-                <div className="flex items-center justify-start w-full gap-2">
-                  <Play className="!w-5 !h-5 fill-gold" />
-                  <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
-                </div>
-              </Button>
-            </a> */}
-
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}
