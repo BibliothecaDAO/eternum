@@ -6,6 +6,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
 import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
+import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
@@ -43,8 +44,6 @@ interface SeasonPassButtonProps {
 
 export const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://dev.empire.realms.world/";
-
-const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
 
 export const StepContainer = ({
   children,
@@ -134,7 +133,11 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
       alt="Cover"
     />
     <div className="absolute z-10 w-screen h-screen">
-      {/* <OnboardingOverlay controller={controller} /> */}
+      {controller && (
+        <div className="absolute top-4 right-4 z-50">
+          <Controller />
+        </div>
+      )}
       {children}
     </div>
   </div>

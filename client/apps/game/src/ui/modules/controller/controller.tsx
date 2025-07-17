@@ -1,3 +1,4 @@
+import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
@@ -47,11 +48,17 @@ export const Controller = () => {
 
   return account ? (
     <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
-      {userName && userName.length > 8 ? `${userName.substring(0, 8)}...` : userName}
+      <div className="flex items-center gap-2">
+        <CartridgeSmall className="w-4 h-4 fill-current" />
+        {userName && userName.length > 8 ? `${userName.substring(0, 8)}...` : userName}
+      </div>
     </Button>
   ) : (
     <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>
-      Login
+      <div className="flex items-center gap-2">
+        <CartridgeSmall className="w-4 h-4 fill-current" />
+        Login
+      </div>
     </Button>
   );
 };

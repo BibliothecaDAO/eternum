@@ -239,15 +239,6 @@ const DojoContextProvider = ({
   // Once account is set, render the children
   return (
     <>
-      {accountName && showBlankOverlay && (
-        <div
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-brown/80 text-gold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ${
-            showWelcome ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          Welcome, {accountName}!
-        </div>
-      )}
       <DojoContext.Provider
         value={{
           ...value,
