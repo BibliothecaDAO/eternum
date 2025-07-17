@@ -21,7 +21,6 @@ import { Route as ProposalListRouteImport } from './routes/proposal.list'
 import { Route as ProposalIdRouteImport } from './routes/proposal.$id'
 import { Route as DelegateProfileRouteImport } from './routes/delegate.profile'
 import { Route as DelegateListRouteImport } from './routes/delegate.list'
-import { ServerRoute as ApiDuneServerRouteImport } from './routes/api/dune'
 import { ServerRoute as ApiAuthSplatServerRouteImport } from './routes/api/auth/$'
 
 const rootServerRouteImport = createServerRootRoute()
@@ -75,11 +74,6 @@ const DelegateListRoute = DelegateListRouteImport.update({
   id: '/delegate/list',
   path: '/delegate/list',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDuneServerRoute = ApiDuneServerRouteImport.update({
-  id: '/api/dune',
-  path: '/api/dune',
-  getParentRoute: () => rootServerRouteImport,
 } as any)
 const ApiAuthSplatServerRoute = ApiAuthSplatServerRouteImport.update({
   id: '/api/auth/$',
@@ -176,28 +170,24 @@ export interface RootRouteChildren {
   VelordsIndexRoute: typeof VelordsIndexRoute
 }
 export interface FileServerRoutesByFullPath {
-  '/api/dune': typeof ApiDuneServerRoute
   '/api/auth/$': typeof ApiAuthSplatServerRoute
 }
 export interface FileServerRoutesByTo {
-  '/api/dune': typeof ApiDuneServerRoute
   '/api/auth/$': typeof ApiAuthSplatServerRoute
 }
 export interface FileServerRoutesById {
   __root__: typeof rootServerRouteImport
-  '/api/dune': typeof ApiDuneServerRoute
   '/api/auth/$': typeof ApiAuthSplatServerRoute
 }
 export interface FileServerRouteTypes {
   fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/api/dune' | '/api/auth/$'
+  fullPaths: '/api/auth/$'
   fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/api/dune' | '/api/auth/$'
-  id: '__root__' | '/api/dune' | '/api/auth/$'
+  to: '/api/auth/$'
+  id: '__root__' | '/api/auth/$'
   fileServerRoutesById: FileServerRoutesById
 }
 export interface RootServerRouteChildren {
-  ApiDuneServerRoute: typeof ApiDuneServerRoute
   ApiAuthSplatServerRoute: typeof ApiAuthSplatServerRoute
 }
 
@@ -277,13 +267,6 @@ declare module '@tanstack/react-router' {
 }
 declare module '@tanstack/react-start/server' {
   interface ServerFileRoutesByPath {
-    '/api/dune': {
-      id: '/api/dune'
-      path: '/api/dune'
-      fullPath: '/api/dune'
-      preLoaderRoute: typeof ApiDuneServerRouteImport
-      parentRoute: typeof rootServerRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -310,7 +293,6 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 const rootServerRouteChildren: RootServerRouteChildren = {
-  ApiDuneServerRoute: ApiDuneServerRoute,
   ApiAuthSplatServerRoute: ApiAuthSplatServerRoute,
 }
 export const serverRouteTree = rootServerRouteImport

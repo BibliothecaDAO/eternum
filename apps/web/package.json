@@ -10,7 +10,8 @@
     "with-env": "dotenv -e ../../.env --",
     "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@cartridge/connector": "^0.8.0",
     "@cartridge/controller": "^0.8.0",
     "@duneanalytics/client-sdk": "^0.2.5",
@@ -88,9 +89,7 @@
     "viem": "catalog:",
     "vite": "^6.3.5",
     "wagmi": "^2.15.6",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
+    "zod": "catalog:",
     "@graphql-codegen/cli": "^5.0.5",
     "@vitejs/plugin-react": "^4.6.0",
     "@types/node": "^22.13.1",
