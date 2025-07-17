@@ -374,15 +374,15 @@ pub mod config_systems {
             );
 
             let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, selector!("season_config"));
-            // if season_config.end_at.is_zero() {
-            assert!(start_settling_at < start_main_at, "start_settling_at must be before start_main_at");
-            season_config.start_settling_at = start_settling_at;
-            season_config.start_main_at = start_main_at;
-            season_config.end_at = end_at;
-            season_config.end_grace_seconds = bridge_close_end_grace_seconds;
-            season_config.registration_grace_seconds = point_registration_grace_seconds;
-            WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
-            // }
+            if season_config.end_at.is_zero() {
+                assert!(start_settling_at < start_main_at, "start_settling_at must be before start_main_at");
+                season_config.start_settling_at = start_settling_at;
+                season_config.start_main_at = start_main_at;
+                season_config.end_at = end_at;
+                season_config.end_grace_seconds = bridge_close_end_grace_seconds;
+                season_config.registration_grace_seconds = point_registration_grace_seconds;
+                WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
+            }
         }
     }
 

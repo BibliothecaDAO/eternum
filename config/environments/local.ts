@@ -94,7 +94,7 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
+    durationSeconds: 60 * 60 * 24 * 30, // 1 month
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
