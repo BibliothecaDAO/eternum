@@ -104,7 +104,7 @@ export const InventoryResources = ({
               isRelicActive ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
             }`}
             onClick={() => {
-              if (resourceIsRelic && entityId) {
+              if (resourceIsRelic && entityId && !isRelicActive) {
                 handleRelicClick(resource.resourceId, divideByPrecision(Number(resource.amount)));
               }
             }}

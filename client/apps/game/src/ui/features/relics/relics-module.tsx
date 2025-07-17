@@ -33,7 +33,6 @@ export const RelicsModule = () => {
   } = useReactQuery({
     queryKey: ["nearbyChests", contractPosition.x, contractPosition.y, refreshKey],
     queryFn: async () => {
-      console.log("fetching chests");
       return sqlApi.fetchChestsNearPosition(contractPosition, searchDistance);
     },
     enabled: true,

@@ -360,6 +360,7 @@ export const ResourceChip = ({
               );
             });
           }}
+          disabled={relicTimeRemaining > 0}
           onMouseEnter={() =>
             setTooltip({
               content: "Activate Relic",
