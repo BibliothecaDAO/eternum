@@ -1,5 +1,6 @@
 "use client";
 
+import type { AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { mainnet, sepolia } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
@@ -21,9 +22,9 @@ const metadata = {
 };
 
 // 3. Set the networks
-const networks = [mainnet, sepolia];
+const networks = [mainnet, sepolia] as [AppKitNetwork, ...AppKitNetwork[]];
 
-// 4. Create Wagmi Adapter
+// 4. Create Wagmnetworksi Adapter
 const wagmiAdapter = new WagmiAdapter({
   networks,
   projectId,
