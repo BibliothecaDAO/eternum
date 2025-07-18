@@ -51,35 +51,38 @@ export const PlayersPanel = ({
     // Sort players by points in descending order
     const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
 
-    const playersWithStructures = sortedPlayers.map((player, index) => {
-      const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
-      const structures = Array.from(structuresEntityIds)
-        .map((entityId) => {
-          const structure = getComponentValue(Structure, entityId);
-          if (!structure) return undefined;
+    const playersWithStructures = sortedPlayers
+      // filter out players with no address
+      .filter((player) => player.address !== 0n)
+      .map((player, index) => {
+        const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
+        const structures = Array.from(structuresEntityIds)
+          .map((entityId) => {
+            const structure = getComponentValue(Structure, entityId);
+            if (!structure) return undefined;
 
-          return getStructureName(structure, getIsBlitz()).name;
-        })
-        .filter((structure): structure is string => structure !== undefined);
+            return getStructureName(structure, getIsBlitz()).name;
+          })
+          .filter((structure): structure is string => structure !== undefined);
 
-      const guild = getGuildFromPlayerAddress(player.address, components);
+        const guild = getGuildFromPlayerAddress(player.address, components);
 
-      let isInvited = false;
-      if (userGuild) {
-        isInvited =
-          getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
-            ?.whitelisted ?? false;
-      }
-      return {
-        ...player,
-        structures,
-        isUser: player.address === ContractAddress(account.address),
-        points: player.points || 0,
-        rank: index + 1,
-        isInvited,
-        guild,
-      };
-    });
+        let isInvited = false;
+        if (userGuild) {
+          isInvited =
+            getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
+              ?.whitelisted ?? false;
+        }
+        return {
+          ...player,
+          structures,
+          isUser: player.address === ContractAddress(account.address),
+          points: player.points || 0,
+          rank: index + 1,
+          isInvited,
+          guild,
+        };
+      });
     return playersWithStructures;
   }, [isLoading, players, components, account.address]);
 

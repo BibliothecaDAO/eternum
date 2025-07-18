@@ -52,11 +52,17 @@ export const TroopDisplay = ({
               {troopCount}
             </div>
             {showRemaining && remainingTroops !== undefined && (
-              <div className={`text-xs font-bold ${
-                remainingTroops > troopCount * 0.8 ? 'text-green-400' : 
-                remainingTroops > troopCount * 0.5 ? 'text-yellow-400' : 
-                remainingTroops > 0 ? 'text-orange-400' : 'text-red-400'
-              }`}>
+              <div
+                className={`text-xs font-bold ${
+                  remainingTroops > troopCount * 0.8
+                    ? "text-green-400"
+                    : remainingTroops > troopCount * 0.5
+                      ? "text-yellow-400"
+                      : remainingTroops > 0
+                        ? "text-orange-400"
+                        : "text-red-400"
+                }`}
+              >
                 {Math.floor(remainingTroops)} left
               </div>
             )}
@@ -116,11 +122,17 @@ export const TroopDisplay = ({
               <div className="flex items-center justify-between">
                 <p className="text-xs sm:text-sm text-gold/70">{troopCount} troops</p>
                 {showRemaining && remainingTroops !== undefined && (
-                  <div className={`text-xs font-bold ${
-                    remainingTroops > troopCount * 0.8 ? 'text-green-400' : 
-                    remainingTroops > troopCount * 0.5 ? 'text-yellow-400' : 
-                    remainingTroops > 0 ? 'text-orange-400' : 'text-red-400'
-                  }`}>
+                  <div
+                    className={`text-xs font-bold ${
+                      remainingTroops > troopCount * 0.8
+                        ? "text-green-400"
+                        : remainingTroops > troopCount * 0.5
+                          ? "text-yellow-400"
+                          : remainingTroops > 0
+                            ? "text-orange-400"
+                            : "text-red-400"
+                    }`}
+                  >
                     {Math.floor(remainingTroops)} after battle
                   </div>
                 )}

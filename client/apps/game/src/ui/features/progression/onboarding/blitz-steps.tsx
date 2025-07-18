@@ -1,6 +1,7 @@
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
+import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
@@ -8,6 +9,7 @@ import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/
 import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
+import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { Clock, Users } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -309,6 +311,7 @@ export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
 
   const {
+    setup,
     setup: {
       account: { account },
       components,
@@ -323,7 +326,11 @@ export const BlitzOnboarding = () => {
     getEntityIdFromKeys([BigInt(account.address)]),
   );
 
+  const { connector } = useAccount();
+
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
+
+  useSetAddressName(setup, playerSettled ? account : null, connector);
 
   // Determine current game state based on time
   useEffect(() => {
