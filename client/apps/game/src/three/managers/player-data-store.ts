@@ -72,7 +72,11 @@ export class PlayerDataStore {
           guildId: item.guild_id || "",
           guildName: item.guild_name ? shortString.decodeShortString(BigInt(item.guild_name).toString()) : "",
           ownerAddress: BigInt(item.owner_address).toString() || "",
-          ownerName: item.player_name ? shortString.decodeShortString(BigInt(item.player_name).toString()) : "",
+          ownerName: item.player_name
+            ? BigInt(item.player_name) === 0n
+              ? ""
+              : shortString.decodeShortString(BigInt(item.player_name).toString())
+            : "",
           realmsCount: item.realms_count,
           hyperstructuresCount: item.hyperstructures_count,
           bankCount: item.bank_count,
