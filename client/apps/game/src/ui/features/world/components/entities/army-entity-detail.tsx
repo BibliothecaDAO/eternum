@@ -1,14 +1,20 @@
 import { sqlApi } from "@/services/api";
 import { getIsBlitz } from "@/ui/constants";
-import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { InventoryResources } from "@/ui/features/economy/resources";
 import { TroopChip } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  getAddressName,
+  getGuildFromPlayerAddress,
+  getStructureName,
+  ResourceManager,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -23,7 +29,7 @@ import {
 import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
-import { memo, useMemo, useState, useCallback } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
@@ -122,8 +128,18 @@ export const ArmyEntityDetail = memo(
       // Convert relic effects to resource IDs for StaminaManager
       const relicResourceIds =
         (explorerData?.relicEffects
-          ?.filter((effect) => effect.effect_end_tick > currentArmiesTick)
-          ?.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[]) || [];
+          // todo: check relic effect active
+          ?.filter((effect) =>
+            ResourceManager.isRelicActive(
+              {
+                start_tick: effect.effect_start_tick,
+                end_tick: effect.effect_end_tick,
+                usage_left: effect.effect_usage_left,
+              },
+              currentArmiesTick,
+            ),
+          )
+          .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[]) || [];
 
       const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick, relicResourceIds);
       const maxStamina = StaminaManager.getMaxStamina(

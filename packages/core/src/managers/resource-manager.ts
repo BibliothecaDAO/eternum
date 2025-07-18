@@ -925,6 +925,7 @@ export class ResourceManager {
     return isWithinTimeWindow && hasUsagesLeft;
   }
 
+  // todo: check relic effect active
   public static relicsArmiesTicksLeft(end_tick: number, currentArmiesTick: number): number {
     return end_tick - currentArmiesTick;
   }

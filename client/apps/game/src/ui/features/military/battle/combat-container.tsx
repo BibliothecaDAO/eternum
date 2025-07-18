@@ -132,17 +132,11 @@ export const CombatContainer = ({
 
   // Convert relic effects to resource IDs
   const attackerRelicResourceIds = useMemo(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
-    return attackerActiveRelicEffects
-      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return attackerActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
   }, [attackerActiveRelicEffects]);
 
   const targetRelicResourceIds = useMemo(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
-    return targetActiveRelicEffects
-      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return targetActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
   }, [targetActiveRelicEffects]);
 
   const attackerStamina = useMemo(() => {

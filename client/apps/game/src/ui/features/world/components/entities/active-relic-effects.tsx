@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { configManager, formatTime } from "@bibliothecadao/eternum";
+import { configManager, formatTime, ResourceManager } from "@bibliothecadao/eternum";
 import { EntityRelicEffect } from "@bibliothecadao/torii";
 import { getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
@@ -31,7 +31,8 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
         if (!relicInfo) return null;
 
         // Calculate remaining ticks until effect ends
-        const remainingTicks = Math.max(0, endTick - currentArmiesTick);
+        // todo: check relic effect active
+        const remainingTicks = ResourceManager.relicsArmiesTicksLeft(endTick, currentArmiesTick);
 
         // Get tick interval for armies (relics use army ticks)
         const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;

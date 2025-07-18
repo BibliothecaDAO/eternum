@@ -1,5 +1,4 @@
-export { TroopDisplay } from "./troop-display";
 export { BattleStats } from "./battle-stats";
-export { BattleVisualization } from "./battle-visualization";
+export { CombatLoading } from "./combat-loading";
 export { ResourceStealing } from "./resource-stealing";
-export { CombatLoading, CombatSkeleton } from "./combat-loading";
+export { TroopDisplay } from "./troop-display";

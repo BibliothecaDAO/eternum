@@ -83,6 +83,7 @@ export const AttackContainer = ({
       const { currentArmiesTick } = getBlockTimestamp();
       try {
         const effects = await sqlApi.fetchEntityRelicEffects(attackerEntityId);
+        // todo: check relic effect active
         setAttackerRelicEffects(
           effects.filter((effect) =>
             ResourceManager.isRelicActive(
@@ -134,9 +135,7 @@ export const AttackContainer = ({
       }
 
       // Convert relic effects to resource IDs for StaminaManager
-      const targetRelicResourceIds = targetEffects
-        .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-        .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+      const targetRelicResourceIds = targetEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
 
       if (isStructure) {
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);

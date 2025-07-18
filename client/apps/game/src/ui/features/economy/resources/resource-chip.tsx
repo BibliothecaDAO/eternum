@@ -206,6 +206,7 @@ export const ResourceChip = ({
     return ResourceManager.isRelic(resourceId);
   }, [resourceManager, resourceId]);
 
+  // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {
     return resourceManager.isRelicActive(resourceId, currentArmiesTick);
   }, [resourceManager, resourceId, currentArmiesTick]);
@@ -219,9 +220,7 @@ export const ResourceChip = ({
     if (!relicEffect) return 0;
 
     // Calculate remaining ticks until effect ends
-    const remainingTicks = Math.max(0, relicEffect.effect_end_tick - currentArmiesTick);
-
-    console.log({ remainingTicks });
+    const remainingTicks = ResourceManager.relicsArmiesTicksLeft(relicEffect.effect_end_tick, currentArmiesTick);
 
     // Get tick interval for armies (relics use army ticks)
     const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
