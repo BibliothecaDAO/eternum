@@ -11,6 +11,11 @@ export const GettingStarted = () => {
         "Realms is played in seasons. Each season is a fresh campaign with specific rules and victory conditions, primarily achieved by accumulating Victory Points through constructing and owning Hyperstructures. In-game assets can often be bridged forward, allowing progress to carry over between seasons.",
     },
     {
+      title: "Victory Points Breakdown",
+      content:
+        "Victory Points (VP) are earned through various actions: Explore a tile - 5 VP, Claim a World Structure from bandits - 200 VP, Claim a Hyperstructure from bandits - 500 VP, Control a Hyperstructure - 1 VP/second. The first player to reach 9.6 million points gains the power to end the season and claim victory.",
+    },
+    {
       title: "The Realms Day",
       content: `Time in Realms is measured in Realms Days. An Realms Day is exactly ${
         configManager.getTick(TickIds.Armies) / 60

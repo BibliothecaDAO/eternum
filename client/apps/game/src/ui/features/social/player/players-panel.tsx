@@ -150,11 +150,29 @@ export const PlayersPanel = ({
         )}
         {!isSeasonOver ? (
           <>
-            {/* <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
-              <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
-                should any lord gather 9.6m points, they gain the ultimate power to <br /> end this game
-              </p>
-            </div> */}
+            <div className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20">
+              <div className="flex items-center justify-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Explore</span>
+                  <span className="text-gold font-semibold">5 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Claim Structures</span>
+                  <span className="text-gold font-semibold">200 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Claim Hyperstructures</span>
+                  <span className="text-gold font-semibold">500 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Control Hyperstructures</span>
+                  <span className="text-gold font-semibold">1 VP/s</span>
+                </div>
+              </div>
+            </div>
             <div className="flex gap-2 justify-center">
               <RegisterPointsButton className="flex-1" />
               {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
