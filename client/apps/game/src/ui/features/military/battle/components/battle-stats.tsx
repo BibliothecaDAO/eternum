@@ -49,12 +49,8 @@ export const BattleStats = ({
           <Skull className="w-3 h-3 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" />
           <span className="text-xs text-gold/70 truncate">Your Casualties</span>
         </div>
-        <div className="text-base sm:text-lg font-bold text-red-400">
-          {Math.ceil(attackerCasualties)}
-        </div>
-        <div className="text-xs text-gold/60 mt-1">
-          ({attackerCasualtyPercentage}%)
-        </div>
+        <div className="text-base sm:text-lg font-bold text-red-400">{Math.ceil(attackerCasualties)}</div>
+        <div className="text-xs text-gold/60 mt-1">({attackerCasualtyPercentage}%)</div>
       </div>
 
       {/* Defender Casualties */}
@@ -63,12 +59,8 @@ export const BattleStats = ({
           <Skull className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400 flex-shrink-0" />
           <span className="text-xs text-gold/70 truncate">Enemy Casualties</span>
         </div>
-        <div className="text-base sm:text-lg font-bold text-orange-400">
-          {Math.ceil(defenderCasualties)}
-        </div>
-        <div className="text-xs text-gold/60 mt-1">
-          ({defenderCasualtyPercentage}%)
-        </div>
+        <div className="text-base sm:text-lg font-bold text-orange-400">{Math.ceil(defenderCasualties)}</div>
+        <div className="text-xs text-gold/60 mt-1">({defenderCasualtyPercentage}%)</div>
       </div>
 
       {/* Stamina Change */}
@@ -78,7 +70,8 @@ export const BattleStats = ({
           <span className="text-xs text-gold/70 truncate">Stamina Change</span>
         </div>
         <div className={`text-base sm:text-lg font-bold ${staminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-          {staminaChange >= 0 ? "+" : ""}{staminaChange}
+          {staminaChange >= 0 ? "+" : ""}
+          {staminaChange}
         </div>
       </div>
 
@@ -88,9 +81,7 @@ export const BattleStats = ({
           <div className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0">{getOutcomeIcon(outcome)}</div>
           <span className="text-xs text-gold/70 truncate">Outcome</span>
         </div>
-        <div className={`text-base sm:text-lg font-bold ${getOutcomeColor(outcome)}`}>
-          {outcome}
-        </div>
+        <div className={`text-base sm:text-lg font-bold ${getOutcomeColor(outcome)}`}>{outcome}</div>
       </div>
     </div>
   );

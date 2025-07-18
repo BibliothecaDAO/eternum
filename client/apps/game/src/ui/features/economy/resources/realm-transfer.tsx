@@ -70,17 +70,15 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     // TRANSFER RULES:
     // 1. Realms can transfer ALL materials (including troops) to other Realms
-    // 2. Other structures (Camp/Village, Essence Rift/FragmentMine, Hyperstructure) 
+    // 2. Other structures (Camp/Village, Essence Rift/FragmentMine, Hyperstructure)
     //    can transfer all materials EXCEPT troops
 
     if (isMilitaryResource(resource)) {
       // Military resources (troops) can ONLY be transferred between Realms
-      
+
       if (selectedStructure?.category === StructureType.Realm) {
         // Source is a Realm: only show other Realms as valid destinations
-        return playerStructuresWithName.filter(
-          (structure) => structure.category === StructureType.Realm
-        );
+        return playerStructuresWithName.filter((structure) => structure.category === StructureType.Realm);
       } else {
         // Source is NOT a Realm (Camp, Essence Rift, Hyperstructure, etc.)
         // These structures cannot transfer troops at all
@@ -315,16 +313,19 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
               ? "Structures are sorted by distance (closest to furthest)"
               : "Structures are sorted by name"}
           </div>
-          {playerStructuresFiltered.length === 0 && isMilitaryResource(resource) && selectedStructure && selectedStructure.category !== StructureType.Realm && (
-            <div className="text-center py-8 text-gold/60">
-              <div className="text-lg mb-2">No Valid Destinations</div>
-              <div className="text-sm">
-                {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops.
-                <br />
-                Only Realms can transfer military units.
+          {playerStructuresFiltered.length === 0 &&
+            isMilitaryResource(resource) &&
+            selectedStructure &&
+            selectedStructure.category !== StructureType.Realm && (
+              <div className="text-center py-8 text-gold/60">
+                <div className="text-lg mb-2">No Valid Destinations</div>
+                <div className="text-sm">
+                  {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops.
+                  <br />
+                  Only Realms can transfer military units.
+                </div>
               </div>
-            </div>
-          )}
+            )}
           {playerStructuresFiltered
             .sort((a, b) => {
               if (!sortByDistance) {

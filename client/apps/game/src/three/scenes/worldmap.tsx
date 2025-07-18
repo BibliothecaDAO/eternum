@@ -280,10 +280,10 @@ export default class WorldmapScene extends HexagonScene {
           if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
             // Move camera to the reward location when follow is enabled
             this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
-            
+
             // Set the following state to true temporarily
             useUIStore.getState().setIsFollowingArmy(true);
-            
+
             // Clear the following state after camera movement
             setTimeout(() => {
               useUIStore.getState().setIsFollowingArmy(false);

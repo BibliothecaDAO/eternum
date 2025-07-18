@@ -45,9 +45,7 @@ export const ResourceStealing = ({ stealableResources, className = "" }: Resourc
                 <div className="text-xs sm:text-sm font-medium text-gold truncate">
                   {resourceData?.trait || "Unknown"}
                 </div>
-                <div className="text-sm sm:text-lg font-bold text-gold">
-                  {resource.amount.toLocaleString()}
-                </div>
+                <div className="text-sm sm:text-lg font-bold text-gold">{resource.amount.toLocaleString()}</div>
               </div>
             </div>
           );
