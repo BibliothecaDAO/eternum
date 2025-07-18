@@ -1,7 +1,6 @@
 import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
-import { RewardPool } from "@/abi/L2/RewardPool";
 import { VeLords } from "@/abi/L2/VeLords";
-import { APY_CONSTANTS, TIME_CONSTANTS } from "@/lib/constants";
+import { TIME_CONSTANTS } from "@/lib/constants";
 import { getLordsInfo } from "@/lib/getLordsPrice";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount, useNetwork, useReadContract } from "@starknet-react/core";
@@ -100,8 +99,14 @@ export const useVelordsData = () => {
   // Get LORDS price for TVL calculation
   const { data: lordsPrice } = useQuery({
     queryKey: ["lordsPrice"],
-    queryFn: getLordsInfo,
+    queryFn: () => getLordsInfo({}),
     staleTime: 60000, // Cache for 1 minute
+  });
+
+  console.log("[useVelords] Price query data:", {
+    lordsPrice,
+    hasPrice: !!lordsPrice?.price?.rate,
+    hasLordsInVelords: !!lordsInVelords,
   });
 
   // Calculate TVL
@@ -112,6 +117,7 @@ export const useVelordsData = () => {
       lordsPrice?.price?.rate,
     ],
     queryFn: () => {
+      console.log('here')
       if (!lordsInVelords || !lordsPrice?.price?.rate) {
         return null;
       }
@@ -136,97 +142,14 @@ export const useVelordsData = () => {
     staleTime: 60000, // Cache for 1 minute
   });
 
-  // Get tokens distributed this week
-  const { data: tokensThisWeek, error: tokensThisWeekError } = useReadContract({
-    abi: RewardPool,
-    functionName: "get_tokens_per_week",
-    address: StakingAddresses.rewardpool[
-      SUPPORTED_L2_CHAIN_ID
-    ] as `0x${string}`,
-    args: [currentWeek],
-    enabled: !!chain,
-  });
-
-  console.log("[useVelords] Tokens this week:", {
-    tokensThisWeek,
-    tokensThisWeekError,
-    formatted:
-      tokensThisWeek !== undefined
-        ? formatTokenAmount(toBigInt(tokensThisWeek))
-        : "N/A",
-  });
-
-  // Get tokens distributed last week
-  const { data: tokensLastWeek, error: tokensLastWeekError } = useReadContract({
-    abi: RewardPool,
-    functionName: "get_tokens_per_week",
-    address: StakingAddresses.rewardpool[
-      SUPPORTED_L2_CHAIN_ID
-    ] as `0x${string}`,
-    args: [safeLastWeek],
-    enabled: !!chain,
-  });
-
-  console.log("[useVelords] Tokens last week:", {
-    tokensLastWeek,
-    tokensLastWeekError,
-    weekQueried: safeLastWeek,
-    formatted:
-      tokensLastWeek !== undefined
-        ? formatTokenAmount(toBigInt(tokensLastWeek))
-        : "N/A",
-  });
-
-  // Get veLORDS supply for this week
-  const { data: veSupplyThisWeek, error: veSupplyThisWeekError } =
-    useReadContract({
-      abi: RewardPool,
-      functionName: "get_ve_supply",
-      address: StakingAddresses.rewardpool[
-        SUPPORTED_L2_CHAIN_ID
-      ] as `0x${string}`,
-      args: [currentWeek],
-      enabled: !!chain,
-    });
-
-  console.log("[useVelords] VE supply this week:", {
-    veSupplyThisWeek,
-    veSupplyThisWeekError,
-    formatted:
-      veSupplyThisWeek !== undefined
-        ? formatTokenAmount(toBigInt(veSupplyThisWeek))
-        : "N/A",
-  });
-
-  // Get veLORDS supply for last week
-  const { data: veSupplyLastWeek, error: veSupplyLastWeekError } =
-    useReadContract({
-      abi: RewardPool,
-      functionName: "get_ve_supply",
-      address: StakingAddresses.rewardpool[
-        SUPPORTED_L2_CHAIN_ID
-      ] as `0x${string}`,
-      args: [safeLastWeek],
-      enabled: !!chain,
-    });
-
-  console.log("[useVelords] VE supply last week:", {
-    veSupplyLastWeek,
-    veSupplyLastWeekError,
-    weekQueried: safeLastWeek,
-    formatted:
-      veSupplyLastWeek !== undefined
-        ? formatTokenAmount(toBigInt(veSupplyLastWeek))
-        : "N/A",
-  });
 
   // Get user's veLORDS balance if connected
   const { data: userBalance, error: userBalanceError } = useReadContract({
     abi: VeLords,
     functionName: "balance_of",
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as `0x${string}`,
-    args: [userAddress!],
-    enabled: !!chain && !!userAddress,
+    args: userAddress && [userAddress],
+    enabled: !!userAddress,
   });
 
   console.log("[useVelords] User balance:", {
@@ -258,154 +181,9 @@ export const useVelordsData = () => {
       : "N/A",
   });
 
-  // Calculate APY based on weekly rewards
-  const calculateAPY = useQuery({
-    queryKey: [
-      "velords-apy",
-      tokensThisWeek?.toString(),
-      tokensLastWeek?.toString(),
-      veSupplyThisWeek?.toString(),
-      veSupplyLastWeek?.toString(),
-    ],
-    queryFn: () => {
-      console.log("[useVelords] Calculating APY with:", {
-        tokensThisWeek,
-        tokensLastWeek,
-        veSupplyThisWeek,
-        veSupplyLastWeek,
-      });
 
-      if (
-        tokensThisWeek === undefined ||
-        tokensLastWeek === undefined ||
-        veSupplyThisWeek === undefined ||
-        veSupplyLastWeek === undefined
-      ) {
-        console.log("[useVelords] APY calculation skipped - missing data");
-        return null;
-      }
 
-      // Use average of this week and last week for more stable APY
-      const avgTokensPerWeek =
-        (toBigInt(tokensThisWeek) + toBigInt(tokensLastWeek)) / 2n;
-      const avgVeSupply =
-        (toBigInt(veSupplyThisWeek) + toBigInt(veSupplyLastWeek)) / 2n;
 
-      console.log("[useVelords] APY calculation intermediates:", {
-        avgTokensPerWeek: avgTokensPerWeek.toString(),
-        avgVeSupply: avgVeSupply.toString(),
-      });
-
-      if (avgVeSupply === 0n) {
-        console.log("[useVelords] APY calculation failed - zero supply");
-        return 0;
-      }
-
-      // Calculate weekly yield
-      const weeklyYield =
-        Number((avgTokensPerWeek * 10000n) / avgVeSupply) / 10000;
-
-      // Annualize (52 weeks)
-      const annualYield = weeklyYield * APY_CONSTANTS.BLOCKS_PER_YEAR;
-
-      // Convert to percentage
-      const apy = annualYield * 100;
-
-      console.log("[useVelords] APY calculated:", {
-        weeklyYield,
-        annualYield,
-        apy,
-      });
-
-      return apy;
-    },
-    enabled:
-      tokensThisWeek !== undefined &&
-      tokensLastWeek !== undefined &&
-      veSupplyThisWeek !== undefined &&
-      veSupplyLastWeek !== undefined,
-    staleTime: 60000, // Cache for 1 minute
-  });
-
-  // Calculate user's expected weekly rewards
-  const userWeeklyRewards = useQuery({
-    queryKey: [
-      "user-weekly-rewards",
-      userBalance?.toString(),
-      tokensThisWeek?.toString(),
-      veSupplyThisWeek?.toString(),
-    ],
-    queryFn: () => {
-      console.log("[useVelords] Calculating user rewards with:", {
-        userBalance,
-        tokensThisWeek,
-        veSupplyThisWeek,
-      });
-
-      if (
-        userBalance === undefined ||
-        tokensThisWeek === undefined ||
-        veSupplyThisWeek === undefined
-      ) {
-        console.log(
-          "[useVelords] User rewards calculation skipped - missing data",
-        );
-        return 0;
-      }
-
-      const veSupplyBigInt = toBigInt(veSupplyThisWeek);
-      if (veSupplyBigInt === 0n) {
-        console.log(
-          "[useVelords] User rewards calculation failed - zero supply",
-        );
-        return 0;
-      }
-
-      const userShare =
-        (toBigInt(userBalance) * toBigInt(tokensThisWeek)) / veSupplyBigInt;
-      const rewards = formatTokenAmount(userShare);
-
-      console.log("[useVelords] User rewards calculated:", {
-        userShare: userShare.toString(),
-        rewards,
-      });
-
-      return rewards;
-    },
-    enabled:
-      userBalance !== undefined &&
-      tokensThisWeek !== undefined &&
-      veSupplyThisWeek !== undefined,
-    staleTime: 60000, // Cache for 1 minute
-  });
-
-  // Get historical APY data for charting
-  const historicalAPY = useQuery({
-    queryKey: ["historical-apy", currentWeek],
-    queryFn: async () => {
-      const weeks = 12; // Last 12 weeks
-      const data = [];
-
-      for (let i = 0; i < weeks; i++) {
-        const week = currentWeek - i * TIME_CONSTANTS.WEEK;
-
-        // This would need to be implemented with multicall or batch requests
-        // For now, returning mock data structure
-        data.push({
-          week,
-          apy: 0,
-          tokensDistributed: 0,
-          veSupply: 0,
-        });
-      }
-
-      return data.reverse();
-    },
-    enabled: false, // Disabled until proper implementation
-    staleTime: 300000, // Cache for 5 minutes when enabled
-  });
-
-  console.log("[useVelords] APY calculation result:", calculateAPY.data);
 
   const result = {
     // Supply data
@@ -413,28 +191,10 @@ export const useVelordsData = () => {
       totalSupply !== undefined
         ? formatTokenAmount(toBigInt(totalSupply))
         : undefined,
-    veSupplyThisWeek:
-      veSupplyThisWeek !== undefined
-        ? formatTokenAmount(toBigInt(veSupplyThisWeek))
-        : undefined,
     lordsLocked:
       lordsInVelords !== undefined
         ? formatTokenAmount(toBigInt(lordsInVelords))
         : undefined,
-
-    // Rewards data
-    tokensThisWeek:
-      tokensThisWeek !== undefined
-        ? formatTokenAmount(toBigInt(tokensThisWeek))
-        : undefined,
-    tokensLastWeek:
-      tokensLastWeek !== undefined
-        ? formatTokenAmount(toBigInt(tokensLastWeek))
-        : undefined,
-
-    // APY data
-    currentAPY: calculateAPY.data,
-    isAPYLoading: calculateAPY.isLoading,
 
     // TVL data
     tvl: tvl.data,
@@ -452,10 +212,6 @@ export const useVelordsData = () => {
           unlockTime: Number((userLocked as any)[1]),
         }
       : undefined,
-    userWeeklyRewards: userWeeklyRewards.data,
-
-    // Historical data
-    historicalAPY: historicalAPY.data,
 
     // Helper functions
     floorToWeek,

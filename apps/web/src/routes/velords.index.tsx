@@ -4,9 +4,10 @@ import { VeLords } from "@/abi/L2/VeLords";
 import { VelordsRewards } from "@/components/modules/velords/claim-rewards";
 import { VeLordsRewardsChart } from "@/components/modules/velords/rewards-chart";
 import { StakeLords } from "@/components/modules/velords/stake-lords";
+import { useVelordsData } from "@/hooks/use-velords-data";
 import { getVelordsBurnsQueryOptions } from "@/lib/getVeLordsBurns";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useReadContract } from "@starknet-react/core";
+import { useAccount, useReadContract } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatEther } from "viem";
@@ -34,13 +35,21 @@ function RouteComponent() {
     getVelordsBurnsQueryOptions({ startTimestamp }),
   );
   const veLordsBurns = veLordsBurnsQuery.data ?? [];
+  const {address} = useAccount()
+  const velordsData = useVelordsData();
+  const {
+    totalSupply: hookTotalSupply,
+    lordsLocked,
+    tvl,
+    userBalance,
+  } = velordsData;
+
   const { data: totalSupply, error } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
     abi: VeLords,
     functionName: "total_supply",
     args: [],
   });
-  // const { lordsLocked } = useVelordsData();
 
   const handleTimePeriodChange = (period: "3m" | "6m" | "1y") => {
     setSelectedPeriod(period);
@@ -50,13 +59,15 @@ function RouteComponent() {
     <div className="bg-background min-h-screen">
       <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         {/* Header Section */}
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            veLords Dashboard
-          </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            Stake $LORDS in the Lordship Protocol
-          </p>
+        <div className="mb-8 space-y-4">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              veLords Dashboard
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg">
+              Stake $LORDS in the Lordship Protocol
+            </p>
+          </div>
           {error && (
             <div className="bg-destructive/10 rounded-md p-3">
               <p className="text-destructive text-sm font-medium">
@@ -68,29 +79,67 @@ function RouteComponent() {
 
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
-          {/* Left Column - Staking Controls */}
-          <div className="space-y-6 xl:col-span-2">
-            <div className="bg-card rounded-lg border">
-              <StakeLords />
+          {/* Right Column - Data Cards and Chart */}
+          <div className="space-y-6 xl:col-span-3">
+            {/* Key Metrics */}
+            <div className="mb-8 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="bg-card rounded-lg border p-4">
+                  <div className="text-sm text-muted-foreground">Total Voting Power (veLORDS)</div>
+                  <div className="text-2xl font-bold">
+                    {hookTotalSupply !== undefined 
+                      ? `${hookTotalSupply.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
+                      : "Loading..."
+                    }
+                  </div>
+                  {userBalance !== undefined && hookTotalSupply !== undefined && hookTotalSupply > 0 && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Your share: {userBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {" "}
+                      ({((userBalance / hookTotalSupply) * 100).toFixed(2)}%)
+                    </div>
+                  )}
+                </div>
+                <div className="bg-card rounded-lg border p-4">
+                  <div className="text-sm text-muted-foreground">LORDS Locked</div>
+                  <div className="text-2xl font-bold">
+                    {lordsLocked !== undefined 
+                      ? `${lordsLocked.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
+                      : "Loading..."
+                    }
+                  </div>
+                </div>
+                <div className="bg-card rounded-lg border p-4">
+                  <div className="text-sm text-muted-foreground">TVL</div>
+                  <div className="text-2xl font-bold">
+                    {typeof tvl === "number" && !isNaN(tvl)
+                      ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      : "Loading..."
+                    }
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-card rounded-lg border">
-              <VelordsRewards />
-            </div>
-          </div>
-
-          {/* Right Column - Chart */}
-          <div className="xl:col-span-3">
             <div className="bg-card rounded-lg border p-6">
               <VeLordsRewardsChart
-                totalSupply={
+                totalSupply={hookTotalSupply ?? (
                   totalSupply
                     ? Number(formatEther(totalSupply as bigint))
                     : undefined
-                }
+                )}
                 data={veLordsBurns}
                 onTimePeriodChange={handleTimePeriodChange}
               />
             </div>
+          </div>
+
+          {/* Left Column - Staking Controls and Claimable Rewards */}
+          <div className="space-y-6 xl:col-span-2">
+            <div className="bg-card rounded-lg border">
+              <StakeLords />
+            </div>
+            {address &&<div className="bg-card rounded-lg border">
+              <VelordsRewards />
+            </div>}
           </div>
         </div>
       </div>

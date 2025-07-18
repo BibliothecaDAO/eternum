@@ -37,6 +37,7 @@ import { LORDS, StakingAddresses } from "@realms-world/constants";
 
 import { StakeDialog } from "./stake-dialog";
 import { UnlockDialog } from "./unlock-dialog";
+import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button";
 
 const chartConfig = {
   locked: {
@@ -107,7 +108,7 @@ export const StakeLords = () => {
           Your balances of locked and unlocked $LORDS
         </CardDescription>
       </CardHeader>
-      <div className="flex flex-col items-center sm:flex-row">
+      {address ? <><div className="flex flex-col items-center sm:flex-row">
         <Card className="mt-4 sm:ml-8 sm:mt-0">
           <CardContent className="flex items-center px-4 pb-0 pt-2 text-lg font-semibold md:text-2xl">
             <LordsIcon className="mr-2 h-6 w-6" />
@@ -207,6 +208,11 @@ export const StakeLords = () => {
           after locking for 4 years)
         </div>
       </CardFooter>
+      </>
+      :<CardContent className="mt-4">
+      <StarknetWalletButton label="Connect Wallet to Stake" />
+      </CardContent >
+      }
     </Card>
   );
 };

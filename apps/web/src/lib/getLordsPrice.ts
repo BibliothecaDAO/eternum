@@ -18,7 +18,7 @@ export interface EthplorerToken {
 /*                          getLordsInfo Endpoint                             */
 /* -------------------------------------------------------------------------- */
 
-const GetLordsInfoInput = z.object({});
+const GetLordsInfoInput = z.object({}).optional();
 
 export const getLordsInfo = createServerFn({ method: "GET" })
   .validator((input: unknown) => GetLordsInfoInput.parse(input))
@@ -27,5 +27,6 @@ export const getLordsInfo = createServerFn({ method: "GET" })
       `https://api.ethplorer.io/getTokenInfo/0x686f2404e77ab0d9070a46cdfb0b7fecdd2318b0?apiKey=${import.meta.env.VITE_ETHPLORER_APIKEY}&chainId=1`,
     );
     const data = (await response.json()) as EthplorerToken;
+
     return data;
   });

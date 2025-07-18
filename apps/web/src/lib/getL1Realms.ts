@@ -1,4 +1,4 @@
-import type { paths } from "@reservoir0x/reservoir-sdk";
+//import type { paths } from "@reservoir0x/reservoir-sdk";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -30,8 +30,8 @@ const GetL1RealmsInput = z.object({
 export const getL1Realms = createServerFn<
   "GET",
   undefined,
-  z.infer<typeof GetL1RealmsInput>,
-  paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"] | null
+  z.infer<typeof GetL1RealmsInput>
+  //paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"] | null
 >({ method: "GET" })
   .validator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
@@ -48,9 +48,7 @@ export const getL1Realms = createServerFn<
         },
       },
     );
-    return (await response.json()) as
-      | paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"]
-      | null;
+    return await response.json();
   });
 
 export const getL1RealmsQueryOptions = (
@@ -68,9 +66,7 @@ export const getL1RealmsQueryOptions = (
 export const getL1UsersRealms = createServerFn<
   "GET",
   undefined,
-  z.infer<typeof GetL1RealmsInput>,
-  | paths["/users/{user}/collections/v4"]["get"]["responses"]["200"]["schema"]
-  | null
+  z.infer<typeof GetL1RealmsInput>
 >({ method: "GET" })
   .validator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
@@ -87,9 +83,7 @@ export const getL1UsersRealms = createServerFn<
         },
       },
     );
-    const data = (await response.json()) as
-      | paths["/users/{user}/collections/v4"]["get"]["responses"]["200"]["schema"]
-      | null;
+    const data = await response.json();
     return data;
   });
 
