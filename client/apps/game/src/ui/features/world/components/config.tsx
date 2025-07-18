@@ -8,7 +8,7 @@ type OSWindows =
   | "Construction"
   | "Assistant"
   | "Quests"
-  | "Social"
+  | "Leaderboard"
   | "BattleSimulation"
   | "Rewards";
 
@@ -34,6 +34,6 @@ export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
-export const social: OSWindows = "Social";
+export const leaderboard: OSWindows = "Leaderboard";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";

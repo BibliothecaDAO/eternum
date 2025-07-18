@@ -7,7 +7,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { HintSection } from "@/ui/features/progression";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
-import { ExpandableOSWindow, social } from "@/ui/features/world";
+import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -36,7 +36,7 @@ export const Social = () => {
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(social));
+  const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
 
   const players = usePlayers();
 
@@ -201,9 +201,9 @@ export const Social = () => {
     <ExpandableOSWindow
       width="900px"
       widthExpanded="400px"
-      onClick={() => togglePopup(social)}
+      onClick={() => togglePopup(leaderboard)}
       show={isOpen}
-      title={social}
+      title={leaderboard}
       hintSection={HintSection.Tribes}
       childrenExpanded={tabs[selectedTab].expandedContent}
       isExpanded={isExpanded}

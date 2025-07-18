@@ -231,15 +231,6 @@ export const AttackContainer = ({
             )}
           </div>
 
-          {/* Attack Type Description */}
-          <div className="text-center mb-4 px-6">
-            <p className="text-gold/70 text-sm">
-              {attackType === AttackType.Combat
-                ? "Combat mode allows you to attack and defeat enemy troops to claim territory."
-                : "Raid mode allows you to steal resources from structures without necessarily defeating all troops."}
-            </p>
-          </div>
-
           {/* Attack Content */}
           {target ? (
             <div className="flex-grow overflow-y-auto">
