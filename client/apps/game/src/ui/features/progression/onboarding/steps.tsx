@@ -271,7 +271,7 @@ export const StepOne = () => {
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" />
-          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Eternum" : timeRemaining}</div>
+          <div className="text-black flex-grow text-center">{isSeasonActive ? "Play Realms" : timeRemaining}</div>
         </Button>
       ) : (
         <Button size="lg" className="!bg-gold border-none w-full" onClick={() => setShowToS(true)}>

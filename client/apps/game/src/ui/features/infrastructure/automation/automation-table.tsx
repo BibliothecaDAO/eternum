@@ -5,6 +5,7 @@ import {
   TransferMode,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -67,7 +68,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     mode: OrderMode.ProduceOnce,
     maxAmount: 1000,
     productionType: ProductionType.ResourceToResource,
-    realmName: getStructureName(realmInfo.structure).name,
+    realmName: getStructureName(realmInfo.structure, getIsBlitz()).name,
     bufferPercentage: 10,
   }));
   const [maxAmountInput, setMaxAmountInput] = useState<string>("5000");
@@ -96,7 +97,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
-      realmName: getStructureName(realmInfo.structure).name,
+      realmName: getStructureName(realmInfo.structure, getIsBlitz()).name,
       bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
@@ -181,7 +182,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       mode: OrderMode.ProduceOnce,
       maxAmount: 1000,
       productionType: ProductionType.ResourceToResource,
-      realmName: getStructureName(realmInfo.structure).name,
+      realmName: getStructureName(realmInfo.structure, getIsBlitz()).name,
       bufferPercentage: 10,
     });
     setMaxAmountInput("1000");
@@ -195,7 +196,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         <br />
       </div>
       <h4 className="mb-2">
-        [BETA] Automation for Realm {getStructureName(realmInfo.structure).name} ({realmEntityId})
+        [BETA] Automation for Realm {getStructureName(realmInfo.structure, getIsBlitz()).name} ({realmEntityId})
       </h4>
 
       {/* Add pause checkbox */}

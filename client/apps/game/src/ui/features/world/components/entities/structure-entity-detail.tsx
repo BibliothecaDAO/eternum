@@ -4,13 +4,14 @@ import {
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
   getStructureName,
-  getStructureTypeName,
   unpackValue,
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
@@ -28,7 +29,7 @@ import {
 import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useCallback } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 
@@ -55,10 +56,13 @@ export const StructureEntityDetail = memo(
     } = useDojo();
 
     const userAddress = ContractAddress(account.account.address);
+    const [lastRefresh, setLastRefresh] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const {
       data: structureDetails,
       isLoading: isLoadingStructure,
+      refetch: refetchStructure,
       // error: structureError, // Can be used for error UI
     } = useQuery({
       queryKey: ["structureDetails", String(structureEntityId), String(userAddress)],
@@ -101,6 +105,23 @@ export const StructureEntityDetail = memo(
       staleTime: 30000, // 30 seconds
     });
 
+    const handleRefresh = useCallback(async () => {
+      const now = Date.now();
+      if (now - lastRefresh < 10000) {
+        // 10 second cooldown
+        return;
+      }
+
+      setIsRefreshing(true);
+      setLastRefresh(now);
+
+      try {
+        await refetchStructure();
+      } finally {
+        setTimeout(() => setIsRefreshing(false), 1000); // Show loading for at least 1 second
+      }
+    }, [lastRefresh, refetchStructure]);
+
     const structure = structureDetails?.structure;
     const resources = structureDetails?.resources;
     const playerGuild = structureDetails?.playerGuild;
@@ -112,7 +133,6 @@ export const StructureEntityDetail = memo(
     const isRealmOrVillage =
       structure?.base.category === StructureType.Realm || structure?.base.category === StructureType.Village;
     const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
-    const structureTypeName = structure ? getStructureTypeName(structure?.category) : undefined;
 
     const goToStructure = useGoToStructure();
 
@@ -144,7 +164,7 @@ export const StructureEntityDetail = memo(
     };
 
     const structureName = useMemo(() => {
-      return structure ? getStructureName(structure).name : undefined;
+      return structure ? getStructureName(structure, getIsBlitz()).name : undefined;
     }, [structure]);
 
     const resourcesProduced = useMemo(() => {
@@ -165,7 +185,7 @@ export const StructureEntityDetail = memo(
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
         {/* Header with owner and guild info */}
         <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1 min-w-0">
             <h4 className={`${compact ? "text-base" : "text-2xl"}`}>
               {addressName || displayAddress("0x0" + structure?.owner.toString(16) || "0x0")}
             </h4>
@@ -177,7 +197,15 @@ export const StructureEntityDetail = memo(
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {showButtons && (
+              <RefreshButton
+                onClick={handleRefresh}
+                isLoading={isRefreshing}
+                size="sm"
+                disabled={Date.now() - lastRefresh < 10000}
+              />
+            )}
             <div
               className={`px-2 py-1 rounded text-xs h6 ${isAlly ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
             >
@@ -214,13 +242,10 @@ export const StructureEntityDetail = memo(
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                 <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
               </div>
-              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
-                {structureTypeName}
-              </div>
             </div>
 
             {/* Progress bar for hyperstructures */}
-            {isHyperstructure && (
+            {isHyperstructure && !getIsBlitz() && (
               <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
                 <div className="flex justify-between items-center">
                   <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Construction Progress</div>

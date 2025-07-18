@@ -26,13 +26,13 @@ const MAX_TROOPS_PER_ARMY = 500_000;
 
 const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputProps) => {
   const isAttacker = label === "Attacker";
-  
+
   return (
     <div className="group relative flex flex-col gap-4 p-6 border-2 border-gold/30 rounded-xl bg-gradient-to-br from-dark-brown/95 to-dark-brown/80 backdrop-blur-md shadow-2xl transition-all duration-300 hover:border-gold/50 hover:shadow-gold/20">
       <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`w-3 h-3 rounded-full ${isAttacker ? 'bg-red-500' : 'bg-blue-500'} shadow-lg`} />
+          <div className={`w-3 h-3 rounded-full ${isAttacker ? "bg-red-500" : "bg-blue-500"} shadow-lg`} />
           <h3 className="text-xl font-bold text-gold tracking-wide">{label}</h3>
           <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
         </div>
@@ -69,9 +69,7 @@ const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputP
           </div>
           <div className="group/input">
             <label className="flex flex-col">
-              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                🛡️ Troop Type
-              </span>
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">🛡️ Troop Type</span>
               <SelectTroop
                 onSelect={(troopType) => {
                   if (troopType) {
@@ -84,9 +82,7 @@ const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputP
           </div>
           <div className="group/input">
             <label className="flex flex-col">
-              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                ⭐ Tier
-              </span>
+              <span className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">⭐ Tier</span>
               <SelectTier
                 onSelect={(tier) => {
                   if (tier) {
@@ -110,7 +106,7 @@ const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputP
             />
             {relics.length > 0 && (
               <div className="mt-2 text-xs text-purple-400">
-                {relics.length} relic{relics.length > 1 ? 's' : ''} equipped
+                {relics.length} relic{relics.length > 1 ? "s" : ""} equipped
               </div>
             )}
           </div>
@@ -248,7 +244,7 @@ export const CombatSimulationPanel = () => {
   return (
     <div className="flex flex-col gap-8 p-8 max-w-6xl mx-auto">
       <ParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
-      
+
       {/* Header Section */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold text-gold bg-gradient-to-r from-gold to-yellow-400 bg-clip-text text-transparent">
@@ -265,9 +261,7 @@ export const CombatSimulationPanel = () => {
       {/* Biome Selection */}
       <div className="p-6 bg-gradient-to-r from-dark-brown/80 to-dark-brown/60 border-2 border-gold/20 rounded-xl backdrop-blur-sm">
         <label className="flex flex-col">
-          <span className="text-lg font-semibold text-gold mb-3 flex items-center gap-2">
-            🌍 Battle Environment
-          </span>
+          <span className="text-lg font-semibold text-gold mb-3 flex items-center gap-2">🌍 Battle Environment</span>
           <SelectBiome
             combatSimulator={combatSimulator}
             onSelect={(newBiome) => {
@@ -320,164 +314,166 @@ export const CombatSimulationPanel = () => {
               <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {[
-              {
-                label: "Attacker",
-                data: {
-                  army: attacker,
-                  troopsLeft: attackerTroopsLeft,
-                  damage: simulationResult.attackerDamage,
-                  newStamina: newAttackerStamina,
-                  isWinner: defenderTroopsLeft <= 0 && attackerTroopsLeft > 0,
-                  staminaModifier: combatSimulator.calculateStaminaModifier(attacker.stamina, true),
-                  biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
-                  relicBonuses: attackerRelicBonuses,
+              {[
+                {
+                  label: "Attacker",
+                  data: {
+                    army: attacker,
+                    troopsLeft: attackerTroopsLeft,
+                    damage: simulationResult.attackerDamage,
+                    newStamina: newAttackerStamina,
+                    isWinner: defenderTroopsLeft <= 0 && attackerTroopsLeft > 0,
+                    staminaModifier: combatSimulator.calculateStaminaModifier(attacker.stamina, true),
+                    biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
+                    relicBonuses: attackerRelicBonuses,
+                  },
                 },
-              },
-              {
-                label: "Defender",
-                data: {
-                  army: defender,
-                  troopsLeft: defenderTroopsLeft,
-                  damage: simulationResult.defenderDamage,
-                  newStamina: newDefenderStamina,
-                  isWinner: attackerTroopsLeft <= 0 && defenderTroopsLeft > 0,
-                  staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
-                  biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
-                  relicBonuses: defenderRelicBonuses,
+                {
+                  label: "Defender",
+                  data: {
+                    army: defender,
+                    troopsLeft: defenderTroopsLeft,
+                    damage: simulationResult.defenderDamage,
+                    newStamina: newDefenderStamina,
+                    isWinner: attackerTroopsLeft <= 0 && defenderTroopsLeft > 0,
+                    staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
+                    biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
+                    relicBonuses: defenderRelicBonuses,
+                  },
                 },
-              },
-            ].map(({ label, data }) => (
-              <div
-                key={label}
-                className={`relative p-6 rounded-xl border-2 transition-all duration-500 ${
-                  data.isWinner 
-                    ? 'border-green-500/50 bg-gradient-to-br from-green-900/30 to-green-800/20 shadow-green-500/20 shadow-lg' 
-                    : data.troopsLeft <= 0 
-                    ? 'border-red-500/50 bg-gradient-to-br from-red-900/30 to-red-800/20'
-                    : 'border-gold/20 bg-gradient-to-br from-dark-brown/80 to-dark-brown/60'
-                }`}
-                style={{
-                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent rounded-xl" />
-                <div className="relative z-10 space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${label === 'Attacker' ? 'bg-red-500' : 'bg-blue-500'} shadow-lg`} />
-                      <h4 className="font-bold text-2xl text-gold">{label}</h4>
+              ].map(({ label, data }) => (
+                <div
+                  key={label}
+                  className={`relative p-6 rounded-xl border-2 transition-all duration-500 ${
+                    data.isWinner
+                      ? "border-green-500/50 bg-gradient-to-br from-green-900/30 to-green-800/20 shadow-green-500/20 shadow-lg"
+                      : data.troopsLeft <= 0
+                        ? "border-red-500/50 bg-gradient-to-br from-red-900/30 to-red-800/20"
+                        : "border-gold/20 bg-gradient-to-br from-dark-brown/80 to-dark-brown/60"
+                  }`}
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent rounded-xl" />
+                  <div className="relative z-10 space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-3 h-3 rounded-full ${label === "Attacker" ? "bg-red-500" : "bg-blue-500"} shadow-lg`}
+                        />
+                        <h4 className="font-bold text-2xl text-gold">{label}</h4>
+                      </div>
+                      {data.isWinner && (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-green-900/60 text-green-400 text-sm font-bold rounded-lg border border-green-400/40 shadow-lg animate-pulse">
+                          👑 Victory!
+                        </div>
+                      )}
+                      {data.troopsLeft <= 0 && !data.isWinner && (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-red-900/60 text-red-400 text-sm font-bold rounded-lg border border-red-400/40">
+                          💀 Defeated
+                        </div>
+                      )}
                     </div>
-                    {data.isWinner && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-green-900/60 text-green-400 text-sm font-bold rounded-lg border border-green-400/40 shadow-lg animate-pulse">
-                        👑 Victory!
-                      </div>
+
+                    {formatTypeAndBonuses(
+                      data.army.troopType,
+                      data.army.tier,
+                      data.biomeBonus,
+                      data.staminaModifier,
+                      label === "Attacker",
                     )}
-                    {data.troopsLeft <= 0 && !data.isWinner && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-red-900/60 text-red-400 text-sm font-bold rounded-lg border border-red-400/40">
-                        💀 Defeated
-                      </div>
-                    )}
-                  </div>
 
-                  {formatTypeAndBonuses(
-                    data.army.troopType,
-                    data.army.tier,
-                    data.biomeBonus,
-                    data.staminaModifier,
-                    label === "Attacker",
-                  )}
-
-                  {/* Relic Effects Display */}
-                  {data.relicBonuses.activeRelics.length > 0 && (
-                    <div className="p-4 bg-purple-900/30 border border-purple-500/40 rounded-lg backdrop-blur-sm">
-                      <div className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
-                        🔮 Active Relic Effects
-                        <span className="text-xs bg-purple-600/30 px-2 py-1 rounded-full">
-                          {data.relicBonuses.activeRelics.length}
-                        </span>
-                      </div>
-                      <div className="grid gap-2">
-                        {data.relicBonuses.damageBonus > 1 && (
-                          <div className="flex items-center justify-between p-2 bg-red-900/30 border border-red-500/30 rounded text-sm">
-                            <span className="text-red-300 flex items-center gap-2">
-                              ⚔️ Damage Bonus
-                            </span>
-                            <span className="text-red-400 font-bold">
-                              +{Math.round((data.relicBonuses.damageBonus - 1) * 100)}%
-                            </span>
-                          </div>
-                        )}
-                        {data.relicBonuses.reductionBonus < 1 && (
-                          <div className="flex items-center justify-between p-2 bg-blue-900/30 border border-blue-500/30 rounded text-sm">
-                            <span className="text-blue-300 flex items-center gap-2">
-                              🛡️ Damage Reduction
-                            </span>
-                            <span className="text-blue-400 font-bold">
-                              -{Math.round((1 - data.relicBonuses.reductionBonus) * 100)}%
-                            </span>
-                          </div>
-                        )}
-                        {data.relicBonuses.staminaBonus > 1 && (
-                          <div className="flex items-center justify-between p-2 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm">
-                            <span className="text-yellow-300 flex items-center gap-2">
-                              ⚡ Stamina Bonus
-                            </span>
-                            <span className="text-yellow-400 font-bold">
-                              +{Math.round((data.relicBonuses.staminaBonus - 1) * 100)}%
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
-                        <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                          ⚔️ Damage Dealt
-                        </div>
-                        <div className="text-3xl font-bold text-gold flex items-baseline">
-                          {data.damage.toFixed(1)}
-                          <span className="text-sm ml-2 text-gold/60">dmg</span>
-                        </div>
-                      </div>
-                      <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
-                        <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                          🗡️ Troops Remaining
-                        </div>
-                        <div className="text-3xl font-bold flex items-baseline">
-                          <span className={`${
-                            data.troopsLeft <= 0 ? 'text-red-400' : 
-                            data.troopsLeft < data.army.troopCount * 0.5 ? 'text-yellow-400' : 
-                            'text-green-400'
-                          }`}>
-                            {Math.max(0, data.troopsLeft).toLocaleString()}
+                    {/* Relic Effects Display */}
+                    {data.relicBonuses.activeRelics.length > 0 && (
+                      <div className="p-4 bg-purple-900/30 border border-purple-500/40 rounded-lg backdrop-blur-sm">
+                        <div className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
+                          🔮 Active Relic Effects
+                          <span className="text-xs bg-purple-600/30 px-2 py-1 rounded-full">
+                            {data.relicBonuses.activeRelics.length}
                           </span>
-                          <span className="text-sm ml-2 text-gold/60">/ {data.army.troopCount.toLocaleString()}</span>
                         </div>
-                        <div className="mt-2 w-full bg-dark-brown/50 rounded-full h-2 overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              data.troopsLeft <= 0 ? 'bg-red-500' : 
-                              data.troopsLeft < data.army.troopCount * 0.5 ? 'bg-yellow-500' : 
-                              'bg-green-500'
-                            }`}
-                            style={{ width: `${Math.max(0, (data.troopsLeft / data.army.troopCount) * 100)}%` }}
-                          />
+                        <div className="grid gap-2">
+                          {data.relicBonuses.damageBonus > 1 && (
+                            <div className="flex items-center justify-between p-2 bg-red-900/30 border border-red-500/30 rounded text-sm">
+                              <span className="text-red-300 flex items-center gap-2">⚔️ Damage Bonus</span>
+                              <span className="text-red-400 font-bold">
+                                +{Math.round((data.relicBonuses.damageBonus - 1) * 100)}%
+                              </span>
+                            </div>
+                          )}
+                          {data.relicBonuses.reductionBonus < 1 && (
+                            <div className="flex items-center justify-between p-2 bg-blue-900/30 border border-blue-500/30 rounded text-sm">
+                              <span className="text-blue-300 flex items-center gap-2">🛡️ Damage Reduction</span>
+                              <span className="text-blue-400 font-bold">
+                                -{Math.round((1 - data.relicBonuses.reductionBonus) * 100)}%
+                              </span>
+                            </div>
+                          )}
+                          {data.relicBonuses.staminaBonus > 1 && (
+                            <div className="flex items-center justify-between p-2 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm">
+                              <span className="text-yellow-300 flex items-center gap-2">⚡ Stamina Bonus</span>
+                              <span className="text-yellow-400 font-bold">
+                                +{Math.round((data.relicBonuses.staminaBonus - 1) * 100)}%
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
+                          <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                            ⚔️ Damage Dealt
+                          </div>
+                          <div className="text-3xl font-bold text-gold flex items-baseline">
+                            {data.damage.toFixed(1)}
+                            <span className="text-sm ml-2 text-gold/60">dmg</span>
+                          </div>
+                        </div>
+                        <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
+                          <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                            🗡️ Troops Remaining
+                          </div>
+                          <div className="text-3xl font-bold flex items-baseline">
+                            <span
+                              className={`${
+                                data.troopsLeft <= 0
+                                  ? "text-red-400"
+                                  : data.troopsLeft < data.army.troopCount * 0.5
+                                    ? "text-yellow-400"
+                                    : "text-green-400"
+                              }`}
+                            >
+                              {Math.max(0, data.troopsLeft).toLocaleString()}
+                            </span>
+                            <span className="text-sm ml-2 text-gold/60">/ {data.army.troopCount.toLocaleString()}</span>
+                          </div>
+                          <div className="mt-2 w-full bg-dark-brown/50 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-1000 ${
+                                data.troopsLeft <= 0
+                                  ? "bg-red-500"
+                                  : data.troopsLeft < data.army.troopCount * 0.5
+                                    ? "bg-yellow-500"
+                                    : "bg-green-500"
+                              }`}
+                              style={{ width: `${Math.max(0, (data.troopsLeft / data.army.troopCount) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
             {(attackerTroopsLeft <= 0 || defenderTroopsLeft <= 0) && (
               <div className="mt-8 p-6 bg-gradient-to-r from-green-900/40 to-green-800/30 border-2 border-green-400/40 rounded-xl text-center animate-in zoom-in-50 duration-500">
@@ -488,19 +484,15 @@ export const CombatSimulationPanel = () => {
                   </p>
                   <div className="text-3xl animate-bounce">🏆</div>
                 </div>
-                <p className="text-green-400/80 text-lg">
-                  Victory Bonus: +30 Stamina
-                </p>
+                <p className="text-green-400/80 text-lg">Victory Bonus: +30 Stamina</p>
               </div>
             )}
-            
+
             {attackerTroopsLeft > 0 && defenderTroopsLeft > 0 && (
               <div className="mt-8 p-6 bg-gradient-to-r from-yellow-900/40 to-orange-800/30 border-2 border-yellow-400/40 rounded-xl text-center">
                 <div className="flex items-center justify-center gap-3 mb-2">
                   <div className="text-2xl">⚔️</div>
-                  <p className="text-yellow-300 font-bold text-xl">
-                    Battle Continues - Both Armies Survive!
-                  </p>
+                  <p className="text-yellow-300 font-bold text-xl">Battle Continues - Both Armies Survive!</p>
                   <div className="text-2xl">🛡️</div>
                 </div>
                 <p className="text-yellow-400/80 text-base">

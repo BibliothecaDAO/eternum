@@ -132,7 +132,7 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings - same cost in both standard and simple mode
   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 200 }],
-  [BuildingType.ResourceFish]: [{ resource: ResourcesIds.Labor, amount: 200 }],
+  [BuildingType.ResourceFish]: [],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 400 }],
   [BuildingType.ResourceStone]: [],
   [BuildingType.ResourceCoal]: [
@@ -280,7 +280,7 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings - same cost in both standard and simple mode
   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 200 }],
-  [BuildingType.ResourceFish]: [{ resource: ResourcesIds.Labor, amount: 200 }],
+  [BuildingType.ResourceFish]: [],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 400 }],
   [BuildingType.ResourceStone]: [],
   [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 560 }],

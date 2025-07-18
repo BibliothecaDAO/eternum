@@ -4,7 +4,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { BiomeInfoPanel } from "@/ui/features/world";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -41,7 +40,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
-import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 
 // Add the new function before the CombatContainer component
 const getFormattedCombatTweet = ({
@@ -103,8 +102,6 @@ export const CombatContainer = ({
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
   const accountName = useAccountStore((state) => state.accountName);
-  const [showShareButton, setShowShareButton] = useState(false);
-  const [tweetText, setTweetText] = useState("");
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
@@ -135,17 +132,11 @@ export const CombatContainer = ({
 
   // Convert relic effects to resource IDs
   const attackerRelicResourceIds = useMemo(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
-    return attackerActiveRelicEffects
-      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return attackerActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
   }, [attackerActiveRelicEffects]);
 
   const targetRelicResourceIds = useMemo(() => {
-    const { currentArmiesTick } = getBlockTimestamp();
-    return targetActiveRelicEffects
-      .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return targetActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
   }, [targetActiveRelicEffects]);
 
   const attackerStamina = useMemo(() => {
@@ -319,18 +310,26 @@ export const CombatContainer = ({
   const onAttack = async () => {
     if (!selectedHex) return;
 
-    if (attackerType === AttackerType.Structure) {
-      if (selectedGuardSlot === null) return;
-      await onGuardVsExplorerAttack();
-    } else if (target?.targetType === TargetType.Army) {
-      await onExplorerVsExplorerAttack();
-    } else {
-      await onExplorerVsGuardAttack();
-    }
+    try {
+      setLoading(true);
 
-    // close modal after attack because we already know the result
-    updateSelectedEntityId(null);
-    toggleModal(null);
+      if (attackerType === AttackerType.Structure) {
+        if (selectedGuardSlot === null) return;
+        await onGuardVsExplorerAttack();
+      } else if (target?.targetType === TargetType.Army) {
+        await onExplorerVsExplorerAttack();
+      } else {
+        await onExplorerVsGuardAttack();
+      }
+
+      // close modal after attack because we already know the result
+      updateSelectedEntityId(null);
+      toggleModal(null);
+    } catch (error) {
+      console.error("Attack failed:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onExplorerVsGuardAttack = async () => {
@@ -338,19 +337,12 @@ export const CombatContainer = ({
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     if (direction === null) return;
 
-    try {
-      setLoading(true);
-      await attack_explorer_vs_guard({
-        signer: account,
-        explorer_id: attackerEntityId,
-        structure_id: target?.id || 0,
-        structure_direction: direction,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    await attack_explorer_vs_guard({
+      signer: account,
+      explorer_id: attackerEntityId,
+      structure_id: target?.id || 0,
+      structure_direction: direction,
+    });
   };
 
   const remainingCapacity = useMemo(() => {
@@ -404,20 +396,13 @@ export const CombatContainer = ({
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     if (direction === null) return;
 
-    try {
-      setLoading(true);
-      await attack_explorer_vs_explorer({
-        signer: account,
-        aggressor_id: attackerEntityId,
-        defender_id: target?.id || 0,
-        defender_direction: direction,
-        steal_resources: targetResources,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    await attack_explorer_vs_explorer({
+      signer: account,
+      aggressor_id: attackerEntityId,
+      defender_id: target?.id || 0,
+      defender_direction: direction,
+      steal_resources: targetResources,
+    });
   };
 
   const onGuardVsExplorerAttack = async () => {
@@ -425,20 +410,13 @@ export const CombatContainer = ({
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     if (direction === null) return;
 
-    try {
-      setLoading(true);
-      await attack_guard_vs_explorer({
-        signer: account,
-        structure_id: attackerEntityId,
-        structure_guard_slot: selectedGuardSlot,
-        explorer_id: target?.id || 0,
-        explorer_direction: direction,
-      });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    await attack_guard_vs_explorer({
+      signer: account,
+      structure_id: attackerEntityId,
+      structure_guard_slot: selectedGuardSlot,
+      explorer_id: target?.id || 0,
+      explorer_direction: direction,
+    });
   };
 
   // Troop selector component for structure troops
@@ -447,15 +425,17 @@ export const CombatContainer = ({
 
     return (
       <div className="p-3 sm:p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm mb-4 overflow-hidden">
-        <h3 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h3>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h2>
+        <div className="flex flex-wrap gap-2 sm:gap-3" role="group" aria-label="Select troop to attack with">
           {structureGuards.map((guard) => (
             <button
               key={guard.slot}
               onClick={() => setSelectedGuardSlot(guard.slot)}
               className={`flex items-center bg-brown-900/90 border ${
-                selectedGuardSlot === guard.slot ? "border-gold" : "border-gold/20"
-              } rounded-md px-2 py-1.5 hover:border-gold/60 transition-colors`}
+                selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
+              } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
+              aria-pressed={selectedGuardSlot === guard.slot}
+              aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${guard.slot}`}
             >
               <ResourceIcon
                 withTooltip={false}
@@ -468,11 +448,11 @@ export const CombatContainer = ({
                 size="sm"
                 className="w-4 h-4 mr-2"
               />
-              <div className="flex flex-col">
-                <span className="text-xs text-gold/90 font-medium">
+              <div className="flex flex-col text-left min-w-0 flex-1">
+                <span className="text-xs sm:text-sm text-gold/90 font-medium truncate">
                   {TroopType[guard.troops.category as TroopType]} {guard.troops.tier as TroopTier} (Slot {guard.slot})
                 </span>
-                <span className="text-sm text-gold font-bold">
+                <span className="text-sm sm:text-base text-gold font-bold">
                   {currencyFormat(Number(guard.troops.count || 0), 0)}
                 </span>
               </div>
@@ -502,103 +482,71 @@ export const CombatContainer = ({
   }, [battleSimulation, attackerArmyData]);
 
   return (
-    <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
+    <div
+      className="flex flex-col gap-3 sm:gap-4 lg:gap-6  mx-auto max-w-full overflow-hidden"
+      role="main"
+      aria-label="Combat interface"
+    >
       {/* Add Biome Info Panel */}
-      <BiomeInfoPanel biome={biome} />
-
+      {/* <BiomeInfoPanel biome={biome} /> */}
       {/* Troop Selector for Structure */}
       {TroopSelector()}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6"
+        role="group"
+        aria-label="Battle forces comparison"
+      >
+        {/* Attacker Relic Effects */}
+        <ActiveRelicEffects relicEffects={attackerActiveRelicEffects} entityId={attackerEntityId} compact={true} />
+
+        {/* Defender Relic Effects */}
+        <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
+
         {/* Attacker Panel */}
-        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
-          <h4>Attacker Forces (You)</h4>
-
-          {/* Attacker Relic Effects */}
-          {attackerActiveRelicEffects.length > 0 && (
-            <ActiveRelicEffects relicEffects={attackerActiveRelicEffects} entityId={attackerEntityId} compact={true} />
-          )}
-
+        <div className="space-y-3 sm:space-y-4" role="region" aria-label="Attacker forces information">
           {attackerArmyData && (
-            <div className="mt-4 space-y-4">
-              {/* Troop Information */}
-              <div className="p-3 border border-gold/10 rounded">
-                {formatTypeAndBonuses(
-                  attackerArmyData.troops.category as TroopType,
-                  attackerArmyData.troops.tier as TroopTier,
-                  configManager.getBiomeCombatBonus(attackerArmyData.troops.category as TroopType, biome),
-                  combatSimulator.calculateStaminaModifier(Number(attackerStamina), true),
-                  true,
-                )}
-                <div className="text-2xl font-bold text-gold">
-                  {divideByPrecision(Number(attackerArmyData.troops.count))} troops
-                </div>
-                <div className="text-lg text-gold/80 mt-1">
-                  Stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
-                </div>
-              </div>
-
-              {/* Battle Simulation Results */}
-              {battleSimulation && (
-                <div className="p-3 border border-gold/10 rounded ">
-                  <h4 className="text-sm font-medium text-gold/90 mb-2">Losses</h4>
-                  <div className="flex items-center gap-2">
-                    <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(trueDefenseDamage)}
-                    </div>
-                    <div className="uppercase text-xs text-red-400">dead</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <TroopDisplay
+              troops={attackerArmyData.troops}
+              title="Attacker Forces (You)"
+              isAttacker={true}
+              biome={biome}
+              stamina={attackerStamina}
+              staminaModifier={combatSimulator.calculateStaminaModifier(Number(attackerStamina), true)}
+              losses={trueDefenseDamage}
+              showLosses={!!battleSimulation}
+              remainingTroops={remainingTroops?.attackerTroops}
+              showRemaining={!!battleSimulation && !!remainingTroops}
+            />
           )}
         </div>
 
         {/* Defender Panel */}
-        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg  backdrop-blur-sm panel-wood">
-          <h4>Defender Forces</h4>
-
-          {/* Defender Relic Effects */}
-          {targetActiveRelicEffects.length > 0 && (
-            <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
-          )}
-
+        <div className="space-y-3 sm:space-y-4" role="region" aria-label="Defender forces information">
           {targetArmyData ? (
-            <div className="mt-4 space-y-4">
-              {/* Troop Information */}
-              <div className="p-3 border border-gold/10 rounded ">
-                {formatTypeAndBonuses(
-                  targetArmyData.troops.category as TroopType,
-                  targetArmyData.troops.tier as TroopTier,
-                  configManager.getBiomeCombatBonus(targetArmyData.troops.category as TroopType, biome),
-                  combatSimulator.calculateStaminaModifier(Number(targetArmyData.troops.stamina.amount), false),
-                  false,
-                )}
-                <div className="text-2xl font-bold text-gold">
-                  {divideByPrecision(Number(targetArmyData.troops.count))} troops
-                </div>
-                <div className="text-lg text-gold/80 mt-1">
-                  {" "}
-                  Current Stamina: {Number(targetArmyData.troops.stamina.amount)}
-                </div>
-              </div>
-
-              {/* Battle Simulation Results */}
-              {battleSimulation && (
-                <div className="p-3 border border-gold/10 rounded">
-                  <h4 className="text-sm font-medium text-gold/90 mb-2">Losses</h4>
-                  <div className="flex items-center gap-2">
-                    <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(trueAttackDamage)}
-                    </div>
-                    <div className="uppercase text-xs text-red-400">dead</div>
-                  </div>
-                </div>
+            <TroopDisplay
+              troops={targetArmyData.troops}
+              title="Defender Forces"
+              isAttacker={false}
+              biome={biome}
+              stamina={targetArmyData.troops.stamina.amount}
+              staminaModifier={combatSimulator.calculateStaminaModifier(
+                Number(targetArmyData.troops.stamina.amount),
+                false,
               )}
-            </div>
+              losses={trueAttackDamage}
+              showLosses={!!battleSimulation}
+              remainingTroops={remainingTroops?.defenderTroops}
+              showRemaining={!!battleSimulation && !!remainingTroops}
+            />
           ) : (
-            <div className="mt-4 space-y-4">
-              <div className="p-3 border border-gold/10 rounded bg-dark-brown/50">
+            <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
+              <h4 className="text-lg font-semibold text-gold mb-3">Defender Forces</h4>
+              <div
+                className="p-3 border border-gold/10 rounded bg-dark-brown/50"
+                role="status"
+                aria-label="No defending troops present"
+              >
                 <h4 className="text-sm font-medium text-gold/90 mb-2">No Troops Present</h4>
               </div>
             </div>
@@ -607,281 +555,61 @@ export const CombatContainer = ({
       </div>
 
       {/* Battle Results */}
-      {targetArmyData && remainingTroops && attackerArmyData && (
-        <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
-          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
-            <span className="mr-2">📜</span> Battle Prediction
-          </h3>
-
-          {/* Battle Outcome Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gold font-semibold">Your Forces</span>
-              <span className="text-gold font-semibold">Enemy Forces</span>
-            </div>
-            <div className="relative h-10 bg-brown-900/70 rounded-md overflow-hidden border border-gold/20">
-              {/* Calculate percentage based on remaining troops ratio */}
-              {(() => {
-                const attackerPercentage = Math.max(
-                  0,
-                  Math.min(
-                    100,
-                    (remainingTroops.attackerTroops / divideByPrecision(Number(attackerArmyData.troops.count))) * 100,
-                  ),
-                );
-                const defenderPercentage = Math.max(
-                  0,
-                  Math.min(
-                    100,
-                    (remainingTroops.defenderTroops / divideByPrecision(Number(targetArmyData.troops.count))) * 100,
-                  ),
-                );
-
-                // Normalize to show relative strength in the bar
-                const totalPercentage = attackerPercentage + defenderPercentage;
-                const normalizedAttackerWidth = totalPercentage > 0 ? (attackerPercentage / totalPercentage) * 100 : 50;
-
-                return (
-                  <>
-                    <div
-                      className="absolute h-full bg-gold/40 transition-all duration-300 flex items-center"
-                      style={{ width: `${normalizedAttackerWidth}%` }}
-                    >
-                      {/* Combat Icons */}
-                      {Array.from({ length: Math.min(5, Math.ceil(remainingTroops.attackerTroops / 5)) }).map(
-                        (_, i) => (
-                          <div
-                            key={`attacker-icon-${i}`}
-                            className="w-5 h-5 mx-1 opacity-80"
-                            style={{
-                              backgroundImage: `url("/assets/ui/icons/${TroopType[attackerArmyData.troops.category as TroopType].toLowerCase()}.svg")`,
-                              backgroundSize: "contain",
-                              backgroundPosition: "center",
-                              backgroundRepeat: "no-repeat",
-                            }}
-                          />
-                        ),
-                      )}
-
-                      {normalizedAttackerWidth > 20 && (
-                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gold-900">
-                          {Math.floor(remainingTroops.attackerTroops)} remaining
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      className="absolute right-0 h-full bg-order-giants/60 transition-all duration-300 flex items-center justify-end"
-                      style={{ width: `${100 - normalizedAttackerWidth}%` }}
-                    >
-                      {/* Combat Icons */}
-                      {Array.from({ length: Math.min(5, Math.ceil(remainingTroops.defenderTroops / 5)) }).map(
-                        (_, i) => (
-                          <div
-                            key={`defender-icon-${i}`}
-                            className="w-5 h-5 mx-1 opacity-80"
-                            style={{
-                              backgroundImage: `url("/assets/ui/icons/${TroopType[targetArmyData.troops.category as TroopType].toLowerCase()}.svg")`,
-                              backgroundSize: "contain",
-                              backgroundPosition: "center",
-                              backgroundRepeat: "no-repeat",
-                            }}
-                          />
-                        ),
-                      )}
-
-                      {100 - normalizedAttackerWidth > 20 && (
-                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-white">
-                          {Math.floor(remainingTroops.defenderTroops)} remaining
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Middle Divider */}
-                    <div className="absolute h-full" style={{ left: `${normalizedAttackerWidth}%`, width: "2px" }}>
-                      <div className="h-full w-full bg-white/30 animate-pulse"></div>
-                    </div>
-
-                    {winner && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span
-                          className={`px-3 py-0.5 rounded-full text-xs font-bold ${
-                            winner === attackerEntityId ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"
-                          }`}
-                        >
-                          {winner === attackerEntityId ? "VICTORY" : "DEFEAT"}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Battle Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-              <div className="text-xs text-gold/70 mb-1">Attacker Casualties</div>
-              <div className="text-lg font-bold text-order-giants">
-                {battleSimulation ? Math.ceil(trueDefenseDamage) : 0}
-                <span className="text-xs ml-1">
-                  (
-                  {battleSimulation
-                    ? Math.round((trueDefenseDamage / divideByPrecision(Number(attackerArmyData.troops.count))) * 100)
-                    : 0}
-                  %)
-                </span>
+      {targetArmyData && attackerArmyData && (
+        <div className="mt-2 space-y-3 sm:space-y-4 lg:space-y-6" role="region" aria-label="Battle simulation results">
+          {battleSimulation && remainingTroops ? (
+            <>
+              {/* Battle Stats Summary */}
+              <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+                <BattleStats
+                  attackerCasualties={trueDefenseDamage}
+                  defenderCasualties={trueAttackDamage}
+                  attackerCasualtyPercentage={Math.round(
+                    (trueDefenseDamage / divideByPrecision(Number(attackerArmyData.troops.count))) * 100,
+                  )}
+                  defenderCasualtyPercentage={Math.round(
+                    (trueAttackDamage / divideByPrecision(Number(targetArmyData.troops.count))) * 100,
+                  )}
+                  staminaChange={battleSimulation.newAttackerStamina - Number(attackerStamina)}
+                  outcome={winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
+                />
               </div>
-            </div>
-            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-              <div className="text-xs text-gold/70 mb-1">Defender Casualties</div>
-              <div className="text-lg font-bold text-order-giants">
-                {battleSimulation ? Math.ceil(trueAttackDamage) : 0}
-                <span className="text-xs ml-1">
-                  (
-                  {battleSimulation
-                    ? Math.round((trueAttackDamage / divideByPrecision(Number(targetArmyData.troops.count))) * 100)
-                    : 0}
-                  %)
-                </span>
-              </div>
-            </div>
-            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-              <div className="text-xs text-gold/70 mb-1">Stamina Change</div>
-              <div className="text-lg font-bold text-gold">
-                {battleSimulation ? battleSimulation.newAttackerStamina - Number(attackerStamina) : 0}
-              </div>
-            </div>
-            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-              <div className="text-xs text-gold/70 mb-1">Battle Outcome</div>
-              <div className={`text-lg font-bold ${winner === attackerEntityId ? "text-green-400" : "text-red-400"}`}>
-                {winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
-              </div>
-            </div>
-          </div>
 
-          {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
-          {winner === attackerEntityId && target?.targetType === TargetType.Army && stealableResources.length > 0 && (
-            <div className="mb-6 p-4 border border-gold/10 rounded bg-brown-900/30">
-              <h4 className="text-lg font-medium text-gold/90 mb-4 flex items-center">
-                <span className="mr-2">💰</span> Resources You Will Steal
-              </h4>
-              <div className="max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/40 scrollbar-track-brown-900/30">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {stealableResources.map((resource) => (
-                    <div
-                      key={resource.resourceId}
-                      className="flex justify-between items-center p-2 border border-gold/10 rounded-md bg-brown-900/20"
-                    >
-                      <div className="flex items-center gap-2">
-                        <ResourceIcon
-                          resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
-                          size="md"
-                        />
-                        <span className="text-gold/80">
-                          {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-gold">{resource.amount}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
+              {winner === attackerEntityId &&
+                target?.targetType === TargetType.Army &&
+                stealableResources.length > 0 && (
+                  <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+                    <ResourceStealing stealableResources={stealableResources} />
+                  </div>
+                )}
+            </>
+          ) : (
+            <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+              <CombatLoading message="Simulating battle outcome..." />
             </div>
           )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-            {[
-              {
-                label: "Attacker Forces (You)",
-                troops: remainingTroops.attackerTroops,
-                isWinner: winner === attackerEntityId,
-                originalTroops: attackerArmyData.troops,
-                currentStamina: attackerArmyData.troops
-                  ? StaminaManager.getStamina(
-                      attackerArmyData.troops,
-                      getBlockTimestamp().currentArmiesTick,
-                      attackerRelicResourceIds,
-                    ).amount
-                  : 0,
-                newStamina: battleSimulation?.newAttackerStamina || 0,
-                isAttacker: true,
-              },
-              {
-                label: "Defender Forces",
-                troops: remainingTroops.defenderTroops,
-                isWinner: winner !== null && winner !== attackerEntityId,
-                originalTroops: targetArmyData.troops,
-                currentStamina: Number(
-                  targetArmyData.troops
-                    ? StaminaManager.getStamina(
-                        targetArmyData.troops,
-                        getBlockTimestamp().currentArmiesTick,
-                        targetRelicResourceIds,
-                      ).amount
-                    : 0,
-                ),
-                newStamina: battleSimulation?.newDefenderStamina || 0,
-                isAttacker: false,
-              },
-            ].map(({ label, troops, isWinner, originalTroops, currentStamina, newStamina, isAttacker }) => (
-              <div key={label} className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg">
-                <h4 className="font-bold text-lg">{label}</h4>
-                <div className="space-y-4">
-                  <div className="p-3 border border-gold/10 rounded">
-                    {formatTypeAndBonuses(
-                      originalTroops.category as TroopType,
-                      originalTroops.tier as TroopTier,
-                      configManager.getBiomeCombatBonus(originalTroops.category as TroopType, biome),
-                      combatSimulator.calculateStaminaModifier(Number(currentStamina), isAttacker),
-                      isAttacker,
-                    )}
-                    <div className="text-2xl font-bold text-gold">
-                      {troops > 0 ? Math.floor(Number(troops)) : 0} /{" "}
-                      {Math.floor(divideByPrecision(Number(originalTroops.count)))} troops
-                    </div>
-                  </div>
-
-                  <div className="p-3 border border-gold/10 rounded">
-                    <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Result</h4>
-                    <div className="flex items-center gap-2">
-                      {isWinner ? (
-                        <div className="text-xl font-bold text-green-400 bg-green-900/20 rounded-md px-2 py-1">
-                          Victory!
-                        </div>
-                      ) : winner === null ? (
-                        <div className="text-xl font-bold text-yellow-400 bg-yellow-900/20 rounded-md px-2 py-1">
-                          Draw
-                        </div>
-                      ) : (
-                        <div className="text-xl font-bold text-red-400 bg-red-900/20 rounded-md px-2 py-1">Defeat</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-3 border border-gold/10 rounded">
-                    <h4 className="text-sm font-medium text-gold/90 mb-2">Stamina</h4>
-                    {getStaminaDisplay(
-                      Number(currentStamina),
-                      Number(newStamina),
-                      Number(newStamina) - Number(currentStamina),
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
       {/* No Troops Message */}
       {!targetArmyData && attackerArmyData && (
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
-          <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Claim Opportunity</h3>
-          <div className="text-center py-4">
-            <div className="text-xl font-bold text-green-400 mb-2">No Defending Troops Present!</div>
+        <div
+          className="mt-2 p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg"
+          role="region"
+          aria-label="Claim opportunity information"
+        >
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-3 sm:pb-4">
+            Claim Opportunity
+          </h2>
+          <div className="text-center py-3 sm:py-4">
+            <div className="text-lg sm:text-xl font-bold text-green-400 mb-2" role="status">
+              No Defending Troops Present!
+            </div>
             {isVillageWithoutTroops ? (
-              <p className="text-gold/80 mb-4">Villages cannot be claimed</p>
+              <p className="text-gold/80 mb-4" role="alert">
+                Villages cannot be claimed
+              </p>
             ) : (
               <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
             )}
@@ -890,16 +618,25 @@ export const CombatContainer = ({
       )}
 
       {/* Attack Button */}
-      <div className="mt-2 flex flex-col items-center gap-4">
+      <div className="mt-2 mb-2 flex flex-col items-center gap-4" role="region" aria-label="Combat actions">
         <Button
           variant="primary"
-          className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
+          className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
           disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isVillageWithoutTroops}
           onClick={onAttack}
+          aria-label={`Attack button: ${buttonMessage}`}
+          aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}
         >
           {buttonMessage}
         </Button>
+
+        {/* Stamina Warning */}
+        {attackerStamina < combatConfig.stamina_attack_req && (
+          <div id="stamina-warning" className="text-sm text-red-400 text-center" role="alert">
+            Insufficient stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
+          </div>
+        )}
 
         {/* Twitter Share Button */}
         {formattedTweet && (

@@ -2,13 +2,13 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
-import { configManager } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -114,8 +114,6 @@ const DojoContextProvider = ({
   const accountName = useAccountStore((state) => state.accountName);
   const setAccountName = useAccountStore((state) => state.setAccountName);
 
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
-
   useEffect(() => {
     const getUsername = async () => {
       let username = await (connector as unknown as ControllerConnector)?.username();
@@ -209,7 +207,7 @@ const DojoContextProvider = ({
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
 
-                  {!isBlitz && (
+                  {!getIsBlitz() && (
                     <a
                       className="cursor-pointer mt-auto w-full"
                       href={mintUrl}
@@ -241,15 +239,6 @@ const DojoContextProvider = ({
   // Once account is set, render the children
   return (
     <>
-      {accountName && showBlankOverlay && (
-        <div
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-brown/80 text-gold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ${
-            showWelcome ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          Welcome, {accountName}!
-        </div>
-      )}
       <DojoContext.Provider
         value={{
           ...value,

@@ -63,6 +63,10 @@ import {
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
+const ONE_MINUTE_IN_SECONDS = 60;
+const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+
 // ----- Buildings ----- //
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
@@ -93,8 +97,8 @@ export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
 // ----- Relic Discovery ----- //
-export const RELIC_DISCOVERY_INTERVAL_SECONDS = 60 * 5; // 5 minutes
-export const RELIC_HEX_DISTANCE_FROM_CENTER = 40;
+export const RELIC_DISCOVERY_INTERVAL_SECONDS = 5 * ONE_MINUTE_IN_SECONDS; // 5 minutes
+export const RELIC_HEX_DISTANCE_FROM_CENTER = 10;
 export const RELIC_CHEST_RELICS_PER_CHEST = 3;
 
 export const AGENT_FIND_PROBABILITY = 5; // 5/100 = 5%
@@ -175,10 +179,6 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 export const SEASON_POOL_FEE_RECIPIENT = "0x04CD21aA3E634E36d6379bdbB3FeF78F7E0A882Eb8a048624c4b02eeAD1bC553";
 export const MAX_NUM_BANKS = 6;
 
-const ONE_MINUTE_IN_SECONDS = 60;
-const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
-const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
-
 export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
 export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
 export const SEASON_DURATION_SECONDS = ONE_HOUR_IN_SECONDS * 2; // 2 hours
@@ -208,8 +208,8 @@ const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x0";
 const BLITZ_REGISTRATION_FEE_AMOUNT = 0;
 const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
-const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * 60 * ONE_MINUTE_IN_SECONDS;
-const BLITZ_CREATION_PERIOD_SECONDS = 1 * 60 * ONE_MINUTE_IN_SECONDS;
+const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * ONE_HOUR_IN_SECONDS;
+const BLITZ_CREATION_PERIOD_SECONDS = 1 * ONE_HOUR_IN_SECONDS;
 
 export const EternumGlobalConfig: Config = {
   agent: {
@@ -277,15 +277,15 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.RealmStructure]: 20_000 * 1000, // 1m kg
     [CapacityConfig.VillageStructure]: 20_000 * 1000, // 1m kg
     [CapacityConfig.HyperstructureStructure]: 20_000 * 1000, // 20,000 kg
     [CapacityConfig.BankStructure]: 2_000_000 * 1000, // 2m kg
-    [CapacityConfig.FragmentMineStructure]: 5_000 * 1000, // 500k kg
+    [CapacityConfig.FragmentMineStructure]: 5_000 * 1000, // 5000 kg
     [CapacityConfig.Donkey]: 50 * 1000, // 500 kg per donkey
     // 10_000 gr per army
     [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
-    [CapacityConfig.Storehouse]: 20_000 * 1000, // 1m kg per storehouse
+    [CapacityConfig.Storehouse]: 20_000 * 1000, // 20_000 kg per storehouse
   },
   speed: {
     donkey: DONKEY_SPEED,

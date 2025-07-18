@@ -1,6 +1,7 @@
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
+import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
@@ -201,10 +202,14 @@ const SettlementState = ({
               <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center">
                 <TreasureChest className="w-8 h-8 mx-auto mb-2 fill-gold" />
                 <p className="text-gold font-medium">Settlement Complete!</p>
-                <p className="text-sm text-gold/70 mt-1">Your realm is ready for battle</p>
+                <p className="text-sm text-gold/70 mt-1">Wait for the settlement phase to finish before playing</p>
               </div>
 
-              <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md">
+              <Button
+                disabled={true}
+                onClick={handlePlay}
+                className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md"
+              >
                 <div className="flex items-center justify-center">
                   <Sword className="w-5 h-5 mr-2 fill-brown" />
                   <span>Play Blitz</span>
@@ -308,6 +313,7 @@ export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
   const {
+    setup,
     setup: {
       account: { account },
       components,
@@ -323,7 +329,11 @@ export const BlitzOnboarding = () => {
     getEntityIdFromKeys([BigInt(account.address)]),
   );
 
+  const { connector } = useAccount();
+
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
+
+  useSetAddressName(setup, playerSettled ? account : null, connector);
 
   // Determine current game state based on time
   useEffect(() => {

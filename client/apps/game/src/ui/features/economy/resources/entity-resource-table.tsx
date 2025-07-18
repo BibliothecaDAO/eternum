@@ -1,8 +1,9 @@
+import { getIsBlitz } from "@/ui/constants";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
 import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { ID, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
+import { getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useMemo, useState } from "react";
 
@@ -19,6 +20,7 @@ const TIER_DISPLAY_NAMES: Record<string, string> = {
   rare: "Rare",
   unique: "Unique",
   mythic: "Mythic",
+  materials: "Materials",
 };
 
 const alwaysShowResources = [
@@ -54,11 +56,11 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   const resourceManager = useResourceManager(entityId);
 
   const storageRemaining = useMemo(() => {
-    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
+    if (!realmInfo?.storehouses) {
       return 0;
     }
-    return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
-  }, [realmInfo?.storehouses?.capacityUsedKg, realmInfo?.storehouses?.capacityKg]);
+    return realmInfo.storehouses.capacityKg - realmInfo.storehouses.capacityUsedKg;
+  }, [realmInfo?.storehouses]);
 
   const isStorageFull = useMemo(() => {
     return storageRemaining <= 0;
@@ -98,7 +100,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
       </div>
 
       <div className="space-y-4">
-        {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
+        {Object.entries(getResourceTiers(getIsBlitz())).map(([tier, resourceIds]) => {
           return (
             <div key={tier} className="pb-3">
               <h4 className="text-sm text-gold/80 font-medium mb-2 border-b border-gold/10 pb-1">

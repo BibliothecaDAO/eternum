@@ -52,20 +52,21 @@ export class StaminaManager {
       return structuredClone(troops.stamina);
     }
 
-    const newStamina = staminaEffects.length > 0 
-      ? this.refill(
-          currentArmiesTick,
-          last_refill_tick,
-          this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
-          Number(troops.stamina.amount),
-          Math.max(...staminaEffects.map(relic => relic.bonus)),
-        )
-      : this.refill(
-          currentArmiesTick,
-          last_refill_tick,
-          this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
-          Number(troops.stamina.amount),
-        );
+    const newStamina =
+      staminaEffects.length > 0
+        ? this.refill(
+            currentArmiesTick,
+            last_refill_tick,
+            this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
+            Number(troops.stamina.amount),
+            Math.max(...staminaEffects.map((relic) => relic.bonus)),
+          )
+        : this.refill(
+            currentArmiesTick,
+            last_refill_tick,
+            this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
+            Number(troops.stamina.amount),
+          );
 
     return newStamina;
   }
@@ -75,7 +76,13 @@ export class StaminaManager {
     return staminaConfig.staminaMax;
   };
 
-  private static refill(currentArmiesTick: number, last_refill_tick: bigint, maxStamina: number, amount: number, staminaMultiplier?: number) {
+  private static refill(
+    currentArmiesTick: number,
+    last_refill_tick: bigint,
+    maxStamina: number,
+    amount: number,
+    staminaMultiplier?: number,
+  ) {
     const staminaPerTick = configManager.getRefillPerTick();
 
     const numTicksPassed = currentArmiesTick - Number(last_refill_tick);

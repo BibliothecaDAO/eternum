@@ -3,9 +3,9 @@ import { ClockIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-export const SeasonEndCountdown = () => {
-  const seasonEndAt = useUIStore((state) => state.seasonEndAt);
-  const seasonStartMainAt = useUIStore((state) => state.seasonStartMainAt);
+export const GameEndCountdown = () => {
+  const seasonEndAt = useUIStore((state) => state.gameEndAt);
+  const seasonStartMainAt = useUIStore((state) => state.gameStartMainAt);
   const [timeLeft, setTimeLeft] = useState("");
   const [seasonEnded, setSeasonEnded] = useState(false);
   const [now, setNow] = useState(0);
@@ -47,22 +47,18 @@ export const SeasonEndCountdown = () => {
 
   return (
     <>
-    {now >= seasonStartMainAt! && (
-        <motion.div
-        drag
-        dragMomentum={false}
-        className="absolute top-20 left-1/2 -translate-x-1/2 z-50 cursor-move"
-        >
-        <div className="flex items-center p-2 bg-black/80 border border-amber-400/50 rounded-lg text-amber-400 shadow-lg animate-pulse">
+      {now >= seasonStartMainAt! && (
+        <motion.div drag dragMomentum={false} className="absolute top-20 left-1/2 -translate-x-1/2 z-50 cursor-move">
+          <div className="flex items-center p-2 bg-black/80 border border-amber-400/50 rounded-lg text-amber-400 shadow-lg animate-pulse">
             <ClockIcon className="mr-2" />
             {seasonEnded ? (
-            <div className="font-bold text-sm tracking-widest">SEASON ENDED. SEE YOU AT THE NEXT ONE!</div>
+              <div className="font-bold text-sm tracking-widest">GAME ENDED. SEE YOU AT THE NEXT ONE!</div>
             ) : (
-            <div className="font-bold text-sm tracking-widest">SEASON ENDS IN: {timeLeft}</div>
+              <div className="font-bold text-sm tracking-widest">GAME ENDS IN: {timeLeft}</div>
             )}
-        </div>
+          </div>
         </motion.div>
-        )}  
+      )}
     </>
   );
-}; 
+};

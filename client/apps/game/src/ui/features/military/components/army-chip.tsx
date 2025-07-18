@@ -7,9 +7,17 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
-import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
+import { armyHasTroops, getEntityIdFromKeys, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ActorType, ArmyInfo, ClientComponents, RelicRecipientType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  ActorType,
+  ArmyInfo,
+  ClientComponents,
+  RelicRecipientType,
+  ResourcesIds,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, HasValue } from "@dojoengine/recs";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
@@ -105,12 +113,22 @@ export const ArmyChip = ({
 
   const stamina = useMemo(() => {
     if (!army.troops) return { amount: 0n, updated_tick: 0n };
-    
+
     // Convert relic effects to resource IDs for StaminaManager
+    // todo: check relic effect active
     const relicResourceIds = relicEffects
-      .filter(effect => effect.effect_end_tick > currentArmiesTick)
-      .map(effect => Number(effect.effect_resource_id)) as ResourcesIds[];
-    
+      .filter((effect) =>
+        ResourceManager.isRelicActive(
+          {
+            start_tick: effect.effect_start_tick,
+            end_tick: effect.effect_end_tick,
+            usage_left: effect.effect_usage_left,
+          },
+          currentArmiesTick,
+        ),
+      )
+      .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+
     return StaminaManager.getStamina(army.troops, currentArmiesTick, relicResourceIds);
   }, [army.troops, currentArmiesTick, relicEffects]);
 

@@ -1,8 +1,9 @@
 import { sqlApi } from "@/services/api";
+import { getIsBlitz } from "@/ui/constants";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
+import { getGuardsByStructure, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityRelicEffect, getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -76,14 +77,13 @@ export const AttackContainer = ({
   const [attackerRelicEffects, setAttackerRelicEffects] = useState<EntityRelicEffect[]>([]);
   const [targetRelicEffects, setTargetRelicEffects] = useState<EntityRelicEffect[]>([]);
 
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
-
   // Query attacker relic effects
   useEffect(() => {
     const fetchAttackerRelicEffects = async () => {
       const { currentArmiesTick } = getBlockTimestamp();
       try {
         const effects = await sqlApi.fetchEntityRelicEffects(attackerEntityId);
+        // todo: check relic effect active
         setAttackerRelicEffects(
           effects.filter((effect) =>
             ResourceManager.isRelicActive(
@@ -135,9 +135,7 @@ export const AttackContainer = ({
       }
 
       // Convert relic effects to resource IDs for StaminaManager
-      const targetRelicResourceIds = targetEffects
-        .filter((effect) => effect.effect_end_tick > currentArmiesTick)
-        .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+      const targetRelicResourceIds = targetEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
 
       if (isStructure) {
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
@@ -200,7 +198,7 @@ export const AttackContainer = ({
         <>
           {/* Attack Type Selection */}
           <div className="flex justify-center mb-6 mx-auto mt-4">
-            {!isBlitz && (
+            {!getIsBlitz() && (
               <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
                 <button
                   className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
@@ -230,15 +228,6 @@ export const AttackContainer = ({
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Attack Type Description */}
-          <div className="text-center mb-4 px-6">
-            <p className="text-gold/70 text-sm">
-              {attackType === AttackType.Combat
-                ? "Combat mode allows you to attack and defeat enemy troops to claim territory."
-                : "Raid mode allows you to steal resources from structures without necessarily defeating all troops."}
-            </p>
           </div>
 
           {/* Attack Content */}

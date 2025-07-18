@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ArmyChip } from "@/ui/features/military";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
@@ -17,12 +17,22 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
 
   const { currentArmiesTick } = useBlockTimestamp();
 
+  // todo: check relic effect active
   const activeRelicEffects = Array.from(activeRelicEntities)
     .map((entity) => {
       return getComponentValue(components.RelicEffect, entity as Entity);
     })
     .filter((relic) => relic !== undefined)
-    .filter((relic) => relic.effect_end_tick > currentArmiesTick);
+    .filter((relic) =>
+      ResourceManager.isRelicActive(
+        {
+          start_tick: relic.effect_start_tick,
+          end_tick: relic.effect_end_tick,
+          usage_left: relic.effect_usage_left,
+        },
+        currentArmiesTick,
+      ),
+    );
 
   return (
     <div

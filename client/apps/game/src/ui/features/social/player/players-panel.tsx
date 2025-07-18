@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
@@ -32,7 +33,7 @@ export const PlayersPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const seasonWinner = useUIStore((state) => state.seasonWinner);
+  const seasonWinner = useUIStore((state) => state.gameWinner);
 
   const isSeasonOver = Boolean(seasonWinner);
 
@@ -50,35 +51,38 @@ export const PlayersPanel = ({
     // Sort players by points in descending order
     const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
 
-    const playersWithStructures = sortedPlayers.map((player, index) => {
-      const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
-      const structures = Array.from(structuresEntityIds)
-        .map((entityId) => {
-          const structure = getComponentValue(Structure, entityId);
-          if (!structure) return undefined;
+    const playersWithStructures = sortedPlayers
+      // filter out players with no address
+      .filter((player) => player.address !== 0n)
+      .map((player, index) => {
+        const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
+        const structures = Array.from(structuresEntityIds)
+          .map((entityId) => {
+            const structure = getComponentValue(Structure, entityId);
+            if (!structure) return undefined;
 
-          return getStructureName(structure).name;
-        })
-        .filter((structure): structure is string => structure !== undefined);
+            return getStructureName(structure, getIsBlitz()).name;
+          })
+          .filter((structure): structure is string => structure !== undefined);
 
-      const guild = getGuildFromPlayerAddress(player.address, components);
+        const guild = getGuildFromPlayerAddress(player.address, components);
 
-      let isInvited = false;
-      if (userGuild) {
-        isInvited =
-          getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
-            ?.whitelisted ?? false;
-      }
-      return {
-        ...player,
-        structures,
-        isUser: player.address === ContractAddress(account.address),
-        points: player.points || 0,
-        rank: index + 1,
-        isInvited,
-        guild,
-      };
-    });
+        let isInvited = false;
+        if (userGuild) {
+          isInvited =
+            getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
+              ?.whitelisted ?? false;
+        }
+        return {
+          ...player,
+          structures,
+          isUser: player.address === ContractAddress(account.address),
+          points: player.points || 0,
+          rank: index + 1,
+          isInvited,
+          guild,
+        };
+      });
     return playersWithStructures;
   }, [isLoading, players, components, account.address]);
 
@@ -149,14 +153,32 @@ export const PlayersPanel = ({
         )}
         {!isSeasonOver ? (
           <>
-            {/* <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
-              <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
-                should any lord gather 9.6m points, they gain the ultimate power to <br /> end this game
-              </p>
-            </div> */}
+            <div className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20">
+              <div className="flex items-center justify-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Explore</span>
+                  <span className="text-gold font-semibold">5 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Claim Structures</span>
+                  <span className="text-gold font-semibold">200 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Claim Hyperstructures</span>
+                  <span className="text-gold font-semibold">500 VP</span>
+                </div>
+                <span className="text-gold/30">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gold/50">Control Hyperstructures</span>
+                  <span className="text-gold font-semibold">1 VP/s</span>
+                </div>
+              </div>
+            </div>
             <div className="flex gap-2 justify-center">
               <RegisterPointsButton className="flex-1" />
-              <EndSeasonButton className="flex-1" />
+              {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
             </div>
           </>
         ) : (

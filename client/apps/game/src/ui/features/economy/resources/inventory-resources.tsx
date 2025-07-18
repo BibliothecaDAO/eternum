@@ -104,7 +104,7 @@ export const InventoryResources = ({
               isRelicActive ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
             }`}
             onClick={() => {
-              if (resourceIsRelic && entityId) {
+              if (resourceIsRelic && entityId && !isRelicActive) {
                 handleRelicClick(resource.resourceId, divideByPrecision(Number(resource.amount)));
               }
             }}
@@ -116,9 +116,7 @@ export const InventoryResources = ({
               color={isRelicActive ? "text-purple-300" : "text-green"}
               resourceId={resource.resourceId}
               amount={divideByPrecision(Number(resource.amount))}
-              className={`!p-1 ${
-                resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""
-              }`}
+              className={`!p-1 ${resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""}`}
             />
             {isCompatibleRelic && !isRelicActive && (
               <div className="absolute inset-0 pointer-events-none">

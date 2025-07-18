@@ -1,22 +1,19 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
-import { MintVillagePassModal, SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
+import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
-import { configManager } from "@bibliothecadao/eternum";
+import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { Castle, FileText, MessageSquare, Twitter as TwitterIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-
-interface OnboardingOverlayProps {
-  controller?: boolean;
-}
+import { getIsBlitz } from "../constants";
 
 interface StepContainerProps {
   children: React.ReactNode;
@@ -43,8 +40,6 @@ interface SeasonPassButtonProps {
 
 export const mintUrl =
   env.VITE_PUBLIC_CHAIN === "mainnet" ? "https://empire.realms.world/" : "https://dev.empire.realms.world/";
-
-const VILLAGE_PASS_END_TIMESTAMP = 1747038600;
 
 export const StepContainer = ({
   children,
@@ -103,7 +98,7 @@ export const StepContainer = ({
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-brown w-32 sm:w-24 lg:w-32 xl:w-48 mx-auto" />
+                  <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-96 mx-auto" />
                 )}
               </div>
             </div>
@@ -113,7 +108,7 @@ export const StepContainer = ({
                 <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg pt-2">
                   <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing <br /> to Eternum's{" "}
+                    By continuing you are agreeing <br /> to Realms's{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
@@ -130,11 +125,15 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
   <div className="relative min-h-screen w-full pointer-events-auto">
     <img
       className="absolute h-screen w-screen object-cover"
-      src={`/images/covers/${backgroundImage}.png`}
+      src={`/images/covers/blitz/${backgroundImage}.png`}
       alt="Cover"
     />
     <div className="absolute z-10 w-screen h-screen">
-      {/* <OnboardingOverlay controller={controller} /> */}
+      {controller && (
+        <div className="absolute top-4 right-4 z-50">
+          <Controller />
+        </div>
+      )}
       {children}
     </div>
   </div>
@@ -149,7 +148,7 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
     return <SeasonPassButton setSettleRealm={setSettleRealm} />;
   }, [setSettleRealm]);
 
-  const isBlitz = configManager.getBlitzConfig()?.blitz_mode_on;
+  const isBlitz = getIsBlitz();
 
   return (
     <>
@@ -216,14 +215,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     return realmsEntities.length > 0 || villageEntities.length > 0;
   }, [realmsEntities, villageEntities]);
 
-  const handleVillagePassClick = () => {
-    toggleModal(<MintVillagePassModal onClose={() => toggleModal(null)} />);
-  };
-
-  const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
-
   const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
-  const [showVillagePassButton, setShowVillagePassButton] = useState<boolean>(true);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -259,38 +251,8 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             Settling will being in <br /> <span className="text-gold font-bold">{settlingStartTimeRemaining}</span>
           </div>
         )}
-        {/* {seasonPassRealms.length > 0 && !settlingStartTimeRemaining && (
-          <Button
-            isPulsing={true}
-            size="lg"
-            onClick={handleClick}
-            className={`w-full !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-              !hasRealmsOrVillages ? "animate-pulse" : ""
-            }`}
-          >
-            <div className="flex items-center justify-start w-full">
-              <div className="w-7 h-7 bg-black/20 rounded-full mr-2 md:mr-3 flex justify-center items-center font-semibold">
-                {seasonPassRealms.length}
-              </div>
-              <span className="text-lg font-medium flex-grow text-center">Redeem Season Pass</span>
-            </div>
-          </Button>
-        )} */}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex w-full flex-wrap">
-            {/* <a className="w-full" target="_blank" rel="noopener noreferrer">
-              <Button
-                size="lg"
-                onClick={handleVillagePassClick}
-                className={`w-full !normal-case rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
-              >
-                <div className="flex items-center justify-start w-full gap-2">
-                  <Play className="!w-5 !h-5 fill-gold" />
-                  <span className="font-medium flex-grow text-center">Village Pass ($5)</span>
-                </div>
-              </Button>
-            </a> */}
-
             <a
               className="text-brown cursor-pointer w-full"
               href={`${mintUrl}trade`}
@@ -340,7 +302,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://x.com/RealmsEternum"
+            href="https://x.com/realms_gg"
             target="_blank"
             rel="noopener noreferrer"
           >

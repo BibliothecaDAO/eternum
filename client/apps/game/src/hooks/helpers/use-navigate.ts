@@ -39,6 +39,7 @@ export const useNavigateToMapView = () => {
 
 export const useSpectatorModeClick = (components: ClientComponents) => {
   const spectatorRealmEntityId = useUIStore((state) => state.spectatorRealmEntityId);
+  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const goToStructure = useGoToStructure();
 
   return () => {
@@ -46,7 +47,8 @@ export const useSpectatorModeClick = (components: ClientComponents) => {
       spectatorRealmEntityId &&
       getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(spectatorRealmEntityId)]));
     if (structure) {
-      goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+      goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), true);
+      setFollowArmyMoves(true);
     }
   };
 };

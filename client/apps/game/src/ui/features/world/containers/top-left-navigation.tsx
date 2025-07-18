@@ -3,12 +3,12 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -25,7 +25,20 @@ import { ClientComponents, ContractAddress, ID, TickIds } from "@bibliothecadao/
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import {
+  Clock,
+  Crown,
+  EyeIcon,
+  EyeOffIcon,
+  Landmark,
+  Pencil,
+  Pickaxe,
+  Search,
+  ShieldQuestion,
+  Sparkles,
+  Star,
+  X,
+} from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CapacityInfo } from "./capacity-info";
 
@@ -58,6 +71,9 @@ export const TopLeftNavigation = memo(() => {
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const followArmyMoves = useUIStore((state) => state.followArmyMoves);
+  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
+  const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -68,7 +84,7 @@ export const TopLeftNavigation = memo(() => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
     [structureEntityId, currentDefaultTick, account.address],
   );
 
@@ -83,7 +99,7 @@ export const TopLeftNavigation = memo(() => {
   const structuresWithFavorites = useMemo(() => {
     return structures
       .map((structure) => {
-        const { name, originalName } = getStructureName(structure.structure);
+        const { name, originalName } = getStructureName(structure.structure, getIsBlitz());
         return {
           ...structure,
           isFavorite: favorites.includes(structure.entityId),
@@ -242,7 +258,7 @@ export const TopLeftNavigation = memo(() => {
                       {searchTerm ? "No structures found" : "No structures available"}
                     </div>
                   ) : (
-                    filteredStructures.map((structure, index) => (
+                    filteredStructures.map((structure) => (
                       <div key={structure.entityId} className="flex flex-row items-center">
                         <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                           {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
@@ -279,22 +295,16 @@ export const TopLeftNavigation = memo(() => {
                       : selectedStructure.structureCategory
                         ? structureIcons[selectedStructure.structureCategory]
                         : structureIcons.None}
-                    <span>{selectedStructure.structure ? getStructureName(selectedStructure.structure).name : ""}</span>
+                    <span>
+                      {selectedStructure.structure
+                        ? getStructureName(selectedStructure.structure, getIsBlitz()).name
+                        : ""}
+                    </span>
                   </>
                 </h5>
               </div>
             )}
           </div>
-        </div>
-        <div className="flex storage-selector  py-1 flex-col md:flex-row gap-1  ">
-          <ViewOnMapIcon
-            className={`self-center ${!isMapView ? "opacity-50 pointer-events-none" : ""}`}
-            position={new Position(selectedStructurePosition)}
-          />
-          <CoordinateNavigationInput
-            position={new Position(selectedStructurePosition)}
-            className={!isMapView ? "opacity-50 pointer-events-none" : ""}
-          />
         </div>
 
         <CapacityInfo
@@ -302,8 +312,9 @@ export const TopLeftNavigation = memo(() => {
           className="storage-selector flex flex-col md:flex-row gap-1  self-center"
         />
         <div className="world-navigation-selector text-xs md:text-base flex md:flex-row gap-2 md:gap-2 justify-between p-1 md:px-4 relative ">
-          <div className="cycle-selector flex justify-center md:justify-start">
+          <div className="cycle-selector flex justify-center md:justify-start gap-2">
             <TickProgress />
+            <GameEndTimer />
           </div>
           <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 panel-wood-small px-4">
             <span
@@ -346,15 +357,43 @@ export const TopLeftNavigation = memo(() => {
             >
               World
             </span>
+            <div className="relative">
+              <button
+                className={`rounded-full p-2 transition-all duration-300 border-2 ${
+                  followArmyMoves
+                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
+                    : "bg-gold/10 hover:bg-gold/20 border-gold/30"
+                }`}
+                onClick={() => setFollowArmyMoves(!followArmyMoves)}
+              >
+                {followArmyMoves ? (
+                  <EyeIcon className="w-4 h-4 text-gold animate-pulse" />
+                ) : (
+                  <EyeOffIcon className="w-4 h-4 text-gold/60" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
         <SecondaryMenuItems />
 
+        {/* Camera Following Status Indicator */}
+        {isFollowingArmy && (
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-5 z-50">
+            <div className="bg-dark-wood text-gold px-4 py-2 rounded-lg shadow-lg border-2 border-gold animate-bounce">
+              <div className="flex items-center gap-2">
+                <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+                <span className="text-sm font-semibold text-gold">Following Army Movement</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {structureNameChange && selectedStructure.structure && (
           <NameChangePopup
-            currentName={getStructureName(structureNameChange).name}
-            originalName={getStructureName(structureNameChange).originalName}
+            currentName={getStructureName(structureNameChange, getIsBlitz()).name}
+            originalName={getStructureName(structureNameChange, getIsBlitz()).originalName}
             onConfirm={(newName) => handleNameChange(structureNameChange.entity_id, newName)}
             onCancel={() => setStructureNameChange(null)}
             onDelete={() => handleNameDelete(structureNameChange.entity_id)}
@@ -468,7 +507,7 @@ const TickProgress = memo(() => {
     () => (
       <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
         <div>
-          A day in Eternum is <span className="font-bold">{formatTime(cycleTime)}</span>
+          A day in Realms is <span className="font-bold">{formatTime(cycleTime)}</span>
         </div>
         <div>
           Time left until next cycle:{" "}
@@ -501,6 +540,75 @@ const TickProgress = memo(() => {
         <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
       </CircularProgress>
       <span className="text-sm">{progress.toFixed()}%</span>
+    </div>
+  );
+});
+
+const GameEndTimer = memo(() => {
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const { currentBlockTimestamp } = getBlockTimestamp();
+
+  const [secondsRemaining, setSecondsRemaining] = useState(gameEndAt ? gameEndAt - currentBlockTimestamp : 0);
+
+  // Update countdown every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate time components
+  const { hours, minutes, seconds } = useMemo(() => {
+    const hrs = Math.floor(secondsRemaining / 3600);
+    const mins = Math.floor((secondsRemaining % 3600) / 60);
+    const secs = secondsRemaining % 60;
+    return { hours: hrs, minutes: mins, seconds: secs };
+  }, [secondsRemaining]);
+
+  // Format time display
+  const timeDisplay = useMemo(() => {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+  }, [hours, minutes, seconds]);
+
+  // Memoize tooltip content
+  const tooltipContent = useMemo(
+    () => (
+      <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
+        <div className="font-bold">Game Ends In</div>
+        <div>
+          Time remaining: <span className="font-bold">{timeDisplay}</span>
+        </div>
+      </div>
+    ),
+    [timeDisplay],
+  );
+
+  // Handle tooltip visibility
+  const handleMouseEnter = useCallback(() => {
+    setTooltip({
+      position: "bottom",
+      content: tooltipContent,
+    });
+  }, [setTooltip, tooltipContent]);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+  }, [setTooltip]);
+
+  return (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="self-center text-center px-2 py-1 flex gap-1 text-xl items-center border-l border-gold/20"
+    >
+      <Clock className="w-4 h-4 text-gold" />
+      <span className="text-sm text-gold font-semibold">{timeDisplay}</span>
     </div>
   );
 });

@@ -425,6 +425,7 @@ export const getQuestsFromTorii = async (client: ToriiClient, components: Compon
   return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
 };
 
+// todo: check relic effect active
 export const getActiveRelicEffectsFromTorii = async (
   client: ToriiClient,
   components: Component<Schema, Metadata, undefined>[],

@@ -1,4 +1,5 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { getIsBlitz } from "@/ui/constants";
 import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceCost } from "@/ui/design-system/molecules";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -9,7 +10,7 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { getResourceTiers, ID, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const SelectResources = ({
@@ -36,7 +37,7 @@ export const SelectResources = ({
   }, [entity_id, toEntityId, dojo.setup.components]);
 
   const orderedResources = useMemo(() => {
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(getResourceTiers(getIsBlitz()))
       .flat()
       .map((resourceId) => ({
         id: resourceId,

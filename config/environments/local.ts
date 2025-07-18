@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { BuildingType, type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -73,14 +73,14 @@ export const LocalEternumGlobalConfig: Config = {
   },
   startingResources: [
     ...CommonEternumGlobalConfig.startingResources,
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.Essence, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
     // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
   ],
   villageStartingResources: [
     ...CommonEternumGlobalConfig.villageStartingResources,
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    // { resource: ResourcesIds.Essence, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic1, amount: 1000 },
     // { resource: ResourcesIds.StaminaRelic2, amount: 1000 },
     // { resource: ResourcesIds.DamageRelic1, amount: 1000 },
@@ -94,7 +94,7 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
+    durationSeconds: 60 * 60 * 24 * 30, // 1 month
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
@@ -110,27 +110,27 @@ export const LocalEternumGlobalConfig: Config = {
     [RealmLevels.Empire]: [
       { resource: ResourcesIds.Labor, amount: 3 },
       { resource: ResourcesIds.Wheat, amount: 3 },
-      { resource: ResourcesIds.Wood, amount: 3},
+      { resource: ResourcesIds.Wood, amount: 3 },
     ],
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    complexBuildingCosts: {
-      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
-      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
-    },
-    buildingPopulation: {
-      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
-      [BuildingType.ResourceWheat]: 0,
-    },
+    // complexBuildingCosts: {
+    //   ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
+    //   [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    // },
+    // buildingPopulation: {
+    //   ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+    //   [BuildingType.ResourceWheat]: 0,
+    // },
   },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 1,
-      creation_period_seconds: 60 * 2,
+      registration_period_seconds: 60 * 5,
+      creation_period_seconds: 60 * 10,
     },
   },
 };

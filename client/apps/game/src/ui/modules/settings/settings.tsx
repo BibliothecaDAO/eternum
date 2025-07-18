@@ -11,7 +11,7 @@ import { ToriiSetting } from "@/types";
 import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { settings, OSWindow } from "@/ui/features/world";
+import { OSWindow, settings } from "@/ui/features/world";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { getAddressName } from "@bibliothecadao/eternum";
@@ -214,7 +214,7 @@ export const SettingsWindow = () => {
                 <Button size="xs" onClick={() => setDownload(true)}>
                   Download
                 </Button>{" "}
-                Eternum Loader for optimal loading times.
+                Realms Loader for optimal loading times.
               </div>
             )}
             <div className="flex justify-between items-center space-x-2 text-xs cursor-pointer text-gray-gold">
@@ -228,7 +228,7 @@ export const SettingsWindow = () => {
                   className="flex items-center space-x-2"
                 >
                   <Checkbox enabled={toriiSetting === ToriiSetting.Local} />
-                  <div>Eternum Loader</div>
+                  <div>Realms Loader</div>
                 </div>
                 <div
                   onClick={() => {

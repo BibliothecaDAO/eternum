@@ -450,26 +450,29 @@ export class ClientConfigManager {
   }
 
   getExploreReward() {
-    return this.getValueOrDefault(() => {
-      const exploreConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.map_config;
+    return this.getValueOrDefault(
+      () => {
+        const exploreConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.map_config;
 
-      const blitzModeOn = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.blitz_mode_on;
+        const blitzModeOn = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.blitz_mode_on;
 
-      let reward_resource = ResourcesIds.AncientFragment;
-      if (blitzModeOn) {
-        reward_resource = ResourcesIds.Essence;
-      }
-      let resource_amount =  Number(exploreConfig?.reward_resource_amount ?? 0);
-      let resource_weight = getTotalResourceWeightKg([{resourceId: reward_resource, amount: resource_amount}]);
+        let reward_resource = ResourcesIds.AncientFragment;
+        if (blitzModeOn) {
+          reward_resource = ResourcesIds.Essence;
+        }
+        let resource_amount = Number(exploreConfig?.reward_resource_amount ?? 0);
+        let resource_weight = getTotalResourceWeightKg([{ resourceId: reward_resource, amount: resource_amount }]);
 
-      return {reward_resource, resource_amount, resource_weight};
-    }, {reward_resource: ResourcesIds.AncientFragment, resource_amount: 0, resource_weight: 0});
+        return { reward_resource, resource_amount, resource_weight };
+      },
+      { reward_resource: ResourcesIds.AncientFragment, resource_amount: 0, resource_weight: 0 },
+    );
   }
 
   getTroopConfig() {

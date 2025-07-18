@@ -2,15 +2,13 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { HintModal } from "@/ui/features/progression";
-import { rewards, settings } from "@/ui/features/world";
+import { leaderboard, rewards, settings } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
-import { social } from "@/ui/features/world";
 import { useCallback, useMemo } from "react";
 
 export const SecondaryMenuItems = () => {
@@ -48,10 +46,10 @@ export const SecondaryMenuItems = () => {
             className="social-selector border-none"
             tooltipLocation="bottom"
             image={BuildingThumbs.guild}
-            label={social}
-            active={isPopupOpen(social)}
+            label={leaderboard}
+            active={isPopupOpen(leaderboard)}
             size="md"
-            onClick={() => togglePopup(social)}
+            onClick={() => togglePopup(leaderboard)}
           />
         ),
       },
@@ -88,21 +86,21 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={handleTrophyClick}
         />
-        <CircleButton
+        {/* <CircleButton
           className="hints-selector border-none"
           image={BuildingThumbs.question}
           label={"Lordpedia"}
           size="md"
           onClick={() => toggleModal(<HintModal />)}
-        />
-        <CircleButton
+        /> */}
+        {/* <CircleButton
           className="discord-selector border-none"
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
           size="md"
           onClick={() => window.open("https://discord.gg/realmsworld")}
-        />
+        /> */}
         <CircleButton
           className="settings-selector border-none"
           tooltipLocation="bottom"

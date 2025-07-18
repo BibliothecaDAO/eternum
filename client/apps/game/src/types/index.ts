@@ -15,7 +15,7 @@ export enum LeftView {
   MilitaryView,
   EntityView,
   ConstructionView,
-  WorldStructuresView,
+  HyperstructuresView,
   ResourceArrivals,
   ResourceTable,
   RelicsView,

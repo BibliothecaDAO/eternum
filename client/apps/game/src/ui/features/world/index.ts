@@ -7,7 +7,6 @@
 export { CombatSimulationPanel } from "./components/battles/combat-simulation-panel";
 
 // Entities - Exports used externally
-export { ActiveRelicEffects } from "./components/entities/active-relic-effects";
 export { ArmyEntityDetail } from "./components/entities/army-entity-detail";
 export { QuestEntityDetail } from "./components/entities/quest-entity-detail";
 export { StructureEntityDetail } from "./components/entities/structure-entity-detail";
@@ -16,8 +15,9 @@ export { StructureEntityDetail } from "./components/entities/structure-entity-de
 export { CapacityInfo } from "./containers/capacity-info";
 export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
-// World Structures - Exports used externally
-export { WorldStructuresMenu } from "./components/world-structures-menu";
+// Hyperstructures - Exports used externally
+export { BlitzHyperstructuresMenu } from "./components/hyperstructures/blitz-hyperstructures-menu";
+export { EternumHyperstructuresMenu } from "./components/hyperstructures/eternum-hyperstructures-menu";
 
 // Navigation Config - Exports used externally
 export * from "./components/config";

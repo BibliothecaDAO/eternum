@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import "../../index.css";
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
-    "Syncing Eternum...",
+    "Syncing Realms...",
     "Gathering Dragonhide...",
     "Stepping the world...",
     "Painting the Sky...",
@@ -77,7 +77,7 @@ export function CountdownTimer({ backgroundImage }: { backgroundImage: string })
     <div className="relative min-h-screen w-full pointer-events-auto">
       <img
         className="absolute h-screen w-screen object-cover"
-        src={`/images/covers/${backgroundImage}.png`}
+        src={`/images/covers/blitz/${backgroundImage}.png`}
         alt="Cover"
       />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
@@ -88,7 +88,7 @@ export function CountdownTimer({ backgroundImage }: { backgroundImage: string })
               src="/images/logos/eternum-loader.png"
               className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
             />
-            <h1 className="tracking-wider">Eternum is Launching in</h1>
+            <h1 className="tracking-wider">Realms is Launching in</h1>
             <div className="flex gap-4 text-center mt-4 mx-auto">
               <TimeUnit value={days} label="Days" />
               <TimeUnit value={hours} label="Hours" />

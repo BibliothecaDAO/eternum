@@ -2,12 +2,12 @@
 // Re-export all shared, cross-feature components
 
 // Core UI Components
+export { GameWinnerMessage } from "./components/game-winner-message";
 export { ModalContainer } from "./components/modal-container";
 export { NameChangePopup } from "./components/name-change-popup";
 export { NotLoggedInMessage } from "./components/not-logged-in-message";
 export { PWAUpdatePopup } from "./components/pwa-update-popup";
-export { SeasonWinnerMessage } from "./components/season-winner-message";
-export { SeasonEndCountdown } from "./components/SeasonEndCountdown";
+export { GameEndCountdown as SeasonEndCountdown } from "./components/SeasonEndCountdown";
 export { Toaster } from "./components/toaster";
 export { ToggleComponent } from "./components/toggle-component";
 export { TransactionNotification } from "./components/tx-emit";
