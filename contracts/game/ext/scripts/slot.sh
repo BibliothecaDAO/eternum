@@ -65,9 +65,8 @@ source "$(dirname "$0")/colors.sh"
 # CONFIGURATION
 #==============================================================================
 
-KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
-KATANA_BLOCK_TIME=2500 # 2.5 seconds
-PROJECT_FILE=".slot-project"
+KATANA_MAX_INVOKE_STEPS=10000000 # 10,000,000
+KATANA_BLOCK_TIME=1000 # 1 seconds
 SN_NETWORK="slot"
 # Default RPC URL will now be set based on network selection
 RPC_URL=""
@@ -314,8 +313,7 @@ EOF
 # Update deployment section to include reminders
 if [ "$COMMAND" = "katana" ]; then
     echo -e "${YELLOW}► Setting up Katana network...${NC}"
-    slot deployments create -t epic $PROJECT_NAME katana \
-        --version v1.2.1 \
+    slot deployments create --team realms-eternum $PROJECT_NAME katana \
         --invoke-max-steps "$KATANA_MAX_INVOKE_STEPS" \
         --dev --dev.no-fee
 
@@ -327,8 +325,8 @@ fi
 
 if [ "$COMMAND" = "torii" ]; then
     echo -e "\n${YELLOW}► Setting up Torii indexer...${NC}"
-    slot deployments create -t epic $PROJECT_NAME torii \
-        --version v1.2.1 \
+    slot deployments create --team realms-eternum $PROJECT_NAME torii \
+        --version v1.6.0-alpha.2 \
         --world $WORLD \
         --rpc $RPC_URL \
         --indexing.pending \

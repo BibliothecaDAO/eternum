@@ -2,7 +2,7 @@
 
 rpc = "http://127.0.0.1:5050"
 
-world_address = "0x06a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561"
+world_address = "0x073902d79676eac8155fc13fb12e327dc03ecd5a8ca0715fe5deb03b56ad6fb5"
 
 db_dir = "torii-local"
 

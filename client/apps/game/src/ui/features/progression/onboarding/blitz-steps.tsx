@@ -7,8 +7,10 @@ import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
+import { ControllerConnector } from "@cartridge/connector";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
+import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { Clock, Users } from "lucide-react";
@@ -309,7 +311,7 @@ const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
 // Main Blitz onboarding component
 export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
-
+  const [addressNameFelt, setAddressNameFelt] = useState<string>("");
   const {
     setup,
     setup: {
@@ -318,6 +320,7 @@ export const BlitzOnboarding = () => {
       systemCalls: { blitz_realm_register, blitz_realm_create },
     },
   } = useDojo();
+  const { connector } = useAccount();
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
 
@@ -359,13 +362,29 @@ export const BlitzOnboarding = () => {
     return () => clearInterval(interval);
   }, [blitzConfig]);
 
+
+  useEffect(() => {
+    const getUsername = async () => {
+      let username;
+      try {
+        username = await (connector as unknown as ControllerConnector)?.username();
+        if (username) {
+          setAddressNameFelt(cairoShortStringToFelt(username.slice(0, 31)));
+        }
+      } catch (error) {
+        console.log("No username found in controller account");
+      }
+    };
+    getUsername();
+  }, [connector]);
+
   const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
   const setShowToS = useUIStore((state) => state.setShowToS);
 
   // Registration handler
   const handleRegister = async () => {
     if (!account?.address) return;
-    await blitz_realm_register({ owner: account.address, signer: account });
+    await blitz_realm_register({ owner: account.address, signer: account, name: addressNameFelt });
   };
 
   // Settlement handler
