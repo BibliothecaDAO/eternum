@@ -320,7 +320,6 @@ export const BlitzOnboarding = () => {
       systemCalls: { blitz_realm_register, blitz_realm_create },
     },
   } = useDojo();
-  const { connector } = useAccount();
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
 
