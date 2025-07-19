@@ -22,7 +22,7 @@ export const Transfers = () => {
         <h4>Donkeys</h4>
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
-            Donkeys are integral to Eternum's economy, serving as the primary means of resource transportation. They
+            Donkeys are integral to Realms's economy, serving as the primary means of resource transportation. They
             possess a finite carrying capacity, with each resource type assigned a specific weight.
           </p>
           <p className="leading-relaxed">

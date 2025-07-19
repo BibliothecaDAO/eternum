@@ -409,7 +409,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         // use exploration reward system to get a random resource type and amount
         let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
-            ref world, map_config, seed.clone(),
+            ref world, Option::None, map_config, seed.clone(),
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward

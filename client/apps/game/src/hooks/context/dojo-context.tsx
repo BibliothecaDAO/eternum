@@ -2,6 +2,7 @@ import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
@@ -48,7 +49,7 @@ const useRpcProvider = () => {
   return useMemo(
     () =>
       new RpcProvider({
-        nodeUrl: env.VITE_PUBLIC_NODE_URL || "http://localhost:5050",
+        nodeUrl: env.VITE_PUBLIC_NODE_URL,
       }),
     [],
   );
@@ -206,14 +207,21 @@ const DojoContextProvider = ({
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
 
-                  <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
-                    <Button className="w-full" size="lg">
-                      <div className="flex items-center justify-start w-full">
-                        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
-                        <span className="flex-grow text-center">Mint Season Pass</span>
-                      </div>
-                    </Button>
-                  </a>
+                  {!getIsBlitz() && (
+                    <a
+                      className="cursor-pointer mt-auto w-full"
+                      href={mintUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button className="w-full" size="lg">
+                        <div className="flex items-center justify-start w-full">
+                          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                          <span className="flex-grow text-center">Mint Season Pass</span>
+                        </div>
+                      </Button>
+                    </a>
+                  )}
                 </>
               )}
             </div>
@@ -231,15 +239,6 @@ const DojoContextProvider = ({
   // Once account is set, render the children
   return (
     <>
-      {accountName && showBlankOverlay && (
-        <div
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-brown/80 text-gold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500 ${
-            showWelcome ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          Welcome, {accountName}!
-        </div>
-      )}
       <DojoContext.Provider
         value={{
           ...value,

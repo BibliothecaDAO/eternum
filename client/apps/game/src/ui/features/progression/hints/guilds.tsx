@@ -10,7 +10,7 @@ export const Guilds = () => {
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
             Tribes are groups of players that work together to achieve common goals. Tribes can be created by any player
-            and can have any number of members. Being part of a tribe is essential to success in Eternum.
+            and can have any number of members. Being part of a tribe is essential to success in Realms.
           </p>
           <p className="leading-relaxed">
             A tribe can be either public or private. Anyone can join a public tribe, but only the owner of a private

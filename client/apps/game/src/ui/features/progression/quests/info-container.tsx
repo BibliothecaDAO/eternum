@@ -77,7 +77,7 @@ export const InfoContainer = ({ questTileEntity }: { questTileEntity: QuestTileD
 
             const settingName = settingsMetadataForGame
               ?.find((setting) => setting.settings_id === settingsId)
-              ?.name.split("Eternum Quest -")[1];
+              ?.name.split("Realms Quest -")[1];
 
             return (
               <div

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { configManager, getStructureName, unpackValue } from "@bibliothecadao/eternum";
@@ -73,7 +74,7 @@ export const RealmProduction = () => {
       <div className="p-5 grid grid-cols-5 gap-4">
         {filteredRealms.map((realm, index) => (
           <div key={index} className="mb-5 panel-wood p-3 hover:opacity-70" onClick={() => handleRealmClick(realm)}>
-            <h5>{getStructureName(realm).name}</h5>
+            <h5>{getStructureName(realm, getIsBlitz()).name}</h5>
 
             <div className="flex flex-row flex-wrap">
               {realm.resourcesProduced.map((resourceId) => (

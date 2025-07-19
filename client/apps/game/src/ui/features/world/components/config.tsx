@@ -1,14 +1,14 @@
 import { HintSection } from "@/ui/features/progression";
 
 type OSWindows =
-  | "World Structures"
+  | "Hyperstructures"
   | "Settings"
   | "Military"
   | "Trade"
   | "Construction"
   | "Assistant"
   | "Quests"
-  | "Social"
+  | "Leaderboard"
   | "BattleSimulation"
   | "Rewards";
 
@@ -29,11 +29,11 @@ export interface ExpandableOSInterface extends OSInterface {
   isExpanded?: boolean;
 }
 
-export const worldStructures: OSWindows = "World Structures";
+export const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const military: OSWindows = "Military";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
-export const social: OSWindows = "Social";
+export const leaderboard: OSWindows = "Leaderboard";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";

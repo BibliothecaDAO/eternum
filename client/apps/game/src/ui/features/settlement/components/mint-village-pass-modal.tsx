@@ -424,7 +424,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     <h5 className="text-xl font-semibold text-gold mb-3">Information</h5>
                     <p className="text-lg text-gray-300 leading-relaxed mt-4">
                       <span className="font-semibold text-xl text-gold">Villages</span> offer a unique way to expand
-                      your presence in Eternum. They are smaller settlements, perfect for a more casual playstyle, and
+                      your presence in Realms. They are smaller settlements, perfect for a more casual playstyle, and
                       cannot be captured by others.
                     </p>
                     <ul className="list-disc list-inside ml-4 space-y-1  mb-4">

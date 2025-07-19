@@ -3,6 +3,7 @@ import {
   BuildingType,
   HexPosition,
   ID,
+  RelicEffect,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -46,7 +47,7 @@ export type BuildingSystemUpdate = {
   paused: boolean;
 };
 
-export type ExplorerRewardSystemUpdate = {
+export type ExplorerMoveSystemUpdate = {
   explorerId: ID;
   resourceId: ResourcesIds | 0;
   amount: number;
@@ -60,4 +61,16 @@ export type QuestSystemUpdate = {
   entityId: ID;
   occupierId: ID;
   hexCoords: HexPosition;
+};
+
+export type ChestSystemUpdate = {
+  occupierId: ID;
+  hexCoords: HexPosition;
+};
+
+export type RelicEffectSystemUpdate = {
+  entityId: ID;
+  relicResourceId: ResourcesIds;
+  isActive: boolean;
+  effect: RelicEffect;
 };

@@ -3,7 +3,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { NotLoggedInMessage, SeasonWinnerMessage } from "@/ui/shared";
+import { GameWinnerMessage, NotLoggedInMessage, SeasonEndCountdown } from "@/ui/shared";
 import { Leva } from "leva";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useEffect, useMemo } from "react";
@@ -133,9 +133,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
     <>
       <StoreManagers />
+      <SeasonEndCountdown />
       <StructureSynchronizerManager />
       <NotLoggedInMessage />
-      <SeasonWinnerMessage />
+      <GameWinnerMessage />
 
       {/* Main world layer */}
       <div

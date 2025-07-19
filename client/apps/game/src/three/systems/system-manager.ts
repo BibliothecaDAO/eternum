@@ -1,7 +1,8 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { type SetupResult } from "@bibliothecadao/dojo";
-import { divideByPrecision, getHyperstructureProgress } from "@bibliothecadao/eternum";
+import { divideByPrecision, getHyperstructureProgress, ResourceManager } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
   BiomeType,
@@ -18,7 +19,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
-  ExplorerRewardSystemUpdate,
+  ExplorerMoveSystemUpdate,
+  type RelicEffectSystemUpdate,
   StructureProgress,
   type StructureSystemUpdate,
   type TileSystemUpdate,
@@ -482,9 +484,9 @@ export class SystemManager {
     };
   }
 
-  public get ExplorerReward() {
+  public get ExplorerMove() {
     return {
-      onUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+      onUpdate: (callback: (value: ExplorerMoveSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.events.ExplorerMoveEvent,
           callback,
@@ -493,7 +495,7 @@ export class SystemManager {
               const [currentState, _prevState] = update.value;
               if (!currentState) return undefined;
 
-              const result: ExplorerRewardSystemUpdate = {
+              const result: ExplorerMoveSystemUpdate = {
                 explorerId: currentState.explorer_id,
                 resourceId: currentState.reward_resource_type,
                 amount: divideByPrecision(Number(currentState.reward_resource_amount)),
@@ -502,6 +504,56 @@ export class SystemManager {
             }
           },
           true,
+        );
+      },
+    };
+  }
+
+  public get Chest() {
+    return {
+      onUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const chest = currentState.occupier_type === TileOccupier.Chest;
+
+              if (!chest) return;
+
+              return {
+                entityId: update.entity,
+                occupierId: currentState?.occupier_id,
+                hexCoords: { col: currentState.col, row: currentState.row },
+              };
+            }
+          },
+          true,
+        );
+      },
+      onDeadChest: (callback: (value: ID) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          async (update: any): Promise<ID | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, prevState] = update.value;
+
+              // Check if the previous state was a chest and current state is not
+              if (
+                prevState &&
+                prevState.occupier_type === TileOccupier.Chest &&
+                (!currentState || currentState.occupier_type !== TileOccupier.Chest)
+              ) {
+                return prevState.occupier_id;
+              }
+            }
+          },
+          false,
         );
       },
     };
@@ -525,5 +577,72 @@ export class SystemManager {
     }
 
     return StructureProgress.STAGE_1;
+  }
+
+  public get RelicEffect() {
+    return {
+      onUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.RelicEffect,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.RelicEffect)) {
+              const [currentState, prevState] = update.value;
+
+              console.log("RelicEffectSystemManager: update received", { currentState, prevState });
+
+              // at least one of the states must have an entity id
+              const entityId = currentState?.entity_id || prevState?.entity_id || 0;
+              const relicResourceId = currentState?.effect_resource_id || prevState?.effect_resource_id || 0;
+
+              console.log("RelicEffectSystemManager: entityId and relicResourceId", { entityId, relicResourceId });
+
+              // Check if we have a current state
+              if (currentState) {
+                const { currentArmiesTick } = getBlockTimestamp();
+                const effect = {
+                  start_tick: currentState.effect_start_tick,
+                  end_tick: currentState.effect_end_tick,
+                  usage_left: currentState.effect_usage_left,
+                };
+                const isActive = ResourceManager.isRelicActive(effect, currentArmiesTick);
+
+                console.log("RelicEffectSystemManager: currentState exists, isActive", {
+                  isActive,
+                  currentArmiesTick,
+                  relicResourceId,
+                  effect,
+                });
+
+                return {
+                  entityId,
+                  relicResourceId,
+                  isActive,
+                  effect,
+                };
+              } else if (prevState && !currentState) {
+                // Relic effect was removed
+                console.log("RelicEffectSystemManager: Relic effect removed", { entityId, relicResourceId });
+                return {
+                  entityId,
+                  relicResourceId,
+                  isActive: false,
+                  effect: {
+                    start_tick: 0,
+                    end_tick: 0,
+                    usage_left: 0,
+                  },
+                };
+              } else {
+                console.log("RelicEffectSystemManager: No relevant state found", { currentState, prevState });
+              }
+            } else {
+              console.log("RelicEffectSystemManager: update is not a component update", { update });
+            }
+          },
+          true,
+        );
+      },
+    };
   }
 }

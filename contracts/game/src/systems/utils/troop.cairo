@@ -4,15 +4,18 @@ use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
-use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{
+    CapacityConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig,
+};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
+use s1_eternum::models::relic::{RelicEffect, RelicEffectStoreImpl};
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -29,6 +32,7 @@ use s1_eternum::models::troop::{
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::math::PercentageValueImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 
@@ -41,12 +45,13 @@ pub impl iGuardImpl of iGuardTrait {
         ref structure_base: StructureBase,
         ref guards: GuardTroops,
         ref troops: Troops,
+        stamina_relic_effect: Option<RelicEffect>,
         slot: GuardSlot,
         category: TroopType,
         tier: TroopTier,
         troops_destroyed_tick: u32,
         amount: u128,
-        tick: TickConfig,
+        tick: TickInterval,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
     ) {
@@ -77,7 +82,7 @@ pub impl iGuardImpl of iGuardTrait {
         }
 
         // update stamina
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(stamina_relic_effect, troops.category, troops.tier, troop_stamina_config, current_tick);
         // force stamina to be 0 so it isn't gamed
         // through the refill function and guard deletion
         if troops.count.is_zero() {
@@ -189,7 +194,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
         };
         let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(Option::None, troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
         let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
@@ -233,6 +238,9 @@ pub impl iExplorerImpl of iExplorerTrait {
         mut biomes: Array<Biome>,
         current_tick: u64,
     ) {
+        let explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+            ref world, explorer.explorer_id, StaminaImpl::relic_effect_id(), current_tick,
+        );
         loop {
             match biomes.pop_front() {
                 Option::Some(biome) => {
@@ -255,6 +263,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                         .troops
                         .stamina
                         .spend(
+                            explorer_stamina_relic_effect,
                             explorer.troops.category,
                             explorer.troops.tier,
                             troop_stamina_config,
@@ -376,14 +385,34 @@ pub impl iExplorerImpl of iExplorerTrait {
         Self::_explorer_delete(ref world, ref explorer);
     }
 
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
+    fn exploration_reward(
+        ref world: WorldStorage,
+        exploration_multiplier_relic_effect: Option<RelicEffect>,
+        config: MapConfig,
+        vrf_seed: u256,
+    ) -> (u8, u128) {
+        // let (resource_types, resources_probs) = split_resources_and_probs();
+        // let reward_resource_id: u8 = *random::choices(
+        //     resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
+        // )
+        //     .at(0);
+        // let mut exploration_reward_resource_amount: u128 = config.reward_resource_amount.into();
 
-        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
+        // todo: add game mode check
+        let reward_resource_id: u8 = ResourceTypes::ESSENCE;
+        let mut exploration_reward_resource_amount: u128 = 1
+            + random::random(vrf_seed, 98139, config.reward_resource_amount.into()).try_into().unwrap();
+
+        match exploration_multiplier_relic_effect {
+            Option::Some(relic_effect) => {
+                exploration_reward_resource_amount +=
+                    (exploration_reward_resource_amount * relic_effect.effect_rate.into())
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        };
+
+        return (reward_resource_id, exploration_reward_resource_amount * RESOURCE_PRECISION);
     }
 
     fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
@@ -494,10 +523,14 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
-        tick: TickConfig,
+        tick: TickInterval,
     ) {
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
+        let current_tick: u64 = tick.current().try_into().unwrap();
+        let guard_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+            ref world, structure_id, StaminaImpl::relic_effect_id(), current_tick,
+        );
         let mut salt: u128 = 1;
 
         loop {
@@ -519,6 +552,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         ref structure_base,
                         ref structure_guards,
                         ref troops,
+                        guard_stamina_relic_effect,
                         *slot,
                         *category,
                         *tier,

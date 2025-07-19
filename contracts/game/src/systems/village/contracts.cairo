@@ -114,6 +114,7 @@ pub mod village_systems {
                 village_resources,
                 villiage_metadata,
                 TileOccupier::Village,
+                false,
             );
 
             // grant starting resources

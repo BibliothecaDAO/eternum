@@ -11,6 +11,22 @@ export enum StructureType {
   Village = 5,
 }
 
+export const EternumStructureTypeToNameMapping: Record<StructureType, string> = {
+  [StructureType.Realm]: "Realm",
+  [StructureType.Hyperstructure]: "Hyperstructure",
+  [StructureType.Bank]: "Bank",
+  [StructureType.FragmentMine]: "Fragment Mine",
+  [StructureType.Village]: "Village",
+};
+
+export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
+  [StructureType.Realm]: "Realm",
+  [StructureType.Hyperstructure]: "Hyperstructure",
+  [StructureType.Bank]: "Bank",
+  [StructureType.FragmentMine]: "Essence Rift",
+  [StructureType.Village]: "Camp",
+};
+
 export enum BuildingType {
   None = 0,
   // Non Resource Buildings

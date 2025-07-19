@@ -1,6 +1,7 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
@@ -60,7 +61,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "FragmentMine" &&
       key !== "None" &&
       key !== "Settlement" &&
-      key !== "Hyperstructure",
+      key !== "Hyperstructure" &&
+      (getIsBlitz() ? key !== "ResourceFish" : true),
   );
 
   const checkBalance = (cost: any) =>
@@ -99,7 +101,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-              if (!buildingCosts) return;
+              if (!buildingCosts || buildingCosts.length === 0) return;
 
               const hasBalance = checkBalance(buildingCosts);
 

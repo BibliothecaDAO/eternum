@@ -58,7 +58,7 @@ export const TopNavigationView = ({
           className="gap-2 hidden sm:flex"
         >
           <PlayIcon className="!w-4 h-2" />
-          {chain === "sepolia" ? "Play Eternum (Sepolia)" : "Play Eternum (Mainnet)"}
+          {chain === "sepolia" ? "Play Realms (Sepolia)" : "Play Realms (Mainnet)"}
         </Button>
 
         <Button

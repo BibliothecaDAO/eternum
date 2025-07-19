@@ -43,6 +43,7 @@ pub impl iRealmImpl of iRealmTrait {
         level: u8,
         wonder: u8,
         coord: Coord,
+        explore_village_coord: bool,
     ) -> ID {
         // create structure
         let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
@@ -77,6 +78,7 @@ pub impl iRealmImpl of iRealmTrait {
                 realm_id: realm_id.try_into().unwrap(), order, has_wonder, villages_count: 0, village_realm: 0,
             },
             tile_occupier.into(),
+            explore_village_coord,
         );
 
         // grant starting resources

@@ -2,10 +2,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { ChatModule } from "@/ui/features/social";
-import { construction, military, trade, worldStructures } from "@/ui/features/world";
+import { construction, hyperstructures, military, trade } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -22,9 +23,19 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
-const WorldStructuresMenu = lazy(() =>
+const BlitzHyperstructuresMenu = lazy(() =>
   import("@/ui/features/world").then((module) => ({
-    default: module.WorldStructuresMenu,
+    default: module.BlitzHyperstructuresMenu,
+  })),
+);
+const EternumHyperstructuresMenu = lazy(() =>
+  import("@/ui/features/world").then((module) => ({
+    default: module.EternumHyperstructuresMenu,
+  })),
+);
+const RelicsModule = lazy(() =>
+  import("@/ui/features/relics").then((module) => ({
+    default: module.RelicsModule,
   })),
 );
 
@@ -50,7 +61,7 @@ export const LeftNavigationModule = memo(() => {
   const { isMapView } = useQuery();
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
     [structureEntityId, account.address, components],
   );
 
@@ -67,6 +78,9 @@ export const LeftNavigationModule = memo(() => {
       switch (event.key.toLowerCase()) {
         case "e":
           setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView);
+          break;
+        case "r":
+          setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView);
           break;
       }
     };
@@ -157,17 +171,17 @@ export const LeftNavigationModule = memo(() => {
         ),
       },
       {
-        name: MenuEnum.worldStructures,
+        name: MenuEnum.hyperstructures,
         button: (
           <CircleButton
             disabled={disableButtons}
-            image={BuildingThumbs.worldStructures}
+            image={BuildingThumbs.hyperstructures}
             tooltipLocation="top"
-            label={worldStructures}
-            active={view === LeftView.WorldStructuresView}
+            label={hyperstructures}
+            active={view === LeftView.HyperstructuresView}
             size={"xl"}
             onClick={() =>
-              setView(view === LeftView.WorldStructuresView ? LeftView.None : LeftView.WorldStructuresView)
+              setView(view === LeftView.HyperstructuresView ? LeftView.None : LeftView.HyperstructuresView)
             }
           />
         ),
@@ -184,6 +198,20 @@ export const LeftNavigationModule = memo(() => {
             active={isPopupOpen(trade)}
             size={"xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.relics,
+        button: (
+          <CircleButton
+            disabled={disableButtons}
+            image={BuildingThumbs.relics}
+            tooltipLocation="top"
+            label="Relics"
+            active={view === LeftView.RelicsView}
+            size={"xl"}
+            onClick={() => setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView)}
           />
         ),
       },
@@ -207,9 +235,10 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.entityDetails,
         MenuEnum.military,
         ...(isMapView ? [] : [MenuEnum.construction]),
-        MenuEnum.worldStructures,
+        MenuEnum.hyperstructures,
         MenuEnum.resourceArrivals,
-        MenuEnum.trade,
+        MenuEnum.relics,
+        ...(getIsBlitz() ? [] : [MenuEnum.trade]),
       ].includes(item.name as MenuEnum),
     );
 
@@ -232,6 +261,8 @@ export const LeftNavigationModule = memo(() => {
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
+  const isBlitz = getIsBlitz();
+
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
@@ -249,8 +280,10 @@ export const LeftNavigationModule = memo(() => {
               {!isMapView && view === LeftView.ConstructionView && (
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
-              {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
+              {view === LeftView.HyperstructuresView &&
+                (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
+              {view === LeftView.RelicsView && <RelicsModule />}
             </Suspense>
           </BaseContainer>
           {ConnectedAccount && (

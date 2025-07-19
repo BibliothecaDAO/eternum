@@ -1,80 +1,4 @@
-# Eternum Project Guidelines
-
-## Package Architecture
-
-IMPORTANT: Read these package READMEs to understand the codebase structure:
-
-- `packages/types/README.md` - Type definitions shared across packages
-- `packages/provider/README.md` - Data provider interfaces and implementations
-- `packages/core/README.md` - Core game logic and utilities
-- `packages/torii/README.md` - Torii integration for blockchain data
-
-This helps you:
-
-- Locate existing functions before creating new ones
-- Write new functions in the appropriate package
-- Understand dependencies between packages
-
-## Common Commands
-
-```bash
-# Build all packages (REQUIRED after package changes)
-pnpm run build:packages
-
-# Development commands
-pnpm run format # run prettier formatting
-pnpm run knip # knip
-```
-
-## Application Structure
-
-When building features, read the relevant app README:
-
-- `client/apps/game/README.md` - Main game application
-- `client/apps/bot/README.md` - Bot implementation
-- `client/apps/game-docs/README.md` - Game documentation site
-- `client/apps/heavy-load/README.md` - Performance testing tools
-- `client/apps/landing/README.md` - Landing page
-
-## Code Style
-
-- Use TypeScript for all new code
-- Follow existing patterns in the codebase
-- Prefer composition over inheritance
-- Use functional components for React code
-- Keep components small and focused
-- **Tailwind CSS**: Always use colors defined in `client/apps/game/tailwind.config.js` rather than default Tailwind
-  colors (e.g., use `bg-danger` instead of `bg-red-600`, `bg-green` instead of `bg-green-600`)
-
-## Testing Guidelines
-
-- Write tests for new features
-- Run tests before committing: `pnpm test`
-- Test files should be colocated with source files
-- Use descriptive test names
-
-## COMMIT Checklist
-
-**⚠️ CRITICAL: NEVER COMMIT WITHOUT A SUCCESSFUL BUILD! ⚠️**
-
-IMPORTANT: Before committing changes, YOU MUST:
-
-1. **Run Build Check** (MANDATORY - DO THIS FIRST!):
-   - Execute `pnpm run build` in EVERY affected app directory
-   - For game changes: `cd client/apps/game && pnpm run build`
-   - For landing page changes: `cd client/apps/landing && pnpm run build`
-   - **IF BUILD FAILS: FIX ALL ERRORS BEFORE PROCEEDING!**
-   - **NEVER use --no-verify or skip this step**
-2. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
-3. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-4. **Update README**: Update the main README if you've added new features or changed setup steps
-5. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-6. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-7. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-8. **Build Packages**: If you modified packages, run `pnpm run build:packages`
-9. **Create PR to `next`**: When creating PR, ALWAYS use `gh pr create --base next` (NEVER to `main`)
-
-## Project-Specific Notes
+# Shared Project Guidelines
 
 - This is a blockchain gaming project using Cairo/Starknet
 - The game involves realms, resources, and armies
@@ -117,18 +41,41 @@ IMPORTANT: Before committing changes, YOU MUST:
 - Don't commit generated files or build artifacts
 - Always test locally before pushing
 
-## Design System Guidelines
+## Build Verification - MANDATORY
 
-When creating new UI components:
+**CRITICAL: After making ANY code changes, always verify the build:**
 
-1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
-   elsewhere in the app
-2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
-   appropriate design system folder:
-   - `atoms/` for basic UI primitives (buttons, inputs, labels)
-   - `molecules/` for composed components (card headers, form groups)
-3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
-   implementations that could be replaced
-4. **Replace existing implementations**: Update all found instances to use the new design system component for
-   consistency
-5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
+```bash
+pnpm run build
+```
+
+- This MUST pass before considering any task complete
+- The project uses `pnpm`, not `npm`
+- Never assume changes work without running the build
+- If build fails, fix all errors before proceeding
+
+## Claude.md Changes Guidelines
+
+When making changes to project rules and guidelines:
+
+- **Project-wide rules** (Git workflow, repository etiquette, etc.) → Update this file (`CLAUDE.md`)
+- **Frontend-specific rules** → Update `.claude/frontend-rules.md`
+- **Contract-specific rules** → Update `.claude/contracts-rules.md`
+
+Keep changes focused to their respective domains and avoid cross-contamination between rule files.
+
+## 🎯 Key Documentation References
+
+- **Frontend Guidelines**: `.claude/frontend-rules.md` 🎨
+- **Contracts Guidelines**: `.claude/contracts-rules.md` ⚡
+
+## 📚 CRITICAL DOCUMENTATION PATTERN
+
+**ALWAYS ADD IMPORTANT DOCS HERE!** When you create or discover:
+
+- Architecture diagrams → Add reference path here
+- Database schemas → Add reference path here
+- Problem solutions → Add reference path here
+- Setup guides → Add reference path here
+
+This prevents context loss! Update this file IMMEDIATELY when creating important docs.

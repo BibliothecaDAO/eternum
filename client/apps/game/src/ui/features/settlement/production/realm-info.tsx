@@ -1,3 +1,4 @@
+import { getIsBlitz } from "@/ui/constants";
 import { CapacityInfo } from "@/ui/features/world";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
@@ -22,7 +23,7 @@ export const RealmInfo = memo(({ realm }: { realm: RealmInfoType }) => {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <h1>{getStructureName(realm.structure).name} </h1>
+            <h1>{getStructureName(realm.structure, getIsBlitz()).name} </h1>
             <CapacityInfo structureEntityId={realm.entityId} className="flex flex-row text-xl" />
           </div>
         </div>

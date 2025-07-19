@@ -3,9 +3,11 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
+use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION};
 use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::WeightConfig;
 use s1_eternum::models::config::{TickImpl};
+use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffect, RelicEffectStoreImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl};
 
@@ -73,8 +75,15 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
+                let tick_config = TickImpl::get_tick_interval(ref world);
+                let current_tick: u64 = tick_config.current();
+                let entity_production_multiplier_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
+                    ref world, entity_id, RELIC_EFFECT::INCREASE_RESOURCE_PRODUCTION_30P_3D, current_tick,
+                );
                 // harvest the resource and get the amount of resources produced
-                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
+                let harvest_amount: u128 = ProductionImpl::harvest(
+                    ref resource, tick_config, entity_production_multiplier_relic_effect,
+                );
 
                 // add the produced amount to the resource balance
                 if harvest_amount.is_non_zero() {
@@ -96,6 +105,13 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         if self.produces {
             ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
         }
+    }
+}
+
+#[generate_trait]
+pub impl RelicResourceImpl of RelicResourceTrait {
+    fn is_relic(resource_type: u8) -> bool {
+        resource_type >= RELICS_RESOURCE_START_ID && resource_type <= RELICS_RESOURCE_END_ID
     }
 }
 
@@ -128,9 +144,19 @@ pub impl TroopResourceImpl of TroopResourceTrait {
 
 #[generate_trait]
 pub impl SingleResourceImpl of SingleResourceTrait {
+    fn ensure_correct_precision(ref self: SingleResource) {
+        if RelicResourceImpl::is_relic(self.resource_type) {
+            assert!(
+                self.balance % RESOURCE_PRECISION == 0,
+                "Eternum: Resource balance must be a multiple of RESOURCE_PRECISION for relics",
+            );
+        }
+    }
+
     fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
         self.balance -= amount;
+        self.ensure_correct_precision();
         entity_weight.deduct(amount * unit_weight);
         // todo add event here to show amount burnt
     }
@@ -142,6 +168,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         let (max_storable, total_weight) = Self::storable_amount(amount, entity_weight.unused(), unit_weight);
 
         self.balance += max_storable;
+        self.ensure_correct_precision();
         entity_weight.add(total_weight);
 
         // todo add event here to show amount burnt
@@ -213,6 +240,10 @@ pub struct Resource {
     WHEAT_BALANCE: u128,
     FISH_BALANCE: u128,
     LORDS_BALANCE: u128,
+    ESSENCE_BALANCE: u128,
+    RELIC_E1_BALANCE: u128,
+    RELIC_E2_BALANCE: u128,
+    RELIC_E3_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
     COAL_PRODUCTION: Production,
@@ -251,6 +282,7 @@ pub struct Resource {
     WHEAT_PRODUCTION: Production,
     FISH_PRODUCTION: Production,
     LORDS_PRODUCTION: Production,
+    ESSENCE_PRODUCTION: Production,
 }
 
 
@@ -268,6 +300,9 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
+            return Zero::zero();
+        }
         return world
             .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::production_selector(resource_type.into()));
     }
@@ -281,6 +316,9 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
+        if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
+            return;
+        }
         world
             .write_member(
                 Model::<Resource>::ptr_from_keys(entity_id),
@@ -337,6 +375,10 @@ pub impl ResourceImpl of ResourceTrait {
             35 => selector!("WHEAT_BALANCE"),
             36 => selector!("FISH_BALANCE"),
             37 => selector!("LORDS_BALANCE"),
+            38 => selector!("ESSENCE_BALANCE"),
+            39 => selector!("RELIC_E1_BALANCE"),
+            40 => selector!("RELIC_E2_BALANCE"),
+            41 => selector!("RELIC_E3_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }
@@ -382,6 +424,7 @@ pub impl ResourceImpl of ResourceTrait {
             35 => selector!("WHEAT_PRODUCTION"),
             36 => selector!("FISH_PRODUCTION"),
             37 => selector!("LORDS_PRODUCTION"),
+            38 => selector!("ESSENCE_PRODUCTION"),
             _ => panic!("Invalid resource type"),
         }
     }
@@ -406,7 +449,7 @@ pub struct ResourceAllowance {
     pub amount: u128,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceList {
     #[key]
@@ -415,4 +458,17 @@ pub struct ResourceList {
     pub index: u32,
     pub resource_type: u8,
     pub amount: u128,
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct ResourceMinMaxList {
+    #[key]
+    pub entity_id: ID,
+    #[key]
+    pub index: u32,
+    pub resource_type: u8,
+    pub min_amount: u128,
+    pub max_amount: u128,
 }

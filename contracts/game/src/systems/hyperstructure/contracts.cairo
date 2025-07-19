@@ -162,7 +162,10 @@ pub mod hyperstructure_systems {
     use s1_eternum::{
         alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes},
         models::{
-            config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl},
+            config::{
+                HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig,
+                WorldConfigUtilImpl,
+            },
             guild::{GuildMember},
             hyperstructure::{
                 ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
@@ -482,15 +485,15 @@ pub mod hyperstructure_systems {
                 assert!(time_elapsed.is_non_zero(), "zero time elapsed");
 
                 let current_shareholders = hyperstructure_shareholders.shareholders;
-                let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
-                    world, selector!("hyperstructure_config"),
+                let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("victory_points_grant_config"),
                 );
                 for i in 0..current_shareholders.len() {
                     let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
                     if shareholder_address.is_non_zero() {
                         let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
                         let generated_points: u256 = time_elapsed.into()
-                            * hyperstructure_config.points_per_second.into()
+                            * victory_points_grant_config.hyp_points_per_second.into()
                             * (*shareholder_percentage).into()
                             / PercentageValueImpl::_100().into();
                         let generated_points: u128 = generated_points.try_into().unwrap();

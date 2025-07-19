@@ -1,8 +1,9 @@
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
+import { getIsBlitz } from "@/ui/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, getResourceTiers } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useMemo, useRef, useState } from "react";
 
@@ -46,7 +47,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
   ];
 
   const orderedResources = useMemo(() => {
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(getResourceTiers(getIsBlitz()))
       .flat()
       .filter((resourceId) => {
         if (resourceId === ResourcesIds.Lords) return false;

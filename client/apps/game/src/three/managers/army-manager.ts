@@ -7,7 +7,16 @@ import { Position } from "@/types/position";
 import { COLORS } from "@/ui/features/settlement";
 import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  ContractAddress,
+  HexEntityInfo,
+  ID,
+  orders,
+  RelicEffect,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
@@ -39,12 +48,18 @@ export class ArmyManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
+  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>> =
+    new Map();
+  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
+  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: { width: number; height: number },
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
+    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
@@ -56,6 +71,8 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
+    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
+    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -169,10 +186,10 @@ export class ArmyManager {
     }
 
     this.currentChunkKey = chunkKey;
-    this.renderVisibleArmies(chunkKey);
+    await this.renderVisibleArmies(chunkKey);
   }
 
-  private renderVisibleArmies(chunkKey: string) {
+  private async renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
 
@@ -218,6 +235,9 @@ export class ArmyManager {
       } else {
         this.addEntityIdLabel(army, position);
       }
+
+      // Add random relic effects for demo (commented out - now using actual relic effects from game system)
+      // this.addRandomRelicEffects(army.entityId, position);
     });
 
     // Remove labels for armies that are no longer visible
@@ -268,7 +288,7 @@ export class ArmyManager {
     return visibleArmies;
   }
 
-  public addArmy(
+  public async addArmy(
     entityId: ID,
     hexCoords: Position,
     owner: { address: bigint; ownerName: string; guildName: string },
@@ -313,10 +333,20 @@ export class ArmyManager {
       tier,
       isDaydreamsAgent,
     });
-    this.renderVisibleArmies(this.currentChunkKey!);
+
+    // Apply any pending relic effects for this army
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+      }
+    }
+
+    await this.renderVisibleArmies(this.currentChunkKey!);
   }
 
-  public moveArmy(
+  public async moveArmy(
     entityId: ID,
     hexCoords: Position,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -350,12 +380,99 @@ export class ArmyManager {
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
+    // Update relic effects position when army moves
+    const relicEffects = this.armyRelicEffects.get(entityId);
+    if (relicEffects) {
+      // Store current relic effects to re-apply at new position
+      const currentRelics = relicEffects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
+
+      // Remove old effects
+      relicEffects.forEach((effect) => effect.fx.end());
+      this.armyRelicEffects.delete(entityId);
+
+      // Re-add effects at new position
+      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
+      for (const relic of currentRelics) {
+        try {
+          await this.addRelicEffect(entityId, relic.relicId, relic.effect);
+        } catch (error) {
+          console.error(
+            `Failed to re-apply relic effect ${relic.relicId} for army ${entityId} during movement:`,
+            error,
+          );
+        }
+      }
+    }
+
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
+  public async addRelicEffect(entityId: ID, relicNumber: number, effect: RelicEffect) {
+    console.log("addRelicEffect", { entityId, relicNumber });
+    const army = this.armies.get(entityId);
+    if (!army) return;
+
+    const position = this.getArmyWorldPosition(entityId, army.hexCoords);
+    position.y += 1.5;
+
+    try {
+      // Register the relic FX if not already registered (wait for texture to load)
+      await this.fxManager.registerRelicFX(relicNumber);
+
+      // Play the relic effect
+      const fx = this.fxManager.playFxAtCoords(
+        `relic_${relicNumber}`,
+        position.x,
+        position.y,
+        position.z,
+        0.8,
+        undefined,
+        true,
+      );
+
+      // Add to existing effects or create new array
+      const existingEffects = this.armyRelicEffects.get(entityId) || [];
+      existingEffects.push({ relicNumber, effect, fx });
+      this.armyRelicEffects.set(entityId, existingEffects);
+    } catch (error) {
+      console.error(`Failed to add relic effect ${relicNumber} for army ${entityId}:`, error);
+    }
+  }
+
+  public removeRelicEffect(entityId: ID, relicNumber: number) {
+    const effects = this.armyRelicEffects.get(entityId);
+    if (!effects) return;
+
+    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
+    if (index !== -1) {
+      effects[index].fx.end();
+      effects.splice(index, 1);
+
+      if (effects.length === 0) {
+        this.armyRelicEffects.delete(entityId);
+      }
+    }
+  }
+
+  public removeAllRelicEffects(entityId: ID) {
+    const effects = this.armyRelicEffects.get(entityId);
+    if (!effects) return;
+
+    effects.forEach((effect) => effect.fx.end());
+    this.armyRelicEffects.delete(entityId);
+  }
+
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
+
+    // Remove any relic effects
+    this.removeAllRelicEffects(entityId);
+
+    // Clear any pending relic effects
+    if (this.clearPendingRelicEffectsCallback) {
+      this.clearPendingRelicEffectsCallback(entityId);
+    }
 
     const { promise } = this.fxManager.playFxAtCoords(
       "skull",
@@ -365,11 +482,11 @@ export class ArmyManager {
       1,
       "Defeated!",
     );
-    promise.then(() => {
+    promise.then(async () => {
       this.armies.delete(entityId);
       this.armyModel.removeLabel(entityId);
       this.entityIdLabels.delete(entityId);
-      this.renderVisibleArmies(this.currentChunkKey!);
+      await this.renderVisibleArmies(this.currentChunkKey!);
     });
   }
 
@@ -383,7 +500,7 @@ export class ArmyManager {
     this.armyModel.updateAnimations(deltaTime);
   }
 
-  private getArmyWorldPosition = (armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
+  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
     const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
 
@@ -493,11 +610,25 @@ export class ArmyManager {
     });
   };
 
+  public hasArmy(entityId: ID): boolean {
+    return this.armies.has(entityId);
+  }
+
+  public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
+    const effects = this.armyRelicEffects.get(entityId);
+    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+  }
+
   public destroy() {
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+    // Clean up relic effects
+    this.armyRelicEffects.forEach((effects) => {
+      effects.forEach((effect) => effect.fx.end());
+    });
+    this.armyRelicEffects.clear();
     // Clean up any other resources...
   }
 }

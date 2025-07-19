@@ -17,7 +17,9 @@ class FXInstance {
   public clock: THREE.Clock;
   public animationFrameId?: number;
   public isDestroyed = false;
+  public initialX: number;
   public initialY: number;
+  public initialZ: number;
   public baseSize: number;
   public resolvePromise?: () => void;
   public label?: CSS2DObject;
@@ -45,7 +47,9 @@ class FXInstance {
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
+    this.initialX = x;
     this.initialY = y;
+    this.initialZ = z;
     this.baseSize = size;
     this.type = type;
     this.animateCallback = animateCallback;
@@ -245,6 +249,75 @@ export class FXManager {
     });
   }
 
+  public async registerRelicFX(relicNumber: number): Promise<void> {
+    const type = `relic_${relicNumber}`;
+    const textureUrl = `images/resources/${relicNumber}.png`;
+
+    // Pre-load the texture and wait for it to load
+    if (!this.textures.has(textureUrl)) {
+      const texture = await new Promise<THREE.Texture>((resolve, _reject) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          textureUrl,
+          (loadedTexture) => {
+            loadedTexture.colorSpace = THREE.SRGBColorSpace;
+            loadedTexture.minFilter = THREE.LinearFilter;
+            loadedTexture.magFilter = THREE.LinearFilter;
+            resolve(loadedTexture);
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load relic texture ${textureUrl}:`, error);
+            // Create a fallback white texture
+            const canvas = document.createElement("canvas");
+            canvas.width = 64;
+            canvas.height = 64;
+            const context = canvas.getContext("2d")!;
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, 64, 64);
+            const fallbackTexture = new THREE.CanvasTexture(canvas);
+            fallbackTexture.colorSpace = THREE.SRGBColorSpace;
+            resolve(fallbackTexture);
+          },
+        );
+      });
+      this.textures.set(textureUrl, texture);
+    }
+
+    this.registerFX(type, {
+      textureUrl,
+      animate: (fx, t) => {
+        // Fade in animation
+        if (t < 0.5) {
+          fx.material.opacity = t / 0.5;
+          const scale = (t / 0.5) * fx.baseSize;
+          fx.sprite.scale.set(scale, scale, scale);
+        } else {
+          fx.material.opacity = 1;
+          fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+        }
+
+        // Get unique orbit parameters based on fx instance
+        const orbitSpeed = 0.5 + (fx.sprite.id % 3) * 0.2; // Different speeds
+        const orbitRadius = 0.5 + (fx.sprite.id % 2) * 0.3; // Different radii
+        const verticalOffset = (fx.sprite.id % 4) * 0.2; // Different heights
+        const phase = (fx.sprite.id % 6) * (Math.PI / 3); // Different starting positions
+
+        // Orbital motion
+        const angle = t * orbitSpeed + phase;
+        fx.group.position.x = fx.initialX + Math.cos(angle) * orbitRadius;
+        fx.group.position.z = fx.initialZ + Math.sin(angle) * orbitRadius;
+
+        // Vertical bobbing
+        const bob = Math.sin(t * 2 + phase) * 0.1;
+        fx.group.position.y = fx.initialY + verticalOffset + bob;
+
+        return true;
+      },
+      isInfinite: true,
+    });
+  }
+
   private registerFX(type: FXType, config: FXConfig) {
     if (!this.textures.has(config.textureUrl)) {
       const texture = new THREE.TextureLoader().load(config.textureUrl, (t) => {
@@ -298,6 +371,10 @@ export class FXManager {
         config.animate,
         isInfinite || config.isInfinite,
       );
+
+      // Set initial position for orbital effects
+      fxInstance.initialX = x;
+      fxInstance.initialZ = z;
 
       fxInstance.onComplete(resolve);
       this.activeFX.add(fxInstance);

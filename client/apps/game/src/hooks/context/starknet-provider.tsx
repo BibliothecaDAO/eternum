@@ -24,7 +24,7 @@ const chain_id = isLocal
     ? constants.StarknetChainId.SN_SEPOLIA
     : constants.StarknetChainId.SN_MAIN;
 
-const nonLocalController = new ControllerConnector({
+const controller = new ControllerConnector({
   chains: [
     {
       rpcUrl: isLocal
@@ -75,7 +75,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={isLocal ? [katanaLocalChain] : [mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[nonLocalController as unknown as Connector]}
+      connectors={[controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
     >

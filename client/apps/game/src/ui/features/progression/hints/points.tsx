@@ -9,7 +9,7 @@ export const Points = () => {
         <h4>Winning with Points</h4>
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
-            Points are needed for victory in Eternum. You can only generate them via constructing Hyperstructures. Once
+            Points are needed for victory in Realms. You can only generate them via constructing Hyperstructures. Once
             built, Hyperstructures generate points per tick.
           </p>
         </div>

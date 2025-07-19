@@ -1,6 +1,7 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { RealmResourcesIO } from "@/ui/features/economy/resources";
@@ -95,15 +96,17 @@ export const PlayerId = ({
     return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
+  const isBlitz = getIsBlitz();
+
   // Helper function to get structure name
-  const getStructureName = (structure: PlayerStructure): string => {
+  const getStructureName = (structure: PlayerStructure, isBlitz: boolean): string => {
     if (structure.category === StructureType.Realm && structure.realm_id) {
       const baseName = getRealmNameById(structure.realm_id);
       return structure.has_wonder ? `WONDER - ${baseName}` : baseName;
     }
 
     // For other structure types, use the type name with entity ID
-    return `${getStructureTypeName(structure.category as StructureType)} ${structure.entity_id}`;
+    return `${getStructureTypeName(structure.category as StructureType, isBlitz)} ${structure.entity_id}`;
   };
 
   // Helper function to get resources for a specific structure
@@ -222,7 +225,7 @@ export const PlayerId = ({
               {playerStructures &&
                 playerStructures.map((structure) => {
                   const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
-                  const structureName = getStructureName(structure);
+                  const structureName = getStructureName(structure, isBlitz);
                   const structureResources = getStructureResources(structure);
 
                   let structureSpecificElement: JSX.Element | null;

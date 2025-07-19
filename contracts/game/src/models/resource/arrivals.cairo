@@ -2,6 +2,7 @@ use core::dict::Felt252Dict;
 use core::num::traits::Zero;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
+use s1_eternum::models::config::TickImpl;
 
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde)]
@@ -35,6 +36,30 @@ pub struct ResourceArrival {
     slot_22: Span<(u8, u128)>,
     slot_23: Span<(u8, u128)>,
     slot_24: Span<(u8, u128)>,
+    slot_25: Span<(u8, u128)>,
+    slot_26: Span<(u8, u128)>,
+    slot_27: Span<(u8, u128)>,
+    slot_28: Span<(u8, u128)>,
+    slot_29: Span<(u8, u128)>,
+    slot_30: Span<(u8, u128)>,
+    slot_31: Span<(u8, u128)>,
+    slot_32: Span<(u8, u128)>,
+    slot_33: Span<(u8, u128)>,
+    slot_34: Span<(u8, u128)>,
+    slot_35: Span<(u8, u128)>,
+    slot_36: Span<(u8, u128)>,
+    slot_37: Span<(u8, u128)>,
+    slot_38: Span<(u8, u128)>,
+    slot_39: Span<(u8, u128)>,
+    slot_40: Span<(u8, u128)>,
+    slot_41: Span<(u8, u128)>,
+    slot_42: Span<(u8, u128)>,
+    slot_43: Span<(u8, u128)>,
+    slot_44: Span<(u8, u128)>,
+    slot_45: Span<(u8, u128)>,
+    slot_46: Span<(u8, u128)>,
+    slot_47: Span<(u8, u128)>,
+    slot_48: Span<(u8, u128)>,
     initialized: bool,
     // just used to track if any resources are in the arrival
     total_amount: u128,
@@ -99,22 +124,66 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             resource_arrival_model.slot_23 = slot_resources;
         } else if slot_selector == selector!("slot_24") {
             resource_arrival_model.slot_24 = slot_resources;
+        } else if slot_selector == selector!("slot_25") {
+            resource_arrival_model.slot_25 = slot_resources;
+        } else if slot_selector == selector!("slot_26") {
+            resource_arrival_model.slot_26 = slot_resources;
+        } else if slot_selector == selector!("slot_27") {
+            resource_arrival_model.slot_27 = slot_resources;
+        } else if slot_selector == selector!("slot_28") {
+            resource_arrival_model.slot_28 = slot_resources;
+        } else if slot_selector == selector!("slot_29") {
+            resource_arrival_model.slot_29 = slot_resources;
+        } else if slot_selector == selector!("slot_30") {
+            resource_arrival_model.slot_30 = slot_resources;
+        } else if slot_selector == selector!("slot_31") {
+            resource_arrival_model.slot_31 = slot_resources;
+        } else if slot_selector == selector!("slot_32") {
+            resource_arrival_model.slot_32 = slot_resources;
+        } else if slot_selector == selector!("slot_33") {
+            resource_arrival_model.slot_33 = slot_resources;
+        } else if slot_selector == selector!("slot_34") {
+            resource_arrival_model.slot_34 = slot_resources;
+        } else if slot_selector == selector!("slot_35") {
+            resource_arrival_model.slot_35 = slot_resources;
+        } else if slot_selector == selector!("slot_36") {
+            resource_arrival_model.slot_36 = slot_resources;
+        } else if slot_selector == selector!("slot_37") {
+            resource_arrival_model.slot_37 = slot_resources;
+        } else if slot_selector == selector!("slot_38") {
+            resource_arrival_model.slot_38 = slot_resources;
+        } else if slot_selector == selector!("slot_39") {
+            resource_arrival_model.slot_39 = slot_resources;
+        } else if slot_selector == selector!("slot_40") {
+            resource_arrival_model.slot_40 = slot_resources;
+        } else if slot_selector == selector!("slot_41") {
+            resource_arrival_model.slot_41 = slot_resources;
+        } else if slot_selector == selector!("slot_42") {
+            resource_arrival_model.slot_42 = slot_resources;
+        } else if slot_selector == selector!("slot_43") {
+            resource_arrival_model.slot_43 = slot_resources;
+        } else if slot_selector == selector!("slot_44") {
+            resource_arrival_model.slot_44 = slot_resources;
+        } else if slot_selector == selector!("slot_45") {
+            resource_arrival_model.slot_45 = slot_resources;
+        } else if slot_selector == selector!("slot_46") {
+            resource_arrival_model.slot_46 = slot_resources;
+        } else if slot_selector == selector!("slot_47") {
+            resource_arrival_model.slot_47 = slot_resources;
+        } else if slot_selector == selector!("slot_48") {
+            resource_arrival_model.slot_48 = slot_resources;
         }
         world.write_model(@resource_arrival_model);
     }
 
-    fn interval_hours() -> u64 {
-        1 // resource arrival gate open every 1 hour (24 slots per day)
-    }
-
     fn last_slot() -> u8 {
-        24
+        48
     }
 
 
     // todo: verify
     fn slot_time_has_passed(ref world: WorldStorage, day: u64, slot: u8) -> bool {
-        let (last_open_slot_day, last_open_slot_hour) = Self::previous_arrival_slot(ref world, 0);
+        let (last_open_slot_day, last_open_slot_hour) = Self::previous_arrival_slot(ref world);
 
         if day < last_open_slot_day {
             return true;
@@ -131,8 +200,8 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
 
-    fn previous_arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
-        let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, travel_time);
+    fn previous_arrival_slot(ref world: WorldStorage) -> (u64, u8) {
+        let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, 0);
         if arrival_slot == 1 {
             // the last slot of the previous day
             (arrival_day - 1, Self::last_slot())
@@ -143,19 +212,14 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
     fn arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
-        let arrival_interval_hours = Self::interval_hours();
-        let arrival_time = starknet::get_block_timestamp() + travel_time;
-        let day = arrival_time / 86400;
-        let hour = (arrival_time % 86400) / 3600;
+        let delivery_interval = TickImpl::get_delivery_tick_interval(ref world);
+        let now = starknet::get_block_timestamp();
+        let arrival_time = now + travel_time;
+        let arrival_time_tick = delivery_interval.at(arrival_time);
 
-        // Each hour corresponds to a slot (1-24)
-        // if time is between 00:00:00 and 00:59:59, then slot = 1
-        // if time is between 01:00:00 and 01:59:59, then slot = 2
-        // ...
-        // if time is between 23:00:00 and 23:59:59, then slot = 24
-
-        let time_slot = (hour + arrival_interval_hours) / arrival_interval_hours;
-        return (day, time_slot.try_into().unwrap());
+        let day = arrival_time_tick / Self::last_slot().into();
+        let slot = (arrival_time_tick % Self::last_slot().into()) + 1;
+        return (day, slot.try_into().unwrap());
     }
 
 
@@ -222,6 +286,30 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             slot_22: empty_resources,
             slot_23: empty_resources,
             slot_24: empty_resources,
+            slot_25: empty_resources,
+            slot_26: empty_resources,
+            slot_27: empty_resources,
+            slot_28: empty_resources,
+            slot_29: empty_resources,
+            slot_30: empty_resources,
+            slot_31: empty_resources,
+            slot_32: empty_resources,
+            slot_33: empty_resources,
+            slot_34: empty_resources,
+            slot_35: empty_resources,
+            slot_36: empty_resources,
+            slot_37: empty_resources,
+            slot_38: empty_resources,
+            slot_39: empty_resources,
+            slot_40: empty_resources,
+            slot_41: empty_resources,
+            slot_42: empty_resources,
+            slot_43: empty_resources,
+            slot_44: empty_resources,
+            slot_45: empty_resources,
+            slot_46: empty_resources,
+            slot_47: empty_resources,
+            slot_48: empty_resources,
             initialized: false,
             total_amount: 0,
         };
@@ -289,6 +377,30 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             22 => selector!("slot_22"),
             23 => selector!("slot_23"),
             24 => selector!("slot_24"),
+            25 => selector!("slot_25"),
+            26 => selector!("slot_26"),
+            27 => selector!("slot_27"),
+            28 => selector!("slot_28"),
+            29 => selector!("slot_29"),
+            30 => selector!("slot_30"),
+            31 => selector!("slot_31"),
+            32 => selector!("slot_32"),
+            33 => selector!("slot_33"),
+            34 => selector!("slot_34"),
+            35 => selector!("slot_35"),
+            36 => selector!("slot_36"),
+            37 => selector!("slot_37"),
+            38 => selector!("slot_38"),
+            39 => selector!("slot_39"),
+            40 => selector!("slot_40"),
+            41 => selector!("slot_41"),
+            42 => selector!("slot_42"),
+            43 => selector!("slot_43"),
+            44 => selector!("slot_44"),
+            45 => selector!("slot_45"),
+            46 => selector!("slot_46"),
+            47 => selector!("slot_47"),
+            48 => selector!("slot_48"),
             _ => panic!("exceeds max hours"),
         }
     }
@@ -325,6 +437,30 @@ impl ResourceArrivalDefault of Default<ResourceArrival> {
             slot_22: zero_span,
             slot_23: zero_span,
             slot_24: zero_span,
+            slot_25: zero_span,
+            slot_26: zero_span,
+            slot_27: zero_span,
+            slot_28: zero_span,
+            slot_29: zero_span,
+            slot_30: zero_span,
+            slot_31: zero_span,
+            slot_32: zero_span,
+            slot_33: zero_span,
+            slot_34: zero_span,
+            slot_35: zero_span,
+            slot_36: zero_span,
+            slot_37: zero_span,
+            slot_38: zero_span,
+            slot_39: zero_span,
+            slot_40: zero_span,
+            slot_41: zero_span,
+            slot_42: zero_span,
+            slot_43: zero_span,
+            slot_44: zero_span,
+            slot_45: zero_span,
+            slot_46: zero_span,
+            slot_47: zero_span,
+            slot_48: zero_span,
             initialized: false,
             total_amount: 0,
         };

@@ -1,5 +1,5 @@
-import { ResourcesIds } from "@bibliothecadao/types";
 import { computeTrades, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -15,7 +15,7 @@ export function useMarket(currentBlockTimestamp: number) {
 
   const allMarket = useEntityQuery([HasValue(components.Trade, { taker_id: 0 })]);
   const allTrades = useMemo(() => {
-    return computeTrades(allMarket, currentBlockTimestamp, components);
+    return computeTrades(allMarket, currentBlockTimestamp, components, false);
   }, [allMarket]);
 
   const userTrades = useMemo(() => {

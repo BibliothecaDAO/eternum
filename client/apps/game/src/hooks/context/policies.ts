@@ -6,6 +6,18 @@ import { messages } from "./signing-policy";
 
 export const policies = toSessionPolicies({
   contracts: {
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "blitz_realm_systems").address]: {
+      methods: [
+        {
+          name: "register",
+          entrypoint: "register",
+        },
+        {
+          name: "create",
+          entrypoint: "create",
+        },
+      ],
+    },
     [getContractByName(dojoConfig.manifest, "s1_eternum", "bank_systems").address]: {
       methods: [
         {
@@ -415,6 +427,26 @@ export const policies = toSessionPolicies({
         {
           name: "troop_burn",
           entrypoint: "troop_burn",
+        },
+      ],
+    },
+    [getContractByName(dojoConfig.manifest, "s1_eternum", "relic_systems").address]: {
+      methods: [
+        {
+          name: "open_chest",
+          entrypoint: "open_chest",
+        },
+        {
+          name: "apply_relic",
+          entrypoint: "apply_relic",
+        },
+        {
+          name: "dojo_name",
+          entrypoint: "dojo_name",
+        },
+        {
+          name: "world_dispatcher",
+          entrypoint: "world_dispatcher",
         },
       ],
     },
