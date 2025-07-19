@@ -127,13 +127,13 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
           gap: "0.5rem",
           fontSize: "2.25rem",
           fontWeight: 700,
-          color: "#FFD700",
+          color: "#dfaa54",
           transition: "opacity 5000ms",
           opacity: showContent ? 1 : 0,
           textAlign: "center",
         }}
       >
-        Loot Chest Contents
+        Loot Chest Content
         <span className="text-sm text-white">(3 items)</span>
       </h1>
     );
@@ -160,7 +160,7 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
         {/* Asset list on the right side */}
         <div className="flex-1 flex justify-end items-center pr-8">
           <div
-            className="w-80 space-y-4 pointer-events-auto"
+            className="w-96 space-y-4 pointer-events-auto"
             style={{
               transition: "opacity 1000ms",
               opacity: showContent ? 1 : 0,
@@ -168,67 +168,104 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
           >
             <h2 className="text-xl font-bold text-white mb-4 text-center">Loot Contents</h2>
 
-            {randomAssets.map((asset) => {
-              const isSelected = selectedAsset.id === asset.id;
-              const cardStyle = isSelected
-                ? getRarityGlow(asset.rarity)
-                : {
-                    borderColor: "#4b5563",
-                    borderWidth: "2px",
-                    borderStyle: "solid",
-                  };
-
-              return (
-                <Card
-                  key={asset.id}
-                  className="cursor-pointer transition-all duration-200 backdrop-blur-sm"
+            {/* Container for the asset list */}
+            <div
+              className="backdrop-blur-md rounded-xl p-6"
+              style={{
+                background: "linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 30, 30, 0.6))",
+                border: "2px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                borderRadius: "16px",
+              }}
+            >
+              {/* Container header */}
+              <div className="mb-4 text-center">
+                <div
                   style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.4)",
-                    ...cardStyle,
-                    ...(isSelected
-                      ? {}
-                      : {
-                          transition: "all 200ms",
-                        }),
+                    fontSize: "0.875rem",
+                    color: "#cccccc",
+                    fontFamily: "heading",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
                   }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.borderColor = "#6b7280";
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.borderColor = "#4b5563";
-                      e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
-                    }
-                  }}
-                  onClick={() => setSelectedAsset(asset)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-white">{asset.name}</h3>
-                          <span
-                            className="text-xs px-2 py-1 rounded"
-                            style={{
-                              ...getRarityStyle(asset.rarity),
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            {asset.rarity.toUpperCase()}
-                          </span>
+                  ⚔️ Item Selection ⚔️
+                </div>
+                <div
+                  className="mt-1 w-16 mx-auto"
+                  style={{
+                    height: "1px",
+                    background: "linear-gradient(90deg, transparent, #888888, transparent)",
+                  }}
+                />
+              </div>
+
+              {/* Asset grid with enhanced spacing */}
+              <div className="space-y-3">
+                {randomAssets.map((asset) => {
+                  const isSelected = selectedAsset.id === asset.id;
+                  const cardStyle = isSelected
+                    ? getRarityGlow(asset.rarity)
+                    : {
+                        borderColor: "#4b5563",
+                        borderWidth: "2px",
+                        borderStyle: "solid",
+                      };
+
+                  return (
+                    <Card
+                      key={asset.id}
+                      className="cursor-pointer transition-all duration-200 backdrop-blur-sm"
+                      style={{
+                        backgroundColor: "rgba(0, 0, 0, 0.4)",
+                        ...cardStyle,
+                        ...(isSelected
+                          ? {}
+                          : {
+                              transition: "all 200ms",
+                            }),
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = "#6b7280";
+                          e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = "#4b5563";
+                          e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+                        }
+                      }}
+                      onClick={() => setSelectedAsset(asset)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-white">{asset.name}</h3>
+                              <span
+                                className="text-xs px-2 py-1 rounded"
+                                style={{
+                                  ...getRarityStyle(asset.rarity),
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {asset.rarity.toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="px-2 py-1 rounded text-xs" style={getTypeStyle(asset.type)}>
+                              {asset.type.toUpperCase()}
+                            </span>
+                          </div>
                         </div>
-                        <span className="px-2 py-1 rounded text-xs" style={getTypeStyle(asset.type)}>
-                          {asset.type.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
