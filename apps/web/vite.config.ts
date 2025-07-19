@@ -36,16 +36,16 @@ export default defineConfig({
       "wagmi",
       "starknet",
       "@starknet-react/core",
+      "zod",
     ],
   },
   ssr: {
-    noExternal: ["@realms-world/db", "@realms-world/constants"],
+    noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
     external: [
       "wagmi",
       "@reown/appkit/react",
       "@reown/appkit",
       "@reown/appkit-adapter-wagmi",
-      "zod",
       "@starknet-io/starknet-types-08",
     ],
   },
