@@ -739,6 +739,12 @@ importers:
       storybook:
         specifier: ^8.3.2
         version: 8.6.14(bufferutil@4.0.9)(prettier@3.5.3)(utf-8-validate@5.0.10)
+      three:
+        specifier: ^0.166.0
+        version: 0.166.1
+      three-stdlib:
+        specifier: ^2.29.5
+        version: 2.36.0(three@0.166.1)
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -806,6 +812,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 18.3.7(@types/react@18.3.23)
+      '@types/three':
+        specifier: ^0.163.0
+        version: 0.163.0
 
   config:
     dependencies:

@@ -78,6 +78,7 @@ export const CollectionTokenGrid = ({
               key={`${tokenId || ""}`}
               token={token}
               isSelected={isSelected(tokenId.toString())}
+              totalOwnedChests={tokens.length}
               onToggleSelection={() => onToggleSelection?.(token)}
               toggleNftSelection={() => tokenId && setIsTransferOpen && setIsTransferOpen(tokenId.toString())}
             />
