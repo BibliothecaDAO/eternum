@@ -9,6 +9,7 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+
   plugins: [
     tsconfigPaths({
       projects: ["./tsconfig.json"],
@@ -25,6 +26,9 @@ export default defineConfig({
   ],
   build: {
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      external: [],
+    },
   },
   optimizeDeps: {
     include: [
@@ -35,14 +39,20 @@ export default defineConfig({
       "wagmi",
       "starknet",
       "@starknet-react/core",
-    ],
-    exclude: [
-      "@starknet-io/starknet-types-07",
       "@starknet-io/starknet-types-08",
     ],
+    esbuildOptions: {
+      define: {
+        global: "globalThis",
+      },
+    },
   },
   ssr: {
-    noExternal: ["@realms-world/db", "@realms-world/constants"],
+    noExternal: [
+      "@realms-world/db",
+      "@realms-world/constants",
+      "@starknet-io/starknet-types-08",
+    ],
     external: [
       "wagmi",
       "@reown/appkit/react",

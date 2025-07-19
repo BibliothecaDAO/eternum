@@ -30,10 +30,10 @@ const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
   .map(([_, [__, address]]) => address);
 */
-const theme = "eternum";
+//const theme = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
-//const namespace: string = "eternum";
-const colorMode: ColorMode = "dark";
+const namespace = "eternum";
+//const colorMode: ColorMode = "dark";
 
 const cartridgeController =
   typeof window !== "undefined"
@@ -51,15 +51,12 @@ const cartridgeController =
           env.VITE_PUBLIC_CHAIN == "sepolia"
             ? ChainId.SN_SEPOLIA
             : (ChainId.SN_MAIN as string),
-        theme,
-        colorMode,
+        /*theme,
+        colorMode,*/
         tokens: {
-          erc20: [
-            LORDS[SUPPORTED_L2_CHAIN_ID]
-              ?.address as string /*, ...otherResources*/,
-          ],
+          erc20: ["lords"],
         },
-        // namespace,
+        namespace,
         slot,
       })
     : null;
