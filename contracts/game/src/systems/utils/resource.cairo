@@ -301,7 +301,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     }
 
                     // add resource to balance to the last open slot so it arrives immediately
-                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::previous_arrival_slot(ref world, 0);
+                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::previous_arrival_slot(ref world);
                     let mut realm_resources_array = ResourceArrivalImpl::read_slot(
                         ref world, to_id, arrival_day, arrival_slot,
                     );
