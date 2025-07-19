@@ -78,7 +78,7 @@ pub mod bank_systems {
                 // add guards to all 4 slots of the structure
                 let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
                 let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
-                let tick = TickImpl::get_tick_config(ref world);
+                let tick = TickImpl::get_tick_interval(ref world);
                 let seed = 'what could possibly go wrong'.into() - bank_entity_id.into();
 
                 let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];

@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
@@ -69,7 +69,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
-        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
         iMercenariesImpl::add(
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
         );

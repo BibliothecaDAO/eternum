@@ -75,7 +75,7 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
-                let tick_config = TickImpl::get_tick_config(ref world);
+                let tick_config = TickImpl::get_tick_interval(ref world);
                 let current_tick: u64 = tick_config.current();
                 let entity_production_multiplier_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
                     ref world, entity_id, RELIC_EFFECT::INCREASE_RESOURCE_PRODUCTION_30P_3D, current_tick,

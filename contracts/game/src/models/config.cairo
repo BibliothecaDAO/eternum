@@ -532,6 +532,7 @@ pub struct VictoryPointsWinConfig {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
+    pub delivery_tick_in_seconds: u64,
 }
 
 
@@ -612,35 +613,50 @@ pub impl CombatConfigImpl of CombatConfigTrait {
 }
 
 
+#[derive(Copy, Drop, Serde)]
+pub struct TickInterval {
+    pub tick_interval: u64,
+}
+
 #[generate_trait]
 pub impl TickImpl of TickTrait {
-    fn get_tick_config(ref world: WorldStorage) -> TickConfig {
-        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
-        return tick_config;
+    fn _tick_config(ref world: WorldStorage) -> TickConfig {
+        WorldConfigUtilImpl::get_member(world, selector!("tick_config"))
     }
 
-    fn interval(self: TickConfig) -> u64 {
-        self.armies_tick_in_seconds
+    // get world tick config
+    fn get_tick_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.armies_tick_in_seconds };
     }
 
-    fn current(self: TickConfig) -> u64 {
+    fn get_delivery_tick_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
+    }
+
+    fn interval(self: TickInterval) -> u64 {
+        self.tick_interval
+    }
+
+    fn current(self: TickInterval) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.interval()
     }
 
-    fn at(self: TickConfig, time: u64) -> u64 {
+    fn at(self: TickInterval, time: u64) -> u64 {
         time / self.interval()
     }
 
-    fn after(self: TickConfig, time_spent: u64) -> u64 {
+    fn after(self: TickInterval, time_spent: u64) -> u64 {
         (starknet::get_block_timestamp() + time_spent) / self.interval()
     }
 
-    fn next_tick_timestamp(self: TickConfig) -> u64 {
+    fn next_tick_timestamp(self: TickInterval) -> u64 {
         self.current() + self.interval()
     }
 
-    fn convert_from_seconds(self: TickConfig, seconds: u64) -> u64 {
+    fn convert_from_seconds(self: TickInterval, seconds: u64) -> u64 {
         let mut ticks = seconds / self.interval();
         let rem = seconds % self.interval();
         if rem.is_non_zero() {
@@ -649,7 +665,7 @@ pub impl TickImpl of TickTrait {
         ticks
     }
 
-    fn convert_to_estimated_timestamp(self: TickConfig, tick: u64) -> u64 {
+    fn convert_to_estimated_timestamp(self: TickInterval, tick: u64) -> u64 {
         tick * self.interval()
     }
 }

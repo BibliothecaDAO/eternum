@@ -1250,6 +1250,7 @@ export function defineContractComponents(world: World) {
           },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
+            delivery_tick_in_seconds: RecsType.Number,
           },
           bank_config: {
             lp_fee_num: RecsType.Number,
@@ -1433,6 +1434,7 @@ export function defineContractComponents(world: World) {
               "u32", // BlitzRegistrationConfig creation_end_at
               "u16", // BlitzRegistrationConfig assigned_positions_count
               "u64", // TickConfig armies_tick_in_seconds
+              "u64", // TickConfig delivery_tick_in_seconds
               "u32", // BankConfig lp_fee_num
               "u32", // BankConfig lp_fee_denom
               "u32", // BankConfig owner_fee_num

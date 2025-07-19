@@ -116,7 +116,7 @@ pub mod relic_systems {
             };
 
             // create relic effect instance
-            let current_tick: u32 = TickImpl::get_tick_config(ref world).current().try_into().unwrap();
+            let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
             let relic_effect = RelicEffectObjectImpl::create_relic_effect(entity_id, relic_resource_id, current_tick);
             relic_effect.store(ref world, current_tick);
 

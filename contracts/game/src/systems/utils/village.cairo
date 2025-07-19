@@ -4,7 +4,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTypes, blitz_produceable_resources};
 use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::config::{VillageFoundResourcesConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord};
@@ -173,7 +173,7 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
-        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
         iMercenariesImpl::add(
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
         );

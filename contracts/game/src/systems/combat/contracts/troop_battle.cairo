@@ -93,7 +93,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -346,7 +346,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -389,7 +389,7 @@ pub mod troop_battle_systems {
             );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_aggressor_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
                 ref world, explorer_aggressor.explorer_id, StaminaImpl::relic_effect_id(), tick.current(),
@@ -590,7 +590,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             structure_aggressor_base.assert_not_cloaked(battle_config, tick, season_config);
 
             // ensure defender is not cloaked

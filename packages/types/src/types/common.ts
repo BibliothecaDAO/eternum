@@ -233,6 +233,7 @@ export type HexTileInfo = {
 export enum TickIds {
   Default,
   Armies,
+  Delivery,
 }
 
 export enum EntityType {
@@ -457,6 +458,7 @@ export interface Config {
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
+    deliveryTickIntervalInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {

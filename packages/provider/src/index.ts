@@ -2212,12 +2212,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { tick_interval_in_seconds, signer } = props;
+    const { tick_interval_in_seconds, delivery_tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_tick_config",
-      calldata: [tick_interval_in_seconds],
+      calldata: [tick_interval_in_seconds, delivery_tick_interval_in_seconds],
     });
   }
 

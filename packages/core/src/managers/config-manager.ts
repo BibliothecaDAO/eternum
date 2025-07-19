@@ -661,6 +661,8 @@ export class ClientConfigManager {
         return Number(tickConfig?.armies_tick_in_seconds ?? 0);
       } else if (tickId === TickIds.Default) {
         return 1;
+      } else if (tickId === TickIds.Delivery) {
+        return Number(tickConfig?.delivery_tick_in_seconds ?? 0);
       } else {
         throw new Error("Undefined tick id in getTick");
       }

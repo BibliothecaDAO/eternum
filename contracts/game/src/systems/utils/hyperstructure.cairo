@@ -4,7 +4,7 @@ use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
 use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction, TravelImpl};
@@ -115,7 +115,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         );
 
         // add guards to structure
-        let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
         let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
         let guard_troop_types_order = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
         let mut count = 0;

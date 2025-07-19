@@ -97,7 +97,7 @@ pub mod troop_movement_systems {
 
             let caller = starknet::get_caller_address();
 
-            let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
+            let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(

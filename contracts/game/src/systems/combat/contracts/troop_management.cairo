@@ -125,7 +125,7 @@ pub mod troop_management_systems {
             }
 
             let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
@@ -162,7 +162,7 @@ pub mod troop_management_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // delete guard
@@ -238,7 +238,7 @@ pub mod troop_management_systems {
 
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             iExplorerImpl::create(
                 ref world,
@@ -397,7 +397,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -525,7 +525,7 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
 
             // update explorer stamina
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let from_explorer_stamina_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
@@ -676,7 +676,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping

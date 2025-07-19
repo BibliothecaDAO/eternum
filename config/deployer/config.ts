@@ -840,20 +840,22 @@ export const setupGlobals = async (config: Config) => {
 
   // Tick Configs
 
-  const armiesTickCalldata = {
+  const tickConfigCalldata = {
     signer: config.account,
     tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
+    delivery_tick_interval_in_seconds: config.config.tick.deliveryTickIntervalInSeconds,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Tick Intervals")}
-    │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
+    │  ${chalk.gray("World Tick:")}            ${chalk.white(hourMinutesSeconds(tickConfigCalldata.tick_interval_in_seconds))}
+    │  ${chalk.gray("Delivery Tick:")}            ${chalk.white(hourMinutesSeconds(tickConfigCalldata.delivery_tick_interval_in_seconds))}
     └────────────────────────────────`),
   );
 
-  const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
-  console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
+  const txTick = await config.provider.set_tick_config(tickConfigCalldata);
+  console.log(chalk.green(`    ✔ Tick configured `) + chalk.gray(txTick.statusReceipt));
 
   // Map Config
   const mapCalldata = {

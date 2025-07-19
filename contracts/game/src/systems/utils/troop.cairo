@@ -8,7 +8,9 @@ use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
-use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{
+    CapacityConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig,
+};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
@@ -49,7 +51,7 @@ pub impl iGuardImpl of iGuardTrait {
         tier: TroopTier,
         troops_destroyed_tick: u32,
         amount: u128,
-        tick: TickConfig,
+        tick: TickInterval,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
     ) {
@@ -521,7 +523,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
-        tick: TickConfig,
+        tick: TickInterval,
     ) {
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);

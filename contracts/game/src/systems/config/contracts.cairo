@@ -92,7 +92,7 @@ pub trait ITradeConfig<T> {
 
 #[starknet::interface]
 pub trait ITickConfig<T> {
-    fn set_tick_config(ref self: T, armies_tick_in_seconds: u64);
+    fn set_tick_config(ref self: T, armies_tick_in_seconds: u64, delivery_tick_in_seconds: u64);
 }
 
 #[starknet::interface]
@@ -489,11 +489,12 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl TickConfigImpl of super::ITickConfig<ContractState> {
-        fn set_tick_config(ref self: ContractState, armies_tick_in_seconds: u64) {
+        fn set_tick_config(ref self: ContractState, armies_tick_in_seconds: u64, delivery_tick_in_seconds: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
             let mut tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
             tick_config.armies_tick_in_seconds = armies_tick_in_seconds;
+            tick_config.delivery_tick_in_seconds = delivery_tick_in_seconds;
             WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
         }
     }

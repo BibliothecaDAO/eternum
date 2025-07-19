@@ -5,7 +5,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{ResourceFactoryConfig, TickConfig, TickImpl};
+use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickInterval};
 use s1_eternum::models::relic::{RelicEffect};
 
 use s1_eternum::models::resource::resource::{ResourceList};
@@ -119,7 +119,9 @@ pub impl ProductionImpl of ProductionTrait {
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
     fn harvest(
-        ref resource: SingleResource, tick_config: TickConfig, production_multiplier_relic_effect: Option<RelicEffect>,
+        ref resource: SingleResource,
+        tick_config: TickInterval,
+        production_multiplier_relic_effect: Option<RelicEffect>,
     ) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();

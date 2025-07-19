@@ -137,6 +137,7 @@ export const QUEST_GAME_LEVELS = [
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 export const ARMIES_TICK_INTERVAL_SECONDS = 60 * 5; // 5 minutes
+export const DELIVERY_TICK_INTERVAL_SECONDS = 60 * 3; // 3 minutes
 
 // ----- Speed ----- //
 // @dev: Seconds per km
@@ -274,6 +275,7 @@ export const EternumGlobalConfig: Config = {
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
+    deliveryTickIntervalInSeconds: DELIVERY_TICK_INTERVAL_SECONDS,
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
