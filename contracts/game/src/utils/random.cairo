@@ -13,7 +13,9 @@ pub impl VRFImpl of VRFTrait {
 
         if vrf_provider_address.is_zero() {
             // workaround for testnet
-            assert!(tx_info.chain_id.is_zero() || tx_info.chain_id == 'KATANA', "VRF provider address must be set");
+            assert!(
+                tx_info.chain_id != 'SN_MAIN' && tx_info.chain_id != 'SN_SEPOLIA', "VRF provider address must be set",
+            );
 
             return tx_info.transaction_hash.into();
         } else {
