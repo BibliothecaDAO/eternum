@@ -31,6 +31,8 @@ interface TokenDetailModalProps {
   onOpenChange: (isOpen: boolean) => void;
   tokenData: MergedNftData;
   isOwner: boolean;
+  isLootChest: boolean;
+  onChestOpen: () => void;
   marketplaceActions: ReturnType<typeof useMarketplace>;
   // Listing details passed from RealmCard
   isListed: boolean;
@@ -44,6 +46,8 @@ export const TokenDetailModal = ({
   onOpenChange,
   tokenData,
   isOwner,
+  isLootChest,
+  onChestOpen,
   marketplaceActions,
   isListed,
   price,
@@ -51,6 +55,8 @@ export const TokenDetailModal = ({
   expiration, // Added
 }: TokenDetailModalProps) => {
   const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
+
+  console.log("isLootChest", isLootChest, "isOwner", isOwner);
 
   // Transform IPFS URLs to use Pinata gateway
   const image = originalImage?.startsWith("ipfs://")
@@ -226,12 +232,19 @@ export const TokenDetailModal = ({
           </Button>
         </div>
       ) : (
-        <CreateListingsDrawer
-          isLoading={isLoading}
-          isSyncing={isSyncing}
-          tokens={[tokenData]}
-          marketplaceActions={marketplaceActions}
-        />
+        <div className="flex gap-2 mt-2">
+          {isOwner && isLootChest && (
+            <Button variant="default" className="w-full" onClick={onChestOpen}>
+              Open Chest
+            </Button>
+          )}
+          <CreateListingsDrawer
+            isLoading={isLoading}
+            isSyncing={isSyncing}
+            tokens={[tokenData]}
+            marketplaceActions={marketplaceActions}
+          />
+        </div>
       )}
     </>
   );

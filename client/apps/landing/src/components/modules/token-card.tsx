@@ -6,10 +6,11 @@ import { MergedNftData } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
+import { ChestOpeningModal } from "./chest-opening-modal";
 import { TokenDetailModal } from "./token-detail-modal";
 
 interface TokenCardProps {
@@ -17,46 +18,27 @@ interface TokenCardProps {
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
+  totalOwnedChests?: number;
 }
 
-export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
+export const TokenCard = ({
+  token,
+  isSelected = false,
+  onToggleSelection,
+  toggleNftSelection,
+  totalOwnedChests = 0,
+}: TokenCardProps) => {
   const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+  const [isChestModalOpen, setIsChestModalOpen] = useState(false);
+  const [remainingChests, setRemainingChests] = useState(totalOwnedChests);
 
   const isOwner = token.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
-  // Calculate time remaining for auctions about to expire
-  useEffect(() => {
-    if (!token.expiration) return;
-
-    const expirationTime = Number(token.expiration) * 1000;
-    const updateCountdown = () => {
-      const now = Date.now();
-      const diff = expirationTime - now;
-
-      if (diff <= 0) {
-        setTimeRemaining("Expired");
-        return;
-      }
-
-      // Only show countdown if less than an hour remains
-      if (diff < 60 * 60 * 1000) {
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
-      } else {
-        setTimeRemaining(null);
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [token.expiration]);
+  const isLootChest = collection?.name === "Loot Chest";
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -187,14 +169,30 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           ${isSelected ? "bg-gold/5" : ""}`}
         >
           <div className="flex w-full gap-4">
-            <Button
-              disabled={isSelected}
-              variant={isOwner ? "outline" : "default"}
-              className="w-full"
-              onClick={handleCardClick}
-            >
-              {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
-            </Button>
+            {isOwner && isLootChest ? (
+              <>
+                <Button
+                  disabled={isSelected}
+                  variant="default"
+                  className="w-full"
+                  onClick={() => setIsChestModalOpen(true)}
+                >
+                  Open Chest
+                </Button>
+                <Button disabled={isSelected} variant="outline" className="w-full" onClick={handleCardClick}>
+                  Manage
+                </Button>
+              </>
+            ) : (
+              <Button
+                disabled={isSelected}
+                variant={isOwner ? "outline" : "default"}
+                className="w-full"
+                onClick={handleCardClick}
+              >
+                {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
+              </Button>
+            )}
 
             {isOwner && (
               <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
@@ -209,6 +207,14 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
         <TokenDetailModal
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
+          isLootChest={isLootChest}
+          onChestOpen={() => {
+            setIsChestModalOpen(true);
+            setTimeout(() => {
+              // This is a hack to prevent the modal from closing immediately
+              setIsModalOpen(false);
+            }, 100);
+          }}
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
@@ -216,6 +222,15 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           orderId={token.order_id?.toString() ?? undefined}
           isListed={token.expiration !== null}
           expiration={token.expiration ? Number(token.expiration) : undefined}
+        />
+      )}
+
+      {isOwner && isLootChest && (
+        <ChestOpeningModal
+          isOpen={isChestModalOpen}
+          onOpenChange={setIsChestModalOpen}
+          remainingChests={remainingChests - 1}
+          onChestOpened={() => setRemainingChests((prev) => Math.max(0, prev - 1))}
         />
       )}
     </>
