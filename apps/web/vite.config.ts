@@ -26,9 +26,6 @@ export default defineConfig({
   ],
   build: {
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      external: [],
-    },
   },
   optimizeDeps: {
     include: [
@@ -41,11 +38,6 @@ export default defineConfig({
       "@starknet-react/core",
       "@starknet-io/starknet-types-08",
     ],
-    esbuildOptions: {
-      define: {
-        global: "globalThis",
-      },
-    },
   },
   ssr: {
     noExternal: [
