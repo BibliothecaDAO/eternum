@@ -56,8 +56,6 @@ export const TokenDetailModal = ({
 }: TokenDetailModalProps) => {
   const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
 
-  console.log("isLootChest", isLootChest, "isOwner", isOwner);
-
   // Transform IPFS URLs to use Pinata gateway
   const image = originalImage?.startsWith("ipfs://")
     ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
@@ -83,6 +81,15 @@ export const TokenDetailModal = ({
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
+
+  const handleOpenChest = () => {
+    setIsChestOpeningLoading(true);
+    setTimeout(() => {
+      setIsChestOpeningLoading(false);
+      onChestOpen();
+    }, 2000);
+  };
 
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
@@ -234,8 +241,15 @@ export const TokenDetailModal = ({
       ) : (
         <div className="flex gap-2 mt-2">
           {isOwner && isLootChest && (
-            <Button variant="default" className="w-full" onClick={onChestOpen}>
-              Open Chest
+            <Button variant="default" className="w-full" onClick={handleOpenChest} disabled={isLoading}>
+              {isChestOpeningLoading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Opening...
+                </>
+              ) : (
+                "Open Chest"
+              )}
             </Button>
           )}
           <CreateListingsDrawer

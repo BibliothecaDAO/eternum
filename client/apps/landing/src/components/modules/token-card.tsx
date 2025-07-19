@@ -171,14 +171,14 @@ export const TokenCard = ({
           <div className="flex w-full gap-4">
             {isOwner && isLootChest ? (
               <>
-                <Button
+                {/* <Button
                   disabled={isSelected}
                   variant="default"
                   className="w-full"
                   onClick={() => setIsChestModalOpen(true)}
                 >
                   Open Chest
-                </Button>
+                </Button> */}
                 <Button disabled={isSelected} variant="outline" className="w-full" onClick={handleCardClick}>
                   Manage
                 </Button>
