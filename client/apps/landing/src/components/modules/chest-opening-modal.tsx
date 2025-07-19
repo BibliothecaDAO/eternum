@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ChestContent } from "./chest-content";
 
 interface ChestOpeningModalProps {
   isOpen: boolean;
@@ -169,25 +170,7 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
           )}
 
           {/* Complete state content */}
-          {videoState === "ended" && (
-            <div className="relative z-10 flex flex-col items-center justify-center gap-8">
-              <h1
-                style={{
-                  fontSize: "2.25rem", // text-4xl
-                  fontWeight: 700, // font-bold
-                  color: "#FFD700", // text-gold
-                  animation: "float 3s ease-in-out infinite", // animate-float
-                  transition: "opacity 5000ms",
-                  opacity: showContent ? 1 : 0,
-                  // Responsive font size for md:text-6xl
-                  // This is a simple example; you may want to use a CSS-in-JS solution for more complex breakpoints
-                  ...(window.innerWidth >= 768 ? { fontSize: "3.75rem" } : {}),
-                }}
-              >
-                You opened the chest!
-              </h1>
-            </div>
-          )}
+          {videoState === "ended" && <ChestContent showContent={showContent} />}
 
           {/* Controls */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-[60]">
