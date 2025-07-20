@@ -600,6 +600,21 @@ export function defineContractComponents(world: World) {
           RELIC_E1_BALANCE: RecsType.BigInt,
           RELIC_E2_BALANCE: RecsType.BigInt,
           RELIC_E3_BALANCE: RecsType.BigInt,
+          RELIC_E4_BALANCE: RecsType.BigInt,
+          RELIC_E5_BALANCE: RecsType.BigInt,
+          RELIC_E6_BALANCE: RecsType.BigInt,
+          RELIC_E7_BALANCE: RecsType.BigInt,
+          RELIC_E8_BALANCE: RecsType.BigInt,
+          RELIC_E9_BALANCE: RecsType.BigInt,
+          RELIC_E10_BALANCE: RecsType.BigInt,
+          RELIC_E11_BALANCE: RecsType.BigInt,
+          RELIC_E12_BALANCE: RecsType.BigInt,
+          RELIC_E13_BALANCE: RecsType.BigInt,
+          RELIC_E14_BALANCE: RecsType.BigInt,
+          RELIC_E15_BALANCE: RecsType.BigInt,
+          RELIC_E16_BALANCE: RecsType.BigInt,
+          RELIC_E17_BALANCE: RecsType.BigInt,
+          RELIC_E18_BALANCE: RecsType.BigInt,
           weight: {
             capacity: RecsType.BigInt,
             weight: RecsType.BigInt,
@@ -833,7 +848,7 @@ export function defineContractComponents(world: World) {
             name: "Resource",
             types: [
               "u32", // entity_id
-              ...Array(40).fill("u128"), // balances
+              ...Array(56).fill("u128"), // balances
               "u128",
               "u128", // weight
               ...Array(37).fill(["u32", "u128", "u128", "u32"]).flat(), // productions

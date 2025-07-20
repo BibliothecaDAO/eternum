@@ -32,19 +32,15 @@ export const RELICS_QUERIES = {
     INNER JOIN \`s1_eternum-Resource\` r ON s.entity_id = r.entity_id
     WHERE s.owner = '{owner}'
       AND (
-        (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0)
+        (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0) OR
+        (r.RELIC_E4_BALANCE > 0) OR (r.RELIC_E5_BALANCE > 0) OR (r.RELIC_E6_BALANCE > 0) OR
+        (r.RELIC_E7_BALANCE > 0) OR (r.RELIC_E8_BALANCE > 0) OR (r.RELIC_E9_BALANCE > 0) OR
+        (r.RELIC_E10_BALANCE > 0) OR (r.RELIC_E11_BALANCE > 0) OR (r.RELIC_E12_BALANCE > 0) OR
+        (r.RELIC_E13_BALANCE > 0) OR (r.RELIC_E14_BALANCE > 0) OR (r.RELIC_E15_BALANCE > 0) OR
+        (r.RELIC_E16_BALANCE > 0) OR (r.RELIC_E17_BALANCE > 0) OR (r.RELIC_E18_BALANCE > 0)
       )
     ORDER BY s.entity_id;
   `,
-
-  // AND (
-  //   (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0) OR
-  //   (r.RELIC_E4_BALANCE > 0) OR (r.RELIC_E5_BALANCE > 0) OR (r.RELIC_E6_BALANCE > 0) OR
-  //   (r.RELIC_E7_BALANCE > 0) OR (r.RELIC_E8_BALANCE > 0) OR (r.RELIC_E9_BALANCE > 0) OR
-  //   (r.RELIC_E10_BALANCE > 0) OR (r.RELIC_S1_BALANCE > 0) OR (r.RELIC_S2_BALANCE > 0) OR
-  //   (r.RELIC_S3_BALANCE > 0) OR (r.RELIC_S4_BALANCE > 0) OR (r.RELIC_S5_BALANCE > 0) OR
-  //   (r.RELIC_S6_BALANCE > 0) OR (r.RELIC_S7_BALANCE > 0) OR (r.RELIC_S8_BALANCE > 0)
-  // )
 
   /**
    * Fetch all relics owned by a player's armies (explorers)
@@ -65,7 +61,12 @@ export const RELICS_QUERIES = {
     INNER JOIN \`s1_eternum-Structure\` s ON s.entity_id = e.owner
     WHERE s.owner = '{owner}'
       AND (
-        (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0)
+        (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0) OR
+        (r.RELIC_E4_BALANCE > 0) OR (r.RELIC_E5_BALANCE > 0) OR (r.RELIC_E6_BALANCE > 0) OR
+        (r.RELIC_E7_BALANCE > 0) OR (r.RELIC_E8_BALANCE > 0) OR (r.RELIC_E9_BALANCE > 0) OR
+        (r.RELIC_E10_BALANCE > 0) OR (r.RELIC_E11_BALANCE > 0) OR (r.RELIC_E12_BALANCE > 0) OR
+        (r.RELIC_E13_BALANCE > 0) OR (r.RELIC_E14_BALANCE > 0) OR (r.RELIC_E15_BALANCE > 0) OR
+        (r.RELIC_E16_BALANCE > 0) OR (r.RELIC_E17_BALANCE > 0) OR (r.RELIC_E18_BALANCE > 0)
       )
     ORDER BY e.explorer_id;
   `,

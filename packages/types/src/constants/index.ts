@@ -52,23 +52,24 @@ export enum ResourcesIds {
   Lords = 37,
   Essence = 38,
   // Relics - Army Enhancements
-  StaminaRelic2 = 39,
-  DamageRelic1 = 40,
-  DamageReductionRelic1 = 41,
+  StaminaRelic1 = 39,
+  StaminaRelic2 = 40,
+  DamageRelic1 = 41,
   DamageRelic2 = 42,
-  StaminaRelic1 = 43,
+  DamageReductionRelic1 = 43,
   DamageReductionRelic2 = 44,
   ExplorationRelic1 = 45,
   ExplorationRelic2 = 46,
   ExplorationRewardRelic1 = 47,
   ExplorationRewardRelic2 = 48,
-  // Relics - Structure Enhancements
+  // Relics - Structure Army Enhancements
   StructureDamageReductionRelic1 = 49,
   StructureDamageReductionRelic2 = 50,
+  // Relics - Structure Production Enhancements
   ProductionRelic1 = 51,
   ProductionRelic2 = 52,
   LaborProductionRelic1 = 53,
   LaborProductionRelic2 = 54,
   TroopProductionRelic1 = 55,
-  TroopProductionRelic2 = 56,
+  TroopProductionRelic2 = 56
 }
