@@ -408,13 +408,25 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // todo: test gas for 20 shareholders
-            // ensure there are never more than 20 shareholders at a time
-            assert!(shareholders.len() <= 20, "too many shareholders, maximum of 20");
-
             // ensure the structure is owned by caller
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
             structure_owner.assert_caller_owner();
+
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            match blitz_mode_on {
+                true => {
+                    assert!(shareholders.len() == 1, "too many shareholders, maximum of 1");
+                    let (address, percentage) = *shareholders.at(0);
+                    assert!(percentage.into() == PercentageValueImpl::_100(), "percentage must be 100%");
+                    assert!(address.is_non_zero(), "shareholder must be set");
+                    assert!(address == structure_owner, "shareholder must be the structure owner");
+                },
+                false => {
+                    assert!( // 20 is the max for non-blitz mode
+                        shareholders.len() <= 20, "too many shareholders, maximum of 20",
+                    );
+                },
+            };
 
             // ensure the structure is a hyperstructure
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
