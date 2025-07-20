@@ -111,6 +111,27 @@ impl CubeImpl of CubeTrait {
 
         max.try_into().unwrap()
     }
+
+    fn scale(self: Cube, factor: i128) -> Cube {
+        // https://www.redblobgames.com/grids/hexagons/#rings-single
+        Cube { q: self.q * factor, r: self.r * factor, s: self.s * factor }
+    }
+
+    fn ring(self: Cube, radius: u32) -> Array<Cube> {
+        // https://www.redblobgames.com/grids/hexagons/#rings-single
+        assert!(radius > 0, "Eternum: Ring radius must be greater than 0");
+
+        let mut results: Array<Cube> = array![];
+        let mut zero_cube: Cube = Zero::zero();
+        let mut hex = self.add(zero_cube.neighbor_after_distance(Direction::SouthWest, 1).scale(radius.into()));
+        for direction in DirectionImpl::all() {
+            for _ in 0..radius {
+                results.append(hex);
+                hex = hex.neighbor_after_distance(direction, 1);
+            }
+        };
+        results
+    }
 }
 
 
@@ -210,6 +231,16 @@ pub impl CoordImpl of CoordTrait {
         let cube: Cube = self.into();
         let neighbor = cube.neighbor_after_distance(direction, tile_distance);
         neighbor.into()
+    }
+
+    fn ring(self: Coord, radius: u32) -> Array<Coord> {
+        let cube: Cube = self.into();
+        let cube_ring: Array<Cube> = cube.ring(radius.into());
+        let mut coord_ring: Array<Coord> = array![];
+        for cube in cube_ring {
+            coord_ring.append(cube.into());
+        };
+        coord_ring
     }
 }
 

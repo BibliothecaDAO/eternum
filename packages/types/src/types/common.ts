@@ -261,6 +261,16 @@ export interface Troops {
     amount: bigint;
     updated_tick: bigint;
   };
+  boosts: {
+    incr_damage_dealt_percent_num: number;
+    incr_damage_dealt_end_tick: number;
+    decr_damage_gotten_percent_num: number;
+    decr_damage_gotten_end_tick: number;
+    incr_stamina_regen_percent_num: number;
+    incr_stamina_regen_tick_count: number;
+    incr_explore_reward_percent_num: number;
+    incr_explore_reward_end_tick: number;
+  };
 }
 
 export enum TroopTier {

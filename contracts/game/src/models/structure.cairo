@@ -9,7 +9,7 @@ use s1_eternum::models::config::{
 use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::stamina::Stamina;
-use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
+use s1_eternum::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -241,7 +241,20 @@ pub impl StructureMetadataStoreImpl of StructureMetadataStoreTrait {
 pub impl StructureDefaultImpl of Default<Structure> {
     fn default() -> Structure {
         let troops: Troops = Troops {
-            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Stamina { amount: 0, updated_tick: 0 },
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         Structure {
             entity_id: 0,

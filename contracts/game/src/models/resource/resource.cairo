@@ -7,7 +7,6 @@ use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RE
 use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::WeightConfig;
 use s1_eternum::models::config::{TickImpl};
-use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffect, RelicEffectStoreImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl};
 
@@ -75,15 +74,8 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
-                let tick_config = TickImpl::get_tick_interval(ref world);
-                let current_tick: u64 = tick_config.current();
-                let entity_production_multiplier_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
-                    ref world, entity_id, RELIC_EFFECT::INCREASE_RESOURCE_PRODUCTION_30P_3D, current_tick,
-                );
                 // harvest the resource and get the amount of resources produced
-                let harvest_amount: u128 = ProductionImpl::harvest(
-                    ref resource, tick_config, entity_production_multiplier_relic_effect,
-                );
+                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
 
                 // add the produced amount to the resource balance
                 if harvest_amount.is_non_zero() {

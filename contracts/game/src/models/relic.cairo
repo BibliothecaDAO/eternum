@@ -1,7 +1,3 @@
-use core::num::traits::Bounded;
-use core::num::traits::zero::Zero;
-use dojo::model::{ModelStorage};
-use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RELICS_RESOURCE_START_ID};
 use s1_eternum::models::resource::resource::RelicResourceImpl;
@@ -9,15 +5,28 @@ use s1_eternum::models::resource::resource::RelicResourceImpl;
 pub mod RELIC_EFFECT {
     use s1_eternum::constants::{RELICS_RESOURCE_START_ID};
 
-    pub const INCREASE_STAMINA_REGENERATION_100P_3D: u8 = RELICS_RESOURCE_START_ID + 0;
-    pub const INCREASE_DAMAGE_30P_3D: u8 = RELICS_RESOURCE_START_ID + 1;
-    pub const REDUCE_DAMAGE_30P_3D: u8 = RELICS_RESOURCE_START_ID + 2;
-    pub const INSTANT_EXPLORE_1TILE: u8 = RELICS_RESOURCE_START_ID + 3;
-    pub const INSTANT_EXPLORE_2TILE: u8 = RELICS_RESOURCE_START_ID + 4;
-    pub const INCREASE_EXPLORATION_REWARDS_100P_3D: u8 = RELICS_RESOURCE_START_ID + 5;
-    pub const INCREASE_RESOURCE_PRODUCTION_30P_3D: u8 = RELICS_RESOURCE_START_ID + 6;
+    pub const EXPLORER_INCREASE_STAMINA_REGENERATION_50P_3D: u8 = RELICS_RESOURCE_START_ID + 0;
+    pub const EXPLORER_INCREASE_STAMINA_REGENERATION_100P_3D: u8 = RELICS_RESOURCE_START_ID + 1;
+    pub const EXPLORER_INCREASE_ATTACK_DAMAGE_20P_3D: u8 = RELICS_RESOURCE_START_ID + 2;
+    pub const EXPLORER_INCREASE_ATTACK_DAMAGE_40P_3D: u8 = RELICS_RESOURCE_START_ID + 3;
+    pub const EXPLORER_REDUCE_ENEMY_ATTACK_DAMAGE_20P_3D: u8 = RELICS_RESOURCE_START_ID + 4;
+    pub const EXPLORER_REDUCE_ENEMY_ATTACK_DAMAGE_40P_3D: u8 = RELICS_RESOURCE_START_ID + 5;
+    pub const EXPLORER_INSTANTLY_EXPLORE_ONE_TILE_RADIUS: u8 = RELICS_RESOURCE_START_ID + 6;
+    pub const EXPLORER_INSTANTLY_EXPLORE_TWO_TILE_RADIUS: u8 = RELICS_RESOURCE_START_ID + 7;
+    pub const EXPLORER_DOUBLE_EXPLORE_REWARD: u8 = RELICS_RESOURCE_START_ID + 8;
+    pub const EXPLORER_TRIPLE_EXPLORE_REWARD: u8 = RELICS_RESOURCE_START_ID + 9;
+    pub const STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_15P_6D: u8 = RELICS_RESOURCE_START_ID + 10;
+    pub const STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_30P_6D: u8 = RELICS_RESOURCE_START_ID + 11;
+    pub const STRUCTURE_RESOURCE_PRODUCTION_INCREASE_20P_3D: u8 = RELICS_RESOURCE_START_ID + 12;
+    pub const STRUCTURE_RESOURCE_PRODUCTION_INCREASE_40P_3D: u8 = RELICS_RESOURCE_START_ID + 13;
+    pub const STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_6D: u8 = RELICS_RESOURCE_START_ID + 14;
+    pub const STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_12D: u8 = RELICS_RESOURCE_START_ID + 15;
+    pub const STRUCTURE_TROOP_PRODUCTION_INCREASE_20P_6D: u8 = RELICS_RESOURCE_START_ID + 16;
+    pub const STRUCTURE_TROOP_PRODUCTION_INCREASE_20P_12D: u8 = RELICS_RESOURCE_START_ID + 17;
 }
 
+
+// TO BE DELETED
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct RelicEffect {
@@ -31,79 +40,50 @@ pub struct RelicEffect {
     pub effect_usage_left: u8,
 }
 
-#[generate_trait]
-pub impl RelicEffectStoreImpl of RelicEffectStoreTrait {
-    fn retrieve(
-        ref world: WorldStorage, entity_id: ID, relic_resource_id: u8, current_tick: u64,
-    ) -> Option<RelicEffect> {
-        let relic_effect: RelicEffect = world.read_model((entity_id, relic_resource_id));
-        return relic_effect.delete_expired(ref world, current_tick.try_into().unwrap());
-    }
-
-    fn store(self: RelicEffect, ref world: WorldStorage, current_tick: u32) {
-        match self.delete_expired(ref world, current_tick) {
-            Option::Some(relic_effect) => world.write_model(@relic_effect),
-            Option::None => (),
-        }
-    }
-
-    fn reduce_usage_left(ref self: RelicEffect, ref world: WorldStorage, current_tick: u32) {
-        if self.effect_usage_left != Bounded::MAX {
-            self.effect_usage_left -= 1;
-        }
-        self.store(ref world, current_tick);
-    }
-
-    fn is_expired(self: RelicEffect, current_tick: u32) -> bool {
-        return current_tick > self.effect_end_tick || self.effect_usage_left.is_zero();
-    }
-
-    fn assert_not_expired(self: RelicEffect, current_tick: u32) {
-        assert!(self.is_expired(current_tick), "Eternum: Relic effect has expired");
-    }
-
-    fn delete_expired(self: RelicEffect, ref world: WorldStorage, current_tick: u32) -> Option<RelicEffect> {
-        if self.is_expired(current_tick) {
-            // delete from db
-            world.erase_model(@self);
-            return Option::None;
-        }
-        return Option::Some(self);
-    }
-}
 
 #[generate_trait]
-pub impl RelicEffectObjectImpl of RelicEffectObjectTrait {
-    fn create_relic_effect(entity_id: ID, relic_resource_id: u8, start_tick: u32) -> RelicEffect {
-        let (rate, duration, usage_left) = Self::get_relic_effect(relic_resource_id, start_tick);
-        RelicEffect {
-            entity_id: entity_id,
-            effect_resource_id: relic_resource_id,
-            effect_rate: rate,
-            effect_start_tick: start_tick,
-            effect_end_tick: start_tick + duration,
-            effect_usage_left: usage_left,
-        }
-    }
-
-    fn get_relic_effect(relic_resource_id: u8, start_tick: u32) -> (u16, u32, u8) {
+pub impl RelicEffectImpl of RelicEffectTrait {
+    // Return (rate%, tick_duration, usage_left)
+    fn get_relic_effect(relic_resource_id: u8) -> (u16, u32, u8) {
         assert!(RelicResourceImpl::is_relic(relic_resource_id), "Eternum: Invalid relic resource id");
         let id: felt252 = (relic_resource_id - RELICS_RESOURCE_START_ID).into();
         match id {
-            // E1: increase stamina regeneration by 100% for 3 Eternum Days
-            0 => (10_000, 3, Bounded::MAX),
-            // E2: increase damage by 30% for 3 Eternum Days
-            1 => (3_000, 3, Bounded::MAX),
-            // E3: reduce damage taken by 30% for 3 Eternum Days
-            2 => (3_000, 3, Bounded::MAX),
-            // E4: instantly explore 1 tile radius
-            3 => (0, 0, 1),
-            // E5: instantly explore 2 tile radius
-            4 => (0, 0, 1),
-            // E6: increase exploration reward by 100% for 3 Eternum Days
-            5 => (10_000, 3, Bounded::MAX),
-            // E7: increase resource production by 30% for 3 Eternum Days
-            6 => (3_000, 3, Bounded::MAX),
+            // E1: increase explorer stamina regeneration by 50% for 3 Eternum Days
+            0 => (5_000, 0, 3),
+            // E2: increase explorer stamina regeneration by 100% for 3 Eternum Days
+            1 => (10_000, 0, 3),
+            // E3: increase explorer attack damage by 20% for 3 Eternum Days
+            2 => (2_000, 3, 0),
+            // E4: increase explorer attack damage by 40% for 3 Eternum Days
+            3 => (4_000, 3, 0),
+            // E5: reduce enemy attack damage by 20% for 3 Eternum Days
+            4 => (2_000, 3, 0),
+            // E6: reduce enemy attack damage by 40% for 3 Eternum Days
+            5 => (4_000, 3, 0),
+            // E7: instantly explore 1 tile radius
+            6 => (0, 0, 1),
+            // E8: instantly explore 2 tile radius
+            7 => (0, 0, 2),
+            // E9: double explore reward for 3 Eternum Days
+            8 => (10_000, 3, 0),
+            // E10: triple explore reward for 3 Eternum Days
+            9 => (20_000, 3, 0),
+            // E11: reduce guard attack damage by 15% for 6 Eternum Days
+            10 => (1_500, 6, 0),
+            // E12: reduce guard attack damage by 30% for 6 Eternum Days
+            11 => (3_000, 6, 0),
+            // E13: increase structure resource production by 20% for 3 Eternum Days
+            12 => (2_000, 3, 0),
+            // E14: increase structure resource production by 40% for 3 Eternum Days
+            13 => (4_000, 3, 0),
+            // E15: increase structure labor production by 20% for 6 Eternum Days
+            14 => (2_000, 6, 0),
+            // E16: increase structure labor production by 20% for 12 Eternum Days
+            15 => (2_000, 12, 0),
+            // E17: increase structure troop production by 20% for 6 Eternum Days
+            16 => (2_000, 6, 0),
+            // E18: increase structure troop production by 20% for 12 Eternum Days
+            17 => (2_000, 12, 0),
             _ => {
                 panic!("Invalid relic resource id");
                 (0, 0, 0)

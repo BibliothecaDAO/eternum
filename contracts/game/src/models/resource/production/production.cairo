@@ -5,8 +5,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickInterval};
-use s1_eternum::models::relic::{RelicEffect};
+use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
 
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -19,22 +18,84 @@ use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
 use s1_eternum::utils::math::{PercentageValueImpl};
 use s1_eternum::utils::math::{min};
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct ProductionWonderBonus {
+pub struct ProductionBoostBonus {
     #[key]
     pub structure_id: ID,
-    pub bonus_percent_num: u128,
+    pub wonder_incr_percent_num: u16,
+    pub incr_resource_rate_percent_num: u16,
+    pub incr_labor_rate_percent_num: u16,
+    pub incr_troop_rate_percent_num: u16,
+    pub incr_resource_rate_end_tick: u32,
+    pub incr_labor_rate_end_tick: u32,
+    pub incr_troop_rate_end_tick: u32,
 }
 
+
+pub impl ProductionBoostBonusZeroable of Zero<ProductionBoostBonus> {
+    fn is_zero(self: @ProductionBoostBonus) -> bool {
+        self.wonder_incr_percent_num == @0
+            && self.incr_resource_rate_percent_num == @0
+            && self.incr_labor_rate_percent_num == @0
+            && self.incr_troop_rate_percent_num == @0
+            && self.incr_resource_rate_end_tick == @0
+            && self.incr_labor_rate_end_tick == @0
+            && self.incr_troop_rate_end_tick == @0
+            && self.structure_id == @0
+    }
+
+    fn is_non_zero(self: @ProductionBoostBonus) -> bool {
+        !self.is_zero()
+    }
+
+    fn zero() -> ProductionBoostBonus {
+        ProductionBoostBonus {
+            structure_id: 0,
+            wonder_incr_percent_num: 0,
+            incr_resource_rate_percent_num: 0,
+            incr_labor_rate_percent_num: 0,
+            incr_troop_rate_percent_num: 0,
+            incr_resource_rate_end_tick: 0,
+            incr_labor_rate_end_tick: 0,
+            incr_troop_rate_end_tick: 0,
+        }
+    }
+}
 #[generate_trait]
-pub impl ProductionWonderBonusImpl of ProductionWonderBonusTrait {
-    fn include_wonder_bonus(ref world: WorldStorage, structure_id: ID, original_produced_amount: u128) -> u128 {
-        let production_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-        let production_output_bonus_amount: u128 = (original_produced_amount
-            * production_wonder_bonus.bonus_percent_num)
+pub impl ProductionBoostBonusImpl of ProductionBoostBonusTrait {
+    fn include_bonuses(
+        ref world: WorldStorage, structure_id: ID, resource_type: u8, original_produced_amount: u128, current_tick: u32,
+    ) -> u128 {
+        let mut total_amount: u128 = original_produced_amount;
+        let mut production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+        total_amount += (original_produced_amount * production_boost_bonus.wonder_incr_percent_num.into())
             / PercentageValueImpl::_100().into();
-        original_produced_amount + production_output_bonus_amount
+
+        // ensure bonus is not applied after the end of bonus tick
+        if current_tick > production_boost_bonus.incr_resource_rate_end_tick {
+            production_boost_bonus.incr_resource_rate_percent_num = 0;
+        }
+        if current_tick > production_boost_bonus.incr_labor_rate_end_tick {
+            production_boost_bonus.incr_labor_rate_percent_num = 0;
+        }
+        if current_tick > production_boost_bonus.incr_resource_rate_end_tick {
+            production_boost_bonus.incr_resource_rate_percent_num = 0;
+        }
+
+        // get bonus percent num for resource type
+        let rate_bonus_percent_num = if resource_type == ResourceTypes::LABOR {
+            production_boost_bonus.incr_labor_rate_percent_num
+        } else if TroopResourceImpl::is_troop(resource_type) {
+            production_boost_bonus.incr_troop_rate_percent_num
+        } else {
+            production_boost_bonus.incr_resource_rate_percent_num
+        };
+
+        // apply production bonus for resource rate
+        total_amount += (original_produced_amount * rate_bonus_percent_num.into()) / PercentageValueImpl::_100().into();
+
+        return total_amount;
     }
 }
 
@@ -118,11 +179,7 @@ pub impl ProductionImpl of ProductionTrait {
 
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(
-        ref resource: SingleResource,
-        tick_config: TickInterval,
-        production_multiplier_relic_effect: Option<RelicEffect>,
-    ) -> u128 {
+    fn harvest(ref resource: SingleResource) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
         let start_at = resource.production.last_updated_at;
@@ -147,24 +204,6 @@ pub impl ProductionImpl of ProductionTrait {
         if !Self::is_free_production(resource.resource_type) {
             total_produced_amount = min(total_produced_amount, resource.production.output_amount_left);
             resource.production.decrease_output_amout_left(total_produced_amount);
-        }
-
-        // apply production multiplier relic effect
-        match production_multiplier_relic_effect {
-            Option::Some(relic_effect) => {
-                // ensure bonus amount is only applied after the relic effect has started
-                let relic_start_at = tick_config.convert_to_estimated_timestamp(relic_effect.effect_start_tick.into());
-                let total_produced_amount_used_for_bonus = if relic_start_at <= start_at.into() {
-                    total_produced_amount
-                } else {
-                    let bonus_num_seconds_produced: u128 = (now.into() - relic_start_at).into();
-                    min(bonus_num_seconds_produced * resource.production.production_rate.into(), total_produced_amount)
-                };
-
-                total_produced_amount += (total_produced_amount_used_for_bonus * relic_effect.effect_rate.into())
-                    / PercentageValueImpl::_100().into();
-            },
-            Option::None => {},
         }
 
         // todo add event here
@@ -247,8 +286,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
-        let produced_labor_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produced_labor_amount,
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produced_labor_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, ResourceTypes::LABOR, produced_labor_amount, current_tick,
         );
         from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
         from_labor_resource.production = from_labor_resource_production;
@@ -303,8 +343,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
-        let produced_resource_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produced_resource_amount,
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produced_resource_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, produced_resource_type, produced_resource_amount, current_tick,
         );
         produced_resource_production.increase_output_amout_left(produced_resource_amount);
         produced_resource.production = produced_resource_production;
@@ -367,8 +408,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
         assert!(produceable_amount.is_non_zero(), "can't produce this resource in standard mode");
 
-        let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
-            ref world, from_entity_id, produceable_amount,
+        // apply production boost bonus
+        let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+        let produceable_amount = ProductionBoostBonusImpl::include_bonuses(
+            ref world, from_entity_id, produced_resource_type, produceable_amount, current_tick,
         );
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;

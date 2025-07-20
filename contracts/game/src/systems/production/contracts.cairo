@@ -56,7 +56,7 @@ mod production_systems {
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
         resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
+        resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -339,10 +339,17 @@ mod production_systems {
             );
 
             // set wonder production bonus
-            let mut structure_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-            assert!(structure_wonder_bonus.bonus_percent_num.is_zero(), "wonder production bonus is already set");
-            structure_wonder_bonus.bonus_percent_num = wonder_production_bonus_config.bonus_percent_num;
-            world.write_model(@structure_wonder_bonus);
+            let mut structure_production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+            assert!(
+                structure_production_boost_bonus.wonder_incr_percent_num.is_zero(),
+                "wonder production bonus is already set",
+            );
+            structure_production_boost_bonus
+                .wonder_incr_percent_num = wonder_production_bonus_config
+                .bonus_percent_num
+                .try_into()
+                .unwrap();
+            world.write_model(@structure_production_boost_bonus);
 
             // update tile model
             let mut structure_tile: Tile = world.read_model((structure_coord.x, structure_coord.y));
