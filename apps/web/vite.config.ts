@@ -26,9 +26,6 @@ export default defineConfig({
   ],
   build: {
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      external: [],
-    },
   },
   optimizeDeps: {
     include: [
@@ -39,25 +36,17 @@ export default defineConfig({
       "wagmi",
       "starknet",
       "@starknet-react/core",
-      "@starknet-io/starknet-types-08",
+      "zod",
     ],
-    esbuildOptions: {
-      define: {
-        global: "globalThis",
-      },
-    },
   },
   ssr: {
-    noExternal: [
-      "@realms-world/db",
-      "@realms-world/constants",
-      "@starknet-io/starknet-types-08",
-    ],
+    noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
     external: [
       "wagmi",
       "@reown/appkit/react",
       "@reown/appkit",
       "@reown/appkit-adapter-wagmi",
+      "@starknet-io/starknet-types-08",
     ],
   },
 });
