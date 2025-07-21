@@ -124,8 +124,6 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
               opacity: showContent ? 1 : 0,
             }}
           >
-            <h2 className="text-xl font-bold text-white mb-4 text-center">Loot Contents</h2>
-
             {/* Container for the asset list */}
             <div className="backdrop-blur-md rounded-2xl p-6 bg-gradient-to-br from-black/80 to-gray-900/60 border-2 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]">
               {/* Container header */}
@@ -146,11 +144,7 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
                     : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
 
                   return (
-                    <Card
-                      key={asset.id}
-                      className={cardClass}
-                      onClick={() => setSelectedAsset(asset)}
-                    >
+                    <Card key={asset.id} className={cardClass} onClick={() => setSelectedAsset(asset)}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
