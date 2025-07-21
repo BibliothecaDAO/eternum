@@ -26,8 +26,7 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  ResourceManager,
-  StructureActionManager,
+  StructureActionManager
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
@@ -39,7 +38,6 @@ import {
   HexEntityInfo,
   HexPosition,
   ID,
-  RelicEffect,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
@@ -100,7 +98,7 @@ export default class WorldmapScene extends HexagonScene {
   private travelEffects: Map<string, () => void> = new Map();
 
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
-  private pendingRelicEffects: Map<ID, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
+  // private pendingRelicEffects: Map<ID, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
 
   // Relic effect validation timer
   private relicValidationInterval: NodeJS.Timeout | null = null;
@@ -183,8 +181,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize,
       this.armyLabelsGroup,
       this,
-      (entityId: ID) => this.applyPendingRelicEffects(entityId),
-      (entityId: ID) => this.clearPendingRelicEffects(entityId),
+      // (entityId: ID) => this.applyPendingRelicEffects(entityId),
+      // (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
     this.structureManager = new StructureManager(
       this.scene,
@@ -192,8 +190,8 @@ export default class WorldmapScene extends HexagonScene {
       this.structureLabelsGroup,
       this,
       this.fxManager,
-      (entityId: ID) => this.applyPendingRelicEffects(entityId),
-      (entityId: ID) => this.clearPendingRelicEffects(entityId),
+      // (entityId: ID) => this.applyPendingRelicEffects(entityId),
+      // (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
 
     // Initialize the quest manager
@@ -323,8 +321,8 @@ export default class WorldmapScene extends HexagonScene {
       this.clearSelection();
     });
 
-    // Start relic effect validation timer (every 5 seconds)
-    this.startRelicValidationTimer();
+    // // Start relic effect validation timer (every 5 seconds)
+    // this.startRelicValidationTimer();
   }
 
   private setupCameraZoomHandler() {
@@ -1300,140 +1298,140 @@ export default class WorldmapScene extends HexagonScene {
       console.log(
         `Entity ${entityId} not found, storing as pending relic effect: relicResourceId=${relicResourceId}, isActive=${isActive}`,
       );
-      if (isActive) {
-        this.addPendingRelicEffect(entityId, relicResourceId, effect);
-      } else {
-        this.removePendingRelicEffect(entityId, relicResourceId);
-      }
+      // if (isActive) {
+      //   this.addPendingRelicEffect(entityId, relicResourceId, effect);
+      // } else {
+      //   this.removePendingRelicEffect(entityId, relicResourceId);
+      // }
     } else {
       // Update pending effects store even for loaded entities to keep it in sync
-      if (isActive) {
-        this.addPendingRelicEffect(entityId, relicResourceId, effect);
-      } else {
-        this.removePendingRelicEffect(entityId, relicResourceId);
-      }
+      // if (isActive) {
+      //   this.addPendingRelicEffect(entityId, relicResourceId, effect);
+      // } else {
+      //   this.removePendingRelicEffect(entityId, relicResourceId);
+      // }
     }
   }
 
-  /**
-   * Add a pending relic effect for an entity that may not be loaded yet
-   */
-  private addPendingRelicEffect(entityId: ID, relicResourceId: number, effect: RelicEffect) {
-    if (!this.pendingRelicEffects.has(entityId)) {
-      this.pendingRelicEffects.set(entityId, new Set());
-    }
+  // /**
+  //  * Add a pending relic effect for an entity that may not be loaded yet
+  //  */
+  // private addPendingRelicEffect(entityId: ID, relicResourceId: number, effect: RelicEffect) {
+  //   if (!this.pendingRelicEffects.has(entityId)) {
+  //     this.pendingRelicEffects.set(entityId, new Set());
+  //   }
 
-    const pendingRelics = this.pendingRelicEffects.get(entityId)!;
+  //   const pendingRelics = this.pendingRelicEffects.get(entityId)!;
 
-    // Check if there's already a pending relic effect with the same relicResourceId
-    let existingRelic: { relicResourceId: number; effect: RelicEffect } | null = null;
-    for (const pendingRelic of pendingRelics) {
-      if (pendingRelic.relicResourceId === relicResourceId) {
-        existingRelic = pendingRelic;
-        break;
-      }
-    }
+  //   // Check if there's already a pending relic effect with the same relicResourceId
+  //   let existingRelic: { relicResourceId: number; effect: RelicEffect } | null = null;
+  //   for (const pendingRelic of pendingRelics) {
+  //     if (pendingRelic.relicResourceId === relicResourceId) {
+  //       existingRelic = pendingRelic;
+  //       break;
+  //     }
+  //   }
 
-    if (existingRelic) {
-      // if the new effect has a newer start_tick, replace the existing one
-      if (effect.start_tick > existingRelic.effect.start_tick) {
-        pendingRelics.delete(existingRelic);
-        pendingRelics.add({ relicResourceId, effect });
-        console.log(
-          `Replaced older relic effect (start_tick=${existingRelic.effect.start_tick}) with newer one (start_tick=${effect.start_tick}): entityId=${entityId}, relicResourceId=${relicResourceId}`,
-        );
-      } else {
-        console.log(
-          `Skipped older/duplicate relic effect (start_tick=${effect.start_tick}) - keeping existing newer one (start_tick=${existingRelic.effect.start_tick}): entityId=${entityId}, relicResourceId=${relicResourceId}`,
-        );
-      }
-    } else {
-      // No existing relic effect with this ID, add it
-      pendingRelics.add({ relicResourceId, effect });
-      console.log(
-        `Added pending relic effect: entityId=${entityId}, relicResourceId=${relicResourceId}, startTick=${effect.start_tick}`,
-      );
-    }
-  }
+  //   if (existingRelic) {
+  //     // if the new effect has a newer start_tick, replace the existing one
+  //     if (effect.start_tick > existingRelic.effect.start_tick) {
+  //       pendingRelics.delete(existingRelic);
+  //       pendingRelics.add({ relicResourceId, effect });
+  //       console.log(
+  //         `Replaced older relic effect (start_tick=${existingRelic.effect.start_tick}) with newer one (start_tick=${effect.start_tick}): entityId=${entityId}, relicResourceId=${relicResourceId}`,
+  //       );
+  //     } else {
+  //       console.log(
+  //         `Skipped older/duplicate relic effect (start_tick=${effect.start_tick}) - keeping existing newer one (start_tick=${existingRelic.effect.start_tick}): entityId=${entityId}, relicResourceId=${relicResourceId}`,
+  //       );
+  //     }
+  //   } else {
+  //     // No existing relic effect with this ID, add it
+  //     pendingRelics.add({ relicResourceId, effect });
+  //     console.log(
+  //       `Added pending relic effect: entityId=${entityId}, relicResourceId=${relicResourceId}, startTick=${effect.start_tick}`,
+  //     );
+  //   }
+  // }
 
-  /**
-   * Remove a pending relic effect for an entity
-   */
-  private removePendingRelicEffect(entityId: ID, relicResourceId: number) {
-    console.log("removePendingRelicEffect", entityId, relicResourceId);
-    const pendingRelics = this.pendingRelicEffects.get(entityId);
-    if (pendingRelics) {
-      // Find and remove the specific pending relic effect
-      for (const pendingRelic of pendingRelics) {
-        if (pendingRelic.relicResourceId === relicResourceId) {
-          pendingRelics.delete(pendingRelic);
-          break;
-        }
-      }
-      if (pendingRelics.size === 0) {
-        this.pendingRelicEffects.delete(entityId);
-      }
-      console.log(`Removed pending relic effect: entityId=${entityId}, relicResourceId=${relicResourceId}`);
-    }
-  }
+  // /**
+  //  * Remove a pending relic effect for an entity
+  //  */
+  // private removePendingRelicEffect(entityId: ID, relicResourceId: number) {
+  //   console.log("removePendingRelicEffect", entityId, relicResourceId);
+  //   const pendingRelics = this.pendingRelicEffects.get(entityId);
+  //   if (pendingRelics) {
+  //     // Find and remove the specific pending relic effect
+  //     for (const pendingRelic of pendingRelics) {
+  //       if (pendingRelic.relicResourceId === relicResourceId) {
+  //         pendingRelics.delete(pendingRelic);
+  //         break;
+  //       }
+  //     }
+  //     if (pendingRelics.size === 0) {
+  //       this.pendingRelicEffects.delete(entityId);
+  //     }
+  //     console.log(`Removed pending relic effect: entityId=${entityId}, relicResourceId=${relicResourceId}`);
+  //   }
+  // }
 
-  /**
-   * Apply all pending relic effects for an entity (called when entity is loaded)
-   */
-  private async applyPendingRelicEffects(entityId: ID) {
-    const pendingRelics = this.pendingRelicEffects.get(entityId);
-    if (!pendingRelics || pendingRelics.size === 0) return;
+  // /**
+  //  * Apply all pending relic effects for an entity (called when entity is loaded)
+  //  */
+  // private async applyPendingRelicEffects(entityId: ID) {
+  //   const pendingRelics = this.pendingRelicEffects.get(entityId);
+  //   if (!pendingRelics || pendingRelics.size === 0) return;
 
-    console.log(`Applying ${pendingRelics.size} pending relic effects for entity ${entityId}`);
+  //   console.log(`Applying ${pendingRelics.size} pending relic effects for entity ${entityId}`);
 
-    // Check if this is an army entity
-    if (this.armyManager.hasArmy(entityId)) {
-      for (const pendingRelic of pendingRelics) {
-        try {
-          await this.armyManager.addRelicEffect(entityId, pendingRelic.relicResourceId, pendingRelic.effect);
-          console.log(
-            `Applied pending relic effect to army: entityId=${entityId}, relicResourceId=${pendingRelic.relicResourceId}`,
-          );
-        } catch (error) {
-          console.error(`Failed to apply pending relic effect to army ${entityId}:`, error);
-        }
-      }
-      return;
-    }
+  //   // Check if this is an army entity
+  //   if (this.armyManager.hasArmy(entityId)) {
+  //     for (const pendingRelic of pendingRelics) {
+  //       try {
+  //         await this.armyManager.addRelicEffect(entityId, pendingRelic.relicResourceId, pendingRelic.effect);
+  //         console.log(
+  //           `Applied pending relic effect to army: entityId=${entityId}, relicResourceId=${pendingRelic.relicResourceId}`,
+  //         );
+  //       } catch (error) {
+  //         console.error(`Failed to apply pending relic effect to army ${entityId}:`, error);
+  //       }
+  //     }
+  //     return;
+  //   }
 
-    // Check if this is a structure entity
-    const structureHexes = this.structureManager.structures.getStructures();
-    for (const [, structures] of structureHexes) {
-      if (structures.has(entityId)) {
-        for (const pendingRelic of pendingRelics) {
-          try {
-            await this.structureManager.addRelicEffect(entityId, pendingRelic.relicResourceId, pendingRelic.effect);
-            console.log(
-              `Applied pending relic effect to structure: entityId=${entityId}, relicResourceId=${pendingRelic.relicResourceId}`,
-            );
-          } catch (error) {
-            console.error(`Failed to apply pending relic effect to structure ${entityId}:`, error);
-          }
-        }
-        return;
-      }
-    }
-  }
+  //   // Check if this is a structure entity
+  //   const structureHexes = this.structureManager.structures.getStructures();
+  //   for (const [, structures] of structureHexes) {
+  //     if (structures.has(entityId)) {
+  //       for (const pendingRelic of pendingRelics) {
+  //         try {
+  //           await this.structureManager.addRelicEffect(entityId, pendingRelic.relicResourceId, pendingRelic.effect);
+  //           console.log(
+  //             `Applied pending relic effect to structure: entityId=${entityId}, relicResourceId=${pendingRelic.relicResourceId}`,
+  //           );
+  //         } catch (error) {
+  //           console.error(`Failed to apply pending relic effect to structure ${entityId}:`, error);
+  //         }
+  //       }
+  //       return;
+  //     }
+  //   }
+  // }
 
-  /**
-   * Clear all pending relic effects for an entity (called when entity is removed)
-   */
-  private clearPendingRelicEffects(entityId: ID) {
-    const pendingRelics = this.pendingRelicEffects.get(entityId);
-    if (pendingRelics) {
-      console.log(`Cleared ${pendingRelics.size} pending relic effects for entity ${entityId}`);
-      this.pendingRelicEffects.delete(entityId);
-    }
-  }
+  // /**
+  //  * Clear all pending relic effects for an entity (called when entity is removed)
+  //  */
+  // private clearPendingRelicEffects(entityId: ID) {
+  //   const pendingRelics = this.pendingRelicEffects.get(entityId);
+  //   if (pendingRelics) {
+  //     console.log(`Cleared ${pendingRelics.size} pending relic effects for entity ${entityId}`);
+  //     this.pendingRelicEffects.delete(entityId);
+  //   }
+  // }
 
   destroy() {
     this.resourceFXManager.destroy();
-    this.stopRelicValidationTimer();
+    // this.stopRelicValidationTimer();
   }
 
   /**
@@ -1468,80 +1466,80 @@ export default class WorldmapScene extends HexagonScene {
     return this.resourceFXManager.playMultipleResourceFx(resources, col, row);
   }
 
-  /**
-   * Start the periodic relic effect validation timer
-   */
-  private startRelicValidationTimer() {
-    // Clear any existing timer
-    this.stopRelicValidationTimer();
+  // /**
+  //  * Start the periodic relic effect validation timer
+  //  */
+  // private startRelicValidationTimer() {
+  //   // Clear any existing timer
+  //   this.stopRelicValidationTimer();
 
-    // Set up new timer to run every 5 seconds
-    this.relicValidationInterval = setInterval(() => {
-      this.validateActiveRelicEffects();
-    }, 5000);
-  }
+  //   // Set up new timer to run every 5 seconds
+  //   this.relicValidationInterval = setInterval(() => {
+  //     this.validateActiveRelicEffects();
+  //   }, 5000);
+  // }
 
-  /**
-   * Stop the periodic relic effect validation timer
-   */
-  private stopRelicValidationTimer() {
-    if (this.relicValidationInterval) {
-      clearInterval(this.relicValidationInterval);
-      this.relicValidationInterval = null;
-    }
-  }
+  // /**
+  //  * Stop the periodic relic effect validation timer
+  //  */
+  // private stopRelicValidationTimer() {
+  //   if (this.relicValidationInterval) {
+  //     clearInterval(this.relicValidationInterval);
+  //     this.relicValidationInterval = null;
+  //   }
+  // }
 
-  /**
-   * Validate all currently displayed relic effects and remove inactive ones
-   */
-  private async validateActiveRelicEffects() {
-    try {
-      const { currentArmiesTick } = getBlockTimestamp();
-      let removedCount = 0;
+  // /**
+  //  * Validate all currently displayed relic effects and remove inactive ones
+  //  */
+  // private async validateActiveRelicEffects() {
+  //   try {
+  //     const { currentArmiesTick } = getBlockTimestamp();
+  //     let removedCount = 0;
 
-      // Validate army relic effects
-      const armies = this.armyManager.getArmies();
-      for (const army of armies) {
-        const currentRelics = this.armyManager.getArmyRelicEffects(army.entityId);
-        if (currentRelics.length > 0) {
-          for (const relic of currentRelics) {
-            // Check if this relic effect is still active
-            if (!ResourceManager.isRelicActive(relic.effect, currentArmiesTick)) {
-              console.log(
-                `Removing inactive relic effect from army: entityId=${army.entityId}, relicNumber=${relic.relicId}`,
-              );
-              this.armyManager.removeRelicEffect(army.entityId, relic.relicId);
-              removedCount++;
-            }
-          }
-        }
-      }
+  //     // Validate army relic effects
+  //     const armies = this.armyManager.getArmies();
+  //     for (const army of armies) {
+  //       const currentRelics = this.armyManager.getArmyRelicEffects(army.entityId);
+  //       if (currentRelics.length > 0) {
+  //         for (const relic of currentRelics) {
+  //           // Check if this relic effect is still active
+  //           if (!ResourceManager.isRelicActive(relic.effect, currentArmiesTick)) {
+  //             console.log(
+  //               `Removing inactive relic effect from army: entityId=${army.entityId}, relicNumber=${relic.relicId}`,
+  //             );
+  //             this.armyManager.removeRelicEffect(army.entityId, relic.relicId);
+  //             removedCount++;
+  //           }
+  //         }
+  //       }
+  //     }
 
-      // Validate structure relic effects
-      const structureHexes = this.structureManager.structures.getStructures();
-      for (const [, structures] of structureHexes) {
-        for (const [entityId] of structures) {
-          const currentRelics = this.structureManager.getStructureRelicEffects(entityId);
-          if (currentRelics.length > 0) {
-            for (const relic of currentRelics) {
-              // Check if this relic effect is still active
-              if (!ResourceManager.isRelicActive(relic.effect, currentArmiesTick)) {
-                console.log(
-                  `Removing inactive relic effect from structure: entityId=${entityId}, relicNumber=${relic.relicId}`,
-                );
-                this.structureManager.removeRelicEffect(entityId, relic.relicId);
-                removedCount++;
-              }
-            }
-          }
-        }
-      }
+  //     // Validate structure relic effects
+  //     const structureHexes = this.structureManager.structures.getStructures();
+  //     for (const [, structures] of structureHexes) {
+  //       for (const [entityId] of structures) {
+  //         const currentRelics = this.structureManager.getStructureRelicEffects(entityId);
+  //         if (currentRelics.length > 0) {
+  //           for (const relic of currentRelics) {
+  //             // Check if this relic effect is still active
+  //             if (!ResourceManager.isRelicActive(relic.effect, currentArmiesTick)) {
+  //               console.log(
+  //                 `Removing inactive relic effect from structure: entityId=${entityId}, relicNumber=${relic.relicId}`,
+  //               );
+  //               this.structureManager.removeRelicEffect(entityId, relic.relicId);
+  //               removedCount++;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      if (removedCount > 0) {
-        console.log(`Removed ${removedCount} inactive relic effects during validation`);
-      }
-    } catch (error) {
-      console.error("Error during relic effect validation:", error);
-    }
-  }
+  //     if (removedCount > 0) {
+  //       console.log(`Removed ${removedCount} inactive relic effects during validation`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error during relic effect validation:", error);
+  //   }
+  // }
 }

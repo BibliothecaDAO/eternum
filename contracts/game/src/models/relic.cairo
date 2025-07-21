@@ -26,21 +26,6 @@ pub mod RELIC_EFFECT {
 }
 
 
-// TO BE DELETED
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct RelicEffect {
-    #[key]
-    pub entity_id: ID,
-    #[key]
-    pub effect_resource_id: u8,
-    pub effect_rate: u16,
-    pub effect_start_tick: u32,
-    pub effect_end_tick: u32,
-    pub effect_usage_left: u8,
-}
-
-
 #[generate_trait]
 pub impl RelicEffectImpl of RelicEffectTrait {
     // Return (rate%, tick_duration, usage_left)

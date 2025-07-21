@@ -1,11 +1,13 @@
 import { getIsBlitz } from "@/ui/constants";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
-import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { getEntityIdFromKeys, getEntityInfo, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useMemo, useState } from "react";
+import { getRelicEffectsFromBoostData } from "../../world/components/entities/active-relic-effects";
 
 const TIER_DISPLAY_NAMES: Record<string, string> = {
   lords: "Lords & Fragments",
@@ -54,6 +56,10 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   );
 
   const resourceManager = useResourceManager(entityId);
+
+  const { currentArmiesTick } = useBlockTimestamp();
+  const entityInfo = useMemo(() => getEntityInfo(entityId, ContractAddress("0x0"), setup.components, getIsBlitz()), [entityId, setup.components]);
+  const entityRelicEffects = useMemo(() => getRelicEffectsFromBoostData(currentArmiesTick, entityInfo.productionBoosts, entityInfo.troopsList), [entityInfo, currentArmiesTick]);
 
   const storageRemaining = useMemo(() => {
     if (!realmInfo?.storehouses) {
@@ -110,6 +116,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                 {resourceIds.map((resourceId: any) => (
                   <ResourceChip
                     key={resourceId}
+                    entityRelicEffects={entityRelicEffects}
                     size="large"
                     resourceId={resourceId}
                     resourceManager={resourceManager}

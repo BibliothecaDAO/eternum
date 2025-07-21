@@ -1,5 +1,5 @@
-import { ClientComponents, ID, RELICS, ResourcesIds, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { ClientComponents, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { configManager } from "./config-manager";
 
@@ -24,49 +24,36 @@ export class StaminaManager {
       getEntityIdFromKeys([BigInt(this.armyEntityId)]),
     )?.troops;
 
-    const activeRelicEntities = runQuery([
-      HasValue(this.components.RelicEffect, {
-        entity_id: this.armyEntityId,
-      }),
-    ]);
-
-    const activeRelicEffects = Array.from(activeRelicEntities)
-      .map((entity) => {
-        return getComponentValue(this.components.RelicEffect, entity as Entity);
-      })
-      .filter((relic) => relic !== undefined)
-      .filter((relic) => relic.effect_end_tick > currentArmiesTick)
-      .map((relic) => relic.effect_resource_id);
 
     if (!troops) return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
 
-    return StaminaManager.getStamina(troops, currentArmiesTick, activeRelicEffects);
+    return StaminaManager.getStamina(troops, currentArmiesTick);
   }
 
-  public static getStamina(troops: Troops, currentArmiesTick: number, activeRelicEffects: ResourcesIds[]) {
-    const staminaEffects = RELICS.filter((relic) => activeRelicEffects.includes(relic.id) && relic.type === "Stamina");
+  public static getStamina(troops: Troops, currentArmiesTick: number) {
 
-    const last_refill_tick = troops.stamina.updated_tick;
-
-    if (last_refill_tick >= BigInt(currentArmiesTick)) {
+    const lastRefillTick = troops.stamina.updated_tick;
+    if (lastRefillTick >= BigInt(currentArmiesTick)) {
       return structuredClone(troops.stamina);
     }
 
-    const newStamina =
-      staminaEffects.length > 0
-        ? this.refill(
-            currentArmiesTick,
-            last_refill_tick,
-            this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
-            Number(troops.stamina.amount),
-            Math.max(...staminaEffects.map((relic) => relic.bonus)),
-          )
-        : this.refill(
-            currentArmiesTick,
-            last_refill_tick,
-            this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
-            Number(troops.stamina.amount),
-          );
+    const staminaPerTick = configManager.getRefillPerTick();
+    let boostStaminaPerTick = staminaPerTick * troops.boosts.incr_stamina_regen_percent_num / 10_000;
+    let boostNumTicksPassed = Math.min(currentArmiesTick - Number(lastRefillTick), troops.boosts.incr_stamina_regen_tick_count);
+    let additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
+
+    // note: fix: if this update is not reflected outside this function, 
+    // the client might display wrong stamina values
+    troops.boosts.incr_stamina_regen_tick_count -= boostNumTicksPassed;
+
+
+    const newStamina = this.refill(
+      currentArmiesTick,
+      lastRefillTick,
+      this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
+      Number(troops.stamina.amount),
+      additionalStaminaBoost,
+    );
 
     return newStamina;
   }
@@ -81,18 +68,13 @@ export class StaminaManager {
     last_refill_tick: bigint,
     maxStamina: number,
     amount: number,
-    staminaMultiplier?: number,
+    additionalStaminaBoost?: number,
   ) {
     const staminaPerTick = configManager.getRefillPerTick();
-
     const numTicksPassed = currentArmiesTick - Number(last_refill_tick);
-
-    // Apply stamina relic multiplier to the regeneration rate if provided
-    const enhancedStaminaPerTick = staminaMultiplier ? staminaPerTick * staminaMultiplier : staminaPerTick;
-    const totalStaminaSinceLastTick = numTicksPassed * enhancedStaminaPerTick;
+    const totalStaminaSinceLastTick = (numTicksPassed * staminaPerTick) + (additionalStaminaBoost ?? 0);
 
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
-
     return {
       amount: BigInt(newAmount),
       updated_tick: BigInt(currentArmiesTick),
