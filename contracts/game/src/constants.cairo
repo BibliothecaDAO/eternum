@@ -85,11 +85,26 @@ pub fn all_resource_ids() -> Array<u8> {
         39,
         40,
         41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
     ]
 }
 
 pub const RELICS_RESOURCE_START_ID: u8 = 39;
-pub const RELICS_RESOURCE_END_ID: u8 = 41;
+pub const RELICS_RESOURCE_END_ID: u8 = 56;
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 pub mod ResourceTypes {
@@ -142,6 +157,21 @@ pub mod ResourceTypes {
     pub const RELIC_E1: u8 = 39;
     pub const RELIC_E2: u8 = 40;
     pub const RELIC_E3: u8 = 41;
+    pub const RELIC_E4: u8 = 42;
+    pub const RELIC_E5: u8 = 43;
+    pub const RELIC_E6: u8 = 44;
+    pub const RELIC_E7: u8 = 45;
+    pub const RELIC_E8: u8 = 46;
+    pub const RELIC_E9: u8 = 47;
+    pub const RELIC_E10: u8 = 48;
+    pub const RELIC_E11: u8 = 49;
+    pub const RELIC_E12: u8 = 50;
+    pub const RELIC_E13: u8 = 51;
+    pub const RELIC_E14: u8 = 52;
+    pub const RELIC_E15: u8 = 53;
+    pub const RELIC_E16: u8 = 54;
+    pub const RELIC_E17: u8 = 55;
+    pub const RELIC_E18: u8 = 56;
 }
 
 
@@ -228,6 +258,36 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
         "RELIC E2"
     } else if resource_type == 41 {
         "RELIC E3"
+    } else if resource_type == 42 {
+        "RELIC E4"
+    } else if resource_type == 43 {
+        "RELIC E5"
+    } else if resource_type == 44 {
+        "RELIC E6"
+    } else if resource_type == 45 {
+        "RELIC E7"
+    } else if resource_type == 46 {
+        "RELIC E8"
+    } else if resource_type == 47 {
+        "RELIC E9"
+    } else if resource_type == 48 {
+        "RELIC E10"
+    } else if resource_type == 49 {
+        "RELIC E11"
+    } else if resource_type == 50 {
+        "RELIC E12"
+    } else if resource_type == 51 {
+        "RELIC E13"
+    } else if resource_type == 52 {
+        "RELIC E14"
+    } else if resource_type == 53 {
+        "RELIC E15"
+    } else if resource_type == 54 {
+        "RELIC E16"
+    } else if resource_type == 55 {
+        "RELIC E17"
+    } else if resource_type == 56 {
+        "RELIC E18"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }

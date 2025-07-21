@@ -4,7 +4,6 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
 use s1_eternum::models::position::Coord;
-use s1_eternum::models::relic::{RelicEffect};
 use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
@@ -51,8 +50,20 @@ pub struct Troops {
     pub tier: TroopTier,
     pub count: u128,
     pub stamina: Stamina,
+    pub boosts: TroopBoosts,
 }
 
+#[derive(Copy, Drop, Serde, Introspect)]
+pub struct TroopBoosts {
+    pub incr_damage_dealt_percent_num: u16,
+    pub incr_damage_dealt_end_tick: u32,
+    pub decr_damage_gotten_percent_num: u16,
+    pub decr_damage_gotten_end_tick: u32,
+    pub incr_stamina_regen_percent_num: u16,
+    pub incr_stamina_regen_tick_count: u8,
+    pub incr_explore_reward_percent_num: u16,
+    pub incr_explore_reward_end_tick: u32,
+}
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct GuardTroops {
@@ -81,6 +92,10 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
+    fn all_slots() -> Array<GuardSlot> {
+        array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha]
+    }
+
     // todo: test
     fn assert_functional_slot(ref self: GuardTroops, slot: GuardSlot, max_guards: felt252) {
         let functional_slots = self.functional_slots(max_guards);
@@ -138,7 +153,20 @@ pub impl GuardImpl of GuardTrait {
 
     fn reset_all_slots(ref self: GuardTroops) {
         let default_troops: Troops = Troops {
-            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Default::default(),
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Default::default(),
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         self.delta = default_troops;
         self.delta_destroyed_tick = 0;
@@ -501,12 +529,6 @@ pub impl TroopsImpl of TroopsTrait {
     fn damage(
         ref self: Troops,
         ref bravo: Troops,
-        self_stamina_relic_effect: Option<RelicEffect>,
-        bravo_stamina_relic_effect: Option<RelicEffect>,
-        self_increase_damage_dealt_relic_effect: Option<RelicEffect>,
-        bravo_increase_damage_dealt_relic_effect: Option<RelicEffect>,
-        self_reduce_damage_taken_relic_effect: Option<RelicEffect>,
-        bravo_reduce_damage_taken_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
@@ -517,17 +539,10 @@ pub impl TroopsImpl of TroopsTrait {
         assert!(biome != Biome::None, "biome is not set");
 
         let mut alpha = self;
-        let alpha_stamina_relic_effect = self_stamina_relic_effect;
-        let alpha_increase_damage_dealt_relic_effect = self_increase_damage_dealt_relic_effect;
-        let alpha_reduce_damage_taken_relic_effect = self_reduce_damage_taken_relic_effect;
 
         // update alpha and bravo's staminas
-        alpha
-            .stamina
-            .refill(alpha_stamina_relic_effect, alpha.category, alpha.tier, troop_stamina_config, current_tick);
-        bravo
-            .stamina
-            .refill(bravo_stamina_relic_effect, bravo.category, bravo.tier, troop_stamina_config, current_tick);
+        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, current_tick);
+        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, current_tick);
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -584,45 +599,39 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        ////////////////////////////////////////////
-        /// APPLY BATTLE DAMAGE RELIC EFFECTS
-        ////////////////////////////////////////////
+        /////////////////////////////////////////////////
+        /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
+        //////////////////////////////////////////////////
 
-        match alpha_increase_damage_dealt_relic_effect {
-            Option::Some(relic_effect) => {
-                ALPHA_DAMAGE_DEALT += ALPHA_DAMAGE_DEALT
-                    * relic_effect.effect_rate.into()
-                    / PercentageValueImpl::_100().into();
-            },
-            Option::None => {},
+        if alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            alpha.boosts.incr_damage_dealt_percent_num = 0;
+        }
+        if alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            alpha.boosts.decr_damage_gotten_percent_num = 0;
         }
 
-        match bravo_increase_damage_dealt_relic_effect {
-            Option::Some(relic_effect) => {
-                BRAVO_DAMAGE_DEALT += BRAVO_DAMAGE_DEALT
-                    * relic_effect.effect_rate.into()
-                    / PercentageValueImpl::_100().into();
-            },
-            Option::None => {},
+        if bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            bravo.boosts.incr_damage_dealt_percent_num = 0;
+        }
+        if bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            bravo.boosts.decr_damage_gotten_percent_num = 0;
         }
 
-        match alpha_reduce_damage_taken_relic_effect {
-            Option::Some(relic_effect) => {
-                BRAVO_DAMAGE_DEALT -= BRAVO_DAMAGE_DEALT
-                    * relic_effect.effect_rate.into()
-                    / PercentageValueImpl::_100().into();
-            },
-            Option::None => {},
-        }
+        ALPHA_DAMAGE_DEALT += ALPHA_DAMAGE_DEALT
+            * alpha.boosts.incr_damage_dealt_percent_num.into()
+            / PercentageValueImpl::_100().into();
 
-        match bravo_reduce_damage_taken_relic_effect {
-            Option::Some(relic_effect) => {
-                ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
-                    * relic_effect.effect_rate.into()
-                    / PercentageValueImpl::_100().into();
-            },
-            Option::None => {},
-        }
+        BRAVO_DAMAGE_DEALT += BRAVO_DAMAGE_DEALT
+            * bravo.boosts.incr_damage_dealt_percent_num.into()
+            / PercentageValueImpl::_100().into();
+
+        BRAVO_DAMAGE_DEALT -= BRAVO_DAMAGE_DEALT
+            * alpha.boosts.decr_damage_gotten_percent_num.into()
+            / PercentageValueImpl::_100().into();
+
+        ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
+            * bravo.boosts.decr_damage_gotten_percent_num.into()
+            / PercentageValueImpl::_100().into();
 
         let ALPHA_STAMINA_LOSS: u64 = alpha_additional_stamina_for_damage
             + troop_stamina_config.stamina_attack_req.into();
@@ -640,34 +649,15 @@ pub impl TroopsImpl of TroopsTrait {
     fn attack(
         ref self: Troops,
         ref bravo: Troops,
-        self_stamina_relic_effect: Option<RelicEffect>,
-        bravo_stamina_relic_effect: Option<RelicEffect>,
-        self_increase_damage_dealt_relic_effect: Option<RelicEffect>,
-        bravo_increase_damage_dealt_relic_effect: Option<RelicEffect>,
-        self_reduce_damage_taken_relic_effect: Option<RelicEffect>,
-        bravo_reduce_damage_taken_relic_effect: Option<RelicEffect>,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
     ) {
         let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss) = self
-            .damage(
-                ref bravo,
-                self_stamina_relic_effect,
-                bravo_stamina_relic_effect,
-                self_increase_damage_dealt_relic_effect,
-                bravo_increase_damage_dealt_relic_effect,
-                self_reduce_damage_taken_relic_effect,
-                bravo_reduce_damage_taken_relic_effect,
-                biome,
-                troop_stamina_config,
-                troop_damage_config,
-                current_tick,
-            );
+            .damage(ref bravo, biome, troop_stamina_config, troop_damage_config, current_tick);
 
         let mut alpha = self;
-        let alpha_stamina_relic_effect = self_stamina_relic_effect;
 
         // deduct dead troops from each side
         alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
@@ -677,7 +667,7 @@ pub impl TroopsImpl of TroopsTrait {
         alpha
             .stamina
             .spend(
-                alpha_stamina_relic_effect,
+                ref alpha.boosts,
                 alpha.category,
                 alpha.tier,
                 troop_stamina_config,
@@ -694,7 +684,7 @@ pub impl TroopsImpl of TroopsTrait {
                 alpha
                     .stamina
                     .add(
-                        alpha_stamina_relic_effect,
+                        ref alpha.boosts,
                         alpha.category,
                         alpha.tier,
                         troop_stamina_config,
@@ -706,7 +696,7 @@ pub impl TroopsImpl of TroopsTrait {
                 bravo
                     .stamina
                     .add(
-                        bravo_stamina_relic_effect,
+                        ref bravo.boosts,
                         bravo.category,
                         bravo.tier,
                         troop_stamina_config,
@@ -780,6 +770,19 @@ mod tests {
         }
     }
 
+    fn TROOP_BOOSTS() -> TroopBoosts {
+        TroopBoosts {
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+        }
+    }
+
 
     #[test]
     fn tests_troop_attack_simple_1() {
@@ -788,12 +791,14 @@ mod tests {
             tier: TroopTier::T1,
             count: 1 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
         let mut bravo = Troops {
             category: TroopType::Paladin,
             tier: TroopTier::T1,
             count: 95_000 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
 
         alpha
@@ -819,12 +824,14 @@ mod tests {
             tier: TroopTier::T2, // Tier 2
             count: 61_293 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
         let mut bravo = Troops {
             category: TroopType::Crossbowman,
             tier: TroopTier::T1, // Tier 1
             count: 159_303 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
 
         alpha

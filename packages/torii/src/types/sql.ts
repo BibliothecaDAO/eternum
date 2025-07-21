@@ -282,14 +282,14 @@ export interface StructureRelicsData {
   RELIC_E8_BALANCE?: string;
   RELIC_E9_BALANCE?: string;
   RELIC_E10_BALANCE?: string;
-  RELIC_S1_BALANCE?: string;
-  RELIC_S2_BALANCE?: string;
-  RELIC_S3_BALANCE?: string;
-  RELIC_S4_BALANCE?: string;
-  RELIC_S5_BALANCE?: string;
-  RELIC_S6_BALANCE?: string;
-  RELIC_S7_BALANCE?: string;
-  RELIC_S8_BALANCE?: string;
+  RELIC_E11_BALANCE?: string;
+  RELIC_E12_BALANCE?: string;
+  RELIC_E13_BALANCE?: string;
+  RELIC_E14_BALANCE?: string;
+  RELIC_E15_BALANCE?: string;
+  RELIC_E16_BALANCE?: string;
+  RELIC_E17_BALANCE?: string;
+  RELIC_E18_BALANCE?: string;
 }
 
 export interface ArmyRelicsData {
@@ -309,14 +309,14 @@ export interface ArmyRelicsData {
   RELIC_E8_BALANCE?: string;
   RELIC_E9_BALANCE?: string;
   RELIC_E10_BALANCE?: string;
-  RELIC_S1_BALANCE?: string;
-  RELIC_S2_BALANCE?: string;
-  RELIC_S3_BALANCE?: string;
-  RELIC_S4_BALANCE?: string;
-  RELIC_S5_BALANCE?: string;
-  RELIC_S6_BALANCE?: string;
-  RELIC_S7_BALANCE?: string;
-  RELIC_S8_BALANCE?: string;
+  RELIC_E11_BALANCE?: string;
+  RELIC_E12_BALANCE?: string;
+  RELIC_E13_BALANCE?: string;
+  RELIC_E14_BALANCE?: string;
+  RELIC_E15_BALANCE?: string;
+  RELIC_E16_BALANCE?: string;
+  RELIC_E17_BALANCE?: string;
+  RELIC_E18_BALANCE?: string;
 }
 
 export interface ChestInfo {

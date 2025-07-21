@@ -56,7 +56,7 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionWonderBonus",
+    "s1_eternum-ProductionBoostBonus",
     "s1_eternum-RelicEffect",
   ];
 

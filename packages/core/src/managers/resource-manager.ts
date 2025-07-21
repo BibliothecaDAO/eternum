@@ -788,19 +788,94 @@ export class ResourceManager {
           balance: resource.ESSENCE_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.StaminaRelic2:
+      case ResourcesIds.StaminaRelic1:
         return {
           balance: resource.RELIC_E1_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.DamageRelic1:
+      case ResourcesIds.StaminaRelic2:
         return {
           balance: resource.RELIC_E2_BALANCE,
           production: noProduction,
         };
-      case ResourcesIds.DamageReductionRelic1:
+      case ResourcesIds.DamageRelic1:
         return {
           balance: resource.RELIC_E3_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageRelic2:
+        return {
+          balance: resource.RELIC_E4_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageReductionRelic1:
+        return {
+          balance: resource.RELIC_E5_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.DamageReductionRelic2:
+        return {
+          balance: resource.RELIC_E6_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRelic1:
+        return {
+          balance: resource.RELIC_E7_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRelic2:
+        return {
+          balance: resource.RELIC_E8_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRewardRelic1:
+        return {
+          balance: resource.RELIC_E9_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ExplorationRewardRelic2:
+        return {
+          balance: resource.RELIC_E10_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StructureDamageReductionRelic1:
+        return {
+          balance: resource.RELIC_E11_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.StructureDamageReductionRelic2:
+        return {
+          balance: resource.RELIC_E12_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ProductionRelic1:
+        return {
+          balance: resource.RELIC_E13_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.ProductionRelic2:
+        return {
+          balance: resource.RELIC_E14_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.LaborProductionRelic1:
+        return {
+          balance: resource.RELIC_E15_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.LaborProductionRelic2:
+        return {
+          balance: resource.RELIC_E16_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.TroopProductionRelic1:
+        return {
+          balance: resource.RELIC_E17_BALANCE,
+          production: noProduction,
+        };
+      case ResourcesIds.TroopProductionRelic2:
+        return {
+          balance: resource.RELIC_E18_BALANCE,
           production: noProduction,
         };
       default:
@@ -858,9 +933,24 @@ export class ResourceManager {
       ["FISH_BALANCE", ResourcesIds.Fish],
       ["LORDS_BALANCE", ResourcesIds.Lords],
       ["ESSENCE_BALANCE", ResourcesIds.Essence],
-      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic2],
-      ["RELIC_E2_BALANCE", ResourcesIds.DamageRelic1],
-      ["RELIC_E3_BALANCE", ResourcesIds.DamageReductionRelic1],
+      ["RELIC_E1_BALANCE", ResourcesIds.StaminaRelic1],
+      ["RELIC_E2_BALANCE", ResourcesIds.StaminaRelic2],
+      ["RELIC_E3_BALANCE", ResourcesIds.DamageRelic1],
+      ["RELIC_E4_BALANCE", ResourcesIds.DamageRelic2],
+      ["RELIC_E5_BALANCE", ResourcesIds.DamageReductionRelic1],
+      ["RELIC_E6_BALANCE", ResourcesIds.DamageReductionRelic2],
+      ["RELIC_E7_BALANCE", ResourcesIds.ExplorationRelic1],
+      ["RELIC_E8_BALANCE", ResourcesIds.ExplorationRelic2],
+      ["RELIC_E9_BALANCE", ResourcesIds.ExplorationRewardRelic1],
+      ["RELIC_E10_BALANCE", ResourcesIds.ExplorationRewardRelic2],
+      ["RELIC_E11_BALANCE", ResourcesIds.StructureDamageReductionRelic1],
+      ["RELIC_E12_BALANCE", ResourcesIds.StructureDamageReductionRelic2],
+      ["RELIC_E13_BALANCE", ResourcesIds.ProductionRelic1],
+      ["RELIC_E14_BALANCE", ResourcesIds.ProductionRelic2],
+      ["RELIC_E15_BALANCE", ResourcesIds.LaborProductionRelic1],
+      ["RELIC_E16_BALANCE", ResourcesIds.LaborProductionRelic2],
+      ["RELIC_E17_BALANCE", ResourcesIds.TroopProductionRelic1],
+      ["RELIC_E18_BALANCE", ResourcesIds.TroopProductionRelic2],
     ];
   }
 

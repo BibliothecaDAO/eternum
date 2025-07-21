@@ -38,11 +38,11 @@ export const Castle = () => {
   const [wonderStructureId, setWonderStructureId] = useState<ID | null>(null);
   const [showMissingResources, setShowMissingResources] = useState(false);
 
-  const productionWonderBonus = useComponentValue(
-    dojo.setup.components.ProductionWonderBonus,
+  const productionBoostBonus = useComponentValue(
+    dojo.setup.components.ProductionBoostBonus,
     getEntityIdFromKeys([BigInt(structureEntityId)]),
   );
-  const hasActivatedWonderBonus = !!productionWonderBonus;
+  const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
 
   const onActivateWonderBonus = async () => {
     setIsWonderBonusLoading(true);

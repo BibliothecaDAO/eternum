@@ -9,24 +9,24 @@ export const extractRelicsFromResourceData = (data: any): RelicInventory[] => {
 
   // Map relic balance fields to ResourcesIds
   const relicMappings = [
-    { field: "RELIC_E1_BALANCE", resourceId: ResourcesIds.StaminaRelic2 },
-    { field: "RELIC_E2_BALANCE", resourceId: ResourcesIds.DamageRelic1 },
-    { field: "RELIC_E3_BALANCE", resourceId: ResourcesIds.DamageReductionRelic1 },
+    { field: "RELIC_E1_BALANCE", resourceId: ResourcesIds.StaminaRelic1 },
+    { field: "RELIC_E2_BALANCE", resourceId: ResourcesIds.StaminaRelic2 },
+    { field: "RELIC_E3_BALANCE", resourceId: ResourcesIds.DamageRelic1 },
     { field: "RELIC_E4_BALANCE", resourceId: ResourcesIds.DamageRelic2 },
-    { field: "RELIC_E5_BALANCE", resourceId: ResourcesIds.StaminaRelic1 },
+    { field: "RELIC_E5_BALANCE", resourceId: ResourcesIds.DamageReductionRelic1 },
     { field: "RELIC_E6_BALANCE", resourceId: ResourcesIds.DamageReductionRelic2 },
     { field: "RELIC_E7_BALANCE", resourceId: ResourcesIds.ExplorationRelic1 },
     { field: "RELIC_E8_BALANCE", resourceId: ResourcesIds.ExplorationRelic2 },
     { field: "RELIC_E9_BALANCE", resourceId: ResourcesIds.ExplorationRewardRelic1 },
     { field: "RELIC_E10_BALANCE", resourceId: ResourcesIds.ExplorationRewardRelic2 },
-    { field: "RELIC_S1_BALANCE", resourceId: ResourcesIds.StructureDamageReductionRelic1 },
-    { field: "RELIC_S2_BALANCE", resourceId: ResourcesIds.StructureDamageReductionRelic2 },
-    { field: "RELIC_S3_BALANCE", resourceId: ResourcesIds.ProductionRelic1 },
-    { field: "RELIC_S4_BALANCE", resourceId: ResourcesIds.ProductionRelic2 },
-    { field: "RELIC_S5_BALANCE", resourceId: ResourcesIds.LaborProductionRelic1 },
-    { field: "RELIC_S6_BALANCE", resourceId: ResourcesIds.LaborProductionRelic2 },
-    { field: "RELIC_S7_BALANCE", resourceId: ResourcesIds.TroopProductionRelic1 },
-    { field: "RELIC_S8_BALANCE", resourceId: ResourcesIds.TroopProductionRelic2 },
+    { field: "RELIC_E11_BALANCE", resourceId: ResourcesIds.StructureDamageReductionRelic1 },
+    { field: "RELIC_E12_BALANCE", resourceId: ResourcesIds.StructureDamageReductionRelic2 },
+    { field: "RELIC_E13_BALANCE", resourceId: ResourcesIds.ProductionRelic1 },
+    { field: "RELIC_E14_BALANCE", resourceId: ResourcesIds.ProductionRelic2 },
+    { field: "RELIC_E15_BALANCE", resourceId: ResourcesIds.LaborProductionRelic1 },
+    { field: "RELIC_E16_BALANCE", resourceId: ResourcesIds.LaborProductionRelic2 },
+    { field: "RELIC_E17_BALANCE", resourceId: ResourcesIds.TroopProductionRelic1 },
+    { field: "RELIC_E18_BALANCE", resourceId: ResourcesIds.TroopProductionRelic2 },
   ];
 
   for (const mapping of relicMappings) {

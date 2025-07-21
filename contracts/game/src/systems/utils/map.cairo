@@ -3,8 +3,9 @@ use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::DAYDREAMS_AGENT_ID;
 use s1_eternum::models::map::{Tile, TileOccupier};
+use s1_eternum::models::position::{Coord, CoordTrait};
 use s1_eternum::models::troop::{TroopTier, TroopType};
-use s1_eternum::utils::map::biomes::Biome;
+use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 #[generate_trait]
 pub impl IMapImpl of IMapTrait {
@@ -139,6 +140,18 @@ pub impl IMapImpl of IMapTrait {
         tile.biome = biome.into();
         world.write_model(@tile);
         // todo add event {if not already explored}
+    }
+
+    fn explore_ring(ref world: WorldStorage, start_coord: Coord, mut radius: u32) {
+        while radius > 0 {
+            let coord_ring: Array<Coord> = start_coord.ring(radius);
+            for coord in coord_ring {
+                let mut tile: Tile = world.read_model((coord.x, coord.y));
+                let biome: Biome = get_biome(coord.x.into(), coord.y.into());
+                Self::explore(ref world, ref tile, biome);
+            };
+            radius -= 1;
+        }
     }
 
     fn occupy(ref world: WorldStorage, ref tile: Tile, category: TileOccupier, id: ID) {

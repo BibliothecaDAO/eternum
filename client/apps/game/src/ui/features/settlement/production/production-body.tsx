@@ -21,17 +21,17 @@ export const ProductionBody = ({
 
   const {
     setup: {
-      components: { ProductionWonderBonus },
+      components: { ProductionBoostBonus },
     },
   } = useDojo();
 
   const { bonus, hasActivatedWonderBonus } = useMemo(() => {
-    const productionWonderBonus = getComponentValue(
-      ProductionWonderBonus,
+    const productionBoostBonus = getComponentValue(
+      ProductionBoostBonus,
       getEntityIdFromKeys([BigInt(realm.entityId)]),
     );
     const wonderBonusConfig = configManager.getWonderBonusConfig();
-    const hasActivatedWonderBonus = !!productionWonderBonus;
+    const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
     return {
       bonus: hasActivatedWonderBonus ? 1 + wonderBonusConfig.bonusPercentNum / 10000 : 1,
       hasActivatedWonderBonus,

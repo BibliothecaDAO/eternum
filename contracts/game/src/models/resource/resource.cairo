@@ -7,7 +7,6 @@ use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RE
 use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::WeightConfig;
 use s1_eternum::models::config::{TickImpl};
-use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffect, RelicEffectStoreImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl};
 
@@ -75,15 +74,8 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
-                let tick_config = TickImpl::get_tick_interval(ref world);
-                let current_tick: u64 = tick_config.current();
-                let entity_production_multiplier_relic_effect: Option<RelicEffect> = RelicEffectStoreImpl::retrieve(
-                    ref world, entity_id, RELIC_EFFECT::INCREASE_RESOURCE_PRODUCTION_30P_3D, current_tick,
-                );
                 // harvest the resource and get the amount of resources produced
-                let harvest_amount: u128 = ProductionImpl::harvest(
-                    ref resource, tick_config, entity_production_multiplier_relic_effect,
-                );
+                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
 
                 // add the produced amount to the resource balance
                 if harvest_amount.is_non_zero() {
@@ -244,6 +236,21 @@ pub struct Resource {
     RELIC_E1_BALANCE: u128,
     RELIC_E2_BALANCE: u128,
     RELIC_E3_BALANCE: u128,
+    RELIC_E4_BALANCE: u128,
+    RELIC_E5_BALANCE: u128,
+    RELIC_E6_BALANCE: u128,
+    RELIC_E7_BALANCE: u128,
+    RELIC_E8_BALANCE: u128,
+    RELIC_E9_BALANCE: u128,
+    RELIC_E10_BALANCE: u128,
+    RELIC_E11_BALANCE: u128,
+    RELIC_E12_BALANCE: u128,
+    RELIC_E13_BALANCE: u128,
+    RELIC_E14_BALANCE: u128,
+    RELIC_E15_BALANCE: u128,
+    RELIC_E16_BALANCE: u128,
+    RELIC_E17_BALANCE: u128,
+    RELIC_E18_BALANCE: u128,
     weight: Weight,
     STONE_PRODUCTION: Production,
     COAL_PRODUCTION: Production,
@@ -379,6 +386,21 @@ pub impl ResourceImpl of ResourceTrait {
             39 => selector!("RELIC_E1_BALANCE"),
             40 => selector!("RELIC_E2_BALANCE"),
             41 => selector!("RELIC_E3_BALANCE"),
+            42 => selector!("RELIC_E4_BALANCE"),
+            43 => selector!("RELIC_E5_BALANCE"),
+            44 => selector!("RELIC_E6_BALANCE"),
+            45 => selector!("RELIC_E7_BALANCE"),
+            46 => selector!("RELIC_E8_BALANCE"),
+            47 => selector!("RELIC_E9_BALANCE"),
+            48 => selector!("RELIC_E10_BALANCE"),
+            49 => selector!("RELIC_E11_BALANCE"),
+            50 => selector!("RELIC_E12_BALANCE"),
+            51 => selector!("RELIC_E13_BALANCE"),
+            52 => selector!("RELIC_E14_BALANCE"),
+            53 => selector!("RELIC_E15_BALANCE"),
+            54 => selector!("RELIC_E16_BALANCE"),
+            55 => selector!("RELIC_E17_BALANCE"),
+            56 => selector!("RELIC_E18_BALANCE"),
             _ => panic!("Invalid resource type"),
         }
     }
