@@ -221,10 +221,7 @@ pub mod relic_systems {
 
             let (rate, duration, _usage_left) = RelicEffectImpl::get_relic_effect(relic_resource_id);
             let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
-
-            let structure_operational_slots = guards.functional_slots(structure_base.troop_max_guard_count.into());
-            for i in 0..structure_operational_slots.len() {
-                let slot = *structure_operational_slots.at(i);
+            for slot in GuardImpl::all_slots() {
                 let (mut slot_troops, troop_destroyed_tick) = guards.from_slot(slot);
 
                 // refill stamina

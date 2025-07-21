@@ -92,6 +92,10 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
+    fn all_slots() -> Array<GuardSlot> {
+        array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha]
+    }
+
     // todo: test
     fn assert_functional_slot(ref self: GuardTroops, slot: GuardSlot, max_guards: felt252) {
         let functional_slots = self.functional_slots(max_guards);
