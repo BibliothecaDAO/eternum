@@ -1,7 +1,7 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { RelicEffect } from "@bibliothecadao/torii";
 import {
   ClientComponents,
   getRelicInfo,
@@ -26,7 +26,7 @@ export const InventoryResources = ({
   recipientType,
 }: {
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  relicEffects: ComponentValue<ClientComponents["RelicEffect"]["schema"]>[];
+  relicEffects: RelicEffect[];
   max?: number;
   className?: string;
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
@@ -36,7 +36,6 @@ export const InventoryResources = ({
 }) => {
   const [showAll, setShowAll] = useState(false);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { currentArmiesTick } = useBlockTimestamp();
 
   const sortedResources = useMemo(() => {
     return ResourceManager.getResourceBalances(resources).sort((a, b) => b.amount - a.amount);
@@ -83,19 +82,8 @@ export const InventoryResources = ({
               (relicInfo.activation === RelicActivation.Structure ||
                 relicInfo.activation === RelicActivation.ArmyAndStructure)));
 
-        const relicEffect = relicEffects.find((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
         // Check if relic effect is active
-        const isRelicActive =
-          resourceIsRelic &&
-          relicEffect &&
-          ResourceManager.isRelicActive(
-            {
-              start_tick: relicEffect.effect_start_tick,
-              end_tick: relicEffect.effect_end_tick,
-              usage_left: relicEffect.effect_usage_left,
-            },
-            currentArmiesTick,
-          );
+        const isRelicActive = resourceIsRelic && relicEffects && relicEffects.some((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
 
         return (
           <div

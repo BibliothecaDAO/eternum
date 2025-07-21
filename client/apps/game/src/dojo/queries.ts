@@ -57,7 +57,6 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
     "s1_eternum-ProductionBoostBonus",
-    "s1_eternum-RelicEffect",
   ];
 
   // Create promises for all queries without awaiting them
@@ -423,16 +422,4 @@ export const getQuestsFromTorii = async (client: ToriiClient, components: Compon
   };
 
   return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
-};
-
-// todo: check relic effect active
-export const getActiveRelicEffectsFromTorii = async (
-  client: ToriiClient,
-  components: Component<Schema, Metadata, undefined>[],
-  currentTick: number,
-) => {
-  // Filter for active relic effects where effect_end_tick >= currentTick
-  const query = MemberClause("s1_eternum-RelicEffect", "effect_end_tick", "Gte", currentTick).build();
-
-  return getEntities(client, query, components as any, [], ["s1_eternum-RelicEffect"], EVENT_QUERY_LIMIT, false);
 };

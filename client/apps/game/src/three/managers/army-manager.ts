@@ -7,13 +7,13 @@ import { Position } from "@/types/position";
 import { COLORS } from "@/ui/features/settlement";
 import { getCharacterName } from "@/utils/agent";
 import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
+import { RelicEffect } from "@bibliothecadao/torii";
 import {
   BiomeType,
   ContractAddress,
   HexEntityInfo,
   ID,
   orders,
-  RelicEffect,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";

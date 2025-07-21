@@ -1,4 +1,3 @@
-import { sqlApi } from "@/services/api";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
@@ -12,27 +11,23 @@ import {
   getAddressName,
   getGuildFromPlayerAddress,
   getStructureName,
-  ResourceManager,
-  StaminaManager,
+  StaminaManager
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
-  ClientComponents,
   ContractAddress,
   ID,
   RelicRecipientType,
-  ResourcesIds,
   TroopTier,
-  TroopType,
+  TroopType
 } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
-import { ActiveRelicEffects } from "./active-relic-effects";
+import { ActiveRelicEffects, getRelicEffectsFromBoostData } from "./active-relic-effects";
 
 interface ArmyEntityDetailProps {
   armyEntityId: ID;
@@ -74,10 +69,7 @@ export const ArmyEntityDetail = memo(
       queryFn: async () => {
         if (!toriiClient || !armyEntityId) return undefined;
         const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        const relicEffects = (await sqlApi.fetchEntityRelicEffects(armyEntityId)) as ComponentValue<
-          ClientComponents["RelicEffect"]["schema"]
-        >[];
-        return { ...explorer, relicEffects };
+        return { ...explorer };
       },
       staleTime: 30000, // 30 seconds
     });
@@ -124,24 +116,7 @@ export const ArmyEntityDetail = memo(
       if (!explorer) return undefined;
 
       const { currentArmiesTick } = getBlockTimestamp();
-
-      // Convert relic effects to resource IDs for StaminaManager
-      const relicResourceIds =
-        (explorerData?.relicEffects
-          // todo: check relic effect active
-          ?.filter((effect) =>
-            ResourceManager.isRelicActive(
-              {
-                start_tick: effect.effect_start_tick,
-                end_tick: effect.effect_end_tick,
-                usage_left: effect.effect_usage_left,
-              },
-              currentArmiesTick,
-            ),
-          )
-          .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[]) || [];
-
-      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick, relicResourceIds);
+      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
       const maxStamina = StaminaManager.getMaxStamina(
         explorer.troops.category as TroopType,
         explorer.troops.tier as TroopTier,
@@ -157,6 +132,7 @@ export const ArmyEntityDetail = memo(
         : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
       const structureOwnerName = structure ? getStructureName(structure, getIsBlitz()).name : undefined;
+      const relicEffects = getRelicEffectsFromBoostData(currentArmiesTick, undefined, [explorer.troops]);
 
       return {
         stamina,
@@ -166,8 +142,9 @@ export const ArmyEntityDetail = memo(
         addressName,
         isMine,
         structureOwnerName: structureOwnerName,
+        relicEffects,
       };
-    }, [explorer, structure, components, userAddress, armyEntityId, explorerData?.relicEffects]);
+    }, [explorer, structure, components, userAddress, armyEntityId]);
 
     const handleDeleteExplorer = async () => {
       setIsLoadingDelete(true);
@@ -288,7 +265,6 @@ export const ArmyEntityDetail = memo(
                 army={explorer}
                 explorerResources={explorerResources}
                 structureResources={structureResources}
-                relicEffects={explorerData?.relicEffects}
               />
             )}
 
@@ -319,7 +295,7 @@ export const ArmyEntityDetail = memo(
               <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
               <InventoryResources
                 resources={explorerResources}
-                relicEffects={explorerData?.relicEffects}
+                relicEffects={derivedData.relicEffects}
                 max={maxInventory}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}
@@ -331,8 +307,8 @@ export const ArmyEntityDetail = memo(
           )}
 
           {/* Active Relic Effects section */}
-          {explorerData?.relicEffects && (
-            <ActiveRelicEffects relicEffects={explorerData.relicEffects} entityId={armyEntityId} compact={compact} />
+          {derivedData.relicEffects && (
+            <ActiveRelicEffects relicEffects={derivedData.relicEffects} entityId={armyEntityId} compact={compact} />
           )}
 
           {/* Troops section */}

@@ -343,11 +343,8 @@ export interface PlayerRelicsData {
   armies: EntityWithRelics[];
 }
 
-export interface EntityRelicEffect {
-  entity_id: ID;
+export interface RelicEffect {
   effect_resource_id: number;
-  effect_rate: number;
   effect_start_tick: number;
   effect_end_tick: number;
-  effect_usage_left: number;
 }

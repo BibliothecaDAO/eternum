@@ -9,6 +9,7 @@ export interface RelicInfo {
   craftable: boolean;
   effect: string;
   bonus: number;
+  bonusInContracts: number;
   duration?: string;
 }
 
@@ -24,22 +25,24 @@ export const RELICS: RelicInfo[] = [
     id: ResourcesIds.StaminaRelic1,
     name: "Stamina Relic I",
     type: "Stamina",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 1,
     craftable: true,
     effect: "Increases stamina regeneration by 50%",
     bonus: 1.5,
+    bonusInContracts: 5_000, // 50%
     duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.StaminaRelic2,
     name: "Stamina Relic II",
     type: "Stamina",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 2,
     craftable: false,
     effect: "Increases stamina regeneration by 100%",
     bonus: 2,
+    bonusInContracts: 10_000, // 100%
     duration: "3 Eternum Days",
   },
 
@@ -48,22 +51,24 @@ export const RELICS: RelicInfo[] = [
     id: ResourcesIds.DamageRelic1,
     name: "Damage Relic I",
     type: "Damage",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 1,
     craftable: false,
-    effect: "Increases damage by 30%",
-    bonus: 1.3,
+    effect: "Increases damage by 20%",
+    bonus: 1.2,
+    bonusInContracts: 2_000, // 20%
     duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.DamageRelic2,
     name: "Damage Relic II",
     type: "Damage",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 2,
     craftable: false,
     effect: "Increases damage by 40%",
     bonus: 1.4,
+    bonusInContracts: 4_000, // 40%
     duration: "3 Eternum Days",
   },
 
@@ -72,22 +77,24 @@ export const RELICS: RelicInfo[] = [
     id: ResourcesIds.DamageReductionRelic1,
     name: "Damage Reduction Relic I",
     type: "Damage Reduction",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 1,
     craftable: false,
-    effect: "Reduces damage taken by 30%",
-    bonus: 0.7,
+    effect: "Reduces damage taken by 20%",
+    bonus: 0.8,
+    bonusInContracts: 2_000, // 20%
     duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.DamageReductionRelic2,
     name: "Damage Reduction Relic II",
     type: "Damage Reduction",
-    activation: RelicActivation.ArmyAndStructure,
+    activation: RelicActivation.Army,
     level: 2,
     craftable: false,
     effect: "Reduces damage taken by 40%",
     bonus: 0.6,
+    bonusInContracts: 4_000, // 40%
     duration: "3 Eternum Days",
   },
 
@@ -101,6 +108,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Instantly explores a one-tile radius",
     bonus: 1, // No multiplier, just a flag
+    bonusInContracts: 0, // No bonus in contracts
   },
   {
     id: ResourcesIds.ExplorationRelic2,
@@ -111,6 +119,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Instantly explores a two-tile radius",
     bonus: 2, // No multiplier, just a flag
+    bonusInContracts: 0, // No bonus in contracts
   },
 
   // Army Exploration Reward Relics
@@ -123,6 +132,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Double all exploration rewards",
     bonus: 2,
+    bonusInContracts: 0, // No bonus in contracts
     duration: "3 Eternum Days",
   },
   {
@@ -134,6 +144,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Triple all exploration rewards",
     bonus: 3,
+    bonusInContracts: 0, // No bonus in contracts
     duration: "3 Eternum Days",
   },
 
@@ -142,22 +153,24 @@ export const RELICS: RelicInfo[] = [
     id: ResourcesIds.StructureDamageReductionRelic1,
     name: "Structure Defense Relic I",
     type: "Damage Reduction",
-    activation: RelicActivation.Structure,
+    activation: RelicActivation.Army,
     level: 1,
     craftable: false,
     effect: "Reduces damage taken by all guard armies by 15%",
     bonus: 0.85,
+    bonusInContracts: 1_500, // 15%
     duration: "6 Eternum Days",
   },
   {
     id: ResourcesIds.StructureDamageReductionRelic2,
     name: "Structure Defense Relic II",
     type: "Damage Reduction",
-    activation: RelicActivation.Structure,
+    activation: RelicActivation.Army,
     level: 2,
     craftable: false,
     effect: "Reduces damage taken by all guard armies by 30%",
     bonus: 0.7,
+    bonusInContracts: 3_000, // 30%
     duration: "6 Eternum Days",
   },
 
@@ -171,6 +184,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases resource production rate by 20%",
     bonus: 1.2,
+    bonusInContracts: 2_000, // 20%
     duration: "3 Eternum Days",
   },
   {
@@ -182,6 +196,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases resource production rate by 40%",
     bonus: 1.4,
+    bonusInContracts: 4_000, // 40%
     duration: "3 Eternum Days",
   },
 
@@ -195,6 +210,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases labor production rate by 20%",
     bonus: 1.2,
+    bonusInContracts: 2_000, // 20%
     duration: "6 Eternum Days",
   },
   {
@@ -206,6 +222,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases labor production rate by 20%",
     bonus: 1.2,
+    bonusInContracts: 4_000, // 40%
     duration: "12 Eternum Days",
   },
 
@@ -219,6 +236,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases troop production rate by 20%",
     bonus: 1.2,
+    bonusInContracts: 2_000, // 20%
     duration: "6 Eternum Days",
   },
   {
@@ -230,6 +248,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases troop production rate by 20%",
     bonus: 1.2,
+    bonusInContracts: 4_000, // 40%
     duration: "12 Eternum Days",
   },
 ];

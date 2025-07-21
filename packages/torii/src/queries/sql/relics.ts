@@ -70,15 +70,4 @@ export const RELICS_QUERIES = {
       )
     ORDER BY e.explorer_id;
   `,
-
-  ENTITY_RELIC_EFFECTS: `
-    SELECT 
-      entity_id,
-      effect_resource_id,
-      effect_rate,
-      effect_start_tick,
-      effect_end_tick,
-      effect_usage_left
-    FROM \`s1_eternum-RelicEffect\` WHERE entity_id = {entityId};
-  `,
 } as const;

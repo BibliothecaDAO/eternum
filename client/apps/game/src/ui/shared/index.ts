@@ -7,7 +7,6 @@ export { ModalContainer } from "./components/modal-container";
 export { NameChangePopup } from "./components/name-change-popup";
 export { NotLoggedInMessage } from "./components/not-logged-in-message";
 export { PWAUpdatePopup } from "./components/pwa-update-popup";
-export { GameEndCountdown as SeasonEndCountdown } from "./components/SeasonEndCountdown";
 export { Toaster } from "./components/toaster";
 export { ToggleComponent } from "./components/toggle-component";
 export { TransactionNotification } from "./components/tx-emit";

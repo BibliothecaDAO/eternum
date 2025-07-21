@@ -1,4 +1,5 @@
 import { env } from "@/../env";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -21,7 +22,6 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
 import {
   CapacityConfig,
   ClientComponents,
@@ -30,15 +30,14 @@ import {
   ID,
   RESOURCE_PRECISION,
   resources,
-  ResourcesIds,
   StructureType,
   Troops,
   TroopTier,
-  TroopType,
+  TroopType
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
+import { ActiveRelicEffects, getRelicEffectsFromBoostData } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 
@@ -81,14 +80,10 @@ export const CombatContainer = ({
   attackerEntityId,
   target,
   targetResources,
-  attackerActiveRelicEffects = [],
-  targetActiveRelicEffects = [],
 }: {
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerActiveRelicEffects: EntityRelicEffect[];
-  targetActiveRelicEffects: EntityRelicEffect[];
 }) => {
   const {
     account: { account },
@@ -129,16 +124,7 @@ export const CombatContainer = ({
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
     return structure ? getGuardsByStructure(structure) : [];
   }, [attackerType, attackerEntityId, Structure]);
-
-  // Convert relic effects to resource IDs
-  const attackerRelicResourceIds = useMemo(() => {
-    return attackerActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
-  }, [attackerActiveRelicEffects]);
-
-  const targetRelicResourceIds = useMemo(() => {
-    return targetActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
-  }, [targetActiveRelicEffects]);
-
+ 
   const attackerStamina = useMemo(() => {
     const { currentArmiesTick } = getBlockTimestamp();
 
@@ -151,17 +137,17 @@ export const CombatContainer = ({
         const guard = structureGuards[0];
         if (!guard.troops.stamina) return 0n;
 
-        return StaminaManager.getStamina(guard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
+        return StaminaManager.getStamina(guard.troops, currentArmiesTick).amount;
       } else if (selectedGuardSlot !== null) {
         const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
         if (selectedGuard && selectedGuard.troops.stamina) {
-          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
+          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick).amount;
         }
       }
       return 0n;
     }
     return new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, attackerActiveRelicEffects]);
+  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
 
   // Get the current army states for display
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
@@ -177,6 +163,7 @@ export const CombatContainer = ({
           category: selectedGuard.troops.category as TroopType,
           tier: selectedGuard.troops.tier as TroopTier,
           stamina: selectedGuard.troops.stamina || { amount: 0n, updated_tick: 0n },
+          boosts: selectedGuard.troops.boosts
         },
       };
     } else {
@@ -188,6 +175,16 @@ export const CombatContainer = ({
           category: army?.troops.category as TroopType,
           tier: army?.troops.tier as TroopTier,
           stamina: army?.troops.stamina || { amount: 0n, updated_tick: 0n },
+          boosts: army?.troops.boosts || {
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+          },
         },
       };
     }
@@ -202,9 +199,16 @@ export const CombatContainer = ({
         category: target.info[0].category as TroopType,
         tier: target.info[0].tier as TroopTier,
         stamina: target.info[0].stamina,
+        boosts: target.info[0].boosts,
       },
     };
   }, [target]);
+
+  const { currentArmiesTick } = useBlockTimestamp();
+  const attackerRelicEffects = attackerArmyData ? getRelicEffectsFromBoostData(currentArmiesTick, undefined, [attackerArmyData.troops]) : [];
+  const attackerRelicResourceIds = attackerRelicEffects.map((effect) => effect.effect_resource_id);
+  const targetRelicEffects = targetArmyData ? getRelicEffectsFromBoostData(currentArmiesTick, undefined, [targetArmyData.troops]) : [];
+  const targetRelicResourceIds = targetRelicEffects.map((effect) => effect.effect_resource_id);
 
   const isVillageWithoutTroops = useMemo(() => {
     return target?.structureCategory === StructureType.Village && !target?.info;
@@ -498,10 +502,10 @@ export const CombatContainer = ({
         aria-label="Battle forces comparison"
       >
         {/* Attacker Relic Effects */}
-        <ActiveRelicEffects relicEffects={attackerActiveRelicEffects} entityId={attackerEntityId} compact={true} />
+        <ActiveRelicEffects relicEffects={attackerRelicEffects} entityId={attackerEntityId} compact={true} />
 
         {/* Defender Relic Effects */}
-        <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
+        <ActiveRelicEffects relicEffects={targetRelicEffects} entityId={target.id} compact={true} />
 
         {/* Attacker Panel */}
         <div className="space-y-3 sm:space-y-4" role="region" aria-label="Attacker forces information">
