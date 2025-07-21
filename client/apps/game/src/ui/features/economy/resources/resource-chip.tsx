@@ -9,6 +9,7 @@ import {
   getTotalResourceWeightKg,
   ResourceManager,
 } from "@bibliothecadao/eternum";
+import { RelicEffect } from "@bibliothecadao/torii";
 import { findResourceById, ID, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const ResourceChip = ({
   resourceId,
   resourceManager,
+  entityRelicEffects,
   size = "default",
   hideZeroBalance = false,
   showTransfer = true,
@@ -24,6 +26,7 @@ export const ResourceChip = ({
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
+  entityRelicEffects: RelicEffect[];
   size?: "default" | "large";
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
@@ -208,19 +211,19 @@ export const ResourceChip = ({
 
   // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {
-    return resourceManager.isRelicActive(resourceId, currentArmiesTick);
-  }, [resourceManager, resourceId, currentArmiesTick]);
+    return entityRelicEffects && entityRelicEffects.some((effect) => effect.effect_resource_id === resourceId);
+  }, [entityRelicEffects, resourceId]);
 
   // Calculate time remaining for active relic with real-time countdown
   const relicTimeRemaining = useMemo(() => {
     if (!isRelic || !relicEffectActivated) return 0;
 
     // Get the relic effect data to access end_tick
-    const relicEffect = resourceManager.getRelicEffect(resourceId);
+    const relicEffect = entityRelicEffects.find((effect) => effect.effect_resource_id === resourceId);
     if (!relicEffect) return 0;
 
     // Calculate remaining ticks until effect ends
-    const remainingTicks = ResourceManager.relicsArmiesTicksLeft(relicEffect.effect_end_tick, currentArmiesTick);
+    const remainingTicks = Math.max(0, relicEffect.effect_end_tick - currentArmiesTick);
 
     // Get tick interval for armies (relics use army ticks)
     const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;

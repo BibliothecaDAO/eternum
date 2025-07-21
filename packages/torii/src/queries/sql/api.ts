@@ -6,7 +6,6 @@ import {
   BattleLogEvent,
   ChestInfo,
   ChestTile,
-  EntityRelicEffect,
   EntityWithRelics,
   EventType,
   Guard,
@@ -477,11 +476,5 @@ export class SqlApi {
         armies: [],
       };
     }
-  }
-
-  async fetchEntityRelicEffects(entityId: ID): Promise<EntityRelicEffect[]> {
-    const query = RELICS_QUERIES.ENTITY_RELIC_EFFECTS.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<EntityRelicEffect>(url, "Failed to fetch entity relic effects");
   }
 }

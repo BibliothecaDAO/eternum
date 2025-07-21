@@ -1,13 +1,14 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { configManager, formatTime, ResourceManager } from "@bibliothecadao/eternum";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
-import { getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { configManager, formatTime } from "@bibliothecadao/eternum";
+import { RelicEffect } from "@bibliothecadao/torii";
+import { ClientComponents, getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
-  relicEffects: EntityRelicEffect[];
+  relicEffects: RelicEffect[];
   entityId: ID;
   compact?: boolean;
   className?: string;
@@ -31,8 +32,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
         if (!relicInfo) return null;
 
         // Calculate remaining ticks until effect ends
-        // todo: check relic effect active
-        const remainingTicks = ResourceManager.relicsArmiesTicksLeft(endTick, currentArmiesTick);
+        const remainingTicks = Math.max(0, endTick - currentArmiesTick);
 
         // Get tick interval for armies (relics use army ticks)
         const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
@@ -87,3 +87,166 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
     </div>
   );
 };
+
+
+export function getRelicEffectsFromBoostData(
+  currentArmiesTick: number,
+  productionBoosts?: ComponentValue<ClientComponents["ProductionBoostBonus"]["schema"]>, 
+  troops?: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]["troops"]>[],
+): RelicEffect[] {
+  return [
+    ..._convertProductionBoostsToRelicEffects(currentArmiesTick, productionBoosts), 
+    ..._convertTroopBoostsToRelicEffects(currentArmiesTick, troops)
+  ];
+}
+
+
+function _convertTroopBoostsToRelicEffects(currentArmiesTick: number, troops?: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]["troops"]>[]): RelicEffect[] {
+  let relicEffects: RelicEffect[] = [];
+  if (!troops) return relicEffects;
+
+  for (const troop of troops) {
+    const troopsBoost = troop.boosts;
+    const troopStaminaLastUpdatedTick = troop.stamina.updated_tick;
+    
+    if (troopsBoost.incr_stamina_regen_tick_count > 0) {
+      let startTick = troopStaminaLastUpdatedTick;
+      let endTick = troopStaminaLastUpdatedTick + BigInt(troopsBoost.incr_stamina_regen_tick_count);
+      switch (troopsBoost.incr_stamina_regen_percent_num) {
+        case getRelicInfo(ResourcesIds.StaminaRelic1)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.StaminaRelic1,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        case getRelicInfo(ResourcesIds.StaminaRelic2)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.StaminaRelic2,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (troopsBoost.incr_damage_dealt_end_tick >= currentArmiesTick ) {
+      let startTick = currentArmiesTick;
+      let endTick = troopsBoost.incr_damage_dealt_end_tick;
+      switch (troopsBoost.incr_damage_dealt_percent_num) {
+        case getRelicInfo(ResourcesIds.DamageRelic1)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.DamageRelic1,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        case getRelicInfo(ResourcesIds.DamageRelic2)?.bonusInContracts:
+
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.DamageRelic2,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (troopsBoost.decr_damage_gotten_end_tick >= currentArmiesTick ) {
+      let startTick = currentArmiesTick;
+      let endTick = troopsBoost.decr_damage_gotten_end_tick;
+      switch (troopsBoost.decr_damage_gotten_percent_num) {
+        case getRelicInfo(ResourcesIds.DamageReductionRelic1)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.DamageReductionRelic1,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        case getRelicInfo(ResourcesIds.DamageReductionRelic2)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.DamageReductionRelic2,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (troopsBoost.incr_explore_reward_end_tick >= currentArmiesTick ) {
+      let startTick = currentArmiesTick;
+      let endTick = troopsBoost.incr_explore_reward_end_tick;
+      switch (troopsBoost.incr_explore_reward_percent_num) {
+        case getRelicInfo(ResourcesIds.ExplorationRewardRelic1)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.ExplorationRewardRelic1,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        case getRelicInfo(ResourcesIds.ExplorationRewardRelic2)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.ExplorationRewardRelic2,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  return Array.from(relicEffects);
+}
+
+
+
+function _convertProductionBoostsToRelicEffects(currentArmiesTick: number, productionBoosts?: ComponentValue<ClientComponents["ProductionBoostBonus"]["schema"]>): RelicEffect[] {
+  let relicEffects: RelicEffect[] = [];
+  if (!productionBoosts) return relicEffects;
+
+  if (productionBoosts.incr_resource_rate_percent_num > 0) {
+    if (productionBoosts.incr_resource_rate_end_tick >= currentArmiesTick) {
+      let startTick = currentArmiesTick;
+      let endTick = productionBoosts.incr_resource_rate_end_tick;
+      relicEffects.push({
+        effect_resource_id: ResourcesIds.ProductionRelic1,
+        effect_start_tick: Number(startTick),
+        effect_end_tick: Number(endTick),
+      });
+    }
+  }
+
+  if (productionBoosts.incr_labor_rate_percent_num > 0) {
+    if (productionBoosts.incr_labor_rate_end_tick >= currentArmiesTick) {
+      let startTick = currentArmiesTick;
+      let endTick = productionBoosts.incr_labor_rate_end_tick;
+      relicEffects.push({
+        effect_resource_id: ResourcesIds.LaborProductionRelic1,
+        effect_start_tick: Number(startTick),
+        effect_end_tick: Number(endTick),
+      });
+    }
+  }
+
+  if (productionBoosts.incr_troop_rate_percent_num > 0) {
+    if (productionBoosts.incr_troop_rate_end_tick >= currentArmiesTick) {
+      let startTick = currentArmiesTick;
+      let endTick = productionBoosts.incr_troop_rate_end_tick;
+      relicEffects.push({
+        effect_resource_id: ResourcesIds.TroopProductionRelic1,
+        effect_start_tick: Number(startTick),
+        effect_end_tick: Number(endTick),
+      });
+    }
+  }
+
+  return Array.from(relicEffects);
+}

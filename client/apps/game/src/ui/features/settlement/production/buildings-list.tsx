@@ -1,13 +1,15 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getEntityIdFromKeys, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, getEntityInfo, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { Building, BuildingType, ContractAddress, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
+import { getRelicEffectsFromBoostData } from "../../world/components/entities/active-relic-effects";
 
 export const BuildingsList = ({
   realm,
@@ -41,6 +43,10 @@ export const BuildingsList = ({
     setup.components.StructureBuildings,
     getEntityIdFromKeys([BigInt(realm.entityId)]),
   );
+
+  const entityInfo = useMemo(() => getEntityInfo(realm.entityId, ContractAddress("0x0"), setup.components, getIsBlitz()), [realm.entityId, setup.components]);
+  const entityRelicEffects = useMemo(() => getRelicEffectsFromBoostData(entityInfo.productionBoosts, entityInfo.troopsList), [entityInfo]);
+
 
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(realm.entityId)]), setup.components),
@@ -217,6 +223,7 @@ export const BuildingsList = ({
                       <ResourceChip
                         resourceId={production.resource}
                         resourceManager={resourceManager}
+                        entityRelicEffects={entityRelicEffects}
                         size="large"
                         showTransfer={false}
                         storageCapacity={realmInfo?.storehouses?.capacityKg}

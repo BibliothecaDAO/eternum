@@ -7,6 +7,7 @@ import {
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
+  Troops,
 } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -24,7 +25,7 @@ export const getEntityInfo = (
   components: ClientComponents,
   isBlitz: boolean,
 ) => {
-  const { Structure, ExplorerTroops } = components;
+  const { Structure, ExplorerTroops, ProductionBoostBonus } = components;
   const entityIdBigInt = BigInt(entityId);
 
   const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
@@ -41,6 +42,21 @@ export const getEntityInfo = (
     if (structure) {
       name = getStructureName(structure, isBlitz);
     }
+  }
+
+  let troopsList: Array<Troops> = [];
+  if (explorer) {
+    troopsList = [explorer.troops];
+  } else if (structure) {
+    troopsList.push(structure.troop_guards.alpha);
+    troopsList.push(structure.troop_guards.bravo);
+    troopsList.push(structure.troop_guards.charlie);
+    troopsList.push(structure.troop_guards.delta);
+  }
+
+  let productionBoosts = undefined;
+  if (structure) {
+    productionBoosts = getComponentValue(ProductionBoostBonus, getEntityIdFromKeys([entityIdBigInt]));
   }
 
   let owner = undefined;
@@ -77,6 +93,8 @@ export const getEntityInfo = (
     structureCategory: structure?.base.category,
     structure,
     name,
+    troopsList,
+    productionBoosts,
   };
 };
 

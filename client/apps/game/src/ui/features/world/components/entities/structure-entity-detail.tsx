@@ -7,8 +7,8 @@ import {
   unpackValue,
 } from "@bibliothecadao/eternum";
 
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
@@ -19,19 +19,17 @@ import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
-  ClientComponents,
   ContractAddress,
   ID,
   MERCENARIES,
   RelicRecipientType,
-  StructureType,
+  StructureType
 } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
-import { memo, useMemo, useState, useCallback } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
-import { ActiveRelicEffects } from "./active-relic-effects";
+import { ActiveRelicEffects, getRelicEffectsFromBoostData } from "./active-relic-effects";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -58,6 +56,7 @@ export const StructureEntityDetail = memo(
     const userAddress = ContractAddress(account.account.address);
     const [lastRefresh, setLastRefresh] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const { currentArmiesTick } = useBlockTimestamp();
 
     const {
       data: structureDetails,
@@ -69,14 +68,12 @@ export const StructureEntityDetail = memo(
       queryFn: async () => {
         if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
 
-        const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        const relicEffects = (await sqlApi.fetchEntityRelicEffects(structureEntityId)) as ComponentValue<
-          ClientComponents["RelicEffect"]["schema"]
-        >[];
+        const { structure, resources, productionBoosts } = await getStructureFromToriiClient(toriiClient, structureEntityId);
         if (!structure)
           return {
             structure: null,
             resources: null,
+            productionBoosts: null,
             playerGuild: undefined,
             guards: [],
             isAlly: false,
@@ -99,7 +96,7 @@ export const StructureEntityDetail = memo(
           isAlly,
           addressName,
           isMine,
-          relicEffects,
+          productionBoosts,
         };
       },
       staleTime: 30000, // 30 seconds
@@ -180,6 +177,11 @@ export const StructureEntityDetail = memo(
     }
 
     if (!structure || !structureDetails) return null;
+
+    const productionBoosts = structureDetails?.productionBoosts;
+    let guard_troops_list = guards.map((guard) => guard.troops);
+    const relicEffects = getRelicEffectsFromBoostData(currentArmiesTick, productionBoosts, guard_troops_list);
+
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -294,7 +296,7 @@ export const StructureEntityDetail = memo(
             <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
             {resources && (
               <InventoryResources
-                relicEffects={structureDetails?.relicEffects || []}
+                relicEffects={relicEffects}
                 max={maxInventory}
                 resources={resources}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
@@ -307,9 +309,9 @@ export const StructureEntityDetail = memo(
           </div>
 
           {/* Active Relic Effects section */}
-          {structureDetails?.relicEffects && (
+          {relicEffects && (
             <ActiveRelicEffects
-              relicEffects={structureDetails.relicEffects}
+              relicEffects={relicEffects}
               entityId={structureEntityId}
               compact={compact}
             />

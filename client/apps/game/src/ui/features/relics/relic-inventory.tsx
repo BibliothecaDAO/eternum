@@ -1,12 +1,13 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
-import { getEntityInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { ContractAddress, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { Castle, Crown, Landmark, Pickaxe, Sparkles, Swords } from "lucide-react";
 import { useMemo } from "react";
+import { getRelicEffectsFromBoostData } from "../world/components/entities/active-relic-effects";
 import { RelicCard } from "./relic-card";
 
 interface RelicInventoryProps {
@@ -14,7 +15,6 @@ interface RelicInventoryProps {
 }
 
 export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
-  const { currentArmiesTick } = useBlockTimestamp();
 
   const getStructureIcon = (structureType: StructureType) => {
     switch (structureType) {
@@ -43,16 +43,20 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
     const {
       setup: { components },
     } = useDojo();
+
+    const { currentArmiesTick } = useBlockTimestamp();
     const totalRelics = entities.reduce((sum, entity) => sum + entity.relics.length, 0);
     const entitiesWithInfo = useMemo(() => {
       return entities.map((entity) => {
+        const info = getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz());
         return {
           ...entity,
           position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
-          info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()),
+          info,
+          relicEffects: getRelicEffectsFromBoostData(currentArmiesTick, info.productionBoosts, info.troopsList),
         };
       });
-    }, [entities]);
+    }, [entities, currentArmiesTick]);
 
     return (
       <div className="space-y-3">
@@ -89,8 +93,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                     {entity.relics.map((relic) => {
-                      const resourceManager = new ResourceManager(components, entity.entityId);
-                      const isActive = resourceManager.isRelicActive(relic.resourceId, currentArmiesTick);
+                      const isActive = entity.relicEffects && entity.relicEffects.some((effect) => effect.effect_resource_id === relic.resourceId);
 
                       return (
                         <RelicCard
