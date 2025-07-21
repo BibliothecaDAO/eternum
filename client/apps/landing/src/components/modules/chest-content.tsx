@@ -22,87 +22,52 @@ const mockAssets: ChestAsset[] = [
   { id: "9", name: "Crossbowman T3", type: "armor", rarity: "epic", modelPath: "/models/units/archer3.glb" },
 ];
 
-const getTypeStyle = (type: ChestAsset["type"]) => {
+const getTypeClass = (type: ChestAsset["type"]) => {
   switch (type) {
     case "armor":
-      return { backgroundColor: "#2563eb", color: "white" };
+      return "bg-blue-600 text-white";
     case "skin":
-      return { backgroundColor: "#9333ea", color: "white" };
+      return "bg-purple-600 text-white";
     case "aura":
-      return { backgroundColor: "#ca8a04", color: "black" };
+      return "bg-yellow-600 text-black";
     case "title":
-      return { backgroundColor: "#16a34a", color: "white" };
+      return "bg-green-600 text-white";
     default:
-      return { backgroundColor: "#4b5563", color: "white" };
+      return "bg-gray-600 text-white";
   }
 };
 
-const getRarityStyle = (rarity: ChestAsset["rarity"]) => {
+const getRarityClass = (rarity: ChestAsset["rarity"]) => {
   switch (rarity) {
     case "common":
-      return { backgroundColor: "#22c55e", color: "white", borderColor: "#4ade80" }; // Green
+      return "bg-green-500 text-white";
     case "uncommon":
-      return { backgroundColor: "#3b82f6", color: "white", borderColor: "#60a5fa" }; // Blue
+      return "bg-blue-500 text-white";
     case "rare":
-      return { backgroundColor: "#a855f7", color: "white", borderColor: "#c084fc" }; // Purple
+      return "bg-purple-500 text-white";
     case "epic":
-      return { backgroundColor: "#f97316", color: "white", borderColor: "#fb923c" }; // Orange
+      return "bg-orange-500 text-white";
     case "legendary":
-      return { backgroundColor: "#ef4444", color: "white", borderColor: "#f87171" }; // Red
+      return "bg-red-500 text-white";
     default:
-      return { backgroundColor: "#6b7280", color: "white", borderColor: "#9ca3af" };
+      return "bg-gray-500 text-white";
   }
 };
 
-const getRarityGlow = (rarity: ChestAsset["rarity"]) => {
+const getRarityGlowClass = (rarity: ChestAsset["rarity"]) => {
   switch (rarity) {
     case "common":
-      return {
-        borderColor: "#22c55e", // Green
-        backgroundColor: "rgba(34, 197, 94, 0.15)",
-        boxShadow: "0 0 15px rgba(34, 197, 94, 0.4)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-green-500 bg-green-500/15 shadow-[0_0_15px_rgba(34,197,94,0.4)]";
     case "uncommon":
-      return {
-        borderColor: "#3b82f6", // Blue
-        backgroundColor: "rgba(59, 130, 246, 0.2)",
-        boxShadow: "0 0 18px rgba(59, 130, 246, 0.5)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-blue-500 bg-blue-500/20 shadow-[0_0_18px_rgba(59,130,246,0.5)]";
     case "rare":
-      return {
-        borderColor: "#a855f7", // Purple
-        backgroundColor: "rgba(168, 85, 247, 0.2)",
-        boxShadow: "0 0 22px rgba(168, 85, 247, 0.6)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-purple-500 bg-purple-500/20 shadow-[0_0_22px_rgba(168,85,247,0.6)]";
     case "epic":
-      return {
-        borderColor: "#f97316", // Orange
-        backgroundColor: "rgba(249, 115, 22, 0.2)",
-        boxShadow: "0 0 28px rgba(249, 115, 22, 0.6)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-orange-500 bg-orange-500/20 shadow-[0_0_28px_rgba(249,115,22,0.6)]";
     case "legendary":
-      return {
-        borderColor: "#ef4444", // Red
-        backgroundColor: "rgba(239, 68, 68, 0.2)",
-        boxShadow: "0 0 35px rgba(239, 68, 68, 0.7)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-red-500 bg-red-500/20 shadow-[0_0_35px_rgba(239,68,68,0.7)]";
     default:
-      return {
-        borderColor: "#6b7280",
-        backgroundColor: "rgba(107, 114, 128, 0.15)",
-        borderWidth: "2px",
-        borderStyle: "solid",
-      };
+      return "border-2 border-gray-500 bg-gray-500/15";
   }
 };
 
@@ -120,17 +85,10 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
   const renderTitle = () => {
     return (
       <h1
+        className="flex items-center justify-center gap-2 text-4xl font-bold text-chest-gold text-center"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "0.5rem",
-          fontSize: "2.25rem",
-          fontWeight: 700,
-          color: "#dfaa54",
           transition: "opacity 5000ms",
           opacity: showContent ? 1 : 0,
-          textAlign: "center",
         }}
       >
         Loot Chest Content
@@ -169,75 +127,28 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
             <h2 className="text-xl font-bold text-white mb-4 text-center">Loot Contents</h2>
 
             {/* Container for the asset list */}
-            <div
-              className="backdrop-blur-md rounded-xl p-6"
-              style={{
-                background: "linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 30, 30, 0.6))",
-                border: "2px solid rgba(255, 255, 255, 0.1)",
-                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-                borderRadius: "16px",
-              }}
-            >
+            <div className="backdrop-blur-md rounded-2xl p-6 bg-gradient-to-br from-black/80 to-gray-900/60 border-2 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]">
               {/* Container header */}
               <div className="mb-4 text-center">
-                <div
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#cccccc",
-                    fontFamily: "heading",
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <div className="text-sm text-gray-300 font-heading font-semibold tracking-wider uppercase">
                   ⚔️ Item Selection ⚔️
                 </div>
-                <div
-                  className="mt-1 w-16 mx-auto"
-                  style={{
-                    height: "1px",
-                    background: "linear-gradient(90deg, transparent, #888888, transparent)",
-                  }}
-                />
+                <div className="mt-1 w-16 mx-auto h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
               </div>
 
               {/* Asset grid with enhanced spacing */}
               <div className="space-y-3">
                 {randomAssets.map((asset) => {
                   const isSelected = selectedAsset.id === asset.id;
-                  const cardStyle = isSelected
-                    ? getRarityGlow(asset.rarity)
-                    : {
-                        borderColor: "#4b5563",
-                        borderWidth: "2px",
-                        borderStyle: "solid",
-                      };
+                  const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
+                  const cardClass = isSelected
+                    ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
+                    : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
 
                   return (
                     <Card
                       key={asset.id}
-                      className="cursor-pointer transition-all duration-200 backdrop-blur-sm"
-                      style={{
-                        backgroundColor: "rgba(0, 0, 0, 0.4)",
-                        ...cardStyle,
-                        ...(isSelected
-                          ? {}
-                          : {
-                              transition: "all 200ms",
-                            }),
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#6b7280";
-                          e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.borderColor = "#4b5563";
-                          e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
-                        }
-                      }}
+                      className={cardClass}
                       onClick={() => setSelectedAsset(asset)}
                     >
                       <CardContent className="p-4">
@@ -245,17 +156,11 @@ export const ChestContent = ({ showContent }: { showContent: boolean }) => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <h3 className="font-semibold text-white">{asset.name}</h3>
-                              <span
-                                className="text-xs px-2 py-1 rounded"
-                                style={{
-                                  ...getRarityStyle(asset.rarity),
-                                  fontSize: "0.75rem",
-                                }}
-                              >
+                              <span className={`text-xs px-2 py-1 rounded ${getRarityClass(asset.rarity)}`}>
                                 {asset.rarity.toUpperCase()}
                               </span>
                             </div>
-                            <span className="px-2 py-1 rounded text-xs" style={getTypeStyle(asset.type)}>
+                            <span className={`px-2 py-1 rounded text-xs ${getTypeClass(asset.type)}`}>
                               {asset.type.toUpperCase()}
                             </span>
                           </div>

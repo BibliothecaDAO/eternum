@@ -1,4 +1,5 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
+const colors = require("tailwindcss/colors");
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -106,6 +107,38 @@ export default {
         },
       },
       colors: {
+        // Add only the specific colors used in the components
+        white: colors.white,
+        black: colors.black,
+        gray: {
+          300: colors.gray[300],
+          500: colors.gray[500],
+          600: colors.gray[600],
+          900: colors.gray[900],
+        },
+        blue: {
+          500: colors.blue[500],
+          600: colors.blue[600],
+        },
+        green: {
+          500: colors.green[500],
+          600: colors.green[600],
+        },
+        purple: {
+          500: colors.purple[500],
+          600: colors.purple[600],
+        },
+        orange: {
+          500: colors.orange[500],
+        },
+        red: {
+          500: colors.red[500],
+        },
+        yellow: {
+          600: colors.yellow[600],
+        },
+        // Custom color for chest title
+        "chest-gold": "#dfaa54",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
