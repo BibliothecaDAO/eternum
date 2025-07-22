@@ -11,6 +11,7 @@ export const StarknetWalletButton = ({
 }: {
   className?: string;
   label?: string;
+  autoConnect?: boolean;
 }) => {
   const { lastConnector, openStarknetKitModal, connectWallet } =
     useStarknetWallet();
@@ -26,7 +27,7 @@ export const StarknetWalletButton = ({
     >
       <div className="flex items-center">
         {lastConnector ? (
-          <img className="w-7 pr-2" src={getConnectorIcon(lastConnector.id)} />
+          <img className="w-7 pr-2" src={getConnectorIcon(lastConnector)} />
         ) : null}
         <p className="mx-auto">{label ?? "Connect wallet"}</p>
         {lastConnector ? (

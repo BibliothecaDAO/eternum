@@ -11,6 +11,7 @@ export function useStarknetWallet() {
 
   const { starknetkitConnectModal } = useStarknetkitConnectModal({
     connectors: connectors as StarknetkitConnector[],
+    modalMode: "alwaysAsk",
   });
 
   useEffect(() => {
@@ -18,7 +19,6 @@ export function useStarknetWallet() {
   }, [isConnected, connectors]);
 
   async function openStarknetKitModal() {
-    console.log(connectors);
     const { connector } = await starknetkitConnectModal();
     if (!connector) return;
     await connectAsync({ connector });

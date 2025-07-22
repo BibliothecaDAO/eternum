@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import RWLogo from "@/components/icons/rw-logo.svg?react";
 import { toast } from "@/hooks/use-toast";
 import useIsWrongNetwork from "@/hooks/use-wrong-network";
+import { getConnectorIcon } from "@/utils/connectWallet";
 import { cn, shortenAddress } from "@/utils/utils";
+import ControllerConnector from "@cartridge/connector/controller";
 import { Separator } from "@radix-ui/react-separator";
 import {
   useAccount,
@@ -50,6 +53,18 @@ export function Header() {
           : (ChainId.SN_MAIN as string),
     },
   });
+  const isController =
+    (connector as ControllerConnector | undefined)?.controller != undefined;
+
+  const [username, setUsername] = useState<string>();
+  useEffect(() => {
+    if (!address || !isController) return;
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    (connector as ControllerConnector).controller
+      .username()
+      ?.then((n) => setUsername(n));
+  }, [address, isController, connector]);
+
   return (
     <header
       className={cn(
@@ -87,12 +102,8 @@ export function Header() {
                   size="lg"
                   className="flex items-center gap-2 rounded px-3"
                 >
-                  <Avatar className="mr-1 size-6">
-                    <AvatarImage
-                      src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
-                    />
-                  </Avatar>
-                  {shortenAddress(address)}
+                  <img className="w-7" src={getConnectorIcon(connector)} />
+                  {username ?? shortenAddress(address)}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -103,7 +114,20 @@ export function Header() {
                         src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
                       />
                     </Avatar>
-                    <div className="text-xl">{shortenAddress(address)}</div>
+                    <Button
+                      onClick={() =>
+                        isController &&
+                        (
+                          connector as ControllerConnector
+                        ).controller.openProfile()
+                      }
+                      variant={"ghost"}
+                      size={"sm"}
+                    >
+                      <div className="text-xl">
+                        {username ?? shortenAddress(address)}
+                      </div>
+                    </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <a href={explorer.contract(address)} target="_blank">
@@ -152,7 +176,7 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <>
-              <StarknetWalletButton />
+              <StarknetWalletButton autoConnect />
             </>
           )}
           <Dialog open={isWrongNetwork}>

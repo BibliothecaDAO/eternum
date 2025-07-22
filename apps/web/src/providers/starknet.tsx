@@ -7,6 +7,7 @@ import { mainnet, sepolia } from "@starknet-react/chains";
 import {
   argent,
   braavos,
+  Connector,
   InjectedConnector,
   jsonRpcProvider,
   publicProvider,
@@ -113,9 +114,9 @@ export function StarknetProvider({
         cartridgeController,
         ...(onlyCartridge ? [] : [...connectors]),
         ...getConnectors(),
-      ]}
+      ].filter((c): c is Connector => c !== null)}
       explorer={voyager}
-      autoConnect={true}
+      autoConnect={false}
       //queryClient={queryClient}
     >
       {children}
