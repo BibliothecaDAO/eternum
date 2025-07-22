@@ -130,22 +130,22 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 
   // Handle entity updates
-  const entitySub = client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities, data);
+  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Entity updated", data);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
   });
 
   // Handle event message updates
-  const eventSub = client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Event message updated", data.hashed_keys);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing event message update:", error);
     }

@@ -34,7 +34,7 @@
     "config:deploy:local": "pnpm run build:packages && pnpm --dir ./config run local",
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
-    "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run villagepass:deploy:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run indexer:start:local && pnpm run config:deploy:local",
+    "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run config:deploy:local",
     "contract:stop:local": "pnpm run katana:stop:local && pnpm run indexer:stop:local",
     "_comment_slot_network_": "_______________________________________________",
     "_comment_slot_network1": "These are all you commands you need to run (in this order)",
