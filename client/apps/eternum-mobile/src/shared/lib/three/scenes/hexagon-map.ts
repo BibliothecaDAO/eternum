@@ -1,9 +1,17 @@
+import {
+  ActionPath,
+  ActionPaths,
+  ActionType,
+  ArmyActionManager,
+  StructureActionManager,
+} from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { BiomeType, FELT_CENTER } from "@bibliothecadao/types";
+import { BiomeType, FELT_CENTER, HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../app/dojo/queries";
+import { getBlockTimestamp } from "../../../../shared/hooks/use-block-timestamp";
 import { GUIManager } from "../helpers/gui-manager";
-import { findShortestPath } from "../helpers/pathfinding";
+import { loggedInAccount } from "../helpers/utils";
 import { SystemManager } from "../system/system-manager";
 import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
@@ -54,6 +62,11 @@ export class HexagonMap {
   private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
 
   private fetchedChunks: Set<string> = new Set();
+
+  // Data structures for action path calculation
+  private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
   constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager) {
     this.scene = scene;
@@ -284,15 +297,27 @@ export class HexagonMap {
     const structures = this.structureRenderer.getObjectsAtHex(col, row);
     const quests = this.questRenderer.getObjectsAtHex(col, row);
 
-    // Check if we have a selected army and clicked on a highlighted hex
+    // Check if we have a selected object and clicked on a highlighted hex
     const selectedObject = this.selectionManager.getSelectedObject();
-    if (selectedObject && selectedObject.type === "army") {
-      const highlightedHexes = this.selectionManager.getHighlightedHexes();
-      const isHighlighted = highlightedHexes.some((hex) => hex.col === col && hex.row === row);
+    if (selectedObject) {
+      const actionPath = this.selectionManager.getActionPath(col, row);
+      if (actionPath) {
+        const actionType = ActionPaths.getActionType(actionPath);
 
-      if (isHighlighted) {
-        // Move the army to the clicked hex
-        await this.moveArmyToHex(selectedObject.id, col, row);
+        if (actionType === ActionType.Move || actionType === ActionType.Explore) {
+          // Move the army to the clicked hex
+          await this.handleArmyMovement(selectedObject.id, actionPath);
+        } else if (actionType === ActionType.Attack) {
+          console.log(`Attack action at (${col}, ${row})`);
+          // Handle attack action
+        } else if (actionType === ActionType.Help) {
+          console.log(`Help action at (${col}, ${row})`);
+          // Handle help action
+        } else if (actionType === ActionType.Quest) {
+          console.log(`Quest action at (${col}, ${row})`);
+          // Handle quest action
+        }
+
         this.selectionManager.clearSelection();
         return;
       }
@@ -300,9 +325,9 @@ export class HexagonMap {
 
     // Normal selection logic
     if (armies.length > 0) {
-      this.selectionManager.selectObject(armies[0].id, "army");
+      this.selectArmy(armies[0].id);
     } else if (structures.length > 0) {
-      this.selectionManager.selectObject(structures[0].id, "structure");
+      this.selectStructure(structures[0].id);
     } else if (quests.length > 0) {
       this.selectionManager.selectObject(quests[0].id, "quest");
     } else {
@@ -310,60 +335,74 @@ export class HexagonMap {
     }
   }
 
-  private async moveArmyToHex(armyId: number, targetCol: number, targetRow: number): Promise<void> {
+  private async handleArmyMovement(armyId: number, actionPath: ActionPath[]): Promise<void> {
+    const army = this.armyRenderer.getObject(armyId);
+    if (!army || actionPath.length < 2) return;
+
+    // Convert action path to movement path (skip first position which is current position)
+    const movementPath = actionPath.slice(1).map((pathItem) => {
+      const normalized = new Position({
+        x: pathItem.hex.col - FELT_CENTER,
+        y: pathItem.hex.row - FELT_CENTER,
+      }).getNormalized();
+      return { col: normalized.x, row: normalized.y };
+    });
+
+    // Move army along the path with animation
+    await this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+
+    const targetHex = actionPath[actionPath.length - 1].hex;
+    const targetCol = targetHex.col - FELT_CENTER;
+    const targetRow = targetHex.row - FELT_CENTER;
+
+    console.log(`Army ${armyId} moved from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`);
+  }
+
+  private selectArmy(armyId: number): void {
+    this.selectionManager.selectObject(armyId, "army");
+
+    // Get army object to find current position
     const army = this.armyRenderer.getObject(armyId);
     if (!army) return;
 
-    // Create data structures for pathfinding
-    const structureHexes = new Map<number, Map<number, { id: number; owner: bigint }>>();
-    const armyHexes = new Map<number, Map<number, { id: number; owner: bigint }>>();
+    // Create army action manager
+    const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
 
-    // Populate structure hexes
-    this.structureRenderer.getAllObjects().forEach((structure) => {
-      if (!structureHexes.has(structure.col)) {
-        structureHexes.set(structure.col, new Map());
-      }
-      structureHexes.get(structure.col)!.set(structure.row, { id: structure.id, owner: structure.owner! });
-    });
+    // Get actual player address from store
+    const playerAddress = loggedInAccount();
 
-    // Populate army hexes (excluding the moving army)
-    this.armyRenderer.getAllObjects().forEach((armyObj) => {
-      if (armyObj.id !== armyId) {
-        if (!armyHexes.has(armyObj.col)) {
-          armyHexes.set(armyObj.col, new Map());
-        }
-        armyHexes.get(armyObj.col)!.set(armyObj.row, { id: armyObj.id, owner: armyObj.owner! });
-      }
-    });
+    // Get proper timestamps from block timestamp utility
+    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    // Find path using pathfinding
-    const startPosition = new Position({ x: army.col, y: army.row });
-    const endPosition = new Position({ x: targetCol, y: targetRow });
-    const maxDistance = 10; // Adjust as needed
-
-    const path = findShortestPath(
-      startPosition,
-      endPosition,
+    // Find action paths for the army
+    const actionPaths = armyActionManager.findActionPaths(
+      this.structureHexes,
+      this.armyHexes,
       this.exploredTiles,
-      structureHexes,
-      armyHexes,
-      maxDistance,
+      this.questHexes,
+      currentDefaultTick,
+      currentArmiesTick,
+      playerAddress,
     );
 
-    if (path.length > 0) {
-      // Skip the first position (current position) and convert to col/row format
-      const movementPath = path.slice(1).map((pos) => {
-        const normalized = pos.getNormalized();
-        return { col: normalized.x, row: normalized.y };
-      });
+    // Set action paths in selection manager for highlighting
+    this.selectionManager.setActionPaths(actionPaths.getPaths());
+  }
 
-      // Move army along the path with chess-like animation
-      await this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+  private selectStructure(structureId: number): void {
+    this.selectionManager.selectObject(structureId, "structure");
 
-      console.log(`Army ${armyId} moved from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`);
-    } else {
-      console.log(`No path found for army ${armyId} to (${targetCol}, ${targetRow})`);
-    }
+    // Create structure action manager
+    const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
+
+    // Get actual player address from store
+    const playerAddress = loggedInAccount();
+
+    // Find action paths for the structure
+    const actionPaths = structureActionManager.findActionPaths(this.armyHexes, this.exploredTiles, playerAddress);
+
+    // Set action paths in selection manager for highlighting
+    this.selectionManager.setActionPaths(actionPaths.getPaths());
   }
 
   private showClickFeedback(instanceId: number): void {
@@ -554,6 +593,12 @@ export class HexagonMap {
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
 
+    // Update army hexes map for action path calculation
+    if (!this.armyHexes.has(newPos.col)) {
+      this.armyHexes.set(newPos.col, new Map());
+    }
+    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+
     const army: ArmyObject = {
       id: entityId,
       col: newPos.col,
@@ -574,6 +619,12 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
+    // Update structure hexes map for action path calculation
+    if (!this.structureHexes.has(normalized.x)) {
+      this.structureHexes.set(normalized.x, new Map());
+    }
+    this.structureHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: address });
+
     const structure: StructureObject = {
       id: entityId,
       col: normalized.x,
@@ -586,6 +637,12 @@ export class HexagonMap {
   }
 
   public deleteArmy(entityId: number) {
+    // Remove from army hexes map
+    const army = this.armyRenderer.getObject(entityId);
+    if (army) {
+      this.armyHexes.get(army.col)?.delete(army.row);
+    }
+
     this.armyRenderer.removeObject(entityId);
   }
 

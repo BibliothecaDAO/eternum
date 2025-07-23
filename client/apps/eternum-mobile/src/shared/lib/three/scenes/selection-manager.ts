@@ -1,11 +1,13 @@
+import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { HighlightRenderer } from "./highlight-renderer";
-import { ArmyObject, GameMapObject, ObjectRenderer, QuestObject, StructureObject } from "./object-renderer";
+import { GameMapObject, ObjectRenderer } from "./object-renderer";
 
 export interface SelectionState {
   selectedObjectId: number | null;
   selectedObjectType: string | null;
-  highlightedHexes: Array<{ col: number; row: number; color: THREE.Color }>;
+  actionPaths: Map<string, ActionPath[]>;
 }
 
 export class SelectionManager {
@@ -14,14 +16,16 @@ export class SelectionManager {
   private currentSelection: SelectionState = {
     selectedObjectId: null,
     selectedObjectType: null,
-    highlightedHexes: [],
+    actionPaths: new Map(),
   };
 
   private readonly HIGHLIGHT_COLORS = {
-    MOVE: new THREE.Color(0x00ff00),
-    ATTACK: new THREE.Color(0xff0000),
-    INTERACT: new THREE.Color(0x0088ff),
-    BUILD: new THREE.Color(0xffaa00),
+    [ActionType.Move]: new THREE.Color(0x00ff00),
+    [ActionType.Attack]: new THREE.Color(0xff0000),
+    [ActionType.Help]: new THREE.Color(0x0088ff),
+    [ActionType.Explore]: new THREE.Color(0xffaa00),
+    [ActionType.Quest]: new THREE.Color(0x8800ff),
+    [ActionType.Build]: new THREE.Color(0xff8800),
   };
 
   constructor(highlightRenderer: HighlightRenderer) {
@@ -51,9 +55,11 @@ export class SelectionManager {
     this.currentSelection.selectedObjectType = objectType;
 
     renderer.selectObject(objectId);
+  }
 
-    const availableActions = this.getAvailableActions(object);
-    this.highlightAvailableActions(availableActions);
+  public setActionPaths(actionPaths: Map<string, ActionPath[]>): void {
+    this.currentSelection.actionPaths = actionPaths;
+    this.highlightActionPaths(actionPaths);
   }
 
   public clearSelection(): void {
@@ -68,7 +74,7 @@ export class SelectionManager {
     this.currentSelection = {
       selectedObjectId: null,
       selectedObjectType: null,
-      highlightedHexes: [],
+      actionPaths: new Map(),
     };
   }
 
@@ -100,6 +106,40 @@ export class SelectionManager {
     );
   }
 
+  public getActionPath(col: number, row: number): ActionPath[] | undefined {
+    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+    return this.currentSelection.actionPaths.get(key);
+  }
+
+  public hasActionAt(col: number, row: number): boolean {
+    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+    return this.currentSelection.actionPaths.has(key);
+  }
+
+  private highlightActionPaths(actionPaths: Map<string, ActionPath[]>): void {
+    this.highlightRenderer.clearHighlights();
+
+    const highlightedHexes = new Set<string>();
+
+    for (const [key, path] of actionPaths) {
+      if (path.length < 2) continue;
+
+      const targetAction = path[path.length - 1];
+      const targetHex = targetAction.hex;
+
+      const normalizedCol = targetHex.col - FELT_CENTER;
+      const normalizedRow = targetHex.row - FELT_CENTER;
+
+      const hexKey = `${normalizedCol},${normalizedRow}`;
+      if (highlightedHexes.has(hexKey)) continue;
+
+      highlightedHexes.add(hexKey);
+
+      const color = this.HIGHLIGHT_COLORS[targetAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
+      this.highlightRenderer.addHighlight(normalizedCol, normalizedRow, color, 2.0, 0.4);
+    }
+  }
+
   public addHighlight(
     col: number,
     row: number,
@@ -108,113 +148,14 @@ export class SelectionManager {
     pulseIntensity?: number,
   ): void {
     this.highlightRenderer.addHighlight(col, row, color, pulseSpeed, pulseIntensity);
-    this.currentSelection.highlightedHexes.push({ col, row, color });
   }
 
   public removeHighlight(col: number, row: number): void {
     this.highlightRenderer.removeHighlight(col, row);
-    this.currentSelection.highlightedHexes = this.currentSelection.highlightedHexes.filter(
-      (hex) => hex.col !== col || hex.row !== row,
-    );
   }
 
   public clearHighlights(): void {
     this.highlightRenderer.clearHighlights();
-    this.currentSelection.highlightedHexes = [];
-  }
-
-  public getHighlightedHexes(): Array<{ col: number; row: number; color: THREE.Color }> {
-    return [...this.currentSelection.highlightedHexes];
-  }
-
-  private getAvailableActions(object: GameMapObject): Array<{ col: number; row: number; actionType: string }> {
-    const actions: Array<{ col: number; row: number; actionType: string }> = [];
-
-    switch (object.type) {
-      case "army":
-        actions.push(...this.getArmyActions(object as ArmyObject));
-        break;
-      case "structure":
-        actions.push(...this.getStructureActions(object as StructureObject));
-        break;
-      case "quest":
-        actions.push(...this.getQuestActions(object as QuestObject));
-        break;
-    }
-
-    return actions;
-  }
-
-  private getArmyActions(army: ArmyObject): Array<{ col: number; row: number; actionType: string }> {
-    const actions: Array<{ col: number; row: number; actionType: string }> = [];
-
-    const moveRange = 3;
-    for (let deltaCol = -moveRange; deltaCol <= moveRange; deltaCol++) {
-      for (let deltaRow = -moveRange; deltaRow <= moveRange; deltaRow++) {
-        if (deltaCol === 0 && deltaRow === 0) continue;
-
-        const distance = Math.abs(deltaCol) + Math.abs(deltaRow);
-        if (distance <= moveRange) {
-          const targetCol = army.col + deltaCol;
-          const targetRow = army.row + deltaRow;
-
-          const actionType = this.getActionTypeForHex(targetCol, targetRow, army);
-          actions.push({ col: targetCol, row: targetRow, actionType });
-        }
-      }
-    }
-
-    return actions;
-  }
-
-  private getStructureActions(structure: StructureObject): Array<{ col: number; row: number; actionType: string }> {
-    const actions: Array<{ col: number; row: number; actionType: string }> = [];
-
-    const adjacentHexes = [
-      { col: structure.col + 1, row: structure.row },
-      { col: structure.col - 1, row: structure.row },
-      { col: structure.col, row: structure.row + 1 },
-      { col: structure.col, row: structure.row - 1 },
-      { col: structure.col + 1, row: structure.row - 1 },
-      { col: structure.col - 1, row: structure.row + 1 },
-    ];
-
-    adjacentHexes.forEach(({ col, row }) => {
-      actions.push({ col, row, actionType: "INTERACT" });
-    });
-
-    return actions;
-  }
-
-  private getQuestActions(quest: QuestObject): Array<{ col: number; row: number; actionType: string }> {
-    const actions: Array<{ col: number; row: number; actionType: string }> = [];
-
-    actions.push({ col: quest.col, row: quest.row, actionType: "INTERACT" });
-
-    return actions;
-  }
-
-  private getActionTypeForHex(col: number, row: number, fromObject: GameMapObject): string {
-    const armyRenderer = this.objectRenderers.get("army");
-    const structureRenderer = this.objectRenderers.get("structure");
-
-    if (armyRenderer && armyRenderer.getObjectsAtHex(col, row).length > 0) {
-      return "ATTACK";
-    }
-
-    if (structureRenderer && structureRenderer.getObjectsAtHex(col, row).length > 0) {
-      return "INTERACT";
-    }
-
-    return "MOVE";
-  }
-
-  private highlightAvailableActions(actions: Array<{ col: number; row: number; actionType: string }>): void {
-    actions.forEach(({ col, row, actionType }) => {
-      const color =
-        this.HIGHLIGHT_COLORS[actionType as keyof typeof this.HIGHLIGHT_COLORS] || this.HIGHLIGHT_COLORS.MOVE;
-      this.addHighlight(col, row, color, 2.0, 0.4);
-    });
   }
 
   public dispose(): void {
