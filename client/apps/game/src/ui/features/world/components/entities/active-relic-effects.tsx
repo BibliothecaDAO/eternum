@@ -174,6 +174,20 @@ function _convertTroopBoostsToRelicEffects(currentArmiesTick: number, troops?: C
             effect_end_tick: Number(endTick),
           });
           break;
+        case getRelicInfo(ResourcesIds.StructureDamageReductionRelic1)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.StructureDamageReductionRelic1,
+              effect_start_tick: Number(startTick),
+              effect_end_tick: Number(endTick),
+            });
+          break;
+        case getRelicInfo(ResourcesIds.StructureDamageReductionRelic2)?.bonusInContracts:
+          relicEffects.push({
+            effect_resource_id: ResourcesIds.StructureDamageReductionRelic2,
+            effect_start_tick: Number(startTick),
+            effect_end_tick: Number(endTick),
+          });
+          break;
         default:
           break;
       }
