@@ -17,7 +17,8 @@ export const getArmyRelicEffects = (troopBoosts: TroopBoosts, currentTick: numbe
   // Stamina Relics
   if (troopBoosts.incr_stamina_regen_percent_num > 0 && troopBoosts.incr_stamina_regen_tick_count > 0) {
     const staminaRelics = RELICS.filter((r) => r.type === "Stamina" && r.recipientType === RelicRecipientType.Explorer);
-    const match = staminaRelics.find((r) => r.bonus === 1 + troopBoosts.incr_stamina_regen_percent_num / 100);
+    const expectedBonus = (10000 + troopBoosts.incr_stamina_regen_percent_num) / 10000;
+    const match = staminaRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.StaminaRelic1;
     // For stamina, use currentTick + tick_count as endTick
     const endTick = currentTick + troopBoosts.incr_stamina_regen_tick_count;
@@ -27,7 +28,8 @@ export const getArmyRelicEffects = (troopBoosts: TroopBoosts, currentTick: numbe
   // Damage Relics
   if (troopBoosts.incr_damage_dealt_percent_num > 0 && troopBoosts.incr_damage_dealt_end_tick > currentTick) {
     const damageRelics = RELICS.filter((r) => r.type === "Damage" && r.recipientType === RelicRecipientType.Explorer);
-    const match = damageRelics.find((r) => r.bonus === 1 + troopBoosts.incr_damage_dealt_percent_num / 100);
+    const expectedBonus = (10000 + troopBoosts.incr_damage_dealt_percent_num) / 10000;
+    const match = damageRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.DamageRelic1;
     relicEffects.push({ id, endTick: troopBoosts.incr_damage_dealt_end_tick });
   }
@@ -37,7 +39,7 @@ export const getArmyRelicEffects = (troopBoosts: TroopBoosts, currentTick: numbe
     const damageReductionRelics = RELICS.filter(
       (r) => r.type === "Damage Reduction" && r.recipientType === RelicRecipientType.Explorer,
     );
-    const expectedBonus = 1 - troopBoosts.decr_damage_gotten_percent_num / 100;
+    const expectedBonus = (10000 - troopBoosts.decr_damage_gotten_percent_num) / 10000;
     const match = damageReductionRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.DamageReductionRelic1;
     relicEffects.push({ id, endTick: troopBoosts.decr_damage_gotten_end_tick });
@@ -48,7 +50,7 @@ export const getArmyRelicEffects = (troopBoosts: TroopBoosts, currentTick: numbe
     const explorationRewardRelics = RELICS.filter(
       (r) => r.type === "Exploration" && r.recipientType === RelicRecipientType.Explorer && r.effect.includes("reward"),
     );
-    const expectedBonus = 1 + troopBoosts.incr_explore_reward_percent_num / 100;
+    const expectedBonus = (10000 + troopBoosts.incr_explore_reward_percent_num) / 10000;
     const match = explorationRewardRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.ExplorationRewardRelic1;
     relicEffects.push({ id, endTick: troopBoosts.incr_explore_reward_end_tick });
@@ -76,7 +78,7 @@ export const getStructureRelicEffects = (
         r.recipientTypeParam === RelicRecipientTypeParam.StructureProduction &&
         r.effect.includes("resource"),
     );
-    const expectedBonus = 1 + productionBoostBonus.incr_resource_rate_percent_num / 100;
+    const expectedBonus = (10000 + productionBoostBonus.incr_resource_rate_percent_num) / 10000;
     const match = productionRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.ProductionRelic1;
     relicEffects.push({ id, endTick: productionBoostBonus.incr_resource_rate_end_tick });
@@ -93,7 +95,7 @@ export const getStructureRelicEffects = (
         r.recipientTypeParam === RelicRecipientTypeParam.StructureProduction &&
         r.effect.includes("labor"),
     );
-    const expectedBonus = 1 + productionBoostBonus.incr_labor_rate_percent_num / 100;
+    const expectedBonus = (10000 + productionBoostBonus.incr_labor_rate_percent_num) / 10000;
     const match = laborProductionRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.LaborProductionRelic1;
     relicEffects.push({ id, endTick: productionBoostBonus.incr_labor_rate_end_tick });
@@ -110,7 +112,7 @@ export const getStructureRelicEffects = (
         r.recipientTypeParam === RelicRecipientTypeParam.StructureProduction &&
         r.effect.includes("troop"),
     );
-    const expectedBonus = 1 + productionBoostBonus.incr_troop_rate_percent_num / 100;
+    const expectedBonus = (10000 + productionBoostBonus.incr_troop_rate_percent_num) / 10000;
     const match = troopProductionRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.TroopProductionRelic1;
     relicEffects.push({ id, endTick: productionBoostBonus.incr_troop_rate_end_tick });
@@ -128,8 +130,6 @@ export const getStructureArmyRelicEffects = (
   const relicEffects: RelicEffectWithEndTick[] = [];
 
   if (!troopBoosts) return relicEffects;
-
-  console.log({ troopBoosts });
 
   // Structure Damage Reduction Relics
   if (troopBoosts.decr_damage_gotten_percent_num > 0 && troopBoosts.decr_damage_gotten_end_tick > currentTick) {

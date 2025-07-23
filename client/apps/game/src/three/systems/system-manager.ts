@@ -7,6 +7,7 @@ import {
   getArmyRelicEffects,
   getHyperstructureProgress,
   getStructureArmyRelicEffects,
+  getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
@@ -609,6 +610,10 @@ export class SystemManager {
                   relicEffects,
                 });
 
+                if (relicEffects.length === 0) {
+                  return;
+                }
+
                 return {
                   entityId,
                   relicEffects,
@@ -632,6 +637,10 @@ export class SystemManager {
               const { currentArmiesTick } = getBlockTimestamp();
               const relicEffects = getStructureArmyRelicEffects(currentState, currentArmiesTick);
 
+              if (relicEffects.length === 0) {
+                return;
+              }
+
               return {
                 entityId: currentState.entity_id,
                 relicEffects,
@@ -641,19 +650,37 @@ export class SystemManager {
           true,
         );
       },
-      // onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
-      //   this.setupSystem(
-      //     this.setup.components.Structure,
-      //     callback,
-      //     async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
-      //       if (isComponentUpdate(update, this.setup.components.Structure)) {
-      //         const [currentState, prevState] = update.value;
+      onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.ProductionBoostBonus,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.ProductionBoostBonus)) {
+              const [currentState, prevState] = update.value;
 
-      //         if (!currentState) return;
-      //       }
-      //     },
-      //   );
-      // },
+              const { currentArmiesTick } = getBlockTimestamp();
+
+              if (!currentState) return;
+
+              const relicEffects = getStructureRelicEffects(currentState, currentArmiesTick);
+
+              if (relicEffects.length === 0) {
+                return;
+              }
+
+              console.log("RelicEffectSystemManager: onStructureProductionUpdate", {
+                currentState,
+                relicEffects,
+              });
+
+              return {
+                entityId: currentState.structure_id,
+                relicEffects,
+              };
+            }
+          },
+        );
+      },
     };
   }
 }

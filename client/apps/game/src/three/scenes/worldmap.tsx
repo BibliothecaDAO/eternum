@@ -10,7 +10,7 @@ import { ArmyManager } from "@/three/managers/army-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
-import { StructureManager } from "@/three/managers/structure-manager";
+import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound, playSound } from "@/three/sound/utils";
@@ -100,7 +100,8 @@ export default class WorldmapScene extends HexagonScene {
   private travelEffects: Map<string, () => void> = new Map();
 
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
-  private pendingRelicEffects: Map<ID, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
+  private pendingRelicEffects: Map<ID, Map<RelicSource, Set<{ relicResourceId: number; effect: RelicEffect }>>> =
+    new Map();
 
   // Relic effect validation timer
   private relicValidationInterval: NodeJS.Timeout | null = null;
@@ -261,12 +262,16 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     // Store the unsubscribe function for Relic Effect updates
-    this.systemManager.RelicEffect.onArmyUpdate((update: RelicEffectSystemUpdate) => {
+    this.systemManager.RelicEffect.onArmyUpdate(async (update: RelicEffectSystemUpdate) => {
       this.handleRelicEffectUpdate(update);
     });
 
     this.systemManager.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
-      this.handleRelicEffectUpdate(update);
+      this.handleRelicEffectUpdate(update, RelicSource.Guard);
+    });
+
+    this.systemManager.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
+      this.handleRelicEffectUpdate(update, RelicSource.Production);
     });
 
     this.systemManager.ExplorerMove.onUpdate((update: ExplorerMoveSystemUpdate) => {
@@ -1254,10 +1259,11 @@ export default class WorldmapScene extends HexagonScene {
   /**
    * Handle relic effect updates from the game system
    * @param update The relic effect update containing entity ID and array of relic effects
+   * @param relicSource Optional source of the relic effects (for structures)
    */
-  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate) {
+  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate, relicSource?: RelicSource) {
     const { entityId, relicEffects } = update;
-    console.log({ updateWorldmap: update });
+    console.log({ updateWorldmap: update, relicSource });
 
     let entityFound = false;
 
@@ -1280,11 +1286,13 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     // Check if this is a structure entity
-    if (!entityFound) {
+    if (!entityFound && relicSource) {
       const structureHexes = this.structureManager.structures.getStructures();
       for (const [, structures] of structureHexes) {
         if (structures.has(entityId)) {
-          console.log(`Relic effect update for Structure entityId: ${entityId}, effects count: ${relicEffects.length}`);
+          console.log(
+            `Relic effect update for Structure entityId: ${entityId}, source: ${relicSource}, effects count: ${relicEffects.length}`,
+          );
           // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
           const { currentArmiesTick } = getBlockTimestamp();
           const newEffects = relicEffects.map((relicEffect) => ({
@@ -1296,7 +1304,7 @@ export default class WorldmapScene extends HexagonScene {
             },
           }));
 
-          await this.structureManager.updateRelicEffects(entityId, newEffects);
+          await this.structureManager.updateRelicEffects(entityId, newEffects, relicSource);
           entityFound = true;
           break;
         }
@@ -1309,7 +1317,17 @@ export default class WorldmapScene extends HexagonScene {
         `Entity ${entityId} not found in current scene. Storing ${relicEffects.length} relic effects as pending`,
       );
 
-      // Clear existing pending effects for this entity and add new ones
+      // Get or create the entity's pending effects map
+      let entityPendingMap = this.pendingRelicEffects.get(entityId);
+      if (!entityPendingMap) {
+        entityPendingMap = new Map();
+        this.pendingRelicEffects.set(entityId, entityPendingMap);
+      }
+
+      // Determine the source for pending effects
+      const pendingSource = relicSource || RelicSource.Guard;
+
+      // Clear existing pending effects for this entity/source and add new ones
       if (relicEffects.length > 0) {
         const pendingRelicsSet = new Set<{ relicResourceId: number; effect: RelicEffect }>();
         for (const relicEffect of relicEffects) {
@@ -1322,12 +1340,25 @@ export default class WorldmapScene extends HexagonScene {
             },
           });
         }
-        this.pendingRelicEffects.set(entityId, pendingRelicsSet);
+        entityPendingMap.set(pendingSource, pendingRelicsSet);
       } else {
-        this.pendingRelicEffects.delete(entityId);
+        entityPendingMap.delete(pendingSource);
+        // If no sources have pending effects, remove the entity
+        if (entityPendingMap.size === 0) {
+          this.pendingRelicEffects.delete(entityId);
+        }
       }
     } else {
       // Update pending effects store even for loaded entities to keep it in sync
+      // Get or create the entity's pending effects map
+      let entityPendingMap = this.pendingRelicEffects.get(entityId);
+      if (!entityPendingMap) {
+        entityPendingMap = new Map();
+        this.pendingRelicEffects.set(entityId, entityPendingMap);
+      }
+
+      const pendingSource = relicSource || RelicSource.Guard;
+
       if (relicEffects.length > 0) {
         const pendingRelicsSet = new Set<{ relicResourceId: number; effect: RelicEffect }>();
         for (const relicEffect of relicEffects) {
@@ -1340,9 +1371,13 @@ export default class WorldmapScene extends HexagonScene {
             },
           });
         }
-        this.pendingRelicEffects.set(entityId, pendingRelicsSet);
+        entityPendingMap.set(pendingSource, pendingRelicsSet);
       } else {
-        this.pendingRelicEffects.delete(entityId);
+        entityPendingMap.delete(pendingSource);
+        // If no sources have pending effects, remove the entity
+        if (entityPendingMap.size === 0) {
+          this.pendingRelicEffects.delete(entityId);
+        }
       }
     }
   }
@@ -1351,16 +1386,22 @@ export default class WorldmapScene extends HexagonScene {
    * Apply all pending relic effects for an entity (called when entity is loaded)
    */
   private async applyPendingRelicEffects(entityId: ID) {
-    const pendingRelics = this.pendingRelicEffects.get(entityId);
-    if (!pendingRelics || pendingRelics.size === 0) return;
+    const entityPendingMap = this.pendingRelicEffects.get(entityId);
+    if (!entityPendingMap || entityPendingMap.size === 0) return;
 
-    console.log(`Applying ${pendingRelics.size} pending relic effects for entity ${entityId}`);
+    console.log(`Applying pending relic effects for entity ${entityId} from ${entityPendingMap.size} sources`);
 
     // Check if this is an army entity
     if (this.armyManager.hasArmy(entityId)) {
       try {
+        // For armies, combine all pending effects (they don't have sources)
+        const allPendingRelics: { relicResourceId: number; effect: RelicEffect }[] = [];
+        for (const pendingRelics of entityPendingMap.values()) {
+          allPendingRelics.push(...Array.from(pendingRelics));
+        }
+
         // Convert pending relics to array format for updateRelicEffects
-        const relicEffectsArray = Array.from(pendingRelics).map((pendingRelic) => ({
+        const relicEffectsArray = allPendingRelics.map((pendingRelic) => ({
           relicNumber: pendingRelic.relicResourceId,
           effect: pendingRelic.effect,
         }));
@@ -1378,14 +1419,19 @@ export default class WorldmapScene extends HexagonScene {
     for (const [, structures] of structureHexes) {
       if (structures.has(entityId)) {
         try {
-          // Convert pending relics to array format for updateRelicEffects
-          const relicEffectsArray = Array.from(pendingRelics).map((pendingRelic) => ({
-            relicNumber: pendingRelic.relicResourceId,
-            effect: pendingRelic.effect,
-          }));
+          // For structures, apply effects per source
+          for (const [relicSource, pendingRelics] of entityPendingMap) {
+            // Convert pending relics to array format for updateRelicEffects
+            const relicEffectsArray = Array.from(pendingRelics).map((pendingRelic) => ({
+              relicNumber: pendingRelic.relicResourceId,
+              effect: pendingRelic.effect,
+            }));
 
-          await this.structureManager.updateRelicEffects(entityId, relicEffectsArray);
-          console.log(`Applied ${relicEffectsArray.length} pending relic effects to structure: entityId=${entityId}`);
+            await this.structureManager.updateRelicEffects(entityId, relicEffectsArray, relicSource);
+            console.log(
+              `Applied ${relicEffectsArray.length} pending relic effects to structure: entityId=${entityId}, source=${relicSource}`,
+            );
+          }
         } catch (error) {
           console.error(`Failed to apply pending relic effects to structure ${entityId}:`, error);
         }
@@ -1398,9 +1444,15 @@ export default class WorldmapScene extends HexagonScene {
    * Clear all pending relic effects for an entity (called when entity is removed)
    */
   private clearPendingRelicEffects(entityId: ID) {
-    const pendingRelics = this.pendingRelicEffects.get(entityId);
-    if (pendingRelics) {
-      console.log(`Cleared ${pendingRelics.size} pending relic effects for entity ${entityId}`);
+    const entityPendingMap = this.pendingRelicEffects.get(entityId);
+    if (entityPendingMap) {
+      let totalEffects = 0;
+      for (const pendingRelics of entityPendingMap.values()) {
+        totalEffects += pendingRelics.size;
+      }
+      console.log(
+        `Cleared ${totalEffects} pending relic effects for entity ${entityId} from ${entityPendingMap.size} sources`,
+      );
       this.pendingRelicEffects.delete(entityId);
     }
   }
@@ -1513,10 +1565,23 @@ export default class WorldmapScene extends HexagonScene {
               console.log(
                 `Removing ${removedThisStructure} inactive relic effect(s) from structure: entityId=${entityId}`,
               );
-              await this.structureManager.updateRelicEffects(
-                entityId,
-                activeRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
-              );
+              // For validation, we need to update each source separately
+              // Get effects by source and update them
+              for (const source of [RelicSource.Guard, RelicSource.Production]) {
+                const sourceRelics = this.structureManager.getStructureRelicEffectsBySource(entityId, source);
+                if (sourceRelics.length > 0) {
+                  const activeSourceRelics = sourceRelics.filter((relic) =>
+                    ResourceManager.isRelicActive(relic.effect, currentArmiesTick),
+                  );
+                  if (activeSourceRelics.length < sourceRelics.length) {
+                    await this.structureManager.updateRelicEffects(
+                      entityId,
+                      activeSourceRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
+                      source,
+                    );
+                  }
+                }
+              }
               removedCount += removedThisStructure;
             }
           }

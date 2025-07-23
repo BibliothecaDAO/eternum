@@ -19,7 +19,7 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
       Keys: {
         keys: [entityId.toString()],
         pattern_matching: "FixedLen" as PatternMatching,
-        models: ["s1_eternum-Structure", "s1_eternum-Resource"], // Ensure models list here matches top-level if keys are specific to them
+        models: ["s1_eternum-Structure", "s1_eternum-Resource", "s1_eternum-ProductionBoostBonus"], // Ensure models list here matches top-level if keys are specific to them
       },
     },
   };
@@ -34,6 +34,7 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
   }
 
   const entityModels = response.items[0].models;
+
   const structureData = entityModels["s1_eternum-Structure"];
   const resourceData = entityModels["s1_eternum-Resource"];
   const productionBoostBonusData = entityModels["s1_eternum-ProductionBoostBonus"];

@@ -74,7 +74,6 @@ export const StructureEntityDetail = memo(
           toriiClient,
           structureEntityId,
         );
-        // todo: get relic effects
         const relicEffects: RelicEffectWithEndTick[] = [];
         const { currentArmiesTick } = getBlockTimestamp();
         if (structure) {

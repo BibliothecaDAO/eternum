@@ -18,6 +18,12 @@ import { FXManager } from "./fx-manager";
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
 
+// Enum to track the source of relic effects
+export enum RelicSource {
+  Guard = "guard",
+  Production = "production",
+}
+
 const ICONS = {
   ARMY: "/images/labels/enemy_army.png",
   MY_ARMY: "/images/labels/army.png",
@@ -113,8 +119,10 @@ export class StructureManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
-  private structureRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>> =
-    new Map();
+  private structureRelicEffects: Map<
+    ID,
+    Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
+  > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private isBlitz: boolean;
@@ -218,8 +226,11 @@ export class StructureManager {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
     // Clean up all relic effects
-    this.structureRelicEffects.forEach((_effects, entityId) => {
-      this.updateRelicEffects(entityId, []);
+    this.structureRelicEffects.forEach((entityEffectsMap, entityId) => {
+      // Clear effects for all sources
+      for (const relicSource of entityEffectsMap.keys()) {
+        this.updateRelicEffects(entityId, [], relicSource);
+      }
       // Clear any pending relic effects
       if (this.clearPendingRelicEffectsCallback) {
         this.clearPendingRelicEffectsCallback(entityId);
@@ -316,7 +327,13 @@ export class StructureManager {
     // Clear existing relic effects for this specific structure before re-rendering
     // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
     console.log(`StructureManager: onUpdate: clearing relic effects for entity ${entityId}`);
-    this.updateRelicEffects(entityId, []);
+    // Clear effects for all sources when structure is updated
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (entityEffectsMap) {
+      for (const relicSource of entityEffectsMap.keys()) {
+        this.updateRelicEffects(entityId, [], relicSource);
+      }
+    }
 
     // Apply any pending relic effects for this structure
     console.log(`StructureManager: onUpdate: applying pending relic effects for entity ${entityId}`);
@@ -550,11 +567,24 @@ export class StructureManager {
   }
 
   // Relic effect management methods
-  public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
+  public async updateRelicEffects(
+    entityId: ID,
+    newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
+    relicSource: RelicSource = RelicSource.Guard,
+  ) {
     const structure = this.structures.getStructureByEntityId(entityId);
     if (!structure) return;
 
-    const currentEffects = this.structureRelicEffects.get(entityId) || [];
+    // Get or create the effects map for this entity
+    let entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) {
+      entityEffectsMap = new Map();
+      this.structureRelicEffects.set(entityId, entityEffectsMap);
+    }
+
+    // Get current effects for this specific source
+    const currentEffects = entityEffectsMap.get(relicSource) || [];
+
     const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
     const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
@@ -596,20 +626,40 @@ export class StructureManager {
       }
     }
 
-    // Update the stored effects
+    // Update the effects for this specific source
     if (newRelicEffects.length === 0) {
-      this.structureRelicEffects.delete(entityId);
+      entityEffectsMap.delete(relicSource);
+      // If no sources have effects, remove the entity from the main map
+      if (entityEffectsMap.size === 0) {
+        this.structureRelicEffects.delete(entityId);
+      }
     } else {
       // Keep existing effects that are still in the new list, add new ones
-      const updatedEffects = currentEffects
-        .filter((e) => newRelicNumbers.has(e.relicNumber))
-        .concat(effectsToAdd);
-      this.structureRelicEffects.set(entityId, updatedEffects);
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      entityEffectsMap.set(relicSource, updatedEffects);
     }
   }
 
   public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
-    const effects = this.structureRelicEffects.get(entityId);
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) return [];
+
+    // Combine effects from all sources
+    const allEffects: { relicId: number; effect: RelicEffect }[] = [];
+    for (const effects of entityEffectsMap.values()) {
+      allEffects.push(...effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })));
+    }
+    return allEffects;
+  }
+
+  public getStructureRelicEffectsBySource(
+    entityId: ID,
+    relicSource: RelicSource,
+  ): { relicId: number; effect: RelicEffect }[] {
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) return [];
+
+    const effects = entityEffectsMap.get(relicSource);
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 }
