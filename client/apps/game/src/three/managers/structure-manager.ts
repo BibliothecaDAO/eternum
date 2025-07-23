@@ -219,7 +219,7 @@ export class StructureManager {
     }
     // Clean up all relic effects
     this.structureRelicEffects.forEach((_effects, entityId) => {
-      this.removeAllRelicEffects(entityId);
+      this.updateRelicEffects(entityId, []);
       // Clear any pending relic effects
       if (this.clearPendingRelicEffectsCallback) {
         this.clearPendingRelicEffectsCallback(entityId);
@@ -316,7 +316,7 @@ export class StructureManager {
     // Clear existing relic effects for this specific structure before re-rendering
     // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
     console.log(`StructureManager: onUpdate: clearing relic effects for entity ${entityId}`);
-    this.removeAllRelicEffects(entityId);
+    this.updateRelicEffects(entityId, []);
 
     // Apply any pending relic effects for this structure
     console.log(`StructureManager: onUpdate: applying pending relic effects for entity ${entityId}`);
@@ -550,65 +550,62 @@ export class StructureManager {
   }
 
   // Relic effect management methods
-  public async addRelicEffect(entityId: ID, relicNumber: number, effect: RelicEffect) {
+  public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
     const structure = this.structures.getStructureByEntityId(entityId);
     if (!structure) return;
 
-    const position = getWorldPositionForHex(structure.hexCoords);
-    position.y += 1.5; // Position above structure
+    const currentEffects = this.structureRelicEffects.get(entityId) || [];
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
-    try {
-      // Register the relic FX type if not already registered (wait for texture to load)
-      await this.fxManager.registerRelicFX(relicNumber);
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        currentEffect.fx.end();
+      }
+    }
 
-      // Create the FX at the structure position
-      const fx = this.fxManager.playFxAtCoords(
-        `relic_${relicNumber}`,
-        position.x,
-        position.y,
-        position.z,
-        1,
-        undefined,
-        true,
-      );
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }> = [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        try {
+          const position = getWorldPositionForHex(structure.hexCoords);
+          position.y += 1.5; // Position above structure
 
-      if (fx) {
-        // Store the effect
-        if (!this.structureRelicEffects.has(entityId)) {
-          this.structureRelicEffects.set(entityId, []);
+          // Register the relic FX type if not already registered (wait for texture to load)
+          await this.fxManager.registerRelicFX(newEffect.relicNumber);
+
+          // Create the FX at the structure position
+          const fx = this.fxManager.playFxAtCoords(
+            `relic_${newEffect.relicNumber}`,
+            position.x,
+            position.y,
+            position.z,
+            1,
+            undefined,
+            true,
+          );
+
+          if (fx) {
+            effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+          }
+        } catch (error) {
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for structure ${entityId}:`, error);
         }
-        this.structureRelicEffects.get(entityId)!.push({ relicNumber, effect, fx });
-      }
-    } catch (error) {
-      console.error(`Failed to add relic effect ${relicNumber} for structure ${entityId}:`, error);
-    }
-  }
-
-  public removeRelicEffect(entityId: ID, relicNumber: number) {
-    const effects = this.structureRelicEffects.get(entityId);
-    if (!effects) return;
-
-    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
-    if (index !== -1) {
-      const effect = effects[index];
-      effect.fx.end();
-      effects.splice(index, 1);
-
-      if (effects.length === 0) {
-        this.structureRelicEffects.delete(entityId);
       }
     }
-  }
 
-  public removeAllRelicEffects(entityId: ID) {
-    const effects = this.structureRelicEffects.get(entityId);
-    if (!effects) return;
-
-    effects.forEach((effect) => {
-      effect.fx.end();
-    });
-
-    this.structureRelicEffects.delete(entityId);
+    // Update the stored effects
+    if (newRelicEffects.length === 0) {
+      this.structureRelicEffects.delete(entityId);
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects
+        .filter((e) => newRelicNumbers.has(e.relicNumber))
+        .concat(effectsToAdd);
+      this.structureRelicEffects.set(entityId, updatedEffects);
+    }
   }
 
   public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {

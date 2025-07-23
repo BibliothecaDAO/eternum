@@ -9,7 +9,14 @@ import {
   getTotalResourceWeightKg,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { findResourceById, ID, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import {
+  findResourceById,
+  ID,
+  RelicEffectWithEndTick,
+  RelicRecipientType,
+  ResourcesIds,
+  TickIds,
+} from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -21,6 +28,7 @@ export const ResourceChip = ({
   showTransfer = true,
   storageCapacity = 0,
   storageCapacityUsed = 0,
+  activeRelicEffects,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -29,6 +37,7 @@ export const ResourceChip = ({
   showTransfer?: boolean;
   storageCapacity?: number;
   storageCapacityUsed?: number;
+  activeRelicEffects: RelicEffectWithEndTick[];
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -208,7 +217,9 @@ export const ResourceChip = ({
 
   // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {
-    return resourceManager.isRelicActive(resourceId, currentArmiesTick);
+    return activeRelicEffects.some(
+      (relicEffect) => relicEffect.id === resourceId && relicEffect.endTick > currentArmiesTick,
+    );
   }, [resourceManager, resourceId, currentArmiesTick]);
 
   // Calculate time remaining for active relic with real-time countdown
@@ -216,11 +227,11 @@ export const ResourceChip = ({
     if (!isRelic || !relicEffectActivated) return 0;
 
     // Get the relic effect data to access end_tick
-    const relicEffect = resourceManager.getRelicEffect(resourceId);
+    const relicEffect = activeRelicEffects.find((relicEffect) => relicEffect.id === resourceId);
     if (!relicEffect) return 0;
 
     // Calculate remaining ticks until effect ends
-    const remainingTicks = ResourceManager.relicsArmiesTicksLeft(relicEffect.effect_end_tick, currentArmiesTick);
+    const remainingTicks = ResourceManager.relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
 
     // Get tick interval for armies (relics use army ticks)
     const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;
@@ -233,7 +244,8 @@ export const ResourceChip = ({
   }, [isRelic, relicEffectActivated, resourceManager, resourceId, currentArmiesTick, armiesTickTimeRemaining]);
 
   // Check if we should hide this resource based on the balance and hideZeroBalance prop
-  if (hideZeroBalance && balance <= 0) {
+  // Show relics with active effects even if balance is 0
+  if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
     return null;
   }
   return (

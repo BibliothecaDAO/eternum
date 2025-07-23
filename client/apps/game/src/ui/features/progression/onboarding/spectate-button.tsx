@@ -3,9 +3,10 @@ import Button from "@/ui/design-system/atoms/button";
 
 export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
   return (
-    <Button className="w-full" onClick={onClick} size="lg">
-      <div className="flex items-center justify-start w-full">
-        <Eye className="w-6 fill-current mr-2" /> <div className="flex-grow text-center">Spectate</div>
+    <Button className="w-full" onClick={onClick}>
+      <div className="flex items-center justify-center">
+        <Eye className="w-5 h-5 mr-2 fill-brown" />
+        <span>Spectate</span>
       </div>
     </Button>
   );

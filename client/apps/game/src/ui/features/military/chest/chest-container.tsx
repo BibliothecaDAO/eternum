@@ -1,10 +1,11 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
+import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getCrateName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getRelicInfo, ID, RelicActivation, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
@@ -154,15 +155,9 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                       {hoveredRelicInfo.type}
                     </span>
                     <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        hoveredRelicInfo.activation === RelicActivation.Army
-                          ? "bg-red-600/20 text-red-400"
-                          : hoveredRelicInfo.activation === RelicActivation.Structure
-                            ? "bg-green-600/20 text-green-400"
-                            : "bg-orange-600/20 text-orange-400"
-                      }`}
+                      className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
                     >
-                      {hoveredRelicInfo.activation}
+                      {hoveredRelicInfo.recipientType}
                     </span>
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
@@ -499,11 +494,11 @@ export const ChestContainer = ({
                     <div className="flex flex-col items-center gap-1 text-xs">
                       {relic.duration && <p className="text-gold/70">Duration: {relic.duration}</p>}
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          relic.activation === "Army" ? "bg-red-600/20 text-red-400" : "bg-green-600/20 text-green-400"
-                        }`}
+                        className={`px-2 py-1 rounded text-xs font-semibold ${getRecipientTypeColor(
+                          relic.recipientType,
+                        )}`}
                       >
-                        {relic.activation} Activation
+                        {relic.recipientType} Activation
                       </span>
                       {relic.craftable && <p className="text-blue-400">✨ Craftable</p>}
                     </div>

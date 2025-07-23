@@ -6,6 +6,7 @@ import {
   computeExploreFoodCosts,
   configManager,
   divideByPrecision,
+  getArmyRelicEffects,
   getArmyTotalCapacityInKg,
   getRemainingCapacityInKg,
   ResourceManager,
@@ -19,10 +20,9 @@ interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   explorerResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   structureResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  relicEffects: ComponentValue<ClientComponents["RelicEffect"]["schema"]>[];
 }
 
-export const ArmyWarning = ({ army, explorerResources, structureResources, relicEffects }: ArmyWarningProps) => {
+export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
   const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
   const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
 
@@ -64,12 +64,13 @@ export const ArmyWarning = ({ army, explorerResources, structureResources, relic
   const { currentArmiesTick } = useBlockTimestamp();
 
   const stamina = useMemo(() => {
+    const relicEffects = getArmyRelicEffects(army.troops.boosts, currentArmiesTick);
     return StaminaManager.getStamina(
       army.troops,
       currentArmiesTick,
-      relicEffects.map((relic) => relic.effect_resource_id),
+      relicEffects.map((relic) => relic.id),
     );
-  }, [army, currentArmiesTick, relicEffects]);
+  }, [army, currentArmiesTick]);
 
   const minStaminaNeeded = useMemo(() => {
     const neighbors = getNeighborHexes(army.coord.x, army.coord.y);

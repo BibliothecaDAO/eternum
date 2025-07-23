@@ -21,13 +21,13 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
 import {
   CapacityConfig,
   ClientComponents,
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RelicEffectWithEndTick,
   RESOURCE_PRECISION,
   resources,
   ResourcesIds,
@@ -41,6 +41,11 @@ import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
+
+enum AttackerType {
+  Structure,
+  Army,
+}
 
 // Add the new function before the CombatContainer component
 const getFormattedCombatTweet = ({
@@ -72,11 +77,6 @@ const getFormattedCombatTweet = ({
   });
 };
 
-enum AttackerType {
-  Structure,
-  Army,
-}
-
 export const CombatContainer = ({
   attackerEntityId,
   target,
@@ -87,8 +87,8 @@ export const CombatContainer = ({
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerActiveRelicEffects: EntityRelicEffect[];
-  targetActiveRelicEffects: EntityRelicEffect[];
+  attackerActiveRelicEffects: RelicEffectWithEndTick[];
+  targetActiveRelicEffects: RelicEffectWithEndTick[];
 }) => {
   const {
     account: { account },
@@ -132,11 +132,11 @@ export const CombatContainer = ({
 
   // Convert relic effects to resource IDs
   const attackerRelicResourceIds = useMemo(() => {
-    return attackerActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
   }, [attackerActiveRelicEffects]);
 
   const targetRelicResourceIds = useMemo(() => {
-    return targetActiveRelicEffects.map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[];
+    return targetActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
   }, [targetActiveRelicEffects]);
 
   const attackerStamina = useMemo(() => {
@@ -177,6 +177,16 @@ export const CombatContainer = ({
           category: selectedGuard.troops.category as TroopType,
           tier: selectedGuard.troops.tier as TroopTier,
           stamina: selectedGuard.troops.stamina || { amount: 0n, updated_tick: 0n },
+          boosts: selectedGuard.troops.boosts || {
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+          },
         },
       };
     } else {
@@ -188,12 +198,22 @@ export const CombatContainer = ({
           category: army?.troops.category as TroopType,
           tier: army?.troops.tier as TroopTier,
           stamina: army?.troops.stamina || { amount: 0n, updated_tick: 0n },
+          boosts: army?.troops.boosts || {
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+          },
         },
       };
     }
   }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
 
-  const targetArmyData = useMemo(() => {
+  const targetArmyData: { troops: Troops } | null = useMemo(() => {
     if (!target?.info[0]) return null;
 
     return {
@@ -202,6 +222,16 @@ export const CombatContainer = ({
         category: target.info[0].category as TroopType,
         tier: target.info[0].tier as TroopTier,
         stamina: target.info[0].stamina,
+        boosts: target.info[0].boosts || {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
       },
     };
   }, [target]);

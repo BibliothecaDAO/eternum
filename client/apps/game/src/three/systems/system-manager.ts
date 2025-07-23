@@ -2,7 +2,12 @@ import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { type SetupResult } from "@bibliothecadao/dojo";
-import { divideByPrecision, getHyperstructureProgress, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getArmyRelicEffects,
+  getHyperstructureProgress,
+  getStructureArmyRelicEffects,
+} from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
   BiomeType,
@@ -581,68 +586,74 @@ export class SystemManager {
 
   public get RelicEffect() {
     return {
-      onUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+      onArmyUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
         this.setupSystem(
-          this.setup.components.RelicEffect,
+          this.setup.components.ExplorerTroops,
           callback,
           async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.RelicEffect)) {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
 
               console.log("RelicEffectSystemManager: update received", { currentState, prevState });
 
               // at least one of the states must have an entity id
-              const entityId = currentState?.entity_id || prevState?.entity_id || 0;
-              const relicResourceId = currentState?.effect_resource_id || prevState?.effect_resource_id || 0;
-
-              console.log("RelicEffectSystemManager: entityId and relicResourceId", { entityId, relicResourceId });
+              const entityId = currentState?.explorer_id || prevState?.explorer_id || 0;
 
               // Check if we have a current state
               if (currentState) {
                 const { currentArmiesTick } = getBlockTimestamp();
-                const effect = {
-                  start_tick: currentState.effect_start_tick,
-                  end_tick: currentState.effect_end_tick,
-                  usage_left: currentState.effect_usage_left,
-                };
-                const isActive = ResourceManager.isRelicActive(effect, currentArmiesTick);
+                const relicEffects = getArmyRelicEffects(currentState.troops.boosts, currentArmiesTick);
 
                 console.log("RelicEffectSystemManager: currentState exists, isActive", {
-                  isActive,
                   currentArmiesTick,
-                  relicResourceId,
-                  effect,
+                  relicEffects,
                 });
 
                 return {
                   entityId,
-                  relicResourceId,
-                  isActive,
-                  effect,
+                  relicEffects,
                 };
-              } else if (prevState && !currentState) {
-                // Relic effect was removed
-                console.log("RelicEffectSystemManager: Relic effect removed", { entityId, relicResourceId });
-                return {
-                  entityId,
-                  relicResourceId,
-                  isActive: false,
-                  effect: {
-                    start_tick: 0,
-                    end_tick: 0,
-                    usage_left: 0,
-                  },
-                };
-              } else {
-                console.log("RelicEffectSystemManager: No relevant state found", { currentState, prevState });
               }
-            } else {
-              console.log("RelicEffectSystemManager: update is not a component update", { update });
             }
           },
           true,
         );
       },
+      onStructureGuardUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.Structure,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.Structure)) {
+              const [currentState, prevState] = update.value;
+
+              if (!currentState) return;
+
+              const { currentArmiesTick } = getBlockTimestamp();
+              const relicEffects = getStructureArmyRelicEffects(currentState, currentArmiesTick);
+
+              return {
+                entityId: currentState.entity_id,
+                relicEffects,
+              };
+            }
+          },
+          true,
+        );
+      },
+      // onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+      //   this.setupSystem(
+      //     this.setup.components.Structure,
+      //     callback,
+      //     async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+      //       if (isComponentUpdate(update, this.setup.components.Structure)) {
+      //         const [currentState, prevState] = update.value;
+
+      //         if (!currentState) return;
+      //       }
+      //     },
+      //   );
+      // },
     };
   }
 }

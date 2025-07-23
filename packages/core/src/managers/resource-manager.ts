@@ -7,7 +7,6 @@ import {
   Resource,
   RESOURCE_PRECISION,
   ResourcesIds,
-  TickIds,
 } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -68,48 +67,48 @@ export class ResourceManager {
     };
   }
 
-  public getRelicEffect(
-    resourceId: ResourcesIds,
-  ): ComponentValue<ClientComponents["RelicEffect"]["schema"]> | undefined {
-    if (!ResourceManager.isRelic(resourceId)) return undefined;
-    const relicEffect = getComponentValue(
-      this.components.RelicEffect,
-      getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
-    );
-    return relicEffect;
-  }
+  // public getRelicEffect(
+  //   resourceId: ResourcesIds,
+  // ): ComponentValue<ClientComponents["RelicEffect"]["schema"]> | undefined {
+  //   if (!ResourceManager.isRelic(resourceId)) return undefined;
+  //   const relicEffect = getComponentValue(
+  //     this.components.RelicEffect,
+  //     getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]),
+  //   );
+  //   return relicEffect;
+  // }
 
-  public isRelicActive(resourceId: ResourcesIds, currentTick: number): boolean {
-    if (!ResourceManager.isRelic(resourceId)) return false;
+  // public isRelicActive(resourceId: ResourcesIds, currentTick: number): boolean {
+  //   if (!ResourceManager.isRelic(resourceId)) return false;
 
-    const relicEffect = this.getRelicEffect(resourceId);
-    if (!relicEffect) return false;
+  //   const relicEffect = this.getRelicEffect(resourceId);
+  //   if (!relicEffect) return false;
 
-    return ResourceManager.isRelicActive(
-      {
-        start_tick: relicEffect.effect_start_tick,
-        end_tick: relicEffect.effect_end_tick,
-        usage_left: relicEffect.effect_usage_left,
-      },
-      currentTick,
-    );
-  }
+  //   return ResourceManager.isRelicActive(
+  //     {
+  //       start_tick: relicEffect.effect_start_tick,
+  //       end_tick: relicEffect.effect_end_tick,
+  //       usage_left: relicEffect.effect_usage_left,
+  //     },
+  //     currentTick,
+  //   );
+  // }
 
-  public getRelicTimeUntilExpiry(resourceId: ResourcesIds, currentTick: number): number {
-    if (!ResourceManager.isRelic(resourceId)) return 0;
+  // public getRelicTimeUntilExpiry(resourceId: ResourcesIds, currentTick: number): number {
+  //   if (!ResourceManager.isRelic(resourceId)) return 0;
 
-    const relicEffect = this.getRelicEffect(resourceId);
-    if (!relicEffect) return 0;
+  //   const relicEffect = this.getRelicEffect(resourceId);
+  //   if (!relicEffect) return 0;
 
-    // Check if relic is still active
-    if (!this.isRelicActive(resourceId, currentTick)) return 0;
+  //   // Check if relic is still active
+  //   if (!this.isRelicActive(resourceId, currentTick)) return 0;
 
-    // Get tick interval for armies (since relics use army ticks)
-    const tickInterval = configManager.getTick(TickIds.Armies) || 1;
+  //   // Get tick interval for armies (since relics use army ticks)
+  //   const tickInterval = configManager.getTick(TickIds.Armies) || 1;
 
-    // Calculate time remaining in seconds
-    return ResourceManager.relicsTimeLeft(relicEffect.effect_end_tick, currentTick, tickInterval);
-  }
+  //   // Calculate time remaining in seconds
+  //   return ResourceManager.relicsTimeLeft(relicEffect.effect_end_tick, currentTick, tickInterval);
+  // }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
     const overrideId = uuid();

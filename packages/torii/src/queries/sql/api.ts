@@ -1,13 +1,10 @@
-import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, Coord, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
-import { extractRelicsFromResourceData } from ".";
 import {
   ArmyRelicsData,
   BattleLogEvent,
   ChestInfo,
   ChestTile,
-  EntityRelicEffect,
-  EntityWithRelics,
   EventType,
   Guard,
   GuardData,
@@ -437,51 +434,9 @@ export class SqlApi {
    * @returns All relics grouped by entity type
    */
   async fetchAllPlayerRelics(playerAddress: string): Promise<PlayerRelicsData> {
-    try {
-      const [structureRelics, armyRelics] = await Promise.all([
-        this.fetchPlayerStructureRelics(playerAddress),
-        this.fetchPlayerArmyRelics(playerAddress),
-      ]);
-
-      const structures: EntityWithRelics[] = structureRelics.map((structure) => {
-        const relics = extractRelicsFromResourceData(structure);
-
-        return {
-          entityId: structure.entity_id,
-          structureType: structure.entity_type,
-          type: EntityType.STRUCTURE,
-          position: { x: structure.coord_x, y: structure.coord_y },
-          relics,
-        };
-      });
-
-      const armies: EntityWithRelics[] = armyRelics.map((army) => {
-        const relics = extractRelicsFromResourceData(army);
-
-        return {
-          entityId: army.entity_id,
-          type: EntityType.ARMY,
-          position: { x: army.coord_x, y: army.coord_y },
-          relics,
-        };
-      });
-
-      return {
-        structures,
-        armies,
-      };
-    } catch (error) {
-      console.error("Error fetching player relics:", error);
-      return {
-        structures: [],
-        armies: [],
-      };
-    }
-  }
-
-  async fetchEntityRelicEffects(entityId: ID): Promise<EntityRelicEffect[]> {
-    const query = RELICS_QUERIES.ENTITY_RELIC_EFFECTS.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<EntityRelicEffect>(url, "Failed to fetch entity relic effects");
+    return {
+      structures: [],
+      armies: [],
+    };
   }
 }

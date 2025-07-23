@@ -1,6 +1,7 @@
 import { ClientComponents, ID, RELICS, ResourcesIds, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getArmyRelicEffects } from "../utils/relic";
 import { configManager } from "./config-manager";
 
 export class StaminaManager {
@@ -24,21 +25,9 @@ export class StaminaManager {
       getEntityIdFromKeys([BigInt(this.armyEntityId)]),
     )?.troops;
 
-    const activeRelicEntities = runQuery([
-      HasValue(this.components.RelicEffect, {
-        entity_id: this.armyEntityId,
-      }),
-    ]);
-
-    const activeRelicEffects = Array.from(activeRelicEntities)
-      .map((entity) => {
-        return getComponentValue(this.components.RelicEffect, entity as Entity);
-      })
-      .filter((relic) => relic !== undefined)
-      .filter((relic) => relic.effect_end_tick > currentArmiesTick)
-      .map((relic) => relic.effect_resource_id);
-
     if (!troops) return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
+
+    const activeRelicEffects = getArmyRelicEffects(troops.boosts, currentArmiesTick).map((relic) => relic.id);
 
     return StaminaManager.getStamina(troops, currentArmiesTick, activeRelicEffects);
   }

@@ -122,11 +122,11 @@ const Components: { [key: string]: Resource } = Object.freeze({
   },
 
   // Relics - Structure Enhancement Items
-  StructureDefenseRelic1: {
+  StructureDamageReductionRelic1: {
     component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic1}.png`} />,
     name: "Structure Defense Relic 1",
   },
-  StructureDefenseRelic2: {
+  StructureDamageReductionRelic2: {
     component: <img src={`/images/resources/${ResourcesIds.StructureDamageReductionRelic2}.png`} />,
     name: "Structure Defense Relic 2",
   },

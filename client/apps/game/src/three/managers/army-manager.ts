@@ -384,90 +384,77 @@ export class ArmyManager {
     const relicEffects = this.armyRelicEffects.get(entityId);
     if (relicEffects) {
       // Store current relic effects to re-apply at new position
-      const currentRelics = relicEffects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
+      const currentRelics = relicEffects.map((effect) => ({ relicNumber: effect.relicNumber, effect: effect.effect }));
 
-      // Remove old effects
-      relicEffects.forEach((effect) => effect.fx.end());
-      this.armyRelicEffects.delete(entityId);
-
-      // Re-add effects at new position
-      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
-      for (const relic of currentRelics) {
-        try {
-          await this.addRelicEffect(entityId, relic.relicId, relic.effect);
-        } catch (error) {
-          console.error(
-            `Failed to re-apply relic effect ${relic.relicId} for army ${entityId} during movement:`,
-            error,
-          );
-        }
-      }
+      // Update effects to new position (this will remove old and add new at correct position)
+      this.updateRelicEffects(entityId, []);
+      // Update effects to new position (this will remove old and add new at correct position)
+      await this.updateRelicEffects(entityId, currentRelics);
     }
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
-  public async addRelicEffect(entityId: ID, relicNumber: number, effect: RelicEffect) {
-    console.log("addRelicEffect", { entityId, relicNumber });
+  public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
     const army = this.armies.get(entityId);
     if (!army) return;
 
-    const position = this.getArmyWorldPosition(entityId, army.hexCoords);
-    position.y += 1.5;
+    const currentEffects = this.armyRelicEffects.get(entityId) || [];
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
-    try {
-      // Register the relic FX if not already registered (wait for texture to load)
-      await this.fxManager.registerRelicFX(relicNumber);
-
-      // Play the relic effect
-      const fx = this.fxManager.playFxAtCoords(
-        `relic_${relicNumber}`,
-        position.x,
-        position.y,
-        position.z,
-        0.8,
-        undefined,
-        true,
-      );
-
-      // Add to existing effects or create new array
-      const existingEffects = this.armyRelicEffects.get(entityId) || [];
-      existingEffects.push({ relicNumber, effect, fx });
-      this.armyRelicEffects.set(entityId, existingEffects);
-    } catch (error) {
-      console.error(`Failed to add relic effect ${relicNumber} for army ${entityId}:`, error);
-    }
-  }
-
-  public removeRelicEffect(entityId: ID, relicNumber: number) {
-    const effects = this.armyRelicEffects.get(entityId);
-    if (!effects) return;
-
-    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
-    if (index !== -1) {
-      effects[index].fx.end();
-      effects.splice(index, 1);
-
-      if (effects.length === 0) {
-        this.armyRelicEffects.delete(entityId);
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        currentEffect.fx.end();
       }
     }
-  }
 
-  public removeAllRelicEffects(entityId: ID) {
-    const effects = this.armyRelicEffects.get(entityId);
-    if (!effects) return;
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }> = [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        try {
+          const position = this.getArmyWorldPosition(entityId, army.hexCoords);
+          position.y += 1.5;
 
-    effects.forEach((effect) => effect.fx.end());
-    this.armyRelicEffects.delete(entityId);
+          // Register the relic FX if not already registered (wait for texture to load)
+          await this.fxManager.registerRelicFX(newEffect.relicNumber);
+
+          // Play the relic effect
+          const fx = this.fxManager.playFxAtCoords(
+            `relic_${newEffect.relicNumber}`,
+            position.x,
+            position.y,
+            position.z,
+            0.8,
+            undefined,
+            true,
+          );
+
+          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+        } catch (error) {
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
+        }
+      }
+    }
+
+    // Update the stored effects
+    if (newRelicEffects.length === 0) {
+      this.armyRelicEffects.delete(entityId);
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      this.armyRelicEffects.set(entityId, updatedEffects);
+    }
   }
 
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
 
     // Remove any relic effects
-    this.removeAllRelicEffects(entityId);
+    this.updateRelicEffects(entityId, []);
 
     // Clear any pending relic effects
     if (this.clearPendingRelicEffectsCallback) {
@@ -625,10 +612,9 @@ export class ArmyManager {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
     // Clean up relic effects
-    this.armyRelicEffects.forEach((effects) => {
-      effects.forEach((effect) => effect.fx.end());
-    });
-    this.armyRelicEffects.clear();
+    for (const [entityId] of this.armyRelicEffects) {
+      this.updateRelicEffects(entityId, []);
+    }
     // Clean up any other resources...
   }
 }

@@ -1,9 +1,10 @@
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { RELICS, RelicActivation, RelicInfo, ResourcesIds, resources } from "@bibliothecadao/types";
+import { RELICS, RelicInfo, ResourcesIds, resources } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getRecipientTypeColor, getRelicTypeColor } from "./relic-colors";
 
 interface SelectRelicProps {
   onSelect: (relicIds: ResourcesIds[]) => void;
@@ -97,30 +98,6 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
     onSelect([]);
   };
 
-  const getRelicTypeColor = (type: RelicInfo["type"]) => {
-    switch (type) {
-      case "Damage":
-        return "text-order-giants";
-      case "Damage Reduction":
-        return "text-order-brilliance";
-      case "Stamina":
-        return "text-order-power";
-      default:
-        return "text-gold";
-    }
-  };
-
-  const getActivationColor = (activation: RelicActivation) => {
-    switch (activation) {
-      case RelicActivation.Army:
-        return "bg-red-500/20 text-red-400";
-      case RelicActivation.Structure:
-        return "bg-green-500/20 text-green-400";
-      case RelicActivation.ArmyAndStructure:
-        return "bg-orange-500/20 text-orange-400";
-    }
-  };
-
   // Call onSelect with default value on mount
   React.useEffect(() => {
     if (defaultValue.length > 0) {
@@ -207,8 +184,10 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={clsx("px-2 py-1 rounded text-xs", getActivationColor(relic.activation))}>
-                            {relic.activation}
+                          <span
+                            className={clsx("px-2 py-1 rounded text-xs", getRecipientTypeColor(relic.recipientType))}
+                          >
+                            {relic.recipientType}
                           </span>
                           {isSelected && allowMultiple && <span className="text-gold">✓</span>}
                         </div>

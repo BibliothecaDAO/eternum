@@ -1,7 +1,13 @@
 import { getIsBlitz } from "@/ui/constants";
 import { ResourceChip } from "@/ui/features/economy/resources";
+import { getBlockTimestamp } from "@/utils/timestamp";
 
-import { getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
+import {
+  getEntityIdFromKeys,
+  getRealmInfo,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+} from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -52,6 +58,24 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     () => getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components),
     [entityId, structureBuildings, resources],
   );
+
+  console.log({ realmInfo });
+
+  const productionBoostBonus = useComponentValue(
+    setup.components.ProductionBoostBonus,
+    getEntityIdFromKeys([BigInt(entityId)]),
+  );
+
+  const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+
+  const activeRelicEffects = useMemo(() => {
+    const currentTick = getBlockTimestamp().currentArmiesTick;
+    const structureArmyRelicEffects = structure ? getStructureArmyRelicEffects(structure, currentTick) : [];
+    const structureRelicEffects = productionBoostBonus
+      ? getStructureRelicEffects(productionBoostBonus, currentTick)
+      : [];
+    return [...structureRelicEffects, ...structureArmyRelicEffects];
+  }, [productionBoostBonus, structure]);
 
   const resourceManager = useResourceManager(entityId);
 
@@ -116,6 +140,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                     hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
                     storageCapacity={realmInfo?.storehouses.capacityKg}
                     storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
+                    activeRelicEffects={activeRelicEffects}
                   />
                 ))}
               </div>

@@ -1,14 +1,8 @@
 import Button from "@/ui/design-system/atoms/button";
+import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  findResourceById,
-  getRelicInfo,
-  ID,
-  RelicActivation,
-  RelicRecipientType,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
@@ -39,22 +33,18 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     return getRelicInfo(relicId as ResourcesIds);
   }, [relicId]);
 
+  const isCompatible = recipientType === relicInfo?.recipientType;
+
   const resourceName = useMemo(() => {
     return findResourceById(relicId)?.trait || "Unknown Relic";
   }, [relicId]);
 
-  const isCompatible = useMemo(() => {
-    if (!relicInfo) return false;
-    return (
-      (recipientType === RelicRecipientType.Explorer &&
-        (relicInfo.activation === RelicActivation.Army || relicInfo.activation === RelicActivation.ArmyAndStructure)) ||
-      (recipientType === RelicRecipientType.Structure &&
-        (relicInfo.activation === RelicActivation.Structure ||
-          relicInfo.activation === RelicActivation.ArmyAndStructure))
-    );
-  }, [relicInfo, recipientType]);
-
   const handleConfirm = async () => {
+    if (!relicInfo) {
+      setError("Relic not found");
+      return;
+    }
+
     if (!account) {
       setError("Account not connected");
       return;
@@ -76,8 +66,10 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         signer: account,
         entity_id: structureEntityId,
         relic_resource_id: relicId,
-        recipient_type: recipientType,
+        recipient_type: relicInfo.recipientTypeParam,
       });
+
+      console.log("applyRelicCall", applyRelicCall);
 
       await applyRelicCall;
       onClose();
@@ -111,35 +103,18 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         {relicInfo && (
           <div className="w-full mb-6 p-4 bg-dark-brown/50 rounded">
             <p className="text-sm font-semibold mb-2">{relicInfo.name}</p>
-            <p className="text-xs text-gold/80 mb-2">{relicInfo.effect}</p>
+            <p className="text-xs text-gold/80 mb-2">
+              {relicInfo.effect}
+              {relicInfo.duration ? ` for ${relicInfo.duration}` : ""}
+            </p>
             <div className="flex items-center gap-2">
-              <span
-                className={`px-2 py-1 rounded text-xs font-semibold ${
-                  relicInfo.type === "Stamina"
-                    ? "bg-green-600/20 text-green-400"
-                    : relicInfo.type === "Damage"
-                      ? "bg-red-600/20 text-red-400"
-                      : relicInfo.type === "Damage Reduction"
-                        ? "bg-blue-600/20 text-blue-400"
-                        : relicInfo.type === "Exploration"
-                          ? "bg-purple-600/20 text-purple-400"
-                          : relicInfo.type === "Production"
-                            ? "bg-yellow-600/20 text-yellow-400"
-                            : "bg-gray-600/20 text-gray-400"
-                }`}
-              >
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(relicInfo.type)}`}>
                 {relicInfo.type}
               </span>
               <span
-                className={`px-2 py-1 rounded text-xs font-semibold ${
-                  relicInfo.activation === RelicActivation.Army
-                    ? "bg-red-600/20 text-red-400"
-                    : relicInfo.activation === RelicActivation.Structure
-                      ? "bg-green-600/20 text-green-400"
-                      : "bg-orange-600/20 text-orange-400"
-                }`}
+                className={`px-2 py-1 rounded text-xs font-semibold ${getRecipientTypeColor(relicInfo.recipientType)}`}
               >
-                {relicInfo.activation}
+                {relicInfo.recipientType}
               </span>
               <span
                 className={`px-2 py-1 rounded text-xs font-bold ${
@@ -159,12 +134,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
               {recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
             </p>
             <p className="text-xs text-red-300 text-center mt-1">
-              {relicInfo?.activation} relics can only be activated by{" "}
-              {relicInfo?.activation === RelicActivation.Army
-                ? "explorers"
-                : relicInfo?.activation === RelicActivation.Structure
-                  ? "structures"
-                  : "explorers and structures"}
+              {relicInfo?.recipientType} relics can only be activated by{" "}
+              {relicInfo?.recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
             </p>
           </div>
         ) : (

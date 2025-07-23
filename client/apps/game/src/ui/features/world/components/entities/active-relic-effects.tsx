@@ -1,13 +1,12 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, formatTime, ResourceManager } from "@bibliothecadao/eternum";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
-import { getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicEffectWithEndTick, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
-  relicEffects: EntityRelicEffect[];
+  relicEffects: RelicEffectWithEndTick[];
   entityId: ID;
   compact?: boolean;
   className?: string;
@@ -21,8 +20,8 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
 
     return relicEffects
       .map((effect) => {
-        const resourceId = Number(effect.effect_resource_id);
-        const endTick = Number(effect.effect_end_tick);
+        const resourceId = Number(effect.id);
+        const endTick = Number(effect.endTick);
 
         // Skip invalid data
         if (isNaN(resourceId) || isNaN(endTick)) return null;

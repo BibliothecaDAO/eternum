@@ -8,7 +8,6 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { sqlApi } from "@/services/api";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
@@ -19,17 +18,16 @@ import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
-  ClientComponents,
   ContractAddress,
   ID,
   MERCENARIES,
+  RelicEffectWithEndTick,
   RelicRecipientType,
   StructureType,
 } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle } from "lucide-react";
-import { memo, useMemo, useState, useCallback } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 
@@ -70,9 +68,8 @@ export const StructureEntityDetail = memo(
         if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
 
         const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        const relicEffects = (await sqlApi.fetchEntityRelicEffects(structureEntityId)) as ComponentValue<
-          ClientComponents["RelicEffect"]["schema"]
-        >[];
+        // todo: get relic effects
+        const relicEffects: RelicEffectWithEndTick[] = [];
         if (!structure)
           return {
             structure: null,
@@ -294,7 +291,7 @@ export const StructureEntityDetail = memo(
             <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
             {resources && (
               <InventoryResources
-                relicEffects={structureDetails?.relicEffects || []}
+                relicEffects={structureDetails?.relicEffects.map((effect) => effect.id) || []}
                 max={maxInventory}
                 resources={resources}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"

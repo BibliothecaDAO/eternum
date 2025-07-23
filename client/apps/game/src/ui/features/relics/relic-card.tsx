@@ -1,15 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getRecipientTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import {
-  findResourceById,
-  getRelicInfo,
-  ID,
-  RelicActivation,
-  RelicRecipientType,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
@@ -88,15 +82,11 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
                       {relicInfo.type}
                     </span>
                     <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        relicInfo.activation === RelicActivation.Army
-                          ? "bg-red-600/20 text-red-400"
-                          : relicInfo.activation === RelicActivation.Structure
-                            ? "bg-green-600/20 text-green-400"
-                            : "bg-orange-600/20 text-orange-400"
-                      }`}
+                      className={`px-2 py-1 rounded text-xs font-semibold ${getRecipientTypeColor(
+                        relicInfo.recipientType,
+                      )}`}
                     >
-                      {relicInfo.activation}
+                      {relicInfo.recipientType} Activation
                     </span>
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
@@ -128,7 +118,7 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
         </div>
         {relicInfo && (
           <div className={`text-xs mt-1 ${isActive ? "text-purple-200/70" : "text-gold/50"}`}>
-            {relicInfo.activation} • Level {relicInfo.level}
+            {relicInfo.recipientType} Activation • Level {relicInfo.level}
             {isActive && " • ACTIVE"}
           </div>
         )}
