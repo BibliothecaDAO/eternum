@@ -3,6 +3,7 @@ import { getIsBlitz } from "@/ui/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { isRelic } from "@bibliothecadao/eternum";
 import { ResourcesIds, getResourceTiers } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useMemo, useRef, useState } from "react";
@@ -29,6 +30,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const REALM_PRODUCTION_EXCLUDED = [
+    ResourcesIds.Essence,
     ResourcesIds.AncientFragment,
     ResourcesIds.Fish,
     ResourcesIds.Wheat,
@@ -51,7 +53,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
       .flat()
       .filter((resourceId) => {
         if (resourceId === ResourcesIds.Lords) return false;
-        if (realmProduction && REALM_PRODUCTION_EXCLUDED.includes(resourceId)) return false;
+        if (realmProduction && (REALM_PRODUCTION_EXCLUDED.includes(resourceId) || isRelic(resourceId))) return false;
         if (excludeResourceIds.includes(resourceId)) return false;
         return true;
       });

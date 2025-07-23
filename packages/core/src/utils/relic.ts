@@ -152,7 +152,7 @@ export const isRelic = (resourceId: ResourcesIds): boolean => {
 
 export const isRelicActive = ({ end_tick, usage_left }: RelicEffect, currentTick: number): boolean => {
   // Check if the effect is within the active time window
-  const isWithinTimeWindow = currentTick > end_tick;
+  const isWithinTimeWindow = end_tick > currentTick;
 
   // Check if there are remaining uses (if applicable)
   const hasUsagesLeft = usage_left > 0;

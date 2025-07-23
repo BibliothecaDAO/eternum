@@ -11,8 +11,6 @@ export const HexEntityDetails = () => {
   const dojo = useDojo();
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  console.log("selectedHex", selectedHex);
-
   // Get tile data based on selected hex
   const tile = useMemo(() => {
     if (!selectedHex) return null;

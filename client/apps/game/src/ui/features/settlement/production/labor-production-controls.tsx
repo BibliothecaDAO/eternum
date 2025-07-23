@@ -2,7 +2,7 @@ import { Button, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceIcon, SelectResource } from "@/ui/design-system/molecules";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, isRelic, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -64,13 +64,15 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
 
   const availableResources = useMemo(() => {
     const { currentBlockTimestamp } = getBlockTimestamp();
-    return selectedResources.map((resource) => {
-      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
-      return {
-        resourceId: resource.id,
-        amount: resourceBalance,
-      };
-    });
+    return selectedResources
+      .filter((resource) => !isRelic(resource.id))
+      .map((resource) => {
+        const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+        return {
+          resourceId: resource.id,
+          amount: resourceBalance,
+        };
+      });
   }, [selectedResources, resourceManager]);
 
   const addResource = () => {

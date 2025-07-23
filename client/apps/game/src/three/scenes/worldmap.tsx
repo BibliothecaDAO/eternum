@@ -1552,6 +1552,7 @@ export default class WorldmapScene extends HexagonScene {
           if (currentRelics.length > 0) {
             // Filter out inactive relics
             const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
+            console.log({ currentRelics, activeRelics, currentArmiesTick });
 
             // If some relics were removed, update the effects
             if (activeRelics.length < currentRelics.length) {
