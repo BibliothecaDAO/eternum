@@ -849,6 +849,9 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../provider
+      '@bibliothecadao/torii':
+        specifier: workspace:*
+        version: link:../torii
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../types

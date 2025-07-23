@@ -1,7 +1,9 @@
+import useStore from "@/shared/store";
+import { SystemManager } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { GUIManager } from "../helpers/gui-manager";
-import { SystemManager } from "../system/system-manager";
+import { loggedInAccount } from "../helpers/utils";
 import { TileRenderer } from "./tile-renderer";
 import { getWorldPositionForHex } from "./utils";
 
@@ -30,7 +32,7 @@ export abstract class BaseScene {
   constructor(dojo: DojoResult, sceneId?: string) {
     this.dojo = dojo;
     this.scene = new THREE.Scene();
-    this.systemManager = new SystemManager(this.dojo.setup);
+    this.systemManager = new SystemManager(this.dojo.setup, loggedInAccount());
     this.tileRenderer = new TileRenderer(this.scene);
     this.raycaster = new THREE.Raycaster();
 
@@ -38,6 +40,14 @@ export abstract class BaseScene {
     this.setupLighting();
     this.createGroundMesh();
     this.setupGUI(sceneId);
+    useStore.subscribe(
+      (state) => ({
+        account: state.account,
+      }),
+      (account) => {
+        this.systemManager.setLoggedInAccount(BigInt(account?.account?.address || "0"));
+      },
+    );
   }
 
   protected initializeScene(): void {
