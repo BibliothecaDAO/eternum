@@ -151,17 +151,17 @@ export const CombatContainer = ({
         const guard = structureGuards[0];
         if (!guard.troops.stamina) return 0n;
 
-        return StaminaManager.getStamina(guard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
+        return StaminaManager.getStamina(guard.troops, currentArmiesTick).amount;
       } else if (selectedGuardSlot !== null) {
         const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
         if (selectedGuard && selectedGuard.troops.stamina) {
-          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick, attackerRelicResourceIds).amount;
+          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick).amount;
         }
       }
       return 0n;
     }
     return new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, attackerActiveRelicEffects]);
+  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
 
   // Get the current army states for display
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {

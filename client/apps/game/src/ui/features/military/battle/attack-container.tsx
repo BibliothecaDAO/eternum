@@ -101,7 +101,7 @@ export const AttackContainer = ({
     } else {
       const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
       if (explorer) {
-        setAttackerRelicEffects(getArmyRelicEffects(explorer.troops.boosts, currentArmiesTick));
+        setAttackerRelicEffects(getArmyRelicEffects(explorer.troops, currentArmiesTick));
       }
     }
   }, [attackerEntityId, Structure]);
@@ -126,7 +126,7 @@ export const AttackContainer = ({
           setTarget({
             info: guards.map((guard) => ({
               ...guard.troops,
-              stamina: StaminaManager.getStamina(guard.troops, currentArmiesTick, []),
+              stamina: StaminaManager.getStamina(guard.troops, currentArmiesTick),
             })),
             id: targetTile?.occupier_id,
             targetType: TargetType.Structure,
@@ -159,18 +159,14 @@ export const AttackContainer = ({
           setTargetResources(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
         }
         if (explorer) {
-          const relicEffects = getArmyRelicEffects(explorer.troops.boosts, currentArmiesTick);
+          const relicEffects = getArmyRelicEffects(explorer.troops, currentArmiesTick);
           setTargetRelicEffects(relicEffects);
           const addressOwner = await sqlApi.fetchExplorerAddressOwner(targetTile.occupier_id);
           setTarget({
             info: [
               {
                 ...explorer.troops,
-                stamina: StaminaManager.getStamina(
-                  explorer.troops,
-                  currentArmiesTick,
-                  relicEffects.map((relic) => relic.id),
-                ),
+                stamina: StaminaManager.getStamina(explorer.troops, currentArmiesTick),
               },
             ],
             id: targetTile?.occupier_id,

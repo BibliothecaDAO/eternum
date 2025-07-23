@@ -1,59 +1,60 @@
 import {
   ClientComponents,
+  RelicEffect,
   RelicEffectWithEndTick,
   RelicRecipientType,
   RelicRecipientTypeParam,
   RELICS,
   ResourcesIds,
-  TroopBoosts,
+  Troops,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 
-export const getArmyRelicEffects = (troopBoosts: TroopBoosts, currentTick: number): RelicEffectWithEndTick[] => {
+export const getArmyRelicEffects = (troops: Troops, currentTick: number): RelicEffectWithEndTick[] => {
   const relicEffects: RelicEffectWithEndTick[] = [];
 
-  if (!troopBoosts) return relicEffects;
+  if (!troops) return relicEffects;
 
   // Stamina Relics
-  if (troopBoosts.incr_stamina_regen_percent_num > 0 && troopBoosts.incr_stamina_regen_tick_count > 0) {
+  if (troops.boosts.incr_stamina_regen_percent_num > 0 && troops.boosts.incr_stamina_regen_tick_count > 0) {
     const staminaRelics = RELICS.filter((r) => r.type === "Stamina" && r.recipientType === RelicRecipientType.Explorer);
-    const expectedBonus = (10000 + troopBoosts.incr_stamina_regen_percent_num) / 10000;
+    const expectedBonus = (10000 + troops.boosts.incr_stamina_regen_percent_num) / 10000;
     const match = staminaRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.StaminaRelic1;
     // For stamina, use currentTick + tick_count as endTick
-    const endTick = currentTick + troopBoosts.incr_stamina_regen_tick_count;
+    const endTick = Number(troops.stamina.updated_tick) + troops.boosts.incr_stamina_regen_tick_count;
     relicEffects.push({ id, endTick });
   }
 
   // Damage Relics
-  if (troopBoosts.incr_damage_dealt_percent_num > 0 && troopBoosts.incr_damage_dealt_end_tick > currentTick) {
+  if (troops.boosts.incr_damage_dealt_percent_num > 0 && troops.boosts.incr_damage_dealt_end_tick > currentTick) {
     const damageRelics = RELICS.filter((r) => r.type === "Damage" && r.recipientType === RelicRecipientType.Explorer);
-    const expectedBonus = (10000 + troopBoosts.incr_damage_dealt_percent_num) / 10000;
+    const expectedBonus = (10000 + troops.boosts.incr_damage_dealt_percent_num) / 10000;
     const match = damageRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.DamageRelic1;
-    relicEffects.push({ id, endTick: troopBoosts.incr_damage_dealt_end_tick });
+    relicEffects.push({ id, endTick: troops.boosts.incr_damage_dealt_end_tick });
   }
 
   // Damage Reduction Relics
-  if (troopBoosts.decr_damage_gotten_percent_num > 0 && troopBoosts.decr_damage_gotten_end_tick > currentTick) {
+  if (troops.boosts.decr_damage_gotten_percent_num > 0 && troops.boosts.decr_damage_gotten_end_tick > currentTick) {
     const damageReductionRelics = RELICS.filter(
       (r) => r.type === "Damage Reduction" && r.recipientType === RelicRecipientType.Explorer,
     );
-    const expectedBonus = (10000 - troopBoosts.decr_damage_gotten_percent_num) / 10000;
+    const expectedBonus = (10000 - troops.boosts.decr_damage_gotten_percent_num) / 10000;
     const match = damageReductionRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.DamageReductionRelic1;
-    relicEffects.push({ id, endTick: troopBoosts.decr_damage_gotten_end_tick });
+    relicEffects.push({ id, endTick: troops.boosts.decr_damage_gotten_end_tick });
   }
 
   // Exploration Reward Relics
-  if (troopBoosts.incr_explore_reward_percent_num > 0 && troopBoosts.incr_explore_reward_end_tick > currentTick) {
+  if (troops.boosts.incr_explore_reward_percent_num > 0 && troops.boosts.incr_explore_reward_end_tick > currentTick) {
     const explorationRewardRelics = RELICS.filter(
       (r) => r.type === "Exploration" && r.recipientType === RelicRecipientType.Explorer && r.effect.includes("reward"),
     );
-    const expectedBonus = (10000 + troopBoosts.incr_explore_reward_percent_num) / 10000;
+    const expectedBonus = (10000 + troops.boosts.incr_explore_reward_percent_num) / 10000;
     const match = explorationRewardRelics.find((r) => r.bonus === expectedBonus);
     const id = match ? match.id : ResourcesIds.ExplorationRewardRelic1;
-    relicEffects.push({ id, endTick: troopBoosts.incr_explore_reward_end_tick });
+    relicEffects.push({ id, endTick: troops.boosts.incr_explore_reward_end_tick });
   }
 
   return relicEffects;
@@ -137,13 +138,38 @@ export const getStructureArmyRelicEffects = (
       (r) => r.type === "Damage Reduction" && r.recipientTypeParam === RelicRecipientTypeParam.StructureGuard,
     );
     const expectedBonus = (10000 - troopBoosts.decr_damage_gotten_percent_num) / 10000;
-    console.log("expectedBonus", expectedBonus);
     const match = structureDamageReductionRelics.find((r) => r.bonus === expectedBonus);
-    console.log("match", match);
     const id = match ? match.id : ResourcesIds.StructureDamageReductionRelic1;
-    console.log("id", id);
     relicEffects.push({ id, endTick: troopBoosts.decr_damage_gotten_end_tick });
   }
 
   return relicEffects;
+};
+
+export const isRelic = (resourceId: ResourcesIds): boolean => {
+  return resourceId >= 39; // Relics start from ID 39 onwards
+};
+
+export const isRelicActive = ({ end_tick, usage_left }: RelicEffect, currentTick: number): boolean => {
+  // Check if the effect is within the active time window
+  const isWithinTimeWindow = currentTick > end_tick;
+
+  // Check if there are remaining uses (if applicable)
+  const hasUsagesLeft = usage_left > 0;
+
+  return isWithinTimeWindow && hasUsagesLeft;
+};
+
+export const relicsArmiesTicksLeft = (end_tick: number, currentArmiesTick: number): number => {
+  return Math.max(0, end_tick - currentArmiesTick);
+};
+
+export const relicsTimeLeft = (
+  end_tick: number,
+  currentTick: number,
+  secondsPerTick: number,
+  partialTickTimeRemaining = 0,
+): number => {
+  const remainingTicks = relicsArmiesTicksLeft(end_tick, currentTick);
+  return remainingTicks > 0 ? remainingTicks * secondsPerTick + partialTickTimeRemaining : 0;
 };

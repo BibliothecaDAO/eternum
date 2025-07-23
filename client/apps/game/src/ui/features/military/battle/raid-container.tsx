@@ -90,9 +90,7 @@ export const RaidContainer = ({
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
-        stamina: army
-          ? StaminaManager.getStamina(army?.troops, currentArmiesTick, attackerRelicResourceIds)
-          : { amount: 0n, updated_tick: 0n },
+        stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
       },
     };
   }, [attackerEntityId, attackerActiveRelicEffects]);

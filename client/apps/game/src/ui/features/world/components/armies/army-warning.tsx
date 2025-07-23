@@ -6,7 +6,6 @@ import {
   computeExploreFoodCosts,
   configManager,
   divideByPrecision,
-  getArmyRelicEffects,
   getArmyTotalCapacityInKg,
   getRemainingCapacityInKg,
   ResourceManager,
@@ -64,12 +63,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
   const { currentArmiesTick } = useBlockTimestamp();
 
   const stamina = useMemo(() => {
-    const relicEffects = getArmyRelicEffects(army.troops.boosts, currentArmiesTick);
-    return StaminaManager.getStamina(
-      army.troops,
-      currentArmiesTick,
-      relicEffects.map((relic) => relic.id),
-    );
+    return StaminaManager.getStamina(army.troops, currentArmiesTick);
   }, [army, currentArmiesTick]);
 
   const minStaminaNeeded = useMemo(() => {

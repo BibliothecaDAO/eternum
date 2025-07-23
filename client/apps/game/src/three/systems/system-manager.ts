@@ -603,7 +603,7 @@ export class SystemManager {
               // Check if we have a current state
               if (currentState) {
                 const { currentArmiesTick } = getBlockTimestamp();
-                const relicEffects = getArmyRelicEffects(currentState.troops.boosts, currentArmiesTick);
+                const relicEffects = getArmyRelicEffects(currentState.troops, currentArmiesTick);
 
                 console.log("RelicEffectSystemManager: currentState exists, isActive", {
                   currentArmiesTick,

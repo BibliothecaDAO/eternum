@@ -26,7 +26,7 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  ResourceManager,
+  isRelicActive,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
 import {
@@ -1334,7 +1334,6 @@ export default class WorldmapScene extends HexagonScene {
           pendingRelicsSet.add({
             relicResourceId: relicEffect.id,
             effect: {
-              start_tick: 0, // Will be updated when applied
               end_tick: relicEffect.endTick,
               usage_left: 1,
             },
@@ -1365,7 +1364,6 @@ export default class WorldmapScene extends HexagonScene {
           pendingRelicsSet.add({
             relicResourceId: relicEffect.id,
             effect: {
-              start_tick: 0, // Will be updated when applied
               end_tick: relicEffect.endTick,
               usage_left: 1,
             },
@@ -1531,9 +1529,7 @@ export default class WorldmapScene extends HexagonScene {
         const currentRelics = this.armyManager.getArmyRelicEffects(army.entityId);
         if (currentRelics.length > 0) {
           // Filter out inactive relics
-          const activeRelics = currentRelics.filter((relic) =>
-            ResourceManager.isRelicActive(relic.effect, currentArmiesTick),
-          );
+          const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
 
           // If some relics were removed, update the effects
           if (activeRelics.length < currentRelics.length) {
@@ -1555,9 +1551,7 @@ export default class WorldmapScene extends HexagonScene {
           const currentRelics = this.structureManager.getStructureRelicEffects(entityId);
           if (currentRelics.length > 0) {
             // Filter out inactive relics
-            const activeRelics = currentRelics.filter((relic) =>
-              ResourceManager.isRelicActive(relic.effect, currentArmiesTick),
-            );
+            const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
 
             // If some relics were removed, update the effects
             if (activeRelics.length < currentRelics.length) {
@@ -1571,7 +1565,7 @@ export default class WorldmapScene extends HexagonScene {
                 const sourceRelics = this.structureManager.getStructureRelicEffectsBySource(entityId, source);
                 if (sourceRelics.length > 0) {
                   const activeSourceRelics = sourceRelics.filter((relic) =>
-                    ResourceManager.isRelicActive(relic.effect, currentArmiesTick),
+                    isRelicActive(relic.effect, currentArmiesTick),
                   );
                   if (activeSourceRelics.length < sourceRelics.length) {
                     await this.structureManager.updateRelicEffects(

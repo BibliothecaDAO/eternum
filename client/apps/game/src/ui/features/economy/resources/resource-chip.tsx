@@ -7,6 +7,8 @@ import {
   divideByPrecision,
   formatTime,
   getTotalResourceWeightKg,
+  isRelic as isResourceRelic,
+  relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import {
@@ -212,7 +214,7 @@ export const ResourceChip = ({
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
     // Using type assertion until the build system picks up the new method
-    return ResourceManager.isRelic(resourceId);
+    return isResourceRelic(resourceId);
   }, [resourceManager, resourceId]);
 
   // todo: check relic effect active
@@ -231,7 +233,7 @@ export const ResourceChip = ({
     if (!relicEffect) return 0;
 
     // Calculate remaining ticks until effect ends
-    const remainingTicks = ResourceManager.relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
+    const remainingTicks = relicsArmiesTicksLeft(relicEffect.endTick, currentArmiesTick);
 
     // Get tick interval for armies (relics use army ticks)
     const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;

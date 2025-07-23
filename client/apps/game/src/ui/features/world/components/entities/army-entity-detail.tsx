@@ -65,7 +65,7 @@ export const ArmyEntityDetail = memo(
         if (!toriiClient || !armyEntityId) return undefined;
         const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
         const relicEffects = explorer.explorer
-          ? getArmyRelicEffects(explorer.explorer.troops.boosts, getBlockTimestamp().currentArmiesTick)
+          ? getArmyRelicEffects(explorer.explorer.troops, getBlockTimestamp().currentArmiesTick)
           : [];
         return { ...explorer, relicEffects };
       },
@@ -115,11 +115,7 @@ export const ArmyEntityDetail = memo(
 
       const { currentArmiesTick } = getBlockTimestamp();
 
-      const stamina = StaminaManager.getStamina(
-        explorer.troops,
-        currentArmiesTick,
-        explorerData?.relicEffects.map((effect) => effect.id),
-      );
+      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
       const maxStamina = StaminaManager.getMaxStamina(
         explorer.troops.category as TroopType,
         explorer.troops.tier as TroopTier,
@@ -145,7 +141,7 @@ export const ArmyEntityDetail = memo(
         isMine,
         structureOwnerName: structureOwnerName,
       };
-    }, [explorer, structure, components, userAddress, armyEntityId, explorerData?.relicEffects]);
+    }, [explorer, structure, components, userAddress, armyEntityId]);
 
     const handleDeleteExplorer = async () => {
       setIsLoadingDelete(true);

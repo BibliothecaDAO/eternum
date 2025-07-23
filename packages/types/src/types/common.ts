@@ -13,7 +13,6 @@ import {
 import { ClientComponents } from "../dojo/create-client-components";
 
 export interface RelicEffect {
-  start_tick: number;
   end_tick: number;
   usage_left: number;
 }

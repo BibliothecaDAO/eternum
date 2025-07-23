@@ -88,7 +88,7 @@ export const ArmyChip = ({
   const { currentArmiesTick } = useBlockTimestamp();
 
   const relicEffects = useMemo(() => {
-    return getArmyRelicEffects(army.troops.boosts, currentArmiesTick).map((relic) => relic.id);
+    return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);
   }, [army.troops, currentArmiesTick]);
 
   const stamina = useMemo(() => {
@@ -96,8 +96,8 @@ export const ArmyChip = ({
 
     // Convert relic effects to resource IDs for StaminaManager
     // todo: check relic effect active
-    return StaminaManager.getStamina(army.troops, currentArmiesTick, relicEffects);
-  }, [army.troops, currentArmiesTick, relicEffects]);
+    return StaminaManager.getStamina(army.troops, currentArmiesTick);
+  }, [army.troops, currentArmiesTick]);
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;
