@@ -48,8 +48,10 @@ export class ArmyManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
-  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>> =
-    new Map();
+  private armyRelicEffects: Map<
+    ID,
+    Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
+  > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
@@ -235,9 +237,6 @@ export class ArmyManager {
       } else {
         this.addEntityIdLabel(army, position);
       }
-
-      // Add random relic effects for demo (commented out - now using actual relic effects from game system)
-      // this.addRandomRelicEffects(army.entityId, position);
     });
 
     // Remove labels for armies that are no longer visible
@@ -380,17 +379,8 @@ export class ArmyManager {
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
-    // Update relic effects position when army moves
-    const relicEffects = this.armyRelicEffects.get(entityId);
-    if (relicEffects) {
-      // Store current relic effects to re-apply at new position
-      const currentRelics = relicEffects.map((effect) => ({ relicNumber: effect.relicNumber, effect: effect.effect }));
-
-      // Update effects to new position (this will remove old and add new at correct position)
-      this.updateRelicEffects(entityId, []);
-      // Update effects to new position (this will remove old and add new at correct position)
-      await this.updateRelicEffects(entityId, currentRelics);
-    }
+    // Don't remove relic effects during movement - they will follow the army
+    // The updateRelicEffectPositions method will handle smooth positioning
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
@@ -412,7 +402,8 @@ export class ArmyManager {
     }
 
     // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }> = [];
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> =
+      [];
     for (const newEffect of newRelicEffects) {
       if (!currentRelicNumbers.has(newEffect.relicNumber)) {
         try {
@@ -485,6 +476,9 @@ export class ArmyManager {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime);
+
+    // Update relic effect positions to follow moving armies
+    this.updateRelicEffectPositions();
   }
 
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
@@ -604,6 +598,32 @@ export class ArmyManager {
   public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
     const effects = this.armyRelicEffects.get(entityId);
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+  }
+
+  private updateRelicEffectPositions() {
+    // Update relic effect positions for armies that are currently moving
+    this.armyRelicEffects.forEach((relicEffects, entityId) => {
+      const army = this.armies.get(entityId);
+      if (!army) return;
+
+      // Get the current position of the army (might be interpolated during movement)
+      const instanceData = this.armyModel["instanceData"]?.get(entityId);
+      if (instanceData && instanceData.isMoving) {
+        // Army is currently moving, update relic effects to follow the current interpolated position
+        const currentPosition = instanceData.position.clone();
+        currentPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+
+        relicEffects.forEach((relicEffect) => {
+          // Update the position of each relic effect to follow the army
+          if (relicEffect.fx.instance) {
+            // Update the base position that the orbital animation uses
+            relicEffect.fx.instance.initialX = currentPosition.x;
+            relicEffect.fx.instance.initialY = currentPosition.y;
+            relicEffect.fx.instance.initialZ = currentPosition.z;
+          }
+        });
+      }
+    });
   }
 
   public destroy() {
