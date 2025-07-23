@@ -42,11 +42,6 @@ export class StaminaManager {
     let boostNumTicksPassed = Math.min(currentArmiesTick - Number(lastRefillTick), troops.boosts.incr_stamina_regen_tick_count);
     let additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
 
-    // note: fix: if this update is not reflected outside this function, 
-    // the client might display wrong stamina values
-    troops.boosts.incr_stamina_regen_tick_count -= boostNumTicksPassed;
-
-
     const newStamina = this.refill(
       currentArmiesTick,
       lastRefillTick,
