@@ -1,23 +1,13 @@
-import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
+import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
+import useStore from "../../../store";
 import { HighlightRenderer } from "./highlight-renderer";
 import { GameMapObject, ObjectRenderer } from "./object-renderer";
-
-export interface SelectionState {
-  selectedObjectId: number | null;
-  selectedObjectType: string | null;
-  actionPaths: Map<string, ActionPath[]>;
-}
 
 export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
   private objectRenderers: Map<string, ObjectRenderer<any>> = new Map();
-  private currentSelection: SelectionState = {
-    selectedObjectId: null,
-    selectedObjectType: null,
-    actionPaths: new Map(),
-  };
 
   private readonly HIGHLIGHT_COLORS = {
     [ActionType.Move]: new THREE.Color(0x00ff00),
@@ -51,69 +41,62 @@ export class SelectionManager {
       return;
     }
 
-    this.currentSelection.selectedObjectId = objectId;
-    this.currentSelection.selectedObjectType = objectType;
+    useStore.getState().setSelectedObject(objectId, objectType);
 
     renderer.selectObject(objectId);
   }
 
   public setActionPaths(actionPaths: Map<string, ActionPath[]>): void {
-    this.currentSelection.actionPaths = actionPaths;
+    useStore.getState().setActionPaths(actionPaths);
     this.highlightActionPaths(actionPaths);
   }
 
   public clearSelection(): void {
-    if (this.currentSelection.selectedObjectId && this.currentSelection.selectedObjectType) {
-      const renderer = this.objectRenderers.get(this.currentSelection.selectedObjectType);
+    const { selectedObjectId, selectedObjectType } = useStore.getState();
+    if (selectedObjectId && selectedObjectType) {
+      const renderer = this.objectRenderers.get(selectedObjectType);
       if (renderer) {
         renderer.deselectObject();
       }
     }
 
     this.highlightRenderer.clearHighlights();
-    this.currentSelection = {
-      selectedObjectId: null,
-      selectedObjectType: null,
-      actionPaths: new Map(),
-    };
+    useStore.getState().clearSelection();
   }
 
   public getSelectedObject(): { id: number; type: string; object: GameMapObject } | null {
-    if (!this.currentSelection.selectedObjectId || !this.currentSelection.selectedObjectType) {
+    const { selectedObjectId, selectedObjectType } = useStore.getState();
+    if (!selectedObjectId || !selectedObjectType) {
       return null;
     }
 
-    const renderer = this.objectRenderers.get(this.currentSelection.selectedObjectType);
+    const renderer = this.objectRenderers.get(selectedObjectType);
     if (!renderer) {
       return null;
     }
 
-    const object = renderer.getObject(this.currentSelection.selectedObjectId);
+    const object = renderer.getObject(selectedObjectId);
     if (!object) {
       return null;
     }
 
     return {
-      id: this.currentSelection.selectedObjectId,
-      type: this.currentSelection.selectedObjectType,
+      id: selectedObjectId,
+      type: selectedObjectType,
       object: object as GameMapObject,
     };
   }
 
   public isObjectSelected(objectId: number, objectType: string): boolean {
-    return (
-      this.currentSelection.selectedObjectId === objectId && this.currentSelection.selectedObjectType === objectType
-    );
+    return useStore.getState().isObjectSelected(objectId, objectType);
   }
 
   public getActionPath(col: number, row: number): ActionPath[] | undefined {
-    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
-    return this.currentSelection.actionPaths.get(key);
+    return useStore.getState().getActionPath(col, row);
   }
 
   public hasActionAt(col: number, row: number): boolean {
-    const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
-    return this.currentSelection.actionPaths.has(key);
+    return useStore.getState().hasActionAt(col, row);
   }
 
   private highlightActionPaths(actionPaths: Map<string, ActionPath[]>): void {
