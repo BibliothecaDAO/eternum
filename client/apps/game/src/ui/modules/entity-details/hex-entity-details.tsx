@@ -11,12 +11,14 @@ export const HexEntityDetails = () => {
   const dojo = useDojo();
   const selectedHex = useUIStore((state) => state.selectedHex);
 
+  console.log("selectedHex", selectedHex);
+
   // Get tile data based on selected hex
   const tile = useMemo(() => {
     if (!selectedHex) return null;
     const selectedHexContract = new PositionInterface({
-      x: selectedHex.col || 0,
-      y: selectedHex.row || 0,
+      x: selectedHex.col,
+      y: selectedHex.row,
     }).getContract();
     return getComponentValue(
       dojo.setup.components.Tile,
@@ -35,6 +37,17 @@ export const HexEntityDetails = () => {
   const isStructure = useMemo(() => {
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
+
+  if (!selectedHex) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center text-gray-400">
+          <p className="text-lg font-medium mb-2">No hex selected</p>
+          <p className="text-sm">Click on a hex to see details</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-auto p-2">
