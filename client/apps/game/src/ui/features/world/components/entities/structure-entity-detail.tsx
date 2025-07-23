@@ -3,7 +3,9 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
+  getStructureArmyRelicEffects,
   getStructureName,
+  getStructureRelicEffects,
   unpackValue,
 } from "@bibliothecadao/eternum";
 
@@ -15,6 +17,7 @@ import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/reso
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -67,9 +70,19 @@ export const StructureEntityDetail = memo(
       queryFn: async () => {
         if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
 
-        const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
+        const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
+          toriiClient,
+          structureEntityId,
+        );
         // todo: get relic effects
         const relicEffects: RelicEffectWithEndTick[] = [];
+        const { currentArmiesTick } = getBlockTimestamp();
+        if (structure) {
+          relicEffects.push(...getStructureArmyRelicEffects(structure, currentArmiesTick));
+        }
+        if (productionBoostBonus) {
+          relicEffects.push(...getStructureRelicEffects(productionBoostBonus, currentArmiesTick));
+        }
         if (!structure)
           return {
             structure: null,

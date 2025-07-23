@@ -116,8 +116,12 @@ export const AttackContainer = ({
       const { currentArmiesTick, currentBlockTimestamp } = getBlockTimestamp();
 
       if (isStructure) {
-        const { structure, resources } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
+        const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
+          toriiClient,
+          targetTile.occupier_id,
+        );
         if (structure) {
+          const relicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
           const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
           setTarget({
             info: guards.map((guard) => ({
@@ -130,6 +134,15 @@ export const AttackContainer = ({
             hex: { x: targetTile.col, y: targetTile.row },
             addressOwner: structure.owner,
           });
+
+          if (productionBoostBonus) {
+            setTargetRelicEffects([
+              ...relicEffects,
+              ...getStructureRelicEffects(productionBoostBonus, currentArmiesTick),
+            ]);
+          } else {
+            setTargetRelicEffects(relicEffects);
+          }
         }
 
         // let timestamp be 1 minute behind so raider doesnt request resources
