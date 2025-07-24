@@ -300,7 +300,7 @@ export const StructureEntityDetail = memo(
 
           {/* Resources section */}
           <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-            <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
+            <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources & Relics</div>
             {resources && (
               <InventoryResources
                 relicEffects={structureDetails?.relicEffects.map((effect) => effect.id) || []}
@@ -311,6 +311,7 @@ export const StructureEntityDetail = memo(
                 textSize={compact ? "xxs" : "xs"}
                 entityId={structureEntityId}
                 recipientType={RelicRecipientType.Structure}
+                activateRelics={showButtons && isMine}
               />
             )}
           </div>

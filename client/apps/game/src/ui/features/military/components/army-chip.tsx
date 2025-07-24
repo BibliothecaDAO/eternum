@@ -268,6 +268,7 @@ export const ArmyChip = ({
                   entityId={army.entityId}
                   recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
+                  activateRelics={showButtons && army.isMine}
                 />
               )}
             </div>

@@ -289,7 +289,7 @@ export const ArmyEntityDetail = memo(
           {/* Resources section */}
           {explorerResources && (
             <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-              <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
+              <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources & Relics</div>
               <InventoryResources
                 resources={explorerResources}
                 relicEffects={explorerData?.relicEffects.map((effect) => effect.id)}
@@ -299,6 +299,7 @@ export const ArmyEntityDetail = memo(
                 textSize={compact ? "xxs" : "xs"}
                 entityId={armyEntityId}
                 recipientType={RelicRecipientType.Explorer}
+                activateRelics={showButtons && derivedData.isMine}
               />
             </div>
           )}
