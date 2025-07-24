@@ -9,7 +9,7 @@ import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibli
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -70,17 +70,21 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
   const totalWidth = displayRelics.length * itemWidth;
 
   // Reset position for seamless looping
-  useEffect(() => {
-    const unsubscribe = x.on("change", (latest) => {
+  const handlePositionChange = useCallback(
+    (latest: number) => {
       if (latest < -totalWidth) {
         x.set(latest + totalWidth);
       } else if (latest > 0) {
         x.set(latest - totalWidth);
       }
-    });
+    },
+    [totalWidth, x],
+  );
 
+  useEffect(() => {
+    const unsubscribe = x.on("change", handlePositionChange);
     return unsubscribe;
-  }, [x, totalWidth]);
+  }, [x, handlePositionChange]);
 
   return (
     <div className="w-full">
