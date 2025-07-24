@@ -7,6 +7,7 @@ export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
   const { selectedRealm } = useStore();
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   const handleSceneChange = (sceneId: string) => {
     setCurrentScene(sceneId);
@@ -17,20 +18,22 @@ export function WorldmapPage() {
     }
   };
 
-  useEffect(() => {
-    if (selectedRealm && canvasRef.current && currentScene === "worldmap") {
-      canvasRef.current.moveCameraToStructure(selectedRealm.position);
-    }
-  }, [selectedRealm, currentScene]);
+  const handleCanvasReady = () => {
+    setIsCanvasReady(true);
 
-  useEffect(() => {
-    if (selectedRealm && canvasRef.current) {
-      const timer = setTimeout(() => {
+    // Move camera to selected realm after canvas is ready (hot reload case)
+    if (selectedRealm && currentScene === "worldmap") {
+      setTimeout(() => {
         canvasRef.current?.moveCameraToStructure(selectedRealm.position);
       }, 100);
-      return () => clearTimeout(timer);
     }
-  }, [selectedRealm]);
+  };
+
+  useEffect(() => {
+    if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
+      canvasRef.current.moveCameraToStructure(selectedRealm.position);
+    }
+  }, [selectedRealm, currentScene, isCanvasReady]);
 
   const handleCameraReset = () => {
     console.log("Reset camera");
@@ -48,7 +51,12 @@ export function WorldmapPage() {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Three.js Canvas */}
       <div className="absolute inset-0">
-        <ThreeCanvas ref={canvasRef} onSceneChange={setCurrentScene} className="w-full h-full" />
+        <ThreeCanvas
+          ref={canvasRef}
+          onSceneChange={setCurrentScene}
+          onReady={handleCanvasReady}
+          className="w-full h-full"
+        />
       </div>
 
       {/* Scene Controls */}
