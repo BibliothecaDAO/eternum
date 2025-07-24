@@ -14,7 +14,7 @@ export const TROOP_DAMAGE_DELTA = 50_000n * BigInt(2) ** BigInt(64);
 
 // Stamina config
 export const TROOP_STAMINA_INITIAL = 20;
-export const TROOP_STAMINA_GAIN_PER_TICK = 20;
+export const TROOP_STAMINA_GAIN_PER_TICK = 30;
 export const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // give 1 tick worth of stamina
 
 export const TROOP_STAMINA_MAX = {

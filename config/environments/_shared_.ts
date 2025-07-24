@@ -136,8 +136,8 @@ export const QUEST_GAME_LEVELS = [
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
-export const ARMIES_TICK_INTERVAL_SECONDS = 60 * 5; // 5 minutes
-export const DELIVERY_TICK_INTERVAL_SECONDS = 60 * 3; // 3 minutes
+export const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 1; // 1 minute
+export const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3; // 3 minutes
 
 // ----- Speed ----- //
 // @dev: Seconds per km

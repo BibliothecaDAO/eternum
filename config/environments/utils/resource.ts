@@ -87,7 +87,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Fish]: 0,
   [ResourcesIds.AncientFragment]: 3,
   [ResourcesIds.Essence]: 5,
-  [ResourcesIds.Labor]: 10,
+  [ResourcesIds.Labor]: 1,
 };
 
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
@@ -150,7 +150,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.TrueIce]: [],
   [ResourcesIds.TwilightQuartz]: [],
   [ResourcesIds.AlchemicalSilver]: [],
-  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 5 }],
+  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 3 }],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
     { resource: ResourcesIds.Copper, amount: 0.24 },
@@ -214,12 +214,15 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
 };
 
 export const STARTING_RESOURCES: ResourceCost[] = [
-  { resource: ResourcesIds.Labor, amount: 5_000 },
+  { resource: ResourcesIds.Labor, amount: 1_000 },
+  { resource: ResourcesIds.Wood, amount: 180 },
+  { resource: ResourcesIds.Coal, amount: 120 },
+  { resource: ResourcesIds.Copper, amount: 60 },
   { resource: ResourcesIds.Donkey, amount: 200 },
-  // 5000, tokenized troops . only one troop type will be selected
-  { resource: ResourcesIds.Knight, amount: 3000 },
-  { resource: ResourcesIds.Crossbowman, amount: 3000 },
-  { resource: ResourcesIds.Paladin, amount: 3000 },
+  // 3,000, tokenized troops. Only one troop type will be selected
+  { resource: ResourcesIds.Knight, amount: 3_000 },
+  { resource: ResourcesIds.Crossbowman, amount: 3_000 },
+  { resource: ResourcesIds.Paladin, amount: 3_000 },
 ];
 
 export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
@@ -239,15 +242,15 @@ export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
 ];
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {
-  [ResourcesIds.Wood]: 10 / 10, // 1
+  [ResourcesIds.Wood]: 1 / 1, // 1
   [ResourcesIds.Stone]: 0,
-  [ResourcesIds.Coal]: 10 / 5, // 2
-  [ResourcesIds.Copper]: 10 / 5, // 2
+  [ResourcesIds.Coal]: 1 / 0.5, // 2
+  [ResourcesIds.Copper]: 1 / 0.5, // 2
   [ResourcesIds.Obsidian]: 0,
   [ResourcesIds.Silver]: 0,
-  [ResourcesIds.Ironwood]: 10 / 2, // 5
-  [ResourcesIds.ColdIron]: 10 / 2, // 5
-  [ResourcesIds.Gold]: 10 / 2, // 5
+  [ResourcesIds.Ironwood]: 1 / 0.2, // 5
+  [ResourcesIds.ColdIron]: 1 / 0.2, // 5
+  [ResourcesIds.Gold]: 1 / 0.2, // 5
   [ResourcesIds.Hartwood]: 0,
   [ResourcesIds.Diamonds]: 0,
   [ResourcesIds.Sapphire]: 0,
@@ -258,9 +261,9 @@ export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs 
   [ResourcesIds.TrueIce]: 0,
   [ResourcesIds.TwilightQuartz]: 0,
   [ResourcesIds.AlchemicalSilver]: 0,
-  [ResourcesIds.Adamantine]: 10 / 0.5, // 20
-  [ResourcesIds.Mithral]: 10 / 0.5, // 20
-  [ResourcesIds.Dragonhide]: 10 / 0.5, // 20
+  [ResourcesIds.Adamantine]: 1 / 0.05, // 20
+  [ResourcesIds.Mithral]: 1 / 0.05, // 20
+  [ResourcesIds.Dragonhide]: 1 / 0.05, // 20
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
   [ResourcesIds.KnightT2]: 0,
@@ -283,30 +286,30 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs =
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 5 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
   ],
   [ResourcesIds.Stone]: [],
   [ResourcesIds.Coal]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 10 },
+    { resource: ResourcesIds.Labor, amount: 1 },
   ],
   [ResourcesIds.Copper]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Labor, amount: 10 },
+    { resource: ResourcesIds.Labor, amount: 1 },
   ],
   [ResourcesIds.Obsidian]: [],
   [ResourcesIds.Silver]: [],
   [ResourcesIds.Ironwood]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 25 },
+    { resource: ResourcesIds.Labor, amount: 2.5 },
   ],
   [ResourcesIds.ColdIron]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 25 },
+    { resource: ResourcesIds.Labor, amount: 2.5 },
   ],
   [ResourcesIds.Gold]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 25 },
+    { resource: ResourcesIds.Labor, amount: 2.5 },
   ],
   [ResourcesIds.Hartwood]: [],
   [ResourcesIds.Diamonds]: [],
@@ -320,32 +323,32 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   [ResourcesIds.AlchemicalSilver]: [],
   [ResourcesIds.Adamantine]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 100 },
+    { resource: ResourcesIds.Labor, amount: 10 },
   ],
   [ResourcesIds.Mithral]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 100 },
+    { resource: ResourcesIds.Labor, amount: 10 },
   ],
   [ResourcesIds.Dragonhide]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
-    { resource: ResourcesIds.Labor, amount: 100 },
+    { resource: ResourcesIds.Labor, amount: 10 },
   ],
   [ResourcesIds.Donkey]: [],
   [ResourcesIds.Knight]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
   ],
   [ResourcesIds.KnightT2]: [],
   [ResourcesIds.KnightT3]: [],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
   ],
   [ResourcesIds.CrossbowmanT2]: [],
   [ResourcesIds.CrossbowmanT3]: [],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Labor, amount: 2.5 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
   ],
   [ResourcesIds.PaladinT2]: [],
   [ResourcesIds.PaladinT3]: [],
