@@ -153,6 +153,7 @@ export class HighlightRenderer {
     const elapsed = (currentTime - this.startTime) / 1000;
 
     const hexArray = Array.from(this.highlightedHexes.values());
+    hexArray.sort((a, b) => b.row - a.row);
 
     hexArray.forEach((highlight, index) => {
       const pulseValue =
