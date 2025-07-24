@@ -15,6 +15,7 @@ import { GUIManager } from "../helpers/gui-manager";
 import { loggedInAccount } from "../helpers/utils";
 import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
+import { FXManager } from "./fx-manager";
 import { createHexagonShape } from "./hexagon-geometry";
 import { HighlightRenderer } from "./highlight-renderer";
 import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./object-renderer";
@@ -36,6 +37,7 @@ export class HexagonMap {
   private structureRenderer: StructureRenderer;
   private questRenderer: QuestRenderer;
   private selectionManager: SelectionManager;
+  private fxManager: FXManager;
   private GUIFolder: any;
 
   private raycaster: THREE.Raycaster;
@@ -75,10 +77,14 @@ export class HexagonMap {
   // Debounced re-render for tile updates
   private tileUpdateTimeout: NodeJS.Timeout | null = null;
 
-  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager) {
+  // Travel effects tracking
+  private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
+
+  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager, fxManager: FXManager) {
     this.scene = scene;
     this.dojo = dojo;
     this.systemManager = systemManager;
+    this.fxManager = fxManager;
     this.raycaster = new THREE.Raycaster();
 
     this.tileRenderer = new TileRenderer(scene);
@@ -384,6 +390,31 @@ export class HexagonMap {
     const army = this.armyRenderer.getObject(armyId);
     if (!army || actionPath.length < 2) return;
 
+    // Get target hex position
+    const targetHex = actionPath[actionPath.length - 1].hex;
+    const targetCol = targetHex.col - FELT_CENTER;
+    const targetRow = targetHex.row - FELT_CENTER;
+
+    // Get world position for target hex
+    getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
+    const targetWorldPos = this.tempVector3.clone();
+
+    // Start travel effect at destination
+    const travelEffect = this.fxManager.playFxAtCoords(
+      "travel",
+      targetWorldPos.x,
+      targetWorldPos.y + 1,
+      targetWorldPos.z - 1,
+      2,
+      "Traveling",
+      true,
+    );
+
+    this.activeTravelEffects.set(armyId, travelEffect);
+
+    // Wait for a few seconds to simulate loading
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     // Convert action path to movement path (skip first position which is current position)
     const movementPath = actionPath.slice(1).map((pathItem) => {
       const normalized = new Position({
@@ -393,12 +424,15 @@ export class HexagonMap {
       return { col: normalized.x, row: normalized.y };
     });
 
-    // Move army along the path with animation
-    await this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+    // Start army movement
+    const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
 
-    const targetHex = actionPath[actionPath.length - 1].hex;
-    const targetCol = targetHex.col - FELT_CENTER;
-    const targetRow = targetHex.row - FELT_CENTER;
+    // End travel effect when movement starts
+    travelEffect.end();
+    this.activeTravelEffects.delete(armyId);
+
+    // Wait for movement to complete
+    await movementPromise;
 
     console.log(`Army ${armyId} moved from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`);
   }
@@ -508,6 +542,12 @@ export class HexagonMap {
   }
 
   public dispose(): void {
+    // Clean up active travel effects
+    this.activeTravelEffects.forEach((effect) => {
+      effect.end();
+    });
+    this.activeTravelEffects.clear();
+
     if (this.GUIFolder) {
       this.GUIFolder.destroy();
       this.GUIFolder = null;
@@ -787,6 +827,34 @@ export class HexagonMap {
   }
 
   public async moveArmy(armyId: number, targetCol: number, targetRow: number): Promise<void> {
-    await this.armyRenderer.moveObject(armyId, targetCol, targetRow);
+    // Get world position for target hex
+    getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
+    const targetWorldPos = this.tempVector3.clone();
+
+    // Start travel effect at destination
+    const travelEffect = this.fxManager.playFxAtCoords(
+      "travel",
+      targetWorldPos.x,
+      targetWorldPos.y + 1,
+      targetWorldPos.z,
+      1.5,
+      "Traveling...",
+      true,
+    );
+
+    this.activeTravelEffects.set(armyId, travelEffect);
+
+    // Wait for a few seconds to simulate loading
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Start army movement
+    const movementPromise = this.armyRenderer.moveObject(armyId, targetCol, targetRow);
+
+    // End travel effect when movement starts
+    travelEffect.end();
+    this.activeTravelEffects.delete(armyId);
+
+    // Wait for movement to complete
+    await movementPromise;
   }
 }
