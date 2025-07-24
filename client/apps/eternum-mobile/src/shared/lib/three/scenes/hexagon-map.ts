@@ -399,18 +399,25 @@ export class HexagonMap {
     getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
     const targetWorldPos = this.tempVector3.clone();
 
-    // Start travel effect at destination
-    const travelEffect = this.fxManager.playFxAtCoords(
-      "travel",
+    // Determine action type and use appropriate effect
+    const actionType = ActionPaths.getActionType(actionPath);
+    const isExplore = actionType === ActionType.Explore;
+
+    const effectType = isExplore ? "compass" : "travel";
+    const effectLabel = isExplore ? "Exploring" : "Traveling";
+
+    // Start appropriate effect at destination
+    const effect = this.fxManager.playFxAtCoords(
+      effectType,
       targetWorldPos.x,
       targetWorldPos.y + 1,
       targetWorldPos.z - 1,
       2,
-      "Traveling",
+      effectLabel,
       true,
     );
 
-    this.activeTravelEffects.set(armyId, travelEffect);
+    this.activeTravelEffects.set(armyId, effect);
 
     // Wait for a few seconds to simulate loading
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -427,14 +434,16 @@ export class HexagonMap {
     // Start army movement
     const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
 
-    // End travel effect when movement starts
-    travelEffect.end();
+    // End effect when movement starts
+    effect.end();
     this.activeTravelEffects.delete(armyId);
 
     // Wait for movement to complete
     await movementPromise;
 
-    console.log(`Army ${armyId} moved from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`);
+    console.log(
+      `Army ${armyId} ${isExplore ? "explored" : "moved"} from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`,
+    );
   }
 
   private selectArmy(armyId: number): void {
