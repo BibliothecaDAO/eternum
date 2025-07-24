@@ -6,6 +6,7 @@ import { GUIManager } from "./helpers/gui-manager";
 import { BaseScene } from "./scenes/base-scene";
 import { GenericScene } from "./scenes/generic-scene";
 import { WorldmapScene } from "./scenes/worldmap-scene";
+import { Position } from "./types/position";
 
 export class GameRenderer {
   private scene: THREE.Scene;
@@ -211,6 +212,16 @@ export class GameRenderer {
     this.sceneInstances.set(sceneId, sceneInstance);
   }
 
+  public moveCameraToStructure(structurePosition: { x: number; y: number }): void {
+    const worldmapScene = this.sceneInstances.get("worldmap") as WorldmapScene;
+    if (!worldmapScene) return;
+
+    const position = new Position(structurePosition);
+    const normalized = position.getNormalized();
+
+    worldmapScene.getHexagonMap().moveCameraToColRow(normalized.x, normalized.y, this.controls);
+  }
+
   public switchScene(sceneId: string): void {
     if (!this.scenes.has(sceneId)) {
       console.warn(`Scene ${sceneId} not found, creating it...`);
@@ -220,11 +231,8 @@ export class GameRenderer {
     this.currentScene = sceneId;
     this.scene = this.scenes.get(sceneId)!;
 
-    // Update controls target to new scene center
     this.controls.target.set(0, 0, 0);
 
-    // Maintain the top-down view by ensuring camera is positioned correctly
-    // Keep the same height (y=10) and directly above the target
     this.camera.position.set(0, 10, 0);
     this.camera.lookAt(0, 0, 0);
 

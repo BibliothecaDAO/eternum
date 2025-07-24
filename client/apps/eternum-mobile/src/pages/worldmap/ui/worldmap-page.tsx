@@ -1,29 +1,46 @@
-import { useRef, useState } from "react";
+import { useStore } from "@/shared/store";
+import { useEffect, useRef, useState } from "react";
 import { SceneControls } from "./scene-controls";
 import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
+  const { selectedRealm } = useStore();
 
   const handleSceneChange = (sceneId: string) => {
     setCurrentScene(sceneId);
     canvasRef.current?.switchScene(sceneId);
+
+    if (sceneId === "worldmap" && selectedRealm) {
+      canvasRef.current?.moveCameraToStructure(selectedRealm.position);
+    }
   };
 
+  useEffect(() => {
+    if (selectedRealm && canvasRef.current && currentScene === "worldmap") {
+      canvasRef.current.moveCameraToStructure(selectedRealm.position);
+    }
+  }, [selectedRealm, currentScene]);
+
+  useEffect(() => {
+    if (selectedRealm && canvasRef.current) {
+      const timer = setTimeout(() => {
+        canvasRef.current?.moveCameraToStructure(selectedRealm.position);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedRealm]);
+
   const handleCameraReset = () => {
-    // Reset camera to default position
-    // This would need to be implemented in the GameRenderer
     console.log("Reset camera");
   };
 
   const handleZoomIn = () => {
-    // Zoom in functionality
     console.log("Zoom in");
   };
 
   const handleZoomOut = () => {
-    // Zoom out functionality
     console.log("Zoom out");
   };
 

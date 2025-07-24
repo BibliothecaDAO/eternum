@@ -1,9 +1,15 @@
 import { DEFAULT_SCENES } from "@/shared/lib/three/constants";
+import { useStore } from "@/shared/store";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
-import { Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import { useState } from "react";
+import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
+import { getStructureName } from "@bibliothecadao/eternum";
+import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { FELT_CENTER, getLevelName } from "@bibliothecadao/types";
+import { ChevronDown, Copy, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface SceneControlsProps {
   currentScene: string;
@@ -13,6 +19,73 @@ interface SceneControlsProps {
   onZoomOut?: () => void;
   className?: string;
 }
+
+const CompactRealmHeader = () => {
+  const playerRealms = usePlayerOwnedRealmsInfo();
+  const playerVillages = usePlayerOwnedVillagesInfo();
+
+  const playerRealmsAndVillages = useMemo(() => {
+    return [...playerRealms, ...playerVillages];
+  }, [playerRealms, playerVillages]);
+
+  const { structureEntityId, selectedRealm, setSelectedStructure } = useStore();
+
+  // Auto-select first realm if none is selected
+  useEffect(() => {
+    if (!selectedRealm && playerRealmsAndVillages.length > 0) {
+      setSelectedStructure(playerRealmsAndVillages[0]);
+    }
+  }, [selectedRealm, playerRealmsAndVillages, setSelectedStructure]);
+
+  const adjustedCoords = useMemo(() => {
+    if (!selectedRealm) return null;
+    return {
+      x: selectedRealm.position.x - FELT_CENTER,
+      y: selectedRealm.position.y - FELT_CENTER,
+    };
+  }, [selectedRealm]);
+
+  const handleCopyCoords = () => {
+    if (adjustedCoords) {
+      navigator.clipboard.writeText(`${adjustedCoords.x},${adjustedCoords.y}`);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {/* Structure Selector */}
+      <div className="flex-1 min-w-0">
+        <SelectStructureDrawer
+          structures={playerRealmsAndVillages}
+          selectedStructureId={structureEntityId}
+          onSelectStructure={(entityId) => {
+            const realm = playerRealmsAndVillages.find((r) => r.entityId === entityId);
+            setSelectedStructure(realm || null);
+          }}
+        >
+          <div className="flex items-center gap-1 text-sm font-medium truncate cursor-pointer hover:text-primary">
+            <span className="truncate">
+              {selectedRealm ? getStructureName(selectedRealm?.structure).name : "Select Structure"}
+            </span>
+            <ChevronDown className="h-3 w-3 flex-shrink-0" />
+          </div>
+        </SelectStructureDrawer>
+      </div>
+
+      {/* Coordinates and Level */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <Badge variant="outline" className="text-xs font-mono h-6">
+          {adjustedCoords ? `${adjustedCoords.x},${adjustedCoords.y}` : "No coords"}
+          <Button variant="ghost" size="icon" className="h-4 w-4 ml-1 p-0" onClick={handleCopyCoords}>
+            <Copy className="h-2.5 w-2.5" />
+          </Button>
+        </Badge>
+
+        {selectedRealm && <span className="text-xs text-muted-foreground">{getLevelName(selectedRealm.level)}</span>}
+      </div>
+    </div>
+  );
+};
 
 export function SceneControls({
   currentScene,
@@ -27,7 +100,13 @@ export function SceneControls({
   const currentSceneConfig = DEFAULT_SCENES.find((scene) => scene.id === currentScene);
 
   return (
-    <div className={`fixed top-4 left-4 right-4 z-20 ${className}`}>
+    <div className={`fixed top-4 left-4 right-4 z-20 space-y-3 ${className}`}>
+      {/* Compact Realm Info Header */}
+      <Card className="p-2 bg-background/95 backdrop-blur-md border-border/50">
+        <CompactRealmHeader />
+      </Card>
+
+      {/* Scene Controls */}
       <Card className="p-3 bg-background/95 backdrop-blur-md border-border/50">
         {/* Main Controls Row */}
         <div className="flex items-center justify-between gap-2">
@@ -85,7 +164,7 @@ export function SceneControls({
       </Card>
 
       {/* Touch Gesture Hints */}
-      <div className="mt-2 text-center">
+      <div className="text-center">
         <div className="inline-flex items-center gap-4 px-3 py-1 bg-background/80 backdrop-blur-sm rounded-full text-xs text-muted-foreground">
           <span>👆 Pan</span>
           <span>🤏 Zoom</span>

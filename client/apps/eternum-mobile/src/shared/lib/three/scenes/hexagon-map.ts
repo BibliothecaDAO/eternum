@@ -72,6 +72,9 @@ export class HexagonMap {
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
+  // Debounced re-render for tile updates
+  private tileUpdateTimeout: NodeJS.Timeout | null = null;
+
   constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager) {
     this.scene = scene;
     this.dojo = dojo;
@@ -280,8 +283,8 @@ export class HexagonMap {
     this.questRenderer.setVisibleBounds(bounds);
   }
 
-  public updateChunkLoading(cameraPosition: THREE.Vector3): void {
-    if (this.isLoadingChunks) {
+  public updateChunkLoading(cameraPosition: THREE.Vector3, force: boolean = false): void {
+    if (this.isLoadingChunks && !force) {
       return;
     }
 
@@ -298,8 +301,10 @@ export class HexagonMap {
     const chunkX = Math.floor(col / HexagonMap.CHUNK_SIZE);
     const chunkZ = Math.floor(row / HexagonMap.CHUNK_SIZE);
 
-    if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ) {
-      console.log(`Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})`);
+    if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ || force) {
+      console.log(
+        `Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})${force ? " (forced)" : ""}`,
+      );
       console.log(`Camera at (${cameraPosition.x.toFixed(2)}, ${cameraPosition.z.toFixed(2)}) -> Hex (${col}, ${row})`);
       this.updateVisibleHexes(chunkX, chunkZ).catch((error) => {
         console.error("Error updating visible hexes:", error);
@@ -513,6 +518,11 @@ export class HexagonMap {
       this.currentAbortController = null;
     }
 
+    if (this.tileUpdateTimeout) {
+      clearTimeout(this.tileUpdateTimeout);
+      this.tileUpdateTimeout = null;
+    }
+
     if (this.hexagonMesh) {
       this.scene.remove(this.hexagonMesh);
       this.hexagonMesh.dispose();
@@ -634,6 +644,9 @@ export class HexagonMap {
       }
 
       controls.update();
+
+      // Force chunk loading at the new camera position
+      this.updateChunkLoading(worldPosition, true);
     }
 
     return worldPosition;
@@ -657,6 +670,15 @@ export class HexagonMap {
     }
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
+
+      // Debounced re-render to batch tile updates
+      if (this.tileUpdateTimeout) {
+        clearTimeout(this.tileUpdateTimeout);
+      }
+      this.tileUpdateTimeout = setTimeout(() => {
+        this.renderHexes();
+        this.tileUpdateTimeout = null;
+      }, 50);
     }
   }
 
