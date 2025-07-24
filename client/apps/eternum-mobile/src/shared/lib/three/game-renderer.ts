@@ -1,5 +1,6 @@
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
+import { CSS2DRenderer } from "three-stdlib";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants";
 import { GUIManager } from "./helpers/gui-manager";
@@ -12,6 +13,8 @@ export class GameRenderer {
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
   private renderer: THREE.WebGLRenderer;
+  private labelRenderer!: CSS2DRenderer;
+  private labelRendererElement!: HTMLDivElement;
   private currentScene: string;
   private scenes: Map<string, THREE.Scene>;
   private sceneInstances: Map<string, BaseScene>; // Store scene class instances
@@ -36,7 +39,31 @@ export class GameRenderer {
     this.renderer = new THREE.WebGLRenderer();
     this.controls = new OrbitControls(this.camera, canvas);
 
+    this.waitForLabelRendererElement().then((labelRendererElement) => {
+      this.labelRendererElement = labelRendererElement;
+      this.initializeLabelRenderer();
+    });
+
     this.init(canvas);
+  }
+
+  private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
+    return new Promise((resolve) => {
+      const checkElement = () => {
+        const element = document.getElementById("labelrenderer") as HTMLDivElement;
+        if (element) {
+          resolve(element);
+        } else {
+          requestAnimationFrame(checkElement);
+        }
+      };
+      checkElement();
+    });
+  }
+
+  private initializeLabelRenderer() {
+    this.labelRenderer = new CSS2DRenderer({ element: this.labelRendererElement });
+    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
   }
 
   private init(canvas: HTMLCanvasElement): void {
@@ -255,12 +282,16 @@ export class GameRenderer {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(width, height);
+    this.labelRenderer?.setSize(width, height);
     this.render();
   }
 
   public render(): void {
     if (this.isDisposed) return;
     this.renderer.render(this.scene, this.camera);
+    if (this.labelRenderer) {
+      this.labelRenderer.render(this.scene, this.camera);
+    }
   }
 
   public startRenderLoop(): void {
@@ -268,6 +299,11 @@ export class GameRenderer {
 
     const animate = () => {
       if (this.isDisposed) return;
+
+      if (!this.labelRenderer) {
+        requestAnimationFrame(animate);
+        return;
+      }
 
       this.animationId = requestAnimationFrame(animate);
       this.controls.update();
@@ -294,6 +330,10 @@ export class GameRenderer {
 
   public getDojo(): DojoResult {
     return this.dojo;
+  }
+
+  public getLabelRenderer(): CSS2DRenderer | undefined {
+    return this.labelRenderer;
   }
 
   public dispose(): void {
@@ -333,5 +373,10 @@ export class GameRenderer {
 
     this.controls.dispose();
     this.renderer.dispose();
+
+    // Dispose label renderer
+    if (this.labelRenderer) {
+      this.labelRenderer.domElement.remove();
+    }
   }
 }
