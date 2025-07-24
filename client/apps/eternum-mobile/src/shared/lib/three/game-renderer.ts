@@ -39,37 +39,32 @@ export class GameRenderer {
     this.renderer = new THREE.WebGLRenderer();
     this.controls = new OrbitControls(this.camera, canvas);
 
-    this.waitForLabelRendererElement()
-      .then((labelRendererElement) => {
-        console.debug("[GameRenderer] Label renderer element promise resolved");
-        this.labelRendererElement = labelRendererElement;
-        this.initializeLabelRenderer();
-      })
-      .catch((error) => {
-        console.error("[GameRenderer] Failed to initialize label renderer:", error);
-      });
-
+    this.createLabelRendererElement();
+    this.initializeLabelRenderer();
     this.init(canvas);
   }
 
-  private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    console.debug("[GameRenderer] Waiting for labelrenderer element...");
-    return new Promise((resolve) => {
-      const checkElement = () => {
-        const element = document.getElementById("labelrenderer") as HTMLDivElement;
-        if (element) {
-          console.debug("[GameRenderer] Found labelrenderer element:", element);
-          resolve(element);
-        } else {
-          console.debug("[GameRenderer] labelrenderer element not found, retrying...");
-          requestAnimationFrame(checkElement);
-        }
-      };
-      checkElement();
-    });
+  private createLabelRendererElement(): void {
+    let existingElement = document.getElementById("labelrenderer") as HTMLDivElement;
+
+    if (!existingElement) {
+      console.debug("[GameRenderer] Creating labelrenderer element");
+      existingElement = document.createElement("div");
+      existingElement.id = "labelrenderer";
+      existingElement.className = "absolute top-0 pointer-events-none z-10";
+      existingElement.style.position = "absolute";
+      existingElement.style.top = "0";
+      existingElement.style.left = "0";
+      existingElement.style.pointerEvents = "none";
+      existingElement.style.zIndex = "10";
+      document.body.appendChild(existingElement);
+    }
+
+    this.labelRendererElement = existingElement;
+    console.debug("[GameRenderer] Label renderer element ready:", this.labelRendererElement);
   }
 
-  private initializeLabelRenderer() {
+  private initializeLabelRenderer(): void {
     console.debug("[GameRenderer] Initializing CSS2DRenderer with element:", this.labelRendererElement);
     this.labelRenderer = new CSS2DRenderer({ element: this.labelRendererElement });
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -79,6 +74,16 @@ export class GameRenderer {
       "x",
       window.innerHeight,
     );
+  }
+
+  private ensureLabelRendererValid(): boolean {
+    if (!this.labelRenderer || !this.labelRendererElement || !document.body.contains(this.labelRendererElement)) {
+      console.debug("[GameRenderer] Label renderer invalid, reinitializing...");
+      this.createLabelRendererElement();
+      this.initializeLabelRenderer();
+      return true;
+    }
+    return false;
   }
 
   private init(canvas: HTMLCanvasElement): void {
@@ -297,6 +302,8 @@ export class GameRenderer {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(width, height);
+
+    this.ensureLabelRendererValid();
     this.labelRenderer?.setSize(width, height);
     this.render();
   }
@@ -304,6 +311,8 @@ export class GameRenderer {
   public render(): void {
     if (this.isDisposed) return;
     this.renderer.render(this.scene, this.camera);
+
+    this.ensureLabelRendererValid();
     if (this.labelRenderer) {
       this.labelRenderer.render(this.scene, this.camera);
     } else {
@@ -389,6 +398,11 @@ export class GameRenderer {
     // Dispose label renderer
     if (this.labelRenderer) {
       this.labelRenderer.domElement.remove();
+    }
+
+    // Remove the programmatically created labelrenderer element
+    if (this.labelRendererElement && document.body.contains(this.labelRendererElement)) {
+      document.body.removeChild(this.labelRendererElement);
     }
   }
 }

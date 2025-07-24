@@ -70,7 +70,6 @@ export function WorldmapPage() {
 
       {/* Bottom spacing for footer */}
       <div className="h-20" />
-      <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
     </div>
   );
 }
