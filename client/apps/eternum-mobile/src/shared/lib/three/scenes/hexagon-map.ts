@@ -565,7 +565,18 @@ export class HexagonMap {
 
     if (controls) {
       console.log("Moving camera to col", col, "row", row);
+
+      // Update the target to the hex position
       controls.target.copy(worldPosition);
+
+      // Maintain the top-down view by setting camera position relative to target
+      // Keep the same height (y=10) and directly above the target
+      const camera = controls.object;
+      if (camera) {
+        camera.position.set(worldPosition.x, 10, worldPosition.z);
+        camera.lookAt(worldPosition.x, 0, worldPosition.z);
+      }
+
       controls.update();
     }
 
