@@ -93,8 +93,16 @@ export class ArmyActionManager {
         };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
-    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
+
+    let maxTravelWheatSteps = Infinity;
+    let maxTravelFishSteps = Infinity;
+    if (travelFoodCosts.wheatPayAmount > 0) {
+      maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    }
+    if (travelFoodCosts.fishPayAmount > 0) {
+      maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
+    }
+
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
 
     return Math.min(maxStaminaSteps, maxTravelSteps);
