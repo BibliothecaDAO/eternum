@@ -1,13 +1,12 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { configManager, formatTime, ResourceManager } from "@bibliothecadao/eternum";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
-import { getRelicInfo, ID, ResourcesIds, TickIds } from "@bibliothecadao/types";
+import { configManager, formatTime, relicsArmiesTicksLeft } from "@bibliothecadao/eternum";
+import { getRelicInfo, ID, RelicEffectWithEndTick, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
-  relicEffects: EntityRelicEffect[];
+  relicEffects: RelicEffectWithEndTick[];
   entityId: ID;
   compact?: boolean;
   className?: string;
@@ -21,8 +20,8 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
 
     return relicEffects
       .map((effect) => {
-        const resourceId = Number(effect.effect_resource_id);
-        const endTick = Number(effect.effect_end_tick);
+        const resourceId = Number(effect.id);
+        const endTick = Number(effect.endTick);
 
         // Skip invalid data
         if (isNaN(resourceId) || isNaN(endTick)) return null;
@@ -32,7 +31,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
 
         // Calculate remaining ticks until effect ends
         // todo: check relic effect active
-        const remainingTicks = ResourceManager.relicsArmiesTicksLeft(endTick, currentArmiesTick);
+        const remainingTicks = relicsArmiesTicksLeft(endTick, currentArmiesTick);
 
         // Get tick interval for armies (relics use army ticks)
         const armyTickInterval = configManager.getTick(TickIds.Armies) || 1;

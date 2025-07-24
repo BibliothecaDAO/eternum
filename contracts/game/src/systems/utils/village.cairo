@@ -191,8 +191,10 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
             let starting_resource_min_max: ResourceMinMaxList = world.read_model((starting_resources_id, i));
             let starting_resource_amount_range = starting_resource_min_max.max_amount
                 - starting_resource_min_max.min_amount;
-            let starting_resource_amount = starting_resource_min_max.min_amount
-                + random::random(vrf_seed, i.into(), starting_resource_amount_range);
+            let mut starting_resource_amount = starting_resource_min_max.min_amount;
+            if starting_resource_amount_range.is_non_zero() {
+                starting_resource_amount += random::random(vrf_seed, i.into(), starting_resource_amount_range);
+            }
             let starting_resource_type = starting_resource_min_max.resource_type;
 
             // add starting resource to structure

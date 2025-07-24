@@ -1,7 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
-import { getEntityInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { ContractAddress, RelicRecipientType, StructureType } from "@bibliothecadao/types";
@@ -89,8 +89,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                     {entity.relics.map((relic) => {
-                      const resourceManager = new ResourceManager(components, entity.entityId);
-                      const isActive = resourceManager.isRelicActive(relic.resourceId, currentArmiesTick);
+                      const isActive = false;
 
                       return (
                         <RelicCard

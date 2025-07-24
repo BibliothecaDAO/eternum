@@ -338,13 +338,14 @@ export class FXManager {
     size?: number,
     labelText?: string,
     isInfinite: boolean = false,
-  ): { promise: Promise<void>; end: () => void } {
+  ): { promise: Promise<void>; end: () => void; instance?: FXInstance } {
     const config = this.fxConfigs.get(type);
     if (!config) {
       console.warn(`FX type '${type}' is not registered.`);
       return {
         promise: Promise.reject(`FX type '${type}' not registered.`),
         end: () => {},
+        instance: undefined,
       };
     }
 
@@ -354,33 +355,33 @@ export class FXManager {
       return {
         promise: Promise.reject("Texture not loaded"),
         end: () => {},
+        instance: undefined,
       };
     }
 
-    let fxInstance: FXInstance | null = null;
+    const fxInstance = new FXInstance(
+      this.scene,
+      texture,
+      type,
+      x,
+      y,
+      z,
+      size ?? this.defaultSize,
+      labelText,
+      config.animate,
+      isInfinite || config.isInfinite,
+    );
+
+    // Set initial position for orbital effects
+    fxInstance.initialX = x;
+    fxInstance.initialZ = z;
+
     const promise = new Promise<void>((resolve) => {
-      fxInstance = new FXInstance(
-        this.scene,
-        texture,
-        type,
-        x,
-        y,
-        z,
-        size ?? this.defaultSize,
-        labelText,
-        config.animate,
-        isInfinite || config.isInfinite,
-      );
-
-      // Set initial position for orbital effects
-      fxInstance.initialX = x;
-      fxInstance.initialZ = z;
-
       fxInstance.onComplete(resolve);
       this.activeFX.add(fxInstance);
 
       const cleanup = () => {
-        this.activeFX.delete(fxInstance!);
+        this.activeFX.delete(fxInstance);
       };
 
       const originalDestroy = fxInstance.destroy;
@@ -397,6 +398,7 @@ export class FXManager {
           fxInstance.startEnding();
         }
       },
+      instance: fxInstance,
     };
   }
 

@@ -48,8 +48,10 @@ export class ArmyManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
-  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>> =
-    new Map();
+  private armyRelicEffects: Map<
+    ID,
+    Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
+  > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
 
@@ -235,9 +237,6 @@ export class ArmyManager {
       } else {
         this.addEntityIdLabel(army, position);
       }
-
-      // Add random relic effects for demo (commented out - now using actual relic effects from game system)
-      // this.addRandomRelicEffects(army.entityId, position);
     });
 
     // Remove labels for armies that are no longer visible
@@ -380,94 +379,73 @@ export class ArmyManager {
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
-    // Update relic effects position when army moves
-    const relicEffects = this.armyRelicEffects.get(entityId);
-    if (relicEffects) {
-      // Store current relic effects to re-apply at new position
-      const currentRelics = relicEffects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
-
-      // Remove old effects
-      relicEffects.forEach((effect) => effect.fx.end());
-      this.armyRelicEffects.delete(entityId);
-
-      // Re-add effects at new position
-      const targetWorldPos = this.getArmyWorldPosition(entityId, hexCoords);
-      for (const relic of currentRelics) {
-        try {
-          await this.addRelicEffect(entityId, relic.relicId, relic.effect);
-        } catch (error) {
-          console.error(
-            `Failed to re-apply relic effect ${relic.relicId} for army ${entityId} during movement:`,
-            error,
-          );
-        }
-      }
-    }
+    // Don't remove relic effects during movement - they will follow the army
+    // The updateRelicEffectPositions method will handle smooth positioning
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
-  public async addRelicEffect(entityId: ID, relicNumber: number, effect: RelicEffect) {
-    console.log("addRelicEffect", { entityId, relicNumber });
+  public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
     const army = this.armies.get(entityId);
     if (!army) return;
 
-    const position = this.getArmyWorldPosition(entityId, army.hexCoords);
-    position.y += 1.5;
+    const currentEffects = this.armyRelicEffects.get(entityId) || [];
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
-    try {
-      // Register the relic FX if not already registered (wait for texture to load)
-      await this.fxManager.registerRelicFX(relicNumber);
-
-      // Play the relic effect
-      const fx = this.fxManager.playFxAtCoords(
-        `relic_${relicNumber}`,
-        position.x,
-        position.y,
-        position.z,
-        0.8,
-        undefined,
-        true,
-      );
-
-      // Add to existing effects or create new array
-      const existingEffects = this.armyRelicEffects.get(entityId) || [];
-      existingEffects.push({ relicNumber, effect, fx });
-      this.armyRelicEffects.set(entityId, existingEffects);
-    } catch (error) {
-      console.error(`Failed to add relic effect ${relicNumber} for army ${entityId}:`, error);
-    }
-  }
-
-  public removeRelicEffect(entityId: ID, relicNumber: number) {
-    const effects = this.armyRelicEffects.get(entityId);
-    if (!effects) return;
-
-    const index = effects.findIndex((effect) => effect.relicNumber === relicNumber);
-    if (index !== -1) {
-      effects[index].fx.end();
-      effects.splice(index, 1);
-
-      if (effects.length === 0) {
-        this.armyRelicEffects.delete(entityId);
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        currentEffect.fx.end();
       }
     }
-  }
 
-  public removeAllRelicEffects(entityId: ID) {
-    const effects = this.armyRelicEffects.get(entityId);
-    if (!effects) return;
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> =
+      [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        try {
+          const position = this.getArmyWorldPosition(entityId, army.hexCoords);
+          position.y += 1.5;
 
-    effects.forEach((effect) => effect.fx.end());
-    this.armyRelicEffects.delete(entityId);
+          // Register the relic FX if not already registered (wait for texture to load)
+          await this.fxManager.registerRelicFX(newEffect.relicNumber);
+
+          // Play the relic effect
+          const fx = this.fxManager.playFxAtCoords(
+            `relic_${newEffect.relicNumber}`,
+            position.x,
+            position.y,
+            position.z,
+            0.8,
+            undefined,
+            true,
+          );
+
+          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+        } catch (error) {
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
+        }
+      }
+    }
+
+    // Update the stored effects
+    if (newRelicEffects.length === 0) {
+      this.armyRelicEffects.delete(entityId);
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      this.armyRelicEffects.set(entityId, updatedEffects);
+    }
   }
 
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
 
     // Remove any relic effects
-    this.removeAllRelicEffects(entityId);
+    this.updateRelicEffects(entityId, []);
 
     // Clear any pending relic effects
     if (this.clearPendingRelicEffectsCallback) {
@@ -498,6 +476,9 @@ export class ArmyManager {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime);
+
+    // Update relic effect positions to follow moving armies
+    this.updateRelicEffectPositions();
   }
 
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
@@ -619,16 +600,41 @@ export class ArmyManager {
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 
+  private updateRelicEffectPositions() {
+    // Update relic effect positions for armies that are currently moving
+    this.armyRelicEffects.forEach((relicEffects, entityId) => {
+      const army = this.armies.get(entityId);
+      if (!army) return;
+
+      // Get the current position of the army (might be interpolated during movement)
+      const instanceData = this.armyModel["instanceData"]?.get(entityId);
+      if (instanceData && instanceData.isMoving) {
+        // Army is currently moving, update relic effects to follow the current interpolated position
+        const currentPosition = instanceData.position.clone();
+        currentPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+
+        relicEffects.forEach((relicEffect) => {
+          // Update the position of each relic effect to follow the army
+          if (relicEffect.fx.instance) {
+            // Update the base position that the orbital animation uses
+            relicEffect.fx.instance.initialX = currentPosition.x;
+            relicEffect.fx.instance.initialY = currentPosition.y;
+            relicEffect.fx.instance.initialZ = currentPosition.z;
+          }
+        });
+      }
+    });
+  }
+
   public destroy() {
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
     // Clean up relic effects
-    this.armyRelicEffects.forEach((effects) => {
-      effects.forEach((effect) => effect.fx.end());
-    });
-    this.armyRelicEffects.clear();
+    for (const [entityId] of this.armyRelicEffects) {
+      this.updateRelicEffects(entityId, []);
+    }
     // Clean up any other resources...
   }
 }

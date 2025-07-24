@@ -1,4 +1,3 @@
-import { sqlApi } from "@/services/api";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
@@ -10,23 +9,14 @@ import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   getAddressName,
+  getArmyRelicEffects,
   getGuildFromPlayerAddress,
   getStructureName,
-  ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import {
-  ClientComponents,
-  ContractAddress,
-  ID,
-  RelicRecipientType,
-  ResourcesIds,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
+import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
@@ -74,9 +64,9 @@ export const ArmyEntityDetail = memo(
       queryFn: async () => {
         if (!toriiClient || !armyEntityId) return undefined;
         const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-        const relicEffects = (await sqlApi.fetchEntityRelicEffects(armyEntityId)) as ComponentValue<
-          ClientComponents["RelicEffect"]["schema"]
-        >[];
+        const relicEffects = explorer.explorer
+          ? getArmyRelicEffects(explorer.explorer.troops, getBlockTimestamp().currentArmiesTick)
+          : [];
         return { ...explorer, relicEffects };
       },
       staleTime: 30000, // 30 seconds
@@ -125,23 +115,7 @@ export const ArmyEntityDetail = memo(
 
       const { currentArmiesTick } = getBlockTimestamp();
 
-      // Convert relic effects to resource IDs for StaminaManager
-      const relicResourceIds =
-        (explorerData?.relicEffects
-          // todo: check relic effect active
-          ?.filter((effect) =>
-            ResourceManager.isRelicActive(
-              {
-                start_tick: effect.effect_start_tick,
-                end_tick: effect.effect_end_tick,
-                usage_left: effect.effect_usage_left,
-              },
-              currentArmiesTick,
-            ),
-          )
-          .map((effect) => Number(effect.effect_resource_id)) as ResourcesIds[]) || [];
-
-      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick, relicResourceIds);
+      const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
       const maxStamina = StaminaManager.getMaxStamina(
         explorer.troops.category as TroopType,
         explorer.troops.tier as TroopTier,
@@ -167,7 +141,7 @@ export const ArmyEntityDetail = memo(
         isMine,
         structureOwnerName: structureOwnerName,
       };
-    }, [explorer, structure, components, userAddress, armyEntityId, explorerData?.relicEffects]);
+    }, [explorer, structure, components, userAddress, armyEntityId]);
 
     const handleDeleteExplorer = async () => {
       setIsLoadingDelete(true);
@@ -288,7 +262,6 @@ export const ArmyEntityDetail = memo(
                 army={explorer}
                 explorerResources={explorerResources}
                 structureResources={structureResources}
-                relicEffects={explorerData?.relicEffects}
               />
             )}
 
@@ -319,7 +292,7 @@ export const ArmyEntityDetail = memo(
               <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
               <InventoryResources
                 resources={explorerResources}
-                relicEffects={explorerData?.relicEffects}
+                relicEffects={explorerData?.relicEffects.map((effect) => effect.id)}
                 max={maxInventory}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}

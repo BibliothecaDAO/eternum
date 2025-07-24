@@ -234,10 +234,8 @@ export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
 ];
 
 export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
-  { resource: ResourcesIds.Wheat, min_amount: 300, max_amount: 600 },
-  { resource: ResourcesIds.Labor, min_amount: 400, max_amount: 800 },
-  { resource: ResourcesIds.Donkey, min_amount: 20, max_amount: 50 },
-  { resource: ResourcesIds.Knight, min_amount: 100, max_amount: 150 },
+  { resource: ResourcesIds.Labor, min_amount: 5_000, max_amount: 5_000 },
+  { resource: ResourcesIds.Donkey, min_amount: 200, max_amount: 200 },
 ];
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {

@@ -27,13 +27,13 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { ArrowBigDown, ArrowBigUp, Search, X } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
-import { num } from "starknet";
+import { BigNumberish } from "starknet";
 
 type transferCall = {
   structureId: ID;
-  sender_entity_id: num.BigNumberish;
-  recipient_entity_id: num.BigNumberish;
-  resources: num.BigNumberish[];
+  sender_entity_id: BigNumberish;
+  recipient_entity_id: BigNumberish;
+  resources: BigNumberish[];
   realmName: string;
 };
 

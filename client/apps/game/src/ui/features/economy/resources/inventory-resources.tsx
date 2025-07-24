@@ -1,15 +1,7 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import {
-  ClientComponents,
-  getRelicInfo,
-  ID,
-  isRelic,
-  RelicActivation,
-  RelicRecipientType,
-} from "@bibliothecadao/types";
+import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -26,7 +18,7 @@ export const InventoryResources = ({
   recipientType,
 }: {
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  relicEffects: ComponentValue<ClientComponents["RelicEffect"]["schema"]>[];
+  relicEffects: ResourcesIds[];
   max?: number;
   className?: string;
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
@@ -36,7 +28,6 @@ export const InventoryResources = ({
 }) => {
   const [showAll, setShowAll] = useState(false);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { currentArmiesTick } = useBlockTimestamp();
 
   const sortedResources = useMemo(() => {
     return ResourceManager.getResourceBalances(resources).sort((a, b) => b.amount - a.amount);
@@ -73,29 +64,9 @@ export const InventoryResources = ({
         const relicInfo = resourceIsRelic ? getRelicInfo(resource.resourceId) : null;
 
         // Check if relic is compatible with the current entity type
-        const isCompatibleRelic =
-          resourceIsRelic &&
-          relicInfo &&
-          ((recipientType === RelicRecipientType.Explorer &&
-            (relicInfo.activation === RelicActivation.Army ||
-              relicInfo.activation === RelicActivation.ArmyAndStructure)) ||
-            (recipientType === RelicRecipientType.Structure &&
-              (relicInfo.activation === RelicActivation.Structure ||
-                relicInfo.activation === RelicActivation.ArmyAndStructure)));
+        const isCompatibleRelic = resourceIsRelic && relicInfo && relicInfo.recipientType === recipientType;
 
-        const relicEffect = relicEffects.find((relicEffect) => relicEffect.effect_resource_id === resource.resourceId);
-        // Check if relic effect is active
-        const isRelicActive =
-          resourceIsRelic &&
-          relicEffect &&
-          ResourceManager.isRelicActive(
-            {
-              start_tick: relicEffect.effect_start_tick,
-              end_tick: relicEffect.effect_end_tick,
-              usage_left: relicEffect.effect_usage_left,
-            },
-            currentArmiesTick,
-          );
+        const isRelicActive = relicEffects.includes(resource.resourceId);
 
         return (
           <div

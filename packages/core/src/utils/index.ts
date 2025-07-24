@@ -14,6 +14,7 @@ export * from "./players";
 export * from "./quest";
 export * from "./raid-simulator";
 export * from "./realm";
+export * from "./relic";
 export * from "./resources";
 export * from "./structure";
 export * from "./trades";

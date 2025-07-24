@@ -173,7 +173,8 @@ export const PlayerId = ({
             <h5 className="text-sm font-semibold text-gold mb-3 px-1">Hyperstructure Shareholdings</h5>
             <div className="space-y-2">
               {unregisteredShareholderPointsBreakdown.map((breakdown) => {
-                const pointsPerSecond = (breakdown.shareholderPercentage * 7).toFixed(2);
+                const pointsPerSecond = (breakdown.shareholderPercentage * 1).toFixed(2);
+                // const pointsPerSecond = (breakdown.shareholderPercentage * 7).toFixed(2);
                 return (
                   <div
                     key={breakdown.hyperstructureId}

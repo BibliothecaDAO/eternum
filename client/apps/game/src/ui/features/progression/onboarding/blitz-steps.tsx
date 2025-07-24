@@ -361,7 +361,6 @@ export const BlitzOnboarding = () => {
     return () => clearInterval(interval);
   }, [blitzConfig]);
 
-
   useEffect(() => {
     const getUsername = async () => {
       let username;

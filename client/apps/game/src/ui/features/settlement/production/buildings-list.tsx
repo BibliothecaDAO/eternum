@@ -2,7 +2,7 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getEntityIdFromKeys, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, getRealmInfo, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -42,25 +42,24 @@ export const BuildingsList = ({
     getEntityIdFromKeys([BigInt(realm.entityId)]),
   );
 
+  const productionBoostBonus = useComponentValue(
+    setup.components.ProductionBoostBonus,
+    getEntityIdFromKeys([BigInt(realm.entityId)]),
+  );
+
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(realm.entityId)]), setup.components),
     [realm.entityId, structureBuildings, resources],
   );
 
-  const storageRemaining = useMemo(() => {
-    if (!realmInfo?.storehouses?.capacityKg || !realmInfo?.storehouses?.capacityUsedKg) {
-      return 0;
-    }
-    return realmInfo?.storehouses?.capacityKg - realmInfo?.storehouses?.capacityUsedKg;
-  }, [realmInfo?.storehouses?.capacityUsedKg, realmInfo?.storehouses?.capacityKg]);
-
-  const isStorageFull = useMemo(() => {
-    return storageRemaining <= 0;
-  }, [storageRemaining]);
-
   const resource = useMemo(() => {
     return resourceManager.getResource();
   }, [resourceManager]);
+
+  const activeRelicEffects = useMemo(() => {
+    if (!productionBoostBonus) return [];
+    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentDefaultTick);
+  }, [productionBoostBonus]);
 
   const productions = useMemo(() => {
     return producedResources
@@ -221,6 +220,7 @@ export const BuildingsList = ({
                         showTransfer={false}
                         storageCapacity={realmInfo?.storehouses?.capacityKg}
                         storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
+                        activeRelicEffects={activeRelicEffects}
                       />
                     </div>
                   </div>

@@ -1,7 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { RealmResourcesIO } from "@/ui/features/economy/resources";
 import { ProductionModal } from "@/ui/features/settlement";
 import {
   configManager,
@@ -11,14 +10,7 @@ import {
   unpackValue,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  ContractAddress,
-  ID,
-  LEVEL_DESCRIPTIONS,
-  RealmLevels,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { sqlApi } from "@/services/api";
@@ -278,19 +270,6 @@ export const Castle = () => {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Resources Section */}
-          <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
-            {structure &&
-              (structure.base.category === StructureType.Realm ||
-                structure.base.category === StructureType.Village) && (
-                <RealmResourcesIO
-                  size="md"
-                  titleClassName="uppercase font-semibold text-gold"
-                  resourcesProduced={resourcesProduced}
-                />
-              )}
           </div>
 
           {/* Labor Production Button */}

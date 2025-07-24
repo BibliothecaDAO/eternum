@@ -3,7 +3,7 @@ import {
   BuildingType,
   HexPosition,
   ID,
-  RelicEffect,
+  RelicEffectWithEndTick,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -70,7 +70,5 @@ export type ChestSystemUpdate = {
 
 export type RelicEffectSystemUpdate = {
   entityId: ID;
-  relicResourceId: ResourcesIds;
-  isActive: boolean;
-  effect: RelicEffect;
+  relicEffects: RelicEffectWithEndTick[];
 };

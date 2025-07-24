@@ -1,12 +1,10 @@
 import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
-import { extractRelicsFromResourceData } from ".";
 import {
   ArmyRelicsData,
   BattleLogEvent,
   ChestInfo,
   ChestTile,
-  EntityRelicEffect,
   EntityWithRelics,
   EventType,
   Guard,
@@ -37,6 +35,7 @@ import {
 import { BATTLE_QUERIES } from "./battle";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
+import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
@@ -477,11 +476,5 @@ export class SqlApi {
         armies: [],
       };
     }
-  }
-
-  async fetchEntityRelicEffects(entityId: ID): Promise<EntityRelicEffect[]> {
-    const query = RELICS_QUERIES.ENTITY_RELIC_EFFECTS.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<EntityRelicEffect>(url, "Failed to fetch entity relic effects");
   }
 }

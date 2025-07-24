@@ -16,12 +16,12 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { EntityRelicEffect } from "@bibliothecadao/torii";
 import {
   CapacityConfig,
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RelicEffectWithEndTick,
   RESOURCE_PRECISION,
   resources,
   ResourcesIds,
@@ -51,8 +51,8 @@ export const RaidContainer = ({
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerActiveRelicEffects: EntityRelicEffect[];
-  targetActiveRelicEffects: EntityRelicEffect[];
+  attackerActiveRelicEffects: RelicEffectWithEndTick[];
+  targetActiveRelicEffects: RelicEffectWithEndTick[];
 }) => {
   const {
     account: { account },
@@ -82,9 +82,7 @@ export const RaidContainer = ({
     const { currentArmiesTick } = getBlockTimestamp();
 
     // Convert attacker relic effects to resource IDs for StaminaManager
-    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) =>
-      Number(effect.effect_resource_id),
-    ) as ResourcesIds[];
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
     return {
       capacity: army?.totalCapacity,
@@ -92,9 +90,7 @@ export const RaidContainer = ({
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
-        stamina: army
-          ? StaminaManager.getStamina(army?.troops, currentArmiesTick, attackerRelicResourceIds)
-          : { amount: 0n, updated_tick: 0n },
+        stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
       },
     };
   }, [attackerEntityId, attackerActiveRelicEffects]);
@@ -129,14 +125,10 @@ export const RaidContainer = ({
 
     // Use the raid simulator to predict the outcome
     // Convert attacker relic effects to resource IDs for RaidSimulator
-    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) =>
-      Number(effect.effect_resource_id),
-    ) as ResourcesIds[];
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
     // For defenders, we aggregate all target relic effects
-    const targetRelicResourceIds = targetActiveRelicEffects.map((effect) =>
-      Number(effect.effect_resource_id),
-    ) as ResourcesIds[];
+    const targetRelicResourceIds = targetActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
     const result = raidSimulator.simulateRaid(
       attackerArmy,
