@@ -39,21 +39,29 @@ export class GameRenderer {
     this.renderer = new THREE.WebGLRenderer();
     this.controls = new OrbitControls(this.camera, canvas);
 
-    this.waitForLabelRendererElement().then((labelRendererElement) => {
-      this.labelRendererElement = labelRendererElement;
-      this.initializeLabelRenderer();
-    });
+    this.waitForLabelRendererElement()
+      .then((labelRendererElement) => {
+        console.debug("[GameRenderer] Label renderer element promise resolved");
+        this.labelRendererElement = labelRendererElement;
+        this.initializeLabelRenderer();
+      })
+      .catch((error) => {
+        console.error("[GameRenderer] Failed to initialize label renderer:", error);
+      });
 
     this.init(canvas);
   }
 
   private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
+    console.debug("[GameRenderer] Waiting for labelrenderer element...");
     return new Promise((resolve) => {
       const checkElement = () => {
         const element = document.getElementById("labelrenderer") as HTMLDivElement;
         if (element) {
+          console.debug("[GameRenderer] Found labelrenderer element:", element);
           resolve(element);
         } else {
+          console.debug("[GameRenderer] labelrenderer element not found, retrying...");
           requestAnimationFrame(checkElement);
         }
       };
@@ -62,8 +70,15 @@ export class GameRenderer {
   }
 
   private initializeLabelRenderer() {
+    console.debug("[GameRenderer] Initializing CSS2DRenderer with element:", this.labelRendererElement);
     this.labelRenderer = new CSS2DRenderer({ element: this.labelRendererElement });
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    console.debug(
+      "[GameRenderer] CSS2DRenderer initialized successfully, size:",
+      window.innerWidth,
+      "x",
+      window.innerHeight,
+    );
   }
 
   private init(canvas: HTMLCanvasElement): void {
@@ -291,6 +306,8 @@ export class GameRenderer {
     this.renderer.render(this.scene, this.camera);
     if (this.labelRenderer) {
       this.labelRenderer.render(this.scene, this.camera);
+    } else {
+      console.debug("[GameRenderer] Label renderer not available for rendering");
     }
   }
 
@@ -299,11 +316,6 @@ export class GameRenderer {
 
     const animate = () => {
       if (this.isDisposed) return;
-
-      if (!this.labelRenderer) {
-        requestAnimationFrame(animate);
-        return;
-      }
 
       this.animationId = requestAnimationFrame(animate);
       this.controls.update();
