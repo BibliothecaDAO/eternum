@@ -1,5 +1,5 @@
 import { ControllerConnector } from "@cartridge/connector";
-import { Chain, mainnet, sepolia } from "@starknet-react/chains";
+import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
@@ -7,19 +7,32 @@ import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 
-const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
-const KATANA_CHAIN_NETWORK = "Katana Local";
-const KATANA_CHAIN_NAME = "katana";
-const KATANA_RPC_URL = "http://localhost:5050";
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
- 
+
+// ==============================================
+
+const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
+const KATANA_CHAIN_NETWORK = "Katana Local";
+const KATANA_CHAIN_NAME = "katana";
+const KATANA_RPC_URL = "http://localhost:5050";
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
+
+// ==============================================
+
+
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f31"
+const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
+const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
+
+// ==============================================
 
 const chain_id = isLocal
   ? KATANA_CHAIN_ID
+  : isSlot
+    ? SLOT_CHAIN_ID
   : env.VITE_PUBLIC_CHAIN === "sepolia"
     ? constants.StarknetChainId.SN_SEPOLIA
     : constants.StarknetChainId.SN_MAIN;
@@ -29,6 +42,8 @@ const controller = new ControllerConnector({
     {
       rpcUrl: isLocal
         ? KATANA_RPC_URL
+        : isSlot
+          ? SLOT_RPC_URL
         : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
           ? env.VITE_PUBLIC_NODE_URL
           : "https://api.cartridge.gg/x/starknet/sepolia",
@@ -36,6 +51,8 @@ const controller = new ControllerConnector({
   ],
   defaultChainId: isLocal
     ? KATANA_CHAIN_ID
+    : isSlot
+      ? SLOT_CHAIN_ID
     : env.VITE_PUBLIC_CHAIN === "mainnet"
       ? constants.StarknetChainId.SN_MAIN
       : constants.StarknetChainId.SN_SEPOLIA,
@@ -73,7 +90,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StarknetConfig
-      chains={isLocal ? [katanaLocalChain] : [mainnet, sepolia]}
+      chains={isLocal ? [katanaLocalChain] : isSlot ? [getSlotChain(SLOT_CHAIN_ID)] : [mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
       connectors={[controller as unknown as Connector]}
       explorer={voyager}
