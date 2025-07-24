@@ -15,7 +15,7 @@ const KATANA_RPC_URL = "http://localhost:5050";
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
-
+ 
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 const chain_id = isLocal
