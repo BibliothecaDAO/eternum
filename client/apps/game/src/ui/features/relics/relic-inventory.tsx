@@ -42,13 +42,15 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
     } = useDojo();
     const totalRelics = entities.reduce((sum, entity) => sum + entity.relics.length, 0);
     const entitiesWithInfo = useMemo(() => {
-      return entities.map((entity) => {
-        return {
-          ...entity,
-          position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
-          info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()),
-        };
-      });
+      return entities
+        .filter((entity) => entity.relics.length > 0)
+        .map((entity) => {
+          return {
+            ...entity,
+            position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
+            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()),
+          };
+        });
     }, [entities]);
 
     return (
