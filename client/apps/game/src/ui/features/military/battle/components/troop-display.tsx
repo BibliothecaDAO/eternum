@@ -55,12 +55,12 @@ export const TroopDisplay = ({
               <div
                 className={`text-xs font-bold ${
                   remainingTroops > troopCount * 0.8
-                    ? "text-green-400"
+                    ? "text-green"
                     : remainingTroops > troopCount * 0.5
-                      ? "text-yellow-400"
+                      ? "text-yellow"
                       : remainingTroops > 0
-                        ? "text-orange-400"
-                        : "text-red-400"
+                        ? "text-orange"
+                        : "text-red"
                 }`}
               >
                 {Math.floor(remainingTroops)} left
@@ -116,27 +116,65 @@ export const TroopDisplay = ({
               className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <h5 className="text-sm sm:text-base font-semibold text-gold truncate">
-                {TroopType[troops.category as TroopType]} {troops.tier}
+              <h5 className="text-sm sm:text-base font-semibold text-gold truncate flex items-center gap-2">
+                {TroopType[troops.category as TroopType]}{" "}
+                <span className="text-gold/70 font-normal">Tier {troops.tier}</span>
               </h5>
-              <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm text-gold/70">{troopCount} troops</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs sm:text-sm text-gold/70 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-gold/60 mr-1" />
+                  {troopCount} <span className="hidden sm:inline">troops</span>
+                </p>
                 {showRemaining && remainingTroops !== undefined && (
-                  <div
-                    className={`text-xs font-bold ${
-                      remainingTroops > troopCount * 0.8
-                        ? "text-green-400"
-                        : remainingTroops > troopCount * 0.5
-                          ? "text-yellow-400"
-                          : remainingTroops > 0
-                            ? "text-orange-400"
-                            : "text-red-400"
-                    }`}
-                  >
-                    {Math.floor(remainingTroops)} after battle
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full ${
+                        remainingTroops > troopCount * 0.8
+                          ? "bg-green"
+                          : remainingTroops > troopCount * 0.5
+                            ? "bg-yellow"
+                            : remainingTroops > 0
+                              ? "bg-orange"
+                              : "bg-red"
+                      }`}
+                    />
+                    <span
+                      className={`text-xs font-bold ${
+                        remainingTroops > troopCount * 0.8
+                          ? "text-green"
+                          : remainingTroops > troopCount * 0.5
+                            ? "text-yellow"
+                            : remainingTroops > 0
+                              ? "text-orange"
+                              : "text-red"
+                      }`}
+                    >
+                      {Math.max(0, Math.floor(remainingTroops))} <span className="hidden sm:inline">after battle</span>
+                    </span>
                   </div>
                 )}
               </div>
+              {showRemaining && remainingTroops !== undefined && (
+                <div className="mt-1 w-full h-2 bg-gold/10 rounded overflow-hidden">
+                  <div
+                    className={`
+                      h-full rounded transition-all duration-500
+                      ${
+                        remainingTroops > troopCount * 0.8
+                          ? "bg-green"
+                          : remainingTroops > troopCount * 0.5
+                            ? "bg-yellow"
+                            : remainingTroops > 0
+                              ? "bg-orange"
+                              : "bg-red"
+                      }
+                    `}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, (remainingTroops / troopCount) * 100))}%`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
