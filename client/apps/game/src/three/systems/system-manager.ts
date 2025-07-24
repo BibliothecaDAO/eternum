@@ -234,7 +234,8 @@ export class SystemManager {
               if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
                 // Attempt to get explorer owner structure id from RECS
                 let explorerTroops = null;
-                let retries = 3;
+                // todo: find a better way to get the explorer owner address
+                let retries = 5;
                 while (retries > 0) {
                   explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
