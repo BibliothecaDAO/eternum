@@ -20,6 +20,7 @@ export class GameRenderer {
   private mouse: THREE.Vector2;
   private boundClickHandler: ((event: MouseEvent) => void) | null = null;
   private dojo: DojoResult;
+  private moveCameraFolder: any = null; // Store reference to GUI folder
 
   constructor(canvas: HTMLCanvasElement, dojo: DojoResult) {
     this.scenes = new Map();
@@ -137,16 +138,24 @@ export class GameRenderer {
   }
 
   private setupCameraMovementGUI() {
-    const moveCameraFolder = GUIManager.addFolder("Move Camera");
+    const folderName = "Move Camera";
+
+    // Check if folder already exists and remove it to prevent duplicates
+    const existingFolder = GUIManager.folders.find((folder: any) => folder._title === folderName);
+    if (existingFolder) {
+      existingFolder.destroy();
+    }
+
+    this.moveCameraFolder = GUIManager.addFolder(folderName);
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
 
-    moveCameraFolder.add(moveCameraParams, "col").name("Column");
-    moveCameraFolder.add(moveCameraParams, "row").name("Row");
-    moveCameraFolder.add(moveCameraParams, "x").name("X");
-    moveCameraFolder.add(moveCameraParams, "y").name("Y");
-    moveCameraFolder.add(moveCameraParams, "z").name("Z");
+    this.moveCameraFolder.add(moveCameraParams, "col").name("Column");
+    this.moveCameraFolder.add(moveCameraParams, "row").name("Row");
+    this.moveCameraFolder.add(moveCameraParams, "x").name("X");
+    this.moveCameraFolder.add(moveCameraParams, "y").name("Y");
+    this.moveCameraFolder.add(moveCameraParams, "z").name("Z");
 
-    moveCameraFolder
+    this.moveCameraFolder
       .add(
         {
           move: () => {
@@ -160,14 +169,7 @@ export class GameRenderer {
       )
       .name("Move Camera");
 
-    // moveCameraFolder.add(
-    //   {
-    //     move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
-    //   },
-    //   "move",
-    // );
-
-    moveCameraFolder.close();
+    this.moveCameraFolder.close();
   }
 
   private updateCurrentScene(): void {
@@ -283,6 +285,12 @@ export class GameRenderer {
   public dispose(): void {
     this.isDisposed = true;
     this.stopRenderLoop();
+
+    // Dispose GUI folder
+    if (this.moveCameraFolder) {
+      this.moveCameraFolder.destroy();
+      this.moveCameraFolder = null;
+    }
 
     // Remove event listeners
     if (this.boundClickHandler) {

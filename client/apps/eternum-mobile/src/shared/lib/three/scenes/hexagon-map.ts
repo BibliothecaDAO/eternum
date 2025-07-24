@@ -36,6 +36,7 @@ export class HexagonMap {
   private structureRenderer: StructureRenderer;
   private questRenderer: QuestRenderer;
   private selectionManager: SelectionManager;
+  private GUIFolder: any;
 
   private raycaster: THREE.Raycaster;
   private matrix = new THREE.Matrix4();
@@ -93,8 +94,15 @@ export class HexagonMap {
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
     this.systemManager.Structure.onUpdate((update) => this.updateStructureHexes(update));
 
-    GUIManager.addFolder("HexagonMap");
-    GUIManager.add(this, "moveCameraToColRow");
+    // Setup GUI with duplicate prevention
+    const folderName = "HexagonMap";
+    const existingFolder = GUIManager.folders.find((folder: any) => folder._title === folderName);
+    if (existingFolder) {
+      existingFolder.destroy();
+    }
+
+    this.GUIFolder = GUIManager.addFolder(folderName);
+    this.GUIFolder.add(this, "moveCameraToColRow");
   }
 
   private initializeStaticAssets(): void {
@@ -463,6 +471,12 @@ export class HexagonMap {
   }
 
   public dispose(): void {
+    // Dispose GUI folder
+    if (this.GUIFolder) {
+      this.GUIFolder.destroy();
+      this.GUIFolder = null;
+    }
+
     if (this.hexagonMesh) {
       this.scene.remove(this.hexagonMesh);
       this.hexagonMesh.dispose();

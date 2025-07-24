@@ -16,6 +16,7 @@ export abstract class BaseScene {
   protected raycaster: THREE.Raycaster;
   protected controls?: OrbitControls;
   protected GUIFolder: any;
+  protected sceneId: string;
 
   // Lighting components
   protected ambientLight!: THREE.AmbientLight;
@@ -34,6 +35,7 @@ export abstract class BaseScene {
   constructor(dojo: DojoResult, sceneId?: string, controls?: OrbitControls) {
     this.dojo = dojo;
     this.controls = controls;
+    this.sceneId = sceneId || "BaseScene";
     this.scene = new THREE.Scene();
     this.systemManager = new SystemManager(this.dojo.setup, loggedInAccount());
     this.tileRenderer = new TileRenderer(this.scene);
@@ -42,7 +44,7 @@ export abstract class BaseScene {
     this.initializeScene();
     this.setupLighting();
     this.createGroundMesh();
-    this.setupGUI(sceneId);
+    this.setupGUI(this.sceneId);
     useStore.subscribe(
       (state) => ({
         account: state.account,
@@ -99,7 +101,15 @@ export abstract class BaseScene {
   }
 
   protected setupGUI(sceneId?: string): void {
-    this.GUIFolder = GUIManager.addFolder(sceneId || "BaseScene");
+    const folderName = sceneId || "BaseScene";
+
+    // Check if folder already exists and remove it to prevent duplicates
+    const existingFolder = GUIManager.folders.find((folder: any) => folder._title === folderName);
+    if (existingFolder) {
+      existingFolder.destroy();
+    }
+
+    this.GUIFolder = GUIManager.addFolder(folderName);
     this.setupSceneGUI();
     this.setupLightingGUI();
     this.setupGroundMeshGUI();
@@ -164,6 +174,12 @@ export abstract class BaseScene {
 
   public dispose(): void {
     this.tileRenderer.dispose();
+
+    // Dispose GUI folder
+    if (this.GUIFolder) {
+      this.GUIFolder.destroy();
+      this.GUIFolder = null;
+    }
 
     if (this.groundMesh) {
       this.scene.remove(this.groundMesh);
