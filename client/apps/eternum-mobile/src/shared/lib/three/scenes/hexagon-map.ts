@@ -759,8 +759,12 @@ export class HexagonMap {
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
-      owner: { address },
+      owner: { address, ownerName, guildName },
       entityId,
+      troopType,
+      troopTier,
+      isDaydreamsAgent,
+      isAlly,
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
@@ -778,6 +782,12 @@ export class HexagonMap {
       row: newPos.row,
       owner: address,
       type: "army",
+      troopType,
+      troopTier,
+      ownerName,
+      guildName,
+      isDaydreamsAgent,
+      isAlly,
     };
 
     this.armyRenderer.updateObject(army);

@@ -1,4 +1,7 @@
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { isAddressEqualToAccount } from "../helpers/utils";
 import { getWorldPositionForTile, HEX_SIZE } from "./utils";
 
 export interface MapObject {
@@ -15,6 +18,12 @@ export interface ArmyObject extends MapObject {
   isMoving?: boolean;
   targetCol?: number;
   targetRow?: number;
+  troopType?: TroopType;
+  troopTier?: TroopTier;
+  ownerName?: string;
+  guildName?: string;
+  isDaydreamsAgent?: boolean;
+  isAlly?: boolean;
 }
 
 export interface StructureObject extends MapObject {
@@ -59,7 +68,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
     this.updateObjectVisibility();
   }
 
-  private updateObjectVisibility(): void {
+  protected updateObjectVisibility(): void {
     if (!this.visibleBounds) return;
 
     for (const [objectId, object] of this.objects) {
@@ -77,7 +86,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
     }
   }
 
-  private isHexVisible(col: number, row: number): boolean {
+  protected isHexVisible(col: number, row: number): boolean {
     if (!this.visibleBounds) return false;
     return (
       col >= this.visibleBounds.minCol &&
@@ -329,7 +338,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
     this.animateSelection();
   }
 
-  private stopSelectionAnimation(): void {
+  protected stopSelectionAnimation(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
@@ -374,6 +383,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   private static armyMaterial: THREE.SpriteMaterial | null = null;
   private static armyTexture: THREE.Texture | null = null;
   private static textureLoader = new THREE.TextureLoader();
+  private labels: Map<number, CSS2DObject> = new Map();
 
   protected initializeMaterials(): void {
     if (!ArmyRenderer.armyMaterial) {
@@ -449,12 +459,167 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     return sprite;
   }
 
+  public addObject(object: ArmyObject): void {
+    super.addObject(object);
+    // Create label for the army
+    this.createLabel(object);
+  }
+
+  public updateObject(object: ArmyObject): void {
+    // Remove existing label
+    this.removeLabel(object.id);
+    super.updateObject(object);
+    // Create new label
+    this.createLabel(object);
+  }
+
+  public removeObject(objectId: number): void {
+    // Remove label
+    this.removeLabel(objectId);
+    super.removeObject(objectId);
+  }
+
+  private createLabel(army: ArmyObject): void {
+    // Create label div
+    const labelDiv = document.createElement("div");
+    labelDiv.style.cssText = `
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    `;
+
+    // Determine ownership color using the same logic as desktop
+    let textColor = "#ffffff";
+    const isPlayerArmy = army.owner ? isAddressEqualToAccount(army.owner) : false;
+
+    if (army.isDaydreamsAgent) {
+      textColor = "#ffd700"; // Gold for AI agents
+    } else if (isPlayerArmy) {
+      textColor = "#00ff00"; // Green for player's armies
+    } else if (army.isAlly) {
+      textColor = "#87ceeb"; // Sky blue for allies
+    } else if (army.owner && army.owner.toString() !== "0") {
+      textColor = "#ff4444"; // Red for enemies
+    }
+
+    labelDiv.style.color = textColor;
+
+    // Create label content
+    const lines = [];
+
+    // Owner name (if available)
+    if (army.ownerName && army.ownerName !== "test") {
+      lines.push(army.ownerName);
+    } else if (army.isDaydreamsAgent) {
+      lines.push("Agent");
+    } else if (isPlayerArmy) {
+      lines.push("My Army");
+    } else {
+      lines.push("Army");
+    }
+
+    // Troop info (if available)
+    if (army.troopType && army.troopTier) {
+      const troopName = this.getTroopDisplayName(army.troopType, army.troopTier);
+      lines.push(troopName);
+    }
+
+    labelDiv.innerHTML = lines.join("<br>");
+
+    // Create CSS2DObject
+    const label = new CSS2DObject(labelDiv);
+
+    // Position the label above the army sprite
+    getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
+    label.position.set(this.tempVector3.x, 1.5, this.tempVector3.z - HEX_SIZE * 2.5);
+
+    this.labels.set(army.id, label);
+
+    // Add to scene if army is visible
+    if (this.isHexVisible(army.col, army.row)) {
+      this.scene.add(label);
+    }
+  }
+
+  private removeLabel(armyId: number): void {
+    const label = this.labels.get(armyId);
+    if (label) {
+      if (label.parent) {
+        this.scene.remove(label);
+      }
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+      this.labels.delete(armyId);
+    }
+  }
+
+  private getTroopDisplayName(troopType: TroopType, troopTier: TroopTier): string {
+    const typeNames: Record<TroopType, string> = {
+      [TroopType.Paladin]: "Paladin",
+      [TroopType.Crossbowman]: "Crossbowman",
+      [TroopType.Knight]: "Knight",
+    };
+
+    const tierNames: Record<TroopTier, string> = {
+      [TroopTier.T1]: "I",
+      [TroopTier.T2]: "II",
+      [TroopTier.T3]: "III",
+    };
+
+    return `${typeNames[troopType] || "Unknown"} ${tierNames[troopTier] || ""}`;
+  }
+
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.visibleBounds = bounds;
+    this.updateObjectVisibility();
+    this.updateLabelVisibility();
+  }
+
+  private updateLabelVisibility(): void {
+    if (!this.visibleBounds) return;
+
+    for (const [armyId, army] of this.objects) {
+      const label = this.labels.get(armyId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(army.col, army.row);
+
+        if (shouldBeVisible && !label.parent) {
+          this.scene.add(label);
+        } else if (!shouldBeVisible && label.parent) {
+          this.scene.remove(label);
+        }
+      }
+    }
+  }
+
   protected getTileId(army: ArmyObject): number {
     return 19;
   }
 
   protected getSharedMaterial(objectType: string): THREE.SpriteMaterial {
     return ArmyRenderer.armyMaterial!;
+  }
+
+  public dispose(): void {
+    // Remove all labels
+    this.labels.forEach((label) => {
+      if (label.parent) {
+        this.scene.remove(label);
+      }
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+    });
+    this.labels.clear();
+
+    super.dispose();
   }
 
   public static disposeStaticAssets(): void {
