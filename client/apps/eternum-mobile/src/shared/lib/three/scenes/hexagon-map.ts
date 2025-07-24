@@ -63,6 +63,9 @@ export class HexagonMap {
   private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
 
   private fetchedChunks: Set<string> = new Set();
+  private isLoadingChunks: boolean = false;
+  private pendingChunkUpdate: { chunkX: number; chunkZ: number } | null = null;
+  private currentAbortController: AbortController | null = null;
 
   // Data structures for action path calculation
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
@@ -136,47 +139,67 @@ export class HexagonMap {
   }
 
   private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
-    this.visibleHexes.clear();
+    if (this.isLoadingChunks) {
+      this.pendingChunkUpdate = { chunkX: centerChunkX, chunkZ: centerChunkZ };
+      return;
+    }
 
-    const radiusX = this.chunkLoadRadiusX;
-    const radiusZ = this.chunkLoadRadiusZ;
-    console.log(
-      `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
-    );
+    this.isLoadingChunks = true;
 
-    const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
-    await this.computeTileEntities(chunkKey);
+    try {
+      this.visibleHexes.clear();
 
-    for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
-      for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
-        if (this.isChunkInBounds(x, z)) {
-          this.loadChunkHexes(x, z);
-        } else {
-          console.log(`Skipping chunk (${x}, ${z}) - out of bounds`);
+      const radiusX = this.chunkLoadRadiusX;
+      const radiusZ = this.chunkLoadRadiusZ;
+      console.log(
+        `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
+      );
+
+      const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
+      await this.computeTileEntities(chunkKey);
+
+      for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
+        for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
+          if (this.isChunkInBounds(x, z)) {
+            this.loadChunkHexes(x, z);
+          } else {
+            console.log(`Skipping chunk (${x}, ${z}) - out of bounds`);
+          }
+        }
+      }
+
+      if (this.visibleHexes.size > 0) {
+        const hexArray = Array.from(this.visibleHexes).map((hexString) => {
+          const [col, row] = hexString.split(",").map(Number);
+          return { col, row };
+        });
+
+        const minCol = Math.min(...hexArray.map((h) => h.col));
+        const maxCol = Math.max(...hexArray.map((h) => h.col));
+        const minRow = Math.min(...hexArray.map((h) => h.row));
+        const maxRow = Math.max(...hexArray.map((h) => h.row));
+
+        console.log(
+          `Total visible hexes: ${this.visibleHexes.size}, range: cols ${minCol}-${maxCol}, rows ${minRow}-${maxRow}`,
+        );
+      } else {
+        console.log("No visible hexes loaded");
+      }
+      console.log("=== End update ===\n");
+
+      this.renderHexes();
+    } finally {
+      this.isLoadingChunks = false;
+
+      if (this.pendingChunkUpdate) {
+        const { chunkX, chunkZ } = this.pendingChunkUpdate;
+        this.pendingChunkUpdate = null;
+
+        if (chunkX !== centerChunkX || chunkZ !== centerChunkZ) {
+          await this.updateVisibleHexes(chunkX, chunkZ);
         }
       }
     }
-
-    if (this.visibleHexes.size > 0) {
-      const hexArray = Array.from(this.visibleHexes).map((hexString) => {
-        const [col, row] = hexString.split(",").map(Number);
-        return { col, row };
-      });
-
-      const minCol = Math.min(...hexArray.map((h) => h.col));
-      const maxCol = Math.max(...hexArray.map((h) => h.col));
-      const minRow = Math.min(...hexArray.map((h) => h.row));
-      const maxRow = Math.max(...hexArray.map((h) => h.row));
-
-      console.log(
-        `Total visible hexes: ${this.visibleHexes.size}, range: cols ${minCol}-${maxCol}, rows ${minRow}-${maxRow}`,
-      );
-    } else {
-      console.log("No visible hexes loaded");
-    }
-    console.log("=== End update ===\n");
-
-    this.renderHexes();
   }
 
   private isChunkInBounds(chunkX: number, chunkZ: number): boolean {
@@ -258,6 +281,10 @@ export class HexagonMap {
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3): void {
+    if (this.isLoadingChunks) {
+      return;
+    }
+
     const hexRadius = HEX_SIZE;
     const hexHeight = hexRadius * 2;
     const hexWidth = hexHeight * 1.6;
@@ -476,10 +503,14 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    // Dispose GUI folder
     if (this.GUIFolder) {
       this.GUIFolder.destroy();
       this.GUIFolder = null;
+    }
+
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
     }
 
     if (this.hexagonMesh) {
@@ -496,6 +527,9 @@ export class HexagonMap {
 
     this.allHexes.clear();
     this.visibleHexes.clear();
+    this.fetchedChunks.clear();
+    this.isLoadingChunks = false;
+    this.pendingChunkUpdate = null;
   }
 
   public static disposeStaticAssets(): void {
@@ -537,6 +571,11 @@ export class HexagonMap {
       return;
     }
 
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+    }
+
+    this.currentAbortController = new AbortController();
     this.fetchedChunks.add(chunkKey);
 
     const start = performance.now();
@@ -553,16 +592,28 @@ export class HexagonMap {
         range,
       );
     } catch (error) {
-      this.fetchedChunks.delete(chunkKey);
-      console.error("Error fetching tile entities:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log(`[HexagonMap] Tile entities request for chunk ${chunkKey} was aborted`);
+      } else {
+        this.fetchedChunks.delete(chunkKey);
+        console.error("Error fetching tile entities:", error);
+      }
     } finally {
       const end = performance.now();
       console.log("[HexagonMap] Tile entities query completed in", end - start, "ms");
+      this.currentAbortController = null;
     }
   }
 
   public clearTileEntityCache() {
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
+
     this.fetchedChunks.clear();
+    this.isLoadingChunks = false;
+    this.pendingChunkUpdate = null;
   }
 
   public moveCameraToColRow(col: number, row: number, controls?: any) {
