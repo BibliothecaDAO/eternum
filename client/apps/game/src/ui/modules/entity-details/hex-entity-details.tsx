@@ -29,7 +29,8 @@ export const HexEntityDetails = () => {
   }, [selectedHex]);
 
   const hasOccupier = useMemo(() => {
-    return tile?.occupier_id !== 0;
+    if (!tile) return false;
+    return tile.occupier_id !== 0;
   }, [tile]);
 
   const isStructure = useMemo(() => {
