@@ -1,4 +1,5 @@
-import { ActionPath } from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@bibliothecadao/types";
 
 export interface SelectionSlice {
   selectedObjectId: number | null;
@@ -55,16 +56,12 @@ export const createSelectionSlice = (set: any, get: any) => ({
 
   hasActionAt: (col: number, row: number) => {
     const state = get();
-    const { ActionPaths } = require("@bibliothecadao/eternum");
-    const { FELT_CENTER } = require("@bibliothecadao/types");
     const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
     return state.actionPaths.has(key);
   },
 
   getActionPath: (col: number, row: number) => {
     const state = get();
-    const { ActionPaths } = require("@bibliothecadao/eternum");
-    const { FELT_CENTER } = require("@bibliothecadao/types");
     const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
     return state.actionPaths.get(key);
   },

@@ -32,7 +32,7 @@ export class HighlightRenderer {
 
   private initializeStaticAssets(): void {
     if (!HighlightRenderer.highlightGeometry) {
-      const hexagonShape = createHexagonShape(HEX_SIZE * 1.1);
+      const hexagonShape = createHexagonShape(HEX_SIZE * 0.975);
       HighlightRenderer.highlightGeometry = new THREE.ShapeGeometry(hexagonShape);
     }
 
@@ -116,6 +116,7 @@ export class HighlightRenderer {
 
       this.dummy.position.copy(this.tempVector3);
       this.dummy.position.y = 0.25;
+      this.dummy.position.z -= 0.15;
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
 
