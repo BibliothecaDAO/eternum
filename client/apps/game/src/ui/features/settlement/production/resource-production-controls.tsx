@@ -253,6 +253,11 @@ export const ResourceProductionControls = ({
             <h2 className="flex items-center gap-2 mt-4">
               {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
               <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
+              {bonus > 1 && (
+                <span className="text-green-400 text-lg font-semibold animate-pulse">
+                  (+{Math.round((bonus - 1) * 100)}% bonus)
+                </span>
+              )}
             </h2>
           </div>
           <h4 className="flex items-center gap-2">

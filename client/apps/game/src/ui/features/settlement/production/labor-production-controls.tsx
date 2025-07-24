@@ -192,6 +192,11 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
               <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="xl" />
               <span>Total Labor Generated:</span>
               <span className="font-medium">{formatStringNumber(Number(laborAmount), 0)}</span>
+              {bonus > 1 && (
+                <span className="text-green-400 text-lg font-semibold animate-pulse">
+                  (+{Math.round((bonus - 1) * 100)}% bonus)
+                </span>
+              )}
             </h3>
 
             <h4 className="flex items-center gap-2 justify-center  rounded-md">
