@@ -732,10 +732,7 @@ export class ResourceManager {
       case ResourcesIds.Lords:
         return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
       case ResourcesIds.Essence:
-        return {
-          balance: resource.ESSENCE_BALANCE,
-          production: noProduction,
-        };
+        return { balance: resource.ESSENCE_BALANCE, production: resource.ESSENCE_PRODUCTION };
       case ResourcesIds.StaminaRelic1:
         return {
           balance: resource.RELIC_E1_BALANCE,

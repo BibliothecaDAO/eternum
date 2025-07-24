@@ -286,5 +286,11 @@ export const getResourcesFromToriiEntity = (entity: any): ComponentValue<ClientC
       output_amount_left: BigInt(entity.LORDS_PRODUCTION.value.output_amount_left.value),
       last_updated_at: entity.LORDS_PRODUCTION.value.last_updated_at.value,
     },
+    ESSENCE_PRODUCTION: {
+      building_count: entity.ESSENCE_PRODUCTION.value.building_count.value,
+      production_rate: BigInt(entity.ESSENCE_PRODUCTION.value.production_rate.value),
+      output_amount_left: BigInt(entity.ESSENCE_PRODUCTION.value.output_amount_left.value),
+      last_updated_at: entity.ESSENCE_PRODUCTION.value.last_updated_at.value,
+    },
   };
 };

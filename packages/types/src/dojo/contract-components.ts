@@ -841,6 +841,12 @@ export function defineContractComponents(world: World) {
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
+          ESSENCE_PRODUCTION: {
+            building_count: RecsType.Number,
+            production_rate: RecsType.BigInt,
+            output_amount_left: RecsType.BigInt,
+            last_updated_at: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -851,7 +857,7 @@ export function defineContractComponents(world: World) {
               ...Array(56).fill("u128"), // balances
               "u128",
               "u128", // weight
-              ...Array(37).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
+              ...Array(38).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
             ],
             customTypes: ["Weight", "Production"],
           },
