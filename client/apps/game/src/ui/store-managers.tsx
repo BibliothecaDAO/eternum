@@ -1,4 +1,5 @@
 import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
+import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -14,6 +15,7 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 import { getIsBlitz } from "./constants";
@@ -224,9 +226,34 @@ const SeasonTimerStoreManager = () => {
   return null;
 };
 
+const MinigameStoreManager = () => {
+  const minigameStore = useMinigameStore.getState();
+
+  const { data: minigames } = useMiniGames({});
+
+  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
+
+  const { data: settingsMetadata } = useGameSettingsMetadata({
+    gameAddresses: minigameAddresses,
+  });
+
+  useEffect(() => {
+    if (minigames) {
+      minigameStore.setMinigames(minigames);
+    }
+
+    if (settingsMetadata) {
+      minigameStore.setSettingsMetadata(settingsMetadata);
+    }
+  }, [minigames, settingsMetadata, minigameStore]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
+      <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />

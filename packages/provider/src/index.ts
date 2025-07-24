@@ -726,7 +726,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createRealmCall = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-ownership_systems`),
       entrypoint: "transfer_structure_ownership",
-      calldata: ["171","0x0018251388AADDb93472aa8aB7c5f147cd94252fE47a46A4De7707313b1B8dB2"],
+      calldata: ["171", "0x0018251388AADDb93472aa8aB7c5f147cd94252fE47a46A4De7707313b1B8dB2"],
     };
 
     // const approvalCloseForAllCall = {
@@ -2469,7 +2469,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "allocate_shares",
-      calldata: [hyperstructure_entity_id, co_owners],
+      calldata: [hyperstructure_entity_id, co_owners.length, ...co_owners.flat()],
     });
 
     return await this.promiseQueue.enqueue(call);

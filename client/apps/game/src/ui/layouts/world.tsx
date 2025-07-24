@@ -1,13 +1,13 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
-import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { GameWinnerMessage, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
-import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
-import { lazy, Suspense, useEffect, useMemo } from "react";
+import { lazy, Suspense } from "react";
 import { env } from "../../../env";
+import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
+import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -110,25 +110,9 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const minigameStore = useMinigameStore.getState();
 
-  const { data: minigames } = useMiniGames({});
-
-  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
-
-  const { data: settingsMetadata } = useGameSettingsMetadata({
-    gameAddresses: minigameAddresses,
-  });
-
-  useEffect(() => {
-    if (minigames) {
-      minigameStore.setMinigames(minigames);
-    }
-
-    if (settingsMetadata) {
-      minigameStore.setSettingsMetadata(settingsMetadata);
-    }
-  }, [minigames, settingsMetadata, minigameStore]);
+  // keep this here to see if it's rerendering
+  console.log("rerender World");
 
   return (
     <>
@@ -136,6 +120,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       <StructureSynchronizerManager />
       <NotLoggedInMessage />
       <GameWinnerMessage />
+      <BlitzSetHyperstructureShareholdersTo100 />
+      <AutomationManager />
 
       {/* Main world layer */}
       <div
