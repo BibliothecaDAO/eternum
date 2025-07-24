@@ -35,6 +35,12 @@ export const SlotEternumGlobalConfig: Config = {
     startMainAfterSeconds: 60,
     durationSeconds: 60 * 60 * 2, // 2 hours
   },
+  battle: {
+    ...CommonEternumGlobalConfig.battle,
+    graceTickCount: 0,
+    graceTickCountHyp: 0,
+    delaySeconds: 0,
+  },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,
     registration: {
