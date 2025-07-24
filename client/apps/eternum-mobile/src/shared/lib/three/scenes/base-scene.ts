@@ -2,6 +2,7 @@ import useStore from "@/shared/store";
 import { SystemManager } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUIManager } from "../helpers/gui-manager";
 import { loggedInAccount } from "../helpers/utils";
 import { TileRenderer } from "./tile-renderer";
@@ -13,6 +14,7 @@ export abstract class BaseScene {
   protected systemManager: SystemManager;
   protected tileRenderer: TileRenderer;
   protected raycaster: THREE.Raycaster;
+  protected controls?: OrbitControls;
   protected GUIFolder: any;
 
   // Lighting components
@@ -29,8 +31,9 @@ export abstract class BaseScene {
   protected tempQuaternion = new THREE.Quaternion();
   protected tempMatrix = new THREE.Matrix4();
 
-  constructor(dojo: DojoResult, sceneId?: string) {
+  constructor(dojo: DojoResult, sceneId?: string, controls?: OrbitControls) {
     this.dojo = dojo;
+    this.controls = controls;
     this.scene = new THREE.Scene();
     this.systemManager = new SystemManager(this.dojo.setup, loggedInAccount());
     this.tileRenderer = new TileRenderer(this.scene);

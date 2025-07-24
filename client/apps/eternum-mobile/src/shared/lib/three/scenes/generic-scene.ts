@@ -1,13 +1,14 @@
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { SCENE_COLORS } from "../constants";
 import { BaseScene } from "./base-scene";
 
 export class GenericScene extends BaseScene {
   private sceneId: string;
 
-  constructor(sceneId: string, dojo: DojoResult) {
-    super(dojo, sceneId);
+  constructor(sceneId: string, dojo: DojoResult, controls?: OrbitControls) {
+    super(dojo, sceneId, controls);
     this.sceneId = sceneId;
     this.createScene();
   }

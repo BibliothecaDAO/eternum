@@ -1,14 +1,18 @@
 import { DojoResult } from "@bibliothecadao/react";
+import throttle from "lodash/throttle";
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { BaseScene } from "./base-scene";
 import { HexagonMap } from "./hexagon-map";
 
 export class WorldmapScene extends BaseScene {
   private hexagonMap!: HexagonMap;
+  private throttledUpdateChunkLoading?: () => void;
 
-  constructor(dojo: DojoResult) {
-    super(dojo, "WorldMap");
+  constructor(dojo: DojoResult, controls?: OrbitControls) {
+    super(dojo, "WorldMap", controls);
     this.createScene();
+    this.setupControlsListener();
   }
 
   private createScene(): void {
@@ -19,13 +23,24 @@ export class WorldmapScene extends BaseScene {
     this.hexagonMap = new HexagonMap(this.scene, this.dojo, this.systemManager);
   }
 
+  private setupControlsListener(): void {
+    if (!this.controls) return;
+
+    this.throttledUpdateChunkLoading = throttle(() => {
+      if (this.controls) {
+        this.hexagonMap.updateChunkLoading(this.controls.target);
+      }
+    }, 30);
+
+    this.controls.addEventListener("change", this.throttledUpdateChunkLoading);
+  }
+
   public getHexagonMap(): HexagonMap {
     return this.hexagonMap;
   }
 
   public update(camera: THREE.Camera): void {
-    // Update chunk loading based on camera position
-    this.hexagonMap.updateChunkLoading(camera.position);
+    // Chunk loading is now handled by controls listener
   }
 
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
@@ -33,6 +48,9 @@ export class WorldmapScene extends BaseScene {
   }
 
   public dispose(): void {
+    if (this.controls && this.throttledUpdateChunkLoading) {
+      this.controls.removeEventListener("change", this.throttledUpdateChunkLoading);
+    }
     this.hexagonMap.dispose();
     super.dispose();
   }

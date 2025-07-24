@@ -113,8 +113,8 @@ export class GameRenderer {
     const { position, lookAt, near, far, left, right, top, bottom } = CAMERA_CONFIG;
 
     this.camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
-    this.camera.position.set(...position);
-    this.camera.lookAt(...lookAt);
+    this.camera.position.set(position[0], position[1], position[2]);
+    this.camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
     this.camera.updateProjectionMatrix();
   }
 
@@ -149,11 +149,12 @@ export class GameRenderer {
     moveCameraFolder
       .add(
         {
-          move: () =>
-            this.sceneInstances
-              .get("worldmap")
+          move: () => {
+            const worldmapScene = this.sceneInstances.get("worldmap") as WorldmapScene;
+            worldmapScene
               ?.getHexagonMap()
-              .moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
+              .moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, this.controls);
+          },
         },
         "move",
       )
@@ -199,9 +200,9 @@ export class GameRenderer {
     let sceneInstance: BaseScene;
 
     if (sceneId === "worldmap") {
-      sceneInstance = new WorldmapScene(this.dojo);
+      sceneInstance = new WorldmapScene(this.dojo, this.controls);
     } else {
-      sceneInstance = new GenericScene(sceneId, this.dojo);
+      sceneInstance = new GenericScene(sceneId, this.dojo, this.controls);
     }
 
     this.scenes.set(sceneId, sceneInstance.getScene());
