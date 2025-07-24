@@ -1,7 +1,7 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { isAddressEqualToAccount } from "../helpers/utils";
+import { loggedInAccount } from "../helpers/utils";
 import { getWorldPositionForTile, HEX_SIZE } from "./utils";
 
 export interface MapObject {
@@ -494,12 +494,13 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       border: 1px solid rgba(255, 255, 255, 0.2);
     `;
 
-    // Determine ownership color using the same logic as desktop
+    // Determine ownership color
     let textColor = "#ffffff";
-    const isPlayerArmy = army.owner ? isAddressEqualToAccount(army.owner) : false;
+    const playerAddress = loggedInAccount();
+    const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
 
     if (army.isDaydreamsAgent) {
-      textColor = "#ffd700"; // Gold for AI agents
+      textColor = "#ffd700";
     } else if (isPlayerArmy) {
       textColor = "#00ff00"; // Green for player's armies
     } else if (army.isAlly) {
@@ -537,7 +538,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
     // Position the label above the army sprite
     getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
-    label.position.set(this.tempVector3.x, 1.5, this.tempVector3.z - HEX_SIZE * 2.5);
+    label.position.set(this.tempVector3.x, 1.5, this.tempVector3.z - HEX_SIZE * 0.825);
 
     this.labels.set(army.id, label);
 
