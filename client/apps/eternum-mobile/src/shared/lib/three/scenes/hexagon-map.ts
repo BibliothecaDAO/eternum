@@ -385,8 +385,8 @@ export class HexagonMap {
       playerAddress,
     );
 
-    // Set action paths in selection manager for highlighting
-    this.selectionManager.setActionPaths(actionPaths.getPaths());
+    // Set action paths in selection manager for highlighting - pass ActionPaths object directly
+    this.selectionManager.setActionPaths(actionPaths);
   }
 
   private selectStructure(structureId: number): void {
@@ -401,8 +401,8 @@ export class HexagonMap {
     // Find action paths for the structure
     const actionPaths = structureActionManager.findActionPaths(this.armyHexes, this.exploredTiles, playerAddress);
 
-    // Set action paths in selection manager for highlighting
-    this.selectionManager.setActionPaths(actionPaths.getPaths());
+    // Set action paths in selection manager for highlighting - pass ActionPaths object directly
+    this.selectionManager.setActionPaths(actionPaths);
   }
 
   private showClickFeedback(instanceId: number): void {

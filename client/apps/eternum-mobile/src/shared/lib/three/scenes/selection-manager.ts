@@ -1,5 +1,4 @@
-import { ActionPath, ActionType } from "@bibliothecadao/eternum";
-import { FELT_CENTER } from "@bibliothecadao/types";
+import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
 import { HighlightRenderer } from "./highlight-renderer";
@@ -46,9 +45,9 @@ export class SelectionManager {
     renderer.selectObject(objectId);
   }
 
-  public setActionPaths(actionPaths: Map<string, ActionPath[]>): void {
-    useStore.getState().setActionPaths(actionPaths);
-    this.highlightActionPaths(actionPaths);
+  public setActionPaths(actionPaths: ActionPaths): void {
+    useStore.getState().setActionPaths(actionPaths.getPaths());
+    this.highlightActionPaths(actionPaths.getHighlightedHexes());
   }
 
   public clearSelection(): void {
@@ -99,27 +98,21 @@ export class SelectionManager {
     return useStore.getState().hasActionAt(col, row);
   }
 
-  private highlightActionPaths(actionPaths: Map<string, ActionPath[]>): void {
+  private highlightActionPaths(highlightedHexes: ActionPath[]): void {
     this.highlightRenderer.clearHighlights();
 
-    const highlightedHexes = new Set<string>();
+    const processedHexes = new Set<string>();
 
-    for (const [key, path] of actionPaths) {
-      if (path.length < 2) continue;
+    for (const hexAction of highlightedHexes) {
+      const { col, row } = hexAction.hex;
 
-      const targetAction = path[path.length - 1];
-      const targetHex = targetAction.hex;
+      const hexKey = `${col},${row}`;
+      if (processedHexes.has(hexKey)) continue;
 
-      const normalizedCol = targetHex.col - FELT_CENTER;
-      const normalizedRow = targetHex.row - FELT_CENTER;
+      processedHexes.add(hexKey);
 
-      const hexKey = `${normalizedCol},${normalizedRow}`;
-      if (highlightedHexes.has(hexKey)) continue;
-
-      highlightedHexes.add(hexKey);
-
-      const color = this.HIGHLIGHT_COLORS[targetAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
-      this.highlightRenderer.addHighlight(normalizedCol, normalizedRow, color, 2.0, 0.4);
+      const color = this.HIGHLIGHT_COLORS[hexAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
+      this.highlightRenderer.addHighlight(col, row, color, 2.0, 0.4);
     }
   }
 
