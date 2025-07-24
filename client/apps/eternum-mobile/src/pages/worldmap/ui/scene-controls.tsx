@@ -107,61 +107,65 @@ export function SceneControls({
       </Card>
 
       {/* Scene Controls */}
-      <Card className="p-3 bg-background/95 backdrop-blur-md border-border/50">
-        {/* Main Controls Row */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Scene Selector */}
-          <div className="flex-1">
-            <Select value={currentScene} onValueChange={onSceneChange}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    <Map size={14} />
-                    <span>{currentSceneConfig?.name || "Select Scene"}</span>
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {DEFAULT_SCENES.map((scene) => (
-                  <SelectItem key={scene.id} value={scene.id}>
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm font-medium">{scene.name}</span>
-                      {scene.description && <span className="text-xs text-muted-foreground">{scene.description}</span>}
+      {false && (
+        <Card className="p-3 bg-background/95 backdrop-blur-md border-border/50">
+          {/* Main Controls Row */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Scene Selector */}
+            <div className="flex-1">
+              <Select value={currentScene} onValueChange={onSceneChange}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <Map size={14} />
+                      <span>{currentSceneConfig?.name || "Select Scene"}</span>
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {DEFAULT_SCENES.map((scene) => (
+                    <SelectItem key={scene.id} value={scene.id}>
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm font-medium">{scene.name}</span>
+                        {scene.description && (
+                          <span className="text-xs text-muted-foreground">{scene.description}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Camera Controls */}
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={onZoomOut} className="h-8 w-8 p-0" title="Zoom Out">
+                <ZoomOut size={14} />
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={onZoomIn} className="h-8 w-8 p-0" title="Zoom In">
+                <ZoomIn size={14} />
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={onCameraReset} className="h-8 w-8 p-0" title="Reset Camera">
+                <RotateCcw size={14} />
+              </Button>
+            </div>
+
+            {/* Expand/Collapse Button */}
+            <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
+              <span className="text-xs">{isExpanded ? "−" : "+"}</span>
+            </Button>
           </div>
 
-          {/* Camera Controls */}
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={onZoomOut} className="h-8 w-8 p-0" title="Zoom Out">
-              <ZoomOut size={14} />
-            </Button>
-
-            <Button variant="outline" size="sm" onClick={onZoomIn} className="h-8 w-8 p-0" title="Zoom In">
-              <ZoomIn size={14} />
-            </Button>
-
-            <Button variant="outline" size="sm" onClick={onCameraReset} className="h-8 w-8 p-0" title="Reset Camera">
-              <RotateCcw size={14} />
-            </Button>
-          </div>
-
-          {/* Expand/Collapse Button */}
-          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
-            <span className="text-xs">{isExpanded ? "−" : "+"}</span>
-          </Button>
-        </div>
-
-        {/* Expanded Info */}
-        {isExpanded && currentSceneConfig?.description && (
-          <div className="mt-3 pt-3 border-t border-border/50">
-            <p className="text-xs text-muted-foreground">{currentSceneConfig.description}</p>
-          </div>
-        )}
-      </Card>
+          {/* Expanded Info */}
+          {isExpanded && currentSceneConfig?.description && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-xs text-muted-foreground">{currentSceneConfig.description}</p>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Touch Gesture Hints */}
       <div className="text-center">
