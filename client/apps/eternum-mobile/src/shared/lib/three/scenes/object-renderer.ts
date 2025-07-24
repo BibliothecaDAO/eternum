@@ -538,7 +538,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
     // Position the label above the army sprite
     getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
-    label.position.set(this.tempVector3.x, 1.5, this.tempVector3.z - HEX_SIZE * 0.825);
+    label.position.set(this.tempVector3.x, 1.5, this.tempVector3.z - HEX_SIZE * 2.25);
 
     this.labels.set(army.id, label);
 
