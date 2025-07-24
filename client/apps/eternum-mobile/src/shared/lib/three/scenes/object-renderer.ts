@@ -37,6 +37,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
   protected sprites: Map<number, THREE.Sprite> = new Map();
   protected selectedObjectId: number | null = null;
   protected animationId: number | null = null;
+  protected visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
 
   protected tempVector3 = new THREE.Vector3();
   protected tempColor = new THREE.Color();
@@ -53,19 +54,55 @@ export abstract class ObjectRenderer<T extends MapObject> {
   protected abstract getTileId(object: T): number;
   protected abstract getSharedMaterial(objectType: string): THREE.SpriteMaterial;
 
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.visibleBounds = bounds;
+    this.updateObjectVisibility();
+  }
+
+  private updateObjectVisibility(): void {
+    if (!this.visibleBounds) return;
+
+    for (const [objectId, object] of this.objects) {
+      const sprite = this.sprites.get(objectId);
+
+      if (sprite) {
+        const shouldBeVisible = this.isHexVisible(object.col, object.row);
+
+        if (shouldBeVisible && !sprite.parent) {
+          this.scene.add(sprite);
+        } else if (!shouldBeVisible && sprite.parent) {
+          this.scene.remove(sprite);
+        }
+      }
+    }
+  }
+
+  private isHexVisible(col: number, row: number): boolean {
+    if (!this.visibleBounds) return false;
+    return (
+      col >= this.visibleBounds.minCol &&
+      col <= this.visibleBounds.maxCol &&
+      row >= this.visibleBounds.minRow &&
+      row <= this.visibleBounds.maxRow
+    );
+  }
+
   public addObject(object: T): void {
     this.objects.set(object.id, object);
     const sprite = this.createSprite(object);
     this.sprites.set(object.id, sprite);
-    this.scene.add(sprite);
+
+    if (this.isHexVisible(object.col, object.row)) {
+      this.scene.add(sprite);
+    }
   }
 
   public removeObject(objectId: number): void {
     const sprite = this.sprites.get(objectId);
-    if (sprite) {
+    if (sprite && sprite.parent) {
       this.scene.remove(sprite);
-      this.sprites.delete(objectId);
     }
+    this.sprites.delete(objectId);
     this.objects.delete(objectId);
 
     if (this.selectedObjectId === objectId) {
@@ -76,15 +113,17 @@ export abstract class ObjectRenderer<T extends MapObject> {
 
   public updateObject(object: T): void {
     const existingSprite = this.sprites.get(object.id);
-    if (existingSprite) {
+    if (existingSprite && existingSprite.parent) {
       this.scene.remove(existingSprite);
-      this.sprites.delete(object.id);
     }
 
     this.objects.set(object.id, object);
     const sprite = this.createSprite(object);
     this.sprites.set(object.id, sprite);
-    this.scene.add(sprite);
+
+    if (this.isHexVisible(object.col, object.row)) {
+      this.scene.add(sprite);
+    }
   }
 
   public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
@@ -117,6 +156,15 @@ export abstract class ObjectRenderer<T extends MapObject> {
         } else {
           object.col = targetCol;
           object.row = targetRow;
+
+          const shouldBeVisible = this.isHexVisible(targetCol, targetRow);
+
+          if (shouldBeVisible && !sprite.parent) {
+            this.scene.add(sprite);
+          } else if (!shouldBeVisible && sprite.parent) {
+            this.scene.remove(sprite);
+          }
+
           resolve();
         }
       };
@@ -175,6 +223,15 @@ export abstract class ObjectRenderer<T extends MapObject> {
           } else {
             object.col = targetHex.col;
             object.row = targetHex.row;
+
+            const shouldBeVisible = this.isHexVisible(targetHex.col, targetHex.row);
+
+            if (shouldBeVisible && !sprite.parent) {
+              this.scene.add(sprite);
+            } else if (!shouldBeVisible && sprite.parent) {
+              this.scene.remove(sprite);
+            }
+
             currentStep++;
             setTimeout(moveToNextStep, 50); // Small delay between steps
           }
@@ -302,10 +359,13 @@ export abstract class ObjectRenderer<T extends MapObject> {
   public dispose(): void {
     this.stopSelectionAnimation();
     this.sprites.forEach((sprite) => {
-      this.scene.remove(sprite);
+      if (sprite.parent) {
+        this.scene.remove(sprite);
+      }
     });
     this.sprites.clear();
     this.objects.clear();
+    this.visibleBounds = null;
   }
 }
 

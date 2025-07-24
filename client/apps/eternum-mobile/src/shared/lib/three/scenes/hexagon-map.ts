@@ -250,6 +250,11 @@ export class HexagonMap {
 
     this.scene.add(this.hexagonMesh);
     this.tileRenderer.renderTilesForHexes(tilePositions);
+
+    const bounds = this.getMapBounds();
+    this.armyRenderer.setVisibleBounds(bounds);
+    this.structureRenderer.setVisibleBounds(bounds);
+    this.questRenderer.setVisibleBounds(bounds);
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3): void {
