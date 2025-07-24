@@ -140,17 +140,7 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                   <h3 className="text-gold font-bold text-lg mb-2">{hoveredRelicInfo.name}</h3>
                   <div className="flex items-center gap-2 mb-3">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        hoveredRelicInfo.type === "Stamina"
-                          ? "bg-green-600/20 text-green-400"
-                          : hoveredRelicInfo.type === "Damage"
-                            ? "bg-red-600/20 text-red-400"
-                            : hoveredRelicInfo.type === "Damage Reduction"
-                              ? "bg-blue-600/20 text-blue-400"
-                              : hoveredRelicInfo.type === "Exploration"
-                                ? "bg-purple-600/20 text-purple-400"
-                                : "bg-yellow-600/20 text-yellow-400"
-                      }`}
+                      className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
                     >
                       {hoveredRelicInfo.type}
                     </span>
@@ -461,19 +451,7 @@ export const ChestContainer = ({
 
                     {/* Badges */}
                     <div className="flex justify-center gap-2 mb-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          relic.type === "Stamina"
-                            ? "bg-green-600/30 text-green-400 border border-green-500/50"
-                            : relic.type === "Damage"
-                              ? "bg-red-600/30 text-red-400 border border-red-500/50"
-                              : relic.type === "Damage Reduction"
-                                ? "bg-blue-600/30 text-blue-400 border border-blue-500/50"
-                                : relic.type === "Exploration"
-                                  ? "bg-purple-600/30 text-purple-400 border border-purple-500/50"
-                                  : "bg-yellow-600/30 text-yellow-400 border border-yellow-500/50"
-                        }`}
-                      >
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRelicTypeColor(relic.type)}`}>
                         {relic.type}
                       </span>
                       <span

@@ -95,7 +95,7 @@ const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputP
           </div>
         </div>
         <div className="col-span-2 mt-2">
-          <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+          <div className="p-4 bg-purple-900/20 border border-relic-activated rounded-lg">
             <SelectRelic
               label="🔮 Active Relics"
               onSelect={onRelicsChange}
@@ -105,7 +105,7 @@ const ArmyInput = ({ label, army, onChange, relics, onRelicsChange }: ArmyInputP
               className="w-full"
             />
             {relics.length > 0 && (
-              <div className="mt-2 text-xs text-purple-400">
+              <div className="mt-2 text-xs text-relic2">
                 {relics.length} relic{relics.length > 1 ? "s" : ""} equipped
               </div>
             )}
@@ -389,7 +389,7 @@ export const CombatSimulationPanel = () => {
                     {/* Relic Effects Display */}
                     {data.relicBonuses.activeRelics.length > 0 && (
                       <div className="p-4 bg-purple-900/30 border border-purple-500/40 rounded-lg backdrop-blur-sm">
-                        <div className="text-sm font-bold text-purple-300 mb-3 flex items-center gap-2">
+                        <div className="text-sm font-bold text-relic mb-3 flex items-center gap-2">
                           🔮 Active Relic Effects
                           <span className="text-xs bg-purple-600/30 px-2 py-1 rounded-full">
                             {data.relicBonuses.activeRelics.length}

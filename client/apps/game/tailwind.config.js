@@ -50,6 +50,35 @@ export default {
       colors: {
         gold: "#dfaa54",
         crimson: "#582C4D",
+        relic: "#a78bfa", // purple-300
+        relic2: "#c084f5", // purple-400
+        "relic-activated": "#a855f7", // purple-500/20
+        relics: {
+          stamina: {
+            bg: "bg-green-600/20",
+            text: "text-green-400",
+          },
+          damage: {
+            bg: "bg-red-600/20",
+            text: "text-red-400",
+          },
+          damageReduction: {
+            bg: "bg-blue-600/20",
+            text: "text-blue-400",
+          },
+          exploration: {
+            bg: "bg-purple-600/20",
+            text: "text-purple-400",
+          },
+          production: {
+            bg: "bg-yellow-600/20",
+            text: "text-yellow-400",
+          },
+          gray: {
+            bg: "bg-gray-600/20",
+            text: "text-gray-400",
+          },
+        },
         brilliance: "#7DFFBA",
         orange: "#FE993C",
         yellow: "#FAFF00",

@@ -66,7 +66,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
   return (
     <div className={`flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1 ${className}`}>
       <div className={`${smallTextClass} text-gold/80 uppercase font-semibold flex items-center gap-1`}>
-        <Sparkles className="h-3 w-3 text-purple-400" />
+        <Sparkles className="h-3 w-3 text-relic2" />
         Active Relic Effects
       </div>
 
@@ -74,12 +74,12 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
         {activeEffects.map((effect) => (
           <div
             key={`${entityId}-${effect.resourceId}`}
-            className="flex items-center gap-1 px-2 py-1 bg-purple-500/10 border border-purple-500/30 rounded"
+            className="flex items-center gap-1 px-2 py-1 bg-relic-activated/10 border border-relic-activated/30 rounded"
             title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
           >
             <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
-            <Sparkles className="h-2 w-2 text-purple-400 animate-pulse" />
-            <span className="text-purple-400 font-medium text-xs">{formatTime(effect.remainingSeconds)}</span>
+            <Sparkles className="h-2 w-2 text-relic2 animate-pulse" />
+            <span className="text-relic2 font-medium text-xs">{formatTime(effect.remainingSeconds)}</span>
           </div>
         ))}
       </div>

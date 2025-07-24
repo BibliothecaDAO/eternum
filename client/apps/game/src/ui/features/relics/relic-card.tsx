@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getRecipientTypeColor } from "@/ui/design-system/molecules/relic-colors";
+import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
@@ -64,21 +64,7 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
                 <>
                   <div className="text-sm">{relicInfo.effect}</div>
                   <div className="flex gap-2 flex-wrap">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        relicInfo.type === "Stamina"
-                          ? "bg-green-600/20 text-green-400"
-                          : relicInfo.type === "Damage"
-                            ? "bg-red-600/20 text-red-400"
-                            : relicInfo.type === "Damage Reduction"
-                              ? "bg-blue-600/20 text-blue-400"
-                              : relicInfo.type === "Exploration"
-                                ? "bg-purple-600/20 text-purple-400"
-                                : relicInfo.type === "Production"
-                                  ? "bg-yellow-600/20 text-yellow-400"
-                                  : "bg-gray-600/20 text-gray-400"
-                      }`}
-                    >
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(relicInfo.type)}`}>
                       {relicInfo.type}
                     </span>
                     <span
@@ -109,15 +95,17 @@ export const RelicCard = ({ resourceId, amount, entityId, entityType, isActive, 
       <ResourceIcon resource={ResourcesIds[resourceId]} size="md" withTooltip={false} className="shrink-0" />
 
       <div className="flex-1 min-w-0">
-        <div className={`font-semibold truncate flex items-center gap-1 ${isActive ? "text-purple-300" : "text-gold"}`}>
+        <div
+          className={`font-semibold truncate flex items-center gap-1 ${isActive ? "text-relic-activated" : "text-gold"}`}
+        >
           {resourceName}
-          {isActive && <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />}
+          {isActive && <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />}
         </div>
-        <div className={`text-sm ${isActive ? "text-purple-200" : "text-gold/70"}`}>
+        <div className={`text-sm ${isActive ? "text-relic-activated" : "text-gold/70"}`}>
           Amount: {currencyFormat(amount, 0)}
         </div>
         {relicInfo && (
-          <div className={`text-xs mt-1 ${isActive ? "text-purple-200/70" : "text-gold/50"}`}>
+          <div className={`text-xs mt-1 ${isActive ? "text-relic-activated" : "text-gold/50"}`}>
             {relicInfo.recipientType} Activation • Level {relicInfo.level}
             {isActive && " • ACTIVE"}
           </div>

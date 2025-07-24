@@ -254,7 +254,7 @@ export const ResourceProductionControls = ({
               {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
               <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
               {bonus > 1 && (
-                <span className="text-green-400 text-lg font-semibold animate-pulse">
+                <span className="text-relic-activated text-lg font-semibold animate-pulse">
                   (+{Math.round((bonus - 1) * 100)}% bonus)
                 </span>
               )}

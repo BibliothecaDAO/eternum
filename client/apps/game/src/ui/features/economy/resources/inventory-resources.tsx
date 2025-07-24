@@ -84,7 +84,7 @@ export const InventoryResources = ({
               size={resourcesIconSize}
               textSize={textSize}
               type="vertical"
-              color={isRelicActive ? "text-purple-300" : "text-green"}
+              color={isRelicActive ? "text-relic" : "text-green"}
               resourceId={resource.resourceId}
               amount={divideByPrecision(Number(resource.amount))}
               className={`!p-1 ${resourceIsRelic ? "cursor-pointer hover:bg-gold/20 transition-all duration-200" : ""}`}
@@ -96,7 +96,7 @@ export const InventoryResources = ({
             )}
             {isRelicActive && (
               <div className="absolute top-0 right-0 pointer-events-none">
-                <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
+                <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
               </div>
             )}
           </div>

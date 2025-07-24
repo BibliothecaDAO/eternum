@@ -193,7 +193,7 @@ export const LaborProductionControls = ({ realm, bonus }: { realm: RealmInfo; bo
               <span>Total Labor Generated:</span>
               <span className="font-medium">{formatStringNumber(Number(laborAmount), 0)}</span>
               {bonus > 1 && (
-                <span className="text-green-400 text-lg font-semibold animate-pulse">
+                <span className="text-relic-activated text-lg font-semibold animate-pulse">
                   (+{Math.round((bonus - 1) * 100)}% bonus)
                 </span>
               )}

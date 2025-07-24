@@ -3,17 +3,17 @@ import { RelicInfo, RelicRecipientType } from "@bibliothecadao/types";
 export const getRelicTypeColor = (type: RelicInfo["type"]) => {
   switch (type) {
     case "Stamina":
-      return "bg-green-600/20 text-green-400";
+      return "bg-relics.stamina.bg text-relics.stamina.text";
     case "Damage":
-      return "bg-red-600/20 text-red-400";
+      return "bg-relics.damage.bg text-relics.damage.text";
     case "Damage Reduction":
-      return "bg-blue-600/20 text-blue-400";
+      return "bg-relics.damageReduction.bg text-relics.damageReduction.text";
     case "Exploration":
-      return "bg-purple-600/20 text-purple-400";
+      return "bg-relics.exploration.bg text-relics.exploration.text";
     case "Production":
-      return "bg-yellow-600/20 text-yellow-400";
+      return "bg-relics.production.bg text-relics.production.text";
     default:
-      return "bg-gray-600/20 text-gray-400";
+      return "bg-relics.gray.bg text-relics.gray.text";
   }
 };
 

@@ -266,16 +266,16 @@ export const ResourceChip = ({
             {icon}
             <span
               className={`${isHovered ? "font-bold animate-pulse" : ""} ${
-                relicEffectActivated ? "text-purple-300 font-semibold" : ""
+                relicEffectActivated ? "text-relic font-semibold" : ""
               }`}
             >
               {currencyFormat(displayBalance, 2)}
             </span>{" "}
             {relicEffectActivated && (
               <div className="flex items-center ml-1 gap-1">
-                <Sparkles className="h-3 w-3 text-purple-400 animate-pulse" />
+                <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
                 <span
-                  className="text-xs text-purple-400 font-medium"
+                  className="text-xs text-relic2 font-medium"
                   onMouseEnter={(e) => {
                     e.stopPropagation();
                     setTooltip({
