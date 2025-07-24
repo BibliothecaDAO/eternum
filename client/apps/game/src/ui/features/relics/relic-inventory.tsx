@@ -1,4 +1,3 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { getEntityInfo } from "@bibliothecadao/eternum";
@@ -14,8 +13,6 @@ interface RelicInventoryProps {
 }
 
 export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
-  const { currentArmiesTick } = useBlockTimestamp();
-
   const getStructureIcon = (structureType: StructureType) => {
     switch (structureType) {
       case StructureType.Realm:

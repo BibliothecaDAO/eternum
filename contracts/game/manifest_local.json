@@ -13321,8 +13321,8 @@
       ]
     },
     {
-      "address": "0x5ce2aec3bd5c81b87a8b4a39293a77b00f3a8444e65b5eee5f1ea36f3c42b13",
-      "class_hash": "0x3691e02c97549e2212c03bbdbf8cee2ce2fe5593c0d98ca625b3c673645610d",
+      "address": "0x337e8d2da98fa8142d638b7df8d11db8e32231dc91f54d54fcded8872eaf51d",
+      "class_hash": "0x61756d0bcad562a71b9cb94d7f42d9776915691bccd998203847253db25d9bb",
       "abi": [
         {
           "type": "impl",
@@ -14269,12 +14269,6 @@
       "class_hash": "0x4b649edee2f208e5b98739d33b33a34f8000f635b27d812503f2877167cf066",
       "tag": "s1_eternum-QuestTile",
       "selector": "0x61f4cba350928998cf98d6fafef2b9c7da216ef013195f85c41b0f3e0d8a370"
-    },
-    {
-      "members": [],
-      "class_hash": "0x1a6d4de997e8ab5c618a2091fc201b4dd6930b0050b51fa643cba5a070df647",
-      "tag": "s1_eternum-RelicEffect",
-      "selector": "0x67b3f39d396aa9377fef642a79196fd0dbe9ef01662e13bbc120ebc95fdc0a5"
     },
     {
       "members": [],

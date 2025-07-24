@@ -4,16 +4,32 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { battleSimulation } from "@/ui/features";
-import { ArmyChip } from "./army-chip";
 import { HintSection } from "@/ui/features/progression";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { useExplorersByStructure } from "@bibliothecadao/react";
-import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { HasValue, runQuery } from "@dojoengine/recs";
+import { ArmyChip } from "./army-chip";
+
+const getArmiesCountByStructure = (structureEntityId: ID, components: ClientComponents) => {
+  const armies = runQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
+  return armies.size;
+};
 
 export const EntitiesArmyTable = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+
   const playerStructures = useUIStore((state) => state.playerStructures);
   const togglePopup = useUIStore((state) => state.togglePopup);
+
+  // Check if any structure has armies
+  const hasAnyArmies = playerStructures.some((entity: any) => {
+    const armyCount = getArmiesCountByStructure(entity.entityId, components);
+    return armyCount > 0;
+  });
 
   return (
     <>
@@ -23,9 +39,18 @@ export const EntitiesArmyTable = () => {
         </Button>
       </div>
       <CombatSimulation />
-      {playerStructures.map((entity: any, index: number) => {
-        return <StructureWithArmy key={entity.entityId} entity={entity} showHint={index === 0} />;
-      })}
+      {!hasAnyArmies ? (
+        <div className="text-center mt-8 p-6 bg-gold/10 rounded-lg">
+          <p className="text-gold mb-2">You don't have any Field Armies</p>
+          <p className="text-sm text-gold/60">
+            To build one, go to the local view of your realm and ensure you have troops in your balance
+          </p>
+        </div>
+      ) : (
+        playerStructures.map((entity: any, index: number) => {
+          return <StructureWithArmy key={entity.entityId} entity={entity} showHint={index === 0} />;
+        })
+      )}
     </>
   );
 };
