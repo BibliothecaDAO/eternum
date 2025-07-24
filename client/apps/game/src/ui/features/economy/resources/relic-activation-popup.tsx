@@ -1,9 +1,9 @@
 import Button from "@/ui/design-system/atoms/button";
+import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDojo } from "@bibliothecadao/react";
 import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
-import { X } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 interface RelicActivationPopupProps {
@@ -81,16 +81,32 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     }
   };
 
-  return (
-    <div className="fixed bottom-100 inset-0 bg-brown bg-opacity-60 z-50 flex justify-center items-center">
-      <div className="border border-gold/10 bg-brown/90 panel-wood rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
-        <div className="absolute top-3 right-3">
-          <Button className="!p-4" size="xs" variant="default" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+  const footer = (
+    <>
+      <div className="flex justify-center space-x-4">
+        <Button variant="default" onClick={onClose} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button
+          disabled={isLoading || !!error || !isCompatible}
+          isLoading={isLoading}
+          variant="gold"
+          onClick={handleConfirm}
+        >
+          Activate Relic
+        </Button>
+      </div>
+      {error && <div className="px-3 mt-4 text-danger font-bold text-center">{error}</div>}
+    </>
+  );
 
-        <h5 className="text-gold font-bold mb-4">Activate Relic</h5>
+  return (
+    <BasePopup
+      title="Activate Relic"
+      onClose={onClose}
+      footer={footer}
+      contentClassName=""
+    >
 
         <div className="flex flex-col items-center mb-6">
           <ResourceIcon resource={ResourcesIds[relicId]} size="xl" withTooltip={false} />
@@ -146,22 +162,6 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           </div>
         )}
 
-        <div className="flex justify-center space-x-4">
-          <Button variant="default" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button
-            disabled={isLoading || !!error || !isCompatible}
-            isLoading={isLoading}
-            variant="gold"
-            onClick={handleConfirm}
-          >
-            Activate Relic
-          </Button>
-        </div>
-
-        {error && <div className="px-3 mt-4 text-danger font-bold text-center">{error}</div>}
-      </div>
-    </div>
+    </BasePopup>
   );
 };
