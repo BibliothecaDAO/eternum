@@ -401,10 +401,10 @@ export class HexagonMap {
 
     // Determine action type and use appropriate effect
     const actionType = ActionPaths.getActionType(actionPath);
-    const isExplore = actionType === ActionType.Explore;
+    const isExplored = actionType === ActionType.Move;
 
-    const effectType = isExplore ? "compass" : "travel";
-    const effectLabel = isExplore ? "Exploring" : "Traveling";
+    const effectType = isExplored ? "travel" : "compass";
+    const effectLabel = isExplored ? "Traveling" : "Exploring";
 
     // Start appropriate effect at destination
     const effect = this.fxManager.playFxAtCoords(
@@ -419,31 +419,52 @@ export class HexagonMap {
 
     this.activeTravelEffects.set(armyId, effect);
 
-    // Wait for a few seconds to simulate loading
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Get account from store
+    const account = this.dojo.account.account;
+    if (!account) {
+      console.error("No account available for army movement");
+      effect.end();
+      this.activeTravelEffects.delete(armyId);
+      return;
+    }
 
-    // Convert action path to movement path (skip first position which is current position)
-    const movementPath = actionPath.slice(1).map((pathItem) => {
-      const normalized = new Position({
-        x: pathItem.hex.col - FELT_CENTER,
-        y: pathItem.hex.row - FELT_CENTER,
-      }).getNormalized();
-      return { col: normalized.x, row: normalized.y };
-    });
+    try {
+      // Create army action manager and perform actual movement
+      const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
 
-    // Start army movement
-    const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+      // Get current timestamps for movement
+      const { currentArmiesTick } = getBlockTimestamp();
 
-    // End effect when movement starts
-    effect.end();
-    this.activeTravelEffects.delete(armyId);
+      // Perform the actual movement call
+      await armyActionManager.moveArmy(account, actionPath, isExplored, currentArmiesTick);
 
-    // Wait for movement to complete
-    await movementPromise;
+      // Convert action path to movement path for visual representation (skip first position which is current position)
+      const movementPath = actionPath.slice(1).map((pathItem) => {
+        const normalized = new Position({
+          x: pathItem.hex.col - FELT_CENTER,
+          y: pathItem.hex.row - FELT_CENTER,
+        }).getNormalized();
+        return { col: normalized.x, row: normalized.y };
+      });
 
-    console.log(
-      `Army ${armyId} ${isExplore ? "explored" : "moved"} from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`,
-    );
+      // Start visual army movement
+      const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+
+      // End effect when movement starts
+      effect.end();
+      this.activeTravelEffects.delete(armyId);
+
+      // Wait for visual movement to complete
+      await movementPromise;
+
+      console.log(
+        `Army ${armyId} ${isExplored ? "moved" : "explored"} from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`,
+      );
+    } catch (error) {
+      console.error("Army movement failed:", error);
+      effect.end();
+      this.activeTravelEffects.delete(armyId);
+    }
   }
 
   private selectArmy(armyId: number): void {
@@ -833,37 +854,5 @@ export class HexagonMap {
 
   public getSelectionManager(): SelectionManager {
     return this.selectionManager;
-  }
-
-  public async moveArmy(armyId: number, targetCol: number, targetRow: number): Promise<void> {
-    // Get world position for target hex
-    getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
-    const targetWorldPos = this.tempVector3.clone();
-
-    // Start travel effect at destination
-    const travelEffect = this.fxManager.playFxAtCoords(
-      "travel",
-      targetWorldPos.x,
-      targetWorldPos.y + 1,
-      targetWorldPos.z,
-      1.5,
-      "Traveling...",
-      true,
-    );
-
-    this.activeTravelEffects.set(armyId, travelEffect);
-
-    // Wait for a few seconds to simulate loading
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Start army movement
-    const movementPromise = this.armyRenderer.moveObject(armyId, targetCol, targetRow);
-
-    // End travel effect when movement starts
-    travelEffect.end();
-    this.activeTravelEffects.delete(armyId);
-
-    // Wait for movement to complete
-    await movementPromise;
   }
 }
