@@ -4,6 +4,7 @@ import {
   ActionType,
   ArmyActionManager,
   StructureActionManager,
+  SystemManager,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { BiomeType, FELT_CENTER, HexEntityInfo } from "@bibliothecadao/types";
@@ -12,7 +13,6 @@ import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { getBlockTimestamp } from "../../../../shared/hooks/use-block-timestamp";
 import { GUIManager } from "../helpers/gui-manager";
 import { loggedInAccount } from "../helpers/utils";
-import { SystemManager } from "../system/system-manager";
 import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { Position } from "../types/position";
 import { createHexagonShape } from "./hexagon-geometry";
@@ -51,8 +51,8 @@ export class HexagonMap {
   private static hexagonGeometry: THREE.ShapeGeometry | null = null;
   private static hexagonMaterial: THREE.MeshLambertMaterial | null = null;
 
-  private lastChunkX: number = -999;
-  private lastChunkZ: number = -999;
+  private lastChunkX: number = -9999;
+  private lastChunkZ: number = -9999;
 
   private static readonly CHUNK_LOAD_RADIUS_X = 2;
   private static readonly CHUNK_LOAD_RADIUS_Z = 3;
