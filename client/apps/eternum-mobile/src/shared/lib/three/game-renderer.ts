@@ -220,8 +220,14 @@ export class GameRenderer {
     this.currentScene = sceneId;
     this.scene = this.scenes.get(sceneId)!;
 
-    // Update controls target to new scene
+    // Update controls target to new scene center
     this.controls.target.set(0, 0, 0);
+
+    // Maintain the top-down view by ensuring camera is positioned correctly
+    // Keep the same height (y=10) and directly above the target
+    this.camera.position.set(0, 10, 0);
+    this.camera.lookAt(0, 0, 0);
+
     this.controls.update();
 
     this.render();
