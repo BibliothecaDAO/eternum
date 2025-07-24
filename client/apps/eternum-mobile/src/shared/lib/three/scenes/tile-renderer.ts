@@ -205,7 +205,8 @@ export class TileRenderer {
     sprite.position.set(position.x, yOffset, position.z - HEX_SIZE * 0.825);
 
     // Set render order based on row and overlay status
-    const baseRenderOrder = 10 + row;
+    // Ensure render order is always positive and above hexagon mesh (which has renderOrder 0)
+    const baseRenderOrder = Math.max(100 + row, 1);
     sprite.renderOrder = isOverlay ? baseRenderOrder + 1000 : baseRenderOrder;
 
     this.sprites.set(spriteKey, sprite);

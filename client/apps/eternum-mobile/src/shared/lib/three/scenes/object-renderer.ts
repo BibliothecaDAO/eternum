@@ -297,7 +297,8 @@ export abstract class ObjectRenderer<T extends MapObject> {
         // Restore original render order
         const object = this.objects.get(this.selectedObjectId);
         if (object) {
-          sprite.renderOrder = 10 + object.row + (object.type === "army" ? 1000 : object.type === "quest" ? 1500 : 500);
+          const baseRenderOrder = Math.max(100 + object.row, 1);
+          sprite.renderOrder = baseRenderOrder + (object.type === "army" ? 1000 : object.type === "quest" ? 1500 : 500);
         }
       }
     }
@@ -443,7 +444,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
     sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
 
-    sprite.renderOrder = 10 + army.row + 1000;
+    sprite.renderOrder = Math.max(100 + army.row, 1) + 1000;
 
     return sprite;
   }
@@ -547,7 +548,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     getWorldPositionForTile({ col: structure.col, row: structure.row }, true, this.tempVector3);
     sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
 
-    sprite.renderOrder = 10 + structure.row + 500;
+    sprite.renderOrder = Math.max(100 + structure.row, 1) + 500;
 
     return sprite;
   }
@@ -599,7 +600,7 @@ export class QuestRenderer extends ObjectRenderer<QuestObject> {
     getWorldPositionForTile({ col: quest.col, row: quest.row }, true, this.tempVector3);
     sprite.position.set(this.tempVector3.x, 0.3, this.tempVector3.z - HEX_SIZE * 0.825);
 
-    sprite.renderOrder = 10 + quest.row + 1500;
+    sprite.renderOrder = Math.max(100 + quest.row, 1) + 1500;
 
     return sprite;
   }
