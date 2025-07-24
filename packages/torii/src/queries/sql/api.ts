@@ -1,10 +1,11 @@
-import { ContractAddress, Coord, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import {
   ArmyRelicsData,
   BattleLogEvent,
   ChestInfo,
   ChestTile,
+  EntityWithRelics,
   EventType,
   Guard,
   GuardData,
@@ -34,6 +35,7 @@ import {
 import { BATTLE_QUERIES } from "./battle";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
+import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
@@ -434,9 +436,45 @@ export class SqlApi {
    * @returns All relics grouped by entity type
    */
   async fetchAllPlayerRelics(playerAddress: string): Promise<PlayerRelicsData> {
-    return {
-      structures: [],
-      armies: [],
-    };
+    try {
+      const [structureRelics, armyRelics] = await Promise.all([
+        this.fetchPlayerStructureRelics(playerAddress),
+        this.fetchPlayerArmyRelics(playerAddress),
+      ]);
+
+      const structures: EntityWithRelics[] = structureRelics.map((structure) => {
+        const relics = extractRelicsFromResourceData(structure);
+
+        return {
+          entityId: structure.entity_id,
+          structureType: structure.entity_type,
+          type: EntityType.STRUCTURE,
+          position: { x: structure.coord_x, y: structure.coord_y },
+          relics,
+        };
+      });
+
+      const armies: EntityWithRelics[] = armyRelics.map((army) => {
+        const relics = extractRelicsFromResourceData(army);
+
+        return {
+          entityId: army.entity_id,
+          type: EntityType.ARMY,
+          position: { x: army.coord_x, y: army.coord_y },
+          relics,
+        };
+      });
+
+      return {
+        structures,
+        armies,
+      };
+    } catch (error) {
+      console.error("Error fetching player relics:", error);
+      return {
+        structures: [],
+        armies: [],
+      };
+    }
   }
 }

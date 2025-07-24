@@ -114,8 +114,9 @@ export class LeaderboardManager {
     const seasonConfig = configManager.getSeasonConfig();
 
     // Use season end time if season has ended, otherwise use current time
+    let now = Math.floor(Date.now() / 1000);
     const currentTimestamp =
-      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 ? Number(seasonConfig.endAt) : Math.floor(Date.now() / 1000);
+      seasonConfig.endAt && Number(seasonConfig.endAt) > 0  &&  now >= Number(seasonConfig.endAt) ? Number(seasonConfig.endAt) : now;
 
     // Clear previous cache
     this.unregisteredShareholderPointsCache.clear();
