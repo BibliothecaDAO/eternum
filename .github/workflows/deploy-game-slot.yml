@@ -51,6 +51,22 @@ jobs:
         with:
           version: latest
 
+      - name: 🔧 Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.10.1"
+
+      - name: 📥 Download Dojo Release
+        run: |
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.5.0/dojo_v1.5.0_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+
+      - name: 🎰 Install Slot CLI
+        run: |
+          curl -L https://slot.cartridge.sh | bash
+          echo "$HOME/.slot/bin" >> $GITHUB_PATH
+
       - name: 📚 Install Dependencies
         run: pnpm install
 
