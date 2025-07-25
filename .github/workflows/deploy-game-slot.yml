@@ -72,24 +72,46 @@ jobs:
           # Install slotup (slot version manager)
           curl -L https://slot.cartridge.sh | bash
           
-          # Find slotup and install slot directly
-          if [ -f "$HOME/.slotup/bin/slotup" ]; then
-            echo "🔧 Found slotup at $HOME/.slotup/bin/slotup"
-            $HOME/.slotup/bin/slotup
-          elif [ -f "$HOME/.local/bin/slotup" ]; then
-            echo "🔧 Found slotup at $HOME/.local/bin/slotup"
-            $HOME/.local/bin/slotup
-          else
-            echo "🔍 Searching for slotup..."
-            find $HOME -name "slotup" -type f 2>/dev/null | head -1 | xargs -I {} {} || {
-              echo "❌ Could not find slotup after installation"
-              exit 1
-            }
+          # Debug: Check what was added to bashrc
+          echo "🔍 Checking .bashrc for slotup PATH..."
+          if [ -f "$HOME/.bashrc" ]; then
+            tail -10 "$HOME/.bashrc"
           fi
+          
+          # Find slotup installation location
+          echo "🔍 Searching for slotup installation..."
+          SLOTUP_PATH=""
+          
+          # Check common locations
+          if [ -f "$HOME/.slotup/bin/slotup" ]; then
+            SLOTUP_PATH="$HOME/.slotup/bin/slotup"
+            echo "🔧 Found slotup at $SLOTUP_PATH"
+          elif [ -f "$HOME/.local/bin/slotup" ]; then
+            SLOTUP_PATH="$HOME/.local/bin/slotup"
+            echo "🔧 Found slotup at $SLOTUP_PATH"
+          else
+            # Search more thoroughly
+            SLOTUP_FOUND=$(find $HOME -name "slotup" -type f -executable 2>/dev/null | head -1)
+            if [ -n "$SLOTUP_FOUND" ]; then
+              SLOTUP_PATH="$SLOTUP_FOUND"
+              echo "🔧 Found slotup at $SLOTUP_PATH"
+            else
+              echo "❌ Could not find slotup binary anywhere"
+              echo "🔍 Listing files in HOME directory:"
+              find $HOME -maxdepth 3 -name "*slot*" -type f 2>/dev/null || true
+              exit 1
+            fi
+          fi
+          
+          # Install slot using slotup
+          echo "🚀 Running slotup to install slot..."
+          "$SLOTUP_PATH"
           
           # Verify installation
           if [ ! -f "$HOME/.slot/bin/slot" ]; then
             echo "❌ Slot CLI installation failed - binary not found"
+            echo "🔍 Checking .slot directory:"
+            ls -la "$HOME/.slot/" 2>/dev/null || echo "No .slot directory found"
             exit 1
           fi
           
