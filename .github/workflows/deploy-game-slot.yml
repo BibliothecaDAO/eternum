@@ -51,6 +51,9 @@ jobs:
         with:
           version: latest
 
+      - name: 🍳 Setup Bun
+        uses: oven-sh/setup-bun@v1
+
       - name: 🔧 Setup Scarb
         uses: software-mansion/setup-scarb@v1
         with:
@@ -132,6 +135,18 @@ jobs:
             $SLOT_NAME torii \
             --version $TORII_VERSION \
             --config ${{ env.TORII_CONFIG }}
+
+      - name: 💾 Commit and Push Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/game/dojo_slot.toml contracts/torii-slot.toml
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "ci: update slot configuration for branch ${{ env.BRANCH }}"
+            git push
+          fi
 
       - name: 📊 Deployment Summary
         run: |
