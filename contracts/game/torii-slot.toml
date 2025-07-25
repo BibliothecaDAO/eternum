@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
 
-world_address = "0x073e9c33e9a4214318e9ca5fa71038661c5f6612ae7f9b22a8854019a54018d4"
+world_address = "0x5f522b0bba417c715e9263925851e19034158a9bd05ed207d3b47579bc9c7d2"
 
 db_dir = "torii-slot"
 
@@ -19,10 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-	"erc721:0x1c7a75093daab29ced347aee0511291803376274c10285da0337ea3ae83dc21",
-	"erc721:0x5254b0deadf825b1355e048c7427330d335dc65d60888effea3115b915e38d7",
-	"erc721:0x24b8651b4ab2e5b1c11d63455309f0c84897b7027a57e56d59678559c64189e",
-	"erc20:0x65e3f93a75b6260b31950a8e1baaea85a41c46f993251f313ac8e14da5d5224",
+	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
+	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
+	"erc721:0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
+	"erc20:0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa",
 ]
 
 namespaces = ["s1_eternum"]
