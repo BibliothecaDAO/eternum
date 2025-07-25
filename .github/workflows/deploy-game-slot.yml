@@ -67,8 +67,30 @@ jobs:
 
       - name: 🎰 Install Slot CLI
         run: |
+          echo "🎰 Installing Slot CLI..."
+          
+          # Install slotup (slot version manager)
           curl -L https://slot.cartridge.sh | bash
+          
+          # Source bashrc to get slotup in PATH
+          source /home/runner/.bashrc
+          
+          # Install slot using slotup
+          slotup
+          
+          # Verify installation
+          if [ ! -f "$HOME/.slot/bin/slot" ]; then
+            echo "❌ Slot CLI installation failed - binary not found"
+            exit 1
+          fi
+          
+          # Add to PATH for current and subsequent steps
           echo "$HOME/.slot/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.slot/bin:$PATH"
+          
+          # Verify slot command works
+          slot --version
+          echo "✅ Slot CLI installed successfully"
 
       - name: 📚 Install Dependencies
         run: pnpm install
