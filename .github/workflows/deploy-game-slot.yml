@@ -10,6 +10,7 @@ env:
   TORII_VERSION: "v1.6.0-alpha.2"
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
+  CI: "true"
 
 on:
   # Scheduled deployment every 6 hours
