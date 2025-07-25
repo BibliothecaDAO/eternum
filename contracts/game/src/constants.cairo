@@ -293,6 +293,61 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
     }
 }
 
+pub fn relic_level(resource_type: u8) -> u8 {
+    if resource_type == 39 {
+        1
+    } else if resource_type == 40 {
+        2
+    } else if resource_type == 41 {
+        1
+    } else if resource_type == 42 {
+        2
+    } else if resource_type == 43 {
+        1
+    } else if resource_type == 44 {
+        2
+    } else if resource_type == 45 {
+        1
+    } else if resource_type == 46 {
+        2
+    } else if resource_type == 47 {
+        1
+    } else if resource_type == 48 {
+        2
+    } else if resource_type == 49 {
+        1
+    } else if resource_type == 50 {
+        2
+    } else if resource_type == 51 {
+        1
+    } else if resource_type == 52 {
+        2
+    } else if resource_type == 53 {
+        1
+    } else if resource_type == 54 {
+        2
+    } else if resource_type == 55 {
+        1
+    } else if resource_type == 56 {
+        2
+    } else {
+        panic!("Eternum: not a relic");
+        0
+    }
+}
+
+pub fn relic_essence_cost(resource_type: u8) -> u128 {
+    let level = relic_level(resource_type);
+    if level == 1 {
+        250
+    } else if level == 2 {
+        500
+    } else {
+        panic!("Eternum: invalid relic level");
+        0
+    }
+}
+
 pub fn blitz_produceable_resources() -> Array<u8> {
     array![
         ResourceTypes::WOOD,

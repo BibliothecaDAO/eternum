@@ -1,4 +1,3 @@
-use s1_eternum::alias::ID;
 use s1_eternum::constants::{RELICS_RESOURCE_START_ID};
 use s1_eternum::models::resource::resource::RelicResourceImpl;
 

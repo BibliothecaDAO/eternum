@@ -22,7 +22,7 @@ pub mod relic_systems {
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::RESOURCE_PRECISION;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, relic_essence_cost};
     use s1_eternum::models::config::MapConfig;
     use s1_eternum::models::config::{
         CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
@@ -153,6 +153,19 @@ pub mod relic_systems {
             );
             relic_resource.spend(1 * RESOURCE_PRECISION, ref entity_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
+
+            // spend essence
+            let essence_cost_amount: u128 = relic_essence_cost(relic_resource_id).into();
+            let essence_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::ESSENCE);
+            let mut essence_resource = SingleResourceStoreImpl::retrieve(
+                ref world, entity_id, ResourceTypes::ESSENCE, ref entity_weight, essence_resource_weight_grams, true,
+            );
+            essence_resource
+                .spend(essence_cost_amount * RESOURCE_PRECISION, ref entity_weight, essence_resource_weight_grams);
+            essence_resource.store(ref world);
+
+            // store entity weight
+            entity_weight.store(ref world, entity_id);
         }
     }
 
