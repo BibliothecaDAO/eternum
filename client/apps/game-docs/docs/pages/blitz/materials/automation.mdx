@@ -48,7 +48,7 @@ The automation system periodically checks and processes active orders for each e
 
 ## Production Types
 
-There are three types of production automation:
+There are two types of production automation:
 
 1. **Standard (Resource-to-Resource)**:
    - Converts one or more input resources into a different output resource.
@@ -56,16 +56,13 @@ There are three types of production automation:
 2. **Simple (Labor-to-Resource)**:
    - Utilizes Labor from the realm to produce a specific resource.
    - Example: Using Labor to harvest Food.
-3. **Resource-to-Labor**:
-   - Converts a specified resource into Labor for the realm.
-   - Example: Burning Food to generate Labor.
+
 
 ## Production Order Modes
 
 Production orders can operate in two different modes:
 
 1. **Produce Once**:
-
    - Produces resources until the target amount is reached, then stops.
    - Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
    - Can be set to "Infinite" to produce continuously without a limit.
@@ -81,13 +78,11 @@ Production orders can operate in two different modes:
 Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
 
 1. **Recurring Transfers**:
-
    - Transfers resources at regular intervals.
    - Minimum interval: 10 minutes (due to automation cycle).
    - Example: Transfer 1,000 Food from Realm A to Realm B every 2 hours.
 
 2. **Maintain Stock Transfers**:
-
    - Transfers when the destination entity falls below a threshold.
    - Example: Transfer 500 Wood to Realm B when it has less than 1,000 Wood.
    - Helps keep important entities well-supplied.
@@ -116,10 +111,9 @@ Production automation is managed within individual realm interfaces.
    - **Production Type**:
      - `Standard (Resource-based)`
      - `Simple (Labor-based)`
-     - `Resource to Labor`
    - **Priority (1-9)**:
      - Set the execution priority. `1` is the highest priority, `9` is the lowest.
-   - **Resource to Produce / Resource Input for Labor**:
+   - **Resource to Produce**:
      - Select the resource you want to produce or consume.
      - The UI shows required input resources for Resource-to-Resource recipes.
    - **Target Amount**:
