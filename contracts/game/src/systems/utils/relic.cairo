@@ -1,7 +1,9 @@
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION};
+use s1_eternum::constants::{
+    RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
+};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl};
@@ -78,6 +80,26 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
 
 #[generate_trait]
 pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
+    fn _chances(relic_start_id: u8, relic_end_id: u8) -> (Span<u8>, Span<u128>) {
+        let mut chances = array![];
+        let mut relic_ids = array![];
+        for relic_id in relic_start_id..relic_end_id + 1 {
+            relic_ids.append(relic_id);
+            if relic_id == ResourceTypes::RELIC_E18 {
+                chances.append(200);
+            } else if relic_id == ResourceTypes::RELIC_E17 {
+                chances.append(600);
+            } else if relic_level(relic_id) == 2 {
+                chances.append(400);
+            } else if relic_level(relic_id) == 1 {
+                chances.append(750);
+            } else {
+                panic!("Eternum: Invalid relic id for chance calculation");
+            }
+        };
+        (relic_ids.span(), chances.span())
+    }
+
     // todo: note: same relic may appear multiple times in the array
     fn grant_relics(
         ref world: WorldStorage,
@@ -86,28 +108,24 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
         map_config: MapConfig,
         vrf_seed: u256,
     ) -> Span<u8> {
-        let RELICS_RESOURCE_ID_RANGE_DELTA: u128 = (RELICS_RESOURCE_END_ID - RELICS_RESOURCE_START_ID).into();
+        let (relic_ids, chances) = Self::_chances(RELICS_RESOURCE_START_ID, RELICS_RESOURCE_END_ID);
         let mut number_of_relics: u128 = map_config.relic_chest_relics_per_chest.into();
-        let mut relics = array![];
-        while number_of_relics > 0 {
-            let salt = number_of_relics;
-            let mut relic_resource_id: u8 = RELICS_RESOURCE_START_ID
-                + random::random(vrf_seed, salt, RELICS_RESOURCE_ID_RANGE_DELTA.into()).try_into().unwrap();
+        let mut chosen_relic_ids: Span<u8> = random::choices(
+            relic_ids, chances, array![].span(), number_of_relics, true, vrf_seed,
+        );
 
+        for i in 0..chosen_relic_ids.len() {
+            let relic_resource_id: u8 = *chosen_relic_ids.at(i);
             let relic_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, relic_resource_id);
             let mut relic_resource = SingleResourceStoreImpl::retrieve(
                 ref world, to_explorer_id, relic_resource_id, ref to_explorer_weight, relic_resource_weight_grams, true,
             );
             relic_resource.add(1 * RESOURCE_PRECISION, ref to_explorer_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
-
-            relics.append(relic_resource_id);
-
-            number_of_relics -= 1;
         };
 
         to_explorer_weight.store(ref world, to_explorer_id);
 
-        return relics.span();
+        return chosen_relic_ids;
     }
 }
