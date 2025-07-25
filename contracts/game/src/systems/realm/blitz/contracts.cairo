@@ -10,6 +10,7 @@ pub trait IBlitzRealmSystems<T> {
 
 #[dojo::contract]
 pub mod blitz_realm_systems {
+    use core::num::traits::Bounded;
     use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -17,7 +18,7 @@ pub mod blitz_realm_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, blitz_produceable_resources};
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use s1_eternum::models::config::{
         BlitzHyperstructureRegister, BlitzHyperstructureRegisterImpl, BlitzRealmPlayerRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
@@ -30,9 +31,9 @@ pub mod blitz_realm_systems {
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
-    use s1_eternum::models::resource::resource::{ResourceImpl};
+    use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
@@ -258,6 +259,26 @@ pub mod blitz_realm_systems {
                 let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(caller, realm_id, resources, 0, 1, coord, false);
+
+                // set infinite labor production
+                let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+                let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
+                let mut structure_labor_resource = SingleResourceStoreImpl::retrieve(
+                    ref world,
+                    structure_id,
+                    ResourceTypes::LABOR,
+                    ref structure_weight,
+                    labor_resource_weight_grams,
+                    true,
+                );
+                let mut structure_labor_production: Production = structure_labor_resource.production;
+                structure_labor_production.increase_output_amout_left(Bounded::MAX);
+                structure_labor_resource.production = structure_labor_production;
+                structure_labor_resource.store(ref world);
+
+                // update structure weight
+                structure_weight.store(ref world, structure_id);
+
                 // emit realm settle event
                 let address_name: AddressName = world.read_model(caller);
                 world
