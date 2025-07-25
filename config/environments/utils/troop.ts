@@ -27,12 +27,12 @@ export const TROOP_STAMINA_MAX = {
 export const TROOP_STAMINA_ATTACK_REQ = 30;
 export const TROOP_STAMINA_ATTACK_MAX = 60;
 // Troop travel
-export const TROOP_TRAVEL_WHEAT_COST = 3;
+export const TROOP_TRAVEL_WHEAT_COST = 1;
 export const TROOP_TRAVEL_FISH_COST = 0;
 export const TROOP_TRAVEL_STAMINA_COST = 20;
 
 // Troop exploration
-export const TROOP_EXPLORE_WHEAT_COST = 6;
+export const TROOP_EXPLORE_WHEAT_COST = 2;
 export const TROOP_EXPLORE_FISH_COST = 0;
 export const TROOP_EXPLORE_STAMINA_COST = 30;
 
