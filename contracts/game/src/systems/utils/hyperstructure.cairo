@@ -154,7 +154,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 #[generate_trait]
 pub impl iHyperstructureBlitzDiscoveryImpl of iHyperstructureBlitzDiscoveryTrait {
     fn ring_distance(ring_count: u32) -> u32 {
-        ring_count * 18
+        ring_count * 12
     }
 
     fn create_ring(

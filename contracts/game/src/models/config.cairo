@@ -420,22 +420,23 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 
     fn step_tile_distance() -> u32 {
-        18
+        12
     }
 
     fn realm_tile_radius() -> u32 {
-        6
-    }
-
-    fn mirror_first_step_tile_distance() -> u32 {
-        14
-    }
-
-    fn mirror_second_step_tile_distance() -> u32 {
         4
     }
 
-    // Python implementation reference: contracts/game/ext/formulas/blitz_settlement_visualizer.py
+    fn mirror_first_step_tile_distance() -> u32 {
+        8
+    }
+
+    fn mirror_second_step_tile_distance() -> u32 {
+        2
+    }
+
+    // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
+
     fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![

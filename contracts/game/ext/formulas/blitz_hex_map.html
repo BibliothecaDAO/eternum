@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blitz Settlement Hex Grid Map</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            color: #cccccc;
+        }
+        
+        .control-group input[type="range"] {
+            width: 200px;
+            height: 6px;
+            background: #555;
+            border-radius: 3px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+        
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group input[type="range"]::-moz-range-thumb:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+        
+        .control-group input[type="range"].updating {
+            background: #2196F3;
+            animation: slideGlow 1s ease-in-out;
+        }
+        
+        .control-group input[type="range"].updating::-webkit-slider-thumb {
+            background: #2196F3;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.6);
+        }
+        
+        .control-group span {
+            font-weight: bold;
+            color: #4CAF50;
+            min-width: 30px;
+            display: inline-block;
+            text-align: right;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 8px rgba(33, 150, 243, 0.4); }
+            50% { box-shadow: 0 0 12px rgba(33, 150, 243, 0.6); }
+            100% { box-shadow: 0 0 8px rgba(33, 150, 243, 0.4); }
+        }
+        
+        @keyframes slideGlow {
+            0% { background: #555; }
+            50% { background: #2196F3; }
+            100% { background: #555; }
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .canvas-container {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        canvas {
+            border: 2px solid #555;
+            border-radius: 8px;
+            background-color: #1a1a1a;
+            cursor: grab;
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        .info {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Blitz Settlement Hex Grid Map Visualizer</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="baseDistance">Base Distance: <span id="baseDistanceValue">8</span></label>
+                <input type="range" id="baseDistance" value="8" min="2" max="100" step="2">
+            </div>
+            
+            <div class="control-group">
+                <label for="maxPoints">Number of Settlements: <span id="maxPointsValue">96</span></label>
+                <input type="range" id="maxPoints" value="96" min="1" max="200" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="stepTileDistance">Step Tile Distance: <span id="stepTileDistanceValue">12</span></label>
+                <input type="range" id="stepTileDistance" value="12" min="5" max="50" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="realmTileRadius">Realm Tile Radius: <span id="realmTileRadiusValue">4</span></label>
+                <input type="range" id="realmTileRadius" value="4" min="1" max="20" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="mirrorFirstDistance">Mirror First Distance: <span id="mirrorFirstDistanceValue">8</span></label>
+                <input type="range" id="mirrorFirstDistance" value="8" min="5" max="30" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="mirrorSecondDistance">Mirror Second Distance: <span id="mirrorSecondDistanceValue">2</span></label>
+                <input type="range" id="mirrorSecondDistance" value="2" min="1" max="15" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="ringDistance">Hyperstructure Ring Distance: <span id="ringDistanceValue">12</span></label>
+                <input type="range" id="ringDistance" value="12" min="5" max="30" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="hyperstructureRings">Hyperstructure Rings: <span id="hyperstructureRingsValue">6</span></label>
+                <input type="range" id="hyperstructureRings" value="6" min="0" max="12" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="hexSize">Hex Size: <span id="hexSizeValue">8</span></label>
+                <input type="range" id="hexSize" value="8" min="1" max="50" step="1">
+            </div>
+            
+            <div class="control-group">
+                <label for="showGrid">Show Grid Lines:</label>
+                <input type="checkbox" id="showGrid" checked>
+            </div>
+            
+            <div class="control-group">
+                <label>Current Zoom:</label>
+                <span id="zoomDisplay">100%</span>
+            </div>
+            
+            <button onclick="animateSequence()">▶️ Animate</button>
+            <button onclick="resetView()">🎯 Reset View</button>
+            <button onclick="zoomIn()">🔍➕ Zoom In</button>
+            <button onclick="zoomOut()">🔍➖ Zoom Out</button>
+            <button onclick="generateMap()" style="opacity: 0.6; font-size: 0.8em;">🔄 Manual Refresh</button>
+        </div>
+        
+        <div class="step-controls" style="background-color: #2d2d2d; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 15px 0; color: #ffffff;">Step Navigation</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                <div class="control-group">
+                    <label for="currentStep">Current Step: <span id="currentStepValue">All</span></label>
+                    <input type="range" id="currentStep" value="0" min="0" max="10" step="1">
+                </div>
+                
+                <button onclick="previousStep()">⬅️ Previous Step</button>
+                <button onclick="nextStep()">➡️ Next Step</button>
+                <button onclick="showAllSteps()">👁️ Show All</button>
+                <button onclick="animateSequence()">🎬 Auto Play</button>
+                <button onclick="stopAnimation()">⏹️ Stop</button>
+                
+                <div class="step-info" style="margin-left: 20px; padding: 10px; background-color: #1a1a1a; border-radius: 5px; min-width: 200px;">
+                    <div><strong>Step Info:</strong></div>
+                    <div id="stepDetails">Select a step to see details</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="hexCanvas" width="1200" height="800"></canvas>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                <span>Center</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4ecdc4;"></div>
+                <span>Normal Settlements</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #45b7d1;"></div>
+                <span>Current Step Normal</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #96ceb4;"></div>
+                <span>Previous Steps Normal</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #9c27b0;"></div>
+                <span>Mirrored Settlements</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #e91e63;"></div>
+                <span>Current Step Mirrored</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ba68c8;"></div>
+                <span>Previous Steps Mirrored</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ffd700;"></div>
+                <span>Center Hyperstructure</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff8c00;"></div>
+                <span>Ring 1 Hyperstructures</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff4500;"></div>
+                <span>Ring 2+ Hyperstructures</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff9800; height: 1px; border-top: 1px dotted #ff9800;"></div>
+                <span>Mirror Connection</span>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>Blitz Settlement Configuration</h3>
+            <p><strong>Algorithm:</strong> Based on the Cairo implementation, this generates settlement coordinates in a hexagonal pattern.</p>
+            <p><strong>Grid Type:</strong> Pointy-top hexagons using even-r offset coordinates (matching position.cairo)</p>
+            <p><strong>Steps Explained:</strong> 🎯 Settlements are generated in concentric steps around the center. Step 1 creates 2 settlements per side (12 total), Step 2 creates 4 per side (24 total), etc. Each step has step×2 points per side, creating a hexagonal expansion pattern.</p>
+            <p><strong>Step Formula:</strong> Each step N contains N×2 points per side × 6 sides = N×12 total settlements. Half are normal, half are mirrored.</p>
+            <p><strong>Auto-Update:</strong> ✅ Map regenerates automatically when sliders change</p>
+            <p><strong>Navigation:</strong> Mouse wheel to zoom, click and drag to pan, arrow keys to move, +/- keys to zoom</p>
+            <p><strong>Mirroring:</strong> 🔗 Orange lines connect mirrored settlement pairs, purple settlements are mirrored versions</p>
+            <p><strong>Parameters:</strong> All Cairo constants are now configurable via sliders. Base distance must be even.</p>
+            <div id="stepStatistics" style="margin-top: 10px; padding: 10px; background-color: #1a1a1a; border-radius: 5px;">
+                <strong>Step Statistics:</strong> <span id="stepStatsContent">Generate settlements to see step breakdown</span>
+            </div>
+            <p id="currentConfig"></p>
+        </div>
+    </div>
+
+    <script>
+        // Constants from the Cairo implementation
+        const CENTER_COL = 2147483646;
+        const CENTER_ROW = 2147483646;
+        
+        // These will be made configurable via sliders
+        let STEP_TILE_DISTANCE = 18;
+        let REALM_TILE_RADIUS = 6;
+        let MIRROR_FIRST_STEP_TILE_DISTANCE = 14;
+        let MIRROR_SECOND_STEP_TILE_DISTANCE = 4;
+
+        // Direction enum matching Cairo implementation
+        const Direction = {
+            East: 0,
+            NorthEast: 1,
+            NorthWest: 2,
+            West: 3,
+            SouthWest: 4,
+            SouthEast: 5
+        };
+
+        // Start directions for each side (matching Cairo array)
+        const START_DIRECTIONS = [
+            [Direction.East, Direction.NorthWest],
+            [Direction.SouthEast, Direction.NorthEast],
+            [Direction.SouthWest, Direction.East],
+            [Direction.West, Direction.SouthEast],
+            [Direction.NorthWest, Direction.SouthWest],
+            [Direction.NorthEast, Direction.West]
+        ];
+
+        class Coord {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+
+            static center() {
+                return new Coord(CENTER_COL, CENTER_ROW);
+            }
+
+            // Convert to cube coordinates for calculations
+            toCube() {
+                const col = this.x;
+                const row = this.y;
+                const q = col - Math.floor((row + (row & 1)) / 2);
+                const r = row;
+                const s = -q - r;
+                return { q, r, s };
+            }
+
+            // Create from cube coordinates
+            static fromCube(cube) {
+                const col = cube.q + Math.floor((cube.r + (cube.r & 1)) / 2);
+                const row = cube.r;
+                return new Coord(col, row);
+            }
+
+            // Get neighbor in a specific direction
+            neighbor(direction) {
+                if (this.y & 1 === 0) {
+                    // Even row
+                    switch (direction) {
+                        case Direction.East: return new Coord(this.x + 1, this.y);
+                        case Direction.NorthEast: return new Coord(this.x + 1, this.y + 1);
+                        case Direction.NorthWest: return new Coord(this.x, this.y + 1);
+                        case Direction.West: return new Coord(this.x - 1, this.y);
+                        case Direction.SouthWest: return new Coord(this.x, this.y - 1);
+                        case Direction.SouthEast: return new Coord(this.x + 1, this.y - 1);
+                    }
+                } else {
+                    // Odd row
+                    switch (direction) {
+                        case Direction.East: return new Coord(this.x + 1, this.y);
+                        case Direction.NorthEast: return new Coord(this.x, this.y + 1);
+                        case Direction.NorthWest: return new Coord(this.x - 1, this.y + 1);
+                        case Direction.West: return new Coord(this.x - 1, this.y);
+                        case Direction.SouthWest: return new Coord(this.x - 1, this.y - 1);
+                        case Direction.SouthEast: return new Coord(this.x, this.y - 1);
+                    }
+                }
+                return this;
+            }
+
+            // Move in a direction for a specific distance
+            neighborAfterDistance(direction, distance) {
+                const cube = this.toCube();
+                const directionVectors = [
+                    { q: distance, r: 0, s: -distance }, // East
+                    { q: 0, r: distance, s: -distance }, // NorthEast
+                    { q: -distance, r: distance, s: 0 }, // NorthWest
+                    { q: -distance, r: 0, s: distance }, // West
+                    { q: 0, r: -distance, s: distance }, // SouthWest
+                    { q: distance, r: -distance, s: 0 }  // SouthEast
+                ];
+                
+                const dir = directionVectors[direction];
+                const newCube = {
+                    q: cube.q + dir.q,
+                    r: cube.r + dir.r,
+                    s: cube.s + dir.s
+                };
+                
+                return Coord.fromCube(newCube);
+            }
+        }
+
+        class BlitzSettlementConfig {
+            constructor(baseDistance) {
+                this.baseDistance = baseDistance;
+                this.side = 0;
+                this.step = 1;
+                this.point = 1;
+            }
+
+            next() {
+                if (this.side === 5) {
+                    if (this.point === this.maxPoints()) {
+                        this.step += 1;
+                        this.point = 1;
+                    } else {
+                        this.point += 1;
+                    }
+                    this.side = 0;
+                } else {
+                    this.side += 1;
+                }
+            }
+
+            maxPoints() {
+                return this.step * 2;
+            }
+
+            generateCoords() {
+                const startCoord = Coord.center();
+                const [startDirection, triangleDirection] = START_DIRECTIONS[this.side];
+
+                // Get the coord of the first structure on step 1 of the selected side
+                const sideFirstStructureStepOne = startCoord
+                    .neighborAfterDistance(startDirection, this.baseDistance)
+                    .neighborAfterDistance(triangleDirection, Math.floor(this.baseDistance / 2));
+
+                // Get the coord of the first structure on selected step of the selected side
+                const sideFirstStructureStepX = sideFirstStructureStepOne
+                    .neighborAfterDistance(startDirection, STEP_TILE_DISTANCE * (this.step - 1));
+
+                const isMirrored = this.point > Math.floor(this.maxPoints() / 2);
+                
+                if (!isMirrored) {
+                    const destinationStartCoord = sideFirstStructureStepX
+                        .neighborAfterDistance(triangleDirection, STEP_TILE_DISTANCE * (this.point - 1));
+                    
+                    const a = destinationStartCoord;
+                    const b = destinationStartCoord.neighborAfterDistance(startDirection, REALM_TILE_RADIUS);
+                    const c = b.neighborAfterDistance(triangleDirection, REALM_TILE_RADIUS);
+                    
+                    return [a, b, c];
+                } else {
+                    const startPoint = this.maxPoints() - this.point + 1;
+                    const destinationStartCoord = sideFirstStructureStepX
+                        .neighborAfterDistance(triangleDirection, STEP_TILE_DISTANCE * (startPoint - 1));
+
+                    const a = destinationStartCoord
+                        .neighborAfterDistance(startDirection, MIRROR_FIRST_STEP_TILE_DISTANCE)
+                        .neighborAfterDistance(triangleDirection, MIRROR_SECOND_STEP_TILE_DISTANCE);
+                    const b = a.neighborAfterDistance(triangleDirection, REALM_TILE_RADIUS);
+                    const c = b.neighborAfterDistance(startDirection, REALM_TILE_RADIUS);
+                    
+                    return [a, b, c];
+                }
+            }
+        }
+
+        class HexRenderer {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.hexSize = 8;
+                this.showGrid = true;
+                this.baseHexSize = 8;
+                
+                // Zoom and pan state
+                this.zoom = 1.0;
+                this.panX = 0;
+                this.panY = 0;
+                this.minZoom = 0.1;
+                this.maxZoom = 10.0;
+                
+                // Mouse interaction state
+                this.isDragging = false;
+                this.lastMouseX = 0;
+                this.lastMouseY = 0;
+                
+                this.setupEventListeners();
+            }
+
+            setHexSize(size) {
+                this.baseHexSize = size;
+                this.hexSize = size * this.zoom;
+            }
+
+            setShowGrid(show) {
+                this.showGrid = show;
+            }
+            
+            setupEventListeners() {
+                // Mouse events for panning
+                this.canvas.addEventListener('mousedown', (e) => {
+                    this.isDragging = true;
+                    this.lastMouseX = e.clientX;
+                    this.lastMouseY = e.clientY;
+                    this.canvas.style.cursor = 'grabbing';
+                });
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    if (this.isDragging) {
+                        const deltaX = e.clientX - this.lastMouseX;
+                        const deltaY = e.clientY - this.lastMouseY;
+                        this.panX += deltaX;
+                        this.panY += deltaY;
+                        this.lastMouseX = e.clientX;
+                        this.lastMouseY = e.clientY;
+                        this.redraw();
+                    }
+                });
+                
+                this.canvas.addEventListener('mouseup', () => {
+                    this.isDragging = false;
+                    this.canvas.style.cursor = 'grab';
+                });
+                
+                this.canvas.addEventListener('mouseleave', () => {
+                    this.isDragging = false;
+                    this.canvas.style.cursor = 'grab';
+                });
+                
+                // Mouse wheel for zooming
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const rect = this.canvas.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoomAt(mouseX, mouseY, zoomFactor);
+                });
+                
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    const panSpeed = 20;
+                    switch(e.key) {
+                        case 'ArrowUp':
+                            this.panY += panSpeed;
+                            this.redraw();
+                            e.preventDefault();
+                            break;
+                        case 'ArrowDown':
+                            this.panY -= panSpeed;
+                            this.redraw();
+                            e.preventDefault();
+                            break;
+                        case 'ArrowLeft':
+                            this.panX += panSpeed;
+                            this.redraw();
+                            e.preventDefault();
+                            break;
+                        case 'ArrowRight':
+                            this.panX -= panSpeed;
+                            this.redraw();
+                            e.preventDefault();
+                            break;
+                        case '+':
+                        case '=':
+                            this.zoomAt(this.canvas.width / 2, this.canvas.height / 2, 1.2);
+                            e.preventDefault();
+                            break;
+                        case '-':
+                            this.zoomAt(this.canvas.width / 2, this.canvas.height / 2, 0.8);
+                            e.preventDefault();
+                            break;
+                    }
+                });
+            }
+            
+            zoomAt(mouseX, mouseY, zoomFactor) {
+                const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * zoomFactor));
+                
+                if (newZoom !== this.zoom) {
+                    // Adjust pan to zoom towards the mouse cursor
+                    const zoomRatio = newZoom / this.zoom;
+                    this.panX = mouseX - (mouseX - this.panX) * zoomRatio;
+                    this.panY = mouseY - (mouseY - this.panY) * zoomRatio;
+                    
+                                        this.zoom = newZoom;
+                    this.hexSize = this.baseHexSize * this.zoom;
+                    this.redraw();
+                    
+                    // Update zoom info if function exists (after page load)
+                    if (typeof updateZoomInfo === 'function') {
+                        updateZoomInfo();
+                    }
+                }
+            }
+            
+            resetView() {
+                this.zoom = 1.0;
+                this.panX = 0;
+                this.panY = 0;
+                this.hexSize = this.baseHexSize;
+                this.redraw();
+            }
+
+            // Convert world coordinates to screen coordinates (pointy-top hexagons)
+            worldToScreen(coord) {
+                // Offset from the world center
+                const offsetX = coord.x - CENTER_COL;
+                const offsetY = coord.y - CENTER_ROW;
+                
+                // For pointy-top hexagons in even-r offset coordinates:
+                const hexWidth = this.hexSize * Math.sqrt(3);
+                const hexHeight = this.hexSize * 2;
+                
+                // Calculate base screen position
+                const baseX = offsetX * hexWidth + (offsetY & 1) * hexWidth * 0.5;
+                const baseY = offsetY * hexHeight * 0.75;
+                
+                // Apply zoom and pan transformations
+                const screenX = this.canvas.width / 2 + baseX + this.panX;
+                const screenY = this.canvas.height / 2 + baseY + this.panY;
+                
+                return { x: screenX, y: screenY };
+            }
+            
+            // Convert screen coordinates back to world coordinates
+            screenToWorld(screenX, screenY) {
+                // Remove pan and zoom transformations
+                const baseX = screenX - this.canvas.width / 2 - this.panX;
+                const baseY = screenY - this.canvas.height / 2 - this.panY;
+                
+                const hexWidth = this.hexSize * Math.sqrt(3);
+                const hexHeight = this.hexSize * 2;
+                
+                // Approximate world coordinates (this is complex for hexagonal grids)
+                const offsetY = Math.round(baseY / (hexHeight * 0.75));
+                const offsetX = Math.round((baseX - (offsetY & 1) * hexWidth * 0.5) / hexWidth);
+                
+                return new Coord(CENTER_COL + offsetX, CENTER_ROW + offsetY);
+            }
+
+            // Draw a pointy-top hexagon at screen coordinates
+            drawHex(screenX, screenY, color = '#333333', strokeColor = '#666666') {
+                const size = this.hexSize;
+                const ctx = this.ctx;
+                
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    // For pointy-top hexagons: start at top (-π/2) and go clockwise
+                    const angle = (Math.PI / 3) * i - Math.PI / 2;
+                    const x = screenX + size * Math.cos(angle);
+                    const y = screenY + size * Math.sin(angle);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                if (this.showGrid) {
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            drawSettlementMap(settlements, currentStep = -1, hyperstructures = []) {
+                this.currentSettlements = settlements;
+                this.currentStep = currentStep;
+                this.currentHyperstructures = hyperstructures;
+                this.redraw();
+            }
+            
+            redraw() {
+                this.clear();
+                
+                // Draw background grid first
+                this.drawBackground();
+                
+                // Draw center
+                const center = this.worldToScreen(Coord.center());
+                this.drawHex(center.x, center.y, '#ff6b6b', '#ff4444');
+                
+                // Draw hyperstructures first (behind other elements)
+                this.drawHyperstructures();
+                
+                if (!this.currentSettlements) return;
+                
+                // First, draw connection lines between mirrored pairs
+                this.drawMirroredConnections();
+                
+                // Then draw settlements
+                this.currentSettlements.forEach(settlement => {
+                    settlement.coords.forEach(coord => {
+                        const screen = this.worldToScreen(coord);
+                        
+                        // Skip if outside visible area (performance optimization)
+                        if (screen.x < -this.hexSize || screen.x > this.canvas.width + this.hexSize ||
+                            screen.y < -this.hexSize || screen.y > this.canvas.height + this.hexSize) {
+                            return;
+                        }
+                        
+                        let color, strokeColor;
+                        
+                        // Different colors for mirrored vs non-mirrored
+                        if (settlement.isMirrored) {
+                            // Mirrored settlements - purple/magenta shades
+                            if (settlement.step === this.currentStep) {
+                                color = '#e91e63'; // Pink for current mirrored
+                                strokeColor = '#ad1457';
+                            } else if (settlement.step < this.currentStep) {
+                                color = '#ba68c8'; // Light purple for previous mirrored
+                                strokeColor = '#8e24aa';
+                            } else {
+                                color = '#9c27b0'; // Purple for mirrored
+                                strokeColor = '#7b1fa2';
+                            }
+                        } else {
+                            // Non-mirrored settlements - teal/green shades
+                            if (settlement.step === this.currentStep) {
+                                color = '#45b7d1'; // Current step color
+                                strokeColor = '#1976d2';
+                            } else if (settlement.step < this.currentStep) {
+                                color = '#96ceb4'; // Previous steps color
+                                strokeColor = '#4caf50';
+                            } else {
+                                color = '#4ecdc4'; // Default settlement color
+                                strokeColor = '#2a9d8f';
+                            }
+                        }
+                        
+                        this.drawHex(screen.x, screen.y, color, strokeColor);
+                    });
+                });
+                
+                // Draw step labels for better understanding
+                this.drawStepLabels();
+                
+                // Finally, draw mirrored settlement shapes/indicators
+                this.drawMirroredIndicators();
+            }
+            
+            drawHyperstructures() {
+                if (!this.currentHyperstructures || this.currentHyperstructures.length === 0) return;
+                
+                this.currentHyperstructures.forEach(hyperstructure => {
+                    const screen = this.worldToScreen(hyperstructure.coord);
+                    
+                    // Skip if outside visible area
+                    if (screen.x < -this.hexSize || screen.x > this.canvas.width + this.hexSize ||
+                        screen.y < -this.hexSize || screen.y > this.canvas.height + this.hexSize) {
+                        return;
+                    }
+                    
+                    let color, strokeColor;
+                    
+                    if (hyperstructure.type === 'center') {
+                        // Center hyperstructure - gold/yellow
+                        color = '#ffd700';
+                        strokeColor = '#ffb000';
+                    } else {
+                        // Ring hyperstructures - different colors per ring
+                        const ringColors = [
+                            { fill: '#ffd700', stroke: '#ffb000' }, // Ring 0 (center, not used here)
+                            { fill: '#ff8c00', stroke: '#ff6600' }, // Ring 1 - orange
+                            { fill: '#ff4500', stroke: '#cc3300' }, // Ring 2 - red-orange
+                            { fill: '#dc143c', stroke: '#aa1144' }, // Ring 3 - crimson
+                            { fill: '#b22222', stroke: '#881111' }, // Ring 4 - fire brick
+                            { fill: '#8b0000', stroke: '#660000' }, // Ring 5 - dark red
+                            { fill: '#4b0082', stroke: '#330055' }, // Ring 6 - indigo
+                            { fill: '#483d8b', stroke: '#332266' }, // Ring 7 - dark slate blue
+                            { fill: '#2f4f4f', stroke: '#1a2f2f' }, // Ring 8 - dark slate gray
+                        ];
+                        
+                        const ringColorIndex = Math.min(hyperstructure.ring, ringColors.length - 1);
+                        color = ringColors[ringColorIndex].fill;
+                        strokeColor = ringColors[ringColorIndex].stroke;
+                    }
+                    
+                    // Draw the hyperstructure hex
+                    this.drawHex(screen.x, screen.y, color, strokeColor);
+                    
+                    // Draw a smaller inner hex to make it more distinctive
+                    this.drawInnerHex(screen.x, screen.y, color, strokeColor);
+                });
+            }
+            
+            drawInnerHex(screenX, screenY, color, strokeColor) {
+                const size = this.hexSize * 0.6; // Smaller inner hex
+                const ctx = this.ctx;
+                
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i - Math.PI / 2;
+                    const x = screenX + size * Math.cos(angle);
+                    const y = screenY + size * Math.sin(angle);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                
+                ctx.fillStyle = strokeColor; // Use stroke color for inner hex
+                ctx.fill();
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            drawMirroredConnections() {
+                if (!this.currentSettlements) return;
+                
+                // Group settlements by step and side to find mirrored pairs
+                const settlementMap = new Map();
+                this.currentSettlements.forEach(settlement => {
+                    const key = `${settlement.step}-${settlement.side}`;
+                    if (!settlementMap.has(key)) {
+                        settlementMap.set(key, []);
+                    }
+                    settlementMap.get(key).push(settlement);
+                });
+                
+                // Draw connection lines between mirrored pairs
+                settlementMap.forEach(settlements => {
+                    const mirrored = settlements.filter(s => s.isMirrored);
+                    const nonMirrored = settlements.filter(s => !s.isMirrored);
+                    
+                    // Connect each mirrored settlement to its non-mirrored counterpart
+                    mirrored.forEach(mirroredSettlement => {
+                        // Find the corresponding non-mirrored settlement
+                        const maxPoints = mirroredSettlement.step * 2;
+                        const correspondingPoint = maxPoints - mirroredSettlement.point + 1;
+                        const corresponding = nonMirrored.find(s => s.point === correspondingPoint);
+                        
+                        if (corresponding) {
+                            this.drawConnectionLine(mirroredSettlement, corresponding);
+                        }
+                    });
+                });
+            }
+            
+            drawConnectionLine(settlement1, settlement2) {
+                // Calculate centroids in screen space for straight lines
+                const screenCoords1 = settlement1.coords.map(coord => this.worldToScreen(coord));
+                const screenCoords2 = settlement2.coords.map(coord => this.worldToScreen(coord));
+                
+                const centroid1 = this.calculateScreenCentroid(screenCoords1);
+                const centroid2 = this.calculateScreenCentroid(screenCoords2);
+                
+                // Draw thin dotted line
+                this.ctx.beginPath();
+                this.ctx.setLineDash([2, 3]); // Smaller dots with more spacing
+                this.ctx.moveTo(centroid1.x, centroid1.y);
+                this.ctx.lineTo(centroid2.x, centroid2.y);
+                this.ctx.strokeStyle = '#ff9800';
+                this.ctx.lineWidth = 1; // Thinner line
+                this.ctx.stroke();
+                this.ctx.setLineDash([]); // Reset line dash
+            }
+            
+            calculateCentroid(coords) {
+                const sumX = coords.reduce((sum, coord) => sum + coord.x, 0);
+                const sumY = coords.reduce((sum, coord) => sum + coord.y, 0);
+                return new Coord(Math.round(sumX / coords.length), Math.round(sumY / coords.length));
+            }
+            
+            calculateScreenCentroid(screenCoords) {
+                const sumX = screenCoords.reduce((sum, coord) => sum + coord.x, 0);
+                const sumY = screenCoords.reduce((sum, coord) => sum + coord.y, 0);
+                return {
+                    x: sumX / screenCoords.length,
+                    y: sumY / screenCoords.length
+                };
+            }
+            
+            drawMirroredIndicators() {
+                if (!this.currentSettlements) return;
+                
+                // Draw triangular outlines around mirrored settlements
+                this.currentSettlements.forEach(settlement => {
+                    if (settlement.isMirrored) {
+                        const screenCoords = settlement.coords.map(coord => this.worldToScreen(coord));
+                        
+                        // Skip if outside visible area
+                        if (screenCoords.some(screen => 
+                            screen.x < -this.hexSize || screen.x > this.canvas.width + this.hexSize ||
+                            screen.y < -this.hexSize || screen.y > this.canvas.height + this.hexSize)) {
+                            return;
+                        }
+                        
+                        // Draw triangle outline
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(screenCoords[0].x, screenCoords[0].y);
+                        screenCoords.forEach((screen, index) => {
+                            if (index > 0) {
+                                this.ctx.lineTo(screen.x, screen.y);
+                            }
+                        });
+                        this.ctx.closePath();
+                        this.ctx.strokeStyle = '#ff9800';
+                        this.ctx.lineWidth = 3;
+                        this.ctx.stroke();
+                    }
+                });
+            }
+
+            drawBackground() {
+                if (!this.showGrid) return;
+                
+                // Calculate visible area based on current view
+                const hexWidth = this.hexSize * Math.sqrt(3);
+                const hexHeight = this.hexSize * 2;
+                
+                // Get world coordinates of canvas corners
+                const topLeft = this.screenToWorld(0, 0);
+                const bottomRight = this.screenToWorld(this.canvas.width, this.canvas.height);
+                
+                // Add padding to draw slightly outside visible area
+                const padding = 3;
+                const minX = topLeft.x - CENTER_COL - padding;
+                const maxX = bottomRight.x - CENTER_COL + padding;
+                const minY = topLeft.y - CENTER_ROW - padding;
+                const maxY = bottomRight.y - CENTER_ROW + padding;
+                
+                // Draw grid hexagons in visible area
+                for (let dy = minY; dy <= maxY; dy++) {
+                    for (let dx = minX; dx <= maxX; dx++) {
+                        const coord = new Coord(CENTER_COL + dx, CENTER_ROW + dy);
+                        const screen = this.worldToScreen(coord);
+                        
+                        // Only draw if hex size is reasonable (performance optimization)
+                        if (this.hexSize >= 0.5) {
+                            this.drawHex(screen.x, screen.y, 'transparent', '#333333');
+                        }
+                    }
+                }
+            }
+
+            drawStepLabels() {
+                if (!this.currentSettlements || this.currentStep === -1) return;
+                
+                // Group settlements by step to find centroids for labels
+                const stepGroups = new Map();
+                this.currentSettlements.forEach(settlement => {
+                    if (!stepGroups.has(settlement.step)) {
+                        stepGroups.set(settlement.step, []);
+                    }
+                    stepGroups.get(settlement.step).push(settlement);
+                });
+                
+                // Draw step labels
+                stepGroups.forEach((settlements, step) => {
+                    if (this.currentStep === -1 || step <= this.currentStep) {
+                        // Find a good position for the step label (centroid of all settlements in this step)
+                        const allCoords = settlements.flatMap(s => s.coords);
+                        const centroid = this.calculateCentroid(allCoords);
+                        const screen = this.worldToScreen(centroid);
+                        
+                        // Only draw label if it's in a visible area
+                        if (screen.x >= 0 && screen.x <= this.canvas.width && 
+                            screen.y >= 0 && screen.y <= this.canvas.height) {
+                            
+                            this.ctx.save();
+                            this.ctx.fillStyle = '#ffffff';
+                            this.ctx.strokeStyle = '#000000';
+                            this.ctx.lineWidth = 3;
+                            this.ctx.font = `bold ${Math.max(12, this.hexSize * 0.8)}px Arial`;
+                            this.ctx.textAlign = 'center';
+                            this.ctx.textBaseline = 'middle';
+                            
+                            const text = `Step ${step}`;
+                            this.ctx.strokeText(text, screen.x, screen.y);
+                            this.ctx.fillText(text, screen.x, screen.y);
+                            this.ctx.restore();
+                        }
+                    }
+                });
+            }
+        }
+
+        let renderer = new HexRenderer('hexCanvas');
+        let currentSettlements = [];
+        let animationId = null;
+        let currentDisplayStep = 0; // 0 means show all
+        let maxStep = 0;
+
+        function generateAllSettlements(baseDistance, maxPoints) {
+            const settlements = [];
+            const config = new BlitzSettlementConfig(baseDistance);
+            
+            for (let i = 0; i < maxPoints; i++) {
+                try {
+                    const coords = config.generateCoords();
+                    const isMirrored = config.point > Math.floor(config.maxPoints() / 2);
+                    settlements.push({
+                        step: config.step,
+                        side: config.side,
+                        point: config.point,
+                        coords: coords,
+                        isMirrored: isMirrored
+                    });
+                    config.next();
+                } catch (error) {
+                    console.error('Error generating settlement:', error);
+                    break;
+                }
+            }
+            
+            return settlements;
+        }
+
+        function generateHyperstructures(ringDistance, maxRings) {
+            const hyperstructures = [];
+            const center = Coord.center();
+            
+            for (let ringCount = 0; ringCount <= maxRings; ringCount++) {
+                if (ringCount === 0) {
+                    // Center hyperstructure (ring 0)
+                    hyperstructures.push({
+                        ring: ringCount,
+                        coord: center,
+                        type: 'center'
+                    });
+                } else {
+                    // Ring of 6 hyperstructures
+                    const distanceFromCenter = ringCount * ringDistance;
+                    const ringCoords = [
+                        center.neighborAfterDistance(Direction.East, distanceFromCenter),
+                        center.neighborAfterDistance(Direction.NorthEast, distanceFromCenter),
+                        center.neighborAfterDistance(Direction.NorthWest, distanceFromCenter),
+                        center.neighborAfterDistance(Direction.SouthWest, distanceFromCenter),
+                        center.neighborAfterDistance(Direction.West, distanceFromCenter),
+                        center.neighborAfterDistance(Direction.SouthEast, distanceFromCenter),
+                    ];
+                    
+                    ringCoords.forEach((coord, index) => {
+                        hyperstructures.push({
+                            ring: ringCount,
+                            coord: coord,
+                            type: 'ring',
+                            position: index
+                        });
+                    });
+                }
+            }
+            
+            return hyperstructures;
+        }
+
+        function addInputFeedback(inputElement) {
+            inputElement.classList.add('updating');
+            setTimeout(() => {
+                inputElement.classList.remove('updating');
+            }, 1000);
+        }
+
+        function updateSliderValue(sliderId) {
+            const slider = document.getElementById(sliderId);
+            const valueSpan = document.getElementById(sliderId + 'Value');
+            if (slider && valueSpan) {
+                if (sliderId === 'currentStep') {
+                    valueSpan.textContent = slider.value === '0' ? 'All' : slider.value;
+                } else {
+                    valueSpan.textContent = slider.value;
+                }
+            }
+        }
+
+        function setupSliderValueUpdates() {
+            const sliders = ['baseDistance', 'maxPoints', 'stepTileDistance', 'realmTileRadius', 'mirrorFirstDistance', 'mirrorSecondDistance', 'ringDistance', 'hyperstructureRings', 'hexSize', 'currentStep'];
+            
+            sliders.forEach(sliderId => {
+                const slider = document.getElementById(sliderId);
+                if (slider) {
+                    slider.addEventListener('input', function() {
+                        updateSliderValue(sliderId);
+                    });
+                }
+            });
+        }
+
+        function updateConfigVariables() {
+            STEP_TILE_DISTANCE = parseInt(document.getElementById('stepTileDistance').value);
+            REALM_TILE_RADIUS = parseInt(document.getElementById('realmTileRadius').value);
+            MIRROR_FIRST_STEP_TILE_DISTANCE = parseInt(document.getElementById('mirrorFirstDistance').value);
+            MIRROR_SECOND_STEP_TILE_DISTANCE = parseInt(document.getElementById('mirrorSecondDistance').value);
+        }
+
+        function generateMap() {
+            console.log('generateMap() called'); // Debug log
+            
+            const baseDistance = parseInt(document.getElementById('baseDistance').value);
+            const maxPoints = parseInt(document.getElementById('maxPoints').value);
+            const ringDistance = parseInt(document.getElementById('ringDistance').value);
+            const hyperstructureRings = parseInt(document.getElementById('hyperstructureRings').value);
+            const hexSize = parseInt(document.getElementById('hexSize').value);
+            const showGrid = document.getElementById('showGrid').checked;
+
+            // Update configurable constants
+            updateConfigVariables();
+
+            console.log('Parameters:', { baseDistance, maxPoints, ringDistance, hyperstructureRings, hexSize, showGrid, STEP_TILE_DISTANCE, REALM_TILE_RADIUS, MIRROR_FIRST_STEP_TILE_DISTANCE, MIRROR_SECOND_STEP_TILE_DISTANCE });
+
+            // Validate inputs
+            if (isNaN(baseDistance) || isNaN(maxPoints) || isNaN(ringDistance) || isNaN(hyperstructureRings) || isNaN(hexSize)) {
+                console.log('Invalid inputs, skipping generation');
+                return; // Skip invalid inputs
+            }
+
+            if (baseDistance % 2 !== 0) {
+                console.log('Correcting odd base distance');
+                document.getElementById('baseDistance').value = baseDistance + 1;
+                updateSliderValue('baseDistance');
+                return; // Will trigger another update
+            }
+
+            // Show updating indicator
+            const configElement = document.getElementById('currentConfig');
+            configElement.innerHTML = '🔄 Auto-updating map...';
+            configElement.style.color = '#2196F3';
+
+            // Generate immediately for better responsiveness
+            try {
+                renderer.setHexSize(hexSize);
+                renderer.setShowGrid(showGrid);
+
+                // Generate settlements
+                currentSettlements = generateAllSettlements(baseDistance, maxPoints);
+                
+                // Generate hyperstructures
+                const hyperstructures = generateHyperstructures(ringDistance, hyperstructureRings);
+                
+                renderer.drawSettlementMap(currentSettlements, -1, hyperstructures);
+
+                // Count mirrored vs non-mirrored and get max step reached
+                const mirroredCount = currentSettlements.filter(s => s.isMirrored).length;
+                const nonMirroredCount = currentSettlements.length - mirroredCount;
+                maxStep = currentSettlements.length > 0 ? Math.max(...currentSettlements.map(s => s.step)) : 0;
+
+                // Update info with success
+                configElement.innerHTML = 
+                    `✅ Generated ${currentSettlements.length} settlements (${nonMirroredCount} normal, ${mirroredCount} mirrored) up to step ${maxStep}, ${hyperstructures.length} hyperstructures. Zoom: ${(renderer.zoom * 100).toFixed(0)}%`;
+                configElement.style.color = '#4CAF50';
+                
+                // Reset color after a moment
+                setTimeout(() => {
+                    configElement.style.color = '';
+                }, 1500);
+                
+                // Update step controls
+                currentDisplayStep = 0; // Reset to show all
+                updateStepSlider();
+                
+                // Generate step statistics
+                updateStepStatistics();
+                
+                console.log('Map generation successful');
+            } catch (error) {
+                configElement.innerHTML = `❌ Error: ${error.message}`;
+                configElement.style.color = '#f44336';
+                console.error('Map generation error:', error);
+            }
+        }
+
+        function updateZoomInfo() {
+            const zoomPercent = `${(renderer.zoom * 100).toFixed(0)}%`;
+            
+            // Update zoom display
+            document.getElementById('zoomDisplay').textContent = zoomPercent;
+            
+            // Update config info
+            const currentConfig = document.getElementById('currentConfig');
+            if (currentConfig.innerHTML.includes('Generated') || currentConfig.innerHTML.includes('✅')) {
+                const parts = currentConfig.innerHTML.split('Zoom:');
+                if (parts.length > 1) {
+                    currentConfig.innerHTML = parts[0] + `Zoom: ${zoomPercent}`;
+                }
+            }
+        }
+
+        // Step navigation functions
+        function updateStepSlider() {
+            const stepSlider = document.getElementById('currentStep');
+            const stepValue = document.getElementById('currentStepValue');
+            
+            stepSlider.max = maxStep;
+            stepSlider.value = currentDisplayStep;
+            stepValue.textContent = currentDisplayStep === 0 ? 'All' : currentDisplayStep.toString();
+            
+            updateStepDetails();
+        }
+
+        function updateStepDetails() {
+            const stepDetails = document.getElementById('stepDetails');
+            
+            if (currentDisplayStep === 0) {
+                const totalSettlements = currentSettlements.length;
+                const mirroredCount = currentSettlements.filter(s => s.isMirrored).length;
+                const normalCount = totalSettlements - mirroredCount;
+                stepDetails.innerHTML = `All ${maxStep} steps shown<br/>${totalSettlements} total settlements (${normalCount} normal, ${mirroredCount} mirrored)`;
+            } else {
+                const stepSettlements = currentSettlements.filter(s => s.step === currentDisplayStep);
+                const mirroredInStep = stepSettlements.filter(s => s.isMirrored).length;
+                const normalInStep = stepSettlements.length - mirroredInStep;
+                const pointsInStep = stepSettlements.length > 0 ? stepSettlements[0].step * 2 : 0;
+                
+                stepDetails.innerHTML = `Step ${currentDisplayStep}<br/>${stepSettlements.length} settlements (${normalInStep} normal, ${mirroredInStep} mirrored)<br/>Max points per side: ${pointsInStep}`;
+            }
+        }
+
+        function updateStepStatistics() {
+            const stepStatsContent = document.getElementById('stepStatsContent');
+            
+            if (currentSettlements.length === 0) {
+                stepStatsContent.innerHTML = 'Generate settlements to see step breakdown';
+                return;
+            }
+            
+            // Group settlements by step
+            const stepGroups = new Map();
+            currentSettlements.forEach(settlement => {
+                if (!stepGroups.has(settlement.step)) {
+                    stepGroups.set(settlement.step, []);
+                }
+                stepGroups.get(settlement.step).push(settlement);
+            });
+            
+            // Generate statistics HTML
+            let statsHtml = '<br/>';
+            stepGroups.forEach((settlements, step) => {
+                const total = settlements.length;
+                const mirrored = settlements.filter(s => s.isMirrored).length;
+                const normal = total - mirrored;
+                const expectedTotal = step * 12; // Each step should have step×12 settlements
+                const pointsPerSide = step * 2;
+                
+                statsHtml += `<div style="margin: 5px 0;">
+                    <strong>Step ${step}:</strong> ${total} settlements (${normal} normal, ${mirrored} mirrored) 
+                    - ${pointsPerSide} points per side
+                    ${total !== expectedTotal ? ` <span style="color: #ff9800;">[Expected: ${expectedTotal}]</span>` : ''}
+                </div>`;
+            });
+            
+            const grandTotal = currentSettlements.length;
+            const totalMirrored = currentSettlements.filter(s => s.isMirrored).length;
+            const totalNormal = grandTotal - totalMirrored;
+            
+            statsHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #555;">
+                <strong>Total:</strong> ${grandTotal} settlements across ${maxStep} steps (${totalNormal} normal, ${totalMirrored} mirrored)
+            </div>`;
+            
+            stepStatsContent.innerHTML = statsHtml;
+        }
+
+        function setDisplayStep(step) {
+            currentDisplayStep = Math.max(0, Math.min(maxStep, step));
+            updateStepSlider();
+            
+            const displayStep = currentDisplayStep === 0 ? -1 : currentDisplayStep;
+            renderer.drawSettlementMap(currentSettlements, displayStep, renderer.currentHyperstructures);
+        }
+
+        function previousStep() {
+            if (currentDisplayStep > 1) {
+                setDisplayStep(currentDisplayStep - 1);
+            } else if (currentDisplayStep === 1) {
+                setDisplayStep(0); // Show all
+            }
+        }
+
+        function nextStep() {
+            if (currentDisplayStep === 0) {
+                setDisplayStep(1); // Start from step 1
+            } else if (currentDisplayStep < maxStep) {
+                setDisplayStep(currentDisplayStep + 1);
+            }
+        }
+
+        function showAllSteps() {
+            setDisplayStep(0);
+        }
+
+        function stopAnimation() {
+            if (animationId) {
+                clearTimeout(animationId);
+                animationId = null;
+            }
+        }
+
+        function animateSequence() {
+            if (currentSettlements.length === 0) {
+                generateMap();
+                return;
+            }
+
+            stopAnimation(); // Stop any existing animation
+            
+            let animationStep = 1;
+            const totalSteps = maxStep;
+
+            function animate() {
+                setDisplayStep(animationStep);
+                
+                animationStep++;
+                if (animationStep <= totalSteps) {
+                    animationId = setTimeout(animate, 1500); // Slower animation for better observation
+                } else {
+                    // Show all at the end
+                    setTimeout(() => setDisplayStep(0), 1000);
+                }
+            }
+
+            animate();
+        }
+        
+        function resetView() {
+            renderer.resetView();
+            updateZoomInfo();
+        }
+        
+        function zoomIn() {
+            renderer.zoomAt(renderer.canvas.width / 2, renderer.canvas.height / 2, 1.2);
+            updateZoomInfo();
+        }
+        
+        function zoomOut() {
+            renderer.zoomAt(renderer.canvas.width / 2, renderer.canvas.height / 2, 0.8);
+            updateZoomInfo();
+        }
+
+        // Initialize with default values
+        window.addEventListener('load', function() {
+            setupSliderValueUpdates(); // Setup slider value displays first
+            generateMap(); // Generate initial map
+            setupAutoUpdate(); // Setup auto-update listeners after initial generation
+        });
+
+        // Auto-update map when parameters change
+        function setupAutoUpdate() {
+            console.log('Setting up auto-update listeners...'); // Debug log
+            
+            // Get all input elements
+            const sliders = {
+                baseDistance: document.getElementById('baseDistance'),
+                maxPoints: document.getElementById('maxPoints'),
+                stepTileDistance: document.getElementById('stepTileDistance'),
+                realmTileRadius: document.getElementById('realmTileRadius'),
+                mirrorFirstDistance: document.getElementById('mirrorFirstDistance'),
+                mirrorSecondDistance: document.getElementById('mirrorSecondDistance'),
+                ringDistance: document.getElementById('ringDistance'),
+                hyperstructureRings: document.getElementById('hyperstructureRings'),
+                hexSize: document.getElementById('hexSize')
+            };
+            const showGridInput = document.getElementById('showGrid');
+            
+            // Setup listeners for each slider
+            Object.keys(sliders).forEach(key => {
+                const slider = sliders[key];
+                
+                // Change event (when user releases slider)
+                slider.addEventListener('change', function() {
+                    console.log(`${key} changed:`, this.value);
+                    addInputFeedback(this);
+                    
+                    // Special handling for base distance (must be even)
+                    if (key === 'baseDistance') {
+                        const value = parseInt(this.value);
+                        if (value % 2 !== 0) {
+                            this.value = value + 1;
+                            updateSliderValue(key);
+                        }
+                    }
+                    
+                    generateMap();
+                });
+                
+                // Input event (real-time as user drags)
+                slider.addEventListener('input', debounce(function() {
+                    const value = parseInt(this.value);
+                    if (!isNaN(value) && value > 0) {
+                        // For base distance, only update if even
+                        if (key === 'baseDistance' && value % 2 !== 0) {
+                            return;
+                        }
+                        
+                        console.log(`${key} input:`, value);
+                        addInputFeedback(this);
+                        generateMap();
+                    }
+                }, 300));
+            });
+            
+            // Show Grid - update display
+            showGridInput.addEventListener('change', function() {
+                console.log('Show grid changed:', this.checked);
+                renderer.setShowGrid(this.checked);
+                renderer.redraw();
+            });
+            
+            // Step slider - navigate through steps
+            const stepSlider = document.getElementById('currentStep');
+            stepSlider.addEventListener('input', function() {
+                const step = parseInt(this.value);
+                setDisplayStep(step);
+            });
+            
+            console.log('Auto-update listeners setup complete');
+        }
+        
+        // Debounce function to prevent too frequent updates
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const context = this;
+                const later = () => {
+                    clearTimeout(timeout);
+                    func.apply(context, args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html> 
