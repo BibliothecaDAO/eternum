@@ -31,42 +31,42 @@ pub impl RelicEffectImpl of RelicEffectTrait {
         assert!(RelicResourceImpl::is_relic(relic_resource_id), "Eternum: Invalid relic resource id");
         let id: felt252 = (relic_resource_id - RELICS_RESOURCE_START_ID).into();
         match id {
-            // E1: increase explorer stamina regeneration by 50% for 3 Eternum Days
-            0 => (5_000, 0, 3),
-            // E2: increase explorer stamina regeneration by 100% for 3 Eternum Days
-            1 => (10_000, 0, 3),
-            // E3: increase explorer attack damage by 20% for 3 Eternum Days
-            2 => (2_000, 3, 0),
-            // E4: increase explorer attack damage by 40% for 3 Eternum Days
-            3 => (4_000, 3, 0),
+            // E1: increase explorer stamina regeneration by 50% for 15 Eternum Days
+            0 => (5_000, 0, 15),
+            // E2: increase explorer stamina regeneration by 100% for 15 Eternum Days
+            1 => (10_000, 0, 15),
+            // E3: increase explorer attack damage by 20% for 15 Eternum Days
+            2 => (2_000, 15, 0),
+            // E4: increase explorer attack damage by 40% for 15 Eternum Days
+            3 => (4_000, 15, 0),
             // E5: reduce enemy attack damage by 20% for 3 Eternum Days
-            4 => (2_000, 3, 0),
+            4 => (2_000, 15, 0),
             // E6: reduce enemy attack damage by 40% for 3 Eternum Days
-            5 => (4_000, 3, 0),
+            5 => (4_000, 15, 0),
             // E7: instantly explore 1 tile radius
             6 => (0, 0, 1),
             // E8: instantly explore 2 tile radius
             7 => (0, 0, 2),
-            // E9: double explore reward for 3 Eternum Days
-            8 => (10_000, 3, 0),
-            // E10: triple explore reward for 3 Eternum Days
-            9 => (20_000, 3, 0),
-            // E11: reduce guard attack damage by 15% for 6 Eternum Days
-            10 => (1_500, 6, 0),
-            // E12: reduce guard attack damage by 30% for 6 Eternum Days
-            11 => (3_000, 6, 0),
-            // E13: increase structure resource production by 20% for 3 Eternum Days
-            12 => (2_000, 3, 0),
-            // E14: increase structure resource production by 40% for 3 Eternum Days
-            13 => (4_000, 3, 0),
-            // E15: increase structure labor production by 20% for 6 Eternum Days
-            14 => (2_000, 6, 0),
-            // E16: increase structure labor production by 20% for 12 Eternum Days
-            15 => (2_000, 12, 0),
-            // E17: increase structure troop production by 20% for 6 Eternum Days
-            16 => (2_000, 6, 0),
-            // E18: increase structure troop production by 20% for 12 Eternum Days
-            17 => (2_000, 12, 0),
+            // E9: double explore reward for 15 Eternum Days
+            8 => (10_000, 15, 0),
+            // E10: triple explore reward for 15 Eternum Days
+            9 => (20_000, 15, 0),
+            // E11: reduce guard attack damage by 15% for 30 Eternum Days
+            10 => (1_500, 30, 0),
+            // E12: reduce guard attack damage by 30% for 30 Eternum Days
+            11 => (3_000, 30, 0),
+            // E13: increase structure resource production by 20% for 15 Eternum Days
+            12 => (2_000, 15, 0),
+            // E14: increase structure resource production by 40% for 15 Eternum Days
+            13 => (4_000, 15, 0),
+            // E15: increase structure labor production by 20% for 30 Eternum Days
+            14 => (2_000, 30, 0),
+            // E16: increase structure labor production by 20% for 60 Eternum Days
+            15 => (2_000, 60, 0),
+            // E17: increase structure troop production by 20% for 30 Eternum Days
+            16 => (2_000, 30, 0),
+            // E18: increase structure troop production by 20% for 60 Eternum Days
+            17 => (2_000, 60, 0),
             _ => {
                 panic!("Invalid relic resource id");
                 (0, 0, 0)
