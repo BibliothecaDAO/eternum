@@ -1,4 +1,4 @@
-name: 🚀 Deploy Eternum Slot
+name: 🚀 Deploy Eternum on Slot
 
 # Configuration Variables - Update these as needed
 env:
@@ -31,7 +31,7 @@ on:
 
 jobs:
   deploy-slot:
-    name: 🎯 Deploy Slot Infrastructure
+    name: 🎯 Deploy New Game on Slot
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
