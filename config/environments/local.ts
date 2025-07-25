@@ -17,8 +17,6 @@ export const LocalEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   tick: {
     ...CommonEternumGlobalConfig.tick,
-    // 5 minutes
-    armiesTickIntervalInSeconds: 300,
   },
   // no stamina cost
   troop: {
@@ -129,8 +127,8 @@ export const LocalEternumGlobalConfig: Config = {
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 5,
-      creation_period_seconds: 60 * 10,
+      registration_period_seconds: 60 * 2,
+      creation_period_seconds: 60 * 2,
     },
   },
 };

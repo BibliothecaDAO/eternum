@@ -242,15 +242,15 @@ export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
 ];
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {
-  [ResourcesIds.Wood]: 1 / 1, // 1
+  [ResourcesIds.Wood]: 0,
   [ResourcesIds.Stone]: 0,
-  [ResourcesIds.Coal]: 1 / 0.5, // 2
-  [ResourcesIds.Copper]: 1 / 0.5, // 2
+  [ResourcesIds.Coal]: 0,
+  [ResourcesIds.Copper]: 0,
   [ResourcesIds.Obsidian]: 0,
   [ResourcesIds.Silver]: 0,
-  [ResourcesIds.Ironwood]: 1 / 0.2, // 5
-  [ResourcesIds.ColdIron]: 1 / 0.2, // 5
-  [ResourcesIds.Gold]: 1 / 0.2, // 5
+  [ResourcesIds.Ironwood]: 0,
+  [ResourcesIds.ColdIron]: 0,
+  [ResourcesIds.Gold]: 0,
   [ResourcesIds.Hartwood]: 0,
   [ResourcesIds.Diamonds]: 0,
   [ResourcesIds.Sapphire]: 0,
@@ -261,9 +261,9 @@ export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs 
   [ResourcesIds.TrueIce]: 0,
   [ResourcesIds.TwilightQuartz]: 0,
   [ResourcesIds.AlchemicalSilver]: 0,
-  [ResourcesIds.Adamantine]: 1 / 0.05, // 20
-  [ResourcesIds.Mithral]: 1 / 0.05, // 20
-  [ResourcesIds.Dragonhide]: 1 / 0.05, // 20
+  [ResourcesIds.Adamantine]: 0,
+  [ResourcesIds.Mithral]: 0,
+  [ResourcesIds.Dragonhide]: 0,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
   [ResourcesIds.KnightT2]: 0,

@@ -16,7 +16,7 @@ export const REALM_UPGRADE_COSTS: { [key in RealmLevels]: ResourceCost[] } = {
     { resource: ResourcesIds.Wood, amount: 400 },
   ],
   [RealmLevels.Empire]: [
-    { resource: ResourcesIds.Labor, amount: 600 },
+    { resource: ResourcesIds.Labor, amount: 800 },
     { resource: ResourcesIds.Wheat, amount: 7_200 },
     { resource: ResourcesIds.Essence, amount: 4_800 },
     { resource: ResourcesIds.Wood, amount: 1_200 },
