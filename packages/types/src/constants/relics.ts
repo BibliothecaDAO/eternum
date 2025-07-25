@@ -259,6 +259,11 @@ export const RELICS: RelicInfo[] = [
   },
 ];
 
+export const RELIC_COST_PER_LEVEL = {
+  1: 250,
+  2: 500,
+};
+
 // Helper functions
 export const getRelicInfo = (relicId: ResourcesIds): RelicInfo | undefined => {
   return RELICS.find((relic) => relic.id === relicId);
