@@ -130,7 +130,7 @@ jobs:
         run: |
           SLOT_NAME="${{ github.event.inputs.slot_name || env.SLOT_NAME }}"
           echo "🗑️ Attempting to delete existing slot: $SLOT_NAME"
-          slot d delete $SLOT_NAME torii || echo "⚠️ Slot deletion failed or slot doesn't exist"
+          slot d delete $SLOT_NAME torii -f || echo "⚠️ Slot deletion failed or slot doesn't exist"
 
       - name: 🆕 Create New Torii Slot
         run: |
@@ -144,12 +144,12 @@ jobs:
           echo "  Version: $TORII_VERSION"
           echo "  Config: ${{ env.TORII_CONFIG }}"
           
-          slot d create \
+          cd contracts/game && slot d create \
             --team ${{ env.SLOT_TEAM }} \
             --tier ${{ env.SLOT_TIER }} \
             $SLOT_NAME torii \
             --version $TORII_VERSION \
-            --config ${{ env.TORII_CONFIG }}
+            --config ${{ env.TORII_CONFIG }} -f
 
       - name: 💾 Commit and Push Changes
         run: |
