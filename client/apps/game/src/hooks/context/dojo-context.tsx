@@ -199,10 +199,10 @@ const DojoContextProvider = ({
             <div className="flex flex-col justify-wrap space-y-4 mt-2">
               {!isConnected && (
                 <>
-                  <Button size="lg" variant="gold" onClick={connectWallet} className="w-full">
-                    <div className="flex items-center justify-start w-full">
-                      <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
-                      <span className="flex-grow text-center">Log In</span>
+                  <Button className="w-full" variant="gold" onClick={connectWallet}>
+                    <div className="flex items-center justify-center">
+                      <CartridgeSmall className="w-5 h-5 mr-2 fill-black" />
+                      <span>Login</span>
                     </div>
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
