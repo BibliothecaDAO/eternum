@@ -11,11 +11,12 @@ env:
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
   CI: "true"
+  CONFIG_START_MAIN_AT: ${{ github.event.inputs.config_start_main_at }}
 
 on:
   # Scheduled deployment every 6 hours
-  schedule:
-    - cron: '0 */6 * * *'
+  # schedule:
+  #   - cron: '0 */6 * * *'
   
   # Manual trigger
   workflow_dispatch:
@@ -28,6 +29,9 @@ on:
         description: 'Torii version to deploy'
         required: false
         default: 'v1.6.0-alpha.2'
+      config_start_main_at:
+        description: 'Unix timestamp of when game should start. It should be at least 1h, 20 mins from now'
+        required: true
 
 jobs:
   deploy-slot:
@@ -116,6 +120,8 @@ jobs:
       - name: ⚙️ Deploy Configuration
         working-directory: ./contracts
         run: |
+          CONFIG_START_MAIN_AT="${{ github.event.inputs.config_start_main_at || env.CONFIG_START_MAIN_AT }}"
+
           echo "🔧 Deploying slot configuration..."
           pnpm run config:deploy:slot
 
