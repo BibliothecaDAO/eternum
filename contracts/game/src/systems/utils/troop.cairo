@@ -4,7 +4,7 @@ use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::constants::{WORLD_CONFIG_ID};
+use s1_eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs, split_blitz_exploration_reward_and_probs};
 use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
@@ -394,19 +394,30 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
     fn exploration_reward(
-        ref world: WorldStorage, explorer: Option<ExplorerTroops>, current_tick: u64, config: MapConfig, vrf_seed: u256,
+        ref world: WorldStorage,
+        explorer: Option<ExplorerTroops>,
+        current_tick: u64,
+        config: MapConfig,
+        vrf_seed: u256,
+        blitz_mode_on: bool,
     ) -> (u8, u128) {
-        // let (resource_types, resources_probs) = split_resources_and_probs();
-        // let reward_resource_id: u8 = *random::choices(
-        //     resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        // )
-        //     .at(0);
-        // let mut exploration_reward_resource_amount: u128 = config.reward_resource_amount.into();
-
-        // todo: add game mode check
-        let reward_resource_id: u8 = ResourceTypes::ESSENCE;
-        let mut exploration_reward_resource_amount: u128 = 1
-            + random::random(vrf_seed, 98139, config.reward_resource_amount.into()).try_into().unwrap();
+        let mut reward_resource_id: u8 = 0;
+        let mut reward_resource_amount: u128 = 0;
+        if blitz_mode_on {
+            let (resources, resources_probs) = split_blitz_exploration_reward_and_probs();
+            let (resource_id, resource_amount): (u8, u128) = *random::choices(
+                resources, resources_probs, array![].span(), 1, true, vrf_seed,
+            )
+                .at(0);
+            reward_resource_id = resource_id;
+            reward_resource_amount = resource_amount;
+        } else {
+            let (resource_types, resources_probs) = split_resources_and_probs();
+            let resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true, vrf_seed)
+                .at(0);
+            reward_resource_id = resource_id;
+            reward_resource_amount = config.reward_resource_amount.into();
+        }
 
         match explorer {
             Option::Some(explorer) => {
@@ -414,14 +425,14 @@ pub impl iExplorerImpl of iExplorerTrait {
                 if current_tick > explorer.troops.boosts.incr_explore_reward_end_tick.into() {
                     explorer.troops.boosts.incr_explore_reward_percent_num = 0;
                 }
-                exploration_reward_resource_amount +=
-                    (exploration_reward_resource_amount * explorer.troops.boosts.incr_explore_reward_percent_num.into())
+                reward_resource_amount +=
+                    (reward_resource_amount * explorer.troops.boosts.incr_explore_reward_percent_num.into())
                     / PercentageValueImpl::_100().into();
             },
             Option::None => {},
         };
 
-        return (reward_resource_id, exploration_reward_resource_amount * RESOURCE_PRECISION);
+        return (reward_resource_id, reward_resource_amount * RESOURCE_PRECISION);
     }
 
     fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {

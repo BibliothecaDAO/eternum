@@ -453,6 +453,40 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 }
 
 
+pub fn get_blitz_exploration_reward() -> Span<(u8, u128, u128)> {
+    return array![
+        (ResourceTypes::ESSENCE, 50, 3_000),
+        (ResourceTypes::ESSENCE, 100, 2_000),
+        (ResourceTypes::ESSENCE, 200, 1_500),
+        (ResourceTypes::LABOR, 250, 1_500),
+        (ResourceTypes::LABOR, 500, 800),
+        (ResourceTypes::DONKEY, 100, 600),
+        (ResourceTypes::KNIGHT_T1, 2_500, 200),
+        (ResourceTypes::CROSSBOWMAN_T1, 2_500, 200),
+        (ResourceTypes::PALADIN_T1, 2_500, 200),
+    ]
+        .span();
+}
+
+pub fn split_blitz_exploration_reward_and_probs() -> (Span<(u8, u128)>, Span<u128>) {
+    let mut zipped = get_blitz_exploration_reward();
+    let mut resources = array![];
+    let mut resource_probabilities = array![];
+    loop {
+        match zipped.pop_front() {
+            Option::Some((
+                resource_type, resource_amount, probability,
+            )) => {
+                resources.append((*resource_type, *resource_amount));
+                resource_probabilities.append(*probability);
+            },
+            Option::None => { break; },
+        }
+    };
+
+    return (resources.span(), resource_probabilities.span());
+}
+
 pub mod LevelIndex {
     pub const FOOD: u8 = 1;
     pub const RESOURCE: u8 = 2;

@@ -167,7 +167,7 @@ pub mod troop_movement_systems {
 
                     // grant resource reward for exploration
                     let (_explore_reward_type, _explore_reward_amount) = iExplorerImpl::exploration_reward(
-                        ref world, Option::Some(explorer), current_tick, map_config, vrf_seed,
+                        ref world, Option::Some(explorer), current_tick, map_config, vrf_seed, blitz_mode_on,
                     );
                     explore_reward_type = _explore_reward_type;
                     explore_reward_amount = _explore_reward_amount;
