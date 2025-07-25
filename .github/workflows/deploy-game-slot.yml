@@ -75,7 +75,7 @@ jobs:
         working-directory: ./contracts/game
         run: |
           # Generate a new random seed with timestamp
-          NEW_SEED="s1_eternum_slot_$(date +%s)_$(openssl rand -hex 4)"
+          NEW_SEED="s1_eternum_slot_$(date +%s)"
           echo "new_seed=$NEW_SEED" >> $GITHUB_OUTPUT
           echo "🎲 Generated new seed: $NEW_SEED"
 
