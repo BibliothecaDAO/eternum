@@ -159,7 +159,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "ci: update slot configuration for branch ${{ env.BRANCH }}"
+            git commit -m "🚀: New Blitz Deployment on Slot using ${{ env.BRANCH }} branch"
             git push
           fi
 
