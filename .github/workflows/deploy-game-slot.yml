@@ -72,11 +72,20 @@ jobs:
           # Install slotup (slot version manager)
           curl -L https://slot.cartridge.sh | bash
           
-          # Source bashrc to get slotup in PATH
-          source /home/runner/.bashrc
-          
-          # Install slot using slotup
-          slotup
+          # Find slotup and install slot directly
+          if [ -f "$HOME/.slotup/bin/slotup" ]; then
+            echo "🔧 Found slotup at $HOME/.slotup/bin/slotup"
+            $HOME/.slotup/bin/slotup
+          elif [ -f "$HOME/.local/bin/slotup" ]; then
+            echo "🔧 Found slotup at $HOME/.local/bin/slotup"
+            $HOME/.local/bin/slotup
+          else
+            echo "🔍 Searching for slotup..."
+            find $HOME -name "slotup" -type f 2>/dev/null | head -1 | xargs -I {} {} || {
+              echo "❌ Could not find slotup after installation"
+              exit 1
+            }
+          fi
           
           # Verify installation
           if [ ! -f "$HOME/.slot/bin/slot" ]; then
