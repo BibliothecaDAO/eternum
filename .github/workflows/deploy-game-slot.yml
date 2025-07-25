@@ -149,7 +149,7 @@ jobs:
             --tier ${{ env.SLOT_TIER }} \
             $SLOT_NAME torii \
             --version $TORII_VERSION \
-            --config ${{ env.TORII_CONFIG }} -f
+            --config ${{ env.TORII_CONFIG }}
 
       - name: 💾 Commit and Push Changes
         run: |
