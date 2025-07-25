@@ -529,9 +529,17 @@ export interface Config {
     subsequent_distance: number;
   };
   season: {
+    // we expect one or the other. The
+    // startSettlingAt takes precedence
     startSettlingAfterSeconds: number;
+    startSettlingAt: number;
     durationSeconds: number;
+
+    // we expect one or the other. The
+    // startMainAt takes precedence
     startMainAfterSeconds: number;
+    startMainAt: number;
+    
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;
   };

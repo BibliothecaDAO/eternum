@@ -63,6 +63,9 @@ import {
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
+const START_SETTLING_AT = Number(process.env.CONFIG_START_SETTLING_AT) || 0;
+const START_MAIN_AT = Number(process.env.CONFIG_START_MAIN_AT) || 0;
+
 const ONE_MINUTE_IN_SECONDS = 60;
 const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
@@ -364,7 +367,9 @@ export const EternumGlobalConfig: Config = {
   },
   season: {
     startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
+    startSettlingAt: START_SETTLING_AT,
     startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
+    startMainAt: START_MAIN_AT,
     durationSeconds: SEASON_DURATION_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
     pointRegistrationCloseAfterEndSeconds: SEASON_POINT_REGISTRATION_CLOSE_AFTER_END_SECONDS,

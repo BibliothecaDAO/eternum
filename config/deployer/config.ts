@@ -1091,9 +1091,20 @@ export const setSeasonConfig = async (config: Config) => {
   );
 
   const now = Math.floor(new Date().getTime() / 1000);
-  const startMainAt = now + config.config.season.startMainAfterSeconds;
-  const startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
-  const endAt = startMainAt + config.config.season.durationSeconds;
+  let startMainAt = 0;
+  let startSettlingAt = 0;
+
+  if (config.config.season.startMainAt && config.config.season.startMainAt > 0) {
+    startMainAt = config.config.season.startMainAt;
+  } else {
+    startMainAt = now + config.config.season.startMainAfterSeconds;
+  }
+
+  if (config.config.season.startSettlingAt && config.config.season.startSettlingAt > 0) {
+    startSettlingAt = config.config.season.startSettlingAt;
+  } else {
+    startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
+  }
 
   const seasonCalldata = {
     signer: config.account,
@@ -1102,7 +1113,7 @@ export const setSeasonConfig = async (config: Config) => {
     lords_address: config.config.setup!.addresses.lords,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,
-    end_at: endAt,
+    end_at: 0,
     bridge_close_end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
@@ -1411,6 +1422,15 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   let registration_end_at = registration_start_at + registration_period_seconds;
   let creation_start_at = registration_end_at + 1;
   let creation_end_at = creation_start_at + creation_period_seconds;
+
+  let startMainAt = config.config.season.startMainAt;
+  if (startMainAt && startMainAt > 0) {
+    creation_end_at = startMainAt;
+    creation_start_at = creation_end_at - creation_period_seconds;
+    registration_end_at = creation_start_at - 1;
+    registration_start_at = registration_end_at - registration_period_seconds;
+  }
+
   const registrationCalldata = {
     signer: config.account,
     fee_token: config.config.blitz.registration.fee_token,
