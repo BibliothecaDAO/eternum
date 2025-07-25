@@ -58,7 +58,7 @@ jobs:
 
       - name: 📥 Download Dojo Release
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.5.0/dojo_v1.5.0_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.6.0-alpha.2/dojo_v1.6.0-alpha.2_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
 
