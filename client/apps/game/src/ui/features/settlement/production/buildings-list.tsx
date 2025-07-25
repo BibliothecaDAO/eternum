@@ -2,7 +2,13 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getEntityIdFromKeys, getRealmInfo, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getRealmInfo,
+  getStructureRelicEffects,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -62,7 +68,15 @@ export const BuildingsList = ({
   }, [productionBoostBonus]);
 
   const productions = useMemo(() => {
+    const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
     return producedResources
+      .filter((resourceId) => {
+        // Exclude Labor if labor production is not enabled
+        if (resourceId === ResourcesIds.Labor && !isLaborProductionEnabled) {
+          return false;
+        }
+        return true;
+      })
       .map((resourceId) => {
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
@@ -174,59 +188,68 @@ export const BuildingsList = ({
           <h3>Production Buildings</h3>
           <p className="text-gold/70 pb-2 text-lg">Select a building to start production.</p>
           <div className="space-y-2 min-h-[300px] overflow-y-auto custom-scrollbar">
-            {productions.map((production) => {
-              let bgImage = "";
-              if (production.isLabor) {
-                bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
-              } else {
-                bgImage = production.buildings[0]?.category
-                  ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
-                  : "";
-              }
+            {productions.length === 0 ? (
+              <div className="panel-wood p-6 text-center">
+                <h4 className="text-xl font-semibold text-gold mb-2">No Production Buildings</h4>
+                <p className="text-gold/70 text-lg">
+                  You need to create production buildings first to start producing resources.
+                </p>
+              </div>
+            ) : (
+              productions.map((production) => {
+                let bgImage = "";
+                if (production.isLabor) {
+                  bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
+                } else {
+                  bgImage = production.buildings[0]?.category
+                    ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
+                    : "";
+                }
 
-              return (
-                <div
-                  key={production.resource}
-                  onClick={() => onSelectProduction(production.resource)}
-                  className={`relative group cursor-pointer transition-all duration-200 
+                return (
+                  <div
+                    key={production.resource}
+                    onClick={() => onSelectProduction(production.resource)}
+                    className={`relative group cursor-pointer transition-all duration-200 
                   ${selectedResource === production.resource ? "button-gold" : "border-transparent"} 
                    p-4`}
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  <div className="flex items-start justify-between space-x-2">
-                    <div className="flex-1 self-center">
-                      <div className="flex items-center gap-2">
-                        <ResourceIcon resource={ResourcesIds[production.resource]} size="xl" />
-                        <div>
-                          <h4 className="text-xl font-semibold text-gold tracking-wide">
-                            {ResourcesIds[production.resource]}
-                          </h4>
-                          <span className="text-base text-gold/70 font-medium">
-                            {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
-                          </span>
+                    style={{
+                      backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  >
+                    <div className="flex items-start justify-between space-x-2">
+                      <div className="flex-1 self-center">
+                        <div className="flex items-center gap-2">
+                          <ResourceIcon resource={ResourcesIds[production.resource]} size="xl" />
+                          <div>
+                            <h4 className="text-xl font-semibold text-gold tracking-wide">
+                              {ResourcesIds[production.resource]}
+                            </h4>
+                            <span className="text-base text-gold/70 font-medium">
+                              {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="w-[480px] flex-shrink-0 self-center">
-                      <ResourceChip
-                        resourceId={production.resource}
-                        resourceManager={resourceManager}
-                        size="large"
-                        showTransfer={false}
-                        storageCapacity={realmInfo?.storehouses?.capacityKg}
-                        storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
-                        activeRelicEffects={activeRelicEffects}
-                      />
+                      <div className="w-[480px] flex-shrink-0 self-center">
+                        <ResourceChip
+                          resourceId={production.resource}
+                          resourceManager={resourceManager}
+                          size="large"
+                          showTransfer={false}
+                          storageCapacity={realmInfo?.storehouses?.capacityKg}
+                          storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
+                          activeRelicEffects={activeRelicEffects}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </motion.div>
       )}

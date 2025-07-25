@@ -162,21 +162,6 @@ const DojoContextProvider = ({
     }
   }, [controllerAccount, retries]);
 
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  useEffect(() => {
-    if (accountName && showBlankOverlay) {
-      const showTimer = setTimeout(() => {
-        setShowWelcome(true);
-        const hideTimer = setTimeout(() => {
-          setShowWelcome(false);
-        }, 4000);
-        return () => clearTimeout(hideTimer);
-      }, 2000);
-      return () => clearTimeout(showTimer);
-    }
-  }, [accountName, showBlankOverlay]);
-
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }

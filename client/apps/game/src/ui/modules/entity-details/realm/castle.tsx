@@ -2,13 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ProductionModal } from "@/ui/features/settlement";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  unpackValue,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -35,6 +29,8 @@ export const Castle = () => {
     getEntityIdFromKeys([BigInt(structureEntityId)]),
   );
   const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
+
+  const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
 
   const onActivateWonderBonus = async () => {
     setIsWonderBonusLoading(true);
@@ -129,10 +125,6 @@ export const Castle = () => {
     }
     setIsLevelUpLoading(false);
   };
-
-  const resourcesProduced = useMemo(() => {
-    return unpackValue(structure?.resources_packed || 0n);
-  }, [structure]);
 
   if (!structure) return null;
   const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
@@ -273,7 +265,7 @@ export const Castle = () => {
           </div>
 
           {/* Labor Production Button */}
-          {isOwner && (
+          {isOwner && isLaborProductionEnabled && (
             <div className="flex justify-center">
               <Button
                 onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}

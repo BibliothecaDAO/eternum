@@ -1069,6 +1069,12 @@ export class ClientConfigManager {
       },
     );
   };
+
+  isLaborProductionEnabled() {
+    return this.getValueOrDefault(() => {
+      return Object.values(configManager.laborOutputPerResource).some((x) => x.amount > 0);
+    }, false);
+  }
 }
 
 export const configManager = ClientConfigManager.instance();
