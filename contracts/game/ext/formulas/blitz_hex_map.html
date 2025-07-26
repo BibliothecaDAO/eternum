@@ -371,7 +371,8 @@
             toCube() {
                 const col = this.x;
                 const row = this.y;
-                const q = col - Math.floor((row + (row & 1)) / 2);
+                // Use integer division that matches Cairo behavior (truncate towards zero)
+                const q = col - Math.trunc((row + (row & 1)) / 2);
                 const r = row;
                 const s = -q - r;
                 return { q, r, s };
@@ -379,7 +380,8 @@
 
             // Create from cube coordinates
             static fromCube(cube) {
-                const col = cube.q + Math.floor((cube.r + (cube.r & 1)) / 2);
+                // Use integer division that matches Cairo behavior (truncate towards zero)
+                const col = cube.q + Math.trunc((cube.r + (cube.r & 1)) / 2);
                 const row = cube.r;
                 return new Coord(col, row);
             }
@@ -641,16 +643,18 @@
             // Convert world coordinates to screen coordinates (pointy-top hexagons)
             worldToScreen(coord) {
                 // Offset from the world center
-                const offsetX = coord.x - CENTER_COL;
-                const offsetY = coord.y - CENTER_ROW;
+                const center = Coord.center();
+                const centerCube = center.toCube();
+                const cube = coord.toCube();
                 
-                // For pointy-top hexagons in even-r offset coordinates:
-                const hexWidth = this.hexSize * Math.sqrt(3);
-                const hexHeight = this.hexSize * 2;
+                // Calculate offset in cube coordinates
+                const offsetQ = cube.q - centerCube.q;
+                const offsetR = cube.r - centerCube.r;
                 
-                // Calculate base screen position
-                const baseX = offsetX * hexWidth + (offsetY & 1) * hexWidth * 0.5;
-                const baseY = offsetY * hexHeight * 0.75;
+                // Standard pointy-top hexagon screen conversion from cube coordinates
+                const size = this.hexSize;
+                const baseX = size * Math.sqrt(3) * (offsetQ + offsetR / 2);
+                const baseY = size * (3/2) * offsetR;
                 
                 // Apply zoom and pan transformations
                 const screenX = this.canvas.width / 2 + baseX + this.panX;
@@ -665,14 +669,22 @@
                 const baseX = screenX - this.canvas.width / 2 - this.panX;
                 const baseY = screenY - this.canvas.height / 2 - this.panY;
                 
-                const hexWidth = this.hexSize * Math.sqrt(3);
-                const hexHeight = this.hexSize * 2;
+                const size = this.hexSize;
                 
-                // Approximate world coordinates (this is complex for hexagonal grids)
-                const offsetY = Math.round(baseY / (hexHeight * 0.75));
-                const offsetX = Math.round((baseX - (offsetY & 1) * hexWidth * 0.5) / hexWidth);
+                // Approximate conversion from screen to cube offset coordinates
+                const offsetR = Math.round(baseY / (size * (3/2)));
+                const offsetQ = Math.round((baseX - offsetR / 2) / (size * Math.sqrt(3)));
                 
-                return new Coord(CENTER_COL + offsetX, CENTER_ROW + offsetY);
+                // Convert back to world coordinates
+                const center = Coord.center();
+                const centerCube = center.toCube();
+                const worldCube = {
+                    q: centerCube.q + offsetQ,
+                    r: centerCube.r + offsetR,
+                    s: centerCube.s - offsetQ - offsetR
+                };
+                
+                return Coord.fromCube(worldCube);
             }
 
             // Draw a pointy-top hexagon at screen coordinates
@@ -953,29 +965,34 @@
             drawBackground() {
                 if (!this.showGrid) return;
                 
-                // Calculate visible area based on current view
-                const hexWidth = this.hexSize * Math.sqrt(3);
-                const hexHeight = this.hexSize * 2;
-                
                 // Get world coordinates of canvas corners
                 const topLeft = this.screenToWorld(0, 0);
                 const bottomRight = this.screenToWorld(this.canvas.width, this.canvas.height);
+                const topRight = this.screenToWorld(this.canvas.width, 0);
+                const bottomLeft = this.screenToWorld(0, this.canvas.height);
+                
+                // Find the bounds in world coordinate space
+                const allX = [topLeft.x, bottomRight.x, topRight.x, bottomLeft.x];
+                const allY = [topLeft.y, bottomRight.y, topRight.y, bottomLeft.y];
+                
+                const minX = Math.min(...allX);
+                const maxX = Math.max(...allX);
+                const minY = Math.min(...allY);
+                const maxY = Math.max(...allY);
                 
                 // Add padding to draw slightly outside visible area
                 const padding = 3;
-                const minX = topLeft.x - CENTER_COL - padding;
-                const maxX = bottomRight.x - CENTER_COL + padding;
-                const minY = topLeft.y - CENTER_ROW - padding;
-                const maxY = bottomRight.y - CENTER_ROW + padding;
                 
                 // Draw grid hexagons in visible area
-                for (let dy = minY; dy <= maxY; dy++) {
-                    for (let dx = minX; dx <= maxX; dx++) {
-                        const coord = new Coord(CENTER_COL + dx, CENTER_ROW + dy);
+                for (let y = minY - padding; y <= maxY + padding; y++) {
+                    for (let x = minX - padding; x <= maxX + padding; x++) {
+                        const coord = new Coord(x, y);
                         const screen = this.worldToScreen(coord);
                         
-                        // Only draw if hex size is reasonable (performance optimization)
-                        if (this.hexSize >= 0.5) {
+                        // Only draw if hex size is reasonable and within reasonable screen bounds
+                        if (this.hexSize >= 0.5 && 
+                            screen.x > -this.hexSize && screen.x < this.canvas.width + this.hexSize &&
+                            screen.y > -this.hexSize && screen.y < this.canvas.height + this.hexSize) {
                             this.drawHex(screen.x, screen.y, 'transparent', '#333333');
                         }
                     }

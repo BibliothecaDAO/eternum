@@ -424,7 +424,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 
     fn realm_tile_radius() -> u32 {
-        4
+        3
     }
 
     fn mirror_first_step_tile_distance() -> u32 {

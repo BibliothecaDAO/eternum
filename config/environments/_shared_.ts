@@ -154,7 +154,7 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 8;
+export const SETTLEMENT_BASE_DISTANCE = 6;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
