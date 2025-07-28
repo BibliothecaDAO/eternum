@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Database, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
+import { Castle, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -46,11 +46,11 @@ const items = [
     url: "/trade",
     icon: Scale,
   },
-  {
-    title: "Data",
-    icon: Database,
-    url: "/data",
-  },
+  // {
+  //   title: "Data",
+  //   icon: Database,
+  //   url: "/data",
+  // },
 ];
 
 export function AppSidebar() {

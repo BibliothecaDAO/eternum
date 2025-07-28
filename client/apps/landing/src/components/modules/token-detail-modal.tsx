@@ -31,6 +31,8 @@ interface TokenDetailModalProps {
   onOpenChange: (isOpen: boolean) => void;
   tokenData: MergedNftData;
   isOwner: boolean;
+  isLootChest: boolean;
+  onChestOpen: () => void;
   marketplaceActions: ReturnType<typeof useMarketplace>;
   // Listing details passed from RealmCard
   isListed: boolean;
@@ -44,6 +46,8 @@ export const TokenDetailModal = ({
   onOpenChange,
   tokenData,
   isOwner,
+  isLootChest,
+  onChestOpen,
   marketplaceActions,
   isListed,
   price,
@@ -77,6 +81,15 @@ export const TokenDetailModal = ({
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
+
+  const handleOpenChest = () => {
+    setIsChestOpeningLoading(true);
+    setTimeout(() => {
+      setIsChestOpeningLoading(false);
+      onChestOpen();
+    }, 2000);
+  };
 
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
@@ -226,12 +239,26 @@ export const TokenDetailModal = ({
           </Button>
         </div>
       ) : (
-        <CreateListingsDrawer
-          isLoading={isLoading}
-          isSyncing={isSyncing}
-          tokens={[tokenData]}
-          marketplaceActions={marketplaceActions}
-        />
+        <div className="flex gap-2 mt-2">
+          {isOwner && isLootChest && (
+            <Button variant="default" className="w-full" onClick={handleOpenChest} disabled={isLoading}>
+              {isChestOpeningLoading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Opening...
+                </>
+              ) : (
+                "Open Chest"
+              )}
+            </Button>
+          )}
+          <CreateListingsDrawer
+            isLoading={isLoading}
+            isSyncing={isSyncing}
+            tokens={[tokenData]}
+            marketplaceActions={marketplaceActions}
+          />
+        </div>
       )}
     </>
   );
