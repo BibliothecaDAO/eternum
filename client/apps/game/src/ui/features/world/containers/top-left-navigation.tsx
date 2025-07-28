@@ -550,6 +550,7 @@ const GameEndTimer = memo(() => {
   const { currentBlockTimestamp } = getBlockTimestamp();
 
   const [secondsRemaining, setSecondsRemaining] = useState(gameEndAt ? gameEndAt - currentBlockTimestamp : 0);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
   // Update countdown every second
   useEffect(() => {
@@ -563,6 +564,37 @@ const GameEndTimer = memo(() => {
     return () => clearInterval(timer);
   }, []);
 
+  // Update tooltip content while it's visible
+  useEffect(() => {
+    if (!isTooltipVisible) return;
+
+    const updateTooltip = () => {
+      const currentFullTime = `${Math.floor(secondsRemaining / 3600)}h ${Math.floor((secondsRemaining % 3600) / 60)
+        .toString()
+        .padStart(2, "0")}m ${(secondsRemaining % 60).toString().padStart(2, "0")}s`;
+
+      setTooltip({
+        position: "bottom",
+        content: (
+          <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
+            <div className="font-bold">Game Ends In:</div>
+            <div>
+              <span className="">{currentFullTime}</span>
+            </div>
+          </div>
+        ),
+      });
+    };
+
+    // Update immediately
+    updateTooltip();
+
+    // Then update every second while tooltip is visible
+    const tooltipTimer = setInterval(updateTooltip, 1000);
+
+    return () => clearInterval(tooltipTimer);
+  }, [isTooltipVisible, secondsRemaining, setTooltip]);
+
   // Calculate time components
   const { hours, minutes, seconds } = useMemo(() => {
     const hrs = Math.floor(secondsRemaining / 3600);
@@ -571,33 +603,18 @@ const GameEndTimer = memo(() => {
     return { hours: hrs, minutes: mins, seconds: secs };
   }, [secondsRemaining]);
 
-  // Format time display
+  // Format time display (without seconds for main display)
   const timeDisplay = useMemo(() => {
-    return `${hours}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
-  }, [hours, minutes, seconds]);
-
-  // Memoize tooltip content
-  const tooltipContent = useMemo(
-    () => (
-      <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
-        <div className="font-bold">Game Ends In</div>
-        <div>
-          Time remaining: <span className="font-bold">{timeDisplay}</span>
-        </div>
-      </div>
-    ),
-    [timeDisplay],
-  );
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  }, [hours, minutes]);
 
   // Handle tooltip visibility
   const handleMouseEnter = useCallback(() => {
-    setTooltip({
-      position: "bottom",
-      content: tooltipContent,
-    });
-  }, [setTooltip, tooltipContent]);
+    setIsTooltipVisible(true);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
+    setIsTooltipVisible(false);
     setTooltip(null);
   }, [setTooltip]);
 
@@ -608,7 +625,7 @@ const GameEndTimer = memo(() => {
       className="self-center text-center px-2 py-1 flex gap-1 text-xl items-center border-l border-gold/20"
     >
       <Clock className="w-4 h-4 text-gold" />
-      <span className="text-sm text-gold font-semibold">{timeDisplay}</span>
+      <span className="text-sm text-gold font-semibold font-mono w-15 text-right">{timeDisplay}</span>
     </div>
   );
 });
