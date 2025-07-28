@@ -428,11 +428,11 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 
     fn mirror_first_step_tile_distance() -> u32 {
-        8
+        9
     }
 
     fn mirror_second_step_tile_distance() -> u32 {
-        2
+        3
     }
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
