@@ -15,20 +15,23 @@ env:
 
 on:
   # Scheduled deployment every 6 hours
-  schedule:
-    - cron: "0 */6 * * *"
-
+  # schedule:
+  #   - cron: '0 */6 * * *'
+  
   # Manual trigger
   workflow_dispatch:
     inputs:
       slot_name:
-        description: "Slot deployment name"
+        description: 'Slot deployment name'
         required: false
-        default: "eternum-blitz-slot-1"
+        default: 'eternum-blitz-slot-1'
       torii_version:
-        description: "Torii version to deploy"
+        description: 'Torii version to deploy'
         required: false
-        default: "v1.6.0-alpha.2"
+        default: 'v1.6.0-alpha.2'
+      config_start_main_at:
+        description: 'Unix timestamp of when game should start. It should be at least 1h, 20 mins from now'
+        required: true
 
 jobs:
   deploy-slot:
@@ -70,18 +73,18 @@ jobs:
       - name: 🎰 Install Slot CLI
         run: |
           echo "🎰 Installing Slot CLI..."
-
+          
           # Install slotup (slot version manager)
           curl -L https://slot.cartridge.sh | bash
-
+          
           # Run slotup to install slot
           echo "🚀 Running slotup to install slot..."
           /home/runner/.config/.slot/bin/slotup
-
+          
           # Add to PATH for subsequent steps
           echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
           export PATH="/home/runner/.config/.slot/bin:$PATH"
-
+          
           # Verify slot command works
           slot --version
           echo "✅ Slot CLI installed successfully"
@@ -104,7 +107,7 @@ jobs:
           # Update the seed in dojo_slot.toml
           sed -i 's/^seed = ".*"/seed = "${{ steps.generate-seed.outputs.new_seed }}"/' dojo_slot.toml
           echo "✅ Updated seed in dojo_slot.toml"
-
+          
           # Verify the change
           grep "^seed = " dojo_slot.toml
 
@@ -139,15 +142,15 @@ jobs:
         run: |
           SLOT_NAME="${{ github.event.inputs.slot_name || env.SLOT_NAME }}"
           TORII_VERSION="${{ github.event.inputs.torii_version || env.TORII_VERSION }}"
-
+          
           echo "🆕 Creating new Torii slot with configuration:"
           echo "  Slot Name: $SLOT_NAME"
           echo "  Team: ${{ env.SLOT_TEAM }}"
           echo "  Tier: ${{ env.SLOT_TIER }}"
           echo "  Version: $TORII_VERSION"
           echo "  Config: ${{ env.TORII_CONFIG }}"
-
-          slot d create \
+          
+          cd contracts/game && slot d create \
             --team ${{ env.SLOT_TEAM }} \
             --tier ${{ env.SLOT_TIER }} \
             $SLOT_NAME torii \
@@ -187,4 +190,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The slot deployment encountered an error. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY 
