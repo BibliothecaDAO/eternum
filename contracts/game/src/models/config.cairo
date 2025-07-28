@@ -567,14 +567,15 @@ pub struct TroopStaminaConfig {
     // Combat stamina requirements
     pub stamina_attack_req: u16, // Minimum stamina required to attack
     pub stamina_attack_max: u16, // Maximum stamina that can be used in attack
-    // Exploration costs
-    pub stamina_explore_wheat_cost: u16,
-    pub stamina_explore_fish_cost: u16,
+    // Exploration and travel stamina costs
     pub stamina_explore_stamina_cost: u16,
-    // Travel costs
-    pub stamina_travel_wheat_cost: u16,
-    pub stamina_travel_fish_cost: u16,
     pub stamina_travel_stamina_cost: u16,
+    // Exploration food costs
+    pub stamina_explore_wheat_cost: u32,
+    pub stamina_explore_fish_cost: u32,
+    // Travel food costs
+    pub stamina_travel_wheat_cost: u32,
+    pub stamina_travel_fish_cost: u32,
 }
 
 

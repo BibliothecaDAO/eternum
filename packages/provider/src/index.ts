@@ -2295,12 +2295,12 @@ export class EternumProvider extends EnhancedDojoProvider {
         stamina_config.stamina_crossbowman_max,
         stamina_config.stamina_attack_req,
         stamina_config.stamina_attack_max,
+        stamina_config.stamina_explore_stamina_cost,
+        stamina_config.stamina_travel_stamina_cost,
         stamina_config.stamina_explore_wheat_cost,
         stamina_config.stamina_explore_fish_cost,
-        stamina_config.stamina_explore_stamina_cost,
         stamina_config.stamina_travel_wheat_cost,
         stamina_config.stamina_travel_fish_cost,
-        stamina_config.stamina_travel_stamina_cost,
 
         // limit config
         limit_config.explorer_max_party_count,

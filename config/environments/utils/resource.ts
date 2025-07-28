@@ -214,6 +214,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
 };
 
 export const STARTING_RESOURCES: ResourceCost[] = [
+  { resource: ResourcesIds.Wheat, amount: 500 },
   { resource: ResourcesIds.Labor, amount: 1_000 },
   { resource: ResourcesIds.Wood, amount: 180 },
   { resource: ResourcesIds.Coal, amount: 120 },
@@ -226,14 +227,14 @@ export const STARTING_RESOURCES: ResourceCost[] = [
 ];
 
 export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
-  { resource: ResourcesIds.Wheat, amount: 2_000_000 },
-  { resource: ResourcesIds.Fish, amount: 2_000_000 },
-  { resource: ResourcesIds.Labor, amount: 200_000 },
-  { resource: ResourcesIds.Donkey, amount: 1_500 },
-  // 1000, tokenized troops. only one troop type will be selected
-  { resource: ResourcesIds.Knight, amount: 1_000 },
-  { resource: ResourcesIds.Crossbowman, amount: 1_000 },
-  { resource: ResourcesIds.Paladin, amount: 1_000 },
+  // { resource: ResourcesIds.Wheat, amount: 2_000_000 },
+  // { resource: ResourcesIds.Fish, amount: 2_000_000 },
+  // { resource: ResourcesIds.Labor, amount: 200_000 },
+  // { resource: ResourcesIds.Donkey, amount: 1_500 },
+  // // 1000, tokenized troops. only one troop type will be selected
+  // { resource: ResourcesIds.Knight, amount: 1_000 },
+  // { resource: ResourcesIds.Crossbowman, amount: 1_000 },
+  // { resource: ResourcesIds.Paladin, amount: 1_000 },
 ];
 
 export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [

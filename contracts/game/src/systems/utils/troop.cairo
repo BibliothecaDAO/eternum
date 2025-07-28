@@ -309,8 +309,8 @@ pub impl iExplorerImpl of iExplorerTrait {
         };
 
         // multiply by troop count
-        let wheat_burn_amount: u128 = wheat_cost * explorer.troops.count.into();
-        let fish_burn_amount: u128 = fish_cost * explorer.troops.count.into();
+        let wheat_burn_amount: u128 = wheat_cost * (explorer.troops.count.into() / RESOURCE_PRECISION);
+        let fish_burn_amount: u128 = fish_cost * (explorer.troops.count.into() / RESOURCE_PRECISION);
 
         // spend wheat resource
         // todo: revisit who should pay food cost

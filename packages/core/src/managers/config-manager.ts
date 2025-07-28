@@ -910,10 +910,18 @@ export class ClientConfigManager {
         )?.troop_stamina_config;
 
         return {
-          exploreWheatBurnAmount: Number(travelFoodCostConfig?.stamina_explore_wheat_cost) ?? 0,
-          exploreFishBurnAmount: Number(travelFoodCostConfig?.stamina_explore_fish_cost) ?? 0,
-          travelWheatBurnAmount: Number(travelFoodCostConfig?.stamina_travel_wheat_cost) ?? 0,
-          travelFishBurnAmount: Number(travelFoodCostConfig?.stamina_travel_fish_cost) ?? 0,
+          exploreWheatBurnAmount: travelFoodCostConfig?.stamina_explore_wheat_cost !== undefined
+            ? Number(travelFoodCostConfig.stamina_explore_wheat_cost) / Number(RESOURCE_PRECISION)
+            : 0,
+          exploreFishBurnAmount: travelFoodCostConfig?.stamina_explore_fish_cost !== undefined
+            ? Number(travelFoodCostConfig.stamina_explore_fish_cost) / Number(RESOURCE_PRECISION)
+            : 0,
+          travelWheatBurnAmount: travelFoodCostConfig?.stamina_travel_wheat_cost !== undefined
+            ? Number(travelFoodCostConfig.stamina_travel_wheat_cost) / Number(RESOURCE_PRECISION)
+            : 0,
+          travelFishBurnAmount: travelFoodCostConfig?.stamina_travel_fish_cost !== undefined
+            ? Number(travelFoodCostConfig.stamina_travel_fish_cost) / Number(RESOURCE_PRECISION)
+            : 0,
         };
       },
       {

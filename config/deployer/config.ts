@@ -748,11 +748,11 @@ export const setTroopConfig = async (config: Config) => {
       stamina_crossbowman_max: stamina_crossbowman_max,
       stamina_attack_req: stamina_attack_req,
       stamina_attack_max: stamina_attack_max,
-      stamina_explore_wheat_cost: stamina_explore_wheat_cost,
-      stamina_explore_fish_cost: stamina_explore_fish_cost,
+      stamina_explore_wheat_cost: stamina_explore_wheat_cost * config.config.resources.resourcePrecision,
+      stamina_explore_fish_cost: stamina_explore_fish_cost * config.config.resources.resourcePrecision,
       stamina_explore_stamina_cost: stamina_explore_stamina_cost,
-      stamina_travel_wheat_cost: stamina_travel_wheat_cost,
-      stamina_travel_fish_cost: stamina_travel_fish_cost,
+      stamina_travel_wheat_cost: stamina_travel_wheat_cost * config.config.resources.resourcePrecision,
+      stamina_travel_fish_cost: stamina_travel_fish_cost * config.config.resources.resourcePrecision,
       stamina_travel_stamina_cost: stamina_travel_stamina_cost,
     },
     limit_config: {
@@ -789,11 +789,11 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Crossbow Max Stamina:")}    ${chalk.white(calldata.stamina_config.stamina_crossbowman_max)}
     │  ${chalk.gray("Attack Requirement:")}       ${chalk.white(calldata.stamina_config.stamina_attack_req)}
     │  ${chalk.gray("Attack Max:")}              ${chalk.white(calldata.stamina_config.stamina_attack_max)}
-    │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost)}
-    │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost)}
+    │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost / config.config.resources.resourcePrecision)}
+    │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Explore Stamina Cost:")}    ${chalk.white(calldata.stamina_config.stamina_explore_stamina_cost)}
-    │  ${chalk.gray("Travel Wheat Cost:")}       ${chalk.white(calldata.stamina_config.stamina_travel_wheat_cost)}
-    │  ${chalk.gray("Travel Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_travel_fish_cost)}
+    │  ${chalk.gray("Travel Wheat Cost:")}       ${chalk.white(calldata.stamina_config.stamina_travel_wheat_cost / config.config.resources.resourcePrecision)}
+    │  ${chalk.gray("Travel Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_travel_fish_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Travel Stamina Cost:")}     ${chalk.white(calldata.stamina_config.stamina_travel_stamina_cost)}
     │
     │  ${chalk.yellow("Limit Configuration")}

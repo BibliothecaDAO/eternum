@@ -123,6 +123,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     }
 
     fn _blitz_mode_reward_amount(ref world: WorldStorage) -> u128 {
-        18_000 * RESOURCE_PRECISION
+        36_000 * RESOURCE_PRECISION
     }
 }
