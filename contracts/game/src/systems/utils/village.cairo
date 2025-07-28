@@ -129,7 +129,7 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
     fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
         // make sure seed is different for each lottery system to prevent same outcome for same probability
-        let VRF_OFFSET: u256 = 4;
+        let VRF_OFFSET: u256 = 5;
         let village_vrf_seed = if vrf_seed > VRF_OFFSET {
             vrf_seed - VRF_OFFSET
         } else {
