@@ -4,10 +4,10 @@
 
 IMPORTANT: Read these package READMEs to understand the codebase structure:
 
-- `packages/types/README.md` - Type definitions shared across packages
-- `packages/provider/README.md` - Data provider interfaces and implementations
-- `packages/core/README.md` - Core game logic and utilities
-- `packages/torii/README.md` - Torii integration for blockchain data
+- `packages/types/README.md` – Type definitions shared across packages
+- `packages/provider/README.md` – Data provider interfaces and implementations
+- `packages/core/README.md` – Core game logic and utilities
+- `packages/torii/README.md` – Torii integration for blockchain data
 
 This helps you:
 
@@ -30,11 +30,11 @@ pnpm run knip # knip
 
 When building features, read the relevant app README:
 
-- `client/apps/game/README.md` - Main game application
-- `client/apps/bot/README.md` - Bot implementation
-- `client/apps/game-docs/README.md` - Game documentation site
-- `client/apps/heavy-load/README.md` - Performance testing tools
-- `client/apps/landing/README.md` - Landing page
+- `client/apps/game/README.md` – Main game application
+- `client/apps/bot/README.md` – Bot implementation
+- `client/apps/game-docs/README.md` – Game documentation site
+- `client/apps/heavy-load/README.md` – Performance testing tools
+- `client/apps/landing/README.md` – Landing page
 
 ## Game World Display: Worldmap vs. Hex View
 
@@ -57,8 +57,18 @@ Transitioning between these two layers is a core interaction in gameplay and imp
 - Prefer composition over inheritance
 - Use functional components for React code
 - Keep components small and focused
-- **NEVER use `(as any)` to bypass TypeScript errors** — This defeats TypeScript's type safety. Instead, properly type
-  your data or fix the underlying issue
+- **NEVER use `(as any)` to bypass TypeScript errors** – Instead, properly type your data or fix the underlying issue
+
+## Shortcut Integration Guidelines
+
+If you're adding new keyboard shortcuts to the app:
+
+- **Always register them via the centralized manager** located at:
+  `@client/apps/game/src/utils/shortcuts/centralized-shortcut-manager.ts`
+- This ensures shortcuts are consistent across scenes and easy to maintain
+- **Do not register shortcuts ad-hoc** in component files or scene logic
+- If shortcuts are tied to the game scene (e.g., Three.js), you can use `SceneShortcutManager` to bridge centralized
+  logic with scene-specific behavior
 
 ## Testing Guidelines
 
@@ -71,13 +81,13 @@ Transitioning between these two layers is a core interaction in gameplay and imp
 
 IMPORTANT: Before committing changes, YOU MUST:
 
-1. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
-2. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-3. **Update README**: Update the main README if you've added new features or changed setup steps
-4. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-5. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-6. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-7. **Build Packages**: If you modified packages, run `pnpm run build:packages`
+1. **Update Lockfile** – If you added/removed dependencies, run `pnpm install` and commit pnpm-lock.yaml
+2. **Update Documentation** – Check if `client/apps/game-docs` needs updates based on your changes
+3. **Update README** – Update the main README if you've added new features or changed setup steps
+4. **Check Directory READMEs** – If you made changes in a directory, check if its README needs updates
+5. **Run Formatter** – Execute `pnpm run format` to ensure consistent code formatting
+6. **Check Unused Dependencies** – Run `knip` and ensure no changes (no unused dependencies)
+7. **Build Packages** – If you modified packages, run `pnpm run build:packages`
 
 ## Design System Guidelines
 
@@ -85,16 +95,15 @@ When creating new UI components:
 
 1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
    elsewhere in the app
-2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
-   design system:
-   - `atoms/` for basic UI primitives
-   - `molecules/` for composed components
+2. **Add to design system if generic**:
+   - `atoms/` for basic UI primitives (buttons, inputs, labels)
+   - `molecules/` for composed components (card headers, form groups)
 3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
    implementations that could be replaced
 4. **Replace existing implementations**: Update all found instances to use the new design system component
 5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
 
-## Adding New Contract Entrypoints - MANDATORY PROCESS
+## Adding New Contract Entrypoints – MANDATORY PROCESS
 
 When new entrypoints are added to contracts, follow this exact pattern:
 
