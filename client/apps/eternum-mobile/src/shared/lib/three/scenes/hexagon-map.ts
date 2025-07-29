@@ -488,6 +488,7 @@ export class HexagonMap {
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
+      this.structureHexes,
       this.questHexes,
       currentDefaultTick,
       currentArmiesTick,

@@ -56,7 +56,9 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionWonderBonus",
+    "s1_eternum-ProductionBoostBonus",
+    // needed to check for hyperstructure shareholders 100% in blitz mode
+    "s1_eternum-HyperstructureShareholders",
   ];
 
   // Create promises for all queries without awaiting them
@@ -97,6 +99,7 @@ export const getConfigFromTorii = async <S extends Schema>(
   const oneKeyConfigModels = [
     "s1_eternum-WorldConfig",
     "s1_eternum-HyperstructureConstructConfig",
+    "s1_eternum-HyperstructureGlobals",
     "s1_eternum-WeightConfig",
     "s1_eternum-ResourceFactoryConfig",
     "s1_eternum-BuildingCategoryConfig",
@@ -107,6 +110,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
+    "s1_eternum-BlitzRealmPlayerRegister",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];
@@ -371,6 +375,7 @@ export const getBuildingsFromTorii = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   structurePositions: HexPosition[],
 ) => {
+  console.log("getBuildingsFromTorii", structurePositions);
   const query = {
     Composite: {
       operator: "Or" as LogicalOperator,

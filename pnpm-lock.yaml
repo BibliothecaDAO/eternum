@@ -271,6 +271,9 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../../../packages/provider
+      '@bibliothecadao/torii':
+        specifier: workspace:*
+        version: link:../../../packages/torii
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../../../packages/types
@@ -879,6 +882,9 @@ importers:
       starknet:
         specifier: 'catalog:'
         version: 7.6.2
+      zustand:
+        specifier: ^4.5.2
+        version: 4.5.7(@types/react@18.3.23)(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.11.10

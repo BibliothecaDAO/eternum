@@ -7,7 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { BLITZ_RESOURCE_TIERS, ID, resources, ResourcesIds } from "@bibliothecadao/types";
+
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -88,14 +89,14 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   );
 
   const visibleCollapsedResources = useMemo(() => {
-    return Object.entries(RESOURCE_TIERS)
+    return Object.entries(BLITZ_RESOURCE_TIERS)
       .filter(([tier]) => !HIDDEN_TIERS_IN_COLLAPSED.includes(tier as ResourceTier))
       .flatMap(([_, resourceIds]) => resourceIds);
   }, []);
 
   const orderedTiers = useMemo(() => {
-    return TIER_ORDER.filter((tier): tier is ResourceTier => tier in RESOURCE_TIERS).map(
-      (tier) => [tier, RESOURCE_TIERS[tier]] as const,
+    return TIER_ORDER.filter((tier): tier is ResourceTier => tier in BLITZ_RESOURCE_TIERS).map(
+      (tier) => [tier, BLITZ_RESOURCE_TIERS[tier]] as const,
     );
   }, []);
 
