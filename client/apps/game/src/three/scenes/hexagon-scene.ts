@@ -17,6 +17,7 @@ import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
+import { ShortcutManager } from "../managers/shortcut-manager";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
@@ -30,6 +31,7 @@ export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
   protected inputManager!: InputManager;
+  protected shortcutManager!: ShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
   protected systemManager!: SystemManager;
   protected highlightHexManager!: HighlightHexManager;

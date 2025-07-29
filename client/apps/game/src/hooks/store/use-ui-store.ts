@@ -1,3 +1,4 @@
+import { SelectableArmy } from "@/three/types";
 import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -83,6 +84,9 @@ interface UIStore {
   setFollowArmyMoves: (follow: boolean) => void;
   isFollowingArmy: boolean;
   setIsFollowingArmy: (following: boolean) => void;
+  // shortcut navigation
+  selectableArmies: SelectableArmy[];
+  setSelectableArmies: (armies: SelectableArmy[]) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -182,5 +186,8 @@ export const useUIStore = create(
     setIsFollowingArmy: (following: boolean) => {
       set({ isFollowingArmy: following });
     },
+    // shortcut navigation - dummy data for now
+    selectableArmies: [],
+    setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
   })),
 );
