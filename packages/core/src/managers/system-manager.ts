@@ -272,7 +272,7 @@ export class SystemManager {
               if (explorerOwnerAddress) {
                 explorerPlayerData = await playerStore.getPlayerDataByExplorerId(currentState.occupier_id.toString());
                 loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                  BigInt(this.getLoggedInAccount()).toString(),
+                  this.getLoggedInAccount().toString(),
                 );
               }
 
@@ -391,7 +391,7 @@ export class SystemManager {
             let loggedInAccountPlayerData = null;
             if (structureOwnerAddress) {
               loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                BigInt(this.getLoggedInAccount()).toString(),
+                this.getLoggedInAccount().toString(),
               );
             }
 
