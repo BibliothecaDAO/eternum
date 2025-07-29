@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { ID, QuestType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { HexPosition, ID, QuestType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export enum SceneName {
   WorldMap = "map",
@@ -55,6 +55,12 @@ export interface QuestData {
 export interface ChestData {
   entityId: ID;
   hexCoords: Position;
+}
+
+export interface SelectableArmy {
+  entityId: ID;
+  position: HexPosition;
+  name: string;
 }
 
 export interface RenderChunkSize {

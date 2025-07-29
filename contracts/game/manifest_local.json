@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x23ae98003c7ce10f69050cabe1b723b07d1fc0a89341bded5b86b17a96d4ef0",
-      "class_hash": "0x1d2c70c492103cc33db6f4dff9b109b24f79de743de5bcb69c8935fabe32735",
+      "address": "0x5e823992e956562507b8c2458b2fdabccf55366ace7df452dc16c312a2432e7",
+      "class_hash": "0x6afde49d299cb5bbb58078746eaabe99909b857a2bed7b00aeaf9a1a5ddec72",
       "abi": [
         {
           "type": "impl",
@@ -1577,28 +1577,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -1805,8 +1805,8 @@
       ]
     },
     {
-      "address": "0x4d3567bb6950cafdbb957320fe06e2bbdb0f091ebd39f69f21e58d6507a494c",
-      "class_hash": "0xcb6236d8b41cb9f1d8d36ef497bc4391681513aace5547e0988c543d799734",
+      "address": "0x5c83fa32948b00ab6830aab2f435cf15fda5fcb58b9778b31d056bb9ffaa70a",
+      "class_hash": "0x27b26414d1123cdd41c9f5ea38e02e92bcfcd7151cdd2c6861670205430d37",
       "abi": [
         {
           "type": "impl",
@@ -2057,8 +2057,8 @@
       ]
     },
     {
-      "address": "0x23303dce6f31444061cb8b5fc86def4daaee5836a7b487fd3ee734d9e2fbe7a",
-      "class_hash": "0x2cc24430c6db87c3cbbd3de9c8d00b97df09ceaf0bb6c1d99e3f86f593486db",
+      "address": "0x1ce0ee4ebbc934387bc1c105f8a743ae539774b8e36f07e6e47b811da1cd727",
+      "class_hash": "0x5f66d6b949c3d77d97f938065d79d6399de6758b9b0ee3341c6edd40d44cd9",
       "abi": [
         {
           "type": "impl",
@@ -2273,8 +2273,8 @@
       ]
     },
     {
-      "address": "0x3cb52b2bf4628be42779adfb1ed6d41d76709b39851bf26dedcfaf85ef6c152",
-      "class_hash": "0x2bdedc3523b5e9a4913a178f684a774f4b7cd140d4c4ab1f581c6db3df20e2b",
+      "address": "0x22c11ba548f716cb9095b6fa7946c8e599c22fc9961e7e85fd9f1618f9b869",
+      "class_hash": "0x3b747d50a78ca97a8aca977af52cc364a1abf83dacaa898dfad8eec4548a316",
       "abi": [
         {
           "type": "impl",
@@ -3100,28 +3100,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -4011,8 +4011,8 @@
       ]
     },
     {
-      "address": "0x4ae4388b399466d93a1cd24611e8fc1e9bdeaf6fbf37d8ab7f57f0684e4bcc1",
-      "class_hash": "0x1f13c5ff01778c8376c6ce133a035a5fd197c3408dc0435c3674f21105f0a08",
+      "address": "0x1562560aa6c94d08624314f55009435da77340021f72f770614096c34f73668",
+      "class_hash": "0x18e670fe0ffa1314538196caa0d8c9ef6a723e5890374723edff26e158579f4",
       "abi": [
         {
           "type": "impl",
@@ -5311,8 +5311,8 @@
       ]
     },
     {
-      "address": "0x7e1528b1bd7f71904dcb673b204b7a344700384d17aea9e17651684a99a2408",
-      "class_hash": "0x7b7f06202ec2b5a23c9aacd2f747d2500fe6f6b9f663f4eeb3a0e00be52d024",
+      "address": "0x48e182f7de578b98a732eef2a7ae8e11dd987a090ae6fa3c2fd592dd078cda4",
+      "class_hash": "0x7d12de6eff870107d9552ca1b725c205bad078674a4d30c008a9d4b36c19dfc",
       "abi": [
         {
           "type": "impl",
@@ -5580,8 +5580,8 @@
       ]
     },
     {
-      "address": "0x48b7ac93c7e482447d266719d9fa679dc8b702946a1408a6001498a54c228bb",
-      "class_hash": "0x698a345abc6f9c7261e1d528b936c0f56f5a859689161e3a238a34359a3e870",
+      "address": "0x1497ecc1a81ce7cd758764dbd9581ae9973e07a5322f56135266535435dad8",
+      "class_hash": "0x6747e96eb65dccd576feb07e8e6800e83e0da4b3757ca7ebfb887cdc501b9e7",
       "abi": [
         {
           "type": "impl",
@@ -5829,28 +5829,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -6057,8 +6057,8 @@
       ]
     },
     {
-      "address": "0x4b04afa738088c68e3145bcfcb6012733f7650ee63e60d096f8373d49afc03d",
-      "class_hash": "0x43cc0c99f3710204b2b54643a3a294be018c0ec549ec301f8c8fa2b5a0672a7",
+      "address": "0x7f3e7adfcffb659a16f6357418a3d8f14f13730ca86e0ca3810009aaf52465b",
+      "class_hash": "0x21a1cf169fee1f432fd5f267177bad24de430e9816f158715aab08e08d497f7",
       "abi": [
         {
           "type": "impl",
@@ -6373,8 +6373,8 @@
       ]
     },
     {
-      "address": "0x3ae9281a12e58fcf3a4c84e172becd7152381465148083d83062f4877b5ef45",
-      "class_hash": "0x4a16b3eb60118bd18796f1a4b89c5c418ff372cd685cbe92eeee13f09082e8f",
+      "address": "0x7a6d779d1f9b06111bd1df81eb8b198c86442fb2bae2fbd8a59aeb3521a66e8",
+      "class_hash": "0x31112e6b211a0b79641c366ce0c823cb61818bb5fcbe8779df596e2b05e807a",
       "abi": [
         {
           "type": "impl",
@@ -6614,8 +6614,8 @@
       ]
     },
     {
-      "address": "0x61ba7f920d5a0d8e225a1e203e847873c6419ae5615a98c071c55604067ae77",
-      "class_hash": "0x3aa0efb5727040cf0d1d9f3810a5923b3c9ebb6f5f49ff69148846aa5204cab",
+      "address": "0x51d249d96f1c86e7ee3a2e7c9175b1f85c6f39abcddd4b6692317127b6214a0",
+      "class_hash": "0x40feeb4bb987c19cc211182e8bb2243df223118a51ee379946c08d8bdcab6c0",
       "abi": [
         {
           "type": "impl",
@@ -6863,28 +6863,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -7291,8 +7291,8 @@
       ]
     },
     {
-      "address": "0x1be908e9e54af932e22a86b423aad918d7dea030b4cd2e012cd39b48186291b",
-      "class_hash": "0x11a0850482a48c31fad4f2f6585b1a87b49b20a96464d8a1dbc535658367993",
+      "address": "0x53242086209e8840880f63574fd994ad7f452ddad280596b957b7518987edf",
+      "class_hash": "0x499a89a5b12abb0e4e1c80294f35d2e9d764a71f35fb2e7d364b0aed3987a7e",
       "abi": [
         {
           "type": "impl",
@@ -7512,8 +7512,8 @@
       ]
     },
     {
-      "address": "0x33c1bb1cbb33bcc64b650b530f780b1040df1771ac2c625e07487f894537d9",
-      "class_hash": "0x343be466147857280b296f8e029e2b7c9ab86d3a35a1c25a1e0ce6b87f9c361",
+      "address": "0x39f7ab2c40fb4660f404d42292f58da713343bac66d4963584d94252dc35560",
+      "class_hash": "0x716b4af109373f8d0b3dccf8b3445b516de2c88e4b97b9c7a7cc6c756ac82e5",
       "abi": [
         {
           "type": "impl",
@@ -8109,8 +8109,8 @@
       ]
     },
     {
-      "address": "0x4af697afefb0020bf7e657ac32347d8ea503d3d2fb60a884fe4b0fce0a8e62d",
-      "class_hash": "0x262065af4135e458e26f408b6d3a507f3d234ca5c3b3a989c7ac7c0b1302aa3",
+      "address": "0x1de9977c83e826b1cdf8857fc80856af079e9a46dd0bce220915c4d94ebbf3e",
+      "class_hash": "0xfb0f14e23280ad52f98c738722d1b3b7b6a155ed39aaa449a82a24e7e72f00",
       "abi": [
         {
           "type": "impl",
@@ -8690,8 +8690,8 @@
       ]
     },
     {
-      "address": "0x7ab4927c0e265d3727653fc3581960a9eb8b3877d1c0080d1994e8189b37ea8",
-      "class_hash": "0x20249678a3b6e679756048b7a96565980571d993092e6e310f8fa1078cecf14",
+      "address": "0x5a4dfef1f515d922ec54b3e254dc0f779dad7482e3ac2c13e390ee13be4c75c",
+      "class_hash": "0x556569fba2f521335c637d51c9f48758de9263883ecc6462a957452102c8ae3",
       "abi": [
         {
           "type": "impl",
@@ -8946,8 +8946,8 @@
       ]
     },
     {
-      "address": "0x6fde657f2367c3aa475728bc9781d262f52f38ea62666c769d8644889157cce",
-      "class_hash": "0x30219f437bed9733536aaf701ef0547e69afc2a715744ac69a8bdd64da5b301",
+      "address": "0x17a92f6ea818e52f1116120c7ef55356208eaf6bdf0d52aa88f2c2b2af37854",
+      "class_hash": "0x45bce236eed1817431be48234ae3cb490bf27ddff7d9c534a30c8630fdc75a7",
       "abi": [
         {
           "type": "impl",
@@ -9180,8 +9180,8 @@
       ]
     },
     {
-      "address": "0x2c91d3dbd021aa73874579f56d41c7bfb0d7e8e632ee7f4f3edd5bedf419496",
-      "class_hash": "0xaf8b0f3470b13425bead3e18fe7148caf2143c1129a7f8f70cab7db39d0a36",
+      "address": "0x5f01976403b2077d52e90111fecd6445ec441ba3d6eb24bbf3dfd9fcfb888b0",
+      "class_hash": "0x40e37fb8e29a550e78fef255a4edcf8ca675f3408cbe27ed1bc772292a2809d",
       "abi": [
         {
           "type": "impl",
@@ -9429,28 +9429,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -9657,8 +9657,8 @@
       ]
     },
     {
-      "address": "0x3270a5b77926b8f696f7851f1d7a94fbe5191c14a4cf30da80b0849d83b13ae",
-      "class_hash": "0x31d62a3e1308356cd6dd31138379428eb5dc0b067e808953fad70f981ca9195",
+      "address": "0x23ba39ede23ee8dece65169ccf6bd89b94fbadbf4a88981007db254c82b99b9",
+      "class_hash": "0x6c4e983fd352fd97f8dfdf8313c7b7744b37fb18d6e1d7ada9e040997687a4d",
       "abi": [
         {
           "type": "impl",
@@ -9914,8 +9914,8 @@
       ]
     },
     {
-      "address": "0x4761d3917874fbf5c573af6309be6033377f34d90cc7e04a8ce21725be1e2dd",
-      "class_hash": "0x1f152d4b5b1c13488ca98dacf0ebb9489121d657db9c4f83e8e905755caf0ad",
+      "address": "0x2cf75504be362b6c83f53c9e3dbddd0c89bf7f00f41b8e21a703dcb3a1b8dbc",
+      "class_hash": "0x692b19041a57012165854e5c0aa430d5c28e48b6708c6491b40406cc86b73ec",
       "abi": [
         {
           "type": "impl",
@@ -10202,8 +10202,8 @@
       ]
     },
     {
-      "address": "0x70be854d7946290745d83b63526bbb3f5c74c8636797b8ad9f276bd4489dcdb",
-      "class_hash": "0x15cb3bd712bf2d6538e4f29f8c880ba9afc883790c39e1dc0a91f7b73c6957a",
+      "address": "0x25c31fcd7cab9a2c78ae25e81f8fcbfa99a7085cdc803197e691625c6034f06",
+      "class_hash": "0x17d043a32f1e5f1683e1bd7f507419f4adc508d3a5d242fd51df18caf013673",
       "abi": [
         {
           "type": "impl",
@@ -10597,8 +10597,8 @@
       ]
     },
     {
-      "address": "0x30cbf5e1393c16f85c4fab8eeff4ce15ba42194d9d8f4a9fbaf238d7903b78c",
-      "class_hash": "0x73daf2f1b3f8b6de7f3d0d4b39bb2e767e836c68a674042455752be3c15bee2",
+      "address": "0x4e265631c99011d39cd2df33249dba38e43be675388370877d3ea5ec1af5f20",
+      "class_hash": "0x51b868557282489097b3159154c6eef8a76c014c879bf50cb63299d86dcabee",
       "abi": [
         {
           "type": "impl",
@@ -10792,8 +10792,8 @@
       ]
     },
     {
-      "address": "0x179e9d662da201b246647359ff341a0f5fd1bbc34b68a43fbe45a46ececdca5",
-      "class_hash": "0x4aa14f3aab13a8198b99153334f0ff0b782209e160b252e5430005adb7abe52",
+      "address": "0x5c9e90744c5c922aba556de98960f09b43f75bc0dcea78951bf5d5fc97178c",
+      "class_hash": "0x4f15e9835fc5543325f1fbbe5f268c732dba6f9af7bc5fc54f1ccec7f27c754",
       "abi": [
         {
           "type": "impl",
@@ -10992,8 +10992,8 @@
       ]
     },
     {
-      "address": "0x3c921569b50ab62767ca370ea105429cbbffbf4b8e641d8c454f045ebdc2513",
-      "class_hash": "0x5aec245afd38711ea242856282e9e46cad1b3c35a2971bec366331e9862e1ad",
+      "address": "0x29298a5bbe043951cfb68007d344dab2f7f5662e46fd08ae5b6baac4dc52bad",
+      "class_hash": "0x1f73c2d131a97409ac2ef5f3042904ad1a08587c347ef39c63194a100bda16a",
       "abi": [
         {
           "type": "impl",
@@ -11229,8 +11229,8 @@
       ]
     },
     {
-      "address": "0x9437115186323ee3184b623a9dbeb3194b8dc98ebd0b25c2a9c604cdc64b2e",
-      "class_hash": "0xb88df6ba4df71fa7339a4e974bf76ee4879114eec2aa7030c988d1ea576cc6",
+      "address": "0x312f793a1c02f5d2d1eeca9a61fee947da1cb070b62301241c62af04f127526",
+      "class_hash": "0x226e6fded5dbd2325df9ba48cd643282163b3aac7dc398f0d14111f37623e7f",
       "abi": [
         {
           "type": "impl",
@@ -11495,8 +11495,8 @@
       ]
     },
     {
-      "address": "0x4ac45b430752e9f16377f1e30ab8c00a0732bb2069a9eddecc96accf1634c9d",
-      "class_hash": "0x68b8cb4d9f8061ed67b7a6ec0b8139a0b96c1a6782190217eb2643e96ce96d0",
+      "address": "0x35597a035d0e1af1ae0d786b73aaf71ee26bdaf196c5686f301860a86479ffe",
+      "class_hash": "0x5a4ae8675ffba5ec0e4a905101f8450d593982d860e378f207010a21606472b",
       "abi": [
         {
           "type": "impl",
@@ -11815,8 +11815,8 @@
       ]
     },
     {
-      "address": "0x311dfd75e3e0a1cdd57e897ac0b34f3e4a2ec9b0a23b8d81b3e903229eba899",
-      "class_hash": "0x391febc4a05ca315f38d059f0e044c5e3362f7d2177788a67caaef229c78506",
+      "address": "0x2d46de73d62b8729e35459f5affdb4bcd44f3d054aa31ca789e27e7cc45cee3",
+      "class_hash": "0x1726df0ac3c8e1aa5ddb91336f92b8aa74105ec62559a9bb6bc52e8018411da",
       "abi": [
         {
           "type": "impl",
@@ -12286,8 +12286,8 @@
       ]
     },
     {
-      "address": "0x7a67a8f80c2e6d8fbfe2227bc6f2ae98d12b791660c3586fc660e814f2fe2b6",
-      "class_hash": "0x325a8c6a294d9a096ccc1d39675fc0a149336afc9494f0ff2fae3ede38f8bc4",
+      "address": "0x62a66a447b69a8c38606d59c3578e3c5ff90113f6956706a6f287c361cc2385",
+      "class_hash": "0x5491a5e05c0a1c1b2629b2190a00d0fff96c4414699819c7746f12ddfb75774",
       "abi": [
         {
           "type": "impl",
@@ -12592,8 +12592,8 @@
       ]
     },
     {
-      "address": "0x6c47985b5d5e9222ca0ce8b1703fb0cedcad597d7ce904b1fd334fc1e854328",
-      "class_hash": "0x4e8330ba4478651ca7f203ba64ec8f8f0871d2ae8160509dd8c8e737cef806",
+      "address": "0x7bb022df58a6bb433ecce64895c005e4b7b3752f5f135428270ce4771dd5c76",
+      "class_hash": "0x5ea7a73af8833aa75daadfbd89be2aeb263c6a59fccc67f64b4c618249b4613",
       "abi": [
         {
           "type": "impl",
@@ -12841,28 +12841,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -13069,8 +13069,8 @@
       ]
     },
     {
-      "address": "0x41a0f26665bd1fc4d7f274db7c176c95ad57ae5db52d404d79b8a03069c1ac4",
-      "class_hash": "0x458874fcf7b9bca1e836ffe517ab8f71c038584369d7cf782d02516e4217b2b",
+      "address": "0x220ca6b32a470c84f78883d441a4ba7a6215dc59e3eb655875eb15b731ef4e6",
+      "class_hash": "0xf543e100d65d4ad856372f60b41b14a9cf9eb6c217823531fb1592c0d0105b",
       "abi": [
         {
           "type": "impl",
@@ -13321,8 +13321,8 @@
       ]
     },
     {
-      "address": "0x337e8d2da98fa8142d638b7df8d11db8e32231dc91f54d54fcded8872eaf51d",
-      "class_hash": "0x61756d0bcad562a71b9cb94d7f42d9776915691bccd998203847253db25d9bb",
+      "address": "0x1d0398a7e28c3cb3abd61fcc4f98394f715638a137a01b50115dad4f91cbef2",
+      "class_hash": "0x5061ff755b89d141ab69c9d394a10552bb27fb9adc61e81adab612a4aca4561",
       "abi": [
         {
           "type": "impl",
@@ -13570,28 +13570,28 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_explore_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_explore_fish_cost",
-              "type": "core::integer::u16"
-            },
-            {
               "name": "stamina_explore_stamina_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_wheat_cost",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "stamina_travel_fish_cost",
               "type": "core::integer::u16"
             },
             {
               "name": "stamina_travel_stamina_cost",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
             }
           ]
         },
@@ -13798,8 +13798,8 @@
       ]
     },
     {
-      "address": "0x7d7aaeb349937daf5448c3af0479d04b4126bbc4e18d3c073c870d9fa01ae94",
-      "class_hash": "0x672ccda1ae607efd283d6de809874b1aab6a6c9fafda3b15a92386d42fcf745",
+      "address": "0x1fe6233dec60251aa7f6de719177222a73941d7807eb490aa0d8360b76f3d6a",
+      "class_hash": "0x5bad949e00050e6c1828efb49c39b34d29537b5cbe5c1c43268a0fe5eed4327",
       "abi": [
         {
           "type": "impl",
@@ -14416,7 +14416,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x76cb0ef82f5682e96f33c0c638609d67b73fb6e274c3324938c2f8d6646f2fa",
+      "class_hash": "0x206d7e1a7b0504793cc7362b25f3773cc8ef238c6d13ec76b4eb53efe74a203",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     },

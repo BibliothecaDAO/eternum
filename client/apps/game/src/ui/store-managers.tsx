@@ -3,10 +3,12 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { SelectableArmy } from "@/three/types/common";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   getAddressName,
   getAllArrivals,
+  getArmyName,
   getEntityIdFromKeys,
   getEntityInfo,
   getGuildFromPlayerAddress,
@@ -14,7 +16,8 @@ import {
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
 import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
@@ -250,6 +253,38 @@ const MinigameStoreManager = () => {
   return null;
 };
 
+/**
+ * Manager component that syncs army and structure data with scene-specific shortcut managers
+ * This replaces the old centralized ShortcutManager approach
+ */
+const SelectableArmiesStoreManager = () => {
+  const setSelectableArmies = useUIStore((state) => state.setSelectableArmies);
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const explorers = useEntityQuery([Has(components.ExplorerTroops)]);
+  const playerStructures = usePlayerStructures();
+
+  useEffect(() => {
+    const selectableArmies: SelectableArmy[] = explorers
+      .map((explorer) => {
+        const explorerTroops = getComponentValue(components.ExplorerTroops, explorer);
+        if (!explorerTroops || !playerStructures.find((structure) => structure.entityId === explorerTroops.owner))
+          return null;
+        return {
+          entityId: explorerTroops.explorer_id,
+          position: { col: explorerTroops?.coord.x ?? 0, row: explorerTroops?.coord.y ?? 0 },
+          name: getArmyName(explorerTroops?.explorer_id ?? 0),
+        };
+      })
+      .filter(Boolean) as SelectableArmy[];
+    setSelectableArmies(selectableArmies);
+  }, [explorers, playerStructures]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
@@ -261,6 +296,7 @@ export const StoreManagers = () => {
       <BattleLogsStoreManager />
       <SeasonWinnerStoreManager />
       <SeasonTimerStoreManager />
+      <SelectableArmiesStoreManager />
     </>
   );
 };

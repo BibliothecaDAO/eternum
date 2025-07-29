@@ -40,6 +40,7 @@ import {
   HexPosition,
   ID,
   RelicEffect,
+  Structure,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
@@ -48,17 +49,23 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
+import { ShortcutManager } from "../managers/shortcut-manager";
+import { SceneName, SelectableArmy } from "../types/common";
 import {
   ArmySystemUpdate,
   ChestSystemUpdate,
   ExplorerMoveSystemUpdate,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
-  SceneName,
   StructureSystemUpdate,
   TileSystemUpdate,
-} from "../types";
+} from "../types/systems";
 import { getWorldPositionForHex } from "../utils";
+import {
+  navigateToStructure,
+  toggleMapHexView,
+  selectNextStructure as utilSelectNextStructure,
+} from "../utils/navigation";
 
 const dummyObject = new THREE.Object3D();
 const dummyVector = new THREE.Vector3();
@@ -119,6 +126,10 @@ export default class WorldmapScene extends HexagonScene {
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
+  private armyIndex: number = 0;
+  private selectableArmies: SelectableArmy[] = [];
+  private structureIndex: number = 0;
+  private playerStructures: Structure[] = [];
 
   constructor(
     dojoContext: SetupResult,
@@ -136,6 +147,20 @@ export default class WorldmapScene extends HexagonScene {
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
+
+    useUIStore.subscribe(
+      (state) => state.selectableArmies,
+      (selectableArmies) => {
+        this.updateSelectableArmies(selectableArmies);
+      },
+    );
+
+    useUIStore.subscribe(
+      (state) => state.playerStructures,
+      (playerStructures) => {
+        this.updatePlayerStructures(playerStructures);
+      },
+    );
 
     useUIStore.subscribe(
       (state) => state.entityActions,
@@ -317,6 +342,32 @@ export default class WorldmapScene extends HexagonScene {
 
     this.minimap = new Minimap(this, this.camera);
 
+    // Initialize ShortcutManager with army selection logic
+    this.shortcutManager = new ShortcutManager(this.sceneManager);
+
+    this.shortcutManager.addShortcut({
+      key: "Tab",
+      description: "Cycle through armies",
+      sceneRestriction: SceneName.WorldMap,
+      condition: () => this.selectableArmies.length > 0,
+      action: () => this.selectNextArmy(),
+    });
+
+    this.shortcutManager.addShortcut({
+      key: "Shift+Tab",
+      description: "Cycle through structures",
+      sceneRestriction: SceneName.WorldMap,
+      condition: () => this.playerStructures.length > 0,
+      action: () => this.selectNextStructure(),
+    });
+
+    this.shortcutManager.addShortcut({
+      key: "v",
+      description: "Toggle between map and hex view",
+      sceneRestriction: SceneName.WorldMap,
+      action: () => toggleMapHexView(),
+    });
+
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
@@ -400,7 +451,14 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  protected onHexagonDoubleClick() {}
+  // go into hex view if it's a structure you own
+  protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    const { structure } = this.getHexagonEntity(hexCoords);
+    if (structure && structure.owner === ContractAddress(useAccountStore.getState().account?.address || "")) {
+      this.state.setStructureEntityId(structure.id);
+      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+    }
+  }
 
   protected getHexagonEntity(hexCoords: HexPosition) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
@@ -1588,6 +1646,46 @@ export default class WorldmapScene extends HexagonScene {
       }
     } catch (error) {
       console.error("Error during relic effect validation:", error);
+    }
+  }
+
+  private selectNextArmy() {
+    console.log("selectNextArmy calling", this.selectableArmies);
+    if (this.selectableArmies.length === 0) return;
+    const account = ContractAddress(useAccountStore.getState().account?.address || "");
+
+    this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
+    const army = this.selectableArmies[this.armyIndex];
+    this.handleHexSelection(army.position, true);
+    this.onArmySelection(army.entityId, account);
+    const position = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+    this.moveCameraToColRow(position.x, position.y, 0.5);
+  }
+
+  private updateSelectableArmies(armies: SelectableArmy[]) {
+    this.selectableArmies = armies;
+    if (this.armyIndex >= armies.length) {
+      this.armyIndex = 0;
+    }
+  }
+
+  private updatePlayerStructures(structures: Structure[]) {
+    this.playerStructures = structures;
+    if (this.structureIndex >= structures.length) {
+      this.structureIndex = 0;
+    }
+  }
+
+  private selectNextStructure() {
+    this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "map");
+    if (this.playerStructures.length > 0) {
+      const structure = this.playerStructures[this.structureIndex];
+      const position = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+      // Set the structure entity ID in the UI store
+      this.state.setStructureEntityId(structure.entityId);
+      this.moveCameraToColRow(position.x, position.y, 0.5);
+      this.handleHexSelection({ col: position.x, row: position.y }, true);
+      this.onStructureSelection(structure.entityId);
     }
   }
 }
