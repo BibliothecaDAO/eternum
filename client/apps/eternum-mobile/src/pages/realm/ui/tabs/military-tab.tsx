@@ -2,7 +2,6 @@ import { useArmiesInRadius } from "@/features/armies";
 import { cn } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
-import { getArmyName } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
 
@@ -78,7 +77,7 @@ export function MilitaryTab({}: MilitaryTabProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className={cn("w-4 h-4", color)} />
-                    <h4 className={cn("text-sm font-medium", color)}>{getArmyName(army.id)}</h4>
+                    <h4 className={cn("text-sm font-medium", color)}>Army #{army.id}</h4>
                   </div>
                   <span className="text-xs text-muted-foreground">{army.distance} Hexes Away</span>
                 </div>
