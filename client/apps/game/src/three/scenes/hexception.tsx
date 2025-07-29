@@ -15,11 +15,11 @@ import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
-import { ShortcutManager } from "@/three/managers/shortcut-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
 import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "@/three/utils/navigation";
+import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
@@ -157,41 +157,47 @@ export default class HexceptionScene extends HexagonScene {
 
     this.state = useUIStore.getState();
 
-    this.shortcutManager = new ShortcutManager(this.sceneManager);
+    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
 
-    this.shortcutManager.addShortcut({
-      key: "Tab",
-      description: "Cycle through structures",
-      sceneRestriction: SceneName.Hexception,
-      condition: () => this.playerStructures.length > 0,
-      action: () => this.selectNextStructure(),
-    });
+    // Only register shortcuts if they haven't been registered already
+    if (!this.shortcutManager.hasShortcuts()) {
+      this.shortcutManager.registerShortcut({
+        id: "cycle-structures",
+        key: "Tab",
+        description: "Cycle through structures",
+        sceneRestriction: SceneName.Hexception,
+        condition: () => this.playerStructures.length > 0,
+        action: () => this.selectNextStructure(),
+      });
 
-    this.shortcutManager.addShortcut({
-      key: "v",
-      description: "Toggle between map and hex view",
-      sceneRestriction: SceneName.Hexception,
-      action: () => toggleMapHexView(),
-    });
+      this.shortcutManager.registerShortcut({
+        id: "toggle-view",
+        key: "v",
+        description: "Toggle between map and hex view",
+        sceneRestriction: SceneName.Hexception,
+        action: () => toggleMapHexView(),
+      });
+
+      this.shortcutManager.registerShortcut({
+        id: "escape-handler",
+        key: "Escape",
+        description: "Return to world map from hexagon view",
+        sceneRestriction: SceneName.Hexception,
+        action: () => {
+          if (this.isNavigationViewOpen()) {
+            this.closeNavigationViews();
+          } else {
+            this.clearBuildingMode();
+          }
+        },
+      });
+    }
 
     // add gui to change castle level
     this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
       this.structureStage = value;
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
-    });
-
-    this.shortcutManager.addShortcut({
-      key: "Escape",
-      description: "Return to world map from hexagon view",
-      sceneRestriction: SceneName.Hexception,
-      action: () => {
-        if (this.isNavigationViewOpen()) {
-          this.closeNavigationViews();
-        } else {
-          this.clearBuildingMode();
-        }
-      },
     });
 
     useUIStore.subscribe(
@@ -352,6 +358,16 @@ export default class HexceptionScene extends HexagonScene {
     this.labels.forEach((label) => {
       this.scene.remove(label.label);
     });
+
+    // Note: Don't clean up shortcuts here - they should persist across scene switches
+    // Shortcuts will be cleaned up when the scene is actually destroyed
+  }
+
+  destroy() {
+    // Clean up shortcuts when scene is actually destroyed
+    if (this.shortcutManager instanceof SceneShortcutManager) {
+      this.shortcutManager.cleanup();
+    }
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {

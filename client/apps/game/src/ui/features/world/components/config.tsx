@@ -10,7 +10,8 @@ type OSWindows =
   | "Quests"
   | "Leaderboard"
   | "BattleSimulation"
-  | "Rewards";
+  | "Rewards"
+  | "Shortcuts";
 
 export interface OSInterface {
   onClick: () => void;
@@ -37,3 +38,4 @@ export const construction: OSWindows = "Construction";
 export const leaderboard: OSWindows = "Leaderboard";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";
+export const shortcuts: OSWindows = "Shortcuts";

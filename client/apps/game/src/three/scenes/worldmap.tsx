@@ -49,7 +49,6 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { ShortcutManager } from "../managers/shortcut-manager";
 import { SceneName, SelectableArmy } from "../types/common";
 import {
   ArmySystemUpdate,
@@ -66,6 +65,7 @@ import {
   toggleMapHexView,
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
+import { SceneShortcutManager } from "../utils/shortcuts";
 
 const dummyObject = new THREE.Object3D();
 const dummyVector = new THREE.Vector3();
@@ -342,42 +342,53 @@ export default class WorldmapScene extends HexagonScene {
 
     this.minimap = new Minimap(this, this.camera);
 
-    // Initialize ShortcutManager with army selection logic
-    this.shortcutManager = new ShortcutManager(this.sceneManager);
+    // Initialize SceneShortcutManager for WorldMap shortcuts  
+    this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
 
-    this.shortcutManager.addShortcut({
-      key: "Tab",
-      description: "Cycle through armies",
-      sceneRestriction: SceneName.WorldMap,
-      condition: () => this.selectableArmies.length > 0,
-      action: () => this.selectNextArmy(),
-    });
+    // Only register shortcuts if they haven't been registered already
+    if (!this.shortcutManager.hasShortcuts()) {
+      this.shortcutManager.registerShortcut({
+        id: "cycle-armies",
+        key: "Tab",
+        description: "Cycle through armies",
+        sceneRestriction: SceneName.WorldMap,
+        condition: () => this.selectableArmies.length > 0,
+        action: () => this.selectNextArmy(),
+      });
 
-    this.shortcutManager.addShortcut({
-      key: "Shift+Tab",
-      description: "Cycle through structures",
-      sceneRestriction: SceneName.WorldMap,
-      condition: () => this.playerStructures.length > 0,
-      action: () => this.selectNextStructure(),
-    });
+      this.shortcutManager.registerShortcut({
+        id: "cycle-structures",
+        key: "Tab",
+        modifiers: { shift: true },
+        description: "Cycle through structures",
+        sceneRestriction: SceneName.WorldMap,
+        condition: () => this.playerStructures.length > 0,
+        action: () => this.selectNextStructure(),
+      });
 
-    this.shortcutManager.addShortcut({
-      key: "v",
-      description: "Toggle between map and hex view",
-      sceneRestriction: SceneName.WorldMap,
-      action: () => toggleMapHexView(),
-    });
+      this.shortcutManager.registerShortcut({
+        id: "toggle-view",
+        key: "v",
+        description: "Toggle between map and hex view",
+        sceneRestriction: SceneName.WorldMap,
+        action: () => toggleMapHexView(),
+      });
 
-    // Add event listener for Escape key
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
-        if (this.isNavigationViewOpen()) {
-          this.closeNavigationViews();
-        } else {
-          this.clearSelection();
-        }
-      }
-    });
+      // Register escape key handler
+      this.shortcutManager.registerShortcut({
+        id: "escape-handler",
+        key: "Escape",
+        description: "Clear selection or close navigation views",
+        sceneRestriction: SceneName.WorldMap,
+        action: () => {
+          if (this.isNavigationViewOpen()) {
+            this.closeNavigationViews();
+          } else {
+            this.clearSelection();
+          }
+        },
+      });
+    }
 
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
@@ -797,7 +808,11 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.wheelHandler = null;
     }
+
+    // Note: Don't clean up shortcuts here - they should persist across scene switches
+    // Shortcuts will be cleaned up when the scene is actually destroyed
   }
+
 
   public deleteArmy(entityId: ID) {
     this.armyManager.removeArmy(entityId);
@@ -1516,6 +1531,11 @@ export default class WorldmapScene extends HexagonScene {
   destroy() {
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
+    
+    // Clean up shortcuts when scene is actually destroyed
+    if (this.shortcutManager instanceof SceneShortcutManager) {
+      this.shortcutManager.cleanup();
+    }
   }
 
   /**

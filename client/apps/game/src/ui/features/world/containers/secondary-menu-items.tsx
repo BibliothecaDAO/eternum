@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { leaderboard, rewards, settings } from "@/ui/features/world";
+import { leaderboard, rewards, settings, shortcuts } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
@@ -86,21 +86,15 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={handleTrophyClick}
         />
-        {/* <CircleButton
-          className="hints-selector border-none"
-          image={BuildingThumbs.question}
-          label={"Lordpedia"}
-          size="md"
-          onClick={() => toggleModal(<HintModal />)}
-        /> */}
-        {/* <CircleButton
-          className="discord-selector border-none"
+        <CircleButton
+          className="shortcuts-selector border-none"
           tooltipLocation="bottom"
-          image={BuildingThumbs.discord}
-          label={"Discord"}
+          active={isPopupOpen(shortcuts)}
+          image={BuildingThumbs.question}
+          label={"Shortcuts"}
           size="md"
-          onClick={() => window.open("https://discord.gg/realmsworld")}
-        /> */}
+          onClick={() => togglePopup(shortcuts)}
+        />
         <CircleButton
           className="settings-selector border-none"
           tooltipLocation="bottom"
