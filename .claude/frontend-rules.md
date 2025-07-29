@@ -36,6 +36,20 @@ When building features, read the relevant app README:
 - `client/apps/heavy-load/README.md` - Performance testing tools
 - `client/apps/landing/README.md` - Landing page
 
+## Game World Display: Worldmap vs. Hex View
+
+The worldmap is a hex-based global view where you can see all structures, realms, and armies on a large-scale grid.
+
+Armies spawn on adjacent hexes of a structure and can explore, travel, and engage in battles across the hexes.
+
+Clicking into a structure or realm enters the hex view (also called "local view"), which contains its own internal grid
+of sub-hexes.
+
+Inside a local hex view, buildings can be constructed on sub-hexes — these actions are isolated to that specific
+structure or realm.
+
+Transitioning between these two layers is a core interaction in gameplay and impacts UX and system design.
+
 ## Code Style
 
 - Use TypeScript for all new code
@@ -43,8 +57,8 @@ When building features, read the relevant app README:
 - Prefer composition over inheritance
 - Use functional components for React code
 - Keep components small and focused
-- **NEVER use `(as any)` to bypass TypeScript errors** - This defeats the purpose of TypeScript's type safety. Instead,
-  properly type your data or fix the underlying type issues
+- **NEVER use `(as any)` to bypass TypeScript errors** — This defeats TypeScript's type safety. Instead, properly type
+  your data or fix the underlying issue
 
 ## Testing Guidelines
 
@@ -72,109 +86,50 @@ When creating new UI components:
 1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
    elsewhere in the app
 2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
-   appropriate design system folder:
-   - `atoms/` for basic UI primitives (buttons, inputs, labels)
-   - `molecules/` for composed components (card headers, form groups)
+   design system:
+   - `atoms/` for basic UI primitives
+   - `molecules/` for composed components
 3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
    implementations that could be replaced
-4. **Replace existing implementations**: Update all found instances to use the new design system component for
-   consistency
+4. **Replace existing implementations**: Update all found instances to use the new design system component
 5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
 
 ## Adding New Contract Entrypoints - MANDATORY PROCESS
 
-**When new entrypoints are added to contracts, follow this exact pattern:**
+When new entrypoints are added to contracts, follow this exact pattern:
 
-1. **Add TypeScript Props Interface** in `packages/types/src/types/provider.ts`:
+1. **Add TypeScript Props Interface** in `packages/types/src/types/provider.ts`
+2. **Add Provider Method** in `packages/dojo/node_modules/@bibliothecadao/provider/src/index.ts`
+3. **Add System Call Wrapper** in `packages/types/src/dojo/create-system-calls.ts`
+4. **Add to Policies** in `client/apps/game/src/hooks/context/policies.ts`
+5. **MANDATORY: Run Build Verification**
 
-   ```typescript
-   export interface YourEntrypointProps extends SystemSigner {
-     // Add parameters matching the contract entrypoint
-     // Use num.BigNumberish for IDs and numbers
-     // Use coordinate structure for Coord: { x: num.BigNumberish; y: num.BigNumberish; }
-   }
-   ```
+```bash
+pnpm run build:packages
+pnpm run build
+```
 
-2. **Add Provider Method** in `packages/dojo/node_modules/@bibliothecadao/provider/src/index.ts`:
+**Example Pattern – Relic System:**
 
-   ```typescript
-   public async your_entrypoint(props: SystemProps.YourEntrypointProps) {
-     const { signer, param1, param2 } = props;
-     return await this.executeAndCheckTransaction(signer, {
-       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-system_name`),
-       entrypoint: "your_entrypoint",
-       calldata: [param1, param2], // Match contract parameter order
-     });
-   }
-   ```
-
-3. **Add System Call Wrapper** in `packages/types/src/dojo/create-system-calls.ts`:
-
-   ```typescript
-   // Add function definition
-   const your_entrypoint = async (props: SystemProps.YourEntrypointProps): Promise<Result> => {
-     return await provider.your_entrypoint(props);
-   };
-
-   // Add to systemCalls export object
-   const systemCalls = {
-     // ... existing calls
-     your_entrypoint: withAuth(your_entrypoint),
-   };
-   ```
-
-4. **Add to Policies** in `client/apps/game/src/hooks/context/policies.ts`:
-
-   ```typescript
-   [getContractByName(dojoConfig.manifest, "s1_eternum", "system_name").address]: {
-     methods: [
-       {
-         name: "your_entrypoint",
-         entrypoint: "your_entrypoint",
-       },
-       // Don't forget dojo_name and world_dispatcher
-       {
-         name: "dojo_name",
-         entrypoint: "dojo_name",
-       },
-       {
-         name: "world_dispatcher",
-         entrypoint: "world_dispatcher",
-       },
-     ],
-   },
-   ```
-
-5. **MANDATORY: Run Build Verification**:
-   ```bash
-   pnpm run build:packages
-   pnpm run build
-   ```
-
-**Example Pattern - Relic System:**
-
-- Contract entrypoints: `open_chest(explorer_id: ID, chest_coord: Coord)`, `apply_relic(...)`
+- Contract entrypoints: `open_chest(...)`, `apply_relic(...)`
 - Props interfaces: `OpenChestProps`, `ApplyRelicProps`
 - Provider methods: `open_chest()`, `apply_relic()`
 - System calls: `open_chest: withAuth(open_chest)`, `apply_relic: withAuth(apply_relic)`
-- Policies entry: Add `relic_systems` contract with `open_chest` and `apply_relic` methods
+- Policies: Add methods under `relic_systems` contract
 
 **CRITICAL NOTES:**
 
-- Always match contract parameter names and order exactly
-- Use `${NAMESPACE}-system_name` pattern for contract addresses (e.g., `relic_systems`)
-- Coordinate parameters use `{ x: num.BigNumberish; y: num.BigNumberish; }` structure
-- All system calls MUST use `withAuth()` wrapper for authentication
-- ALWAYS update policies.ts when adding new entrypoints - this is required for user authorization
-- Build verification is mandatory before considering task complete
+- Always match contract parameter names and order
+- Use `${NAMESPACE}-system_name` for contract addresses
+- Coordinate parameters must be `{ x: num.BigNumberish; y: num.BigNumberish; }`
+- All system calls MUST be wrapped with `withAuth()`
+- You must update policies.ts for user authorization
+- Run full build before completing your task
 
 ## Torii Query Strategy
 
-When querying data from Torii:
-
-- **Use SQL queries by default** for better performance and consistency
-- SQL queries are located in `packages/torii/src/queries/sql/`
-- Only use torii-client queries when absolutely necessary (complex multi-model relationships)
-- Always follow existing SQL query patterns and naming conventions
-- Add new SQL query files to `packages/torii/src/queries/sql/` directory
-- Export SQL queries through the api.ts class methods
+- **Use SQL queries by default** for best performance
+- Queries live in `packages/torii/src/queries/sql/`
+- Use torii-client queries only when needed for complex multi-model joins
+- Follow naming conventions for query files and structure
+- Export all SQL queries from the main api.ts file
