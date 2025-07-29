@@ -1,7 +1,8 @@
 import { KeyboardShortcut } from "@/hooks/store/use-shortcut-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Headline } from "@/ui/design-system/molecules";
-import { OSWindow, shortcuts } from "@/ui/features/world";
+import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { shortcuts } from "@/ui/features/world";
 import { useShortcutManager } from "@/utils/shortcuts";
 import { useMemo } from "react";
 
@@ -38,7 +39,6 @@ export const ShortcutsWindow = () => {
     return categories;
   }, [registeredShortcuts]);
 
-
   const renderShortcutKey = (shortcut: KeyboardShortcut) => (
     <div className="flex items-center space-x-1">
       {shortcut.modifiers?.ctrl && (
@@ -59,7 +59,7 @@ export const ShortcutsWindow = () => {
 
   const renderShortcutSection = (title: string, shortcuts: KeyboardShortcut[]) => {
     if (shortcuts.length === 0) return null;
-    
+
     return (
       <div className="space-y-2">
         <h3 className="text-gold font-semibold text-sm">{title}</h3>
@@ -76,29 +76,32 @@ export const ShortcutsWindow = () => {
     );
   };
 
+  if (!isOpen) return null;
+
   return (
-    <OSWindow onClick={() => togglePopup(shortcuts)} show={isOpen} title="Keyboard Shortcuts">
-      <div className="flex flex-col space-y-4 p-6 max-h-96 overflow-y-auto">
-        <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
+    <SecondaryPopup name="shortcuts" className="pointer-events-auto">
+      <SecondaryPopup.Head onClose={() => togglePopup(shortcuts)}>Keyboard Shortcuts</SecondaryPopup.Head>
+      <SecondaryPopup.Body height="h-96" width="500px">
+        <div className="flex flex-col space-y-4 p-6 overflow-y-auto h-full">
+          <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
 
-        {registeredShortcuts.length === 0 ? (
-          <div className="text-gold/60 text-center py-8">
-            No shortcuts are currently registered.
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {renderShortcutSection("Global", categorizedShortcuts.global)}
-            {renderShortcutSection("Map View", categorizedShortcuts.map)}
-            {renderShortcutSection("Hex View", categorizedShortcuts.hex)}
-          </div>
-        )}
+          {registeredShortcuts.length === 0 ? (
+            <div className="text-gold/60 text-center py-8">No shortcuts are currently registered.</div>
+          ) : (
+            <div className="space-y-6">
+              {renderShortcutSection("Global", categorizedShortcuts.global)}
+              {renderShortcutSection("Map View", categorizedShortcuts.map)}
+              {renderShortcutSection("Hex View", categorizedShortcuts.hex)}
+            </div>
+          )}
 
-        <div className="mt-4 pt-4 border-t border-gold/20">
-          <p className="text-gold/60 text-xxs">
-            Shortcuts are automatically registered by active components and scenes.
-          </p>
+          <div className="mt-4 pt-4 border-t border-gold/20">
+            <p className="text-gold/60 text-xxs">
+              Shortcuts are automatically registered by active components and scenes.
+            </p>
+          </div>
         </div>
-      </div>
-    </OSWindow>
+      </SecondaryPopup.Body>
+    </SecondaryPopup>
   );
 };
