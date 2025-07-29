@@ -113,7 +113,7 @@ export const BuildingThumbs = {
   leaderboard: `${prefix}leaderboard.png`,
   worldMap: `${prefix}world.png`,
   squire: `${prefix}squire.png`,
-  question: `${prefix}question.png`,
+  question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
   settings: `${prefix}support.png`,
   guild: `${prefix}guild.png`,
