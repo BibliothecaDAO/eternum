@@ -326,7 +326,6 @@ export class StructureManager {
 
     // Clear existing relic effects for this specific structure before re-rendering
     // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
-    console.log(`StructureManager: onUpdate: clearing relic effects for entity ${entityId}`);
     // Clear effects for all sources when structure is updated
     const entityEffectsMap = this.structureRelicEffects.get(entityId);
     if (entityEffectsMap) {
@@ -336,7 +335,6 @@ export class StructureManager {
     }
 
     // Apply any pending relic effects for this structure
-    console.log(`StructureManager: onUpdate: applying pending relic effects for entity ${entityId}`);
     if (this.applyPendingRelicEffectsCallback) {
       try {
         await this.applyPendingRelicEffectsCallback(entityId);
