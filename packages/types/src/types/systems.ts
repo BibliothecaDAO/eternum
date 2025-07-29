@@ -1,5 +1,5 @@
 import { BiomeType, BuildingType, ResourcesIds, StructureProgress, StructureType } from "../constants";
-import { HexPosition, ID, TroopTier, TroopType } from "./common";
+import { HexPosition, ID, RelicEffectWithEndTick, TroopTier, TroopType } from "./common";
 
 export type ArmySystemUpdate = {
   entityId: ID;
@@ -42,6 +42,12 @@ export type ExplorerRewardSystemUpdate = {
   resourceId: ResourcesIds | 0;
   amount: number;
 };
+
+export type ExplorerMoveSystemUpdate = {
+  explorerId: ID;
+  resourceId: ResourcesIds | 0;
+  amount: number;
+};
 export type RealmSystemUpdate = {
   level: number;
   hexCoords: HexPosition;
@@ -51,4 +57,14 @@ export type QuestSystemUpdate = {
   entityId: ID;
   occupierId: ID;
   hexCoords: HexPosition;
+};
+
+export type ChestSystemUpdate = {
+  occupierId: ID;
+  hexCoords: HexPosition;
+};
+
+export type RelicEffectSystemUpdate = {
+  entityId: ID;
+  relicEffects: RelicEffectWithEndTick[];
 };

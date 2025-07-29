@@ -1,15 +1,16 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
-  type ArmySystemUpdate,
+  ArmySystemUpdate,
   BiomeIdToType,
   BiomeType,
   type BuildingSystemUpdate,
-  ExplorerRewardSystemUpdate,
+  ExplorerMoveSystemUpdate,
   type HexPosition,
   type ID,
   PROGRESS_FINAL_THRESHOLD,
   PROGRESS_HALF_THRESHOLD,
   RealmLevels,
+  RelicEffectSystemUpdate,
   StructureProgress,
   type StructureSystemUpdate,
   StructureType,
@@ -21,7 +22,14 @@ import {
 import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { usePlayerStore } from "../store";
-import { divideByPrecision, getHyperstructureProgress } from "../utils";
+import {
+  getArmyRelicEffects,
+  getHyperstructureProgress,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+} from "../utils";
+import { getBlockTimestamp } from "../utils/timestamp";
+import { divideByPrecision } from "../utils/utils";
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
@@ -238,7 +246,8 @@ export class SystemManager {
               if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
                 // Attempt to get explorer owner structure id from RECS
                 let explorerTroops = null;
-                let retries = 3;
+                // todo: find a better way to get the explorer owner address
+                let retries = 5;
                 while (retries > 0) {
                   explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
@@ -494,9 +503,9 @@ export class SystemManager {
     };
   }
 
-  public get ExplorerReward() {
+  public get ExplorerMove() {
     return {
-      onUpdate: (callback: (value: ExplorerRewardSystemUpdate) => void) => {
+      onUpdate: (callback: (value: ExplorerMoveSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.events.ExplorerMoveEvent,
           callback,
@@ -505,7 +514,7 @@ export class SystemManager {
               const [currentState, _prevState] = update.value;
               if (!currentState) return undefined;
 
-              const result: ExplorerRewardSystemUpdate = {
+              const result: ExplorerMoveSystemUpdate = {
                 explorerId: currentState.explorer_id,
                 resourceId: currentState.reward_resource_type,
                 amount: divideByPrecision(Number(currentState.reward_resource_amount)),
@@ -514,6 +523,56 @@ export class SystemManager {
             }
           },
           true,
+        );
+      },
+    };
+  }
+
+  public get Chest() {
+    return {
+      onUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const chest = currentState.occupier_type === TileOccupier.Chest;
+
+              if (!chest) return;
+
+              return {
+                entityId: update.entity,
+                occupierId: currentState?.occupier_id,
+                hexCoords: { col: currentState.col, row: currentState.row },
+              };
+            }
+          },
+          true,
+        );
+      },
+      onDeadChest: (callback: (value: ID) => void) => {
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          async (update: any): Promise<ID | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, prevState] = update.value;
+
+              // Check if the previous state was a chest and current state is not
+              if (
+                prevState &&
+                prevState.occupier_type === TileOccupier.Chest &&
+                (!currentState || currentState.occupier_type !== TileOccupier.Chest)
+              ) {
+                return prevState.occupier_id;
+              }
+            }
+          },
+          false,
         );
       },
     };
@@ -537,5 +596,104 @@ export class SystemManager {
     }
 
     return StructureProgress.STAGE_1;
+  }
+
+  public get RelicEffect() {
+    return {
+      onArmyUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.ExplorerTroops,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              const [currentState, prevState] = update.value;
+
+              console.log("RelicEffectSystemManager: update received", { currentState, prevState });
+
+              // at least one of the states must have an entity id
+              const entityId = currentState?.explorer_id || prevState?.explorer_id || 0;
+
+              // Check if we have a current state
+              if (currentState) {
+                const { currentArmiesTick } = getBlockTimestamp();
+                const relicEffects = getArmyRelicEffects(currentState.troops, currentArmiesTick);
+
+                console.log("RelicEffectSystemManager: currentState exists, isActive", {
+                  currentArmiesTick,
+                  relicEffects,
+                });
+
+                if (relicEffects.length === 0) {
+                  return;
+                }
+
+                return {
+                  entityId,
+                  relicEffects,
+                };
+              }
+            }
+          },
+          true,
+        );
+      },
+      onStructureGuardUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.Structure,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.Structure)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const { currentArmiesTick } = getBlockTimestamp();
+              const relicEffects = getStructureArmyRelicEffects(currentState, currentArmiesTick);
+
+              if (relicEffects.length === 0) {
+                return;
+              }
+
+              return {
+                entityId: currentState.entity_id,
+                relicEffects,
+              };
+            }
+          },
+          true,
+        );
+      },
+      onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.ProductionBoostBonus,
+          callback,
+          async (update: any): Promise<RelicEffectSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.ProductionBoostBonus)) {
+              const [currentState, _prevState] = update.value;
+
+              const { currentArmiesTick } = getBlockTimestamp();
+
+              if (!currentState) return;
+
+              const relicEffects = getStructureRelicEffects(currentState, currentArmiesTick);
+
+              if (relicEffects.length === 0) {
+                return;
+              }
+
+              console.log("RelicEffectSystemManager: onStructureProductionUpdate", {
+                currentState,
+                relicEffects,
+              });
+
+              return {
+                entityId: currentState.structure_id,
+                relicEffects,
+              };
+            }
+          },
+        );
+      },
+    };
   }
 }
