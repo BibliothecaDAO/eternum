@@ -420,7 +420,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 
     fn step_tile_distance() -> u32 {
-        12
+        15
     }
 
     fn realm_tile_radius() -> u32 {
@@ -428,11 +428,11 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 
     fn mirror_first_step_tile_distance() -> u32 {
-        9
+        11
     }
 
     fn mirror_second_step_tile_distance() -> u32 {
-        3
+        4
     }
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
