@@ -142,3 +142,29 @@ pnpm run build
 - Use torii-client queries only when needed for complex multi-model joins
 - Follow naming conventions for query files and structure
 - Export all SQL queries from the main api.ts file
+
+## Feature Log Policy
+
+Whenever a new feature or UX improvement is added (excluding bug fixes), it must be logged in `latest-features.ts` with a clear, descriptive title and a timestamp. This entry will appear in the in-game 'Latest Features' panel to help users understand what's new.
+
+### Guidelines for Feature Logging:
+
+1. **Include only features and UX improvements** - Bug fixes should not be logged
+2. **Use clear, descriptive titles** - Write titles that explain the feature clearly to players
+3. **Follow the timestamp format** - Use YYYY-MM-DD format (e.g., "2025-07-29")  
+4. **Sort entries chronologically** - Most recent features should appear first in the array
+5. **Write from the player's perspective** - Focus on what the player can now do or experience
+
+### Example Entry:
+
+```typescript
+{
+  date: "2025-07-29",
+  title: "You can now cycle between idle armies using the TAB key"
+}
+```
+
+### File Location:
+
+The feature log is maintained in:
+`client/apps/game/src/ui/features/world/latest-features.ts`
