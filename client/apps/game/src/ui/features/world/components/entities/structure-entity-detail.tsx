@@ -13,7 +13,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import { InventoryResources, RealmResourcesIO } from "@/ui/features/economy/resources";
+import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { displayAddress } from "@/ui/utils/utils";
@@ -276,11 +276,11 @@ export const StructureEntityDetail = memo(
               </div>
             )}
 
-            {/* Realm resources input/output display */}
-            {isRealmOrVillage && (
+            {/* Active resource productions display */}
+            {resources && (
               <div className="mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
-                <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Resource Production</div>
-                <RealmResourcesIO resourcesProduced={resourcesProduced} compact={true} size="xs" />
+                <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Active Productions</div>
+                <ActiveResourceProductions resources={resources} compact={true} size="xs" />
               </div>
             )}
 
