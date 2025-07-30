@@ -10,7 +10,9 @@ import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
+import { PlusIcon } from "lucide-react";
 import { ArmyChip } from "./army-chip";
+import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 const getArmiesCountByStructure = (structureEntityId: ID, components: ClientComponents) => {
   const armies = runQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
@@ -24,6 +26,7 @@ export const EntitiesArmyTable = () => {
 
   const playerStructures = useUIStore((state) => state.playerStructures);
   const togglePopup = useUIStore((state) => state.togglePopup);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   // Check if any structure has armies
   const hasAnyArmies = playerStructures.some((entity: any) => {
@@ -33,10 +36,45 @@ export const EntitiesArmyTable = () => {
 
   return (
     <>
-      <div className="w-full flex justify-center mt-4">
+      <div className="w-full flex justify-center mt-4 gap-2">
         <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
           Simulate a battle
         </Button>
+
+        {playerStructures.length > 0 && (
+          <>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                toggleModal(
+                  <UnifiedArmyCreationModal structureId={playerStructures[0]?.entityId || 0} isExplorer={true} />,
+                );
+              }}
+              className="flex items-center gap-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create Attack
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => {
+                toggleModal(
+                  <UnifiedArmyCreationModal
+                    structureId={playerStructures[0]?.entityId || 0}
+                    isExplorer={false}
+                    maxDefenseSlots={playerStructures[0]?.structure.base.troop_max_guard_count}
+                  />,
+                );
+              }}
+              className="flex items-center gap-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create Defense
+            </Button>
+          </>
+        )}
       </div>
       <CombatSimulation />
       {!hasAnyArmies ? (
@@ -58,19 +96,23 @@ export const EntitiesArmyTable = () => {
 const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolean }) => {
   const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
 
-  // Skip rendering if there are no armies
-  if (explorers.length === 0) {
+  // Always show structure if it has armies
+  const shouldShow = explorers.length > 0;
+
+  if (!shouldShow) {
     return null;
   }
 
   return (
-    <div className="p-2">
+    <div className="p-2 rounded-lg">
       <Headline>
-        <div className="flex gap-2">
-          <div className="self-center">{entity.name} </div>
+        <div className="flex gap-2 items-center">
+          <div className="self-center">{entity.name}</div>
+
           {showHint && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
+
       <div className="grid grid-cols-1 gap-4">
         <EntityArmyTable structureEntityId={entity.entityId} />
       </div>

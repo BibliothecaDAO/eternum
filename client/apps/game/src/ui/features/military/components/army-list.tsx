@@ -6,7 +6,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression";
-import { ArmyManager, getStructureName } from "@bibliothecadao/eternum";
+import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";
 import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
@@ -15,8 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArmyChip } from "./army-chip";
-import { ArmyCreate } from "./army-management-card";
 import { StructureDefence } from "./structure-defence";
+import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
   const dojo = useDojo();
@@ -55,20 +55,31 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
     return slotsTimeLeft;
   }, [guards]);
 
-  const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
-
   const totalExplorersCount = useMemo(() => {
     return explorers.length;
   }, [explorers]);
 
   const isRealmOrVillage = structure.category === StructureType.Realm || structure.category === StructureType.Village;
 
-  const armyManager = useMemo(() => {
-    if (!structure.entity_id) return null;
-    return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
-  }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
-
   const name = useMemo(() => getStructureName(structure, getIsBlitz()).name, [structure]);
+
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  const handleCreateAttack = () => {
+    toggleModal(<UnifiedArmyCreationModal structureId={structure.entity_id || 0} isExplorer={true} />);
+  };
+
+  console.log({ structure, maxDefenseSlots: structure.base.troop_max_guard_count });
+
+  const handleCreateDefense = () => {
+    toggleModal(
+      <UnifiedArmyCreationModal
+        structureId={structure.entity_id || 0}
+        isExplorer={false}
+        maxDefenseSlots={structure.base.troop_max_guard_count}
+      />,
+    );
+  };
 
   return (
     <div className="military-panel-selector p-4">
@@ -97,44 +108,55 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
       <div className="space-y-4">
         <Headline>Armies</Headline>
 
-        <div className="">
-          {showTroopSelection && armyManager ? (
-            <ArmyCreate
-              owner_entity={structure.entity_id || 0}
-              army={undefined}
-              armyManager={armyManager}
-              isExplorer={true}
-              onCancel={() => setShowTroopSelection(false)}
-            />
-          ) : (
-            <div
-              className="flex justify-center items-center p-4"
-              onMouseEnter={() => {
-                if (!isRealmOrVillage) {
-                  setTooltip({
-                    content: "Can only create attacking armies on realms",
-                    position: "top",
-                  });
-                } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
-                  setTooltip({
-                    content: "Maximum number of armies reached",
-                    position: "top",
-                  });
-                }
-              }}
-              onMouseLeave={() => setTooltip(null)}
+        <div className="flex gap-2 justify-center p-4">
+          <div
+            onMouseEnter={() => {
+              if (!isRealmOrVillage) {
+                setTooltip({
+                  content: "Can only create attacking armies on realms",
+                  position: "top",
+                });
+              } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
+                setTooltip({
+                  content: "Maximum number of armies reached",
+                  position: "top",
+                });
+              }
+            }}
+            onMouseLeave={() => setTooltip(null)}
+          >
+            <Button
+              variant="primary"
+              disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
+              className="px-6 py-2 flex items-center gap-2"
+              onClick={handleCreateAttack}
             >
-              <Button
-                variant="primary"
-                disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
-                className="attack-army-selector px-6 py-2 text-lg flex items-center gap-2"
-                onClick={() => setShowTroopSelection(true)}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span>Create Attack Army</span>
-              </Button>
-            </div>
-          )}
+              <PlusIcon className="h-4 w-4" />
+              <span>Create Attack</span>
+            </Button>
+          </div>
+
+          <div
+            onMouseEnter={() => {
+              if (guards.length >= structure.base.troop_max_guard_count) {
+                setTooltip({
+                  content: "Maximum number of defenses reached",
+                  position: "top",
+                });
+              }
+            }}
+            onMouseLeave={() => setTooltip(null)}
+          >
+            <Button
+              variant="outline"
+              disabled={guards.length >= structure.base.troop_max_guard_count}
+              className="px-6 py-2 flex items-center gap-2"
+              onClick={handleCreateDefense}
+            >
+              <PlusIcon className="h-4 w-4" />
+              <span>Create Defense</span>
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-3">
