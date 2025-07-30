@@ -129,6 +129,7 @@ export const BuildingThumbs = {
   logs: `${prefix}hourglass.png`,
   transfer: `${prefix}transfer.png`,
   relics: `${prefix}relics.png`,
+  latestUpdates: `${prefix}latest-updates.png`,
 };
 
 export enum MenuEnum {

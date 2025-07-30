@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { leaderboard, rewards, settings, shortcuts } from "@/ui/features/world";
+import { latestFeatures, leaderboard, rewards, settings, shortcuts } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
@@ -85,6 +85,15 @@ export const SecondaryMenuItems = () => {
           label={"Trophies"}
           size="md"
           onClick={handleTrophyClick}
+        />
+        <CircleButton
+          className="latest-features-selector border-none"
+          tooltipLocation="bottom"
+          active={isPopupOpen(latestFeatures)}
+          image={BuildingThumbs.latestUpdates}
+          label={"Latest Features"}
+          size="md"
+          onClick={() => togglePopup(latestFeatures)}
         />
         <CircleButton
           className="shortcuts-selector border-none"
