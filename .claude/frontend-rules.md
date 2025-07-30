@@ -1,191 +1,235 @@
-# Eternum Project Guidelines
+⚔️ Eternum Project Guidelines 🧱 Package Architecture IMPORTANT: Read each package README before contributing:
 
-## Package Architecture
+packages/types/README.md — Shared type definitions
 
-IMPORTANT: Read these package READMEs to understand the codebase structure:
+packages/provider/README.md — Data provider interfaces and implementations
 
-- `packages/types/README.md` – Type definitions shared across packages
-- `packages/provider/README.md` – Data provider interfaces and implementations
-- `packages/core/README.md` – Core game logic and utilities
-- `packages/torii/README.md` – Torii integration for blockchain data
+packages/core/README.md — Core game logic and utility functions
+
+packages/torii/README.md — SQL + Torii integration for blockchain data
 
 This helps you:
 
-- Locate existing functions before creating new ones
-- Write new functions in the appropriate package
-- Understand dependencies between packages
+Discover existing functions before writing new ones
 
-## Common Commands
+Place new logic in the correct layer
+
+Avoid redundant dependencies and circular imports
+
+🛠️ Common Dev Commands
 
 ```bash
 # Build all packages (REQUIRED after package changes)
 pnpm run build:packages
 
-# Development commands
-pnpm run format # run prettier formatting
-pnpm run knip # knip
+# Run formatter
+pnpm run format
+
+# Check for unused code/dependencies
+pnpm run knip
 ```
 
-## Application Structure
+🗺 Application Structure When adding features, consult the relevant app's README:
 
-When building features, read the relevant app README:
+client/apps/game/ – Main game app (React + Three.js)
 
-- `client/apps/game/README.md` – Main game application
-- `client/apps/bot/README.md` – Bot implementation
-- `client/apps/game-docs/README.md` – Game documentation site
-- `client/apps/heavy-load/README.md` – Performance testing tools
-- `client/apps/landing/README.md` – Landing page
+client/apps/bot/ – Game bot logic
 
-## Game World Display: Worldmap vs. Hex View
+client/apps/game-docs/ – Developer documentation site
 
-The worldmap is a hex-based global view where you can see all structures, realms, and armies on a large-scale grid.
+client/apps/heavy-load/ – Load testing tools
 
-Armies spawn on adjacent hexes of a structure and can explore, travel, and engage in battles across the hexes.
+client/apps/landing/ – Marketing site
 
-Clicking into a structure or realm enters the hex view (also called "local view"), which contains its own internal grid
-of sub-hexes.
+🌍 World vs. Local View (Hex View) Worldmap: Global hex grid showing realms, structures, and armies
 
-Inside a local hex view, buildings can be constructed on sub-hexes — these actions are isolated to that specific
-structure or realm.
+Local hex view: Sub-grid inside a realm or structure for construction and local interactions
 
-Transitioning between these two layers is a core interaction in gameplay and impacts UX and system design.
+Key UX transition: Clicking into a structure enters the local grid; actions here are isolated to the specific realm.
+Design systems and game logic must support both views coherently.
 
-## Code Style
+🎨 Code Style & Best Practices Use TypeScript exclusively
 
-- Use TypeScript for all new code
-- Follow existing patterns in the codebase
-- Prefer composition over inheritance
-- Use functional components for React code
-- Keep components small and focused
-- **NEVER use `(as any)` to bypass TypeScript errors** – Instead, properly type your data or fix the underlying issue
+Never use as any — Fix types properly
 
-## Shortcut Integration Guidelines
+Follow compositional patterns over inheritance
 
-If you're adding new keyboard shortcuts to the app:
+Use functional React components and avoid monoliths
 
-- **Always register them via the centralized manager** located at:
-  `@client/apps/game/src/utils/shortcuts/centralized-shortcut-manager.ts`
-- This ensures shortcuts are consistent across scenes and easy to maintain
-- **Do not register shortcuts ad-hoc** in component files or scene logic
-- If shortcuts are tied to the game scene (e.g., Three.js), you can use `SceneShortcutManager` to bridge centralized
-  logic with scene-specific behavior
+Match naming conventions already used across the codebase
 
-## Testing Guidelines
+Break large logic into reusable utility functions
 
-- Write tests for new features
-- Run tests before committing: `pnpm test`
-- Test files should be colocated with source files
-- Use descriptive test names
+⌨️ Shortcut Integration MANDATORY: Register all new shortcuts via the centralized manager:
 
-## COMMIT Checklist
-
-IMPORTANT: Before committing changes, YOU MUST:
-
-1. **Update Lockfile** – If you added/removed dependencies, run `pnpm install` and commit pnpm-lock.yaml
-2. **Update Documentation** – Check if `client/apps/game-docs` needs updates based on your changes
-3. **Update README** – Update the main README if you've added new features or changed setup steps
-4. **Check Directory READMEs** – If you made changes in a directory, check if its README needs updates
-5. **Run Formatter** – Execute `pnpm run format` to ensure consistent code formatting
-6. **Check Unused Dependencies** – Run `knip` and ensure no changes (no unused dependencies)
-7. **Build Packages** – If you modified packages, run `pnpm run build:packages`
-
-## Design System Guidelines
-
-When creating new UI components:
-
-1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
-   elsewhere in the app
-2. **Add to design system if generic**:
-   - `atoms/` for basic UI primitives (buttons, inputs, labels)
-   - `molecules/` for composed components (card headers, form groups)
-3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
-   implementations that could be replaced
-4. **Replace existing implementations**: Update all found instances to use the new design system component
-5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
-
-## UX Design Consultation
-
-**MANDATORY: When facing UX challenges or design decisions:**
-
-- **Always consult the UX agent** for guidance on user experience improvements
-- This includes: interaction patterns, user flows, interface clarity, game mechanics presentation
-- Use the game-ux-evaluator agent when you need to:
-  - Evaluate existing UX patterns
-  - Design new user interactions
-  - Improve player onboarding flows
-  - Resolve confusion points in the interface
-  - Optimize game mechanics presentation
-
-Example usage:
-
-```
-"I need help improving the UX of the army selection interface. Players are confused about how to select and move units."
+```swift
+@client/apps/game/src/utils/shortcuts/centralized-shortcut-manager.ts
 ```
 
-## Adding New Contract Entrypoints – MANDATORY PROCESS
+If your shortcut logic is tied to a Three.js scene, use SceneShortcutManager to bridge context.
 
-When new entrypoints are added to contracts, follow this exact pattern:
+❌ Do NOT register shortcuts directly in scenes or components.
 
-1. **Add TypeScript Props Interface** in `packages/types/src/types/provider.ts`
-2. **Add Provider Method** in `packages/dojo/node_modules/@bibliothecadao/provider/src/index.ts`
-3. **Add System Call Wrapper** in `packages/types/src/dojo/create-system-calls.ts`
-4. **Add to Policies** in `client/apps/game/src/hooks/context/policies.ts`
-5. **MANDATORY: Run Build Verification**
+🧪 Testing Practices Co-locate test files with source code
+
+Use clear, descriptive test names
+
+Always run pnpm test before pushing
+
+✅ Pre-Commit Checklist Before pushing any change:
+
+- [ ] pnpm install (if deps changed)
+
+- [ ] Update pnpm-lock.yaml
+
+- [ ] Update any relevant README files
+
+- [ ] Update latest-features.ts (if UX- or player-facing)
+
+- [ ] pnpm run format
+
+- [ ] pnpm run knip (no unused code)
+
+- [ ] pnpm run build:packages (if packages changed)
+
+- [ ] pnpm run build (MANDATORY before merge)
+
+🧭 Systematic Dev Process 📋 Task Analysis (always at the start)
+
+```markdown
+- Type: [Feature | Bug Fix | Refactor | UX Improvement | Docs]
+- User-facing: [Yes/No]
+- Needs logging: [Yes/No]
+- Affects packages: [Yes/No]
+```
+
+🔍 Pre-Work Checklist
+
+```markdown
+- [ ] Read all relevant README files
+- [ ] Look for reusable components
+- [ ] Identify applicable guidelines (UX, contract, etc.)
+- [ ] Plan feature log entry
+```
+
+⚙️ Implementation Reminders
+
+```markdown
+- [ ] Follow TS best practices (no `as any`)
+- [ ] Use core utils and patterns
+- [ ] Keep logic reusable and focused
+- [ ] Consult UX agent if needed
+```
+
+✅ Pre-Commit Summary
+
+```markdown
+- [ ] Dependencies updated?
+- [ ] Docs updated?
+- [ ] Run format
+- [ ] Run knip
+- [ ] Build packages
+- [ ] Build app
+- [ ] Feature added to `latest-features.ts`
+- [ ] Exports updated in index.ts if new components
+```
+
+📝 Completion Summary
+
+```markdown
+- Modified files: [list]
+- Checklist: [X/Y]
+- Feature logged: [Yes/No]
+- Ready for commit: [Yes/No]
+```
+
+🧩 Design System Guidelines When adding UI components:
+
+Evaluate reuse potential before placing in a feature directory
+
+If generic, place in design system:
+
+atoms/ — low-level UI primitives
+
+molecules/ — composed UI units
+
+Search for similar existing implementations
+
+Replace and refactor usages where appropriate
+
+Use kebab-case for file names and PascalCase for component names
+
+🧠 UX Agent Consultation If you're unsure about interaction design or user flow, consult the UX agent.
+
+Use it to:
+
+Improve clarity or discoverability
+
+Test new interaction patterns
+
+Reduce player friction or confusion
+
+Improve game mechanic UI
+
+Example query:
+
+"Players aren't clear on how to move armies. How should I redesign the selection flow?"
+
+🔐 Adding New Contract Entrypoints When adding new Cairo entrypoints:
+
+Create TypeScript props interface in: packages/types/src/types/provider.ts
+
+Add provider method in: packages/dojo/node_modules/@bibliothecadao/provider/src/index.ts
+
+Create system call wrapper in: packages/types/src/dojo/create-system-calls.ts
+
+Add to policies in: client/apps/game/src/hooks/context/policies.ts
+
+Run:
 
 ```bash
 pnpm run build:packages
 pnpm run build
 ```
 
-**Example Pattern – Relic System:**
+⚠️ CRITICAL:
 
-- Contract entrypoints: `open_chest(...)`, `apply_relic(...)`
-- Props interfaces: `OpenChestProps`, `ApplyRelicProps`
-- Provider methods: `open_chest()`, `apply_relic()`
-- System calls: `open_chest: withAuth(open_chest)`, `apply_relic: withAuth(apply_relic)`
-- Policies: Add methods under `relic_systems` contract
+Match param names and order from the contract
 
-**CRITICAL NOTES:**
+Use withAuth() for all system calls
 
-- Always match contract parameter names and order
-- Use `${NAMESPACE}-system_name` for contract addresses
-- Coordinate parameters must be `{ x: num.BigNumberish; y: num.BigNumberish; }`
-- All system calls MUST be wrapped with `withAuth()`
-- You must update policies.ts for user authorization
-- Run full build before completing your task
+Coordinate params must follow { x: num.BigNumberish, y: num.BigNumberish }
 
-## Torii Query Strategy
+Use NAMESPACE-system_name for contract naming
 
-- **Use SQL queries by default** for best performance
-- Queries live in `packages/torii/src/queries/sql/`
-- Use torii-client queries only when needed for complex multi-model joins
-- Follow naming conventions for query files and structure
-- Export all SQL queries from the main api.ts file
+Authorization is managed in policies.ts
 
-## Feature Log Policy
+🧠 Torii Query Guidelines Default to SQL queries (packages/torii/src/queries/sql/)
 
-Whenever a new feature or UX improvement is added (excluding bug fixes), it must be logged in `latest-features.ts` with
-a clear, descriptive title and a timestamp. This entry will appear in the in-game 'Latest Features' panel to help users
-understand what's new.
+Use Torii client only when SQL isn't enough (complex joins, dynamic filters)
 
-### Guidelines for Feature Logging:
+Name query files clearly and export from api.ts
 
-1. **Include only features and UX improvements** - Bug fixes should not be logged
-2. **Use clear, descriptive titles** - Write titles that explain the feature clearly to players
-3. **Follow the timestamp format** - Use YYYY-MM-DD format (e.g., "2025-07-29")
-4. **Sort entries chronologically** - Most recent features should appear first in the array
-5. **Write from the player's perspective** - Focus on what the player can now do or experience
+✨ Feature Log Policy MANDATORY: Log every new player-facing feature or UX improvement in:
 
-### Example Entry:
+```swift
+client/apps/game/src/ui/features/world/latest-features.ts
+```
 
-```typescript
+Logging Format:
+
+```ts
 {
   date: "2025-07-29",
-  title: "New armies change shortcut",
-  description: "You can now cycle between idle armies using the TAB key"
+  title: "Idle army shortcut",
+  description: "You can now cycle through idle armies using the TAB key"
 }
 ```
 
-### File Location:
+Rules: Log only user-visible features (not internal fixes)
 
-The feature log is maintained in: `client/apps/game/src/ui/features/world/latest-features.ts`
+Use YYYY-MM-DD format
+
+Newest entries go first
+
+Write from the player's perspective (not dev lingo)
