@@ -1,6 +1,6 @@
+import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientConfigManager } from "..";
-import { RESOURCE_PRECISION, ResourcesIds, Position, ResourceMiningTypes, TickIds } from "@bibliothecadao/types";
 
 export { getEntityIdFromKeys };
 
@@ -16,17 +16,33 @@ export enum TimeFormat {
 }
 
 export const formatTime = (seconds: number) => {
+  // Handle invalid or infinite values
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return "N/A";
+  }
+
+  // Cap at 999 days to avoid unreasonably large numbers
+  const maxDays = 999;
+  if (seconds > maxDays * 24 * 60 * 60) {
+    return `${maxDays}d+`;
+  }
+
   const days = Math.floor(seconds / (24 * 60 * 60));
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
   const minutes = Math.floor((seconds % (60 * 60)) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return [
-    days > 0 ? `${days}d ` : "",
-    hours > 0 ? `${hours}h ` : "",
-    minutes > 0 ? `${minutes}m ` : "",
-    `${remainingSeconds}s`,
-  ].join("");
+  // Only show the two most significant units
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+  return `${remainingSeconds}s`;
 };
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
