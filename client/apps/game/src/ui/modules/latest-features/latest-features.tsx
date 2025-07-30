@@ -30,6 +30,9 @@ export const LatestFeaturesWindow = () => {
                     <span className="text-gold text-sm font-medium">{feature.title}</span>
                     <span className="text-gold/60 text-xs flex-shrink-0 ml-4">{feature.date}</span>
                   </div>
+                  {feature.description && (
+                    <p className="text-gold/80 text-xs mt-2 leading-relaxed">{feature.description}</p>
+                  )}
                 </div>
               ))}
             </div>
