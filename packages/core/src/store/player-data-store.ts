@@ -2,6 +2,7 @@ import { shortString } from "starknet";
 import { SqlApi } from "../../../torii/src/queries/sql/api";
 import { PlayersData } from "../../../torii/src/types/sql";
 import realms from "../data/realms-metadata.json";
+import { getIsBlitz } from "../utils";
 import { getStructureTypeName } from "../utils/structure";
 
 export interface PlayerDataTransformed {
@@ -92,7 +93,9 @@ export class PlayerDataStore {
           let actualCategory = structureId.split(":")[2];
           this.structureToAddressMap.set(actualStructureId, transformedItem.ownerAddress);
           const realmName =
-            actualRealmId === "0" ? getStructureTypeName(Number(actualCategory), true) : realmsData[actualRealmId].name;
+            actualRealmId === "0"
+              ? getStructureTypeName(Number(actualCategory), getIsBlitz())
+              : realmsData[actualRealmId].name;
           this.structureToNameMap.set(actualStructureId, realmName);
         });
 
