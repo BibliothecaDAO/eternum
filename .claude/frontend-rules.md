@@ -103,6 +103,25 @@ When creating new UI components:
 4. **Replace existing implementations**: Update all found instances to use the new design system component
 5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
 
+## UX Design Consultation
+
+**MANDATORY: When facing UX challenges or design decisions:**
+
+- **Always consult the UX agent** for guidance on user experience improvements
+- This includes: interaction patterns, user flows, interface clarity, game mechanics presentation
+- Use the game-ux-evaluator agent when you need to:
+  - Evaluate existing UX patterns
+  - Design new user interactions
+  - Improve player onboarding flows
+  - Resolve confusion points in the interface
+  - Optimize game mechanics presentation
+
+Example usage:
+
+```
+"I need help improving the UX of the army selection interface. Players are confused about how to select and move units."
+```
+
 ## Adding New Contract Entrypoints – MANDATORY PROCESS
 
 When new entrypoints are added to contracts, follow this exact pattern:
@@ -145,13 +164,15 @@ pnpm run build
 
 ## Feature Log Policy
 
-Whenever a new feature or UX improvement is added (excluding bug fixes), it must be logged in `latest-features.ts` with a clear, descriptive title and a timestamp. This entry will appear in the in-game 'Latest Features' panel to help users understand what's new.
+Whenever a new feature or UX improvement is added (excluding bug fixes), it must be logged in `latest-features.ts` with
+a clear, descriptive title and a timestamp. This entry will appear in the in-game 'Latest Features' panel to help users
+understand what's new.
 
 ### Guidelines for Feature Logging:
 
 1. **Include only features and UX improvements** - Bug fixes should not be logged
 2. **Use clear, descriptive titles** - Write titles that explain the feature clearly to players
-3. **Follow the timestamp format** - Use YYYY-MM-DD format (e.g., "2025-07-29")  
+3. **Follow the timestamp format** - Use YYYY-MM-DD format (e.g., "2025-07-29")
 4. **Sort entries chronologically** - Most recent features should appear first in the array
 5. **Write from the player's perspective** - Focus on what the player can now do or experience
 
@@ -160,11 +181,11 @@ Whenever a new feature or UX improvement is added (excluding bug fixes), it must
 ```typescript
 {
   date: "2025-07-29",
-  title: "You can now cycle between idle armies using the TAB key"
+  title: "New armies change shortcut",
+  description: "You can now cycle between idle armies using the TAB key"
 }
 ```
 
 ### File Location:
 
-The feature log is maintained in:
-`client/apps/game/src/ui/features/world/latest-features.ts`
+The feature log is maintained in: `client/apps/game/src/ui/features/world/latest-features.ts`
