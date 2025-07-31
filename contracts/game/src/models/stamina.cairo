@@ -1,6 +1,7 @@
 use core::num::traits::zero::Zero;
 use s1_eternum::models::config::{TroopStaminaConfig};
-use s1_eternum::models::troop::{TroopTier, TroopType};
+use s1_eternum::models::troop::{TroopBoosts, TroopTier, TroopType};
+use s1_eternum::utils::math::PercentageImpl;
 
 #[derive(Introspect, Copy, Drop, Serde, Default)]
 pub struct Stamina {
@@ -17,6 +18,7 @@ pub impl StaminaImpl of StaminaTrait {
 
     fn refill(
         ref self: Stamina,
+        ref troop_boosts: TroopBoosts,
         troop_type: TroopType,
         troop_tier: TroopTier,
         troop_stamina_config: TroopStaminaConfig,
@@ -31,13 +33,29 @@ pub impl StaminaImpl of StaminaTrait {
             self.amount = troop_stamina_config.stamina_initial.into();
             self.updated_tick = current_tick;
         } else {
+            // regular stamina gain
+            let mut regular_gain_per_tick = troop_stamina_config.stamina_gain_per_tick.into();
+            let regular_num_ticks_passed = current_tick - self.updated_tick;
+            let regular_stamina_gain = regular_num_ticks_passed * regular_gain_per_tick;
+
+            // additional stamina from boost
+            let boost_gain_per_tick = PercentageImpl::get(
+                regular_gain_per_tick, troop_boosts.incr_stamina_regen_percent_num.into(),
+            );
+            let boost_num_ticks_passed = core::cmp::min(
+                current_tick - self.updated_tick, troop_boosts.incr_stamina_regen_tick_count.into(),
+            );
+            let boost_stamina_gain = boost_num_ticks_passed * boost_gain_per_tick.try_into().unwrap();
+            let total_stamina_gain = regular_stamina_gain + boost_stamina_gain;
+
+            // reduce boost tick duration
+            troop_boosts.incr_stamina_regen_tick_count -= boost_num_ticks_passed.try_into().unwrap();
+
             // refill stamina
-            let num_ticks_passed: u64 = current_tick - self.updated_tick;
-            let additional_stamina: u64 = num_ticks_passed * troop_stamina_config.stamina_gain_per_tick.into();
             self
                 .amount =
                     core::cmp::min(
-                        self.amount + additional_stamina, Self::max(troop_type, troop_tier, troop_stamina_config),
+                        self.amount + total_stamina_gain, Self::max(troop_type, troop_tier, troop_stamina_config),
                     );
             self.updated_tick = current_tick;
         }
@@ -45,6 +63,7 @@ pub impl StaminaImpl of StaminaTrait {
 
     fn spend(
         ref self: Stamina,
+        ref troop_boosts: TroopBoosts,
         troop_type: TroopType,
         troop_tier: TroopTier,
         troop_stamina_config: TroopStaminaConfig,
@@ -53,7 +72,7 @@ pub impl StaminaImpl of StaminaTrait {
         throw_error: bool,
     ) {
         // reduce stamina
-        self.refill(troop_type, troop_tier, troop_stamina_config, current_tick);
+        self.refill(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, current_tick);
         if amount > self.amount {
             if throw_error {
                 panic!("insufficient stamina, you need: {}, and have: {}", amount, self.amount);
@@ -67,6 +86,7 @@ pub impl StaminaImpl of StaminaTrait {
 
     fn add(
         ref self: Stamina,
+        ref troop_boosts: TroopBoosts,
         troop_type: TroopType,
         troop_tier: TroopTier,
         troop_stamina_config: TroopStaminaConfig,
@@ -74,7 +94,7 @@ pub impl StaminaImpl of StaminaTrait {
         current_tick: u64,
     ) {
         // increase stamina, limited to max of troop type stamina
-        self.refill(troop_type, troop_tier, troop_stamina_config, current_tick);
+        self.refill(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, current_tick);
         self.amount = core::cmp::min(self.amount + amount, Self::max(troop_type, troop_tier, troop_stamina_config));
     }
 

@@ -1,85 +1,35 @@
-# Eternum Project Guidelines
-
-## Package Architecture
-
-IMPORTANT: Read these package READMEs to understand the codebase structure:
-
-- `packages/types/README.md` - Type definitions shared across packages
-- `packages/provider/README.md` - Data provider interfaces and implementations
-- `packages/core/README.md` - Core game logic and utilities
-- `packages/torii/README.md` - Torii integration for blockchain data
-
-This helps you:
-
-- Locate existing functions before creating new ones
-- Write new functions in the appropriate package
-- Understand dependencies between packages
-
-## Common Commands
-
-```bash
-# Build all packages (REQUIRED after package changes)
-pnpm run build:packages
-
-# Development commands
-pnpm run format # run prettier formatting
-pnpm run knip # knip
-```
-
-## Application Structure
-
-When building features, read the relevant app README:
-
-- `client/apps/game/README.md` - Main game application
-- `client/apps/bot/README.md` - Bot implementation
-- `client/apps/game-docs/README.md` - Game documentation site
-- `client/apps/heavy-load/README.md` - Performance testing tools
-- `client/apps/landing/README.md` - Landing page
-
-## Code Style
-
-- Use TypeScript for all new code
-- Follow existing patterns in the codebase
-- Prefer composition over inheritance
-- Use functional components for React code
-- Keep components small and focused
-- **Tailwind CSS**: Always use colors defined in `client/apps/game/tailwind.config.js` rather than default Tailwind
-  colors (e.g., use `bg-danger` instead of `bg-red-600`, `bg-green` instead of `bg-green-600`)
-
-## Testing Guidelines
-
-- Write tests for new features
-- Run tests before committing: `pnpm test`
-- Test files should be colocated with source files
-- Use descriptive test names
-
-## COMMIT Checklist
-
-**⚠️ CRITICAL: NEVER COMMIT WITHOUT A SUCCESSFUL BUILD! ⚠️**
-
-IMPORTANT: Before committing changes, YOU MUST:
-
-1. **Run Build Check** (MANDATORY - DO THIS FIRST!):
-   - Execute `pnpm run build` in EVERY affected app directory
-   - For game changes: `cd client/apps/game && pnpm run build`
-   - For landing page changes: `cd client/apps/landing && pnpm run build`
-   - **IF BUILD FAILS: FIX ALL ERRORS BEFORE PROCEEDING!**
-   - **NEVER use --no-verify or skip this step**
-2. **Update Lockfile**: If you added/removed dependencies, run `pnpm install` to update pnpm-lock.yaml and commit it
-3. **Update Documentation**: Check if `client/apps/game-docs` needs updates based on your changes
-4. **Update README**: Update the main README if you've added new features or changed setup steps
-5. **Check Directory READMEs**: If you made changes in a directory, check if that directory's README needs updates
-6. **Run Formatter**: Execute `pnpm run format` to ensure consistent code formatting
-7. **Check Unused Dependencies**: Run `knip` and ensure no changes (no unused dependencies)
-8. **Build Packages**: If you modified packages, run `pnpm run build:packages`
-9. **Create PR to `next`**: When creating PR, ALWAYS use `gh pr create --base next` (NEVER to `main`)
-
-## Project-Specific Notes
+# Shared Project Guidelines
 
 - This is a blockchain gaming project using Cairo/Starknet
 - The game involves realms, resources, and armies
 - Torii is used for indexing blockchain data
 - The project uses pnpm workspaces for monorepo management
+
+## 🎯 Key Documentation References
+
+**MANDATORY: Read these domain-specific guidelines:**
+
+- **Frontend Guidelines**: `.claude/frontend-rules.md` 🎨
+  - Package architecture & dependencies
+  - UI/UX patterns & design system
+  - Component development standards
+  - Frontend-specific workflows
+  
+- **Contracts Guidelines**: `.claude/contracts-rules.md` ⚡
+  - Smart contract patterns
+  - Cairo best practices
+  - Contract testing requirements
+
+## 📦 Package Architecture Overview
+
+**CRITICAL: Understand the monorepo structure before coding:**
+
+- `packages/types` – Shared type definitions
+- `packages/provider` – Data provider interfaces
+- `packages/core` – Core game logic
+- `packages/torii` – Blockchain data indexing
+
+**See `.claude/frontend-rules.md` for detailed package guidelines**
 
 ## Git Workflow - MANDATORY PROCESS
 
@@ -93,15 +43,16 @@ IMPORTANT: Before committing changes, YOU MUST:
    - Documentation: `git checkout -b docs/what-docs-youre-updating`
    - Other: `git checkout -b chore/your-change-description`
 3. **Make your changes on the branch** (NEVER work directly on `next`)
-4. **Commit changes**: `git add . && git commit -m "your message"`
-5. **Push branch**: `git push -u origin your-branch-name`
-6. **Create PR**: **ALWAYS use `--base next`** when creating PRs: `gh pr create --base next`
+4. **Follow Pre-commit Checklist** (see below)
+5. **Commit changes**: `git add . && git commit -m "your message"`
+6. **Push branch**: `git push -u origin your-branch-name`
+7. **Create PR**: **ALWAYS use `--base next`** when creating PRs: `gh pr create --base next`
 
 **If you find yourself on `next` with uncommitted changes:**
 
 - Create an appropriate branch: `git checkout -b fix/move-from-next` (or feature/, refactor/, etc.)
 - Your changes will move with you to the new branch
-- Then follow steps 4-6 above
+- Then follow steps 4-7 above
 
 **NEVER:**
 
@@ -110,25 +61,108 @@ IMPORTANT: Before committing changes, YOU MUST:
 - Push commits directly to `next`
 - Use `gh pr create` without explicitly specifying `--base next`
 
+## 📋 Pre-commit Checklist - MANDATORY
+
+**Complete ALL items before committing:**
+
+1. **Update Lockfile** – If dependencies changed: `pnpm install`
+2. **Update Documentation** – Check if docs need updates
+3. **Run Formatter** – `pnpm run format`
+4. **Check Dependencies** – `pnpm run knip` (no unused deps)
+5. **Build Packages** – `pnpm run build:packages` (if packages modified)
+6. **Build Verification** – `pnpm run build` (MUST pass)
+7. **Update Feature Log** – Add new features to `latest-features.ts`
+
+**See `.claude/frontend-rules.md` for detailed checklist items**
+
+## 🚀 Quick Command Reference
+
+```bash
+# Essential commands
+pnpm run build:packages  # Build all packages
+pnpm run build          # Full build verification
+pnpm run format         # Format code
+pnpm run knip          # Check unused dependencies
+pnpm test              # Run tests
+
+# Development
+pnpm dev               # Start development server
+```
+
+## 🏗️ Domain-Specific Guidelines
+
+### Frontend Development
+- **Design System**: Check reusability before creating components
+- **TypeScript**: NEVER use `(as any)` - properly type your data
+- **Shortcuts**: Register via centralized manager only
+- **Components**: Functional components, small and focused
+- **Full details**: `.claude/frontend-rules.md`
+
+### Contract Development
+- **Cairo patterns**: Follow established patterns
+- **Testing**: Comprehensive test coverage required
+- **Full details**: `.claude/contracts-rules.md`
+
+### Adding New Features
+1. **Contract Entrypoints**: Follow 5-step process in frontend-rules.md
+2. **UI Components**: Check design system first
+3. **Torii Queries**: SQL by default, torii-client for complex joins
+4. **Feature Logging**: Update `latest-features.ts` for user-facing changes
+
 ## Repository Etiquette
 
 - Use descriptive commit messages
 - Keep commits focused and atomic
 - Don't commit generated files or build artifacts
 - Always test locally before pushing
+- Follow the appropriate domain guidelines
 
-## Design System Guidelines
+## Build Verification - MANDATORY
 
-When creating new UI components:
+**CRITICAL: After making ANY code changes, always verify the build:**
 
-1. **Check for reusability**: Before creating a component in a feature-specific location, evaluate if it could be used
-   elsewhere in the app
-2. **Add to design system if generic**: If the component is generic enough (like buttons, inputs, modals), add it to the
-   appropriate design system folder:
-   - `atoms/` for basic UI primitives (buttons, inputs, labels)
-   - `molecules/` for composed components (card headers, form groups)
-3. **Search for existing usage**: When adding a component to the design system, search the codebase for similar
-   implementations that could be replaced
-4. **Replace existing implementations**: Update all found instances to use the new design system component for
-   consistency
-5. **Follow naming conventions**: Use kebab-case for files and PascalCase for component names
+```bash
+pnpm run build
+```
+
+- This MUST pass before considering any task complete
+- The project uses `pnpm`, not `npm`
+- Never assume changes work without running the build
+- If build fails, fix all errors before proceeding
+
+## Claude.md Changes Guidelines
+
+When making changes to project rules and guidelines:
+
+- **Project-wide rules** (Git workflow, repository etiquette, etc.) → Update this file (`CLAUDE.md`)
+- **Frontend-specific rules** → Update `.claude/frontend-rules.md`
+- **Contract-specific rules** → Update `.claude/contracts-rules.md`
+
+Keep changes focused to their respective domains and avoid cross-contamination between rule files.
+
+## 📚 CRITICAL DOCUMENTATION PATTERN
+
+**ALWAYS ADD IMPORTANT DOCS HERE!** When you create or discover:
+
+- Architecture diagrams → Add reference path here
+- Database schemas → Add reference path here
+- Problem solutions → Add reference path here
+- Setup guides → Add reference path here
+- Package READMEs → Listed in frontend-rules.md
+- App READMEs → Listed in frontend-rules.md
+
+This prevents context loss! Update this file IMMEDIATELY when creating important docs.
+
+## ⚠️ Common Pitfalls to Avoid
+
+1. **Not reading domain guidelines** before starting work
+2. **Skipping build verification** after changes
+3. **Creating components without checking design system**
+4. **Using `(as any)` in TypeScript**
+5. **Working directly on `next` branch**
+6. **Creating PRs to `main` instead of `next`**
+7. **Not updating feature log for new features**
+
+---
+
+**Remember: When in doubt, check the domain-specific guidelines first!**

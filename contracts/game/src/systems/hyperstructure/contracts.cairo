@@ -162,7 +162,10 @@ pub mod hyperstructure_systems {
     use s1_eternum::{
         alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes},
         models::{
-            config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl},
+            config::{
+                HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig,
+                WorldConfigUtilImpl,
+            },
             guild::{GuildMember},
             hyperstructure::{
                 ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
@@ -405,13 +408,25 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // todo: test gas for 20 shareholders
-            // ensure there are never more than 20 shareholders at a time
-            assert!(shareholders.len() <= 20, "too many shareholders, maximum of 20");
-
             // ensure the structure is owned by caller
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
             structure_owner.assert_caller_owner();
+
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            match blitz_mode_on {
+                true => {
+                    assert!(shareholders.len() == 1, "too many shareholders, maximum of 1");
+                    let (address, percentage) = *shareholders.at(0);
+                    assert!(percentage.into() == PercentageValueImpl::_100(), "percentage must be 100%");
+                    assert!(address.is_non_zero(), "shareholder must be set");
+                    assert!(address == structure_owner, "shareholder must be the structure owner");
+                },
+                false => {
+                    assert!( // 20 is the max for non-blitz mode
+                        shareholders.len() <= 20, "too many shareholders, maximum of 20",
+                    );
+                },
+            };
 
             // ensure the structure is a hyperstructure
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
@@ -482,15 +497,15 @@ pub mod hyperstructure_systems {
                 assert!(time_elapsed.is_non_zero(), "zero time elapsed");
 
                 let current_shareholders = hyperstructure_shareholders.shareholders;
-                let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
-                    world, selector!("hyperstructure_config"),
+                let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("victory_points_grant_config"),
                 );
                 for i in 0..current_shareholders.len() {
                     let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
                     if shareholder_address.is_non_zero() {
                         let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
                         let generated_points: u256 = time_elapsed.into()
-                            * hyperstructure_config.points_per_second.into()
+                            * victory_points_grant_config.hyp_points_per_second.into()
                             * (*shareholder_percentage).into()
                             / PercentageValueImpl::_100().into();
                         let generated_points: u128 = generated_points.try_into().unwrap();

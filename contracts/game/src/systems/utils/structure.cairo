@@ -4,8 +4,9 @@ use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
+    StartingResourcesConfig, StructureCapacityConfig, VictoryPointsGrantConfig, VillageTokenConfig, WorldConfigUtilImpl,
 };
+use s1_eternum::models::hyperstructure::PlayerRegisteredPointsImpl;
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{
@@ -39,6 +40,7 @@ pub impl iStructureImpl of IStructureTrait {
         resources: Span<u8>,
         metadata: StructureMetadata,
         tile_occupier: TileOccupier,
+        explore_village_coord: bool,
     ) {
         // ensure the tile is not occupied
         let mut tile: Tile = world.read_model((coord.x, coord.y));
@@ -108,33 +110,36 @@ pub impl iStructureImpl of IStructureTrait {
             world, selector!("village_pass_config"),
         );
 
-        for direction in structure_surrounding {
-            let neighbor_coord: Coord = coord.neighbor(direction);
-            let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
-            if !neighbor_tile.discovered() {
-                let biome: Biome = get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
-                IMapImpl::explore(ref world, ref neighbor_tile, biome);
-            }
-
-            // only do village settings when category is realm
-            if category == StructureCategory::Realm {
-                // explore village tile so that no structure can be built on it
-                let village_coord = coord.neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
-                let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
-                if !village_tile.discovered() {
-                    let village_biome: Biome = get_biome(village_coord.x.into(), village_coord.y.into());
-                    IMapImpl::explore(ref world, ref village_tile, village_biome);
+        if (category != StructureCategory::FragmentMine.into() && category != StructureCategory::Village.into())
+            || explore_village_coord {
+            for direction in structure_surrounding {
+                let neighbor_coord: Coord = coord.neighbor(direction);
+                let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
+                if !neighbor_tile.discovered() {
+                    let biome: Biome = get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
+                    IMapImpl::explore(ref world, ref neighbor_tile, biome);
                 }
 
-                // ensure village tile is only useable if no structure is on it and tile is not a quest tile
-                if !village_tile.occupier_is_structure && village_tile.occupier_type != TileOccupier::Quest.into() {
-                    // mint village nft
-                    IVillagePassDispatcher { contract_address: village_pass_config.token_address }
-                        .mint(village_pass_config.mint_recipient_address);
-                    // append village slot
-                    possible_village_slots.append(direction);
+                // only do village settings when category is realm
+                if explore_village_coord {
+                    // explore village tile so that no structure can be built on it
+                    let village_coord = coord.neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
+                    let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
+                    if !village_tile.discovered() {
+                        let village_biome: Biome = get_biome(village_coord.x.into(), village_coord.y.into());
+                        IMapImpl::explore(ref world, ref village_tile, village_biome);
+                    }
+
+                    // ensure village tile is only useable if no structure is on it and tile is not a quest tile
+                    if !village_tile.occupier_is_structure && village_tile.occupier_type != TileOccupier::Quest.into() {
+                        // mint village nft
+                        IVillagePassDispatcher { contract_address: village_pass_config.token_address }
+                            .mint(village_pass_config.mint_recipient_address);
+                        // append village slot
+                        possible_village_slots.append(direction);
+                    }
                 }
-            }
+            };
         };
 
         if possible_village_slots.len().is_non_zero() {
@@ -186,16 +191,50 @@ pub impl iStructureImpl of IStructureTrait {
         structure_id: ID,
     ) {
         if explorer.owner != DAYDREAMS_AGENT_ID {
-            if structure_base.category != StructureCategory::Village.into() {
-                // reset all guard troops
-                structure_guards.reset_all_slots();
-                StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let season_mode_on: bool = !blitz_mode_on;
+            if season_mode_on {
+                // villages can't be claimed in season mode
+                if structure_base.category == StructureCategory::Village.into() {
+                    return;
+                }
+            }
 
-                // change owner of structure
-                let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                    ref world, explorer.owner,
+            // reset all guard troops
+            structure_guards.reset_all_slots();
+            StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+
+            // get previous owner
+            let previous_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, structure_id,
+            );
+
+            // get new owner
+            let explorer_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer.owner,
+            );
+            // store new owner
+            StructureOwnerStoreImpl::store(explorer_owner_address, ref world, structure_id);
+
+            // grant victory points to player for conquering hyperstructure
+            let structure_was_owned_by_bandits: bool = previous_owner_address.is_zero();
+            let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("victory_points_grant_config"),
+            );
+            if structure_was_owned_by_bandits && structure_base.category == StructureCategory::Hyperstructure.into() {
+                PlayerRegisteredPointsImpl::register_points(
+                    ref world, explorer_owner_address, victory_points_grant_config.claim_hyperstructure_points.into(),
                 );
-                StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+            }
+
+            // grant victory points to player for conquering other structures
+            if structure_was_owned_by_bandits && structure_base.category != StructureCategory::Hyperstructure.into() {
+                let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("victory_points_grant_config"),
+                );
+                PlayerRegisteredPointsImpl::register_points(
+                    ref world, explorer_owner_address, victory_points_grant_config.claim_otherstructure_points.into(),
+                );
             }
         }
     }

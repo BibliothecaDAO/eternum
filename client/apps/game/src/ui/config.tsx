@@ -109,10 +109,11 @@ export const BuildingThumbs = {
   resources: `${prefix}resources.png`,
   banks: `${prefix}banks.png`,
   worldStructures: `${prefix}world.png`,
+  hyperstructures: `${prefix}hyperstructure.png`,
   leaderboard: `${prefix}leaderboard.png`,
   worldMap: `${prefix}world.png`,
   squire: `${prefix}squire.png`,
-  question: `${prefix}question.png`,
+  question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
   settings: `${prefix}support.png`,
   guild: `${prefix}guild.png`,
@@ -127,12 +128,14 @@ export const BuildingThumbs = {
   automation: `${prefix}robot.png`,
   logs: `${prefix}hourglass.png`,
   transfer: `${prefix}transfer.png`,
+  relics: `${prefix}relics.png`,
+  latestUpdates: `${prefix}latest-updates.png`,
 };
 
 export enum MenuEnum {
   military = "military",
   construction = "construction",
-  worldStructures = "worldStructures",
+  hyperstructures = "hyperstructures",
   entityDetails = "entityDetails",
   resourceArrivals = "resourceArrivals",
   trade = "trade",
@@ -142,4 +145,5 @@ export enum MenuEnum {
   automation = "automation",
   logs = "logs",
   transfer = "transfer",
+  relics = "relics",
 }

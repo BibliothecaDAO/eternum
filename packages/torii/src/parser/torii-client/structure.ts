@@ -27,6 +27,16 @@ export const getStructureFromToriiEntity = (entityData: any) => {
           amount: entityData.troop_guards?.value?.delta?.value?.stamina?.value?.amount?.value,
           updated_tick: entityData.troop_guards?.value?.delta?.value?.stamina?.value?.updated_tick?.value,
         },
+        boosts: {
+          incr_damage_dealt_percent_num: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_damage_dealt_percent_num.value,
+          incr_damage_dealt_end_tick: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_damage_dealt_end_tick.value,
+          decr_damage_gotten_percent_num: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.decr_damage_gotten_percent_num.value,
+          decr_damage_gotten_end_tick: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.decr_damage_gotten_end_tick.value,
+          incr_stamina_regen_percent_num: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_stamina_regen_percent_num.value,
+          incr_stamina_regen_tick_count: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_stamina_regen_tick_count.value,
+          incr_explore_reward_percent_num: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_explore_reward_percent_num.value,
+          incr_explore_reward_end_tick: entityData.troop_guards?.value?.delta?.value?.boosts?.value?.incr_explore_reward_end_tick.value,
+        },
       },
       charlie: {
         category: entityData.troop_guards?.value?.charlie?.value?.category?.value?.option,
@@ -35,6 +45,16 @@ export const getStructureFromToriiEntity = (entityData: any) => {
         stamina: {
           amount: entityData.troop_guards?.value?.charlie?.value?.stamina?.value?.amount?.value,
           updated_tick: entityData.troop_guards?.value?.charlie?.value?.stamina?.value?.updated_tick?.value,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_damage_dealt_percent_num.value,
+          incr_damage_dealt_end_tick: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_damage_dealt_end_tick.value,
+          decr_damage_gotten_percent_num: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.decr_damage_gotten_percent_num.value,
+          decr_damage_gotten_end_tick: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.decr_damage_gotten_end_tick.value,
+          incr_stamina_regen_percent_num: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_stamina_regen_percent_num.value,
+          incr_stamina_regen_tick_count: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_stamina_regen_tick_count.value,
+          incr_explore_reward_percent_num: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_explore_reward_percent_num.value,
+          incr_explore_reward_end_tick: entityData.troop_guards?.value?.charlie?.value?.boosts?.value?.incr_explore_reward_end_tick.value,
         },
       },
       bravo: {
@@ -45,6 +65,16 @@ export const getStructureFromToriiEntity = (entityData: any) => {
           amount: entityData.troop_guards?.value?.bravo?.value?.stamina?.value?.amount?.value,
           updated_tick: entityData.troop_guards?.value?.bravo?.value?.stamina?.value?.updated_tick?.value,
         },
+        boosts: {
+          incr_damage_dealt_percent_num: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_damage_dealt_percent_num.value,
+          incr_damage_dealt_end_tick: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_damage_dealt_end_tick.value,
+          decr_damage_gotten_percent_num: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.decr_damage_gotten_percent_num.value,
+          decr_damage_gotten_end_tick: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.decr_damage_gotten_end_tick.value,
+          incr_stamina_regen_percent_num: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_stamina_regen_percent_num.value,
+          incr_stamina_regen_tick_count: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_stamina_regen_tick_count.value,
+          incr_explore_reward_percent_num: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_explore_reward_percent_num.value,
+          incr_explore_reward_end_tick: entityData.troop_guards?.value?.bravo?.value?.boosts?.value?.incr_explore_reward_end_tick.value,
+        },
       },
       alpha: {
         category: entityData.troop_guards?.value?.alpha?.value?.category?.value?.option,
@@ -53,6 +83,16 @@ export const getStructureFromToriiEntity = (entityData: any) => {
         stamina: {
           amount: entityData.troop_guards?.value?.alpha?.value?.stamina?.value?.amount?.value,
           updated_tick: entityData.troop_guards?.value?.alpha?.value?.stamina?.value?.updated_tick?.value,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_damage_dealt_percent_num.value,
+          incr_damage_dealt_end_tick: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_damage_dealt_end_tick.value,
+          decr_damage_gotten_percent_num: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.decr_damage_gotten_percent_num.value,
+          decr_damage_gotten_end_tick: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.decr_damage_gotten_end_tick.value,
+          incr_stamina_regen_percent_num: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_stamina_regen_percent_num.value,
+          incr_stamina_regen_tick_count: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_stamina_regen_tick_count.value,
+          incr_explore_reward_percent_num: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_explore_reward_percent_num.value,
+          incr_explore_reward_end_tick: entityData.troop_guards?.value?.alpha?.value?.boosts?.value?.incr_explore_reward_end_tick.value,
         },
       },
       delta_destroyed_tick: entityData.troop_guards?.value?.delta_destroyed_tick?.value,

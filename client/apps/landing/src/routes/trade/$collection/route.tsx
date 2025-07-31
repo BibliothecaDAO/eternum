@@ -87,7 +87,7 @@ function TradeLayout() {
                   <h4 className="text-blue-800 dark:text-blue-300 font-medium text-base">Season Update</h4>
                 </div>
                 <p className="text-blue-700 dark:text-blue-400 text-base max-w-2xl mx-auto leading-relaxed">
-                  The current season has ended and Season 1 Passes can no longer be used in Eternum.
+                  The current season has ended and Season 1 Passes can no longer be used in Realms.
                 </p>
               </div>
             </div>

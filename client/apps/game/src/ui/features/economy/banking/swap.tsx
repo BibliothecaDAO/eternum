@@ -1,5 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { getIsBlitz } from "@/ui/constants";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { ConfirmationPopup, ResourceBar } from "@/ui/features/economy/banking";
@@ -21,8 +22,8 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import {
   ContractAddress,
+  getResourceTiers,
   ID,
-  RESOURCE_TIERS,
   Resources,
   resources,
   ResourcesIds,
@@ -165,7 +166,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   };
 
   const orderedResources = useMemo(() => {
-    return Object.values(RESOURCE_TIERS)
+    return Object.values(getResourceTiers(getIsBlitz()))
       .flat()
       .map((id) => resources.find((r) => r.id === id))
       .filter((r): r is Resources => !!r)

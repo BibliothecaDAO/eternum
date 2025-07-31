@@ -26,8 +26,8 @@ export default defineConfig({
         skipWaiting: false,
       },
       manifest: {
-        name: "Eternum",
-        short_name: "Eternum",
+        name: "Realms",
+        short_name: "Realms",
         description: "Glory awaits for those who rule the Hex",
         theme_color: "#F6C297",
         background_color: "#F6C297",

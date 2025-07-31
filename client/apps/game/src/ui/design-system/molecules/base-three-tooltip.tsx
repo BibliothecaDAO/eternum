@@ -22,6 +22,7 @@ export const BaseThreeTooltip = ({
 }: BaseThreeTooltipProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isAboveMouse, setIsAboveMouse] = useState(false);
+  const [canShow, setCanShow] = useState(false);
 
   useEffect(() => {
     const setTooltipPosition = (e: MouseEvent) => {
@@ -64,6 +65,30 @@ export const BaseThreeTooltip = ({
     };
   }, []);
 
+  // Only allow tooltip to show when no mouse buttons are pressed
+  useEffect(() => {
+    const checkMouseState = (e: MouseEvent) => {
+      setCanShow(e.buttons === 0);
+    };
+
+    const throttledCheckMouseState = throttle(checkMouseState, 16);
+
+    const handleMouseDown = () => {
+      setCanShow(false);
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mouseup", checkMouseState);
+    document.addEventListener("mousemove", throttledCheckMouseState);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mouseup", checkMouseState);
+      document.removeEventListener("mousemove", throttledCheckMouseState);
+      throttledCheckMouseState.cancel();
+    };
+  }, []);
+
   return (
     <div
       ref={ref}
@@ -72,7 +97,7 @@ export const BaseThreeTooltip = ({
         position,
         className,
         {
-          hidden: !visible,
+          hidden: !visible || !canShow,
         },
       )}
     >

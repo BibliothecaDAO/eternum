@@ -79,14 +79,14 @@ export const TermsOfService = () => {
 
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <p className="text-lg">
-            By participating in <strong>Eternum</strong>, you fully acknowledge and agree to the following terms and
+            By participating in <strong>Realms</strong>, you fully acknowledge and agree to the following terms and
             conditions:
           </p>
         </section>
 
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <p className="text-lg">
-            A season of Eternum concludes when a single player achieves the required number of Victory Points and clicks
+            A season of Realms concludes when a single player achieves the required number of Victory Points and clicks
             the "End Season" button.
             <br />
             <br />
@@ -123,7 +123,7 @@ export const TermsOfService = () => {
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <h2 className="font-bold text-lg mb-2 text-gold">Immutable Contracts</h2>
           <p className="text-lg">
-            Eternum is governed entirely by immutable smart contracts. Once deployed, the game's rules and mechanics
+            Realms is governed entirely by immutable smart contracts. Once deployed, the game's rules and mechanics
             cannot be altered, updated, or reversed by the developers, the DAO, or any other party.
           </p>
         </section>
@@ -131,7 +131,7 @@ export const TermsOfService = () => {
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <h2 className="font-bold text-lg mb-2 text-gold">Risk of Loss</h2>
           <p className="text-lg">
-            All transactions and gameplay actions in Eternum are final. There are no mechanisms for refunds, reversals,
+            All transactions and gameplay actions in Realms are final. There are no mechanisms for refunds, reversals,
             or compensation. You acknowledge the risk of loss of funds and accept that you bear sole responsibility for
             any financial impact incurred.
           </p>
@@ -139,15 +139,15 @@ export const TermsOfService = () => {
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <h2 className="font-bold text-lg mb-2 text-gold">No Recourse</h2>
           <p className="text-lg">
-            By participating in Eternum, you waive all rights to claims or recourse against the developers, the DAO, or
+            By participating in Realms, you waive all rights to claims or recourse against the developers, the DAO, or
             any other associated entities for any losses or disputes arising from your participation in the game.
           </p>
         </section>
         <section className="bg-gold/10 border-l-4 border-gold p-4 rounded-lg shadow">
           <h2 className="font-bold text-lg mb-2 text-gold">Acknowledgment of Terms</h2>
           <p className="text-lg">
-            Participation in Eternum constitutes your agreement to these terms, as well as all other terms and
-            conditions outlined in the game's documentation.
+            Participation in Realms constitutes your agreement to these terms, as well as all other terms and conditions
+            outlined in the game's documentation.
           </p>
         </section>
 

@@ -12,6 +12,11 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 
+export interface RelicEffect {
+  end_tick: number;
+  usage_left: number;
+}
+
 export enum ActorType {
   Explorer = "explorer",
   Structure = "structure",
@@ -57,6 +62,7 @@ export enum TileOccupier {
   RealmRegularLevel4WonderBonus = 36,
   VillageWonderBonus = 37,
   Quest = 38,
+  Chest = 39,
 }
 
 /**
@@ -116,6 +122,7 @@ export type ArmyInfo = {
   explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
   hasAdjacentStructure: boolean;
+  relicEffects: ResourcesIds[];
 };
 
 export type Structure = {
@@ -226,12 +233,13 @@ export type HexTileInfo = {
 export enum TickIds {
   Default,
   Armies,
+  Delivery,
 }
 
 export enum EntityType {
   DONKEY,
-  TROOP,
-  UNKNOWN,
+  ARMY,
+  STRUCTURE,
 }
 
 export enum Access {
@@ -245,6 +253,19 @@ export enum TravelTypes {
   Travel,
 }
 
+export type RelicEffectWithEndTick = { id: ResourcesIds; endTick: number };
+
+export interface TroopBoosts {
+  incr_damage_dealt_percent_num: number;
+  incr_damage_dealt_end_tick: number;
+  decr_damage_gotten_percent_num: number;
+  decr_damage_gotten_end_tick: number;
+  incr_stamina_regen_percent_num: number;
+  incr_stamina_regen_tick_count: number;
+  incr_explore_reward_percent_num: number;
+  incr_explore_reward_end_tick: number;
+}
+
 export interface Troops {
   category: string;
   tier: string;
@@ -253,6 +274,7 @@ export interface Troops {
     amount: bigint;
     updated_tick: bigint;
   };
+  boosts: TroopBoosts;
 }
 
 export enum TroopTier {
@@ -365,6 +387,12 @@ export interface ResourceCostMinMax {
   min_amount: number;
   max_amount: number;
 }
+
+export interface ResourceMinMax {
+  resource: ResourcesIds;
+  min_amount: number;
+  max_amount: number;
+}
 export interface HyperstructureResourceCostMinMax {
   resource_type: ResourcesIds;
   resource_completion_points: number;
@@ -427,6 +455,8 @@ export interface Config {
     shardsMinesWinProbability: number;
     agentFindProbability: number;
     agentFindFailProbability: number;
+    villageFindProbability: number;
+    villageFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -435,10 +465,14 @@ export interface Config {
     shardsMineInitialFishBalance: number;
     questFindProbability: number;
     questFindFailProbability: number;
+    relicDiscoveryIntervalSeconds: number;
+    relicHexDistanceFromCenter: number;
+    relicChestRelicsPerChest: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
+    deliveryTickIntervalInSeconds: number;
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
@@ -495,8 +529,17 @@ export interface Config {
     subsequent_distance: number;
   };
   season: {
+    // we expect one or the other. The
+    // startSettlingAt takes precedence
     startSettlingAfterSeconds: number;
+    startSettlingAt: number;
+    durationSeconds: number;
+
+    // we expect one or the other. The
+    // startMainAt takes precedence
     startMainAfterSeconds: number;
+    startMainAt: number;
+    
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;
   };
@@ -527,8 +570,13 @@ export interface Config {
   hyperstructures: {
     hyperstructureInitializationShardsCost: ResourceCost;
     hyperstructureConstructionCost: HyperstructureResourceCostMinMax[];
-    hyperstructurePointsPerCycle: number;
-    hyperstructurePointsForWin: bigint;
+  };
+  victoryPoints: {
+    pointsForWin: bigint;
+    hyperstructurePointsPerCycle: bigint;
+    pointsForHyperstructureClaimAgainstBandits: bigint;
+    pointsForNonHyperstructureClaimAgainstBandits: bigint;
+    pointsForTileExploration: bigint;
   };
   wonderProductionBonus: {
     within_tile_distance: number;
@@ -536,6 +584,7 @@ export interface Config {
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
+  discoverableVillageStartingResources: ResourceMinMax[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
@@ -544,6 +593,20 @@ export interface Config {
     levels: Level[];
     overwrite: boolean;
   }[];
+  blitz: {
+    mode: {
+      on: boolean;
+    };
+    registration: {
+      fee_token: string;
+      fee_recipient: string;
+      fee_amount: number;
+      registration_count_max: number;
+      registration_delay_seconds: number;
+      registration_period_seconds: number;
+      creation_period_seconds: number;
+    };
+  };
 
   // Config for calling the setup function
   setup?: {

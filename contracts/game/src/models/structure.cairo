@@ -3,11 +3,13 @@ use core::num::traits::zero::Zero;
 use core::traits::Into;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{
+    BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, WorldConfigUtilImpl,
+};
 use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::stamina::Stamina;
-use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
+use s1_eternum::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -124,7 +126,7 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn assert_not_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) {
         let (is_cloaked, reason) = self.is_cloaked(battle_config, tick_config, season_config);
         assert!(!is_cloaked, "{}", reason);
@@ -139,14 +141,14 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn is_not_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) -> bool {
         let (is_cloaked, _) = self.is_cloaked(battle_config, tick_config, season_config);
         return !is_cloaked;
     }
 
     fn is_cloaked(
-        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickInterval, season_config: SeasonConfig,
     ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
         let mut allow_attack_tick: u64 = tick_config.at(season_config.start_main_at)
@@ -239,7 +241,20 @@ pub impl StructureMetadataStoreImpl of StructureMetadataStoreTrait {
 pub impl StructureDefaultImpl of Default<Structure> {
     fn default() -> Structure {
         let troops: Troops = Troops {
-            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Stamina { amount: 0, updated_tick: 0 },
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         Structure {
             entity_id: 0,

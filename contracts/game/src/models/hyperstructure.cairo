@@ -2,8 +2,8 @@ use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::model::{Model};
 use dojo::world::WorldStorage;
-use s1_eternum::constants::RESOURCE_PRECISION;
-use s1_eternum::{alias::ID, models::{config::HyperstructureConstructConfig, guild::{GuildMember}}};
+use s1_eternum::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
+use s1_eternum::{alias::ID, models::{config::HyperstructureConstructConfig, guild::{GuildMember}, season::SeasonPrize}};
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -203,6 +203,22 @@ pub struct PlayerRegisteredPoints {
     pub address: ContractAddress,
     pub registered_points: u128,
     pub prize_claimed: bool,
+}
+
+#[generate_trait]
+pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
+    fn register_points(ref world: WorldStorage, address: ContractAddress, points: u128) {
+        if points.is_non_zero() {
+            let mut player_registered_points: PlayerRegisteredPoints = world.read_model(address);
+            player_registered_points.registered_points += points;
+            world.write_model(@player_registered_points);
+
+            // increase global total registered points
+            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+            season_prize.total_registered_points += points;
+            world.write_model(@season_prize);
+        }
+    }
 }
 
 

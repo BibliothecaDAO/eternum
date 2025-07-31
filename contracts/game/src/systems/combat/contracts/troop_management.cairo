@@ -65,6 +65,7 @@ pub mod troop_management_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{RESOURCE_PRECISION};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::{
         config::{
             CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
@@ -123,7 +124,7 @@ pub mod troop_management_systems {
             }
 
             let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iGuardImpl::add(
@@ -155,7 +156,7 @@ pub mod troop_management_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // delete guard
@@ -231,7 +232,7 @@ pub mod troop_management_systems {
 
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             iExplorerImpl::create(
                 ref world,
@@ -390,7 +391,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -398,11 +399,23 @@ pub mod troop_management_systems {
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_explorer.troops.boosts,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_explorer.troops.boosts,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
@@ -500,13 +513,19 @@ pub mod troop_management_systems {
             iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
 
             // update explorer stamina
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             from_explorer
                 .troops
                 .stamina
-                .refill(from_explorer.troops.category, from_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_explorer.troops.boosts,
+                    from_explorer.troops.category,
+                    from_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -536,7 +555,13 @@ pub mod troop_management_systems {
             // ensure there is no stamina advantage gained by swapping
             to_structure_troops
                 .stamina
-                .refill(to_structure_troops.category, to_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_structure_troops.boosts,
+                    to_structure_troops.category,
+                    to_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
                 to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
                 to_structure_troops.stamina.updated_tick = current_tick;
@@ -632,7 +657,7 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
@@ -640,10 +665,22 @@ pub mod troop_management_systems {
             to_explorer
                 .troops
                 .stamina
-                .refill(to_explorer.troops.category, to_explorer.troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref to_explorer.troops.boosts,
+                    to_explorer.troops.category,
+                    to_explorer.troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             from_structure_troops
                 .stamina
-                .refill(from_structure_troops.category, from_structure_troops.tier, troop_stamina_config, current_tick);
+                .refill(
+                    ref from_structure_troops.boosts,
+                    from_structure_troops.category,
+                    from_structure_troops.tier,
+                    troop_stamina_config,
+                    current_tick,
+                );
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;

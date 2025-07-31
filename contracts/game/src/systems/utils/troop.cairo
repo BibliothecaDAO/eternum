@@ -4,11 +4,13 @@ use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+use s1_eternum::constants::{WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs, split_resources_and_probs};
 use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
-use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{
+    CapacityConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig,
+};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
@@ -24,11 +26,12 @@ use s1_eternum::models::structure::{
     StructureTroopGuardStoreImpl,
 };
 use s1_eternum::models::troop::{
-    ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
+    ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops, TroopsImpl,
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::math::PercentageValueImpl;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 
@@ -46,7 +49,7 @@ pub impl iGuardImpl of iGuardTrait {
         tier: TroopTier,
         troops_destroyed_tick: u32,
         amount: u128,
-        tick: TickConfig,
+        tick: TickInterval,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
     ) {
@@ -77,7 +80,7 @@ pub impl iGuardImpl of iGuardTrait {
         }
 
         // update stamina
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(ref troops.boosts, troops.category, troops.tier, troop_stamina_config, current_tick);
         // force stamina to be 0 so it isn't gamed
         // through the refill function and guard deletion
         if troops.count.is_zero() {
@@ -186,10 +189,23 @@ pub impl iExplorerImpl of iExplorerTrait {
 
         // set troop stamina
         let mut troops = Troops {
-            category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
+            category: troop_type,
+            tier: troop_tier,
+            count: troop_amount,
+            stamina: Default::default(),
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-        troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+        troops.stamina.refill(ref troops.boosts, troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
         let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
@@ -255,6 +271,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                         .troops
                         .stamina
                         .spend(
+                            ref explorer.troops.boosts,
                             explorer.troops.category,
                             explorer.troops.tier,
                             troop_stamina_config,
@@ -292,8 +309,8 @@ pub impl iExplorerImpl of iExplorerTrait {
         };
 
         // multiply by troop count
-        let wheat_burn_amount: u128 = wheat_cost * explorer.troops.count.into();
-        let fish_burn_amount: u128 = fish_cost * explorer.troops.count.into();
+        let wheat_burn_amount: u128 = wheat_cost * (explorer.troops.count.into() / RESOURCE_PRECISION);
+        let fish_burn_amount: u128 = fish_cost * (explorer.troops.count.into() / RESOURCE_PRECISION);
 
         // spend wheat resource
         // todo: revisit who should pay food cost
@@ -376,14 +393,46 @@ pub impl iExplorerImpl of iExplorerTrait {
         Self::_explorer_delete(ref world, ref explorer);
     }
 
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
+    fn exploration_reward(
+        ref world: WorldStorage,
+        explorer: Option<ExplorerTroops>,
+        current_tick: u64,
+        config: MapConfig,
+        vrf_seed: u256,
+        blitz_mode_on: bool,
+    ) -> (u8, u128) {
+        let mut reward_resource_id: u8 = 0;
+        let mut reward_resource_amount: u128 = 0;
+        if blitz_mode_on {
+            let (resources, resources_probs) = split_blitz_exploration_reward_and_probs();
+            let (resource_id, resource_amount): (u8, u128) = *random::choices(
+                resources, resources_probs, array![].span(), 1, true, vrf_seed,
+            )
+                .at(0);
+            reward_resource_id = resource_id;
+            reward_resource_amount = resource_amount;
+        } else {
+            let (resource_types, resources_probs) = split_resources_and_probs();
+            let resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true, vrf_seed)
+                .at(0);
+            reward_resource_id = resource_id;
+            reward_resource_amount = config.reward_resource_amount.into();
+        }
 
-        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
+        match explorer {
+            Option::Some(explorer) => {
+                let mut explorer = explorer;
+                if current_tick > explorer.troops.boosts.incr_explore_reward_end_tick.into() {
+                    explorer.troops.boosts.incr_explore_reward_percent_num = 0;
+                }
+                reward_resource_amount +=
+                    (reward_resource_amount * explorer.troops.boosts.incr_explore_reward_percent_num.into())
+                    / PercentageValueImpl::_100().into();
+            },
+            Option::None => {},
+        };
+
+        return (reward_resource_id, reward_resource_amount * RESOURCE_PRECISION);
     }
 
     fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
@@ -494,7 +543,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
-        tick: TickConfig,
+        tick: TickInterval,
     ) {
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);

@@ -131,16 +131,6 @@ export const Buildings = ({ structure }: { structure: any }) => {
   );
 };
 
-const BuildingsHeader = () => {
-  return (
-    <div className="grid grid-cols-3 gap-2 mb-4 text-xs text-gold tracking-wider uppercase">
-      <div className=""></div>
-      <div className="text-center">Produces /s</div>
-      <div className="text-center">Consumes /s</div>
-    </div>
-  );
-};
-
 interface BuildingRowProps {
   building: Building;
   isOwner: boolean;

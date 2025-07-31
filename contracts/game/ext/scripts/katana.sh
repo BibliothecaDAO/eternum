@@ -64,8 +64,6 @@ LOG_FILE="$LOG_DIR/katana.log"
 PID_FILE="$PID_DIR/katana.pid"
 PORT=5050
 
-# Katana settings
-KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
 
 #==============================================================================
 # UTILITY FUNCTIONS
@@ -118,8 +116,26 @@ setup_log_handling() {
 #==============================================================================
 # MAIN EXECUTION
 #==============================================================================
+if [ -f ".dojo-versions" ]; then
+    KATANA_REQUIRED_VERSION=$(grep "^katana " .dojo-versions | awk '{print $2}')
+    if [ ! -z "$KATANA_REQUIRED_VERSION" ]; then
+        KATANA_COMMAND="$HOME/.dojo/bin/katana"
+    else
+        KATANA_COMMAND="katana"
+        echo -e "${YELLOW}► No katana version specified in .dojo-versions, using system katana${NC}"
+    fi
+else
+    KATANA_COMMAND="katana"
+    KATANA_REQUIRED_VERSION=""
+fi
 
-KATANA_VERSION=$(katana --version)
+KATANA_VERSION=$($KATANA_COMMAND --version)
+
+if [ ! -z "$KATANA_REQUIRED_VERSION" ] && [[ "$KATANA_VERSION" != *"$KATANA_REQUIRED_VERSION"* ]]; then
+    echo -e "${RED}✗ Katana version $KATANA_REQUIRED_VERSION is required. Detected: $KATANA_VERSION${NC}"
+    echo -e "\n\n${YELLOW}► To install the correct version, run: \n\n${BOLD}dojoup component add katana $KATANA_REQUIRED_VERSION${NC}\n\n"
+    exit 1
+fi
 DISPLAY_TITLE="Starting up $KATANA_VERSION"
 if [ "$1" == "--kill" ]; then
     DISPLAY_TITLE="Stopping Katana"
@@ -163,12 +179,7 @@ if [ -f "$LOG_FILE" ]; then
 fi
 
 # Run katana in the background with log handling
-katana --invoke-max-steps $KATANA_MAX_INVOKE_STEPS \
-    --http.cors_origins "*" \
-    --explorer \
-    --cartridge.paymaster \
-    --dev \
-    --dev.no-fee > >(setup_log_handling) 2>&1 &
+$KATANA_COMMAND --config katana.toml > >(setup_log_handling) 2>&1 &
 
 # Store the PID
 echo $! > "$PID_FILE"

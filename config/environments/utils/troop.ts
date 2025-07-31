@@ -14,7 +14,7 @@ export const TROOP_DAMAGE_DELTA = 50_000n * BigInt(2) ** BigInt(64);
 
 // Stamina config
 export const TROOP_STAMINA_INITIAL = 20;
-export const TROOP_STAMINA_GAIN_PER_TICK = 20;
+export const TROOP_STAMINA_GAIN_PER_TICK = 30;
 export const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // give 1 tick worth of stamina
 
 export const TROOP_STAMINA_MAX = {
@@ -27,20 +27,20 @@ export const TROOP_STAMINA_MAX = {
 export const TROOP_STAMINA_ATTACK_REQ = 30;
 export const TROOP_STAMINA_ATTACK_MAX = 60;
 // Troop travel
-export const TROOP_TRAVEL_WHEAT_COST = 3;
-export const TROOP_TRAVEL_FISH_COST = 3;
+export const TROOP_TRAVEL_WHEAT_COST = 0.03;
+export const TROOP_TRAVEL_FISH_COST = 0;
 export const TROOP_TRAVEL_STAMINA_COST = 20;
 
 // Troop exploration
-export const TROOP_EXPLORE_WHEAT_COST = 6;
-export const TROOP_EXPLORE_FISH_COST = 6;
+export const TROOP_EXPLORE_WHEAT_COST = 0.06;
+export const TROOP_EXPLORE_FISH_COST = 0;
 export const TROOP_EXPLORE_STAMINA_COST = 30;
 
 // Troop limit config
 export const TROOP_EXPLORER_MAX_PARTY_COUNT = 10;
 export const TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT = 100_000;
-export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 60 * 12; // 12 hours
-export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 8_000;
-export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 15_000;
+export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 10; // 10 minutes
+export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 1_000;
+export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 2_000;
 export const TROOP_AGENTS_TROOP_LOWER_BOUND = 500;
 export const TROOP_AGENTS_TROOP_UPPER_BOUND = 15_000;

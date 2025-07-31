@@ -77,6 +77,24 @@ export const Tooltip = ({ className }: TooltipProps) => {
     };
   }, [tooltip?.fixed, position, tooltipSize.width, tooltipSize.height]);
 
+  // Add cleanup effect for when tooltips should be cleared on rapid interactions
+  useEffect(() => {
+    const clearTooltip = () => {
+      const setTooltip = useUIStore.getState().setTooltip;
+      setTooltip(null);
+    };
+
+    // Clear tooltip on any click to handle overlapping elements
+    document.addEventListener("click", clearTooltip);
+    // Clear tooltip on drag start to handle dragging interactions
+    document.addEventListener("dragstart", clearTooltip);
+    
+    return () => {
+      document.removeEventListener("click", clearTooltip);
+      document.removeEventListener("dragstart", clearTooltip);
+    };
+  }, []);
+
   return (
     <>
       {tooltip && tooltip.content && (

@@ -1,6 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
 
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-b.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { captureSystemError, initPostHog } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
@@ -86,7 +86,7 @@ async function init() {
           <EternumWordsLogo className="mx-auto w-28 fill-current stroke-current sm:w-40 lg:w-48" />
 
           <p className="my-6 text-lg leading-snug sm:text-xl md:text-2xl">
-            Eternum is being crafted, and will be available soon...
+            Blitz is being crafted, and will be available soon...
           </p>
 
           <div className="mt-4 flex w-full flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
@@ -103,7 +103,7 @@ async function init() {
             </a>
 
             <a
-              href="https://twitter.com/RealmsEternum"
+              href="https://x.com/realms_gg"
               target="_blank"
               rel="noopener noreferrer"
               className="button-wood flex items-center px-4 py-2"
@@ -125,7 +125,7 @@ async function init() {
             <Button
               variant="gold"
               className="w-full sm:w-auto"
-              onClick={() => window.open("https://docs.eternum.realms.world/", "_blank")}
+              onClick={() => window.open("https://docs.realms.world/", "_blank")}
             >
               Docs
             </Button>
@@ -141,7 +141,7 @@ async function init() {
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
         <h1 className="text-2xl font-bold mb-4">Mobile Version Not Available</h1>
         <p className="mb-6">
-          This version of Eternum is not optimized for mobile devices. Please visit the desktop site or our
+          This version of Blitz is not optimized for mobile devices. Please visit the desktop site or our
           mobile-friendly version.
         </p>
 

@@ -79,8 +79,32 @@ pub fn all_resource_ids() -> Array<u8> {
         35,
         36,
         37,
+        // Essence
+        38,
+        // Relics
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
     ]
 }
+
+pub const RELICS_RESOURCE_START_ID: u8 = 39;
+pub const RELICS_RESOURCE_END_ID: u8 = 56;
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 pub mod ResourceTypes {
@@ -126,6 +150,28 @@ pub mod ResourceTypes {
     pub const WHEAT: u8 = 35;
     pub const FISH: u8 = 36;
     pub const LORDS: u8 = 37;
+
+    // Essence
+    pub const ESSENCE: u8 = 38;
+    // Relics
+    pub const RELIC_E1: u8 = 39;
+    pub const RELIC_E2: u8 = 40;
+    pub const RELIC_E3: u8 = 41;
+    pub const RELIC_E4: u8 = 42;
+    pub const RELIC_E5: u8 = 43;
+    pub const RELIC_E6: u8 = 44;
+    pub const RELIC_E7: u8 = 45;
+    pub const RELIC_E8: u8 = 46;
+    pub const RELIC_E9: u8 = 47;
+    pub const RELIC_E10: u8 = 48;
+    pub const RELIC_E11: u8 = 49;
+    pub const RELIC_E12: u8 = 50;
+    pub const RELIC_E13: u8 = 51;
+    pub const RELIC_E14: u8 = 52;
+    pub const RELIC_E15: u8 = 53;
+    pub const RELIC_E16: u8 = 54;
+    pub const RELIC_E17: u8 = 55;
+    pub const RELIC_E18: u8 = 56;
 }
 
 
@@ -204,9 +250,116 @@ pub fn resource_type_name(resource_type: u8) -> ByteArray {
         "FISH"
     } else if resource_type == 37 {
         "LORDS"
+    } else if resource_type == 38 {
+        "ESSENCE"
+    } else if resource_type == 39 {
+        "RELIC E1"
+    } else if resource_type == 40 {
+        "RELIC E2"
+    } else if resource_type == 41 {
+        "RELIC E3"
+    } else if resource_type == 42 {
+        "RELIC E4"
+    } else if resource_type == 43 {
+        "RELIC E5"
+    } else if resource_type == 44 {
+        "RELIC E6"
+    } else if resource_type == 45 {
+        "RELIC E7"
+    } else if resource_type == 46 {
+        "RELIC E8"
+    } else if resource_type == 47 {
+        "RELIC E9"
+    } else if resource_type == 48 {
+        "RELIC E10"
+    } else if resource_type == 49 {
+        "RELIC E11"
+    } else if resource_type == 50 {
+        "RELIC E12"
+    } else if resource_type == 51 {
+        "RELIC E13"
+    } else if resource_type == 52 {
+        "RELIC E14"
+    } else if resource_type == 53 {
+        "RELIC E15"
+    } else if resource_type == 54 {
+        "RELIC E16"
+    } else if resource_type == 55 {
+        "RELIC E17"
+    } else if resource_type == 56 {
+        "RELIC E18"
     } else {
         format!("{} (unknown resource name)", resource_type)
     }
+}
+
+pub fn relic_level(resource_type: u8) -> u8 {
+    if resource_type == 39 {
+        1
+    } else if resource_type == 40 {
+        2
+    } else if resource_type == 41 {
+        1
+    } else if resource_type == 42 {
+        2
+    } else if resource_type == 43 {
+        1
+    } else if resource_type == 44 {
+        2
+    } else if resource_type == 45 {
+        1
+    } else if resource_type == 46 {
+        2
+    } else if resource_type == 47 {
+        1
+    } else if resource_type == 48 {
+        2
+    } else if resource_type == 49 {
+        1
+    } else if resource_type == 50 {
+        2
+    } else if resource_type == 51 {
+        1
+    } else if resource_type == 52 {
+        2
+    } else if resource_type == 53 {
+        1
+    } else if resource_type == 54 {
+        2
+    } else if resource_type == 55 {
+        1
+    } else if resource_type == 56 {
+        2
+    } else {
+        panic!("Eternum: not a relic");
+        0
+    }
+}
+
+pub fn relic_essence_cost(resource_type: u8) -> u128 {
+    let level = relic_level(resource_type);
+    if level == 1 {
+        250
+    } else if level == 2 {
+        500
+    } else {
+        panic!("Eternum: invalid relic level");
+        0
+    }
+}
+
+pub fn blitz_produceable_resources() -> Array<u8> {
+    array![
+        ResourceTypes::WOOD,
+        ResourceTypes::COAL,
+        ResourceTypes::COPPER,
+        ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON,
+        ResourceTypes::GOLD,
+        ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL,
+        ResourceTypes::DRAGONHIDE,
+    ]
 }
 
 
@@ -354,6 +507,40 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     return (resource_types.span(), resource_probabilities.span());
 }
 
+
+pub fn get_blitz_exploration_reward() -> Span<(u8, u128, u128)> {
+    return array![
+        (ResourceTypes::ESSENCE, 100, 3_000),
+        (ResourceTypes::ESSENCE, 250, 2_000),
+        (ResourceTypes::ESSENCE, 500, 1_500),
+        (ResourceTypes::LABOR, 250, 1_500),
+        (ResourceTypes::LABOR, 500, 800),
+        (ResourceTypes::DONKEY, 100, 600),
+        (ResourceTypes::KNIGHT_T1, 2_500, 200),
+        (ResourceTypes::CROSSBOWMAN_T1, 2_500, 200),
+        (ResourceTypes::PALADIN_T1, 2_500, 200),
+    ]
+        .span();
+}
+
+pub fn split_blitz_exploration_reward_and_probs() -> (Span<(u8, u128)>, Span<u128>) {
+    let mut zipped = get_blitz_exploration_reward();
+    let mut resources = array![];
+    let mut resource_probabilities = array![];
+    loop {
+        match zipped.pop_front() {
+            Option::Some((
+                resource_type, resource_amount, probability,
+            )) => {
+                resources.append((*resource_type, *resource_amount));
+                resource_probabilities.append(*probability);
+            },
+            Option::None => { break; },
+        }
+    };
+
+    return (resources.span(), resource_probabilities.span());
+}
 
 pub mod LevelIndex {
     pub const FOOD: u8 = 1;

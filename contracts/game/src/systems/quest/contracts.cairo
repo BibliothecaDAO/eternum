@@ -1,7 +1,7 @@
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, QuestConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
@@ -408,8 +408,10 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         // use exploration reward system to get a random resource type and amount
         let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
-            ref world, map_config, seed.clone(),
+            ref world, Option::None, current_tick, map_config, seed.clone(), blitz_mode_on,
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward

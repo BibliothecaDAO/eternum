@@ -1,3 +1,4 @@
+import { SelectableArmy } from "@/three/types";
 import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -21,8 +22,12 @@ type TooltipType = {
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
-  seasonWinner: { address: ContractAddress; name: string; guildName: string } | null;
-  setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
+  gameWinner: { address: ContractAddress; name: string; guildName: string } | null;
+  setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) => void;
+  gameEndAt: number | null;
+  setGameEndAt: (seasonEndAt: number | null) => void;
+  gameStartMainAt: number | null;
+  setGameStartMainAt: (seasonStartMainAt: number | null) => void;
   spectatorRealmEntityId: ID | null;
   setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
@@ -74,6 +79,14 @@ interface UIStore {
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
+  // camera follow
+  followArmyMoves: boolean;
+  setFollowArmyMoves: (follow: boolean) => void;
+  isFollowingArmy: boolean;
+  setIsFollowingArmy: (following: boolean) => void;
+  // shortcut navigation
+  selectableArmies: SelectableArmy[];
+  setSelectableArmies: (armies: SelectableArmy[]) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -84,9 +97,13 @@ export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
     setDisableButtons: (disable: boolean) => set({ disableButtons: disable }),
-    seasonWinner: null,
-    setSeasonWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
-      set({ seasonWinner: winner }),
+    gameWinner: null,
+    setGameWinner: (winner: { address: ContractAddress; name: string; guildName: string } | null) =>
+      set({ gameWinner: winner }),
+    gameEndAt: null,
+    setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
+    gameStartMainAt: null,
+    setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
     spectatorRealmEntityId: null,
     setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
@@ -131,15 +148,15 @@ export const useUIStore = create(
     setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
     modalContent: null,
     toggleModal: (content) => {
-      set({ modalContent: content, showModal: !!content });
+      set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.None,
-    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
+    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
     rightNavigationView: RightView.None,
-    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
@@ -151,7 +168,8 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    setModal: (content: React.ReactNode | null, show: boolean) => set({ modalContent: content, showModal: show }),
+    setModal: (content: React.ReactNode | null, show: boolean) =>
+      set({ modalContent: content, showModal: show, tooltip: null }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
@@ -160,5 +178,17 @@ export const useUIStore = create(
     // labor
     useSimpleCost: true,
     setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
+    // camera follow
+    followArmyMoves: false,
+    setFollowArmyMoves: (follow: boolean) => {
+      set({ followArmyMoves: follow });
+    },
+    isFollowingArmy: false,
+    setIsFollowingArmy: (following: boolean) => {
+      set({ isFollowingArmy: following });
+    },
+    // shortcut navigation - dummy data for now
+    selectableArmies: [],
+    setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
   })),
 );

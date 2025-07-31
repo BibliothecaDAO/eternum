@@ -1,3 +1,5 @@
+import { getIsBlitz } from "@/ui/constants";
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { InventoryResources } from "@/ui/features/economy/resources";
@@ -5,15 +7,22 @@ import { TroopChip } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getGuildFromPlayerAddress, getStructureName, StaminaManager } from "@bibliothecadao/eternum";
+import {
+  getAddressName,
+  getArmyRelicEffects,
+  getGuildFromPlayerAddress,
+  getStructureName,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { Loader, MessageCircle, Trash2 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
+import { ActiveRelicEffects } from "./active-relic-effects";
 
 interface ArmyEntityDetailProps {
   armyEntityId: ID;
@@ -42,16 +51,23 @@ export const ArmyEntityDetail = memo(
 
     const userAddress = ContractAddress(account.address);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const {
       data: explorerData,
       isLoading: isLoadingExplorer,
+      refetch: refetchExplorer,
       // error: explorerError, // Available if error handling is needed
     } = useQuery({
       queryKey: ["explorer", String(armyEntityId)],
       queryFn: async () => {
         if (!toriiClient || !armyEntityId) return undefined;
-        return getExplorerFromToriiClient(toriiClient, armyEntityId);
+        const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        const relicEffects = explorer.explorer
+          ? getArmyRelicEffects(explorer.explorer.troops, getBlockTimestamp().currentArmiesTick)
+          : [];
+        return { ...explorer, relicEffects };
       },
       staleTime: 30000, // 30 seconds
     });
@@ -62,6 +78,7 @@ export const ArmyEntityDetail = memo(
     const {
       data: structureData,
       isLoading: isLoadingStructure,
+      refetch: refetchStructure,
       // error: structureError, // Available if error handling is needed
     } = useQuery({
       queryKey: ["structure", explorer?.owner ? String(explorer.owner) : undefined],
@@ -73,6 +90,23 @@ export const ArmyEntityDetail = memo(
       staleTime: 30000, // 30 seconds
     });
 
+    const handleRefresh = useCallback(async () => {
+      const now = Date.now();
+      if (now - lastRefresh < 10000) {
+        // 10 second cooldown
+        return;
+      }
+
+      setIsRefreshing(true);
+      setLastRefresh(now);
+
+      try {
+        await Promise.all([refetchExplorer(), explorer?.owner ? refetchStructure() : Promise.resolve()]);
+      } finally {
+        setTimeout(() => setIsRefreshing(false), 1000); // Show loading for at least 1 second
+      }
+    }, [lastRefresh, refetchExplorer, refetchStructure, explorer?.owner]);
+
     const structure = structureData?.structure;
     const structureResources = structureData?.resources;
 
@@ -80,6 +114,7 @@ export const ArmyEntityDetail = memo(
       if (!explorer) return undefined;
 
       const { currentArmiesTick } = getBlockTimestamp();
+
       const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
       const maxStamina = StaminaManager.getMaxStamina(
         explorer.troops.category as TroopType,
@@ -95,7 +130,7 @@ export const ArmyEntityDetail = memo(
         ? getAddressName(structure?.owner, components)
         : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
-      const structureOwnerName = structure ? getStructureName(structure).name : undefined;
+      const structureOwnerName = structure ? getStructureName(structure, getIsBlitz()).name : undefined;
 
       return {
         stamina,
@@ -167,7 +202,7 @@ export const ArmyEntityDetail = memo(
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
         {/* Header with owner and guild info */}
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1 min-w-0">
             <h4 className={`${headerTextClass} font-bold`}>
               {derivedData.addressName} <span className="text-xs text-gold/80">({armyEntityId})</span>
             </h4>
@@ -182,7 +217,15 @@ export const ArmyEntityDetail = memo(
               <div className="text-xs text-gold/70 italic">Owner: {derivedData.structureOwnerName}</div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {showButtons && (
+              <RefreshButton
+                onClick={handleRefresh}
+                isLoading={isRefreshing}
+                size="sm"
+                disabled={Date.now() - lastRefresh < 10000}
+              />
+            )}
             <div className={`px-2 py-1 rounded text-xs font-bold ${derivedData.isAlly ? "bg-green/20" : "bg-red/20"}`}>
               {derivedData.isAlly ? "Ally" : "Enemy"}
             </div>
@@ -246,15 +289,24 @@ export const ArmyEntityDetail = memo(
           {/* Resources section */}
           {explorerResources && (
             <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-              <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
+              <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources & Relics</div>
               <InventoryResources
                 resources={explorerResources}
+                relicEffects={explorerData?.relicEffects.map((effect) => effect.id)}
                 max={maxInventory}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}
                 textSize={compact ? "xxs" : "xs"}
+                entityId={armyEntityId}
+                recipientType={RelicRecipientType.Explorer}
+                activateRelics={showButtons && derivedData.isMine}
               />
             </div>
+          )}
+
+          {/* Active Relic Effects section */}
+          {explorerData?.relicEffects && (
+            <ActiveRelicEffects relicEffects={explorerData.relicEffects} entityId={armyEntityId} compact={compact} />
           )}
 
           {/* Troops section */}

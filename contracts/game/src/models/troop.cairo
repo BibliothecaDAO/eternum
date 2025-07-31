@@ -50,8 +50,20 @@ pub struct Troops {
     pub tier: TroopTier,
     pub count: u128,
     pub stamina: Stamina,
+    pub boosts: TroopBoosts,
 }
 
+#[derive(Copy, Drop, Serde, Introspect)]
+pub struct TroopBoosts {
+    pub incr_damage_dealt_percent_num: u16,
+    pub incr_damage_dealt_end_tick: u32,
+    pub decr_damage_gotten_percent_num: u16,
+    pub decr_damage_gotten_end_tick: u32,
+    pub incr_stamina_regen_percent_num: u16,
+    pub incr_stamina_regen_tick_count: u8,
+    pub incr_explore_reward_percent_num: u16,
+    pub incr_explore_reward_end_tick: u32,
+}
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct GuardTroops {
@@ -80,6 +92,10 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
+    fn all_slots() -> Array<GuardSlot> {
+        array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha]
+    }
+
     // todo: test
     fn assert_functional_slot(ref self: GuardTroops, slot: GuardSlot, max_guards: felt252) {
         let functional_slots = self.functional_slots(max_guards);
@@ -137,7 +153,20 @@ pub impl GuardImpl of GuardTrait {
 
     fn reset_all_slots(ref self: GuardTroops) {
         let default_troops: Troops = Troops {
-            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Default::default(),
+            category: TroopType::Knight,
+            tier: TroopTier::T1,
+            count: 0,
+            stamina: Default::default(),
+            boosts: TroopBoosts {
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+            },
         };
         self.delta = default_troops;
         self.delta_destroyed_tick = 0;
@@ -473,22 +502,22 @@ pub impl TroopsImpl of TroopsTrait {
     fn start_troop_type(biome: Biome) -> (u8, (TroopType, TroopTier)) {
         match biome {
             Biome::None => panic!("biome is not set"),
-            Biome::DeepOcean => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
-            Biome::Ocean => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
-            Biome::Beach => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
-            Biome::Scorched => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::DeepOcean => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::Ocean => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::Beach => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::Scorched => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
             Biome::Bare => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
             Biome::Tundra => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
-            Biome::Snow => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::Snow => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
             Biome::TemperateDesert => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
             Biome::Shrubland => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
-            Biome::Taiga => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::Taiga => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
             Biome::Grassland => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
-            Biome::TemperateDeciduousForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
-            Biome::TemperateRainForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::TemperateDeciduousForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::TemperateRainForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
             Biome::SubtropicalDesert => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
-            Biome::TropicalSeasonalForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
-            Biome::TropicalRainForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::TropicalSeasonalForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::TropicalRainForest => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
         }
     }
 
@@ -512,8 +541,8 @@ pub impl TroopsImpl of TroopsTrait {
         let mut alpha = self;
 
         // update alpha and bravo's staminas
-        alpha.stamina.refill(alpha.category, alpha.tier, troop_stamina_config, current_tick);
-        bravo.stamina.refill(bravo.category, bravo.tier, troop_stamina_config, current_tick);
+        alpha.stamina.refill(ref alpha.boosts, alpha.category, alpha.tier, troop_stamina_config, current_tick);
+        bravo.stamina.refill(ref bravo.boosts, bravo.category, bravo.tier, troop_stamina_config, current_tick);
 
         // ensure alpha has enough stamina to launch attack
         assert!(
@@ -554,7 +583,7 @@ pub impl TroopsImpl of TroopsTrait {
         let BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER: Fixed = bravo._biome_damage_bonus(biome, troop_damage_config);
         let TOTAL_NUM_TROOPS: Fixed = ALPHA_NUM_TROOPS + BRAVO_NUM_TROOPS;
         let EFFECTIVE_BETA: Fixed = Self::_effective_beta();
-        let BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
+        let mut BRAVO_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * BRAVO_NUM_TROOPS
             * BRAVO_TIER_BONUS
             * BRAVO_BIOME_BONUS_DAMAGE_MULTIPLIER
@@ -562,13 +591,47 @@ pub impl TroopsImpl of TroopsTrait {
             / ALPHA_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        let ALPHA_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
+        let mut ALPHA_DAMAGE_DEALT: Fixed = (BASE_DAMAGE_FACTOR
             * ALPHA_NUM_TROOPS
             * ALPHA_TIER_BONUS
             * ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER
             * ALPHA_BIOME_BONUS_DAMAGE_MULTIPLIER
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
+
+        /////////////////////////////////////////////////
+        /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
+        //////////////////////////////////////////////////
+
+        if alpha.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            alpha.boosts.incr_damage_dealt_percent_num = 0;
+        }
+        if alpha.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            alpha.boosts.decr_damage_gotten_percent_num = 0;
+        }
+
+        if bravo.boosts.incr_damage_dealt_end_tick.into() <= current_tick {
+            bravo.boosts.incr_damage_dealt_percent_num = 0;
+        }
+        if bravo.boosts.decr_damage_gotten_end_tick.into() <= current_tick {
+            bravo.boosts.decr_damage_gotten_percent_num = 0;
+        }
+
+        ALPHA_DAMAGE_DEALT += ALPHA_DAMAGE_DEALT
+            * alpha.boosts.incr_damage_dealt_percent_num.into()
+            / PercentageValueImpl::_100().into();
+
+        BRAVO_DAMAGE_DEALT += BRAVO_DAMAGE_DEALT
+            * bravo.boosts.incr_damage_dealt_percent_num.into()
+            / PercentageValueImpl::_100().into();
+
+        BRAVO_DAMAGE_DEALT -= BRAVO_DAMAGE_DEALT
+            * alpha.boosts.decr_damage_gotten_percent_num.into()
+            / PercentageValueImpl::_100().into();
+
+        ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
+            * bravo.boosts.decr_damage_gotten_percent_num.into()
+            / PercentageValueImpl::_100().into();
 
         let ALPHA_STAMINA_LOSS: u64 = alpha_additional_stamina_for_damage
             + troop_stamina_config.stamina_attack_req.into();
@@ -601,7 +664,17 @@ pub impl TroopsImpl of TroopsTrait {
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
 
         // deduct stamina spent
-        alpha.stamina.spend(alpha.category, alpha.tier, troop_stamina_config, alpha_stamina_loss, current_tick, true);
+        alpha
+            .stamina
+            .spend(
+                ref alpha.boosts,
+                alpha.category,
+                alpha.tier,
+                troop_stamina_config,
+                alpha_stamina_loss,
+                current_tick,
+                true,
+            );
 
         // the defense does not lose stamina
 
@@ -611,6 +684,7 @@ pub impl TroopsImpl of TroopsTrait {
                 alpha
                     .stamina
                     .add(
+                        ref alpha.boosts,
                         alpha.category,
                         alpha.tier,
                         troop_stamina_config,
@@ -622,6 +696,7 @@ pub impl TroopsImpl of TroopsTrait {
                 bravo
                     .stamina
                     .add(
+                        ref bravo.boosts,
                         bravo.category,
                         bravo.tier,
                         troop_stamina_config,
@@ -695,6 +770,19 @@ mod tests {
         }
     }
 
+    fn TROOP_BOOSTS() -> TroopBoosts {
+        TroopBoosts {
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+        }
+    }
+
 
     #[test]
     fn tests_troop_attack_simple_1() {
@@ -703,15 +791,26 @@ mod tests {
             tier: TroopTier::T1,
             count: 1 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
         let mut bravo = Troops {
             category: TroopType::Paladin,
             tier: TroopTier::T1,
             count: 95_000 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
 
-        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha
+            .attack(
+                ref bravo,
+                Option::None,
+                Option::None,
+                Biome::DeepOcean,
+                TROOP_STAMINA_CONFIG(),
+                TROOP_DAMAGE_CONFIG(),
+                1,
+            );
 
         assert_eq!(alpha.count, 0);
         assert_eq!(bravo.count, 95_000 * RESOURCE_PRECISION);
@@ -725,15 +824,26 @@ mod tests {
             tier: TroopTier::T2, // Tier 2
             count: 61_293 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
         let mut bravo = Troops {
             category: TroopType::Crossbowman,
             tier: TroopTier::T1, // Tier 1
             count: 159_303 * RESOURCE_PRECISION,
             stamina: Stamina { amount: 100, updated_tick: 1 },
+            boosts: TROOP_BOOSTS(),
         };
 
-        alpha.attack(ref bravo, Biome::DeepOcean, TROOP_STAMINA_CONFIG(), TROOP_DAMAGE_CONFIG(), 1);
+        alpha
+            .attack(
+                ref bravo,
+                Option::None,
+                Option::None,
+                Biome::DeepOcean,
+                TROOP_STAMINA_CONFIG(),
+                TROOP_DAMAGE_CONFIG(),
+                1,
+            );
 
         assert_eq!(alpha.count, 40_079 * RESOURCE_PRECISION);
         assert_eq!(bravo.count, 108_288 * RESOURCE_PRECISION);

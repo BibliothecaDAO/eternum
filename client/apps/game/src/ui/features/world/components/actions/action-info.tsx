@@ -16,9 +16,8 @@ import {
   getBalance,
   getGuardsByStructure,
   getRemainingCapacityInKg,
-  StaminaManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient, QuestTileData } from "@bibliothecadao/torii";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -92,6 +91,12 @@ const TooltipContent = memo(
           />
         ) : actionType === ActionType.Quest ? (
           <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
+        ) : actionType === ActionType.Chest ? (
+          <ChestInfo />
+        ) : actionType === ActionType.CreateArmy ? (
+          <CreateArmyInfo />
+        ) : actionType === ActionType.Help ? (
+          <HelpInfo />
         ) : (
           <AttackInfo
             selectedEntityId={Number(selectedEntityId)}
@@ -103,7 +108,7 @@ const TooltipContent = memo(
           <div className="flex flex-row text-xs ml-1">
             <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
             <div className="flex flex-col p-1 text-xs">
-              <div>+{configManager.getExploreReward()} Random resource</div>
+              <div>+{configManager.getExploreReward().resource_amount} Random resource</div>
             </div>
           </div>
         )}
@@ -210,10 +215,13 @@ const AttackInfo = memo(
       return guardTroops;
     }, [explorer, structure]);
 
+    const staminaManager = useStaminaManager(selectedEntityId);
+
     const stamina = useMemo(() => {
       if (!targetTroops) return { amount: 0n, updated_tick: 0n };
-      return StaminaManager.getStamina(targetTroops, currentArmiesTick);
-    }, [targetTroops, currentArmiesTick]);
+      // No relic effects available in this context, pass empty array
+      return staminaManager.getStamina(currentArmiesTick);
+    }, [targetTroops, currentArmiesTick, staminaManager]);
 
     const combatParams = useMemo(() => configManager.getCombatConfig(), []);
 
@@ -398,3 +406,49 @@ const QuestInfo = memo(
     );
   },
 );
+
+const ChestInfo = memo(() => {
+  return (
+    <div className="flex flex-col p-1 text-xs">
+      <div className="flex flex-row text-xs ml-1">
+        <div className="text-lg p-1 pr-3">📦</div>
+        <div className="flex flex-col p-1 text-xs">
+          <div className="font-semibold text-gold mb-1">Relic Crate</div>
+          <div className="text-gray-300 mb-1">
+            Contains valuable relics that can enhance your structures and armies.
+          </div>
+          <div className="text-xs text-gray-400">Click to open the crate and collect relics.</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const HelpInfo = memo(() => {
+  return (
+    <div className="flex flex-col p-1 text-xs">
+      <div className="flex flex-row text-xs ml-1">
+        <div className="text-lg p-1 pr-3">🛡️</div>
+        <div className="flex flex-col p-1 text-xs">
+          <div className="font-semibold text-gold mb-1">Help</div>
+          <div className="text-gray-300 mb-1">Help an army that is attacking your structure.</div>
+          <div className="text-xs text-gray-400">Click to help the army.</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const CreateArmyInfo = memo(() => {
+  return (
+    <div className="flex flex-col p-1 text-xs">
+      <div className="flex flex-row text-xs ml-1">
+        <div className="text-lg p-1 pr-3">🗡️</div>
+        <div className="flex flex-col p-1 text-xs">
+          <div className="font-semibold text-gold mb-1">Create Army</div>
+          <div className="text-gray-300 mb-1">Create an army to help you explore the world.</div>
+        </div>
+      </div>
+    </div>
+  );
+});

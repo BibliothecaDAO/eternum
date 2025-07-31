@@ -29,7 +29,7 @@ export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
   }, [remainingCapacity, totalCapacity]);
 
   const capacityColor = useMemo(() => {
-    const exploreReward = configManager.getExploreReward();
+    const exploreReward = configManager.getExploreReward().resource_weight;
     if (remainingCapacity < BigInt(Math.floor(exploreReward))) return CapacityColor.HEAVY;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);

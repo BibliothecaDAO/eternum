@@ -1,7 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById } from "@bibliothecadao/types";
+import { findResourceById, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -73,7 +73,7 @@ export const ResourceCost = ({
       <ResourceIcon
         className="self-center justify-center"
         withTooltip={withTooltip}
-        resource={trait || ""}
+        resource={ResourcesIds[resourceId]}
         size={size}
       />
       <div className={contentClasses}>

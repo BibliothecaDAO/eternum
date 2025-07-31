@@ -220,7 +220,7 @@ export class ResourceFXManager {
    * Preloads textures for all resources
    * @private
    */
-  private preloadResourceTextures() {
+  private async preloadResourceTextures() {
     // Build an array with all resource IDs
     const resourceIds = [
       // Basic resources
@@ -256,28 +256,48 @@ export class ResourceFXManager {
       ResourcesIds.Fish,
     ];
 
-    // Preload all resources
-    for (const resourceId of resourceIds) {
-      this.getOrLoadTexture(resourceId);
-    }
+    console.log(`[ResourceFXManager] Starting preload of ${resourceIds.length} resource textures`);
 
-    console.log(`[ResourceFXManager] Preloaded ${resourceIds.length} resource textures`);
-  }
-
-  private getOrLoadTexture(resourceId: number): THREE.Texture {
-    if (this.resourceTextures.has(resourceId)) {
-      return this.resourceTextures.get(resourceId)!;
-    }
-
-    // Load the texture
-    const texture = this.textureLoader.load(`/images/resources/${resourceId}.png`, (t) => {
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.minFilter = THREE.LinearFilter;
-      t.magFilter = THREE.LinearFilter;
+    // Preload all resources with proper promise handling
+    const preloadPromises = resourceIds.map(async (resourceId) => {
+      try {
+        await this.getOrLoadTexture(resourceId);
+      } catch (error) {
+        console.warn(`Failed to preload texture for resource ${resourceId}:`, error);
+      }
     });
 
-    this.resourceTextures.set(resourceId, texture);
-    return texture;
+    try {
+      await Promise.allSettled(preloadPromises);
+      console.log(`[ResourceFXManager] Completed preloading resource textures`);
+    } catch (error) {
+      console.warn(`[ResourceFXManager] Some textures failed to preload:`, error);
+    }
+  }
+
+  private getOrLoadTexture(resourceId: number): Promise<THREE.Texture> {
+    if (this.resourceTextures.has(resourceId)) {
+      return Promise.resolve(this.resourceTextures.get(resourceId)!);
+    }
+
+    // Load the texture and return a promise
+    return new Promise((resolve, reject) => {
+      this.textureLoader.load(
+        `/images/resources/${resourceId}.png`,
+        (loadedTexture) => {
+          loadedTexture.colorSpace = THREE.SRGBColorSpace;
+          loadedTexture.minFilter = THREE.LinearFilter;
+          loadedTexture.magFilter = THREE.LinearFilter;
+          this.resourceTextures.set(resourceId, loadedTexture);
+          resolve(loadedTexture);
+        },
+        undefined,
+        (error) => {
+          console.error(`Failed to load texture for resource ${resourceId}:`, error);
+          reject(error);
+        },
+      );
+    });
   }
 
   /**
@@ -291,7 +311,7 @@ export class ResourceFXManager {
    * @param options Additional options for the effect
    * @returns Promise that resolves when animation completes
    */
-  playResourceFxAtCoords(
+  async playResourceFxAtCoords(
     resourceId: number,
     amount: number,
     x: number,
@@ -299,45 +319,45 @@ export class ResourceFXManager {
     z: number,
     options: ResourceFXOptions = {},
   ): Promise<void> {
-    const texture = this.getOrLoadTexture(resourceId);
+    try {
+      const texture = await this.getOrLoadTexture(resourceId);
 
-    if (!texture || !texture.image) {
-      console.warn("Resource texture not loaded yet, skipping FX", resourceId);
-      return Promise.reject("Resource texture not loaded");
+      let fxInstance: ResourceFXInstance | null = null;
+      const promise = new Promise<void>((resolve) => {
+        fxInstance = new ResourceFXInstance(
+          this.scene,
+          texture,
+          resourceId,
+          amount,
+          x,
+          y,
+          z,
+          options.size ?? this.defaultSize,
+          options.labelText,
+          options.floatHeight,
+          options.duration ?? 2.0,
+          options.fadeOutDuration ?? 0.5,
+        );
+
+        fxInstance.onComplete(resolve);
+        this.activeResourceFX.add(fxInstance);
+
+        const cleanup = () => {
+          this.activeResourceFX.delete(fxInstance!);
+        };
+
+        const originalDestroy = fxInstance.destroy;
+        fxInstance.destroy = () => {
+          originalDestroy.call(fxInstance);
+          cleanup();
+        };
+      });
+
+      return promise;
+    } catch (error) {
+      console.warn("Failed to load resource texture, skipping FX", resourceId, error);
+      return Promise.reject("Resource texture failed to load");
     }
-
-    let fxInstance: ResourceFXInstance | null = null;
-    const promise = new Promise<void>((resolve) => {
-      fxInstance = new ResourceFXInstance(
-        this.scene,
-        texture,
-        resourceId,
-        amount,
-        x,
-        y,
-        z,
-        options.size ?? this.defaultSize,
-        options.labelText,
-        options.floatHeight,
-        options.duration ?? 2.0,
-        options.fadeOutDuration ?? 0.5,
-      );
-
-      fxInstance.onComplete(resolve);
-      this.activeResourceFX.add(fxInstance);
-
-      const cleanup = () => {
-        this.activeResourceFX.delete(fxInstance!);
-      };
-
-      const originalDestroy = fxInstance.destroy;
-      fxInstance.destroy = () => {
-        originalDestroy.call(fxInstance);
-        cleanup();
-      };
-    });
-
-    return promise;
   }
 
   /**
@@ -351,7 +371,7 @@ export class ResourceFXManager {
    * @param options Additional options for the effect
    * @returns Promise that resolves when animation completes
    */
-  playResourceFx(
+  async playResourceFx(
     resourceId: number,
     amount: number,
     col: number,

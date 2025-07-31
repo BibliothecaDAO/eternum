@@ -129,22 +129,22 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 
   // Handle entity updates
-  const entitySub = client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities, data);
+  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Entity updated", data);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
   });
 
   // Handle event message updates
-  const eventSub = client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Event message updated", data.hashed_keys);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing event message update:", error);
     }
@@ -171,13 +171,12 @@ export const initialSync = async (
   let end;
 
   // BANKS
-  // todo: this is not needed for initial sync, should be placed to market sync but currently not working
   await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] bank structures query", end - start);
   setInitialSyncProgress(10);
 
-  // SPECTATOR REALM
+  // // SPECTATOR REALM
   const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   if (firstNonOwnedStructure) {

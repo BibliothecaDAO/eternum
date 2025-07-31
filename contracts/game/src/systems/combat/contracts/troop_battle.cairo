@@ -46,6 +46,7 @@ pub mod troop_battle_systems {
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::utils::random::{VRFImpl};
+
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -91,7 +92,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -128,6 +129,7 @@ pub mod troop_battle_systems {
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
+
             explorer_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
@@ -314,7 +316,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -357,11 +359,11 @@ pub mod troop_battle_systems {
             );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
+
             explorer_aggressor_troops
                 .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
-
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -525,7 +527,7 @@ pub mod troop_battle_systems {
 
             // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             structure_aggressor_base.assert_not_cloaked(battle_config, tick, season_config);
 
             // ensure defender is not cloaked
@@ -548,6 +550,7 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
+
             structure_guard_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,

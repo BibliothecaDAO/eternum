@@ -1,14 +1,27 @@
 import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
+import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { SelectableArmy } from "@/three/types/common";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { getAddressName, getAllArrivals, getEntityInfo, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import {
+  getAddressName,
+  getAllArrivals,
+  getArmyName,
+  getEntityIdFromKeys,
+  getEntityInfo,
+  getGuildFromPlayerAddress,
+} from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
+import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
+import { getIsBlitz } from "./constants";
 
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
@@ -62,7 +75,7 @@ const ButtonStateStoreManager = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
     [structureEntityId, account.address, components],
   );
 
@@ -168,7 +181,7 @@ const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
   } = useDojo();
-  const setSeasonWinner = useUIStore((state) => state.setSeasonWinner);
+  const setSeasonWinner = useUIStore((state) => state.setGameWinner);
   const [seasonEnded, setSeasonEnded] = useState<SeasonEnded | null>(null);
 
   useEffect(() => {
@@ -194,15 +207,96 @@ const SeasonWinnerStoreManager = () => {
   return null;
 };
 
+const SeasonTimerStoreManager = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const setGameEndAt = useUIStore((state) => state.setGameEndAt);
+  const setSeasonStartMainAt = useUIStore((state) => state.setGameStartMainAt);
+
+  useEffect(() => {
+    // Try to get season_config.end_at from WorldConfig
+    const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const endAt = worldConfig?.season_config?.end_at;
+    if (endAt && typeof endAt === "number") {
+      setGameEndAt(endAt);
+    }
+    const startMainAt = worldConfig?.season_config?.start_main_at;
+    if (startMainAt && typeof startMainAt === "number") {
+      setSeasonStartMainAt(startMainAt);
+    }
+  }, [components, setGameEndAt, setSeasonStartMainAt]);
+  return null;
+};
+
+const MinigameStoreManager = () => {
+  const minigameStore = useMinigameStore.getState();
+
+  const { data: minigames } = useMiniGames({});
+
+  const minigameAddresses = useMemo(() => minigames?.map((m) => m.contract_address) ?? [], [minigames]);
+
+  const { data: settingsMetadata } = useGameSettingsMetadata({
+    gameAddresses: minigameAddresses,
+  });
+
+  useEffect(() => {
+    if (minigames) {
+      minigameStore.setMinigames(minigames);
+    }
+
+    if (settingsMetadata) {
+      minigameStore.setSettingsMetadata(settingsMetadata);
+    }
+  }, [minigames, settingsMetadata, minigameStore]);
+
+  return null;
+};
+
+/**
+ * Manager component that syncs army and structure data with scene-specific shortcut managers
+ * This replaces the old centralized ShortcutManager approach
+ */
+const SelectableArmiesStoreManager = () => {
+  const setSelectableArmies = useUIStore((state) => state.setSelectableArmies);
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const explorers = useEntityQuery([Has(components.ExplorerTroops)]);
+  const playerStructures = usePlayerStructures();
+
+  useEffect(() => {
+    const selectableArmies: SelectableArmy[] = explorers
+      .map((explorer) => {
+        const explorerTroops = getComponentValue(components.ExplorerTroops, explorer);
+        if (!explorerTroops || !playerStructures.find((structure) => structure.entityId === explorerTroops.owner))
+          return null;
+        return {
+          entityId: explorerTroops.explorer_id,
+          position: { col: explorerTroops?.coord.x ?? 0, row: explorerTroops?.coord.y ?? 0 },
+          name: getArmyName(explorerTroops?.explorer_id ?? 0),
+        };
+      })
+      .filter(Boolean) as SelectableArmy[];
+    setSelectableArmies(selectableArmies);
+  }, [explorers, playerStructures]);
+
+  return null;
+};
+
 export const StoreManagers = () => {
   return (
     <>
+      <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
       <BattleLogsStoreManager />
       <SeasonWinnerStoreManager />
+      <SeasonTimerStoreManager />
+      <SelectableArmiesStoreManager />
     </>
   );
 };

@@ -4,16 +4,25 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getIsBlitz } from "@/ui/constants";
+import { getStructureTypeName } from "@bibliothecadao/eternum";
+import { getLevelName, ID, RelicEffect, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createContentContainer, createLabelBase, createOwnerDisplayElement, transitionManager } from "../utils/";
+import { FXManager } from "./fx-manager";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
+
+// Enum to track the source of relic effects
+export enum RelicSource {
+  Guard = "guard",
+  Production = "production",
+}
 
 const ICONS = {
   ARMY: "/images/labels/enemy_army.png",
@@ -39,7 +48,7 @@ const ICONS = {
 };
 
 // Create structure info label
-const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView) => {
+const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView, isBlitz: boolean) => {
   // Create label div using the shared base
   const labelDiv = createLabelBase({
     isMine: structure.isMine,
@@ -81,7 +90,7 @@ const createStructureInfoElement = (structure: StructureInfo, cameraView: Camera
 
   // Add structure type and level
   const typeText = document.createElement("strong");
-  typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+  typeText.textContent = `${getStructureTypeName(structure.structureType, isBlitz)} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
     structure.structureType === StructureType.Hyperstructure
       ? structure.initialized
         ? `(Stage ${structure.stage + 1})`
@@ -109,18 +118,33 @@ export class StructureManager {
   private labelsGroup: THREE.Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
+  private fxManager: FXManager;
+  private structureRelicEffects: Map<
+    ID,
+    Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
+  > = new Map();
+  private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
+  private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private isBlitz: boolean;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: { width: number; height: number },
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    fxManager?: FXManager,
+    applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
+    clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.fxManager = fxManager || new FXManager(scene);
+    this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
+    this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
+    this.isBlitz = getIsBlitz();
     this.loadModels();
 
     // Subscribe to camera view changes if scene is provided
@@ -201,6 +225,17 @@ export class StructureManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+    // Clean up all relic effects
+    this.structureRelicEffects.forEach((entityEffectsMap, entityId) => {
+      // Clear effects for all sources
+      for (const relicSource of entityEffectsMap.keys()) {
+        this.updateRelicEffects(entityId, [], relicSource);
+      }
+      // Clear any pending relic effects
+      if (this.clearPendingRelicEffectsCallback) {
+        this.clearPendingRelicEffectsCallback(entityId);
+      }
+    });
   }
 
   getTotalStructures() {
@@ -221,7 +256,6 @@ export class StructureManager {
           loader.load(
             modelPath,
             (gltf) => {
-              const model = gltf.scene as THREE.Group;
               const instancedModel = new InstancedModel(
                 gltf,
                 MAX_INSTANCES,
@@ -256,6 +290,7 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureSystemUpdate) {
+    console.log("StructureManager: onUpdate", update);
     await Promise.all(this.modelLoadPromises);
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
@@ -288,6 +323,25 @@ export class StructureManager {
       hasWonder,
       update.isAlly,
     );
+
+    // Clear existing relic effects for this specific structure before re-rendering
+    // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
+    // Clear effects for all sources when structure is updated
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (entityEffectsMap) {
+      for (const relicSource of entityEffectsMap.keys()) {
+        this.updateRelicEffects(entityId, [], relicSource);
+      }
+    }
+
+    // Apply any pending relic effects for this structure
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+      }
+    }
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -386,7 +440,7 @@ export class StructureManager {
     }
 
     const labelsToRemove: ID[] = [];
-    this.entityIdLabels.forEach((label, entityId) => {
+    this.entityIdLabels.forEach((_label, entityId) => {
       if (!visibleStructureIds.has(entityId)) {
         labelsToRemove.push(entityId);
       }
@@ -449,7 +503,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    const labelDiv = createStructureInfoElement(structure, this.currentCameraView);
+    const labelDiv = createStructureInfoElement(structure, this.currentCameraView, this.isBlitz);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -484,7 +538,7 @@ export class StructureManager {
   }
 
   public removeLabelsFromScene() {
-    this.entityIdLabels.forEach((label, entityId) => {
+    this.entityIdLabels.forEach((label, _entityId) => {
       this.labelsGroup.remove(label);
       // Dispose of the label's DOM element
       if (label.element && label.element.parentNode) {
@@ -508,6 +562,103 @@ export class StructureManager {
     this.removeLabelsFromScene();
     // Update visible structures which will create new labels as needed
     this.updateVisibleStructures();
+  }
+
+  // Relic effect management methods
+  public async updateRelicEffects(
+    entityId: ID,
+    newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
+    relicSource: RelicSource = RelicSource.Guard,
+  ) {
+    const structure = this.structures.getStructureByEntityId(entityId);
+    if (!structure) return;
+
+    // Get or create the effects map for this entity
+    let entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) {
+      entityEffectsMap = new Map();
+      this.structureRelicEffects.set(entityId, entityEffectsMap);
+    }
+
+    // Get current effects for this specific source
+    const currentEffects = entityEffectsMap.get(relicSource) || [];
+
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
+
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        currentEffect.fx.end();
+      }
+    }
+
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }> = [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        try {
+          const position = getWorldPositionForHex(structure.hexCoords);
+          position.y += 1.5; // Position above structure
+
+          // Register the relic FX type if not already registered (wait for texture to load)
+          await this.fxManager.registerRelicFX(newEffect.relicNumber);
+
+          // Create the FX at the structure position
+          const fx = this.fxManager.playFxAtCoords(
+            `relic_${newEffect.relicNumber}`,
+            position.x,
+            position.y,
+            position.z,
+            1,
+            undefined,
+            true,
+          );
+
+          if (fx) {
+            effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+          }
+        } catch (error) {
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for structure ${entityId}:`, error);
+        }
+      }
+    }
+
+    // Update the effects for this specific source
+    if (newRelicEffects.length === 0) {
+      entityEffectsMap.delete(relicSource);
+      // If no sources have effects, remove the entity from the main map
+      if (entityEffectsMap.size === 0) {
+        this.structureRelicEffects.delete(entityId);
+      }
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      entityEffectsMap.set(relicSource, updatedEffects);
+    }
+  }
+
+  public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) return [];
+
+    // Combine effects from all sources
+    const allEffects: { relicId: number; effect: RelicEffect }[] = [];
+    for (const effects of entityEffectsMap.values()) {
+      allEffects.push(...effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })));
+    }
+    return allEffects;
+  }
+
+  public getStructureRelicEffectsBySource(
+    entityId: ID,
+    relicSource: RelicSource,
+  ): { relicId: number; effect: RelicEffect }[] {
+    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    if (!entityEffectsMap) return [];
+
+    const effects = entityEffectsMap.get(relicSource);
+    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 }
 
@@ -575,6 +726,16 @@ class Structures {
 
   getStructures(): Map<StructureType, Map<ID, StructureInfo>> {
     return this.structures;
+  }
+
+  getStructureByEntityId(entityId: ID): StructureInfo | undefined {
+    for (const [_, structures] of this.structures) {
+      const structure = structures.get(entityId);
+      if (structure) {
+        return structure;
+      }
+    }
+    return undefined;
   }
 
   recheckOwnership() {

@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression";
@@ -42,9 +43,10 @@ export const RealmVillageDetails = () => {
     return toHexString(structure?.owner || 0n);
   }, [structure]);
 
+  const isBlitz = getIsBlitz();
   const [selectedTab, setSelectedTab] = useState(0);
-  const tabs = useMemo(
-    () => [
+  const tabs = useMemo(() => {
+    const baseTabs = [
       {
         key: "Castle",
         label: <div className="castle-tab-selector">Overview</div>,
@@ -55,14 +57,16 @@ export const RealmVillageDetails = () => {
         label: <div className="buildings-tab-selector"> Buildings</div>,
         component: <Buildings structure={structure} />,
       },
-      {
+    ];
+    if (!isBlitz) {
+      baseTabs.push({
         key: "Transfer",
         label: <div className="transfer-tab-selector">Transfer</div>,
         component: <TransferRealm structure={structure} />,
-      },
-    ],
-    [structure],
-  );
+      });
+    }
+    return baseTabs;
+  }, [structure, isBlitz]);
 
   const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
   const timer = useMemo(
@@ -96,7 +100,7 @@ export const RealmVillageDetails = () => {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h3 className="text-2xl font-bold">{getStructureName(structure.structure).name}</h3>
+              <h3 className="text-2xl font-bold">{getStructureName(structure.structure, getIsBlitz()).name}</h3>
             </div>
             <HintModalButton section={HintSection.Realm} />
           </div>

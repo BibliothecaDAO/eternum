@@ -14,6 +14,8 @@ export enum ActionType {
   Help = "help",
   Explore = "explore",
   Quest = "quest",
+  Chest = "chest",
+  CreateArmy = "create_army",
 }
 
 export class ActionPaths {

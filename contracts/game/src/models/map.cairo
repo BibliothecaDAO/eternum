@@ -42,6 +42,10 @@ pub impl TileImpl of TileTrait {
         self.biome != 0
     }
 
+    fn not_discovered(self: Tile) -> bool {
+        self.biome == 0
+    }
+
     fn occupied(self: Tile) -> bool {
         self.occupier_type.is_non_zero()
     }
@@ -99,6 +103,7 @@ pub enum TileOccupier {
     //
     VillageWonderBonus,
     Quest,
+    Chest,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -143,6 +148,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::RealmRegularLevel4WonderBonus => 36,
             TileOccupier::VillageWonderBonus => 37,
             TileOccupier::Quest => 38,
+            TileOccupier::Chest => 39,
         }
     }
 }

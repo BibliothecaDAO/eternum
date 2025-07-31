@@ -6,6 +6,12 @@
 export function confirmNonLocalDeployment(chain: string): void {
   if (chain === "local") return;
 
+  // Skip confirmation if environment variable is set (useful for CI/CD)
+  if (process.env.SKIP_CONFIRMATION === "true" || process.env.CI === "true") {
+    console.log(`\x1b[1;36m🤖 Auto-confirming deployment to ${chain.toUpperCase()} (CI mode)\x1b[0m`);
+    return;
+  }
+
   // Color mapping for different chains
   const chainColors: Record<string, string> = {
     mainnet: "31", // Red

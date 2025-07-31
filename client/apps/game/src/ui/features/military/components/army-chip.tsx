@@ -7,9 +7,9 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { InventoryResources } from "@/ui/features/economy/resources";
-import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
+import { armyHasTroops, getArmyRelicEffects, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ActorType, ArmyInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -87,8 +87,15 @@ export const ArmyChip = ({
 
   const { currentArmiesTick } = useBlockTimestamp();
 
+  const relicEffects = useMemo(() => {
+    return getArmyRelicEffects(army.troops, currentArmiesTick).map((relic) => relic.id);
+  }, [army.troops, currentArmiesTick]);
+
   const stamina = useMemo(() => {
     if (!army.troops) return { amount: 0n, updated_tick: 0n };
+
+    // Convert relic effects to resource IDs for StaminaManager
+    // todo: check relic effect active
     return StaminaManager.getStamina(army.troops, currentArmiesTick);
   }, [army.troops, currentArmiesTick]);
 
@@ -255,9 +262,13 @@ export const ArmyChip = ({
               {army.troops.count > 0n && resources && (
                 <InventoryResources
                   resources={resources}
+                  relicEffects={relicEffects}
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
+                  entityId={army.entityId}
+                  recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
+                  activateRelics={showButtons && army.isMine}
                 />
               )}
             </div>

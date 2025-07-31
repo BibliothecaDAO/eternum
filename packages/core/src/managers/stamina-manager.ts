@@ -30,17 +30,25 @@ export class StaminaManager {
   }
 
   public static getStamina(troops: Troops, currentArmiesTick: number) {
-    const last_refill_tick = troops.stamina.updated_tick;
-
-    if (last_refill_tick >= BigInt(currentArmiesTick)) {
+    const lastRefillTick = troops.stamina.updated_tick;
+    if (lastRefillTick >= BigInt(currentArmiesTick)) {
       return structuredClone(troops.stamina);
     }
 
+    const staminaPerTick = configManager.getRefillPerTick();
+    let boostStaminaPerTick = (staminaPerTick * troops.boosts.incr_stamina_regen_percent_num) / 10_000;
+    let boostNumTicksPassed = Math.min(
+      currentArmiesTick - Number(lastRefillTick),
+      troops.boosts.incr_stamina_regen_tick_count,
+    );
+    let additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
+
     const newStamina = this.refill(
       currentArmiesTick,
-      last_refill_tick,
+      lastRefillTick,
       this.getMaxStamina(troops.category as TroopType, troops.tier as TroopTier),
       Number(troops.stamina.amount),
+      additionalStaminaBoost,
     );
 
     return newStamina;
@@ -51,15 +59,18 @@ export class StaminaManager {
     return staminaConfig.staminaMax;
   };
 
-  private static refill(currentArmiesTick: number, last_refill_tick: bigint, maxStamina: number, amount: number) {
+  private static refill(
+    currentArmiesTick: number,
+    last_refill_tick: bigint,
+    maxStamina: number,
+    amount: number,
+    additionalStaminaBoost?: number,
+  ) {
     const staminaPerTick = configManager.getRefillPerTick();
-
     const numTicksPassed = currentArmiesTick - Number(last_refill_tick);
-
-    const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick;
+    const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick + (additionalStaminaBoost ?? 0);
 
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
-
     return {
       amount: BigInt(newAmount),
       updated_tick: BigInt(currentArmiesTick),

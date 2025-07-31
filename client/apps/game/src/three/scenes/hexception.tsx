@@ -18,6 +18,8 @@ import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
+import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "@/three/utils/navigation";
+import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
@@ -40,6 +42,7 @@ import {
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
+  Structure,
   StructureType,
   findResourceById,
   getNeighborHexes,
@@ -120,6 +123,8 @@ export default class HexceptionScene extends HexagonScene {
   }[] = [];
   private structureStage: RealmLevels | StructureProgress = RealmLevels.Settlement;
   private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
+  private structureIndex: number = 0;
+  private playerStructures: Structure[] = [];
 
   constructor(
     controls: MapControls,
@@ -152,6 +157,42 @@ export default class HexceptionScene extends HexagonScene {
 
     this.state = useUIStore.getState();
 
+    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
+
+    // Only register shortcuts if they haven't been registered already
+    if (!this.shortcutManager.hasShortcuts()) {
+      this.shortcutManager.registerShortcut({
+        id: "cycle-structures",
+        key: "Tab",
+        description: "Cycle through structures",
+        sceneRestriction: SceneName.Hexception,
+        condition: () => this.playerStructures.length > 0,
+        action: () => this.selectNextStructure(),
+      });
+
+      this.shortcutManager.registerShortcut({
+        id: "toggle-view",
+        key: "v",
+        description: "Toggle between map and hex view",
+        sceneRestriction: SceneName.Hexception,
+        action: () => toggleMapHexView(),
+      });
+
+      this.shortcutManager.registerShortcut({
+        id: "escape-handler",
+        key: "Escape",
+        description: "Return to world map from hexagon view",
+        sceneRestriction: SceneName.Hexception,
+        action: () => {
+          if (this.isNavigationViewOpen()) {
+            this.closeNavigationViews();
+          } else {
+            this.clearBuildingMode();
+          }
+        },
+      });
+    }
+
     // add gui to change castle level
     this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
       this.structureStage = value;
@@ -159,16 +200,14 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(this.hexceptionRadius);
     });
 
-    // Add event listener for Escape key
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && this.sceneManager.getCurrentScene() === SceneName.Hexception) {
-        if (this.isNavigationViewOpen()) {
-          this.closeNavigationViews();
-        } else {
-          this.clearBuildingMode();
+    useUIStore.subscribe(
+      (state) => state.playerStructures,
+      (playerStructures) => {
+        if (playerStructures.length > 0) {
+          this.updatePlayerStructures(playerStructures);
         }
-      }
-    });
+      },
+    );
 
     useUIStore.subscribe(
       (state) => state.previewBuilding,
@@ -319,6 +358,16 @@ export default class HexceptionScene extends HexagonScene {
     this.labels.forEach((label) => {
       this.scene.remove(label.label);
     });
+
+    // Note: Don't clean up shortcuts here - they should persist across scene switches
+    // Shortcuts will be cleaned up when the scene is actually destroyed
+  }
+
+  destroy() {
+    // Clean up shortcuts when scene is actually destroyed
+    if (this.shortcutManager instanceof SceneShortcutManager) {
+      this.shortcutManager.cleanup();
+    }
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
@@ -879,6 +928,22 @@ export default class HexceptionScene extends HexagonScene {
     // Remove any mixers
     this.buildingMixers.delete(key);
     this.buildingMixers.delete(wonderKey);
+  }
+
+  private selectNextStructure() {
+    this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "hex");
+    if (this.playerStructures.length > 0) {
+      const structure = this.playerStructures[this.structureIndex];
+      // Set the structure entity ID in the UI store
+      this.state.setStructureEntityId(structure.entityId);
+    }
+  }
+
+  public updatePlayerStructures(structures: Structure[]) {
+    this.playerStructures = structures;
+    if (this.structureIndex >= structures.length) {
+      this.structureIndex = 0;
+    }
   }
 
   update(deltaTime: number) {

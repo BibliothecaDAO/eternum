@@ -73,7 +73,7 @@ export class ArmyActionManager {
     if (!resource) return false;
 
     const remainingCapacity = getRemainingCapacityInKg(resource);
-    const requiredCapacity = configManager.getExploreReward();
+    const requiredCapacity = configManager.getExploreReward().resource_weight;
 
     return remainingCapacity >= requiredCapacity;
   }
@@ -93,8 +93,16 @@ export class ArmyActionManager {
         };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
-    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
+
+    let maxTravelWheatSteps = Infinity;
+    let maxTravelFishSteps = Infinity;
+    if (travelFoodCosts.wheatPayAmount > 0) {
+      maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    }
+    if (travelFoodCosts.fishPayAmount > 0) {
+      maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
+    }
+
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
 
     return Math.min(maxStaminaSteps, maxTravelSteps);
@@ -121,6 +129,7 @@ export class ArmyActionManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     questHexes: Map<number, Map<number, HexEntityInfo>>,
+    chestHexes: Map<number, Map<number, HexEntityInfo>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
     playerAddress: ContractAddress,
@@ -150,6 +159,7 @@ export class ArmyActionManager {
       const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const hasQuest = questHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasChest = chestHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const isStructureMine =
         structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
@@ -170,6 +180,8 @@ export class ArmyActionManager {
         actionType = ActionType.Attack;
       } else if (hasQuest) {
         actionType = ActionType.Quest;
+      } else if (hasChest) {
+        actionType = ActionType.Chest;
       } else if (biome) {
         actionType = ActionType.Move;
         // Skip if no movement range available
@@ -213,11 +225,12 @@ export class ArmyActionManager {
         const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
         const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
         const hasQuest = questHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        const hasChest = chestHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
 
         actionPaths.set(currentKey, path);
 
         // cannot go through these hexes so need to stop here
-        if (!isExplored || hasArmy || hasStructure || hasQuest) continue;
+        if (!isExplored || hasArmy || hasStructure || hasQuest || hasChest) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
@@ -231,8 +244,9 @@ export class ArmyActionManager {
           const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
           const hasQuest = questHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasChest = chestHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
 
-          if (!isExplored || hasArmy || hasStructure || hasQuest) continue;
+          if (!isExplored || hasArmy || hasStructure || hasQuest || hasChest) continue;
 
           const staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
           const nextStaminaUsed = staminaUsed + staminaCost;

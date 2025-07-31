@@ -16,7 +16,7 @@ pub mod structure_systems {
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
-    use s1_eternum::models::resource::production::production::{ProductionWonderBonus};
+    use s1_eternum::models::resource::production::production::{ProductionBoostBonus};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -96,8 +96,8 @@ pub mod structure_systems {
                 let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
                     ref world, structure_id,
                 );
-                let structure_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
-                let structure_has_wonder_bonus = structure_wonder_bonus.bonus_percent_num > 0;
+                let structure_production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+                let structure_has_wonder_bonus = structure_production_boost_bonus.wonder_incr_percent_num > 0;
                 let tile_occupier = IMapImpl::get_realm_occupier(
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
                 );

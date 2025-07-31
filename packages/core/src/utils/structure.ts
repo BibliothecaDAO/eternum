@@ -1,6 +1,8 @@
 import {
+  BlitzStructureTypeToNameMapping,
   ClientComponents,
   ContractAddress,
+  EternumStructureTypeToNameMapping,
   ID,
   MERCENARIES,
   Position,
@@ -83,19 +85,6 @@ export const getStructureImmunityTimer = (
   return immunityEndTimestamp - currentBlockTimestamp!;
 };
 
-export const getStructureTypeName = (structureType: StructureType) => {
-  switch (structureType) {
-    case StructureType.Bank:
-      return "Bank";
-    case StructureType.Hyperstructure:
-      return "Hyperstructure";
-    case StructureType.FragmentMine:
-      return "Fragment Mine";
-    case StructureType.Village:
-      return "Village";
-    case StructureType.Realm:
-      return "Realm";
-    default:
-      return "Unknown";
-  }
+export const getStructureTypeName = (structureType: StructureType, isBlitz: boolean) => {
+  return isBlitz ? BlitzStructureTypeToNameMapping[structureType] : EternumStructureTypeToNameMapping[structureType];
 };

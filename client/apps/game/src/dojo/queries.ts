@@ -56,7 +56,9 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-Resource",
     "s1_eternum-StructureBuildings",
     "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionWonderBonus",
+    "s1_eternum-ProductionBoostBonus",
+    // needed to check for hyperstructure shareholders 100% in blitz mode
+    "s1_eternum-HyperstructureShareholders",
   ];
 
   // Create promises for all queries without awaiting them
@@ -108,6 +110,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
+    "s1_eternum-BlitzRealmPlayerRegister",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];

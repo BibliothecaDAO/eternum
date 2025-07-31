@@ -12,7 +12,7 @@ export const Combat = () => {
         <h4>Combat System Overview</h4>
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
-            Combat in Eternum involves managing armies, engaging in battles, raiding structures, and understanding the
+            Combat in Realms involves managing armies, engaging in battles, raiding structures, and understanding the
             nuances of troop tiers, stamina, and biome effects.
           </p>
         </div>

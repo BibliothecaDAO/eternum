@@ -2,16 +2,16 @@
 // Re-export all shared, cross-feature components
 
 // Core UI Components
-export { ErrorBoundary } from "./error-boundary";
+export { GameWinnerMessage } from "./components/game-winner-message";
 export { ModalContainer } from "./components/modal-container";
 export { NameChangePopup } from "./components/name-change-popup";
 export { NotLoggedInMessage } from "./components/not-logged-in-message";
 export { PWAUpdatePopup } from "./components/pwa-update-popup";
-export { SeasonWinnerMessage } from "./components/season-winner-message";
 export { Toaster } from "./components/toaster";
 export { ToggleComponent } from "./components/toggle-component";
 export { TransactionNotification } from "./components/tx-emit";
 export { WorldLoading } from "./components/world-loading";
+export { ErrorBoundary } from "./error-boundary";
 
 // TODO: Move positioning containers here
 // TODO: Move additional modal components here

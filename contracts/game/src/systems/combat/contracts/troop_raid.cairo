@@ -102,7 +102,7 @@ pub mod troop_raid_systems {
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
 
             // ensure defender is not cloaked
-            let tick = TickImpl::get_tick_config(ref world);
+            let tick = TickImpl::get_tick_interval(ref world);
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
             guarded_structure.assert_not_cloaked(battle_config, tick, season_config);
 
@@ -245,6 +245,7 @@ pub mod troop_raid_systems {
                 explorer_aggressor_troops
                     .stamina
                     .spend(
+                        ref explorer_aggressor_troops.boosts,
                         explorer_aggressor_troops.category,
                         explorer_aggressor_troops.tier,
                         troop_stamina_config,

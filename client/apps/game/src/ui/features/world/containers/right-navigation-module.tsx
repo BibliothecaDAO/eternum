@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
 import { BattleLogsTable } from "@/ui/features/military";
@@ -128,6 +129,17 @@ export const RightNavigationModule = () => {
 
   const isOffscreen = view === RightView.None;
 
+  const filteredNavigation = navigation.filter((item) =>
+    [
+      MenuEnum.resourceTable,
+      MenuEnum.production,
+      MenuEnum.automation,
+      ...(getIsBlitz() ? [] : [MenuEnum.bridge]),
+      MenuEnum.logs,
+      MenuEnum.transfer,
+    ].includes(item.name as MenuEnum),
+  );
+
   return (
     <div
       className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[500px] right-4 pointer-events-none pt-16 ${
@@ -146,7 +158,7 @@ export const RightNavigationModule = () => {
             className="flex flex-col justify-start pointer-events-auto h-[60vh]"
           >
             <div className="flex flex-col mb-auto">
-              {navigation.map((item, index) => (
+              {filteredNavigation.map((item, index) => (
                 <div key={index}>{item.button}</div>
               ))}
             </div>

@@ -24,6 +24,9 @@ pub struct WorldConfig {
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
+    pub blitz_mode_on: bool,
+    pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_registration_config: BlitzRegistrationConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
@@ -41,11 +44,14 @@ pub struct WorldConfig {
     pub agent_controller_config: AgentControllerConfig,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
+    pub village_find_resources_config: VillageFoundResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
     pub wonder_production_bonus_config: WonderProductionBonusConfig,
     pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
+    pub victory_points_grant_config: VictoryPointsGrantConfig,
+    pub victory_points_win_config: VictoryPointsWinConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -85,7 +91,11 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
     }
 
     fn has_ended(self: SeasonConfig) -> bool {
-        self.end_at.is_non_zero()
+        let now = starknet::get_block_timestamp();
+        if self.end_at == 0 {
+            return false;
+        }
+        now >= self.end_at
     }
 
     fn has_settling_started(self: SeasonConfig) -> bool {
@@ -203,8 +213,6 @@ pub struct HyperstructureConstructConfig {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct HyperstructureConfig {
     pub initialize_shards_amount: u128,
-    pub points_per_second: u128,
-    pub points_for_win: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -250,15 +258,18 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub agent_discovery_prob: u16,
     pub agent_discovery_fail_prob: u16,
+    pub village_win_probability: u16,
+    pub village_fail_probability: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
     pub hyps_fail_prob_increase_p_hex: u16,
     // fail probability increase per hyperstructure found
     pub hyps_fail_prob_increase_p_fnd: u16,
-    // Mine discovery rewards
-    pub mine_wheat_grant_amount: u32,
-    pub mine_fish_grant_amount: u32,
+    // Relic discovery
+    pub relic_discovery_interval_sec: u16,
+    pub relic_hex_dist_from_center: u8,
+    pub relic_chest_relics_per_chest: u8,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -376,10 +387,153 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BlitzSettlementConfig {
+    pub base_distance: u32,
+    pub side: u32,
+    pub step: u32,
+    pub point: u32,
+}
+
+#[generate_trait]
+pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
+    fn new(base_distance: u32) -> BlitzSettlementConfig {
+        BlitzSettlementConfig { base_distance: base_distance, side: 0, step: 1, point: 1 }
+    }
+
+    fn next(ref self: BlitzSettlementConfig) {
+        if self.side == 5 {
+            if self.point == self.max_points() {
+                self.step += 1;
+                self.point = 1;
+            } else {
+                self.point += 1;
+            }
+            self.side = 0;
+        } else {
+            self.side += 1;
+        }
+    }
+
+    fn max_points(self: BlitzSettlementConfig) -> u32 {
+        self.step * 2
+    }
+
+    fn step_tile_distance() -> u32 {
+        15
+    }
+
+    fn realm_tile_radius() -> u32 {
+        3
+    }
+
+    fn mirror_first_step_tile_distance() -> u32 {
+        11
+    }
+
+    fn mirror_second_step_tile_distance() -> u32 {
+        4
+    }
+
+    // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
+
+    fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(self.side);
+        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+
+        // get the coord of the first structure on step 1 of the selected side
+        let side_first_structure__step_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__step_x = side_first_structure__step_one
+            .neighbor_after_distance(start_direction, Self::step_tile_distance() * (self.step - 1));
+
+        let is_mirrored = self.point > self.max_points() / 2;
+        if !is_mirrored {
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (self.point - 1));
+            let a = destination_start_coord;
+            let b = destination_start_coord.neighbor_after_distance(start_direction, Self::realm_tile_radius());
+            let c = b.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
+            return array![a, b, c];
+        } else {
+            let start_point = self.max_points() - self.point + 1;
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, Self::step_tile_distance() * (start_point - 1));
+
+            let a = destination_start_coord
+                .neighbor_after_distance(start_direction, Self::mirror_first_step_tile_distance())
+                .neighbor_after_distance(triangle_direction, Self::mirror_second_step_tile_distance());
+            let b = a.neighbor_after_distance(triangle_direction, Self::realm_tile_radius());
+            let c = b.neighbor_after_distance(start_direction, Self::realm_tile_radius());
+            return array![a, b, c];
+        }
+    }
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BlitzRegistrationConfig {
+    pub fee_amount: u256,
+    pub fee_token: ContractAddress,
+    pub fee_recipient: ContractAddress,
+    pub registration_count: u16,
+    pub registration_count_max: u16,
+    pub registration_start_at: u32,
+    pub registration_end_at: u32,
+    pub creation_start_at: u32,
+    pub creation_end_at: u32,
+    pub assigned_positions_count: u16,
+}
+
+#[generate_trait]
+pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
+    fn is_registration_full(self: BlitzRegistrationConfig) -> bool {
+        self.registration_count >= self.registration_count_max
+    }
+
+    fn increase_registration_count(ref self: BlitzRegistrationConfig) {
+        self.registration_count += 1;
+    }
+
+    fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
+        now >= self.registration_start_at && now <= self.registration_end_at
+    }
+
+    fn is_creation_open(self: BlitzRegistrationConfig, now: u32) -> bool {
+        now >= self.creation_start_at && now <= self.creation_end_at
+    }
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct VictoryPointsGrantConfig {
+    pub hyp_points_per_second: u32,
+    // Only granted when claim hyperstructure from bandits
+    pub claim_hyperstructure_points: u32,
+    // Only granted when claim non hyperstructure from bandits
+    pub claim_otherstructure_points: u32,
+    pub explore_tiles_points: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct VictoryPointsWinConfig {
+    pub points_for_win: u128,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
+    pub delivery_tick_in_seconds: u64,
 }
 
 
@@ -413,14 +567,15 @@ pub struct TroopStaminaConfig {
     // Combat stamina requirements
     pub stamina_attack_req: u16, // Minimum stamina required to attack
     pub stamina_attack_max: u16, // Maximum stamina that can be used in attack
-    // Exploration costs
-    pub stamina_explore_wheat_cost: u16,
-    pub stamina_explore_fish_cost: u16,
+    // Exploration and travel stamina costs
     pub stamina_explore_stamina_cost: u16,
-    // Travel costs
-    pub stamina_travel_wheat_cost: u16,
-    pub stamina_travel_fish_cost: u16,
     pub stamina_travel_stamina_cost: u16,
+    // Exploration food costs
+    pub stamina_explore_wheat_cost: u32,
+    pub stamina_explore_fish_cost: u32,
+    // Travel food costs
+    pub stamina_travel_wheat_cost: u32,
+    pub stamina_travel_fish_cost: u32,
 }
 
 
@@ -460,41 +615,60 @@ pub impl CombatConfigImpl of CombatConfigTrait {
 }
 
 
+#[derive(Copy, Drop, Serde)]
+pub struct TickInterval {
+    pub tick_interval: u64,
+}
+
 #[generate_trait]
 pub impl TickImpl of TickTrait {
-    fn get_tick_config(ref world: WorldStorage) -> TickConfig {
-        let tick_config: TickConfig = WorldConfigUtilImpl::get_member(world, selector!("tick_config"));
-        return tick_config;
+    fn _tick_config(ref world: WorldStorage) -> TickConfig {
+        WorldConfigUtilImpl::get_member(world, selector!("tick_config"))
     }
 
-    fn interval(self: TickConfig) -> u64 {
-        self.armies_tick_in_seconds
+    // get world tick config
+    fn get_tick_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.armies_tick_in_seconds };
     }
 
-    fn current(self: TickConfig) -> u64 {
+    fn get_delivery_tick_interval(ref world: WorldStorage) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world);
+        return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
+    }
+
+    fn interval(self: TickInterval) -> u64 {
+        self.tick_interval
+    }
+
+    fn current(self: TickInterval) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.interval()
     }
 
-    fn at(self: TickConfig, time: u64) -> u64 {
+    fn at(self: TickInterval, time: u64) -> u64 {
         time / self.interval()
     }
 
-    fn after(self: TickConfig, time_spent: u64) -> u64 {
+    fn after(self: TickInterval, time_spent: u64) -> u64 {
         (starknet::get_block_timestamp() + time_spent) / self.interval()
     }
 
-    fn next_tick_timestamp(self: TickConfig) -> u64 {
+    fn next_tick_timestamp(self: TickInterval) -> u64 {
         self.current() + self.interval()
     }
 
-    fn convert_from_seconds(self: TickConfig, seconds: u64) -> u64 {
+    fn convert_from_seconds(self: TickInterval, seconds: u64) -> u64 {
         let mut ticks = seconds / self.interval();
         let rem = seconds % self.interval();
         if rem.is_non_zero() {
             ticks += 1;
         }
         ticks
+    }
+
+    fn convert_to_estimated_timestamp(self: TickInterval, tick: u64) -> u64 {
+        tick * self.interval()
     }
 }
 
@@ -575,6 +749,11 @@ pub struct StartingResourcesConfig {
     pub resources_list_count: u8,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct VillageFoundResourcesConfig {
+    pub resources_mm_list_id: ID,
+    pub resources_mm_list_count: u8,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct ResourceBridgeConfig {
@@ -633,4 +812,36 @@ pub struct StructureLevelConfig {
     pub level: u8,
     pub required_resources_id: ID,
     pub required_resource_count: u8,
+}
+
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPositionRegister {
+    #[key]
+    pub spot_number: u16,
+    pub coords: Span<Coord>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzRealmPlayerRegister {
+    #[key]
+    pub player: ContractAddress,
+    pub registered: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzHyperstructureRegister {
+    #[key]
+    pub id: ID,
+    pub ring_count: u32,
+}
+
+#[generate_trait]
+pub impl BlitzHyperstructureRegisterImpl of BlitzHyperstructureRegisterTrait {
+    fn ID() -> ID {
+        WORLD_CONFIG_ID
+    }
 }

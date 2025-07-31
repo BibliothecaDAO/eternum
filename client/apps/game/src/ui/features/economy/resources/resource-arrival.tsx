@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getIsBlitz } from "@/ui/constants";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { DepositResources } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -40,7 +41,7 @@ export const StructureArrivals = memo(({ structure }: { structure: Structure }) 
   }, [currentBlockTimestamp]);
 
   const structureName = useMemo(() => {
-    return getStructureName(structure.structure).name;
+    return getStructureName(structure.structure, getIsBlitz()).name;
   }, [structure]);
 
   if (arrivals.length === 0) return null;

@@ -1,3 +1,4 @@
+import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { QuestReward } from "@/ui/features/economy/resources";
 import { getStructureName } from "@bibliothecadao/eternum";
@@ -82,7 +83,9 @@ export const QuestRealm = ({
       {!loadingQuests ? (
         <>
           <div className="flex flex-row items-center justify-between w-full">
-            <span className="font-semibold text-sm">{getStructureName(structureInfo.structure).name}</span>
+            <span className="font-semibold text-sm">
+              {getStructureName(structureInfo.structure, getIsBlitz()).name}
+            </span>
             <div className="flex flex-row items-center gap-2">
               <div className={`px-2 py-1 rounded text-xxs font-bold ${getBadgeClass()}`}>{questStatus}</div>
             </div>

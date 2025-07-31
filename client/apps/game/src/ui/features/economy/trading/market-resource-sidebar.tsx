@@ -1,7 +1,8 @@
+import { getIsBlitz } from "@/ui/constants";
 import { MarketResource } from "@/ui/features/economy/trading";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, MarketInterface, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
+import { getResourceTiers, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const MarketResourceSidebar = ({
@@ -22,7 +23,7 @@ export const MarketResourceSidebar = ({
   const dojo = useDojo();
 
   const filteredResources = useMemo(() => {
-    return Object.entries(RESOURCE_TIERS).flatMap(([_, resourceIds]) => {
+    return Object.entries(getResourceTiers(getIsBlitz())).flatMap(([_, resourceIds]) => {
       return resourceIds;
     });
   }, []);

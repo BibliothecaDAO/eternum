@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SceneManager } from "@/three/scene-manager";
 import * as THREE from "three";
 import { SceneName } from "../types";
@@ -62,6 +63,8 @@ export class InputManager {
     const checkDrag = (e: MouseEvent) => {
       if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
         this.isDragged = true;
+        // Clear tooltip when dragging starts
+        useUIStore.getState().setTooltip(null);
         window.removeEventListener("mousemove", checkDrag);
       }
     };

@@ -1,14 +1,14 @@
-import { getComponentValue, type Entity } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BiomeType,
-  FELT_CENTER,
-  getNeighborHexes,
   ClientComponents,
   ContractAddress,
+  FELT_CENTER,
+  getNeighborHexes,
   HexEntityInfo,
   ID,
 } from "@bibliothecadao/types";
+import { getComponentValue, type Entity } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
 export class StructureActionManager {
@@ -76,6 +76,15 @@ export class StructureActionManager {
         ];
 
         // Add the path to the action paths
+        actionPaths.set(ActionPaths.posKey({ col, row }), path);
+      } else {
+        const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+        const path: ActionPath[] = [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          { hex: { col, row }, actionType: ActionType.CreateArmy, biomeType: biome },
+        ];
+
         actionPaths.set(ActionPaths.posKey({ col, row }), path);
       }
     }

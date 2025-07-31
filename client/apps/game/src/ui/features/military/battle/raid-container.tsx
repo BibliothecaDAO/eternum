@@ -21,13 +21,16 @@ import {
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RelicEffectWithEndTick,
   RESOURCE_PRECISION,
   resources,
+  ResourcesIds,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
+import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
@@ -42,10 +45,14 @@ export const RaidContainer = ({
   attackerEntityId,
   target,
   targetResources,
+  attackerActiveRelicEffects = [],
+  targetActiveRelicEffects = [],
 }: {
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
+  attackerActiveRelicEffects: RelicEffectWithEndTick[];
+  targetActiveRelicEffects: RelicEffectWithEndTick[];
 }) => {
   const {
     account: { account },
@@ -73,6 +80,10 @@ export const RaidContainer = ({
   const attackerArmyData = useMemo(() => {
     const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
     const { currentArmiesTick } = getBlockTimestamp();
+
+    // Convert attacker relic effects to resource IDs for StaminaManager
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
     return {
       capacity: army?.totalCapacity,
       troops: {
@@ -82,7 +93,7 @@ export const RaidContainer = ({
         stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
       },
     };
-  }, [attackerEntityId]);
+  }, [attackerEntityId, attackerActiveRelicEffects]);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -91,6 +102,8 @@ export const RaidContainer = ({
   // Simulate raid outcome
   const raidSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
+
+    const { currentArmiesTick } = getBlockTimestamp();
 
     // Convert game armies to simulator armies
     const attackerArmy = {
@@ -111,7 +124,19 @@ export const RaidContainer = ({
     }));
 
     // Use the raid simulator to predict the outcome
-    const result = raidSimulator.simulateRaid(attackerArmy, defenders, biome);
+    // Convert attacker relic effects to resource IDs for RaidSimulator
+    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
+    // For defenders, we aggregate all target relic effects
+    const targetRelicResourceIds = targetActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+
+    const result = raidSimulator.simulateRaid(
+      attackerArmy,
+      defenders,
+      biome,
+      attackerRelicResourceIds,
+      targetRelicResourceIds,
+    );
 
     // Calculate total defender troops for percentages
     const totalDefenderTroops = defenders.reduce((total, troop) => total + troop.troopCount, 0);
@@ -127,7 +152,18 @@ export const RaidContainer = ({
       newDefendersStamina: defenders.map((troop) => troop.stamina - result.defenderDamageTaken),
       totalDefenderTroops,
     };
-  }, [attackerEntityId, target, account, components, attackerArmyData, biome, combatConfig, raidSimulator]);
+  }, [
+    attackerEntityId,
+    target,
+    account,
+    components,
+    attackerArmyData,
+    biome,
+    combatConfig,
+    raidSimulator,
+    attackerActiveRelicEffects,
+    targetActiveRelicEffects,
+  ]);
 
   const remainingCapacity = useMemo(() => {
     // you can use getcomponentvalue because it's your own entity so synced
@@ -319,6 +355,13 @@ export const RaidContainer = ({
                             <span className="text-gold font-medium">{Number(remainingCapacity.beforeRaid)} kg</span>
                           </div>
                         </div>
+
+                        {/* Active Relic Effects */}
+                        <ActiveRelicEffects
+                          relicEffects={attackerActiveRelicEffects}
+                          entityId={attackerEntityId}
+                          compact={true}
+                        />
                       </div>
 
                       {/* Raid Simulation Results */}
@@ -431,6 +474,9 @@ export const RaidContainer = ({
                           </div>
                         ))}
                       </div>
+
+                      {/* Active Relic Effects for Defenders */}
+                      <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
 
                       {/* Raid Simulation Results */}
                       {raidSimulation && (

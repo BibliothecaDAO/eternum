@@ -19,6 +19,7 @@ import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
+import { SceneShortcutManager } from "../utils/shortcuts";
 
 export enum CameraView {
   Close = 1,
@@ -30,6 +31,7 @@ export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
   protected inputManager!: InputManager;
+  protected shortcutManager!: SceneShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
   protected systemManager!: SystemManager;
   protected highlightHexManager!: HighlightHexManager;
