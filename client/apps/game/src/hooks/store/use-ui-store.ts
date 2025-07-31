@@ -148,15 +148,15 @@ export const useUIStore = create(
     setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
     modalContent: null,
     toggleModal: (content) => {
-      set({ modalContent: content, showModal: !!content });
+      set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.None,
-    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
+    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
     rightNavigationView: RightView.None,
-    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     selectedPlayer: null,
@@ -168,7 +168,8 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    setModal: (content: React.ReactNode | null, show: boolean) => set({ modalContent: content, showModal: show }),
+    setModal: (content: React.ReactNode | null, show: boolean) =>
+      set({ modalContent: content, showModal: show, tooltip: null }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
