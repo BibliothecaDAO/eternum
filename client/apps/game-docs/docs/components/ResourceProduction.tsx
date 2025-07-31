@@ -252,7 +252,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Wood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 5, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 0.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -261,7 +261,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Coal",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
       ],
       output: 1,
     },
@@ -270,7 +270,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Copper",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 1, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 1, name: "Labor" },
       ],
       output: 1,
     },
@@ -279,7 +279,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Ironwood",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -288,7 +288,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Cold Iron",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -297,7 +297,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Gold",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 2, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 25, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 2.5, name: "Labor" },
       ],
       output: 1,
     },
@@ -306,7 +306,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Adamantine",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -315,7 +315,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Mithral",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -324,7 +324,7 @@ export const BlitzSimpleResourceProduction = () => {
       name: "Dragonhide",
       inputs: [
         { resource: ResourcesIds.Wheat, amount: 4, name: "Wheat" },
-        { resource: ResourcesIds.Labor, amount: 100, name: "Labor" },
+        { resource: ResourcesIds.Labor, amount: 10, name: "Labor" },
       ],
       output: 1,
     },
@@ -984,9 +984,9 @@ export const BlitzLaborProduction = () => {
 export const BlitzSimpleTroopProduction = () => {
   // Hardcoded data for Blitz simple troop production
   const blitzSimpleTroops = [
-    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 2.5, output: 5 },
-    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 2.5, output: 5 },
-    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 2.5, output: 5 },
+    { id: ResourcesIds.Knight, name: "T1 Knight", wheat: 2, labor: 0.5, output: 5 },
+    { id: ResourcesIds.Crossbowman, name: "T1 Crossbowman", wheat: 2, labor: 0.5, output: 5 },
+    { id: ResourcesIds.Paladin, name: "T1 Paladin", wheat: 2, labor: 0.5, output: 5 },
   ];
 
   return (
@@ -1236,7 +1236,7 @@ export const BlitzDonkeyProduction = () => {
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceGroupStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />5
+                    <ResourceIcon id={ResourcesIds.Wheat} name="Wheat" size="md" />3
                   </div>
                 </div>
               </td>
