@@ -223,4 +223,4 @@ const RelicTable = () => {
   );
 };
 
-export default RelicTable; 
+export default RelicTable;
