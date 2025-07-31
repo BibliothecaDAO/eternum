@@ -1,9 +1,9 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, Resource, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -596,8 +596,8 @@ export class ResourceManager {
     const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
-      capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
-      capacityUsedKg: gramToKg(Number(resource?.weight.weight || 0) / RESOURCE_PRECISION),
+      capacityKg: gramToKg(divideByPrecision(Number(resource?.weight.capacity || 0))),
+      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(resource?.weight.weight || 0)))),
       quantity,
     };
   }
@@ -610,7 +610,7 @@ export class ResourceManager {
 
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
     const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
-    const capacityLeft = capacityKg - capacityUsedKg;
+    const capacityLeft = Math.max(0, capacityKg - capacityUsedKg);
 
     const maxAmountStorable = multiplyByPrecision(capacityLeft / (configManager.getResourceWeightKg(resourceId) || 1));
 
