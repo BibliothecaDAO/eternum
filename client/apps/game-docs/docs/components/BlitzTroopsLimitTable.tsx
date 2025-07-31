@@ -18,7 +18,7 @@ export default function BlitzTroopsLimitTable() {
         </div>
         <div>
           <div style={stats.label}>Guard Resurrection:</div>
-          <div style={stats.value}>10 minutes</div>
+          <div style={stats.value}>15 minutes</div>
         </div>
       </div>
     </div>
