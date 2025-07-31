@@ -24,3 +24,6 @@
 
 # ignore json files
 **/*.json
+
+# ignore github actions
+.github/workflows/deploy-game-slot.yml
