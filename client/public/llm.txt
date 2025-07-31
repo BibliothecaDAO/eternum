@@ -1140,25 +1140,25 @@ This is useful to provide a better user experience by updating the UI immediatel
 
 ```ts
 private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-	const overrideId = uuid();
-	const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-	const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
-	const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
-	this.setup.components.Building.addOverride(overrideId, {
-		entity,
-		value: {
-		outer_col: outercol,
-		outer_row: outerrow,
-		inner_col: col,
-		inner_row: row,
-		category: "None",
-		produced_resource_type: 0,
-		bonus_percent: 0,
-		entity_id: 0,
-		outer_entity_id: 0,
-		},
-	});
-	return overrideId;
+  const overrideId = uuid();
+  const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+  const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+  const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+  this.setup.components.Building.addOverride(overrideId, {
+    entity,
+    value: {
+      outer_col: outercol,
+      outer_row: outerrow,
+      inner_col: col,
+      inner_row: row,
+      category: "None",
+      produced_resource_type: 0,
+      bonus_percent: 0,
+      entity_id: 0,
+      outer_entity_id: 0,
+    },
+  });
+  return overrideId;
 };
 ```
 
@@ -1250,7 +1250,7 @@ pub struct ExampleEvent {
     id: ID,
     #[key]
     event_id: EventType,
-	my_data_field: u8
+    my_data_field: u8
 }
 ```
 
@@ -5046,7 +5046,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🧱 Materials
 
-# Materials Overview
+## Materials Overview
 
 Materials encompass all transportable assets in Eternum, including:
 
