@@ -89,7 +89,7 @@ export function AppSidebar() {
               />
             </svg>
 
-            <TypeH2 className="p-1 text-lg">REALMS EMPIRE</TypeH2>
+            <TypeH2 className="p-3">Realms</TypeH2>
           </div>
         </a>
         <SidebarGroup>
