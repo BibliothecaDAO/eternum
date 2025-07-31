@@ -34,7 +34,7 @@ export default defineConfig({
     google: "Open Sans",
   },
 
-  title: "Eternum (Season 1 - Concluded)",
+  title: "Realms Docs",
   sidebar: [
     {
       text: "Overview",
