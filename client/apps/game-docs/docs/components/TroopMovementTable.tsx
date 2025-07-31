@@ -213,7 +213,7 @@ export function BlitzTroopMovementTable() {
             </div>
             <div style={section.sectionGrid}>
               <StatItem label="Stamina on Deployment" value={config.troop.stamina.staminaInitial} />
-              <StatItem label="Gain Per Eternum Day" value={30} />
+              <StatItem label="Gain Per Eternum Day" value={60} />
             </div>
           </div>
         </div>

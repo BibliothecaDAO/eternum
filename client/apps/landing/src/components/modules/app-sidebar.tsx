@@ -89,7 +89,7 @@ export function AppSidebar() {
               />
             </svg>
 
-            <TypeH2 className="p-1 text-lg">REALMS EMPIRE</TypeH2>
+            <TypeH2 className="p-3">Eternum</TypeH2>
           </div>
         </a>
         <SidebarGroup>
@@ -126,7 +126,7 @@ export function AppSidebar() {
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center">
               <a
-                href="https://twitter.com/realms_gg"
+                href="https://twitter.com/lootrealms"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleLinkClick}

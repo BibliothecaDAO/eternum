@@ -1,4 +1,4 @@
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-g.svg";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-w.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { CollectionCard } from "@/components/modules/collection-card";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
@@ -113,7 +113,7 @@ function Index() {
         </div>
         <div className="relative z-10 text-center px-4">
           <h1 className="text-gold fill-gold">
-            <EternumWordsLogo className="mx-auto w-60 fill-current stroke-current sm:w-72 lg:w-96 mb-16" />
+            <EternumWordsLogo className="mx-auto w-28 fill-current stroke-current sm:w-40 lg:w-60 mb-12" />
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
             Explore, conquer, and build your legacy in the eternal realm.

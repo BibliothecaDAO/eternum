@@ -61,7 +61,7 @@ To run the client locally while connecting to the Sepolia testnet, update your `
 
 ```
 VITE_PUBLIC_NODE_URL=https://api.cartridge.gg/x/starknet/sepolia
-VITE_PUBLIC_TORII=https://api.cartridge.gg/x/eternum-game-sepolia-3/torii
+VITE_PUBLIC_TORII=https://api.cartridge.gg/x/eternum-sepolia-2/torii
 ```
 
 This will allow you to interact with the Sepolia version of the game while developing locally.
