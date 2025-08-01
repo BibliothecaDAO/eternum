@@ -230,14 +230,15 @@ pub mod config_systems {
     use s1_eternum::models::agent::AgentConfig;
 
     use s1_eternum::models::config::{
-        AgentControllerConfig, BankConfig, BattleConfig, BlitzRegistrationConfig, BlitzSettlementConfigImpl,
-        BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig, HyperstructureConstructConfig,
-        HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWhitelistConfig, ResourceFactoryConfig, ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig,
-        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig,
-        StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-        TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig,
-        VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
+        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
+        HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
+        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
+        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
+        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -825,6 +826,10 @@ pub mod config_systems {
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_settlement_config"), BlitzSettlementConfigImpl::new(base_distance),
+            );
+
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("blitz_hypers_settlement_config"), BlitzHypersSettlementConfigImpl::new(),
             );
         }
 

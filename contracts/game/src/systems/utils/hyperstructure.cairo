@@ -147,6 +147,9 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         // increment hyperstructures created count
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         hyperstructure_globals.created_count += 1;
+        if hyperstructure_completed {
+            hyperstructure_globals.completed_count += 1;
+        }
         world.write_model(@hyperstructure_globals);
     }
 }

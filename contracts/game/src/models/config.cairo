@@ -26,6 +26,7 @@ pub struct WorldConfig {
     pub settlement_config: SettlementConfig,
     pub blitz_mode_on: bool,
     pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
@@ -482,6 +483,65 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     }
 }
 
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BlitzHypersSettlementConfig {
+    pub max_ring_count: u8,
+    pub current_ring_count: u8,
+    pub point: u8,
+    pub side: u32,
+}
+
+#[generate_trait]
+pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
+    fn new() -> BlitzHypersSettlementConfig {
+        BlitzHypersSettlementConfig { max_ring_count: 0, current_ring_count: 0, side: 5, point: 1 }
+    }
+
+    fn is_valid_ring(ref self: BlitzHypersSettlementConfig) -> bool {
+        if self.current_ring_count > self.max_ring_count {
+            return false;
+        }
+        return true;
+    }
+
+    fn next(ref self: BlitzHypersSettlementConfig) {
+        if self.point >= self.current_ring_count.into() {
+            self.point = 1;
+            if self.side == 5 {
+                self.side = 0;
+                self.current_ring_count += 1;
+            } else {
+                self.side += 1;
+            }
+        } else {
+            self.point += 1;
+        }
+    }
+
+    fn ring_tile_distance() -> u32 {
+        15
+    }
+
+    // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
+    fn next_coord(self: BlitzHypersSettlementConfig) -> Coord {
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(self.side);
+        return start_coord
+            .neighbor_after_distance(start_direction, Self::ring_tile_distance() * self.current_ring_count.into())
+            .neighbor_after_distance(triangle_direction, Self::ring_tile_distance() * (self.point.into() - 1));
+    }
+}
+
+
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BlitzRegistrationConfig {
     pub fee_amount: u256,
@@ -829,19 +889,4 @@ pub struct BlitzRealmPlayerRegister {
     #[key]
     pub player: ContractAddress,
     pub registered: bool,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzHyperstructureRegister {
-    #[key]
-    pub id: ID,
-    pub ring_count: u32,
-}
-
-#[generate_trait]
-pub impl BlitzHyperstructureRegisterImpl of BlitzHyperstructureRegisterTrait {
-    fn ID() -> ID {
-        WORLD_CONFIG_ID
-    }
 }
