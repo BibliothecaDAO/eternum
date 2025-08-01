@@ -74,6 +74,50 @@ const NoGameState = ({ registrationStartAt }: { registrationStartAt: number }) =
   );
 };
 
+// Make hyperstructures state component
+const MakeHyperstructuresState = ({
+  numHyperStructuresLeft,
+  onMakeHyperstructures,
+}: {
+  numHyperStructuresLeft: number;
+  onMakeHyperstructures: () => Promise<void>;
+}) => {
+
+  const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
+  const handleMakeHyperstructures = async () => {
+    setIsMakingHyperstructures(true);
+    try {
+      await onMakeHyperstructures();
+    } catch (error) {
+      console.error("Make hyperstructures failed:", error);
+    } finally {
+      setIsMakingHyperstructures(false);
+    }
+  };
+
+  return (
+    <>
+      {numHyperStructuresLeft > 0 && (
+        <Button onClick={handleMakeHyperstructures} disabled={isMakingHyperstructures} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse">
+          <div className="flex items-center justify-center">
+          {isMakingHyperstructures ? (
+            <div className="flex items-center justify-center">
+              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+              <span>...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <Sword className="w-5 h-5 mr-2 fill-brown" />
+              <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
+            </div>
+            )}
+          </div>
+        </Button>
+      )}
+    </>
+  );
+};
+
 // Registration state component
 const RegistrationState = ({
   registrationCount,
@@ -317,12 +361,12 @@ export const BlitzOnboarding = () => {
     setup: {
       account: { account },
       components,
-      systemCalls: { blitz_realm_register, blitz_realm_create },
+      systemCalls: { blitz_realm_register, blitz_realm_create, blitz_realm_make_hyperstructures },
     },
   } = useDojo();
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
-
+  const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
     getEntityIdFromKeys([BigInt(account.address)]),
@@ -385,6 +429,11 @@ export const BlitzOnboarding = () => {
     await blitz_realm_register({ owner: account.address, signer: account, name: addressNameFelt });
   };
 
+  const handleMakeHyperstructures = async () => {
+    if (!account?.address) return;
+    await blitz_realm_make_hyperstructures({ count: 8, signer: account });
+  };
+
   // Settlement handler
   const handleSettle = async () => {
     if (!account?.address) return;
@@ -409,6 +458,7 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
+      <MakeHyperstructuresState numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0} onMakeHyperstructures={handleMakeHyperstructures} />
       {gameState === GameState.NO_GAME && <NoGameState registrationStartAt={blitzConfig.registration_start_at} />}
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
