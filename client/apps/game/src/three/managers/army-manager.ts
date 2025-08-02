@@ -5,8 +5,7 @@ import { GUIManager } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { Position } from "@/types/position";
 import { COLORS } from "@/ui/features/settlement";
-import { getCharacterName } from "@/utils/agent";
-import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
+import { Biome, configManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   ContractAddress,
@@ -21,15 +20,10 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import {
-  createContentContainer,
-  createLabelBase,
-  createOwnerDisplayElement,
-  findShortestPath,
-  LABEL_STYLES,
-  TIERS_TO_STARS,
-} from "../utils/";
+import { applyLabelTransitions, createArmyLabel, updateArmyLabel, findShortestPath, LABEL_STYLES } from "../utils/";
+import { MapDataStore } from "./map-data-store";
 import { FXManager } from "./fx-manager";
+import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -54,6 +48,8 @@ export class ArmyManager {
   > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private mapDataStore: MapDataStore;
+  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
 
   constructor(
     scene: THREE.Scene,
@@ -108,6 +104,9 @@ export class ArmyManager {
               TroopTier.T1,
               false,
               false,
+              10,
+              10,
+              100,
             );
           },
         },
@@ -131,6 +130,10 @@ export class ArmyManager {
       )
       .name("Delete army");
     deleteArmyFolder.close();
+
+    // Initialize MapDataStore as instance property
+    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
+    this.mapDataStore.onRefresh(this.onMapDataRefresh);
 
     useAccountStore.subscribe(() => {
       this.recheckOwnership();
@@ -175,7 +178,19 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent, update.isAlly);
+      this.addArmy(
+        entityId,
+        newPosition,
+        owner,
+        order,
+        troopType,
+        troopTier,
+        update.isDaydreamsAgent,
+        update.isAlly,
+        update.troopCount,
+        update.currentStamina,
+        update.maxStamina,
+      );
     }
     return false;
   }
@@ -282,6 +297,9 @@ export class ArmyManager {
         category: army.category,
         tier: army.tier,
         isDaydreamsAgent: army.isDaydreamsAgent,
+        troopCount: army.troopCount,
+        currentStamina: army.currentStamina,
+        maxStamina: army.maxStamina,
       }));
 
     return visibleArmies;
@@ -296,6 +314,9 @@ export class ArmyManager {
     tier: TroopTier,
     isDaydreamsAgent: boolean,
     isAlly: boolean,
+    troopCount: number,
+    currentStamina: number,
+    maxStamina: number,
   ) {
     if (this.armies.has(entityId)) return;
 
@@ -331,6 +352,10 @@ export class ArmyManager {
       category,
       tier,
       isDaydreamsAgent,
+      // Enhanced data
+      troopCount,
+      currentStamina,
+      maxStamina,
     });
 
     // Apply any pending relic effects for this army
@@ -497,52 +522,8 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
-    // Create base label using shared utility
-    const labelDiv = createLabelBase({
-      isMine: army.isMine,
-      isAlly: army.isAlly,
-      isDaydreamsAgent: army.isDaydreamsAgent,
-      // No need to specify textColor - it will use LABEL_STYLES from our utility
-    });
-
-    // Prevent right click
-    labelDiv.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    // Add army icon
-    const img = document.createElement("img");
-    img.src = army.isDaydreamsAgent
-      ? "/images/logos/daydreams.png"
-      : `/images/labels/${army.isMine ? "army" : army.isAlly ? "allies_army" : "enemy_army"}.png`;
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    labelDiv.appendChild(img);
-
-    // Create text container with transition using shared utility
-    const textContainer = createContentContainer(this.currentCameraView);
-
-    // Add owner information using shared component
-    const line1 = createOwnerDisplayElement({
-      owner: army.owner,
-      isMine: army.isMine,
-      isAlly: army.isAlly,
-      cameraView: this.currentCameraView,
-      color: army.color, // Use the color directly from the army data
-      isDaydreamsAgent: army.isDaydreamsAgent,
-    });
-
-    // Add troop type information with consistent styling
-    const line2 = document.createElement("strong");
-    if (army.isDaydreamsAgent) {
-      line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
-    } else {
-      line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
-    }
-
-    textContainer.appendChild(line1);
-    textContainer.appendChild(line2);
-    labelDiv.appendChild(textContainer);
+    // Create label using centralized function
+    const labelDiv = createArmyLabel(army, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -589,6 +570,9 @@ export class ArmyManager {
     this.visibleArmies.forEach((army) => {
       this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
     });
+
+    // Apply label transitions using the centralized function
+    applyLabelTransitions(this.entityIdLabels, view);
   };
 
   public hasArmy(entityId: ID): boolean {
@@ -626,11 +610,59 @@ export class ArmyManager {
     });
   }
 
+  /**
+   * Handle MapDataStore refresh by updating all army data and visible labels
+   */
+  private handleMapDataRefresh(): void {
+    console.log("ArmyManager: Handling map data refresh, updating cached data for", this.armies.size, "armies");
+    
+    // Update ALL cached army data, not just visible ones
+    this.armies.forEach((army, entityId) => {
+      // Get fresh army data from MapDataStore
+      const armyMapData = this.mapDataStore.getArmyById(entityId);
+      if (!armyMapData) return;
+      
+      // Update the army data with fresh stamina and count
+      const updatedArmy: ArmyData = {
+        ...army,
+        troopCount: armyMapData.count,
+        currentStamina: Number(armyMapData.stamina.amount),
+        maxStamina: 100, // TODO: Calculate proper max stamina based on army data
+      };
+      
+      // Update the army in our local cache
+      this.armies.set(entityId, updatedArmy);
+    });
+    
+    console.log("ArmyManager: Updated cached data, now updating", this.entityIdLabels.size, "visible labels");
+    
+    // Update visible army labels with the refreshed cached data
+    this.entityIdLabels.forEach((label, entityId) => {
+      const army = this.armies.get(entityId);
+      if (!army) return;
+      
+      // Update the label with fresh data
+      this.updateArmyLabelData(entityId, army, label);
+    });
+  }
+
+  /**
+   * Update an army label with fresh data from MapDataStore
+   */
+  private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
+    // Update the existing label content in-place
+    updateArmyLabel(existingLabel.element, army);
+  }
+
   public destroy() {
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+
+    // Clean up MapDataStore refresh callback
+    this.mapDataStore.offRefresh(this.onMapDataRefresh);
+
     // Clean up relic effects
     for (const [entityId] of this.armyRelicEffects) {
       this.updateRelicEffects(entityId, []);

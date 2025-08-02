@@ -1,6 +1,7 @@
 import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import {
+  ArmyMapDataRaw,
   ArmyRelicsData,
   BattleLogEvent,
   ChestInfo,
@@ -19,6 +20,7 @@ import {
   SeasonEnded,
   StructureDetails,
   StructureLocation,
+  StructureMapDataRaw,
   StructureRelicsData,
   SwapEventResponse,
   Tile,
@@ -476,5 +478,23 @@ export class SqlApi {
         armies: [],
       };
     }
+  }
+
+  /**
+   * Fetch all structures for map display from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchAllStructuresMapData(): Promise<StructureMapDataRaw[]> {
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_STRUCTURES_MAP_DATA);
+    return await fetchWithErrorHandling<StructureMapDataRaw>(url, "Failed to fetch all structures map data");
+  }
+
+  /**
+   * Fetch all armies for map display from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchAllArmiesMapData(): Promise<ArmyMapDataRaw[]> {
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA);
+    return await fetchWithErrorHandling<ArmyMapDataRaw>(url, "Failed to fetch all armies map data");
   }
 }

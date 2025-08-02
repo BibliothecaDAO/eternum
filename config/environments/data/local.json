@@ -799,7 +799,7 @@
   },
   "settlement": {
     "center": 2147483646,
-    "base_distance": 6,
+    "base_distance": 8,
     "subsequent_distance": 10
   },
   "buildings": {
@@ -3950,8 +3950,8 @@
           ]
         },
         {
-          "address": "0x1ce0ee4ebbc934387bc1c105f8a743ae539774b8e36f07e6e47b811da1cd727",
-          "class_hash": "0x5f66d6b949c3d77d97f938065d79d6399de6758b9b0ee3341c6edd40d44cd9",
+          "address": "0x6ce004c8151d62ed9bfd2461aed064ba3334da7b967dabd47cbade799f87913",
+          "class_hash": "0x4f64b969ffcae92e7abcc7eb33c9314dc1c83c740dc805b02a6e065e9e6eb48",
           "abi": [
             {
               "type": "impl",
