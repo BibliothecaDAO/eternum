@@ -9,6 +9,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
+import type { ActiveProduction, GuardArmy } from "../managers/map-data-store";
 import { StructureProgress } from "./common";
 
 export type ArmySystemUpdate = {
@@ -20,6 +21,10 @@ export type ArmySystemUpdate = {
   owner: { address: bigint; ownerName: string; guildName: string };
   isDaydreamsAgent: boolean;
   isAlly: boolean;
+  // Enhanced data from MapDataStore
+  troopCount: number;
+  currentStamina: number;
+  maxStamina: number;
 };
 
 export type StructureSystemUpdate = {
@@ -32,6 +37,9 @@ export type StructureSystemUpdate = {
   isAlly: boolean;
   owner: { address: bigint; ownerName: string; guildName: string };
   hasWonder: boolean;
+  // Enhanced data from MapDataStore
+  guardArmies?: GuardArmy[];
+  activeProductions?: ActiveProduction[];
 };
 
 export type TileSystemUpdate = {

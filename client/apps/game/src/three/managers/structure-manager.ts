@@ -5,15 +5,21 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz } from "@/ui/constants";
-import { getStructureTypeName } from "@bibliothecadao/eternum";
-import { getLevelName, ID, RelicEffect, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createContentContainer, createLabelBase, createOwnerDisplayElement, transitionManager } from "../utils/";
+import {
+  createStructureLabel,
+  updateStructureLabel,
+  applyLabelTransitions,
+  transitionManager,
+} from "../utils/";
+import { MapDataStore } from "./map-data-store";
 import { FXManager } from "./fx-manager";
+import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -24,84 +30,7 @@ export enum RelicSource {
   Production = "production",
 }
 
-const ICONS = {
-  ARMY: "/images/labels/enemy_army.png",
-  MY_ARMY: "/images/labels/army.png",
-  MY_REALM: "/images/labels/realm.png",
-  MY_REALM_WONDER: "/images/labels/realm.png",
-  REALM_WONDER: "/images/labels/realm.png",
-  STRUCTURES: {
-    [StructureType.Village]: "/images/labels/enemy_village.png",
-    [StructureType.Realm]: "/images/labels/enemy_realm.png",
-    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
-    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
-  } as Record<StructureType, string>,
-  MY_STRUCTURES: {
-    [StructureType.Village]: "/images/labels/village.png",
-    [StructureType.Realm]: "/images/labels/realm.png",
-  } as Record<StructureType, string>,
-  ALLY_STRUCTURES: {
-    [StructureType.Village]: "/images/labels/allies_village.png",
-    [StructureType.Realm]: "/images/labels/allies_realm.png",
-  } as Record<StructureType, string>,
-};
 
-// Create structure info label
-const createStructureInfoElement = (structure: StructureInfo, cameraView: CameraView, isBlitz: boolean) => {
-  // Create label div using the shared base
-  const labelDiv = createLabelBase({
-    isMine: structure.isMine,
-    isAlly: structure.isAlly,
-  });
-
-  // Create icon container
-  const iconContainer = document.createElement("div");
-  iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
-
-  // Select appropriate icon
-  let iconPath = ICONS.STRUCTURES[structure.structureType];
-  if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
-    iconPath = structure.isMine
-      ? ICONS.MY_STRUCTURES[structure.structureType]
-      : structure.isAlly
-        ? ICONS.ALLY_STRUCTURES[structure.structureType]
-        : ICONS.STRUCTURES[structure.structureType];
-  }
-
-  // Create and set icon image
-  const iconImg = document.createElement("img");
-  iconImg.src = iconPath;
-  iconImg.classList.add("w-full", "h-full", "object-contain");
-  iconContainer.appendChild(iconImg);
-  labelDiv.appendChild(iconContainer);
-
-  // Create content container with transition using shared utility
-  const contentContainer = createContentContainer(cameraView);
-
-  // Add owner display using shared component
-  const ownerText = createOwnerDisplayElement({
-    owner: structure.owner,
-    isMine: structure.isMine,
-    isAlly: structure.isAlly,
-    cameraView,
-  });
-  contentContainer.appendChild(ownerText);
-
-  // Add structure type and level
-  const typeText = document.createElement("strong");
-  typeText.textContent = `${getStructureTypeName(structure.structureType, isBlitz)} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-    structure.structureType === StructureType.Hyperstructure
-      ? structure.initialized
-        ? `(Stage ${structure.stage + 1})`
-        : "Foundation"
-      : ""
-  }`;
-  contentContainer.appendChild(typeText);
-
-  labelDiv.appendChild(contentContainer);
-  return labelDiv;
-};
 
 export class StructureManager {
   private scene: THREE.Scene;
@@ -123,8 +52,10 @@ export class StructureManager {
     ID,
     Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
   > = new Map();
+  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private mapDataStore: MapDataStore;
   private isBlitz: boolean;
 
   constructor(
@@ -152,6 +83,10 @@ export class StructureManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
+    // Initialize MapDataStore as instance property
+    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
+    this.mapDataStore.onRefresh(this.onMapDataRefresh);
+
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
       // Update labels when ownership changes
@@ -160,6 +95,7 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    console.log("StructureManager handleCameraViewChange:", this.currentCameraView, "->", view);
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
@@ -174,50 +110,8 @@ export class StructureManager {
       transitionManager.setMediumViewTransition();
     }
 
-    // Update all existing labels to reflect the new view
-    this.entityIdLabels.forEach((label, entityId) => {
-      if (label.element) {
-        const contentContainer = label.element.querySelector(".flex.flex-col");
-        if (contentContainer) {
-          // Get or create a container ID for tracking timeouts
-          let containerId = (contentContainer as HTMLElement).dataset.containerId;
-          if (!containerId) {
-            containerId = `structure_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-            (contentContainer as HTMLElement).dataset.containerId = containerId;
-          }
-
-          if (view === CameraView.Far) {
-            // For Far view, always collapse immediately
-            contentContainer.classList.add("max-w-0", "ml-0");
-            contentContainer.classList.remove("max-w-[250px]", "ml-2");
-            transitionManager.clearTimeout(containerId);
-          } else if (view === CameraView.Close) {
-            // For Close view, always expand and never collapse
-            contentContainer.classList.remove("max-w-0", "ml-0");
-            contentContainer.classList.add("max-w-[250px]", "ml-2");
-            transitionManager.clearTimeout(containerId);
-          } else if (view === CameraView.Medium) {
-            // For Medium view, expand initially
-            contentContainer.classList.remove("max-w-0", "ml-0");
-            contentContainer.classList.add("max-w-[250px]", "ml-2");
-
-            // And set up timeout to collapse after 2 seconds
-            transitionManager.setMediumViewTransition(containerId);
-            transitionManager.setLabelTimeout(
-              () => {
-                if (contentContainer.isConnected) {
-                  contentContainer.classList.remove("max-w-[250px]", "ml-2");
-                  contentContainer.classList.add("max-w-0", "ml-0");
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          }
-        }
-      }
-    });
+    // Use the centralized label transition function
+    applyLabelTransitions(this.entityIdLabels, view);
   };
 
   public destroy() {
@@ -225,6 +119,10 @@ export class StructureManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+
+    // Clean up MapDataStore refresh callback
+    this.mapDataStore.offRefresh(this.onMapDataRefresh);
+
     // Clean up all relic effects
     this.structureRelicEffects.forEach((entityEffectsMap, entityId) => {
       // Clear effects for all sources
@@ -322,6 +220,8 @@ export class StructureManager {
       },
       hasWonder,
       update.isAlly,
+      update.guardArmies,
+      update.activeProductions,
     );
 
     // Clear existing relic effects for this specific structure before re-rendering
@@ -503,7 +403,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    const labelDiv = createStructureInfoElement(structure, this.currentCameraView, this.isBlitz);
+    const labelDiv = createStructureLabel(structure, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -660,6 +560,45 @@ export class StructureManager {
     const effects = entityEffectsMap.get(relicSource);
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
+
+  /**
+   * Handle MapDataStore refresh by updating all structure data and visible labels
+   */
+  private handleMapDataRefresh(): void {
+    console.log("StructureManager: Handling map data refresh, updating cached structure data");
+    
+    // Update ALL cached structure data, not just visible ones
+    this.structures.getStructures().forEach((structureMap, structureType) => {
+      structureMap.forEach((structure, entityId) => {
+        // Get fresh structure data from MapDataStore
+        const structureMapData = this.mapDataStore.getStructureById(entityId);
+        if (!structureMapData) return;
+        
+        // Update the structure with fresh guard armies and production info
+        structure.guardArmies = structureMapData.guardArmies;
+        structure.activeProductions = structureMapData.activeProductions;
+      });
+    });
+    
+    console.log("StructureManager: Updated cached data, now updating", this.entityIdLabels.size, "visible labels");
+    
+    // Update visible structure labels with the refreshed cached data
+    this.entityIdLabels.forEach((label, entityId) => {
+      const structure = this.structures.getStructureByEntityId(entityId);
+      if (!structure) return;
+      
+      // Update the label with fresh data
+      this.updateStructureLabelData(entityId, structure, label);
+    });
+  }
+
+  /**
+   * Update a structure label with fresh data from MapDataStore
+   */
+  private updateStructureLabelData(entityId: ID, structure: any, existingLabel: CSS2DObject): void {
+    // Update the existing label content in-place
+    updateStructureLabel(existingLabel.element, structure);
+  }
 }
 
 class Structures {
@@ -675,6 +614,8 @@ class Structures {
     owner: { address: bigint; ownerName: string; guildName: string },
     hasWonder: boolean,
     isAlly: boolean,
+    guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
+    activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -690,6 +631,9 @@ class Structures {
       structureType,
       hasWonder,
       isAlly,
+      // Enhanced data
+      guardArmies,
+      activeProductions,
     });
   }
 

@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { HexPosition, ID, QuestType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, HexPosition, ID, QuestType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export enum SceneName {
   WorldMap = "map",
@@ -29,6 +29,9 @@ export interface StructureInfo {
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
+  // Enhanced data from MapDataStore
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
 }
 
 export interface ArmyData {
@@ -43,6 +46,10 @@ export interface ArmyData {
   category: TroopType;
   tier: TroopTier;
   isDaydreamsAgent: boolean;
+  // Enhanced data from MapDataStore
+  troopCount: number;
+  currentStamina: number;
+  maxStamina: number;
 }
 
 export interface QuestData {
