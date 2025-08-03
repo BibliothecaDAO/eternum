@@ -657,8 +657,6 @@ export const createProductionDisplay = (
     return container;
   }
 
-  console.log({ activeProductions });
-
   activeProductions.forEach((production, index) => {
     const productionDiv = document.createElement("div");
     productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
@@ -1018,7 +1016,7 @@ export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLEle
     textContainer.appendChild(staminaInfo);
   }
 
-  labelDiv.appendChild((textContainer as any).wrapper || textContainer);
+  labelDiv.appendChild(textContainer);
 
   return labelDiv;
 };
@@ -1144,7 +1142,6 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
   }
-
   if (progressFill) {
     const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
     progressFill.style.width = `${percentage}%`;
