@@ -69,6 +69,7 @@ export enum BuildingType {
   ResourcePaladinT3 = 36,
   ResourceWheat = 37,
   ResourceFish = 38,
+  ResourceEssence = 39,
 }
 
 export const BuildingTypeToString: Record<BuildingType, string> = {
@@ -111,6 +112,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourcePaladinT3]: "Paladin T3 Resource",
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceFish]: "Fishing Village",
+  [BuildingType.ResourceEssence]: "Essence Mine",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {

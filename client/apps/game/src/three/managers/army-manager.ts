@@ -18,12 +18,12 @@ import {
 } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { applyLabelTransitions, createArmyLabel, updateArmyLabel, findShortestPath, LABEL_STYLES } from "../utils/";
-import { MapDataStore } from "./map-data-store";
+import { applyLabelTransitions, createArmyLabel, findShortestPath, LABEL_STYLES, updateArmyLabel } from "../utils/";
 import { FXManager } from "./fx-manager";
-import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
+import { MapDataStore } from "./map-data-store";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -566,11 +566,6 @@ export class ArmyManager {
     // Update the ArmyModel's camera view
     this.armyModel.setCurrentCameraView(view);
 
-    // Update all existing labels to reflect the new view
-    this.visibleArmies.forEach((army) => {
-      this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
-    });
-
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);
   };
@@ -615,13 +610,13 @@ export class ArmyManager {
    */
   private handleMapDataRefresh(): void {
     console.log("ArmyManager: Handling map data refresh, updating cached data for", this.armies.size, "armies");
-    
+
     // Update ALL cached army data, not just visible ones
     this.armies.forEach((army, entityId) => {
       // Get fresh army data from MapDataStore
       const armyMapData = this.mapDataStore.getArmyById(entityId);
       if (!armyMapData) return;
-      
+
       // Update the army data with fresh stamina and count
       const updatedArmy: ArmyData = {
         ...army,
@@ -629,18 +624,18 @@ export class ArmyManager {
         currentStamina: Number(armyMapData.stamina.amount),
         maxStamina: 100, // TODO: Calculate proper max stamina based on army data
       };
-      
+
       // Update the army in our local cache
       this.armies.set(entityId, updatedArmy);
     });
-    
+
     console.log("ArmyManager: Updated cached data, now updating", this.entityIdLabels.size, "visible labels");
-    
+
     // Update visible army labels with the refreshed cached data
     this.entityIdLabels.forEach((label, entityId) => {
       const army = this.armies.get(entityId);
       if (!army) return;
-      
+
       // Update the label with fresh data
       this.updateArmyLabelData(entityId, army, label);
     });
