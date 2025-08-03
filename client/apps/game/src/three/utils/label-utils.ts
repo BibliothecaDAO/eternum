@@ -1016,7 +1016,7 @@ export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLEle
     textContainer.appendChild(staminaInfo);
   }
 
-  labelDiv.appendChild(textContainer);
+  labelDiv.appendChild((textContainer as any).wrapper || textContainer);
 
   return labelDiv;
 };
