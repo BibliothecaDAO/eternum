@@ -8,11 +8,10 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { ChestData, ChestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createContentContainer, createLabelBase, transitionManager } from "../utils/";
+import { applyLabelTransitions, createChestLabel, transitionManager } from "../utils/";
 import { gltfLoader } from "../utils/utils";
 
 const MAX_INSTANCES = 1000;
-const CHEST_ICON_PATH = "/images/labels/chest.png";
 
 export class ChestManager {
   private scene: THREE.Scene;
@@ -70,9 +69,7 @@ export class ChestManager {
     }
 
     // Update all existing labels to reflect the new view
-    this.visibleChests.forEach((chest) => {
-      this.updateLabelVisibility(chest.entityId, view === CameraView.Far);
-    });
+    applyLabelTransitions(this.entityIdLabels, view);
   };
 
   public destroy() {
@@ -232,32 +229,8 @@ export class ChestManager {
   }
 
   private addEntityIdLabel(chest: ChestData, position: THREE.Vector3) {
-    // Create label div using the shared base
-    const labelDiv = createLabelBase({
-      isMine: false, // Chests don't have ownership
-      textColor: "text-yellow-300", // Use gold color for chests
-    });
-
-    // Prevent right click
-    labelDiv.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    const img = document.createElement("img");
-    img.src = CHEST_ICON_PATH;
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    labelDiv.appendChild(img);
-
-    // Create text container with transition using shared utility
-    const textContainer = createContentContainer(this.currentCameraView);
-
-    const line1 = document.createElement("span");
-    line1.textContent = `Chest`;
-    line1.style.color = "inherit";
-
-    textContainer.appendChild(line1);
-    labelDiv.appendChild(textContainer);
+    // Use centralized chest label creation
+    const labelDiv = createChestLabel(chest, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -294,57 +267,6 @@ export class ChestManager {
     });
   }
 
-  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
-    const labelData = this.entityIdLabels.get(entityId);
-    if (labelData?.element) {
-      const textContainer = labelData.element.querySelector(".flex.flex-col");
-      if (textContainer) {
-        // Get the container's unique ID or generate one if it doesn't exist
-        let containerId = (textContainer as HTMLElement).dataset.containerId;
-        if (!containerId) {
-          containerId = `chest_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (textContainer as HTMLElement).dataset.containerId = containerId;
-        }
-
-        if (isCompact) {
-          // For Far view (isCompact = true), always collapse immediately
-          textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[250px]", "ml-2");
-          // Clear any existing timeouts
-          transitionManager.clearTimeout(containerId);
-        } else {
-          // For Medium and Close views, expand immediately
-          textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[250px]", "ml-2");
-
-          // If this is Medium view, add timeout to switch back to compact
-          if (this.currentCameraView === CameraView.Medium) {
-            // Store the current timestamp
-            transitionManager.setMediumViewTransition(containerId);
-
-            // Use the managed timeout
-            transitionManager.setLabelTimeout(
-              () => {
-                // Only apply if the element is still connected to the DOM
-                if (textContainer.isConnected) {
-                  textContainer.classList.remove("max-w-[250px]", "ml-2");
-                  textContainer.classList.add("max-w-0", "ml-0");
-
-                  // Clear the transition state
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          } else if (this.currentCameraView === CameraView.Close) {
-            // For Close view, ensure we cancel any existing timeouts
-            transitionManager.clearTimeout(containerId);
-          }
-        }
-      }
-    }
-  }
 
   public async removeChest(entityId: ID) {
     if (!this.chests.getChest(entityId)) {

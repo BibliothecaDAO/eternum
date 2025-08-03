@@ -566,11 +566,6 @@ export class ArmyManager {
     // Update the ArmyModel's camera view
     this.armyModel.setCurrentCameraView(view);
 
-    // Update all existing labels to reflect the new view
-    this.visibleArmies.forEach((army) => {
-      this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
-    });
-
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);
   };

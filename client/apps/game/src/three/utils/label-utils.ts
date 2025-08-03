@@ -334,52 +334,37 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions) => {
 
 // Create common content container with proper transitions for different camera views
 export const createContentContainer = (cameraView: CameraView) => {
+  // Create wrapper for width transition
+  const wrapperContainer = document.createElement("div");
+  wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");
+
+  // Create inner container for content
   const contentContainer = document.createElement("div");
+  contentContainer.classList.add("flex", "flex-col", "gap-y-1", "w-max");
 
   // Add empty div with w-2 for spacing
   const spacerDiv = document.createElement("div");
   spacerDiv.classList.add("w-2");
   contentContainer.appendChild(spacerDiv);
 
-  contentContainer.classList.add(
-    "flex",
-    "flex-col",
-    "transition-all", // Changed from transition-width to transition-all
-    "duration-700",
-    "gap-y-1",
-    "ease-in-out",
-    "overflow-hidden",
-  );
-
   // Generate a unique ID for this container to manage its transitions
   const containerId = `container_${Math.random().toString(36).substring(2, 9)}`;
-  (contentContainer as HTMLElement).dataset.containerId = containerId;
+  (wrapperContainer as HTMLElement).dataset.containerId = containerId;
 
   // Check if we have an active medium view transition
   const mediumViewExpanded = transitionDB.getMediumViewExpanded(containerId);
 
-  const contentContainerStyle = [
-    "max-w-[1000px]",
-    "ml-2",
-    "whitespace-normal",
-    "break-words",
-    "max-h-none",
-    "opacity-100",
-  ];
-  const contentContainerStyleCollapsed = [
-    "max-w-0",
-    "ml-0",
-    "whitespace-nowrap",
-    "break-words",
-    "max-h-0",
-    "opacity-0",
-  ];
+  const wrapperStyle = ["max-w-[1000px]", "ml-2", "opacity-100"];
+  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+
+  // Put content inside wrapper
+  wrapperContainer.appendChild(contentContainer);
 
   // Set initial state based on camera view
   if (cameraView === CameraView.Far || (cameraView === CameraView.Medium && !mediumViewExpanded)) {
-    contentContainer.classList.add(...contentContainerStyleCollapsed);
+    wrapperContainer.classList.add(...wrapperStyleCollapsed);
   } else {
-    contentContainer.classList.add(...contentContainerStyle);
+    wrapperContainer.classList.add(...wrapperStyle);
 
     // For Medium view, add a timeout to revert to Far view style after 2 seconds
     if (cameraView === CameraView.Medium) {
@@ -390,9 +375,9 @@ export const createContentContainer = (cameraView: CameraView) => {
         containerId,
         () => {
           // Only apply the transition if the element is still in the DOM
-          if (contentContainer.isConnected) {
-            contentContainer.classList.remove(...contentContainerStyle);
-            contentContainer.classList.add(...contentContainerStyleCollapsed);
+          if (wrapperContainer.isConnected) {
+            wrapperContainer.classList.remove(...wrapperStyle);
+            wrapperContainer.classList.add(...wrapperStyleCollapsed);
             // Clear the timestamp when the transition is complete
             transitionDB.clearMediumViewTransition(containerId);
           }
@@ -402,6 +387,8 @@ export const createContentContainer = (cameraView: CameraView) => {
     }
   }
 
+  // Return contentContainer so the rest of the code can append children to it
+  (contentContainer as any).wrapper = wrapperContainer; // Store reference to wrapper
   return contentContainer;
 };
 
@@ -670,6 +657,8 @@ export const createProductionDisplay = (
     return container;
   }
 
+  console.log({ activeProductions });
+
   activeProductions.forEach((production, index) => {
     const productionDiv = document.createElement("div");
     productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
@@ -725,48 +714,49 @@ export const transitionManager = {
 
 // Centralized camera view transition handling for existing labels
 export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: CameraView) => {
-  const styleExtended = ["max-w-[1000px]", "ml-2", "whitespace-normal", "break-words", "max-h-none", "opacity-100"];
-  const styleCollapsed = ["max-w-0", "ml-0", "whitespace-nowrap", "break-words", "max-h-0", "opacity-0"];
+  const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
+  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
 
   labelsMap.forEach((label, entityId) => {
     if (label.element) {
-      const contentContainer = label.element.querySelector(".flex.flex-col");
-      if (contentContainer) {
+      // Look for the wrapper div with transition classes
+      const wrapperContainer = label.element.querySelector(".transition-all.duration-700");
+      if (wrapperContainer) {
         // Get or create a container ID for tracking timeouts
-        let containerId = (contentContainer as HTMLElement).dataset.containerId;
+        let containerId = (wrapperContainer as HTMLElement).dataset.containerId;
         if (!containerId) {
           containerId = `structure_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (contentContainer as HTMLElement).dataset.containerId = containerId;
+          (wrapperContainer as HTMLElement).dataset.containerId = containerId;
         }
 
         console.log("applyLabelTransitions - cameraView:", cameraView, "entityId:", entityId);
 
         // Remove all existing styles first
-        contentContainer.classList.remove(...styleExtended, ...styleCollapsed);
+        wrapperContainer.classList.remove(...styleExtended, ...styleCollapsed);
 
         if (cameraView === CameraView.Far) {
           // For Far view, always collapse immediately
           console.log("applyLabelTransitions - collapsing for Far view");
-          contentContainer.classList.add(...styleCollapsed);
+          wrapperContainer.classList.add(...styleCollapsed);
           transitionManager.clearTimeout(containerId);
         } else if (cameraView === CameraView.Close) {
           // For Close view, always expand and never collapse
           console.log("applyLabelTransitions - expanding for Close view");
-          contentContainer.classList.add(...styleExtended);
+          wrapperContainer.classList.add(...styleExtended);
           transitionManager.clearTimeout(containerId);
         } else if (cameraView === CameraView.Medium) {
           // For Medium view, expand initially
           console.log("applyLabelTransitions - expanding for Medium view with timeout");
-          contentContainer.classList.add(...styleExtended);
+          wrapperContainer.classList.add(...styleExtended);
 
           // And set up timeout to collapse after 2 seconds
           transitionManager.setMediumViewTransition(containerId);
           transitionManager.setLabelTimeout(
             () => {
-              if (contentContainer.isConnected) {
+              if (wrapperContainer.isConnected) {
                 console.log("applyLabelTransitions - Medium timeout: collapsing");
-                contentContainer.classList.remove(...styleExtended);
-                contentContainer.classList.add(...styleCollapsed);
+                wrapperContainer.classList.remove(...styleExtended);
+                wrapperContainer.classList.add(...styleCollapsed);
                 transitionManager.clearMediumViewTransition(containerId);
               }
             },
@@ -888,7 +878,7 @@ export const createStructureLabel = (structure: StructureInfo, cameraView: Camer
     contentContainer.appendChild(productionsDisplay);
   }
 
-  labelDiv.appendChild(contentContainer);
+  labelDiv.appendChild((contentContainer as any).wrapper || contentContainer);
   return labelDiv;
 };
 
@@ -930,6 +920,7 @@ const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceKnightT1]: "Knight",
   [BuildingType.ResourceKnightT2]: "Knight",
   [BuildingType.ResourceKnightT3]: "Knight",
+  [BuildingType.ResourceEssence]: "Essence",
 };
 
 // Army label creation functionality moved from army-manager.ts
@@ -1027,7 +1018,7 @@ export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLEle
     textContainer.appendChild(staminaInfo);
   }
 
-  labelDiv.appendChild(textContainer);
+  labelDiv.appendChild((textContainer as any).wrapper || textContainer);
 
   return labelDiv;
 };
@@ -1059,9 +1050,9 @@ export const updateArmyLabel = (labelElement: HTMLElement, army: ArmyInfo): void
 
   // Update simple stamina display if stamina bar doesn't exist but stamina info does
   if (!staminaBar && army.currentStamina !== undefined) {
-    const staminaInfo = labelElement.querySelector('.text-yellow-400')?.parentElement;
+    const staminaInfo = labelElement.querySelector(".text-yellow-400")?.parentElement;
     if (staminaInfo) {
-      const staminaText = staminaInfo.querySelector('.font-mono') as HTMLElement;
+      const staminaText = staminaInfo.querySelector(".font-mono") as HTMLElement;
       if (staminaText) {
         staminaText.textContent = `${army.currentStamina}`;
       }
@@ -1084,9 +1075,9 @@ export const updateStructureLabel = (labelElement: HTMLElement, structure: Struc
   if (guardDisplay && structure.guardArmies) {
     // Recreate the entire guard display to ensure proper layout
     const newGuardDisplay = createGuardArmyDisplay(structure.guardArmies);
-    
+
     // Replace the content while preserving the container
-    guardDisplay.innerHTML = '';
+    guardDisplay.innerHTML = "";
     while (newGuardDisplay.firstChild) {
       guardDisplay.appendChild(newGuardDisplay.firstChild);
     }
@@ -1097,26 +1088,63 @@ export const updateStructureLabel = (labelElement: HTMLElement, structure: Struc
   if (productionsDisplay && structure.activeProductions) {
     // Recreate the entire productions display to ensure proper layout
     const newProductionsDisplay = createProductionDisplay(structure.activeProductions);
-    
+
     // Replace the content while preserving the container
-    productionsDisplay.innerHTML = '';
+    productionsDisplay.innerHTML = "";
     while (newProductionsDisplay.firstChild) {
       productionsDisplay.appendChild(newProductionsDisplay.firstChild);
     }
   }
 };
 
+// Chest label creation functionality
+interface ChestInfo {
+  entityId: number;
+  hexCoords: Position;
+}
+
+const CHEST_ICON_PATH = "/images/labels/chest.png";
+
+export const createChestLabel = (chest: ChestInfo, cameraView: CameraView): HTMLElement => {
+  // Create label div using the shared base
+  const labelDiv = createLabelBase({
+    isMine: false, // Chests don't have ownership
+    textColor: "#fbbf24", // Use amber-400 color for chests
+  });
+
+  // Add chest icon
+  const img = document.createElement("img");
+  img.src = CHEST_ICON_PATH;
+  img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+  img.setAttribute("data-component", "chest-icon");
+  labelDiv.appendChild(img);
+
+  // Create content container with transition using shared utility
+  const contentContainer = createContentContainer(cameraView);
+
+  // Add chest label
+  const line1 = document.createElement("span");
+  line1.textContent = `Chest`;
+  line1.style.color = "inherit";
+
+  contentContainer.appendChild(line1);
+
+  labelDiv.appendChild((contentContainer as any).wrapper || contentContainer);
+
+  return labelDiv;
+};
+
 /**
  * Update an existing stamina bar with new values
  */
 export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
-  const progressFill = staminaBarElement.querySelector('div > div') as HTMLElement; // The progress fill element
-  const textElement = staminaBarElement.querySelector('span:last-child') as HTMLElement; // The text element
+  const progressFill = staminaBarElement.querySelector("div > div") as HTMLElement; // The progress fill element
+  const textElement = staminaBarElement.querySelector("span:last-child") as HTMLElement; // The text element
 
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
   }
-  
+
   if (progressFill) {
     const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
     progressFill.style.width = `${percentage}%`;
