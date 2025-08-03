@@ -720,6 +720,7 @@ export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: Came
       // Look for the wrapper div with transition classes
       const wrapperContainer = label.element.querySelector(".transition-all.duration-700");
       if (wrapperContainer) {
+        console.log("applyLabelTransitions found wrapper for entityId:", entityId, "classes:", wrapperContainer.className);
         // Get or create a container ID for tracking timeouts
         let containerId = (wrapperContainer as HTMLElement).dataset.containerId;
         if (!containerId) {
@@ -762,6 +763,8 @@ export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: Came
             containerId,
           );
         }
+      } else {
+        console.log("applyLabelTransitions could NOT find wrapper for entityId:", entityId, "element:", label.element);
       }
     }
   });
