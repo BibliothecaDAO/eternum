@@ -296,6 +296,23 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Create hyperstructures for Blitz 
+   *
+   * @param props - Properties for registration
+   * @param props.count - Number of hyperstructures to create
+   * @returns Transaction receipt
+   */
+    public async blitz_realm_make_hyperstructures(props: SystemProps.BlitzRealmMakeHyperstructuresProps) {
+      const { count, signer } = props;
+      const call = this.createProviderCall(signer, {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+        entrypoint: "make_hyperstructures",
+        calldata: [count],
+      });
+      return await this.promiseQueue.enqueue(call);
+    }
+  
+  /**
    * Create Blitz Realms
    *
    * @param props - Properties for creation

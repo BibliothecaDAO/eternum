@@ -186,8 +186,8 @@
             </div>
             
             <div class="control-group">
-                <label for="stepTileDistance">Step Tile Distance: <span id="stepTileDistanceValue">12</span></label>
-                <input type="range" id="stepTileDistance" value="12" min="5" max="50" step="1">
+                <label for="stepTileDistance">Step Tile Distance: <span id="stepTileDistanceValue">15</span></label>
+                <input type="range" id="stepTileDistance" value="15" min="5" max="50" step="1">
             </div>
             
             <div class="control-group">
@@ -196,18 +196,18 @@
             </div>
             
             <div class="control-group">
-                <label for="mirrorFirstDistance">Mirror First Distance: <span id="mirrorFirstDistanceValue">9</span></label>
-                <input type="range" id="mirrorFirstDistance" value="9" min="5" max="30" step="1">
+                <label for="mirrorFirstDistance">Mirror First Distance: <span id="mirrorFirstDistanceValue">11</span></label>
+                <input type="range" id="mirrorFirstDistance" value="11" min="5" max="30" step="1">
             </div>
             
             <div class="control-group">
-                <label for="mirrorSecondDistance">Mirror Second Distance: <span id="mirrorSecondDistanceValue">3</span></label>
-                <input type="range" id="mirrorSecondDistance" value="3" min="1" max="15" step="1">
+                <label for="mirrorSecondDistance">Mirror Second Distance: <span id="mirrorSecondDistanceValue">4</span></label>
+                <input type="range" id="mirrorSecondDistance" value="4" min="1" max="15" step="1">
             </div>
             
             <div class="control-group">
-                <label for="ringDistance">Hyperstructure Ring Distance: <span id="ringDistanceValue">12</span></label>
-                <input type="range" id="ringDistance" value="12" min="5" max="30" step="1">
+                <label for="ringDistance">Hyperstructure Ring Distance: <span id="ringDistanceValue">15</span></label>
+                <input type="range" id="ringDistance" value="15" min="5" max="30" step="1">
             </div>
             
             <div class="control-group">
@@ -297,11 +297,11 @@
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #ff8c00;"></div>
-                <span>Ring 1 Hyperstructures</span>
+                <span>Ring 1 Hyperstructures (6 total)</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #ff4500;"></div>
-                <span>Ring 2+ Hyperstructures</span>
+                <span>Ring 2+ Hyperstructures (Ring N = N×6 total)</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #ff9800; height: 1px; border-top: 1px dotted #ff9800;"></div>
@@ -315,6 +315,7 @@
             <p><strong>Grid Type:</strong> Pointy-top hexagons using even-r offset coordinates (matching position.cairo)</p>
             <p><strong>Steps Explained:</strong> 🎯 Settlements are generated in concentric steps around the center. Step 1 creates 2 settlements per side (12 total), Step 2 creates 4 per side (24 total), etc. Each step has step×2 points per side, creating a hexagonal expansion pattern.</p>
             <p><strong>Step Formula:</strong> Each step N contains N×2 points per side × 6 sides = N×12 total settlements. Half are normal, half are mirrored.</p>
+            <p><strong>Hyperstructures:</strong> 🏗️ Placed in hexagonal rings with Ring N containing N points per side × 6 sides = N×6 total hyperstructures. Ring 0 has 1 center hyperstructure, Ring 1 has 6, Ring 2 has 12, Ring 3 has 18, etc. Ring distance is fixed at 15 tiles.</p>
             <p><strong>Auto-Update:</strong> ✅ Map regenerates automatically when sliders change</p>
             <p><strong>Navigation:</strong> Mouse wheel to zoom, click and drag to pan, arrow keys to move, +/- keys to zoom</p>
             <p><strong>Mirroring:</strong> 🔗 Orange lines connect mirrored settlement pairs, purple settlements are mirrored versions</p>
@@ -332,9 +333,9 @@
         const CENTER_ROW = 2147483646;
         
         // These will be made configurable via sliders
-        let STEP_TILE_DISTANCE = 18;
-        let REALM_TILE_RADIUS = 6;
-        let MIRROR_FIRST_STEP_TILE_DISTANCE = 14;
+        let STEP_TILE_DISTANCE = 15;
+        let REALM_TILE_RADIUS = 3;
+        let MIRROR_FIRST_STEP_TILE_DISTANCE = 11;
         let MIRROR_SECOND_STEP_TILE_DISTANCE = 4;
 
         // Direction enum matching Cairo implementation
@@ -1072,39 +1073,80 @@
             return settlements;
         }
 
+        // BlitzHypersSettlementConfig class matching the Cairo implementation
+        class BlitzHypersSettlementConfig {
+            constructor(ringDistance = 15) {
+                this.max_ring_count = 0;
+                this.current_ring_count = 0;
+                this.side = 5;
+                this.point = 1;
+                this.ring_distance = ringDistance;
+            }
+
+            isValidRing() {
+                return this.current_ring_count <= this.max_ring_count;
+            }
+
+            next() {
+                if (this.point >= this.current_ring_count) {
+                    this.point = 1;
+                    if (this.side === 5) {
+                        this.side = 0;
+                        this.current_ring_count += 1;
+                    } else {
+                        this.side += 1;
+                    }
+                } else {
+                    this.point += 1;
+                }
+            }
+
+            static ringTileDistance() {
+                return 15;
+            }
+
+            nextCoord() {
+                const startCoord = Coord.center();
+                const startDirections = [
+                    [Direction.East, Direction.NorthWest],
+                    [Direction.SouthEast, Direction.NorthEast],
+                    [Direction.SouthWest, Direction.East],
+                    [Direction.West, Direction.SouthEast],
+                    [Direction.NorthWest, Direction.SouthWest],
+                    [Direction.NorthEast, Direction.West]
+                ];
+                
+                const [startDirection, triangleDirection] = startDirections[this.side];
+                
+                return startCoord
+                    .neighborAfterDistance(startDirection, this.ring_distance * this.current_ring_count)
+                    .neighborAfterDistance(triangleDirection, this.ring_distance * (this.point - 1));
+            }
+        }
+
         function generateHyperstructures(ringDistance, maxRings) {
             const hyperstructures = [];
-            const center = Coord.center();
+            const config = new BlitzHypersSettlementConfig(ringDistance);
+            config.max_ring_count = maxRings;
             
-            for (let ringCount = 0; ringCount <= maxRings; ringCount++) {
-                if (ringCount === 0) {
-                    // Center hyperstructure (ring 0)
-                    hyperstructures.push({
-                        ring: ringCount,
-                        coord: center,
-                        type: 'center'
-                    });
-                } else {
-                    // Ring of 6 hyperstructures
-                    const distanceFromCenter = ringCount * ringDistance;
-                    const ringCoords = [
-                        center.neighborAfterDistance(Direction.East, distanceFromCenter),
-                        center.neighborAfterDistance(Direction.NorthEast, distanceFromCenter),
-                        center.neighborAfterDistance(Direction.NorthWest, distanceFromCenter),
-                        center.neighborAfterDistance(Direction.SouthWest, distanceFromCenter),
-                        center.neighborAfterDistance(Direction.West, distanceFromCenter),
-                        center.neighborAfterDistance(Direction.SouthEast, distanceFromCenter),
-                    ];
-                    
-                    ringCoords.forEach((coord, index) => {
-                        hyperstructures.push({
-                            ring: ringCount,
-                            coord: coord,
-                            type: 'ring',
-                            position: index
-                        });
-                    });
-                }
+            // Generate hyperstructures using the new algorithm
+            let count = 0;
+            const maxCount = 1000; // Safety limit to prevent infinite loops
+            
+            while (config.isValidRing() && count < maxCount) {
+                const coord = config.nextCoord();
+                const isCenter = config.current_ring_count === 0;
+                
+                hyperstructures.push({
+                    ring: config.current_ring_count,
+                    coord: coord,
+                    type: isCenter ? 'center' : 'ring',
+                    side: config.side,
+                    point: config.point
+                });
+                
+                config.next();
+                count++;
             }
             
             return hyperstructures;

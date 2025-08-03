@@ -30,6 +30,10 @@ export interface BlitzRealmRegisterProps extends SystemSigner {
   name: BigNumberish;
 }
 
+export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
+  count: BigNumberish;
+}
+
 export interface BlitzRealmCreateProps extends SystemSigner {}
 
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
