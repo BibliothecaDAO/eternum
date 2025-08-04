@@ -2,7 +2,7 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { AlertTriangle, Home, Plus, Warehouse } from "lucide-react";
+import { AlertTriangle, Home, Plus, Shield, Warehouse } from "lucide-react";
 import { useState } from "react";
 import { BuildingDetailsDrawer } from "./building-details-drawer";
 
@@ -10,6 +10,7 @@ import { BuildingDetailsDrawer } from "./building-details-drawer";
 enum BuildingCategory {
   RESOURCE = "resource",
   ECONOMIC = "economic",
+  MILITARY = "military",
 }
 
 // Building interface with new structure
@@ -23,6 +24,8 @@ interface Building {
   canBuild: boolean;
   hasBalance: boolean;
   hasEnoughPopulation: boolean;
+  militaryType?: string;
+  tier?: number;
 }
 
 interface BuildingPreviewCardProps {
@@ -54,6 +57,8 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
         ) : (
           <Warehouse className="h-4 w-4 text-blue-400" />
         );
+      case BuildingCategory.MILITARY:
+        return <Shield className="h-4 w-4 text-red-400" />;
       default:
         return null;
     }
