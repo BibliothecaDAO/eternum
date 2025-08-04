@@ -16,7 +16,6 @@ import {
 } from "../constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
-import { transitionManager } from "../utils/";
 
 export class ArmyModel {
   // Core properties
@@ -654,57 +653,6 @@ export class ArmyModel {
         labelData.label.element.parentNode.removeChild(labelData.label.element);
       }
       this.labels.delete(entityId);
-    }
-  }
-
-  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData?.label.element) {
-      const textContainer = labelData.label.element.querySelector(".flex.flex-col");
-      if (textContainer) {
-        // Get the container's unique ID or generate one if it doesn't exist
-        let containerId = (textContainer as HTMLElement).dataset.containerId;
-        if (!containerId) {
-          containerId = `army_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (textContainer as HTMLElement).dataset.containerId = containerId;
-        }
-
-        if (isCompact) {
-          // For Far view (isCompact = true), always collapse immediately
-          textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[250px]", "ml-2");
-          // Clear any existing timeouts
-          transitionManager.clearTimeout(containerId);
-        } else {
-          // For Medium and Close views, expand immediately
-          textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[250px]", "ml-2");
-
-          // Only add timeout for Medium view, not for Close view
-          if (this.currentCameraView === CameraView.Medium) {
-            // Store timestamp for Medium view transition
-            transitionManager.setMediumViewTransition(containerId);
-
-            // Use the managed timeout
-            transitionManager.setLabelTimeout(
-              () => {
-                // Only apply the transition if the element is still in the DOM
-                if (textContainer.isConnected) {
-                  textContainer.classList.remove("max-w-[250px]", "ml-2");
-                  textContainer.classList.add("max-w-0", "ml-0");
-                  // Clear the transition state
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          } else if (this.currentCameraView === CameraView.Close) {
-            // For Close view, ensure we cancel any existing timeouts
-            transitionManager.clearTimeout(containerId);
-          }
-        }
-      }
     }
   }
 

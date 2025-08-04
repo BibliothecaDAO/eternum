@@ -1,9 +1,9 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, Resource, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -31,9 +31,19 @@ export class ResourceManager {
   public isActive(resourceId: ResourcesIds): boolean {
     const resource = this._getResource();
     if (!resource) return false;
+    return ResourceManager.isActiveStatic(resource, resourceId);
+  }
+
+  public static isActiveStatic(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+    resourceId: ResourcesIds,
+  ): boolean {
+    if (!resource) return false;
     const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
     if (!production) return false;
-    if (this.isFood(resourceId)) {
+
+    const isFood = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
+    if (isFood) {
       return production.production_rate !== 0n;
     }
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
@@ -586,8 +596,8 @@ export class ResourceManager {
     const quantity = structureBuildings ? getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0 : 0;
 
     return {
-      capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
-      capacityUsedKg: gramToKg(Number(resource?.weight.weight || 0) / RESOURCE_PRECISION),
+      capacityKg: gramToKg(divideByPrecision(Number(resource?.weight.capacity || 0))),
+      capacityUsedKg: gramToKg(Math.max(0, divideByPrecision(Number(resource?.weight.weight || 0)))),
       quantity,
     };
   }
@@ -600,7 +610,7 @@ export class ResourceManager {
 
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
     const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
-    const capacityLeft = capacityKg - capacityUsedKg;
+    const capacityLeft = Math.max(0, capacityKg - capacityUsedKg);
 
     const maxAmountStorable = multiplyByPrecision(capacityLeft / (configManager.getResourceWeightKg(resourceId) || 1));
 
@@ -983,5 +993,104 @@ export class ResourceManager {
       return BigInt(maxAmountStorable);
     }
     return amountProduced;
+  }
+
+  public getActiveProductions(): Array<{
+    resourceId: ResourcesIds;
+    productionRate: bigint;
+    buildingCount: number;
+    outputAmountLeft: bigint;
+    lastUpdatedAt: number;
+  }> {
+    const resource = this._getResource();
+    if (!resource) return [];
+
+    return ResourceManager.getActiveProductions(resource);
+  }
+
+  /**
+   * Static version of getActiveProductions for use without instantiating ResourceManager
+   */
+  public static getActiveProductions(resource: ComponentValue<ClientComponents["Resource"]["schema"]>): Array<{
+    resourceId: ResourcesIds;
+    productionRate: bigint;
+    buildingCount: number;
+    outputAmountLeft: bigint;
+    lastUpdatedAt: number;
+  }> {
+    if (!resource) return [];
+
+    const activeProductions: Array<{
+      resourceId: ResourcesIds;
+      productionRate: bigint;
+      buildingCount: number;
+      outputAmountLeft: bigint;
+      lastUpdatedAt: number;
+    }> = [];
+
+    // Define production fields and their corresponding resource IDs
+    const productionFields: Array<[keyof typeof resource, ResourcesIds]> = [
+      ["STONE_PRODUCTION", ResourcesIds.Stone],
+      ["COAL_PRODUCTION", ResourcesIds.Coal],
+      ["WOOD_PRODUCTION", ResourcesIds.Wood],
+      ["COPPER_PRODUCTION", ResourcesIds.Copper],
+      ["IRONWOOD_PRODUCTION", ResourcesIds.Ironwood],
+      ["OBSIDIAN_PRODUCTION", ResourcesIds.Obsidian],
+      ["GOLD_PRODUCTION", ResourcesIds.Gold],
+      ["SILVER_PRODUCTION", ResourcesIds.Silver],
+      ["MITHRAL_PRODUCTION", ResourcesIds.Mithral],
+      ["ALCHEMICAL_SILVER_PRODUCTION", ResourcesIds.AlchemicalSilver],
+      ["COLD_IRON_PRODUCTION", ResourcesIds.ColdIron],
+      ["DEEP_CRYSTAL_PRODUCTION", ResourcesIds.DeepCrystal],
+      ["RUBY_PRODUCTION", ResourcesIds.Ruby],
+      ["DIAMONDS_PRODUCTION", ResourcesIds.Diamonds],
+      ["HARTWOOD_PRODUCTION", ResourcesIds.Hartwood],
+      ["IGNIUM_PRODUCTION", ResourcesIds.Ignium],
+      ["TWILIGHT_QUARTZ_PRODUCTION", ResourcesIds.TwilightQuartz],
+      ["TRUE_ICE_PRODUCTION", ResourcesIds.TrueIce],
+      ["ADAMANTINE_PRODUCTION", ResourcesIds.Adamantine],
+      ["SAPPHIRE_PRODUCTION", ResourcesIds.Sapphire],
+      ["ETHEREAL_SILICA_PRODUCTION", ResourcesIds.EtherealSilica],
+      ["DRAGONHIDE_PRODUCTION", ResourcesIds.Dragonhide],
+      ["LABOR_PRODUCTION", ResourcesIds.Labor],
+      ["EARTHEN_SHARD_PRODUCTION", ResourcesIds.AncientFragment],
+      ["DONKEY_PRODUCTION", ResourcesIds.Donkey],
+      ["KNIGHT_T1_PRODUCTION", ResourcesIds.Knight],
+      ["KNIGHT_T2_PRODUCTION", ResourcesIds.KnightT2],
+      ["KNIGHT_T3_PRODUCTION", ResourcesIds.KnightT3],
+      ["CROSSBOWMAN_T1_PRODUCTION", ResourcesIds.Crossbowman],
+      ["CROSSBOWMAN_T2_PRODUCTION", ResourcesIds.CrossbowmanT2],
+      ["CROSSBOWMAN_T3_PRODUCTION", ResourcesIds.CrossbowmanT3],
+      ["PALADIN_T1_PRODUCTION", ResourcesIds.Paladin],
+      ["PALADIN_T2_PRODUCTION", ResourcesIds.PaladinT2],
+      ["PALADIN_T3_PRODUCTION", ResourcesIds.PaladinT3],
+      ["WHEAT_PRODUCTION", ResourcesIds.Wheat],
+      ["FISH_PRODUCTION", ResourcesIds.Fish],
+      ["LORDS_PRODUCTION", ResourcesIds.Lords],
+      ["ESSENCE_PRODUCTION", ResourcesIds.Essence],
+    ];
+
+    // Check each production field directly
+    for (const [fieldName, resourceId] of productionFields) {
+      const production = resource[fieldName] as {
+        building_count: number;
+        production_rate: bigint;
+        output_amount_left: bigint;
+        last_updated_at: number;
+      };
+
+      // Check if production is active
+      if (ResourceManager.isActiveStatic(resource, resourceId)) {
+        activeProductions.push({
+          resourceId,
+          productionRate: production.production_rate,
+          buildingCount: production.building_count,
+          outputAmountLeft: production.output_amount_left,
+          lastUpdatedAt: production.last_updated_at,
+        });
+      }
+    }
+
+    return activeProductions;
   }
 }

@@ -12,7 +12,7 @@ import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
-import { lazy, memo, Suspense, useEffect, useMemo } from "react";
+import { lazy, memo, Suspense, useMemo } from "react";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -72,25 +72,6 @@ export const LeftNavigationModule = memo(() => {
         structureInfo?.structureCategory === StructureType.Village),
     [structureInfo],
   );
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      switch (event.key.toLowerCase()) {
-        case "e":
-          setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView);
-          break;
-        case "r":
-          setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView);
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [view, setView, toggleModal]);
 
   const navigation = useMemo(() => {
     const baseNavigation = [

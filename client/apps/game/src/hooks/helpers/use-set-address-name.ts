@@ -26,6 +26,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
       let username;
       try {
         username = await (connector as unknown as ControllerConnector)?.username();
+        console.log({ username });
       } catch (error) {
         console.log("No username found in controller account");
       }
@@ -50,8 +51,7 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
         const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([address]))?.name;
         const decodedAddressName = addressName ? shortString.decodeShortString(addressName.toString()) : undefined;
 
-        // fix to rename adventurer to controller account
-        if (!decodedAddressName || decodedAddressName === "adventurer") {
+        if (!decodedAddressName || decodedAddressName === "0") {
           await setUserName();
         } else {
           setAddressName(decodedAddressName);

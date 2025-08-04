@@ -93,6 +93,10 @@ const TooltipContent = memo(
           <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
         ) : actionType === ActionType.Chest ? (
           <ChestInfo />
+        ) : actionType === ActionType.CreateArmy ? (
+          <CreateArmyInfo />
+        ) : actionType === ActionType.Help ? (
+          <HelpInfo />
         ) : (
           <AttackInfo
             selectedEntityId={Number(selectedEntityId)}
@@ -414,6 +418,35 @@ const ChestInfo = memo(() => {
             Contains valuable relics that can enhance your structures and armies.
           </div>
           <div className="text-xs text-gray-400">Click to open the crate and collect relics.</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const HelpInfo = memo(() => {
+  return (
+    <div className="flex flex-col p-1 text-xs">
+      <div className="flex flex-row text-xs ml-1">
+        <div className="text-lg p-1 pr-3">🛡️</div>
+        <div className="flex flex-col p-1 text-xs">
+          <div className="font-semibold text-gold mb-1">Help</div>
+          <div className="text-gray-300 mb-1">Help an army that is attacking your structure.</div>
+          <div className="text-xs text-gray-400">Click to help the army.</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const CreateArmyInfo = memo(() => {
+  return (
+    <div className="flex flex-col p-1 text-xs">
+      <div className="flex flex-row text-xs ml-1">
+        <div className="text-lg p-1 pr-3">🗡️</div>
+        <div className="flex flex-col p-1 text-xs">
+          <div className="font-semibold text-gold mb-1">Create Army</div>
+          <div className="text-gray-300 mb-1">Create an army to help you explore the world.</div>
         </div>
       </div>
     </div>

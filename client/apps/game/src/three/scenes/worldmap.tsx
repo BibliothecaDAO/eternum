@@ -18,6 +18,7 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, CombatModal, HelpModal } from "@/ui/features/military";
+import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { QuestModal } from "@/ui/features/progression";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -35,6 +36,7 @@ import {
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
+  getDirectionBetweenAdjacentHexes,
   getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
@@ -342,7 +344,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.minimap = new Minimap(this, this.camera);
 
-    // Initialize SceneShortcutManager for WorldMap shortcuts  
+    // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
 
     // Only register shortcuts if they haven't been registered already
@@ -557,6 +559,8 @@ export default class WorldmapScene extends HexagonScene {
           this.onQuestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.CreateArmy) {
+          this.onArmyCreate(actionPath, selectedEntityId);
         }
       }
     }
@@ -631,6 +635,21 @@ export default class WorldmapScene extends HexagonScene {
           hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
         }}
       />,
+    );
+  }
+
+  private onArmyCreate(actionPath: ActionPath[], selectedEntityId: ID) {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+    const direction = getDirectionBetweenAdjacentHexes(
+      { col: selectedPath[0].col, row: selectedPath[0].row },
+      { col: targetHex.col, row: targetHex.row },
+    );
+
+    if (direction === undefined || direction === null) return;
+
+    this.state.toggleModal(
+      <UnifiedArmyCreationModal structureId={selectedEntityId} direction={direction} isExplorer={true} />,
     );
   }
 
@@ -812,7 +831,6 @@ export default class WorldmapScene extends HexagonScene {
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
-
 
   public deleteArmy(entityId: ID) {
     this.armyManager.removeArmy(entityId);
@@ -1531,7 +1549,7 @@ export default class WorldmapScene extends HexagonScene {
   destroy() {
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
-    
+
     // Clean up shortcuts when scene is actually destroyed
     if (this.shortcutManager instanceof SceneShortcutManager) {
       this.shortcutManager.cleanup();

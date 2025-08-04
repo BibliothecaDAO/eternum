@@ -5,6 +5,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
     fn register(ref self: T, owner: ContractAddress, name: felt252);
+    fn make_hyperstructures(ref self: T, count: u8);
     fn create(ref self: T) -> Array<ID>;
 }
 
@@ -20,7 +21,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use s1_eternum::models::config::{
-        BlitzHyperstructureRegister, BlitzHyperstructureRegisterImpl, BlitzRealmPlayerRegister,
+        BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
@@ -41,7 +42,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureBlitzDiscoveryImpl;
+    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureBlitzDiscoveryImpl, iHyperstructureDiscoveryImpl};
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -128,10 +129,62 @@ pub mod blitz_realm_systems {
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
 
             ////////////////////////////////////////////////
-            /// Create hyperstructures if condition is met
-            ///
-            /// hyperstructure Ring Count (R)  = Math.ceil(sqrt(P/6)),
-            /// where P is num registered players
+            /// Update Hyperstructure Ring Count
+            ////////////////////////////////////////////////
+
+            // increase hyperstructure ring count
+            // [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
+            // Where P is num registered players
+            // and R is hyperstructure ring count
+
+            let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
+            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
+                WorldConfigUtilImpl::get_member(
+                world, blitz_hyperstructure_settlement_config_selector,
+            );
+            let registration_count = blitz_registration_config.registration_count.into();
+            let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
+            let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
+            if max_ring_count_squared.is_zero()
+                || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
+                blitz_hyperstructure_settlement_config.max_ring_count += 1;
+                WorldConfigUtilImpl::set_member(
+                    ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+                );
+            }
+
+            // set name for the player
+            //note: this can be abused. as you can pay to set the name for any player
+
+            let mut address_name: AddressName = world.read_model(owner);
+            address_name.name = name;
+            world.write_model(@address_name);
+
+            // emit registration event
+            world.emit_event(@BlitzRegistrationEvent { player: owner, timestamp: now.into() });
+        }
+
+
+        /// Callable by anyone to make hyperstructures.
+        ///
+        /// It can be called during or after registration period. But all hyperstructures must be created
+        /// before the
+        ///creation period ends.
+        ///
+        /// The maximum number of hyperstructures is 6 x blitz_hyperstructure_settlement_config.max_ring_count
+        /// So the count parameter should be <=
+        ///  6 x blitz_hyperstructure_settlement_config.max_ring_count
+        ///     - hyperstructure_globals.created_count
+        ///
+        /// The count should generally be a small number like 6 or 7 to prevent out of gas errors
+        ///
+        fn make_hyperstructures(ref self: ContractState, count: u8) {
+            // check that season is still active
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+
+            ////////////////////////////////////////////////
+            /// Create hyperstructures
             ////////////////////////////////////////////////
 
             // obtain vrf seed
@@ -151,51 +204,37 @@ pub mod blitz_realm_systems {
             );
 
             // create center hyperstructure [when num hyperstructures is 0]
-            let mut blitz_hyperstructure_register: BlitzHyperstructureRegister = world
-                .read_model(BlitzHyperstructureRegisterImpl::ID());
-            if blitz_hyperstructure_register.ring_count.is_zero() {
-                iHyperstructureBlitzDiscoveryImpl::create_ring(
+            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
+                WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_hypers_settlement_config"),
+            );
+
+            for i in 0..count {
+                if !blitz_hyperstructure_settlement_config.is_valid_ring() {
+                    break;
+                }
+
+                let next_coord: Coord = blitz_hyperstructure_settlement_config.next_coord();
+                iHyperstructureDiscoveryImpl::create(
                     ref world,
+                    next_coord,
+                    Zero::zero(),
                     map_config,
                     troop_limit_config,
                     troop_stamina_config,
-                    blitz_hyperstructure_register.ring_count,
-                    vrf_seed,
+                    vrf_seed + i.into(),
+                    true,
+                    true,
                 );
+
+                // move to the next location and see if we are done
+                blitz_hyperstructure_settlement_config.next();
             };
 
-            // create rings of hyperstructures [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
-            let registration_count = blitz_registration_config.registration_count.into();
-            let ring_count = blitz_hyperstructure_register.ring_count;
-            let ring_count_squared = ring_count * ring_count;
-            if ring_count_squared.is_zero()
-                || (ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
-                // increase ring count
-                blitz_hyperstructure_register.ring_count += 1;
-                world.write_model(@blitz_hyperstructure_register);
-
-                // create next ring of hyperstructures
-                iHyperstructureBlitzDiscoveryImpl::create_ring(
-                    ref world,
-                    map_config,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    blitz_hyperstructure_register.ring_count,
-                    vrf_seed,
-                );
-            }
-
-            // set name for the player
-            //note: this can be abused. as you can pay to set the name for any player
-
-            let mut address_name: AddressName = world.read_model(owner);
-            address_name.name = name;
-            world.write_model(@address_name);
-
-            // emit registration event
-            world.emit_event(@BlitzRegistrationEvent { player: owner, timestamp: now.into() });
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("blitz_hypers_settlement_config"), blitz_hyperstructure_settlement_config,
+            );
         }
-
 
         fn create(ref self: ContractState) -> Array<ID> {
             // check that season is still active
@@ -208,6 +247,16 @@ pub mod blitz_realm_systems {
             );
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             assert!(blitz_registration_config.is_creation_open(now), "Eternum: Realm settlement period is over");
+
+            // ensure all hyperstructures have been created
+            let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
+                WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_hypers_settlement_config"),
+            );
+            assert!(
+                !blitz_hyperstructure_settlement_config.is_valid_ring(),
+                "Eternum: Not all hyperstructures have been created",
+            );
 
             // ensure player registered
             let caller: ContractAddress = starknet::get_caller_address();

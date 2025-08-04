@@ -36,6 +36,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_realm_register(props);
   };
 
+  const blitz_realm_make_hyperstructures = async (props: SystemProps.BlitzRealmMakeHyperstructuresProps): Promise<Result> => {
+    return await provider.blitz_realm_make_hyperstructures(props);
+  };
+
   const blitz_realm_create = async (props: SystemProps.BlitzRealmCreateProps): Promise<Result> => {
     return await provider.blitz_realm_create(props);
   };
@@ -372,6 +376,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const systemCalls = {
     blitz_realm_register: withAuth(blitz_realm_register),
+    blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
     blitz_realm_create: withAuth(blitz_realm_create),
 
     send_resources: withAuth(send_resources),

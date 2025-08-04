@@ -1,6 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { COLORS } from "@/ui/features/settlement";
-import { TroopTier } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 
 // In-memory database for managing label transitions
 interface LabelTransitionRecord {
@@ -334,37 +334,37 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions) => {
 
 // Create common content container with proper transitions for different camera views
 export const createContentContainer = (cameraView: CameraView) => {
+  // Create wrapper for width transition
+  const wrapperContainer = document.createElement("div");
+  wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");
+
+  // Create inner container for content
   const contentContainer = document.createElement("div");
+  contentContainer.classList.add("flex", "flex-col", "w-max");
 
   // Add empty div with w-2 for spacing
   const spacerDiv = document.createElement("div");
   spacerDiv.classList.add("w-2");
   contentContainer.appendChild(spacerDiv);
 
-  contentContainer.classList.add(
-    "flex",
-    "flex-col",
-    "transition-width",
-    "duration-700",
-    "ease-in-out",
-    "overflow-hidden",
-    "whitespace-nowrap",
-    "group-hover:max-w-[250px]",
-    "group-hover:ml-2",
-  );
-
   // Generate a unique ID for this container to manage its transitions
   const containerId = `container_${Math.random().toString(36).substring(2, 9)}`;
-  (contentContainer as HTMLElement).dataset.containerId = containerId;
+  (wrapperContainer as HTMLElement).dataset.containerId = containerId;
 
   // Check if we have an active medium view transition
   const mediumViewExpanded = transitionDB.getMediumViewExpanded(containerId);
 
+  const wrapperStyle = ["max-w-[1000px]", "ml-2", "opacity-100"];
+  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+
+  // Put content inside wrapper
+  wrapperContainer.appendChild(contentContainer);
+
   // Set initial state based on camera view
   if (cameraView === CameraView.Far || (cameraView === CameraView.Medium && !mediumViewExpanded)) {
-    contentContainer.classList.add("max-w-0", "ml-0");
+    wrapperContainer.classList.add(...wrapperStyleCollapsed);
   } else {
-    contentContainer.classList.add("max-w-[250px]", "ml-2");
+    wrapperContainer.classList.add(...wrapperStyle);
 
     // For Medium view, add a timeout to revert to Far view style after 2 seconds
     if (cameraView === CameraView.Medium) {
@@ -375,9 +375,9 @@ export const createContentContainer = (cameraView: CameraView) => {
         containerId,
         () => {
           // Only apply the transition if the element is still in the DOM
-          if (contentContainer.isConnected) {
-            contentContainer.classList.remove("max-w-[250px]", "ml-2");
-            contentContainer.classList.add("max-w-0", "ml-0");
+          if (wrapperContainer.isConnected) {
+            wrapperContainer.classList.remove(...wrapperStyle);
+            wrapperContainer.classList.add(...wrapperStyleCollapsed);
             // Clear the timestamp when the transition is complete
             transitionDB.clearMediumViewTransition(containerId);
           }
@@ -387,6 +387,8 @@ export const createContentContainer = (cameraView: CameraView) => {
     }
   }
 
+  // Return contentContainer so the rest of the code can append children to it
+  (contentContainer as any).wrapper = wrapperContainer; // Store reference to wrapper
   return contentContainer;
 };
 
@@ -407,7 +409,7 @@ export const createLabelBase = (options: LabelBaseOptions) => {
   labelDiv.classList.add(
     "rounded-md",
     "pointer-events-auto",
-    "h-10",
+    // "h-",
     "p-0.5",
     "-translate-x-1/2",
     "text-xxs",
@@ -465,6 +467,238 @@ export const TIERS_TO_STARS = {
   [TroopTier.T3]: "⭐⭐⭐",
 };
 
+// Enhanced army information display utilities
+export const createStaminaBar = (currentStamina: number, maxStamina: number): HTMLElement => {
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.alignItems = "center";
+  container.style.gap = "4px";
+  container.style.fontSize = "10px";
+  container.setAttribute("data-component", "stamina-bar");
+
+  // Stamina icon
+  const icon = document.createElement("span");
+  icon.textContent = "⚡";
+  icon.style.color = "#facc15"; // yellow-400
+  container.appendChild(icon);
+
+  // Progress bar container
+  const progressBar = document.createElement("div");
+  progressBar.style.position = "relative";
+  progressBar.style.backgroundColor = "#374151"; // gray-700
+  progressBar.style.borderRadius = "9999px";
+  progressBar.style.height = "8px";
+  progressBar.style.width = "64px";
+  progressBar.style.overflow = "hidden";
+  progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+
+  const progressFill = document.createElement("div");
+  progressFill.style.position = "absolute";
+  progressFill.style.top = "0";
+  progressFill.style.left = "0";
+  progressFill.style.height = "100%";
+  progressFill.style.borderRadius = "9999px";
+  progressFill.style.transition = "width 0.3s ease-in-out";
+
+  const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
+  progressFill.style.width = `${percentage}%`;
+
+  // Color based on stamina level
+  if (percentage > 66) {
+    progressFill.style.backgroundColor = "#10b981"; // green-500
+  } else if (percentage > 33) {
+    progressFill.style.backgroundColor = "#f59e0b"; // amber-500
+  } else {
+    progressFill.style.backgroundColor = "#ef4444"; // red-500
+  }
+
+  progressBar.appendChild(progressFill);
+  container.appendChild(progressBar);
+
+  // Text display
+  const text = document.createElement("span");
+  text.textContent = `${currentStamina}/${maxStamina}`;
+  text.style.color = "#ffffff";
+  text.style.fontFamily = "monospace";
+  text.style.fontSize = "10px";
+  text.style.fontWeight = "500";
+  container.appendChild(text);
+
+  return container;
+};
+
+export const createTroopCountDisplay = (count: number, troopType: string, tier: string): HTMLElement => {
+  const container = document.createElement("div");
+  container.classList.add("flex", "items-center", "text-xxs", "gap-1");
+  container.setAttribute("data-component", "troop-count");
+
+  // Troop count
+  const countSpan = document.createElement("strong");
+  countSpan.textContent = count.toString();
+  countSpan.classList.add("text-white");
+  countSpan.setAttribute("data-role", "count");
+  container.appendChild(countSpan);
+
+  // Troop type and tier
+  const typeSpan = document.createElement("span");
+  typeSpan.textContent = `${troopType} ${TIERS_TO_STARS[tier as TroopTier] || ""}`;
+  typeSpan.classList.add("text-gray-300");
+  container.appendChild(typeSpan);
+
+  return container;
+};
+
+// Helper function to get troop resource ID from category name
+const getTroopResourceIdFromCategory = (category: string | null): number | null => {
+  if (!category) return null;
+
+  switch (category.toLowerCase()) {
+    case "knight":
+      return ResourcesIds.Knight;
+    case "crossbowman":
+      return ResourcesIds.Crossbowman;
+    case "paladin":
+      return ResourcesIds.Paladin;
+    default:
+      return null;
+  }
+};
+
+export const getTierStyle = (tier: number) => {
+  switch (tier) {
+    case 1:
+      return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300 shadow-blue-500/10";
+    case 2:
+      return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300 shadow-emerald-500/10";
+    case 3:
+      return "!bg-purple-600 !text-white !border-purple-400 animate-pulse";
+    default:
+      return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
+  }
+};
+
+export const createGuardArmyDisplay = (
+  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
+): HTMLElement => {
+  const container = document.createElement("div");
+  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+  container.setAttribute("data-component", "guard-armies");
+
+  if (guardArmies.length === 0) {
+    const noGuards = document.createElement("span");
+    noGuards.textContent = "No Guards";
+    noGuards.classList.add("italic");
+    container.appendChild(noGuards);
+    return container;
+  }
+
+  guardArmies.forEach((guard) => {
+    if (guard.count > 0) {
+      const guardDiv = document.createElement("div");
+      guardDiv.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40");
+
+      // Shield icon
+      const shieldIcon = document.createElement("span");
+      shieldIcon.textContent = "🛡️";
+      guardDiv.appendChild(shieldIcon);
+
+      // Troop resource icon
+      const resourceId = getTroopResourceIdFromCategory(guard.category);
+      if (resourceId) {
+        const iconContainer = document.createElement("div");
+        iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
+
+        const img = document.createElement("img");
+        img.src = `/images/resources/${resourceId}.png`;
+        img.classList.add("w-full", "h-full", "object-contain");
+        iconContainer.appendChild(img);
+        guardDiv.appendChild(iconContainer);
+      }
+
+      // Count
+      const countSpan = document.createElement("span");
+      countSpan.textContent = guard.count.toString();
+      countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+      guardDiv.appendChild(countSpan);
+
+      // Tier badge
+      const tierBadge = document.createElement("span");
+      tierBadge.textContent = `T${guard.tier}`;
+      tierBadge.classList.add(
+        "px-1",
+        "py-0.5",
+        "rounded",
+        "text-[10px]",
+        "font-bold",
+        "border",
+        ...getTierStyle(guard.tier).split(" "),
+      );
+      guardDiv.appendChild(tierBadge);
+
+      container.appendChild(guardDiv);
+    }
+  });
+
+  return container;
+};
+
+export const createProductionDisplay = (
+  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
+): HTMLElement => {
+  const container = document.createElement("div");
+  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs");
+  container.setAttribute("data-component", "productions");
+
+  if (activeProductions.length === 0) {
+    const noProduction = document.createElement("span");
+    noProduction.textContent = "No Active Production";
+    noProduction.classList.add("text-gray-400", "italic");
+    container.appendChild(noProduction);
+    return container;
+  }
+
+  activeProductions.forEach((production, index) => {
+    const productionDiv = document.createElement("div");
+    productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
+
+    // Create resource icon based on building type
+    const resourceName = BuildingTypeToIcon[production.buildingType];
+    if (resourceName) {
+      const iconContainer = document.createElement("div");
+      iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+
+      const img = document.createElement("img");
+
+      // Special handling for buildings that use different images
+      if (resourceName === "House") {
+        img.src = "/images/buildings/thumb/house.png";
+      } else if (resourceName === "Silo") {
+        img.src = "/images/buildings/thumb/silo.png";
+      } else {
+        // Use ResourcesIds enum to get the correct ID
+        const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
+        if (resourceId) {
+          img.src = `/images/resources/${resourceId}.png`;
+        }
+      }
+
+      img.classList.add("w-full", "h-full", "object-contain");
+      iconContainer.appendChild(img);
+      productionDiv.appendChild(iconContainer);
+    }
+
+    // Production count
+    const countSpan = document.createElement("span");
+    countSpan.textContent = `${production.buildingCount}`;
+    countSpan.classList.add("text-white", "font-semibold");
+    productionDiv.appendChild(countSpan);
+
+    container.appendChild(productionDiv);
+  });
+
+  return container;
+};
+
 // Export the transitionManager alias for backward compatibility
 export const transitionManager = {
   setMediumViewTransition: (id: string = "global", entityType?: string, entityId?: string) =>
@@ -474,4 +708,424 @@ export const transitionManager = {
   setLabelTimeout: (callback: () => void, ms: number, id: string = "global") =>
     transitionDB.scheduleTimeout(id, callback, ms),
   clearTimeout: (id: string = "global") => transitionDB.delete(id),
+};
+
+// Centralized camera view transition handling for existing labels
+export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: CameraView) => {
+  const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
+  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+
+  labelsMap.forEach((label, entityId) => {
+    if (label.element) {
+      // Look for the wrapper div with transition classes
+      const wrapperContainer = label.element.querySelector(".transition-all.duration-700");
+      if (wrapperContainer) {
+        console.log(
+          "applyLabelTransitions found wrapper for entityId:",
+          entityId,
+          "classes:",
+          wrapperContainer.className,
+        );
+        // Get or create a container ID for tracking timeouts
+        let containerId = (wrapperContainer as HTMLElement).dataset.containerId;
+        if (!containerId) {
+          containerId = `structure_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
+          (wrapperContainer as HTMLElement).dataset.containerId = containerId;
+        }
+
+        console.log("applyLabelTransitions - cameraView:", cameraView, "entityId:", entityId);
+
+        // Remove all existing styles first
+        wrapperContainer.classList.remove(...styleExtended, ...styleCollapsed);
+
+        if (cameraView === CameraView.Far) {
+          // For Far view, always collapse immediately
+          console.log("applyLabelTransitions - collapsing for Far view");
+          wrapperContainer.classList.add(...styleCollapsed);
+          transitionManager.clearTimeout(containerId);
+        } else if (cameraView === CameraView.Close) {
+          // For Close view, always expand and never collapse
+          console.log("applyLabelTransitions - expanding for Close view");
+          wrapperContainer.classList.add(...styleExtended);
+          transitionManager.clearTimeout(containerId);
+        } else if (cameraView === CameraView.Medium) {
+          // For Medium view, expand initially
+          console.log("applyLabelTransitions - expanding for Medium view with timeout");
+          wrapperContainer.classList.add(...styleExtended);
+
+          // And set up timeout to collapse after 2 seconds
+          transitionManager.setMediumViewTransition(containerId);
+          transitionManager.setLabelTimeout(
+            () => {
+              if (wrapperContainer.isConnected) {
+                console.log("applyLabelTransitions - Medium timeout: collapsing");
+                wrapperContainer.classList.remove(...styleExtended);
+                wrapperContainer.classList.add(...styleCollapsed);
+                transitionManager.clearMediumViewTransition(containerId);
+              }
+            },
+            2000,
+            containerId,
+          );
+        }
+      } else {
+        console.log("applyLabelTransitions could NOT find wrapper for entityId:", entityId, "element:", label.element);
+      }
+    }
+  });
+};
+
+// Structure label creation functionality moved from structure-manager.ts
+import { getIsBlitz } from "@/ui/constants";
+import { getStructureTypeName } from "@bibliothecadao/eternum";
+import { getLevelName, StructureType } from "@bibliothecadao/types";
+
+const STRUCTURE_ICONS = {
+  STRUCTURES: {
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
+    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+  } as Record<StructureType, string>,
+  MY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
+  } as Record<StructureType, string>,
+  ALLY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/allies_village.png",
+    [StructureType.Realm]: "/images/labels/allies_realm.png",
+  } as Record<StructureType, string>,
+};
+
+interface StructureInfo {
+  entityId: number;
+  hexCoords: { col: number; row: number };
+  structureType: StructureType;
+  stage: number;
+  initialized: boolean;
+  level: number;
+  isMine: boolean;
+  isAlly: boolean;
+  hasWonder: boolean;
+  owner: {
+    address: bigint;
+    ownerName: string;
+    guildName: string;
+  };
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+}
+
+// Create structure info label - centralized from structure-manager.ts
+export const createStructureLabel = (structure: StructureInfo, cameraView: CameraView): HTMLElement => {
+  const isBlitz = getIsBlitz();
+
+  // Create label div using the shared base
+  const labelDiv = createLabelBase({
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+  });
+
+  // Create icon container
+  const iconContainer = document.createElement("div");
+  iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
+
+  // Select appropriate icon
+  let iconPath = STRUCTURE_ICONS.STRUCTURES[structure.structureType];
+  if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
+    iconPath = structure.isMine
+      ? STRUCTURE_ICONS.MY_STRUCTURES[structure.structureType]
+      : structure.isAlly
+        ? STRUCTURE_ICONS.ALLY_STRUCTURES[structure.structureType]
+        : STRUCTURE_ICONS.STRUCTURES[structure.structureType];
+  }
+
+  // Create and set icon image
+  const iconImg = document.createElement("img");
+  iconImg.src = iconPath;
+  iconImg.classList.add("w-10", "h-10", "object-contain");
+  iconImg.setAttribute("data-component", "structure-icon");
+  iconContainer.appendChild(iconImg);
+  labelDiv.appendChild(iconContainer);
+
+  // Create content container with transition using shared utility
+  const contentContainer = createContentContainer(cameraView);
+
+  // Add owner display using shared component
+  const ownerText = createOwnerDisplayElement({
+    owner: structure.owner,
+    isMine: structure.isMine,
+    isAlly: structure.isAlly,
+    cameraView,
+  });
+  contentContainer.appendChild(ownerText);
+
+  // Add structure type and level
+  const typeText = document.createElement("strong");
+  typeText.textContent = `${getStructureTypeName(structure.structureType, isBlitz)} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+    structure.structureType === StructureType.Hyperstructure
+      ? structure.initialized
+        ? `(Stage ${structure.stage + 1})`
+        : "Foundation"
+      : ""
+  }`;
+  contentContainer.appendChild(typeText);
+
+  // Add guard armies display if available
+  if (structure.guardArmies && structure.guardArmies.length > 0) {
+    const guardArmiesDisplay = createGuardArmyDisplay(structure.guardArmies);
+    contentContainer.appendChild(guardArmiesDisplay);
+  }
+
+  // Add active productions display if available
+  if (structure.activeProductions && structure.activeProductions.length > 0) {
+    const productionsDisplay = createProductionDisplay(structure.activeProductions);
+    contentContainer.appendChild(productionsDisplay);
+  }
+
+  labelDiv.appendChild((contentContainer as any).wrapper || contentContainer);
+  return labelDiv;
+};
+
+const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
+  [BuildingType.ResourceWood]: "Wood",
+  [BuildingType.ResourceStone]: "Stone",
+  [BuildingType.ResourceCoal]: "Coal",
+  [BuildingType.ResourceCopper]: "Copper",
+  [BuildingType.ResourceObsidian]: "Obsidian",
+  [BuildingType.ResourceSilver]: "Silver",
+  [BuildingType.ResourceIronwood]: "Ironwood",
+  [BuildingType.ResourceColdIron]: "ColdIron",
+  [BuildingType.ResourceGold]: "Gold",
+  [BuildingType.ResourceHartwood]: "Hartwood",
+  [BuildingType.ResourceDiamonds]: "Diamonds",
+  [BuildingType.ResourceSapphire]: "Sapphire",
+  [BuildingType.ResourceRuby]: "Ruby",
+  [BuildingType.ResourceDeepCrystal]: "DeepCrystal",
+  [BuildingType.ResourceIgnium]: "Ignium",
+  [BuildingType.ResourceEtherealSilica]: "EtherealSilica",
+  [BuildingType.ResourceTrueIce]: "TrueIce",
+  [BuildingType.ResourceTwilightQuartz]: "TwilightQuartz",
+  [BuildingType.ResourceAlchemicalSilver]: "AlchemicalSilver",
+  [BuildingType.ResourceAdamantine]: "Adamantine",
+  [BuildingType.ResourceMithral]: "Mithral",
+  [BuildingType.ResourceDragonhide]: "Dragonhide",
+  [BuildingType.WorkersHut]: "House",
+  [BuildingType.Storehouse]: "Silo",
+  [BuildingType.ResourceWheat]: "Wheat",
+  [BuildingType.ResourceFish]: "Fish",
+  [BuildingType.ResourceDonkey]: "Donkey",
+  [BuildingType.ResourceLabor]: "Labor",
+  [BuildingType.ResourceCrossbowmanT1]: "Crossbowman",
+  [BuildingType.ResourceCrossbowmanT2]: "Crossbowman",
+  [BuildingType.ResourceCrossbowmanT3]: "Crossbowman",
+  [BuildingType.ResourcePaladinT1]: "Paladin",
+  [BuildingType.ResourcePaladinT2]: "Paladin",
+  [BuildingType.ResourcePaladinT3]: "Paladin",
+  [BuildingType.ResourceKnightT1]: "Knight",
+  [BuildingType.ResourceKnightT2]: "Knight",
+  [BuildingType.ResourceKnightT3]: "Knight",
+  [BuildingType.ResourceEssence]: "Essence",
+};
+
+// Army label creation functionality moved from army-manager.ts
+import { Position } from "@/types/position";
+import { getCharacterName } from "@/utils/agent";
+import { TroopType } from "@bibliothecadao/types";
+
+interface ArmyInfo {
+  entityId: number;
+  hexCoords: Position;
+  category: TroopType;
+  tier: TroopTier;
+  isMine: boolean;
+  isAlly: boolean;
+  isDaydreamsAgent: boolean;
+  owner: {
+    address: bigint;
+    ownerName: string;
+    guildName: string;
+  };
+  color: string;
+  troopCount: number;
+  currentStamina: number;
+  maxStamina: number;
+}
+
+// Create army info label - centralized from army-manager.ts
+export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLElement => {
+  // Create base label using shared utility
+  const labelDiv = createLabelBase({
+    isMine: army.isMine,
+    isAlly: army.isAlly,
+    isDaydreamsAgent: army.isDaydreamsAgent,
+  });
+
+  // Add army icon
+  const img = document.createElement("img");
+  img.src = army.isDaydreamsAgent
+    ? "/images/logos/daydreams.png"
+    : `/images/labels/${army.isMine ? "army" : army.isAlly ? "allies_army" : "enemy_army"}.png`;
+  img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+  img.setAttribute("data-component", "army-icon");
+  labelDiv.appendChild(img);
+
+  // Create text container with transition using shared utility
+  const textContainer = createContentContainer(cameraView);
+
+  // Add owner information using shared component
+  const line1 = createOwnerDisplayElement({
+    owner: army.owner,
+    isMine: army.isMine,
+    isAlly: army.isAlly,
+    cameraView,
+    color: army.color,
+    isDaydreamsAgent: army.isDaydreamsAgent,
+  });
+
+  // Add troop type information with consistent styling
+  const line2 = document.createElement("strong");
+  if (army.isDaydreamsAgent) {
+    line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
+  }
+
+  textContainer.appendChild(line1);
+  textContainer.appendChild(line2);
+
+  // Add enhanced troop count display if available
+  if (army.troopCount !== undefined) {
+    const troopCountDisplay = createTroopCountDisplay(army.troopCount, army.category, army.tier);
+    textContainer.appendChild(troopCountDisplay);
+  }
+
+  // Add stamina bar if data is available
+  if (army.currentStamina !== undefined && army.maxStamina !== undefined && army.maxStamina > 0) {
+    const staminaBar = createStaminaBar(army.currentStamina, army.maxStamina);
+    textContainer.appendChild(staminaBar);
+  } else if (army.currentStamina !== undefined) {
+    // Show just current stamina if max is not available
+    const staminaInfo = document.createElement("div");
+    staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+
+    const staminaIcon = document.createElement("span");
+    staminaIcon.textContent = "⚡";
+    staminaIcon.classList.add("text-yellow-400");
+    staminaInfo.appendChild(staminaIcon);
+
+    const staminaText = document.createElement("span");
+    staminaText.textContent = `${army.currentStamina}`;
+    staminaText.classList.add("text-white", "font-mono");
+    staminaInfo.appendChild(staminaText);
+
+    textContainer.appendChild(staminaInfo);
+  }
+
+  labelDiv.appendChild((textContainer as any).wrapper || textContainer);
+
+  return labelDiv;
+};
+
+/**
+ * Update an existing army label with new data
+ */
+export const updateArmyLabel = (labelElement: HTMLElement, army: ArmyInfo): void => {};
+
+/**
+ * Update an existing structure label with new data
+ */
+export const updateStructureLabel = (labelElement: HTMLElement, structure: StructureInfo): void => {
+  // Verify the structure icon is still present (debugging)
+  const structureIcon = labelElement.querySelector('[data-component="structure-icon"]') as HTMLElement;
+  if (!structureIcon) {
+    console.warn("Structure icon missing during update, label may have been corrupted");
+  }
+
+  // Update guard armies display if it exists
+  const guardDisplay = labelElement.querySelector('[data-component="guard-armies"]') as HTMLElement;
+  if (guardDisplay && structure.guardArmies) {
+    // Recreate the entire guard display to ensure proper layout
+    const newGuardDisplay = createGuardArmyDisplay(structure.guardArmies);
+
+    // Replace the content while preserving the container
+    guardDisplay.innerHTML = "";
+    while (newGuardDisplay.firstChild) {
+      guardDisplay.appendChild(newGuardDisplay.firstChild);
+    }
+  }
+
+  // Update active productions display if it exists
+  const productionsDisplay = labelElement.querySelector('[data-component="productions"]') as HTMLElement;
+  if (productionsDisplay && structure.activeProductions) {
+    // Recreate the entire productions display to ensure proper layout
+    const newProductionsDisplay = createProductionDisplay(structure.activeProductions);
+
+    // Replace the content while preserving the container
+    productionsDisplay.innerHTML = "";
+    while (newProductionsDisplay.firstChild) {
+      productionsDisplay.appendChild(newProductionsDisplay.firstChild);
+    }
+  }
+};
+
+// Chest label creation functionality
+interface ChestInfo {
+  entityId: number;
+  hexCoords: Position;
+}
+
+const CHEST_ICON_PATH = "/images/labels/chest.png";
+
+export const createChestLabel = (chest: ChestInfo, cameraView: CameraView): HTMLElement => {
+  // Create label div using the shared base
+  const labelDiv = createLabelBase({
+    isMine: false, // Chests don't have ownership
+    textColor: "#fbbf24", // Use amber-400 color for chests
+  });
+
+  // Add chest icon
+  const img = document.createElement("img");
+  img.src = CHEST_ICON_PATH;
+  img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+  img.setAttribute("data-component", "chest-icon");
+  labelDiv.appendChild(img);
+
+  // Create content container with transition using shared utility
+  const contentContainer = createContentContainer(cameraView);
+
+  // Add chest label
+  const line1 = document.createElement("span");
+  line1.textContent = `Chest`;
+  line1.style.color = "inherit";
+
+  contentContainer.appendChild(line1);
+
+  labelDiv.appendChild((contentContainer as any).wrapper || contentContainer);
+
+  return labelDiv;
+};
+
+/**
+ * Update an existing stamina bar with new values
+ */
+export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
+  const progressFill = staminaBarElement.querySelector("div > div") as HTMLElement; // The progress fill element
+  const textElement = staminaBarElement.querySelector("span:last-child") as HTMLElement; // The text element
+
+  if (textElement) {
+    textElement.textContent = `${currentStamina}/${maxStamina}`;
+  }
+  if (progressFill) {
+    const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
+    progressFill.style.width = `${percentage}%`;
+
+    // Color based on stamina level
+    if (percentage > 66) {
+      progressFill.style.backgroundColor = "#10b981"; // green-500
+    } else if (percentage > 33) {
+      progressFill.style.backgroundColor = "#f59e0b"; // amber-500
+    } else {
+      progressFill.style.backgroundColor = "#ef4444"; // red-500
+    }
+  }
 };

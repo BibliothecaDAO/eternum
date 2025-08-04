@@ -111,16 +111,12 @@ const DojoContextProvider = ({
 
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting, connector } = useAccount();
-  const accountName = useAccountStore((state) => state.accountName);
   const setAccountName = useAccountStore((state) => state.setAccountName);
 
   useEffect(() => {
     const getUsername = async () => {
       let username = await (connector as unknown as ControllerConnector)?.username();
-      if (!username) {
-        username = "adventurer"; // Default to adventurer in local mode
-      }
-      setAccountName(username);
+      username && setAccountName(username);
     };
     getUsername();
   }, [connector]);

@@ -258,6 +258,17 @@ export default {
     "text-enemy",
     "bg-ally",
     "bg-enemy",
+    // Stamina bar classes
+    "bg-gray-700",
+    "bg-green-500",
+    "bg-yellow-500", 
+    "bg-red-500",
+    "bg-amber-500",
+    "text-yellow-400",
+    "h-2",
+    "w-16",
+    "rounded-full",
+    "text-[10px]",
   ],
   plugins: [
     require("@tailwindcss/typography"),

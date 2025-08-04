@@ -16,6 +16,18 @@ export function Header() {
   const navigate = useNavigate();
   const matches = useMatches();
   const currentPath = matches.at(-1)?.pathname;
+  const connector = useStore((state) => state.connector);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!connector || !connector!.controller) return;
+
+    try {
+      connector.controller.username()?.then((name) => setUserName(name));
+    } catch (error) {
+      console.error("Failed to get username:", error);
+    }
+  }, [connector]);
 
   // Don't show header on home page
   if (currentPath === ROUTES.HOME) {

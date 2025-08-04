@@ -1411,6 +1411,12 @@ export function defineContractComponents(world: World) {
             step: RecsType.Number,
             point: RecsType.Number,
           },
+          blitz_hypers_settlement_config: {
+            max_ring_count: RecsType.Number,
+            current_ring_count: RecsType.Number,
+            point: RecsType.Number,
+            side: RecsType.Number,
+          },
           blitz_registration_config: {
             fee_amount: RecsType.BigInt,
             fee_token: RecsType.BigInt,
@@ -1598,6 +1604,10 @@ export function defineContractComponents(world: World) {
               "u32", // BlitzSettlementConfig side
               "u32", // BlitzSettlementConfig step
               "u32", // BlitzSettlementConfig point
+              "u8", // BlitzHypersSettlementConfig max_ring_count
+              "u8", // BlitzHypersSettlementConfig current_ring_count
+              "u8", // BlitzHypersSettlementConfig point
+              "u32", // BlitzHypersSettlementConfig side
               "u128", // BlitzRegistrationConfig fee_amount
               "ContractAddress", // BlitzRegistrationConfig fee_token
               "ContractAddress", // BlitzRegistrationConfig fee_recipient

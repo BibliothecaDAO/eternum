@@ -1,5 +1,7 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
+import { MapDataStore } from "@/three/managers/map-data-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -8,6 +10,7 @@ import {
   getHyperstructureProgress,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
@@ -194,7 +197,44 @@ export const getStructureInfoFromTileOccupier = (
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private setup: SetupResult) {}
+  private mapDataStore: MapDataStore;
+  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
+
+  constructor(private setup: SetupResult) {
+    // Initialize MapDataStore with centralized refresh interval
+    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
+
+    // Register callback to update labels when map data refreshes
+    this.mapDataStore.onRefresh(this.onMapDataRefresh);
+
+    // Start initial data fetch
+    this.mapDataStore.refresh().catch((error) => {
+      console.warn("Initial MapDataStore refresh failed:", error);
+    });
+
+    // Start automatic refresh timer
+    this.mapDataStore.startAutoRefresh();
+  }
+
+  /**
+   * Handle map data refresh by updating all visible labels
+   */
+  private handleMapDataRefresh(): void {
+    console.log("SystemManager: Handling map data refresh, updating labels");
+
+    // Trigger label updates by calling the onUpdate methods for all visible entities
+    // This will fetch fresh data from the MapDataStore and update the labels
+    this.refreshAllVisibleLabels();
+  }
+
+  /**
+   * Refresh all visible army and structure labels with updated data
+   */
+  private refreshAllVisibleLabels(): void {
+    // Note: We would need access to the HexagonScene managers here
+    // This will be implemented once we have access to army and structure managers
+    console.log("SystemManager: Refreshing all visible labels (placeholder)");
+  }
 
   private setupSystem<T>(
     component: Component,
@@ -267,6 +307,43 @@ export class SystemManager {
               const isAlly =
                 Boolean(loggedInAccountPlayerData?.guildId) &&
                 loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
+
+              console.log({ isAlly, explorerOwnerAddress, explorerPlayerData });
+
+              // Get enhanced army data from MapDataStore
+              const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
+
+              const { currentArmiesTick } = getBlockTimestamp();
+
+              const currentStamina = armyMapData
+                ? Number(
+                    StaminaManager.getStamina(
+                      {
+                        category: explorer.troopType,
+                        tier: explorer.troopTier,
+                        count: BigInt(armyMapData.count),
+                        stamina: {
+                          amount: BigInt(armyMapData.stamina.amount),
+                          updated_tick: BigInt(armyMapData.stamina.updated_tick),
+                        },
+                        boosts: {
+                          incr_stamina_regen_percent_num: 0,
+                          incr_stamina_regen_tick_count: 0,
+                          incr_explore_reward_percent_num: 0,
+                          incr_explore_reward_end_tick: 0,
+                          incr_damage_dealt_percent_num: 0,
+                          incr_damage_dealt_end_tick: 0,
+                          decr_damage_gotten_percent_num: 0,
+                          decr_damage_gotten_end_tick: 0,
+                        },
+                      },
+                      currentArmiesTick,
+                    ).amount,
+                  )
+                : 0;
+
+              const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
+
               return {
                 entityId: currentState.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
@@ -280,6 +357,10 @@ export class SystemManager {
                 troopTier: explorer.troopTier as TroopTier,
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
                 isAlly,
+                // Enhanced data from MapDataStore
+                troopCount: armyMapData?.count || 0,
+                currentStamina,
+                maxStamina,
               };
             }
           },
@@ -386,6 +467,10 @@ export class SystemManager {
             const isAlly =
               Boolean(loggedInAccountPlayerData?.guildId) &&
               loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
+
+            // Get enhanced structure data from MapDataStore
+            const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
+
             return {
               entityId: currentState.occupier_id,
               hexCoords: {
@@ -403,6 +488,9 @@ export class SystemManager {
               },
               hasWonder: structureInfo.hasWonder,
               isAlly,
+              // Enhanced data from MapDataStore
+              guardArmies: structureMapData?.guardArmies || [],
+              activeProductions: structureMapData?.activeProductions || [],
             };
           }
         });
@@ -683,5 +771,13 @@ export class SystemManager {
         );
       },
     };
+  }
+
+  /**
+   * Clean up resources and stop timers
+   */
+  public destroy(): void {
+    this.mapDataStore.destroy();
+    console.log("SystemManager: Destroyed and cleaned up");
   }
 }

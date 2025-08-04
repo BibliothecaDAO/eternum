@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
@@ -32,7 +33,11 @@ export const InventoryResources = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const { regularResources, relics } = useMemo(() => {
-    const balances = ResourceManager.getResourceBalances(resources);
+    const { currentDefaultTick } = getBlockTimestamp();
+    // Only include resources with amount > 0
+    const balances = ResourceManager.getResourceBalancesWithProduction(resources, currentDefaultTick).filter(
+      (resource) => resource.amount > 0,
+    );
 
     if (!activateRelics) {
       return {

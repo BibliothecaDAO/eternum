@@ -787,6 +787,18 @@ export class ClientConfigManager {
 
         const blitzSettlementConfig = config.blitz_settlement_config;
         const blitzRegistrationConfig = config.blitz_registration_config;
+        const blitzHypersSettlementConfig = config.blitz_hypers_settlement_config;
+        const blitzHyperStructureCount = getComponentValue(
+          this.components.HyperstructureGlobals,
+          getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]),
+        )?.created_count || 0;
+
+        // get number of hyperstructures left to create
+        let numHyperStructuresLeft = 1;
+        for (let i = 1; i <= blitzHypersSettlementConfig.max_ring_count; i++) {
+          numHyperStructuresLeft += 6 * i;
+        }
+        numHyperStructuresLeft -= blitzHyperStructureCount;
 
         return {
           blitz_mode_on: config?.blitz_mode_on ?? false,
@@ -808,6 +820,7 @@ export class ClientConfigManager {
             creation_end_at: Number(blitzRegistrationConfig.creation_end_at),
             assigned_positions_count: Number(blitzRegistrationConfig.assigned_positions_count),
           },
+          blitz_num_hyperstructures_left: Math.max(numHyperStructuresLeft, 0),
         };
       },
       {
@@ -830,6 +843,7 @@ export class ClientConfigManager {
           creation_end_at: 0,
           assigned_positions_count: 0,
         },
+        blitz_num_hyperstructures_left: 0,
       },
     );
   }

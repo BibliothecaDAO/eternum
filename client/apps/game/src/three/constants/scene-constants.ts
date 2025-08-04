@@ -53,6 +53,8 @@ enum BuildingFilenames {
   Farm = "farm.glb",
   FishingVillage = "fishery.glb",
   FragmentMine = "mine.glb",
+  Camp = "camp.glb",
+  EssenceRift = "mine.glb",
   Market = "market.glb",
   Resource = "mine.glb",
   Stable = "stable.glb",
@@ -122,50 +124,57 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | typeof WONDER_REALM
   | StructureType.Village;
 
-export const buildingModelPaths = {
-  [BUILDINGS_GROUPS.BUILDINGS]: {
-    [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-    [BuildingType.ResourceCrossbowmanT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceCrossbowmanT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceCrossbowmanT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ResourceKnightT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourceKnightT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourceKnightT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.ResourcePaladinT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourcePaladinT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourcePaladinT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-    [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-    [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
-    [BuildingType.ResourceAncientFragment]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
-    [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
-    [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
-    [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
-    [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
-  },
-  [BUILDINGS_GROUPS.RESOURCES_MINING]: {
-    [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
-    [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
-    [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
-    [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
-  },
-  [BUILDINGS_GROUPS.REALMS]: {
-    [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-    [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-    [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-    [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-  },
-  [BUILDINGS_GROUPS.VILLAGE]: {
-    [StructureType.Village]: BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
-  },
-  [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-    [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-  },
-  [BUILDINGS_GROUPS.WONDER]: {
-    [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
-  },
+export const buildingModelPaths = (isBlitz: boolean) => {
+  return {
+    [BUILDINGS_GROUPS.BUILDINGS]: {
+      [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+      [BuildingType.ResourceCrossbowmanT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceCrossbowmanT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceCrossbowmanT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.ResourceKnightT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourceKnightT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourceKnightT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+      [BuildingType.ResourcePaladinT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourcePaladinT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourcePaladinT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+      [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+      [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
+      [BuildingType.ResourceAncientFragment]: isBlitz
+        ? BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift
+        : BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+      [BuildingType.ResourceEssence]: BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift,
+      [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
+      [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
+      [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
+      [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+    },
+    [BUILDINGS_GROUPS.RESOURCES_MINING]: {
+      [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,
+      [ResourceMiningTypes.Mine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Mine,
+      [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
+      [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
+    },
+    [BUILDINGS_GROUPS.REALMS]: {
+      [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+      [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+      [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+      [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+    },
+    [BUILDINGS_GROUPS.VILLAGE]: {
+      [StructureType.Village]: isBlitz
+        ? BUILDINGS_MODELS_PATH + BuildingFilenames.Camp
+        : BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
+    },
+    [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
+      [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+      [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+      [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    },
+    [BUILDINGS_GROUPS.WONDER]: {
+      [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
+    },
+  };
 };
 
 export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = {
@@ -193,23 +202,29 @@ export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = 
 export const PROGRESS_HALF_THRESHOLD = 50;
 export const PROGRESS_FINAL_THRESHOLD = 100;
 
-export const StructureModelPaths: Record<StructureType, string[]> = {
-  [StructureType.Realm]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
-  ],
-  [StructureType.Hyperstructure]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
-  ],
-  [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
-  [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
-};
+export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
+  return {
+    [StructureType.Realm]: [
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
+    ],
+    [StructureType.Hyperstructure]: [
+      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+      BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    ],
+    [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
+    [StructureType.FragmentMine]: isBlitz
+      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift]
+      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+    [StructureType.Village]: isBlitz
+      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp]
+      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
+  };
+}
 
 export const MinesMaterialsParams: Record<
   number,

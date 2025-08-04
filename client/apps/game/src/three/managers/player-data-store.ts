@@ -119,7 +119,9 @@ export class PlayerDataStore {
 
   public async getPlayerDataFromAddress(address: string): Promise<PlayerDataTransformed | undefined> {
     this._checkRefresh();
-    return this.addressToPlayerDataMap.get(BigInt(address).toString());
+    const playerData = this.addressToPlayerDataMap.get(BigInt(address).toString());
+    console.log({ playerData, address });
+    return playerData;
   }
 
   public async getPlayerDataFromStructureId(structureId: string): Promise<PlayerDataTransformed | undefined> {

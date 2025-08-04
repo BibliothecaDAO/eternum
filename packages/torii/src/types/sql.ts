@@ -202,6 +202,52 @@ export interface SeasonEnded {
   timestamp: number;
 }
 
+export interface StructureMapDataRaw {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  structure_type: number;
+  level: number;
+  owner_address: string;
+  realm_id: number | null;
+  resources_packed: string;
+  owner_name: string | null;
+  // Guard army data
+  delta_category: string | null;
+  delta_tier: string | null;
+  delta_count: string | null; // hex string
+  delta_stamina_amount: string | null; // hex string
+  charlie_category: string | null;
+  charlie_tier: string | null;
+  charlie_count: string | null; // hex string
+  charlie_stamina_amount: string | null; // hex string
+  bravo_category: string | null;
+  bravo_tier: string | null;
+  bravo_count: string | null; // hex string
+  bravo_stamina_amount: string | null; // hex string
+  alpha_category: string | null;
+  alpha_tier: string | null;
+  alpha_count: string | null; // hex string
+  alpha_stamina_amount: string | null; // hex string
+  // Building production data from StructureBuildings
+  packed_counts_1: string | null; // hex string
+  packed_counts_2: string | null; // hex string
+  packed_counts_3: string | null; // hex string
+}
+
+export interface ArmyMapDataRaw {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  category: string | null;
+  tier: string | null;
+  count: string; // hex string
+  stamina_amount: string | null; // hex string
+  stamina_updated_tick: string | null; // hex string
+  owner_address: string | null;
+  owner_name: string | null;
+}
+
 // Raw response types for queries that need transformation
 export interface RawRealmVillageSlot {
   "connected_realm_coord.x": number;

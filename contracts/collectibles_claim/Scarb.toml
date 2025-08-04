@@ -1,0 +1,22 @@
+[package]
+name = "collectibles_claim"
+version = "1.0.0"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "v0.3.0" }
+openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.20.0"}
+graffiti = { git = "https://github.com/ponderingdemocritus/graffiti", rev = "bc569531791dbc71c6cd8d9bc154c34eedad31fe" }
+
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.31.0" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
