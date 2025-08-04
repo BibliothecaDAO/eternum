@@ -313,6 +313,41 @@ export class SystemManager {
 
               const { currentArmiesTick } = getBlockTimestamp();
 
+              const currentStamina = armyMapData
+                ? Number(
+                    StaminaManager.getStamina(
+                      {
+                        category: explorer.troopType,
+                        tier: explorer.troopTier,
+                        count: BigInt(armyMapData.count),
+                        stamina: {
+                          amount: BigInt(armyMapData.stamina.amount),
+                          updated_tick: BigInt(armyMapData.stamina.updated_tick),
+                        },
+                        boosts: {
+                          incr_stamina_regen_percent_num: 0,
+                          incr_stamina_regen_tick_count: 0,
+                          incr_explore_reward_percent_num: 0,
+                          incr_explore_reward_end_tick: 0,
+                          incr_damage_dealt_percent_num: 0,
+                          incr_damage_dealt_end_tick: 0,
+                          decr_damage_gotten_percent_num: 0,
+                          decr_damage_gotten_end_tick: 0,
+                        },
+                      },
+                      currentArmiesTick,
+                    ).amount,
+                  )
+                : 0;
+
+              const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
+
+              console.log({
+                troopId: currentState.occupier_id,
+                stamina: currentStamina,
+                maxStamina,
+              });
+
               return {
                 entityId: currentState.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
@@ -328,31 +363,8 @@ export class SystemManager {
                 isAlly,
                 // Enhanced data from MapDataStore
                 troopCount: armyMapData?.count || 0,
-                currentStamina: Number(
-                  StaminaManager.getStamina(
-                    {
-                      category: explorer.troopType,
-                      tier: explorer.troopTier,
-                      count: BigInt(armyMapData?.count || 0),
-                      stamina: {
-                        amount: BigInt(armyMapData?.stamina.amount || 0),
-                        updated_tick: BigInt(armyMapData?.stamina.updated_tick || 0),
-                      },
-                      boosts: {
-                        incr_stamina_regen_percent_num: 0,
-                        incr_stamina_regen_tick_count: 0,
-                        incr_explore_reward_percent_num: 0,
-                        incr_explore_reward_end_tick: 0,
-                        incr_damage_dealt_percent_num: 0,
-                        incr_damage_dealt_end_tick: 0,
-                        decr_damage_gotten_percent_num: 0,
-                        decr_damage_gotten_end_tick: 0,
-                      },
-                    },
-                    currentArmiesTick,
-                  ).amount,
-                ),
-                maxStamina: StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier),
+                currentStamina,
+                maxStamina,
               };
             }
           },
