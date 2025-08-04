@@ -12,7 +12,8 @@ import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { applyLabelTransitions, createStructureLabel, transitionManager, updateStructureLabel } from "../utils/";
+import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
+import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 import { MapDataStore } from "./map-data-store";
 
