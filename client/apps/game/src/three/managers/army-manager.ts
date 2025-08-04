@@ -22,7 +22,10 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { applyLabelTransitions, createArmyLabel, findShortestPath, LABEL_STYLES, updateArmyLabel } from "../utils/";
+import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { LABEL_STYLES } from "../utils/labels/label-config";
+import { applyLabelTransitions } from "../utils/labels/label-transitions";
+import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
 import { MapDataStore } from "./map-data-store";
 
@@ -330,15 +333,15 @@ export class ArmyManager {
     const isMine = isAddressEqualToAccount(owner.address);
 
     // Determine the color based on ownership (consistent with structure labels)
-    let color;
+    let color: string;
     if (isDaydreamsAgent) {
       color = COLORS.SELECTED;
     } else if (isMine) {
-      color = LABEL_STYLES.MINE.textColor;
+      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
     } else if (isAlly) {
-      color = LABEL_STYLES.ALLY.textColor;
+      color = LABEL_STYLES.ALLY.textColor || "#bae6fd";
     } else {
-      color = LABEL_STYLES.ENEMY.textColor;
+      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
     }
 
     this.armies.set(entityId, {
@@ -349,7 +352,7 @@ export class ArmyManager {
       isAlly,
       owner,
       color,
-      order: orderData?.orderName || "",
+      order: (orderData?.orderName ?? "") as string,
       category,
       tier,
       isDaydreamsAgent,

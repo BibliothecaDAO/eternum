@@ -8,7 +8,8 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { ChestData, ChestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { applyLabelTransitions, createChestLabel, transitionManager } from "../utils/";
+import { createChestLabel } from "../utils/labels/label-factory";
+import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 
 const MAX_INSTANCES = 1000;

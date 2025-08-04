@@ -8,13 +8,10 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createContentContainer, createLabelBase, transitionManager } from "../utils/";
+import { LabelManager } from "../utils/labels/label-manager";
+import { QuestLabelType, QuestLabelData } from "../utils/labels/label-factory";
 import { gltfLoader } from "../utils/utils";
 const MAX_INSTANCES = 1000;
-
-const ICONS = {
-  [QuestType.DarkShuffle]: "/images/labels/quest.png",
-};
 
 export class QuestManager {
   private scene: THREE.Scene;
@@ -25,11 +22,10 @@ export class QuestManager {
   quests: Quests = new Quests();
   private visibleQuests: QuestData[] = [];
   private currentChunkKey: string | null = "190,170";
-  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private labelsGroup: THREE.Group;
   private entityIdMaps: Map<QuestType, Map<number, ID>> = new Map();
   private scale: number = 1;
   private currentCameraView: CameraView;
+  private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
 
   constructor(
@@ -40,9 +36,19 @@ export class QuestManager {
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
-    this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    
+    // Initialize the label manager
+    this.labelManager = new LabelManager({
+      labelsGroup: labelsGroup || new THREE.Group(),
+      initialCameraView: this.currentCameraView,
+      maxLabels: 1000,
+      autoCleanup: true,
+    });
+    
+    // Register the quest label type
+    this.labelManager.registerLabelType(QuestLabelType);
     this.loadModels().then(() => {
       if (this.currentChunkKey) {
         this.renderVisibleQuests(this.currentChunkKey);
@@ -56,23 +62,10 @@ export class QuestManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
-
-    // If we're moving away from Medium view, clean up transition state
-    if (this.currentCameraView === CameraView.Medium) {
-      transitionManager.clearMediumViewTransition();
-    }
-
     this.currentCameraView = view;
 
-    // If we're switching to Medium view, store timestamp
-    if (view === CameraView.Medium) {
-      transitionManager.setMediumViewTransition();
-    }
-
-    // Update all existing labels to reflect the new view
-    this.visibleQuests.forEach((quest) => {
-      this.updateLabelVisibility(quest.entityId, view === CameraView.Far);
-    });
+    // Update the label manager's camera view
+    this.labelManager.updateCameraView(view);
   };
 
   public destroy() {
@@ -80,6 +73,9 @@ export class QuestManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
+    
+    // Clean up the label manager
+    this.labelManager.destroy();
   }
 
   private async loadModels(): Promise<void> {
@@ -202,11 +198,19 @@ export class QuestManager {
           position.y += 0.05;
           const { x, y } = quest.hexCoords.getContract();
 
-          // Always recreate the label to ensure it matches current camera view
-          if (this.entityIdLabels.has(quest.entityId)) {
-            this.removeEntityIdLabel(quest.entityId);
-          }
-          this.addEntityIdLabel(quest, position);
+          // Create or update quest label using the label manager
+          const questLabelData: QuestLabelData = {
+            entityId: quest.entityId,
+            hexCoords: quest.hexCoords,
+            questType: quest.questType,
+            occupierId: quest.occupierId,
+          };
+
+          // Remove existing label if it exists, then create new one
+          this.labelManager.removeLabel(quest.entityId);
+          this.labelManager.createLabel("quest", questLabelData, {
+            cameraView: this.currentCameraView,
+          });
 
           this.dummy.position.copy(position);
 
@@ -227,9 +231,10 @@ export class QuestManager {
       }
     }
     // Remove labels for quests that are no longer visible
-    this.entityIdLabels.forEach((label, entityId) => {
-      if (!this.visibleQuests.find((quest) => quest.entityId === entityId)) {
-        this.removeEntityIdLabel(entityId);
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach((labelInstance) => {
+      if (!visibleQuestIds.has(labelInstance.data.entityId)) {
+        this.labelManager.removeLabel(labelInstance.data.entityId);
       }
     });
 
@@ -238,128 +243,19 @@ export class QuestManager {
     // this.questModel.computeBoundingSphere();
   }
 
-  private removeEntityIdLabel(entityId: number) {
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.labelsGroup.remove(label);
-      this.entityIdLabels.delete(entityId);
-    }
-  }
-
-  private addEntityIdLabel(quest: QuestData, position: THREE.Vector3) {
-    // Create label div using the shared base
-    const labelDiv = createLabelBase({
-      isMine: false, // Quests don't have ownership
-      textColor: "text-gold", // Use gold color for quests
-    });
-
-    // Prevent right click
-    labelDiv.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    const img = document.createElement("img");
-    img.src = ICONS[QuestType.DarkShuffle];
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    labelDiv.appendChild(img);
-
-    // Create text container with transition using shared utility
-    const textContainer = createContentContainer(this.currentCameraView);
-
-    const line1 = document.createElement("span");
-    line1.textContent = `Quest`;
-    line1.style.color = "inherit";
-
-    textContainer.appendChild(line1);
-    labelDiv.appendChild(textContainer);
-
-    const label = new CSS2DObject(labelDiv);
-    label.position.copy(position);
-    label.position.y += 1.5;
-
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
-
-    this.labelsGroup.add(label);
-    this.entityIdLabels.set(quest.entityId, label);
-  }
+  // Label management is now handled by LabelManager
 
   public removeLabelsFromScene(): void {
-    this.entityIdLabels.forEach((labelData) => {
-      this.labelsGroup.remove(labelData);
-    });
+    // Label visibility is managed by LabelManager
+    // If needed, we could call labelManager.removeAllLabels() here
   }
 
   public addLabelsToScene(): void {
-    this.entityIdLabels.forEach((labelData) => {
-      if (!this.labelsGroup.children.includes(labelData)) {
-        this.labelsGroup.add(labelData);
-      }
-    });
+    // Label visibility is managed by LabelManager  
+    // Labels are automatically added when created
   }
 
-  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
-    const labelData = this.entityIdLabels.get(entityId);
-    if (labelData?.element) {
-      const textContainer = labelData.element.querySelector(".flex.flex-col");
-      if (textContainer) {
-        // Get the container's unique ID or generate one if it doesn't exist
-        let containerId = (textContainer as HTMLElement).dataset.containerId;
-        if (!containerId) {
-          containerId = `quest_${entityId}_${Math.random().toString(36).substring(2, 9)}`;
-          (textContainer as HTMLElement).dataset.containerId = containerId;
-        }
-
-        if (isCompact) {
-          // For Far view (isCompact = true), always collapse immediately
-          textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[250px]", "ml-2");
-          // Clear any existing timeouts
-          transitionManager.clearTimeout(containerId);
-        } else {
-          // For Medium and Close views, expand immediately
-          textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[250px]", "ml-2");
-
-          // If this is Medium view, add timeout to switch back to compact
-          if (this.currentCameraView === CameraView.Medium) {
-            // Store the current timestamp
-            transitionManager.setMediumViewTransition(containerId);
-
-            // Use the managed timeout
-            transitionManager.setLabelTimeout(
-              () => {
-                // Only apply if the element is still connected to the DOM
-                if (textContainer.isConnected) {
-                  textContainer.classList.remove("max-w-[250px]", "ml-2");
-                  textContainer.classList.add("max-w-0", "ml-0");
-
-                  // Clear the transition state
-                  transitionManager.clearMediumViewTransition(containerId);
-                }
-              },
-              2000,
-              containerId,
-            );
-          } else if (this.currentCameraView === CameraView.Close) {
-            // For Close view, ensure we cancel any existing timeouts
-            transitionManager.clearTimeout(containerId);
-          }
-        }
-      }
-    }
-  }
+  // Label visibility transitions are now handled automatically by LabelManager
 }
 
 class Quests {
