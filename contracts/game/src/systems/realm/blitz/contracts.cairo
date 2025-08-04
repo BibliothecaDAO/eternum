@@ -36,6 +36,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
+    use s1_eternum::models::structure::StructureOwnerStats;
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
@@ -159,6 +160,10 @@ pub mod blitz_realm_systems {
             let mut address_name: AddressName = world.read_model(owner);
             address_name.name = name;
             world.write_model(@address_name);
+
+            let mut structure_owner_stats: StructureOwnerStats = world.read_model(owner);
+            structure_owner_stats.name = name;
+            world.write_model(@structure_owner_stats);
 
             // emit registration event
             world.emit_event(@BlitzRegistrationEvent { player: owner, timestamp: now.into() });
