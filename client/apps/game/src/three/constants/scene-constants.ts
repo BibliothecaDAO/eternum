@@ -54,7 +54,7 @@ enum BuildingFilenames {
   FishingVillage = "fishery.glb",
   FragmentMine = "mine.glb",
   Camp = "camp.glb",
-  EssenceRift = "mine.glb",
+  EssenceRift = "essence_rift.glb",
   Market = "market.glb",
   Resource = "mine.glb",
   Stable = "stable.glb",
