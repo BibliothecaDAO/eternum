@@ -24,6 +24,7 @@ import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -125,6 +126,7 @@ export default class HexceptionScene extends HexagonScene {
   private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
+  private isBlitz: boolean;
 
   constructor(
     controls: MapControls,
@@ -135,6 +137,7 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
+    this.isBlitz = getIsBlitz();
     this.buildingPreview = new BuildingPreview(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -244,7 +247,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private loadBuildingModels() {
     for (const category of Object.values(BUILDINGS_GROUPS)) {
-      const categoryPaths = buildingModelPaths[category];
+      const categoryPaths = buildingModelPaths(this.isBlitz)[category];
       if (!this.buildingModels.has(category)) {
         this.buildingModels.set(category, new Map());
       }
