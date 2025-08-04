@@ -5,7 +5,8 @@ import { GUIManager } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { Position } from "@/types/position";
 import { COLORS } from "@/ui/features/settlement";
-import { Biome, configManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   ContractAddress,
@@ -610,6 +611,7 @@ export class ArmyManager {
    */
   private handleMapDataRefresh(): void {
     console.log("ArmyManager: Handling map data refresh, updating cached data for", this.armies.size, "armies");
+    const { currentArmiesTick } = getBlockTimestamp();
 
     // Update ALL cached army data, not just visible ones
     this.armies.forEach((army, entityId) => {
@@ -621,8 +623,31 @@ export class ArmyManager {
       const updatedArmy: ArmyData = {
         ...army,
         troopCount: armyMapData.count,
-        currentStamina: Number(armyMapData.stamina.amount),
-        maxStamina: 100, // TODO: Calculate proper max stamina based on army data
+        currentStamina: Number(
+          StaminaManager.getStamina(
+            {
+              category: army.category,
+              tier: army.tier,
+              count: BigInt(armyMapData.count),
+              stamina: {
+                amount: BigInt(armyMapData.stamina.amount),
+                updated_tick: BigInt(armyMapData.stamina.updated_tick),
+              },
+              boosts: {
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+              },
+            },
+            currentArmiesTick,
+          ).amount,
+        ),
+        maxStamina: StaminaManager.getMaxStamina(army.category, army.tier),
       };
 
       // Update the army in our local cache

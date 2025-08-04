@@ -192,7 +192,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   return (
     <div className="p-2 border rounded-lg shadow-md panel-wood">
       <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes.
+        IMPORTANT: Your browser must stay open for automation. Automation runs every minute.
         <br />
       </div>
       <h4 className="mb-2">
@@ -225,7 +225,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         </li>
         <li>Resources produced will increase your realm's balance and may cause resource loss if storage is full.</li>
         <li>
-          Process activates every <span className="font-bold">10 minutes</span> automatically.
+          Process activates every <span className="font-bold">1 minute</span> automatically.
         </li>
       </ul>
 

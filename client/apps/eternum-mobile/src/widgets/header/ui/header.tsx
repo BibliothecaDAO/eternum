@@ -29,7 +29,7 @@ export function Header() {
   const matches = useMatches();
   const currentPath = matches.at(-1)?.pathname;
   const connector = useStore((state) => state.connector);
-  const [userName, setUserName] = useState("adventurer");
+  const [userName, setUserName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!connector || !connector!.controller) return;
@@ -37,8 +37,7 @@ export function Header() {
     try {
       connector.controller.username()?.then((name) => setUserName(name));
     } catch (error) {
-      // controller in local
-      setUserName("adventurer");
+      console.error("Failed to get username:", error);
     }
   }, [connector]);
 

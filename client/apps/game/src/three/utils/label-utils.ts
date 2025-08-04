@@ -340,7 +340,7 @@ export const createContentContainer = (cameraView: CameraView) => {
 
   // Create inner container for content
   const contentContainer = document.createElement("div");
-  contentContainer.classList.add("flex", "flex-col", "gap-y-1", "w-max");
+  contentContainer.classList.add("flex", "flex-col", "w-max");
 
   // Add empty div with w-2 for spacing
   const spacerDiv = document.createElement("div");
@@ -355,7 +355,7 @@ export const createContentContainer = (cameraView: CameraView) => {
   const mediumViewExpanded = transitionDB.getMediumViewExpanded(containerId);
 
   const wrapperStyle = ["max-w-[1000px]", "ml-2", "opacity-100"];
-  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
 
   // Put content inside wrapper
   wrapperContainer.appendChild(contentContainer);
@@ -408,7 +408,6 @@ export const createLabelBase = (options: LabelBaseOptions) => {
   // Add common classes
   labelDiv.classList.add(
     "rounded-md",
-    "pointer-events-auto",
     // "h-",
     "p-0.5",
     "-translate-x-1/2",
@@ -713,14 +712,19 @@ export const transitionManager = {
 // Centralized camera view transition handling for existing labels
 export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: CameraView) => {
   const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
-  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
 
   labelsMap.forEach((label, entityId) => {
     if (label.element) {
       // Look for the wrapper div with transition classes
       const wrapperContainer = label.element.querySelector(".transition-all.duration-700");
       if (wrapperContainer) {
-        console.log("applyLabelTransitions found wrapper for entityId:", entityId, "classes:", wrapperContainer.className);
+        console.log(
+          "applyLabelTransitions found wrapper for entityId:",
+          entityId,
+          "classes:",
+          wrapperContainer.className,
+        );
         // Get or create a container ID for tracking timeouts
         let containerId = (wrapperContainer as HTMLElement).dataset.containerId;
         if (!containerId) {
@@ -927,7 +931,6 @@ const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
 // Army label creation functionality moved from army-manager.ts
 import { Position } from "@/types/position";
 import { getCharacterName } from "@/utils/agent";
-import { getTroopName } from "@bibliothecadao/eternum";
 import { TroopType } from "@bibliothecadao/types";
 
 interface ArmyInfo {
@@ -984,8 +987,6 @@ export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLEle
   const line2 = document.createElement("strong");
   if (army.isDaydreamsAgent) {
     line2.textContent = `${getCharacterName(army.tier, army.category, army.entityId)}`;
-  } else {
-    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier] || ""}`;
   }
 
   textContainer.appendChild(line1);
@@ -1027,39 +1028,7 @@ export const createArmyLabel = (army: ArmyInfo, cameraView: CameraView): HTMLEle
 /**
  * Update an existing army label with new data
  */
-export const updateArmyLabel = (labelElement: HTMLElement, army: ArmyInfo): void => {
-  // Verify the army icon is still present (debugging)
-  const armyIcon = labelElement.querySelector('[data-component="army-icon"]') as HTMLElement;
-  if (!armyIcon) {
-    console.warn("Army icon missing during update, label may have been corrupted");
-  }
-
-  // Update stamina bar if it exists
-  const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]') as HTMLElement;
-  if (staminaBar && army.currentStamina !== undefined && army.maxStamina !== undefined) {
-    updateStaminaBar(staminaBar, army.currentStamina, army.maxStamina);
-  }
-
-  // Update troop count display if it exists
-  const troopCountElement = labelElement.querySelector('[data-component="troop-count"]') as HTMLElement;
-  if (troopCountElement && army.troopCount !== undefined) {
-    const countSpan = troopCountElement.querySelector('[data-role="count"]') as HTMLElement;
-    if (countSpan) {
-      countSpan.textContent = army.troopCount.toString();
-    }
-  }
-
-  // Update simple stamina display if stamina bar doesn't exist but stamina info does
-  if (!staminaBar && army.currentStamina !== undefined) {
-    const staminaInfo = labelElement.querySelector(".text-yellow-400")?.parentElement;
-    if (staminaInfo) {
-      const staminaText = staminaInfo.querySelector(".font-mono") as HTMLElement;
-      if (staminaText) {
-        staminaText.textContent = `${army.currentStamina}`;
-      }
-    }
-  }
-};
+export const updateArmyLabel = (labelElement: HTMLElement, army: ArmyInfo): void => {};
 
 /**
  * Update an existing structure label with new data

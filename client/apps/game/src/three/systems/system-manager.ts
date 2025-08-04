@@ -1,8 +1,8 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { MapDataStore } from "@/three/managers/map-data-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
   divideByPrecision,
@@ -308,12 +308,41 @@ export class SystemManager {
                 Boolean(loggedInAccountPlayerData?.guildId) &&
                 loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
 
+              console.log({ isAlly, explorerOwnerAddress, explorerPlayerData });
+
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 
-              if (!armyMapData) return;
-
               const { currentArmiesTick } = getBlockTimestamp();
+
+              const currentStamina = armyMapData
+                ? Number(
+                    StaminaManager.getStamina(
+                      {
+                        category: explorer.troopType,
+                        tier: explorer.troopTier,
+                        count: BigInt(armyMapData.count),
+                        stamina: {
+                          amount: BigInt(armyMapData.stamina.amount),
+                          updated_tick: BigInt(armyMapData.stamina.updated_tick),
+                        },
+                        boosts: {
+                          incr_stamina_regen_percent_num: 0,
+                          incr_stamina_regen_tick_count: 0,
+                          incr_explore_reward_percent_num: 0,
+                          incr_explore_reward_end_tick: 0,
+                          incr_damage_dealt_percent_num: 0,
+                          incr_damage_dealt_end_tick: 0,
+                          decr_damage_gotten_percent_num: 0,
+                          decr_damage_gotten_end_tick: 0,
+                        },
+                      },
+                      currentArmiesTick,
+                    ).amount,
+                  )
+                : 0;
+
+              const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
               return {
                 entityId: currentState.occupier_id,
@@ -329,32 +358,9 @@ export class SystemManager {
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
                 isAlly,
                 // Enhanced data from MapDataStore
-                troopCount: armyMapData.count,
-                currentStamina: Number(
-                  StaminaManager.getStamina(
-                    {
-                      category: explorer.troopType,
-                      tier: explorer.troopTier,
-                      count: BigInt(armyMapData.count),
-                      stamina: {
-                        amount: BigInt(armyMapData.stamina.amount),
-                        updated_tick: BigInt(armyMapData.stamina.updated_tick),
-                      },
-                      boosts: {
-                        incr_stamina_regen_percent_num: 0,
-                        incr_stamina_regen_tick_count: 0,
-                        incr_explore_reward_percent_num: 0,
-                        incr_explore_reward_end_tick: 0,
-                        incr_damage_dealt_percent_num: 0,
-                        incr_damage_dealt_end_tick: 0,
-                        decr_damage_gotten_percent_num: 0,
-                        decr_damage_gotten_end_tick: 0,
-                      },
-                    },
-                    currentArmiesTick,
-                  ).amount,
-                ),
-                maxStamina: StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier),
+                troopCount: armyMapData?.count || 0,
+                currentStamina,
+                maxStamina,
               };
             }
           },

@@ -79,7 +79,7 @@ export const UnifiedArmyCreationModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
-  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(direction || null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(direction !== undefined ? direction : null);
   const [selectedTroopCombo, setSelectedTroopCombo] = useState<{ type: TroopType; tier: TroopTier }>({
     type: TroopType.Crossbowman,
     tier: TroopTier.T1,
@@ -122,10 +122,10 @@ export const UnifiedArmyCreationModal = ({
 
   // Auto-select first available direction
   useEffect(() => {
-    if (freeDirections.length > 0 && selectedDirection === null) {
+    if (freeDirections.length > 0 && selectedDirection === null && direction === undefined) {
       setSelectedDirection(freeDirections[0]);
     }
-  }, [freeDirections, selectedDirection]);
+  }, [freeDirections, selectedDirection, direction]);
 
   const handleCreate = async () => {
     if (!armyManager || troopCount <= 0) return;

@@ -22,13 +22,13 @@ priorities.
 - **Entity-Specific**: Automation is configured on a per-entity basis.
 - **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
   function.
-- **10-Minute Cycles**: All automation is processed every 10 minutes.
+- **10-Minute Cycles**: All automation is processed every minute.
 
 ## How It Works
 
 The automation system periodically checks and processes active orders for each entity.
 
-1. **Processing Interval**: All orders are evaluated every 10 minutes.
+1. **Processing Interval**: All orders are evaluated every 1 minute.
 2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
 3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
 4. **Order Processing**: The system processes different order types:
@@ -84,7 +84,7 @@ Transfer automation allows you to automatically move resources between your enti
 1. **Recurring Transfers**:
 
    - Transfers resources at regular intervals.
-   - Minimum interval: 10 minutes (due to automation cycle).
+   - Minimum interval: 1 minute (due to automation cycle).
    - Example: Transfer 1,000 Food from Realm A to Village B every 2 hours.
    - _[GIF placeholder: Setting up a recurring transfer]_
 
@@ -159,7 +159,7 @@ _[GIF placeholder: Accessing transfer automation]_
    - **Resources to Transfer**:
      - Add multiple resources with specific amounts
    - **Schedule/Conditions**:
-     - For Recurring: Set interval in minutes (minimum 10 minutes)
+     - For Recurring: Set interval in minutes (minimum 1 minute)
      - For conditional transfers: Set threshold amounts
 
 3. Click "Add Transfer Automation".
@@ -168,7 +168,7 @@ _[GIF placeholder: Creating a transfer automation order]_
 
 #### Transfer Interval Guidelines
 
-- **Minimum Interval**: 10 minutes (matches automation processing cycle)
+- **Minimum Interval**: 1 minute (matches automation processing cycle)
 - **Common Intervals**:
   - 10m, 30m, 1h, 2h, 6h, 24h (preset buttons available)
   - Custom intervals can be set in minutes
@@ -217,7 +217,7 @@ _[GIF placeholder: Pausing and resuming automation]_
 
 - **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
   automation will stop.
-- **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
+- **10-Minute Processing Cycle**: All automation is processed every minute. This affects timing for all orders.
 - **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
   blockchain transaction, which incurs network transaction fees.
 - **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
@@ -236,8 +236,8 @@ _[GIF placeholder: Pausing and resuming automation]_
 
 - **Entity Ownership**: You can only set up transfers between entities you own.
 - **Transfer Timing**:
-  - Minimum effective interval is 10 minutes due to processing cycle
-  - Intervals shorter than 10 minutes will effectively transfer every 10 minutes
+  - Minimum effective interval is 1 minute due to processing cycle
+  - Intervals shorter than 1 minute will effectively transfer every minute
   - Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
 - **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
   time.

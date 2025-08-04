@@ -1,5 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { StructureModelPaths } from "@/three/constants";
+import { getStructureModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
@@ -8,18 +8,13 @@ import { getIsBlitz } from "@/ui/constants";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import {
-  createStructureLabel,
-  updateStructureLabel,
-  applyLabelTransitions,
-  transitionManager,
-} from "../utils/";
-import { MapDataStore } from "./map-data-store";
+import { applyLabelTransitions, createStructureLabel, transitionManager, updateStructureLabel } from "../utils/";
 import { FXManager } from "./fx-manager";
-import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
+import { MapDataStore } from "./map-data-store";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -29,8 +24,6 @@ export enum RelicSource {
   Guard = "guard",
   Production = "production",
 }
-
-
 
 export class StructureManager {
   private scene: THREE.Scene;
@@ -143,7 +136,7 @@ export class StructureManager {
   public async loadModels() {
     const loader = gltfLoader;
 
-    for (const [key, modelPaths] of Object.entries(StructureModelPaths)) {
+    for (const [key, modelPaths] of Object.entries(getStructureModelPaths(this.isBlitz))) {
       const structureType = parseInt(key) as StructureType;
 
       if (structureType === undefined) continue;
@@ -566,27 +559,27 @@ export class StructureManager {
    */
   private handleMapDataRefresh(): void {
     console.log("StructureManager: Handling map data refresh, updating cached structure data");
-    
+
     // Update ALL cached structure data, not just visible ones
     this.structures.getStructures().forEach((structureMap, structureType) => {
       structureMap.forEach((structure, entityId) => {
         // Get fresh structure data from MapDataStore
         const structureMapData = this.mapDataStore.getStructureById(entityId);
         if (!structureMapData) return;
-        
+
         // Update the structure with fresh guard armies and production info
         structure.guardArmies = structureMapData.guardArmies;
         structure.activeProductions = structureMapData.activeProductions;
       });
     });
-    
+
     console.log("StructureManager: Updated cached data, now updating", this.entityIdLabels.size, "visible labels");
-    
+
     // Update visible structure labels with the refreshed cached data
     this.entityIdLabels.forEach((label, entityId) => {
       const structure = this.structures.getStructureByEntityId(entityId);
       if (!structure) return;
-      
+
       // Update the label with fresh data
       this.updateStructureLabelData(entityId, structure, label);
     });

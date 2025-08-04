@@ -182,11 +182,15 @@ export const AutomationTransferTable: React.FC = () => {
   const debouncedDestinationSearchTerm = useDebounce(destinationSearchTerm, 300);
 
   // Use React Query to fetch other structures with caching
+  // If you want the automation to run every minute, set the interval to 1.
+  // However, the UI and backend may enforce a minimum interval (e.g., 10 minutes).
+  // In the code, an interval of less than 10 will still run every minute due to automation cycle.
+  // Example: transferInterval = 1 will attempt to run every minute.
   const { data: otherStructures = [] } = useQuery<EntityIdFormat[]>({
     queryKey: ["otherStructures", account.address],
     queryFn: () => sqlApi.fetchOtherStructures(account.address),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+    gcTime: 1 * 60 * 1000, // 1 minute (previously cacheTime)
   });
 
   // Process fetched structures
@@ -770,12 +774,6 @@ export const AutomationTransferTable: React.FC = () => {
         </div>
       </div>
 
-      {/* <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        {transferType === "automation"
-          ? "IMPORTANT: Your browser must stay open for automation. Automation runs every 10 minutes."
-          : "IMPORTANT: One-off transfers happen immediately and require donkey travel time."}
-        <br />
-      </div> */}
       {!selectedSource ? (
         <div className="mb-4 border border-gold/20 rounded-md p-3">
           <h4 className="mb-2">Select Source</h4>
@@ -1209,8 +1207,7 @@ export const AutomationTransferTable: React.FC = () => {
                       />
                       {transferInterval < 10 && (
                         <div className="text-xs text-red/90 bg-red/10 rounded p-1 mt-1">
-                          ⚠️ Automation runs every 10 minutes. Intervals less than 10 minutes will transfer every 10
-                          minutes.
+                          ⚠️ Automation runs every minute. Intervals less than 1 minute will transfer every minute.
                         </div>
                       )}
                       <div className="flex gap-1 mt-1">

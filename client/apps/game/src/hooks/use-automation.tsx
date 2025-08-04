@@ -116,7 +116,7 @@ function getProductionRecipe(
   return undefined;
 }
 
-const PROCESS_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const PROCESS_INTERVAL_MS = 60 * 1000; // 1 minute
 const CYCLE_BUFFER = 150;
 
 export const useAutomation = () => {
