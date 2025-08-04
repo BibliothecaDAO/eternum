@@ -44,6 +44,12 @@ interface Building {
   hasEnoughPopulation: boolean;
   militaryType?: string;
   tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 interface BuildingDetailsDrawerProps {

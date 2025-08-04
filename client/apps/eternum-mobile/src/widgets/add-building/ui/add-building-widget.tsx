@@ -44,6 +44,12 @@ interface Building {
   hasEnoughPopulation: boolean;
   militaryType?: string;
   tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 const BUILDING_IMAGES_PATH: Record<string, string> = {
@@ -145,6 +151,33 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
+  const getMissingResources = (cost: any) => {
+    const missing: Array<{
+      resourceId: number;
+      needed: number;
+      available: number;
+      missing: number;
+    }> = [];
+
+    Object.keys(cost).forEach((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
+      const available = divideByPrecision(balance.balance);
+      const needed = resourceCost.amount;
+
+      if (available < needed) {
+        missing.push({
+          resourceId: resourceCost.resource,
+          needed,
+          available,
+          missing: needed - available,
+        });
+      }
+    });
+
+    return missing;
+  };
+
   // Filter buildings based on the selected category
   const getFilteredBuildings = () => {
     const buildings: Building[] = [];
@@ -161,6 +194,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         if (!buildingCosts || buildingCosts.length === 0) return;
 
         const hasBalance = checkBalance(buildingCosts);
+        const missingResources = getMissingResources(buildingCosts);
         const hasEnoughPopulation = hasEnoughPopulationForBuilding(
           realm,
           configManager.getBuildingCategoryConfig(building).population_cost,
@@ -184,6 +218,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
           canBuild,
           hasBalance,
           hasEnoughPopulation,
+          missingResources,
         });
       });
     }
@@ -208,6 +243,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
           if (!buildingCosts || buildingCosts.length === 0) return;
 
           const hasBalance = checkBalance(buildingCosts);
+          const missingResources = getMissingResources(buildingCosts);
           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
 
           // Make sure we have a boolean value
@@ -227,6 +263,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
             canBuild,
             hasBalance,
             hasEnoughPopulation,
+            missingResources,
           });
         });
     }
@@ -248,6 +285,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
           if (!buildingCosts || buildingCosts.length === 0) return;
 
           const hasBalance = checkBalance(buildingCosts);
+          const missingResources = getMissingResources(buildingCosts);
           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
 
           // Make sure we have a boolean value
@@ -268,6 +306,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
             hasEnoughPopulation,
             militaryType: info.type,
             tier: info.tier,
+            missingResources,
           });
         });
     }

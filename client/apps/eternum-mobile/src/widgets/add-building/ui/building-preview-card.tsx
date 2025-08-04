@@ -1,8 +1,9 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
+import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { AlertTriangle, Home, Plus, Shield, Warehouse } from "lucide-react";
+import { AlertTriangle, Home, Plus, Shield, Warehouse, X } from "lucide-react";
 import { useState } from "react";
 import { BuildingDetailsDrawer } from "./building-details-drawer";
 
@@ -26,6 +27,12 @@ interface Building {
   hasEnoughPopulation: boolean;
   militaryType?: string;
   tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 interface BuildingPreviewCardProps {
@@ -36,6 +43,7 @@ interface BuildingPreviewCardProps {
 
 export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: BuildingPreviewCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showMissingResources, setShowMissingResources] = useState(false);
 
   const getBuildingIcon = () => {
     if (building.resourceId) {
@@ -66,7 +74,14 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
 
   return (
     <>
-      <Card className={`w-full transition-all duration-200 hover:bg-white/5 ${!building.canBuild ? "opacity-60" : ""}`}>
+      <Card
+        className={`w-full transition-all duration-200 hover:bg-white/5 ${!building.canBuild ? "opacity-60" : ""} ${!building.hasBalance && building.missingResources && building.missingResources.length > 0 ? "cursor-pointer" : ""}`}
+        onClick={() => {
+          if (!building.hasBalance && building.missingResources && building.missingResources.length > 0) {
+            setShowMissingResources(!showMissingResources);
+          }
+        }}
+      >
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-md overflow-hidden flex items-center justify-center">
@@ -89,7 +104,9 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
               </div>
               <p className="text-xs text-white/70 mt-0.5 line-clamp-1">
                 {!building.hasBalance
-                  ? "Not enough resources"
+                  ? building.missingResources && building.missingResources.length > 0
+                    ? "Click to see missing resources"
+                    : "Not enough resources"
                   : !building.hasEnoughPopulation
                     ? "Not enough population"
                     : building.category === BuildingCategory.RESOURCE
@@ -104,12 +121,50 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
               size="sm"
               className="ml-auto"
               disabled={!building.canBuild}
-              onClick={() => setIsOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(true);
+              }}
             >
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
           </div>
+
+          {/* Missing Resources Section */}
+          {showMissingResources && building.missingResources && building.missingResources.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-white">Missing Resources:</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMissingResources(false);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {building.missingResources.map((resource, index) => (
+                  <div key={index} className="flex items-center justify-between text-xs">
+                    <ResourceAmount
+                      resourceId={resource.resourceId}
+                      amount={resource.missing}
+                      size="sm"
+                      className="text-red-400"
+                    />
+                    <span className="text-white/50">
+                      {resource.available} / {resource.needed}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
