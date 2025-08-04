@@ -355,7 +355,7 @@ export const createContentContainer = (cameraView: CameraView) => {
   const mediumViewExpanded = transitionDB.getMediumViewExpanded(containerId);
 
   const wrapperStyle = ["max-w-[1000px]", "ml-2", "opacity-100"];
-  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+  const wrapperStyleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
 
   // Put content inside wrapper
   wrapperContainer.appendChild(contentContainer);
@@ -408,7 +408,6 @@ export const createLabelBase = (options: LabelBaseOptions) => {
   // Add common classes
   labelDiv.classList.add(
     "rounded-md",
-    "pointer-events-auto",
     // "h-",
     "p-0.5",
     "-translate-x-1/2",
@@ -713,7 +712,7 @@ export const transitionManager = {
 // Centralized camera view transition handling for existing labels
 export const applyLabelTransitions = (labelsMap: Map<any, any>, cameraView: CameraView) => {
   const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
-  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0", "pointer-events-none"];
+  const styleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
 
   labelsMap.forEach((label, entityId) => {
     if (label.element) {
