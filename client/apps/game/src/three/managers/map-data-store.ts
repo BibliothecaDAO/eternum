@@ -300,8 +300,6 @@ export class MapDataStore {
       sqlApi.fetchAllArmiesMapData(),
     ]);
 
-    console.log({ armiesRaw });
-
     // Transform and store structures
     structuresRaw.forEach((structure) => {
       const guardArmies = this.parseGuardArmies(structure);

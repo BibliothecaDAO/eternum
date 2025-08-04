@@ -308,6 +308,8 @@ export class SystemManager {
                 Boolean(loggedInAccountPlayerData?.guildId) &&
                 loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
 
+              console.log({ isAlly, explorerOwnerAddress, explorerPlayerData });
+
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 

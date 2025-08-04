@@ -32,8 +32,7 @@ export const Controller = () => {
     try {
       connector.controller.username()?.then((name) => setUserName(name));
     } catch (error) {
-      // controller in local
-      setUserName("adventurer");
+      console.error("Failed to get username:", error);
     }
   }, [connector]);
 
