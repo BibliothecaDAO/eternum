@@ -4,6 +4,7 @@ import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import { Position } from "@/types/position";
+import { getIsBlitz } from "@/ui/constants";
 import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
@@ -11,7 +12,7 @@ import { CameraView } from "../scenes/hexagon-scene";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "../systems/system-manager";
 import { getHexForWorldPosition } from "../utils";
 
-const LABELS = {
+const LABELS = (isBlitz: boolean) => ({
   ARMY: "/images/labels/enemy_army.png",
   MY_ARMY: "/images/labels/army.png",
   MY_REALM: "/images/labels/realm.png",
@@ -22,14 +23,14 @@ const LABELS = {
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+    [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   },
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   },
   QUEST: "/images/labels/quest.png",
-};
+});
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
@@ -84,6 +85,7 @@ interface EntityCluster {
 interface ArmyCluster extends EntityCluster {}
 
 class Minimap {
+  private isBlitz: boolean;
   private worldmapScene: WorldmapScene;
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
@@ -132,6 +134,7 @@ class Minimap {
 
   constructor(worldmapScene: WorldmapScene, camera: THREE.PerspectiveCamera) {
     this.worldmapScene = worldmapScene;
+    this.isBlitz = getIsBlitz();
 
     // Expose the minimap instance globally for UI access
     (window as any).minimapInstance = this;
@@ -806,14 +809,14 @@ class Minimap {
 
   private loadLabelImages() {
     // Load army labels
-    this.loadImage("ARMY", LABELS.ARMY);
-    this.loadImage("MY_ARMY", LABELS.MY_ARMY);
-    this.loadImage("MY_REALM", LABELS.MY_REALM);
-    this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
-    this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
-    this.loadImage("QUEST", LABELS.QUEST);
+    this.loadImage("ARMY", LABELS(this.isBlitz).ARMY);
+    this.loadImage("MY_ARMY", LABELS(this.isBlitz).MY_ARMY);
+    this.loadImage("MY_REALM", LABELS(this.isBlitz).MY_REALM);
+    this.loadImage("MY_REALM_WONDER", LABELS(this.isBlitz).MY_REALM_WONDER);
+    this.loadImage("REALM_WONDER", LABELS(this.isBlitz).REALM_WONDER);
+    this.loadImage("QUEST", LABELS(this.isBlitz).QUEST);
     // Load structure labels
-    Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {
+    Object.entries(LABELS(this.isBlitz).STRUCTURES).forEach(([type, path]) => {
       this.loadImage(`STRUCTURE_${type}`, path);
     });
   }

@@ -17,17 +17,21 @@ const ENTITY_TOGGLES = (isBlitz: boolean) => [
     label: getStructureTypeName(StructureType.Hyperstructure, isBlitz),
     imagePath: "/images/labels/hyperstructure.png",
   },
-  {
-    id: "banks",
-    label: getStructureTypeName(StructureType.Bank, isBlitz),
-    imagePath: `images/resources/${ResourcesIds.Lords}.png`,
-  },
+  ...(!isBlitz
+    ? [
+        {
+          id: "banks",
+          label: getStructureTypeName(StructureType.Bank, isBlitz),
+          imagePath: `images/resources/${ResourcesIds.Lords}.png`,
+        },
+      ]
+    : []),
   {
     id: "fragmentMines",
     label: getStructureTypeName(StructureType.FragmentMine, isBlitz),
-    imagePath: "/images/labels/fragment_mine.png",
+    imagePath: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   },
-  { id: "quests", label: "Quests", imagePath: "/images/labels/quest.png" },
+  ...(!isBlitz ? [{ id: "quests", label: "Quests", imagePath: "/images/labels/quest.png" }] : []),
 ];
 
 export const MiniMapNavigation = () => {

@@ -19,13 +19,13 @@ import { LabelData, LabelTypeDefinition } from "./label-types";
 /**
  * Structure icon paths
  */
-const STRUCTURE_ICONS = {
+const STRUCTURE_ICONS = (isBlitz: boolean) => ({
   STRUCTURES: {
     [StructureType.Village]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`, // Lords resource ID
-    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+    [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
   } as Record<StructureType, string>,
   MY_STRUCTURES: {
     [StructureType.Village]: "/images/labels/village.png",
@@ -35,7 +35,7 @@ const STRUCTURE_ICONS = {
     [StructureType.Village]: "/images/labels/allies_village.png",
     [StructureType.Realm]: "/images/labels/allies_realm.png",
   } as Record<StructureType, string>,
-};
+});
 
 /**
  * Extended label data interfaces
@@ -254,13 +254,13 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
 
     // Select appropriate icon
-    let iconPath = STRUCTURE_ICONS.STRUCTURES[data.structureType];
+    let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
     if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
       iconPath = data.isMine
-        ? STRUCTURE_ICONS.MY_STRUCTURES[data.structureType]
+        ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
         : data.isAlly
-          ? STRUCTURE_ICONS.ALLY_STRUCTURES[data.structureType]
-          : STRUCTURE_ICONS.STRUCTURES[data.structureType];
+          ? STRUCTURE_ICONS(isBlitz).ALLY_STRUCTURES[data.structureType]
+          : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
     }
 
     // Create and set icon image
