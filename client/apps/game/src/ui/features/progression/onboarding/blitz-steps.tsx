@@ -13,9 +13,25 @@ import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
-import { Clock, Users } from "lucide-react";
+import { AlertCircle, Clock, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SpectateButton } from "./spectate-button";
+
+// Helper function to format timestamp to local time
+const formatLocalTime = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+const formatLocalDateTime = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 // Game state enum
 enum GameState {
@@ -60,7 +76,20 @@ const PlayerCount = ({ count }: { count: number }) => {
 };
 
 // No game state component
-const NoGameState = ({ registrationStartAt }: { registrationStartAt: number }) => {
+const NoGameState = ({
+  registrationStartAt,
+  registrationEndAt,
+  creationStartAt,
+  creationEndAt,
+}: {
+  registrationStartAt: number;
+  registrationEndAt: number;
+  creationStartAt: number;
+  creationEndAt: number;
+}) => {
+  const registrationDuration = registrationEndAt - registrationStartAt;
+  const settlementDuration = creationEndAt - creationStartAt;
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
       <div className="py-8">
@@ -70,6 +99,26 @@ const NoGameState = ({ registrationStartAt }: { registrationStartAt: number }) =
       </div>
 
       <CountdownTimer targetTime={registrationStartAt} label="Next game starts in:" />
+
+      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
+        <p className="text-sm text-gold/70">Upcoming Schedule:</p>
+        <div className="text-sm space-y-2">
+          <div>
+            <p className="text-gold">Registration Phase</p>
+            <p className="text-gold/60 text-xs">Starts: {formatLocalDateTime(registrationStartAt)}</p>
+            <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
+          </div>
+          <div>
+            <p className="text-gold/70">Settlement Phase</p>
+            <p className="text-gold/50 text-xs">Starts: {formatLocalDateTime(creationStartAt)}</p>
+            <p className="text-gold/50 text-xs">Duration: {formatTime(settlementDuration)}</p>
+          </div>
+          <div>
+            <p className="text-gold/70">Game Starts</p>
+            <p className="text-gold/50 text-xs">{formatLocalDateTime(creationEndAt)}</p>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -82,7 +131,6 @@ const MakeHyperstructuresState = ({
   numHyperStructuresLeft: number;
   onMakeHyperstructures: () => Promise<void>;
 }) => {
-
   const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
   const handleMakeHyperstructures = async () => {
     setIsMakingHyperstructures(true);
@@ -98,18 +146,22 @@ const MakeHyperstructuresState = ({
   return (
     <>
       {numHyperStructuresLeft > 0 && (
-        <Button onClick={handleMakeHyperstructures} disabled={isMakingHyperstructures} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse">
+        <Button
+          onClick={handleMakeHyperstructures}
+          disabled={isMakingHyperstructures}
+          className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+        >
           <div className="flex items-center justify-center">
-          {isMakingHyperstructures ? (
-            <div className="flex items-center justify-center">
-              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-              <span>...</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center">
-              <Sword className="w-5 h-5 mr-2 fill-brown" />
-              <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
-            </div>
+            {isMakingHyperstructures ? (
+              <div className="flex items-center justify-center">
+                <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                <span>...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center">
+                <Sword className="w-5 h-5 mr-2 fill-brown" />
+                <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
+              </div>
             )}
           </div>
         </Button>
@@ -121,12 +173,18 @@ const MakeHyperstructuresState = ({
 // Registration state component
 const RegistrationState = ({
   registrationCount,
+  registrationStartAt,
   registrationEndAt,
+  creationStartAt,
+  creationEndAt,
   isRegistered,
   onRegister,
 }: {
   registrationCount: number;
+  registrationStartAt: number;
   registrationEndAt: number;
+  creationStartAt: number;
+  creationEndAt: number;
   isRegistered: boolean;
   onRegister: () => Promise<void>;
 }) => {
@@ -136,6 +194,10 @@ const RegistrationState = ({
 
   const [isRegistering, setIsRegistering] = useState(false);
   const onSpectatorModeClick = useSpectatorModeClick(components);
+
+  // Calculate phase durations
+  const registrationDuration = registrationEndAt - registrationStartAt;
+  const settlementDuration = creationEndAt - creationStartAt;
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -154,6 +216,19 @@ const RegistrationState = ({
         <h3 className="text-xl font-bold text-gold">Registration Open</h3>
         <PlayerCount count={registrationCount} />
         <CountdownTimer targetTime={registrationEndAt} label="Registration closes in:" />
+
+        <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm space-y-2">
+          <div>
+            <p className="text-gold/70">Current Phase Duration: {formatTime(registrationDuration)}</p>
+            <p className="text-gold/60 text-xs">Ends at: {formatLocalTime(registrationEndAt)}</p>
+          </div>
+          <div>
+            <p className="text-gold/70">Next: Settlement phase</p>
+            <p className="text-gold/60 text-xs">
+              Starts at: {formatLocalTime(creationStartAt)} ({formatTime(settlementDuration)})
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -191,11 +266,13 @@ const RegistrationState = ({
 
 // Settlement state component
 const SettlementState = ({
+  creationStartAt,
   creationEndAt,
   isRegistered,
   hasSettled,
   onSettle,
 }: {
+  creationStartAt: number;
   creationEndAt: number;
   isRegistered: boolean;
   hasSettled: boolean;
@@ -237,6 +314,15 @@ const SettlementState = ({
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Settlement Phase</h3>
         <CountdownTimer targetTime={creationEndAt} label="Settlement phase ends in:" />
+
+        <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm space-y-2">
+          <div>
+            <p className="text-gold/70">Current Phase Duration: {formatTime(creationEndAt - creationStartAt)}</p>
+            <p className="text-gold/60 text-xs">Ends at: {formatLocalTime(creationEndAt)}</p>
+          </div>
+          <p className="text-gold/70">Game starts at: {formatLocalTime(creationEndAt)}</p>
+          <p className="text-gold font-semibold">⚡ Settle quickly to secure your spot!</p>
+        </div>
       </div>
 
       {isRegistered ? (
@@ -302,7 +388,7 @@ const SettlementState = ({
 };
 
 // Game active state component
-const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
+const GameActiveState = ({ hasSettled, gameEndAt }: { hasSettled: boolean; gameEndAt?: number }) => {
   const {
     setup: { components },
   } = useDojo();
@@ -326,6 +412,16 @@ const GameActiveState = ({ hasSettled }: { hasSettled: boolean }) => {
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Game Active</h3>
         <p className="text-gold/70">The battle for supremacy has begun!</p>
+
+        {gameEndAt && (
+          <div className="space-y-2">
+            <CountdownTimer targetTime={gameEndAt} label="Game ends in:" />
+            <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm">
+              <p className="text-gold/60 text-xs">Ends at: {formatLocalDateTime(gameEndAt)}</p>
+              <p className="text-gold font-semibold mt-2">🏆 Conquer everything</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -367,6 +463,7 @@ export const BlitzOnboarding = () => {
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
+  const seasonConfig = configManager.getSeasonConfig();
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
     getEntityIdFromKeys([BigInt(account.address)]),
@@ -450,33 +547,63 @@ export const BlitzOnboarding = () => {
 
   if (!blitzConfig) {
     return (
-      <div className="text-center text-gold/70">
-        <p>Loading Blitz configuration...</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-brown/10 border border-brown/30 rounded-lg p-6 text-center space-y-4"
+      >
+        <AlertCircle className="w-12 h-12 mx-auto text-gold/50" />
+        <div>
+          <h3 className="text-lg font-bold text-gold mb-2">Configuration Error</h3>
+          <p className="text-gold/70">Unable to load Blitz game configuration.</p>
+          <p className="text-gold/70 text-sm mt-2">Please refresh the page or contact support if the issue persists.</p>
+        </div>
+        <Button onClick={() => window.location.reload()} className="!bg-gold !text-brown !normal-case rounded-md">
+          Refresh Page
+        </Button>
+      </motion.div>
     );
   }
 
+  const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
+
   return (
     <div className="space-y-6">
-      <MakeHyperstructuresState numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0} onMakeHyperstructures={handleMakeHyperstructures} />
-      {gameState === GameState.NO_GAME && <NoGameState registrationStartAt={blitzConfig.registration_start_at} />}
+      <MakeHyperstructuresState
+        numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
+        onMakeHyperstructures={handleMakeHyperstructures}
+      />
+      {gameState === GameState.NO_GAME && registration_start_at && (
+        <NoGameState
+          registrationStartAt={registration_start_at}
+          registrationEndAt={registration_end_at}
+          creationStartAt={creation_start_at}
+          creationEndAt={creation_end_at}
+        />
+      )}
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
           registrationCount={blitzConfig.registration_count}
-          registrationEndAt={blitzConfig.registration_end_at}
+          registrationStartAt={registration_start_at}
+          registrationEndAt={registration_end_at}
+          creationStartAt={creation_start_at}
+          creationEndAt={creation_end_at}
           isRegistered={playerRegistered?.registered || false}
           onRegister={handleRegister}
         />
       )}
       {gameState === GameState.SETTLEMENT && (
         <SettlementState
-          creationEndAt={blitzConfig.creation_end_at}
+          creationStartAt={creation_start_at}
+          creationEndAt={creation_end_at}
           isRegistered={playerRegistered?.registered || !!playerSettled}
           hasSettled={!!playerSettled}
           onSettle={handleSettle}
         />
       )}
-      {gameState === GameState.GAME_ACTIVE && <GameActiveState hasSettled={!!playerSettled} />}
+      {gameState === GameState.GAME_ACTIVE && (
+        <GameActiveState hasSettled={!!playerSettled} gameEndAt={seasonConfig?.endAt} />
+      )}
     </div>
   );
 };
