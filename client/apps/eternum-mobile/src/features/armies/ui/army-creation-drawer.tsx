@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
+import { DefenseTroop } from "@/shared/ui/defense-slots";
 import {
   Drawer,
   DrawerClose,
@@ -14,14 +15,9 @@ import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { ArmyManager, divideByPrecision, getBalance, getTroopName, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { DEFENSE_NAMES, ID, TroopTier, TroopType, Troops } from "@bibliothecadao/types";
+import { DEFENSE_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { Plus, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
-
-export interface DefenseTroop {
-  slot: number;
-  troops: Troops;
-}
 
 interface ArmyCreationDrawerProps {
   isOpen: boolean;
@@ -51,17 +47,17 @@ export function ArmyCreationDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [troopCount, setTroopCount] = useState(0);
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(
-    (existingDefense?.troops.category as TroopType) || TroopType.Crossbowman,
+    (existingDefense?.troops?.category as TroopType) || TroopType.Crossbowman,
   );
   const [selectedTier, setSelectedTier] = useState<TroopTier>(
-    (existingDefense?.troops.tier as TroopTier) || TroopTier.T1,
+    (existingDefense?.troops?.tier as TroopTier) || TroopTier.T1,
   );
 
   const defenseName = DEFENSE_NAMES[defenseSlot as keyof typeof DEFENSE_NAMES];
-  const isUpdate = !!existingDefense && existingDefense.troops.count > 0n;
+  const isUpdate = !!existingDefense && !!existingDefense.troops && existingDefense.troops.count > 0n;
 
   useEffect(() => {
-    if (existingDefense && existingDefense.troops.count > 0n) {
+    if (existingDefense && existingDefense.troops && existingDefense.troops.count > 0n) {
       setSelectedTroopType(existingDefense.troops.category as TroopType);
       setSelectedTier(existingDefense.troops.tier as TroopTier);
     }
@@ -71,6 +67,23 @@ export function ArmyCreationDrawer({
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
     const balance = getBalance(structureId, resourceId, Date.now(), components).balance;
     return divideByPrecision(balance);
+  };
+
+  const getTroopBalance = (troopType: TroopType, tier: TroopTier) => {
+    const resourceId = getTroopResourceId(troopType, tier);
+    return getBalance(structureId, resourceId, Date.now(), components).balance;
+  };
+
+  const getCurrentTroopCount = (troopType: TroopType) => {
+    return existingDefense?.troops?.category === troopType ? Number(existingDefense.troops.count) : 0;
+  };
+
+  const incrementTroopCount = (amount: number) => {
+    setTroopCount(Math.min(troopCount + amount, maxAffordable));
+  };
+
+  const setMaxTroopCount = () => {
+    setTroopCount(maxAffordable);
   };
 
   const handleCreateDefense = async () => {
@@ -94,7 +107,7 @@ export function ArmyCreationDrawer({
     { troopType: TroopType.Knight, name: "Knight" },
     { troopType: TroopType.Paladin, name: "Paladin" },
   ].filter((troop) => {
-    if (!existingDefense || existingDefense.troops.count === 0n) return true;
+    if (!existingDefense || !existingDefense.troops || existingDefense.troops.count === 0n) return true;
     return existingDefense.troops.category === troop.troopType;
   });
 
@@ -116,7 +129,7 @@ export function ArmyCreationDrawer({
 
         <div className="px-4 pb-4 space-y-6">
           {/* Tier Selection - only show if no existing defense or empty */}
-          {(!existingDefense || existingDefense.troops.count === 0n) && (
+          {(!existingDefense || !existingDefense.troops || existingDefense.troops.count === 0n) && (
             <div>
               <h4 className="text-sm font-semibold mb-3">Select Tier</h4>
               <Tabs
@@ -137,15 +150,9 @@ export function ArmyCreationDrawer({
             <h4 className="text-sm font-semibold mb-3">Select Troop Type</h4>
             <div className="space-y-3">
               {troops.map((troop) => {
-                const balance = getBalance(
-                  structureId,
-                  getTroopResourceId(troop.troopType, selectedTier),
-                  Date.now(),
-                  components,
-                ).balance;
+                const balance = getTroopBalance(troop.troopType, selectedTier);
                 const isSelected = selectedTroopType === troop.troopType;
-                const currentCount =
-                  existingDefense?.troops.category === troop.troopType ? Number(existingDefense.troops.count) : 0;
+                const currentCount = getCurrentTroopCount(troop.troopType);
 
                 return (
                   <div
@@ -153,10 +160,11 @@ export function ArmyCreationDrawer({
                     className={cn(
                       "border rounded-lg p-4 transition-all",
                       isSelected ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-500/50",
-                      (!existingDefense || existingDefense.troops.count === 0n) && "cursor-pointer",
+                      (!existingDefense || !existingDefense.troops || existingDefense.troops.count === 0n) &&
+                        "cursor-pointer",
                     )}
                     onClick={() => {
-                      if (!existingDefense || existingDefense.troops.count === 0n) {
+                      if (!existingDefense || !existingDefense.troops || existingDefense.troops.count === 0n) {
                         setSelectedTroopType(troop.troopType);
                       }
                     }}
@@ -191,7 +199,7 @@ export function ArmyCreationDrawer({
                             className="flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTroopCount(Math.min(troopCount + 100, maxAffordable));
+                              incrementTroopCount(100);
                             }}
                           >
                             +100
@@ -202,7 +210,7 @@ export function ArmyCreationDrawer({
                             className="flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTroopCount(Math.min(troopCount + 500, maxAffordable));
+                              incrementTroopCount(500);
                             }}
                           >
                             +500
@@ -213,7 +221,7 @@ export function ArmyCreationDrawer({
                             className="flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTroopCount(maxAffordable);
+                              setMaxTroopCount();
                             }}
                           >
                             MAX

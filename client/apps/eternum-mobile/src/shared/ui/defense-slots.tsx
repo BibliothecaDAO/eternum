@@ -17,7 +17,7 @@ export interface DefenseTroop {
       amount: bigint;
       updated_tick: bigint;
     };
-  };
+  } | null;
 }
 
 interface DefenseSlotsProps {
@@ -69,6 +69,10 @@ export function DefenseSlots({
     setSelectedSlot(null);
     onDefenseUpdated?.();
   };
+
+  const getExistingDefense = (slotIndex: number) => {
+    return troops.find((t) => t.slot === slotIndex);
+  };
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center gap-2 mb-4">
@@ -87,7 +91,7 @@ export function DefenseSlots({
               key={index}
               className={cn(
                 "border rounded-lg p-3 transition-all",
-                defense && defense.troops.count > 0n
+                defense && defense.troops && defense.troops.count > 0n
                   ? "bg-blue-500/10 border-blue-500/20"
                   : "bg-gray-500/10 border-gray-500/20",
                 structureId && !cooldown && "cursor-pointer hover:border-blue-500/40 active:scale-[0.98]",
@@ -100,7 +104,7 @@ export function DefenseSlots({
                   {cooldown && <CooldownTimer timeLeft={cooldown.timeLeft} />}
                   {structureId && !cooldown && (
                     <div className="flex items-center gap-1">
-                      {defense && defense.troops.count > 0n ? (
+                      {defense && defense.troops && defense.troops.count > 0n ? (
                         <Edit className="w-4 h-4 text-blue-500" />
                       ) : (
                         <Plus className="w-4 h-4 text-green-500" />
@@ -110,24 +114,24 @@ export function DefenseSlots({
                 </div>
               </div>
 
-              {!cooldown && defense && defense.troops.count > 0n ? (
+              {!cooldown && defense && defense.troops && defense.troops.count > 0n ? (
                 <div className="flex items-center justify-between">
                   <ResourceAmount
                     resourceId={getTroopResourceId(
-                      defense.troops.category as TroopType,
-                      defense.troops.tier as TroopTier,
+                      defense.troops!.category as TroopType,
+                      defense.troops!.tier as TroopTier,
                     )}
-                    amount={divideByPrecision(Number(defense.troops.count), false)}
+                    amount={divideByPrecision(Number(defense.troops!.count), false)}
                     size="lg"
                     showName={true}
                   />
                   <span
                     className={cn(
                       "px-2 py-1 text-xs font-bold border rounded",
-                      getTierStyle(defense.troops.tier || ""),
+                      getTierStyle(defense.troops!.tier || ""),
                     )}
                   >
-                    {defense.troops.tier}
+                    {defense.troops!.tier}
                   </span>
                 </div>
               ) : (
@@ -149,31 +153,7 @@ export function DefenseSlots({
           onOpenChange={setIsDrawerOpen}
           structureId={structureId}
           defenseSlot={selectedSlot}
-          existingDefense={(() => {
-            const selectedDefense = troops.find((t) => t.slot === selectedSlot);
-            if (!selectedDefense || !selectedDefense.troops.category || !selectedDefense.troops.tier) {
-              return undefined;
-            }
-            return {
-              slot: selectedSlot,
-              troops: {
-                category: selectedDefense.troops.category,
-                tier: selectedDefense.troops.tier,
-                count: selectedDefense.troops.count || 0n,
-                stamina: selectedDefense.troops.stamina || { amount: 0n, updated_tick: 0n },
-                boosts: {
-                  incr_damage_dealt_percent_num: 0,
-                  incr_damage_dealt_end_tick: 0,
-                  decr_damage_gotten_percent_num: 0,
-                  decr_damage_gotten_end_tick: 0,
-                  incr_stamina_regen_percent_num: 0,
-                  incr_stamina_regen_tick_count: 0,
-                  incr_explore_reward_percent_num: 0,
-                  incr_explore_reward_end_tick: 0,
-                },
-              },
-            };
-          })()}
+          existingDefense={getExistingDefense(selectedSlot)}
           onSuccess={handleDefenseSuccess}
         />
       )}

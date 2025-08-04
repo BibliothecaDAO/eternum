@@ -5,6 +5,7 @@ import { DefenseSlots } from "@/shared/ui/defense-slots";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { AlertTriangle, Eye, Shield, Swords, Users } from "lucide-react";
@@ -124,10 +125,7 @@ export function MilitaryTab({}: MilitaryTabProps) {
       {selectedRealm && structure && !isLoadingGuards && (
         <DefenseSlots
           maxDefenses={structure.base.troop_max_guard_count}
-          troops={guards.map((guard) => ({
-            slot: guard.slot,
-            troops: guard.troops!,
-          }))}
+          troops={guards}
           cooldownSlots={cooldownSlots}
           structureId={selectedRealm.entityId}
           onDefenseUpdated={() => {
