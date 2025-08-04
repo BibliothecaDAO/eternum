@@ -1,8 +1,8 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { MapDataStore } from "@/three/managers/map-data-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
   divideByPrecision,
@@ -311,8 +311,6 @@ export class SystemManager {
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 
-              if (!armyMapData) return;
-
               const { currentArmiesTick } = getBlockTimestamp();
 
               return {
@@ -329,16 +327,16 @@ export class SystemManager {
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
                 isAlly,
                 // Enhanced data from MapDataStore
-                troopCount: armyMapData.count,
+                troopCount: armyMapData?.count || 0,
                 currentStamina: Number(
                   StaminaManager.getStamina(
                     {
                       category: explorer.troopType,
                       tier: explorer.troopTier,
-                      count: BigInt(armyMapData.count),
+                      count: BigInt(armyMapData?.count || 0),
                       stamina: {
-                        amount: BigInt(armyMapData.stamina.amount),
-                        updated_tick: BigInt(armyMapData.stamina.updated_tick),
+                        amount: BigInt(armyMapData?.stamina.amount || 0),
+                        updated_tick: BigInt(armyMapData?.stamina.updated_tick || 0),
                       },
                       boosts: {
                         incr_stamina_regen_percent_num: 0,
