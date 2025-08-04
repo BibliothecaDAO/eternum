@@ -37,7 +37,6 @@ export const useSetAddressName = (value: SetupResult, controllerAccount: Account
           signer: controllerAccount!,
           name: usernameFelt,
         };
-        console.log({ calldata });
         value.systemCalls.set_address_name(calldata);
         setAddressName(username);
         setIsAddressNameSet(true);
