@@ -1,3 +1,4 @@
+import { getTierStyle } from "@/shared/lib/tier-styles";
 import { cn } from "@/shared/lib/utils";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
@@ -68,15 +69,25 @@ export function DefenseSlots({ maxDefenses, troops, cooldownSlots = [], classNam
               </div>
 
               {!cooldown && defense && defense.troops.count > 0n ? (
-                <ResourceAmount
-                  resourceId={getTroopResourceId(
-                    defense.troops.category as TroopType,
-                    defense.troops.tier as TroopTier,
-                  )}
-                  amount={divideByPrecision(Number(defense.troops.count), false)}
-                  size="lg"
-                  showName={true}
-                />
+                <div className="flex items-center justify-between">
+                  <ResourceAmount
+                    resourceId={getTroopResourceId(
+                      defense.troops.category as TroopType,
+                      defense.troops.tier as TroopTier,
+                    )}
+                    amount={divideByPrecision(Number(defense.troops.count), false)}
+                    size="lg"
+                    showName={true}
+                  />
+                  <span
+                    className={cn(
+                      "px-2 py-1 text-xs font-bold border rounded",
+                      getTierStyle(defense.troops.tier || ""),
+                    )}
+                  >
+                    {defense.troops.tier}
+                  </span>
+                </div>
               ) : (
                 <div className="text-sm text-muted-foreground py-2">{cooldown ? "On cooldown" : "Empty slot"}</div>
               )}
