@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-08-04",
+    title: "Enhanced Worldmap Labels",
+    description:
+      "Worldmap labels now display more detailed information: structures show their current productions and defense values, while armies display their unit count, type, and stamina. This gives you a clearer overview of your forces and assets at a glance.",
+  },
+  {
     date: "2025-07-30",
     title: "Active Production Display",
     description:
