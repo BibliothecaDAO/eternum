@@ -35,7 +35,7 @@ const BLITZ_TIER_ORDER = ["lords", "relics", "essence", "labor", "military", "tr
 
 type ResourceTier = (typeof NORMAL_TIER_ORDER | typeof BLITZ_TIER_ORDER)[number];
 
-const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military", "transport"];
+const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military", "transport", "relics", "essence"];
 
 export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -128,16 +128,32 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
         <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
           <ScrollArea className="h-[50vh]">
             <div className="space-y-6 px-2">
-              {orderedTiers.map(([tier, resourceIds]) => (
-                <div key={tier} className="space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground sticky top-0 bg-background/95 backdrop-blur-sm py-2 capitalize">
-                    {tier}
-                  </h4>
-                  <div className="space-y-2">
-                    {resourceIds.map((resourceId: ResourcesIds) => renderResourceItem(resourceId))}
-                  </div>
-                </div>
-              ))}
+              {orderedTiers
+                .map(([tier, resourceIds]) => {
+                  const filteredResourceIds = resourceIds.filter((resourceId: ResourcesIds) => {
+                    if (tier === "relics" || tier === "military") {
+                      const amount = resourceAmounts.find((r) => r.id === resourceId)?.amount || 0;
+                      return amount > 0;
+                    }
+                    return true;
+                  });
+
+                  if (filteredResourceIds.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div key={tier} className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground sticky top-0 bg-background/95 backdrop-blur-sm py-2 capitalize">
+                        {tier}
+                      </h4>
+                      <div className="space-y-2">
+                        {filteredResourceIds.map((resourceId: ResourcesIds) => renderResourceItem(resourceId))}
+                      </div>
+                    </div>
+                  );
+                })
+                .filter(Boolean)}
             </div>
           </ScrollArea>
         </CollapsibleContent>
