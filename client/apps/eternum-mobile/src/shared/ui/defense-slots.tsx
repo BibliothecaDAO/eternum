@@ -1,9 +1,11 @@
+import { ArmyCreationDrawer } from "@/features/armies";
 import { getTierStyle } from "@/shared/lib/tier-styles";
 import { cn } from "@/shared/lib/utils";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
-import { DEFENSE_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Clock, Shield } from "lucide-react";
+import { DEFENSE_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Clock, Edit, Plus, Shield } from "lucide-react";
+import { useState } from "react";
 
 export interface DefenseTroop {
   slot: number;
@@ -22,7 +24,9 @@ interface DefenseSlotsProps {
   maxDefenses: number;
   troops: DefenseTroop[];
   cooldownSlots?: { slot: number; timeLeft: number }[];
+  structureId?: ID;
   className?: string;
+  onDefenseUpdated?: () => void;
 }
 
 const CooldownTimer = ({ timeLeft }: { timeLeft: number }) => {
@@ -39,7 +43,32 @@ const CooldownTimer = ({ timeLeft }: { timeLeft: number }) => {
   );
 };
 
-export function DefenseSlots({ maxDefenses, troops, cooldownSlots = [], className }: DefenseSlotsProps) {
+export function DefenseSlots({
+  maxDefenses,
+  troops,
+  cooldownSlots = [],
+  structureId,
+  className,
+  onDefenseUpdated,
+}: DefenseSlotsProps) {
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleSlotClick = (index: number) => {
+    if (!structureId) return;
+
+    const cooldown = cooldownSlots.find((c) => c.slot === index);
+    if (cooldown) return; // Don't allow editing during cooldown
+
+    setSelectedSlot(index);
+    setIsDrawerOpen(true);
+  };
+
+  const handleDefenseSuccess = () => {
+    setIsDrawerOpen(false);
+    setSelectedSlot(null);
+    onDefenseUpdated?.();
+  };
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center gap-2 mb-4">
@@ -57,15 +86,28 @@ export function DefenseSlots({ maxDefenses, troops, cooldownSlots = [], classNam
             <div
               key={index}
               className={cn(
-                "border rounded-lg p-3",
+                "border rounded-lg p-3 transition-all",
                 defense && defense.troops.count > 0n
                   ? "bg-blue-500/10 border-blue-500/20"
                   : "bg-gray-500/10 border-gray-500/20",
+                structureId && !cooldown && "cursor-pointer hover:border-blue-500/40 active:scale-[0.98]",
               )}
+              onClick={() => handleSlotClick(index)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-muted-foreground">{defenseName}</span>
-                {cooldown && <CooldownTimer timeLeft={cooldown.timeLeft} />}
+                <div className="flex items-center gap-2">
+                  {cooldown && <CooldownTimer timeLeft={cooldown.timeLeft} />}
+                  {structureId && !cooldown && (
+                    <div className="flex items-center gap-1">
+                      {defense && defense.troops.count > 0n ? (
+                        <Edit className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <Plus className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {!cooldown && defense && defense.troops.count > 0n ? (
@@ -89,12 +131,52 @@ export function DefenseSlots({ maxDefenses, troops, cooldownSlots = [], classNam
                   </span>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground py-2">{cooldown ? "On cooldown" : "Empty slot"}</div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-muted-foreground">
+                    {cooldown ? "On cooldown" : structureId ? "Tap to add defense" : "Empty slot"}
+                  </span>
+                </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Army Creation Drawer */}
+      {structureId && selectedSlot !== null && (
+        <ArmyCreationDrawer
+          isOpen={isDrawerOpen}
+          onOpenChange={setIsDrawerOpen}
+          structureId={structureId}
+          defenseSlot={selectedSlot}
+          existingDefense={(() => {
+            const selectedDefense = troops.find((t) => t.slot === selectedSlot);
+            if (!selectedDefense || !selectedDefense.troops.category || !selectedDefense.troops.tier) {
+              return undefined;
+            }
+            return {
+              slot: selectedSlot,
+              troops: {
+                category: selectedDefense.troops.category,
+                tier: selectedDefense.troops.tier,
+                count: selectedDefense.troops.count || 0n,
+                stamina: selectedDefense.troops.stamina || { amount: 0n, updated_tick: 0n },
+                boosts: {
+                  incr_damage_dealt_percent_num: 0,
+                  incr_damage_dealt_end_tick: 0,
+                  decr_damage_gotten_percent_num: 0,
+                  decr_damage_gotten_end_tick: 0,
+                  incr_stamina_regen_percent_num: 0,
+                  incr_stamina_regen_tick_count: 0,
+                  incr_explore_reward_percent_num: 0,
+                  incr_explore_reward_end_tick: 0,
+                },
+              },
+            };
+          })()}
+          onSuccess={handleDefenseSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -129,6 +129,11 @@ export function MilitaryTab({}: MilitaryTabProps) {
             troops: guard.troops!,
           }))}
           cooldownSlots={cooldownSlots}
+          structureId={selectedRealm.entityId}
+          onDefenseUpdated={() => {
+            // Refresh guards data - this would typically trigger a refetch
+            // The useGuardsByStructure hook should handle automatic updates
+          }}
         />
       )}
 
