@@ -127,7 +127,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         const building = getBuildingFromResource(resourceId);
         const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-        if (!buildingCosts) return;
+        if (!buildingCosts || buildingCosts.length === 0) return;
 
         const hasBalance = checkBalance(buildingCosts);
         const hasEnoughPopulation = hasEnoughPopulationForBuilding(
