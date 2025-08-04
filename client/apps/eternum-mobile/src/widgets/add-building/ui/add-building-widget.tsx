@@ -174,8 +174,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         .forEach((buildingType) => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
           const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
-
-          if (!buildingCosts) return;
+          if (!buildingCosts || buildingCosts.length === 0) return;
 
           const hasBalance = checkBalance(buildingCosts);
           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
