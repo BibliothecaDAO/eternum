@@ -1,15 +1,21 @@
-import { useArmiesInRadius, useExplorersByStructure, useGuardsByStructure } from "@/features/armies";
+import {
+  UnifiedArmyCreationDrawer,
+  useArmiesInRadius,
+  useExplorersByStructure,
+  useGuardsByStructure,
+} from "@/features/armies";
 import { cn } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
+import { Button } from "@/shared/ui/button";
 import { DefenseSlots } from "@/shared/ui/defense-slots";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { AlertTriangle, Eye, Shield, Swords, Users } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export interface MilitaryTabProps {
   className?: string;
@@ -41,6 +47,8 @@ const getDangerLevel = (distance: number) => {
 export function MilitaryTab({}: MilitaryTabProps) {
   const { selectedRealm } = useStore();
   const { armies, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
+  const [isArmyCreationOpen, setIsArmyCreationOpen] = useState(false);
+  const [armyCreationType, setArmyCreationType] = useState<"explorer" | "defense">("explorer");
 
   const {
     setup: { components },
@@ -94,6 +102,13 @@ export function MilitaryTab({}: MilitaryTabProps) {
 
   const sortedArmies = armies.sort((a, b) => a.distance - b.distance);
 
+  const handleCreateArmy = (type: "explorer" | "defense") => {
+    setArmyCreationType(type);
+    setIsArmyCreationOpen(true);
+  };
+
+  const isRealmOrVillage = structure?.category === StructureType.Realm || structure?.category === StructureType.Village;
+
   return (
     <div className="space-y-6">
       {/* Military Overview */}
@@ -117,6 +132,44 @@ export function MilitaryTab({}: MilitaryTabProps) {
             <div className="text-lg font-bold">
               {isLoadingGuards ? "..." : `${guards.length} / ${structure.base.troop_max_guard_count}`}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Army Creation Buttons */}
+      {selectedRealm && structure && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold">Army Management</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => handleCreateArmy("explorer")}
+              disabled={!isRealmOrVillage || explorers.length >= structure.base.troop_max_explorer_count}
+              className="flex items-center gap-2 h-12"
+              variant="outline"
+            >
+              <Swords className="w-4 h-4" />
+              <div className="text-left">
+                <div className="text-sm font-medium">Create Attack</div>
+                <div className="text-xs opacity-70">
+                  {explorers.length}/{structure.base.troop_max_explorer_count}
+                </div>
+              </div>
+            </Button>
+
+            <Button
+              onClick={() => handleCreateArmy("defense")}
+              disabled={guards.length >= structure.base.troop_max_guard_count}
+              className="flex items-center gap-2 h-12"
+              variant="outline"
+            >
+              <Shield className="w-4 h-4" />
+              <div className="text-left">
+                <div className="text-sm font-medium">Create Defense</div>
+                <div className="text-xs opacity-70">
+                  {isLoadingGuards ? "..." : `${guards.length}/${structure.base.troop_max_guard_count}`}
+                </div>
+              </div>
+            </Button>
           </div>
         </div>
       )}
@@ -167,6 +220,21 @@ export function MilitaryTab({}: MilitaryTabProps) {
           <p className="text-sm text-muted-foreground">No enemy armies nearby</p>
         )}
       </div>
+
+      {/* Army Creation Drawer */}
+      {selectedRealm && (
+        <UnifiedArmyCreationDrawer
+          isOpen={isArmyCreationOpen}
+          onOpenChange={setIsArmyCreationOpen}
+          structureId={selectedRealm.entityId}
+          maxDefenseSlots={structure?.base.troop_max_guard_count || 4}
+          isExplorer={armyCreationType === "explorer"}
+          onSuccess={() => {
+            // Refresh data after successful army creation
+            // The hooks should handle automatic updates
+          }}
+        />
+      )}
     </div>
   );
 }
