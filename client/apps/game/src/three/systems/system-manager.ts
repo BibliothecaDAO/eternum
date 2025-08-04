@@ -342,12 +342,6 @@ export class SystemManager {
 
               const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
-              console.log({
-                troopId: currentState.occupier_id,
-                stamina: currentStamina,
-                maxStamina,
-              });
-
               return {
                 entityId: currentState.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
