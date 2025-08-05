@@ -371,7 +371,7 @@ export const createGuardArmyDisplay = (
       const resourceId = getTroopResourceIdFromCategory(guard.category);
       if (resourceId) {
         const iconContainer = document.createElement("div");
-        iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
+        iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
 
         const img = document.createElement("img");
         img.src = `/images/resources/${resourceId}.png`;
@@ -414,7 +414,7 @@ export const createProductionDisplay = (
   activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
 ): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs");
+  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
   container.setAttribute("data-component", "productions");
 
   if (activeProductions.length === 0) {

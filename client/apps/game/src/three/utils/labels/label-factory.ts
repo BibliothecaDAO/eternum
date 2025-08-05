@@ -1,8 +1,7 @@
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { getCharacterName } from "@/utils/agent";
-import { getStructureTypeName } from "@bibliothecadao/eternum";
-import { BuildingType, getLevelName, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import {
   createContentContainer,
@@ -289,17 +288,17 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     contentContainer.appendChild(ownerText);
 
     // Add structure type and level
-    const typeText = document.createElement("strong");
-    typeText.textContent = `${getStructureTypeName(data.structureType, isBlitz)} ${
-      data.structureType === StructureType.Realm ? `(${getLevelName(data.level)})` : ""
-    } ${
-      data.structureType === StructureType.Hyperstructure
-        ? data.initialized
-          ? `(Stage ${data.stage + 1})`
-          : "Foundation"
-        : ""
-    }`;
-    contentContainer.appendChild(typeText);
+    // const typeText = document.createElement("strong");
+    // typeText.textContent = `${getStructureTypeName(data.structureType, isBlitz)} ${
+    //   data.structureType === StructureType.Realm ? `(${getLevelName(data.level)})` : ""
+    // } ${
+    //   data.structureType === StructureType.Hyperstructure
+    //     ? data.initialized
+    //       ? `(Stage ${data.stage + 1})`
+    //       : "Foundation"
+    //     : ""
+    // }`;
+    // contentContainer.appendChild(typeText);
 
     // Add guard armies display
     if (data.guardArmies && data.guardArmies.length > 0) {
