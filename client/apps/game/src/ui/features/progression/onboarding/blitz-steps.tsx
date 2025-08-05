@@ -95,7 +95,7 @@ const NoGameState = ({
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
-      <CountdownTimer targetTime={registrationStartAt} label="Next game starts in:" />
+      <CountdownTimer targetTime={registrationStartAt} label="Registration starts in:" />
 
       <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
         <p className="text-sm text-gold/70">Upcoming Schedule:</p>
