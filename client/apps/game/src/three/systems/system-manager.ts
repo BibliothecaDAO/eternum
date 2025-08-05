@@ -308,8 +308,6 @@ export class SystemManager {
                 Boolean(loggedInAccountPlayerData?.guildId) &&
                 loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
 
-              console.log({ isAlly, explorerOwnerAddress, explorerPlayerData });
-
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 
@@ -349,8 +347,8 @@ export class SystemManager {
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
-                  address: BigInt(explorerOwnerAddress),
-                  ownerName: explorerPlayerData?.ownerName || "",
+                  address: BigInt(armyMapData?.ownerAddress || ""),
+                  ownerName: armyMapData?.ownerName || "",
                   guildName: explorerPlayerData?.guildName || "",
                 },
                 troopType: explorer.troopType as TroopType,

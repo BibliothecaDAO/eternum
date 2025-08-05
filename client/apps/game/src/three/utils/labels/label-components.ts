@@ -1,6 +1,6 @@
-import { CameraView } from "../../scenes/hexagon-scene";
 import { COLORS } from "@/ui/features/settlement";
 import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { CameraView } from "../../scenes/hexagon-scene";
 
 /**
  * Component factory for creating reusable label UI elements
@@ -39,7 +39,7 @@ export const getGuildColorSet = (guildName: string) => {
   const cleanedName = cleanText(guildName);
   const firstChar = cleanedName.length > 0 ? cleanedName.charAt(0).toLowerCase() : "a";
   const charCode = firstChar.charCodeAt(0);
-  
+
   let index = Math.floor((charCode - 97) / 4);
   if (index < 0 || index >= GUILD_COLOR_SETS.length) {
     index = GUILD_COLOR_SETS.length - 1;
@@ -212,7 +212,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
       borderColor,
       "font-semibold",
       "shadow-sm",
-      "text-white"
+      "text-white",
     );
 
     container.appendChild(guildBadge);
@@ -288,21 +288,48 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
  */
 export const createTroopCountDisplay = (count: number, troopType: string, tier: string): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "text-xxs", "gap-1");
+  container.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40", "text-xxs");
   container.setAttribute("data-component", "troop-count");
 
-  // Troop count
-  const countSpan = document.createElement("strong");
+  // Sword icon (like shield for guards)
+  const swordIcon = document.createElement("span");
+  swordIcon.textContent = "⚔️";
+  container.appendChild(swordIcon);
+
+  // Troop resource icon
+  const resourceId = getTroopResourceIdFromCategory(troopType);
+  if (resourceId) {
+    const iconContainer = document.createElement("div");
+    iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
+
+    const img = document.createElement("img");
+    img.src = `/images/resources/${resourceId}.png`;
+    img.classList.add("w-full", "h-full", "object-contain");
+    iconContainer.appendChild(img);
+    container.appendChild(iconContainer);
+  }
+
+  // Count
+  const countSpan = document.createElement("span");
   countSpan.textContent = count.toString();
-  countSpan.classList.add("text-white");
+  countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center", "text-white");
   countSpan.setAttribute("data-role", "count");
   container.appendChild(countSpan);
 
-  // Troop type and tier
-  const typeSpan = document.createElement("span");
-  typeSpan.textContent = `${troopType} ${TIERS_TO_STARS[tier as TroopTier] || ""}`;
-  typeSpan.classList.add("text-gray-300");
-  container.appendChild(typeSpan);
+  // Tier badge
+  const tierNumber = parseInt(tier.replace("T", "")) || 1;
+  const tierBadge = document.createElement("span");
+  tierBadge.textContent = `T${tierNumber}`;
+  tierBadge.classList.add(
+    "px-1",
+    "py-0.5",
+    "rounded",
+    "text-[10px]",
+    "font-bold",
+    "border",
+    ...getTierStyle(tierNumber).split(" "),
+  );
+  container.appendChild(tierBadge);
 
   return container;
 };
@@ -311,7 +338,7 @@ export const createTroopCountDisplay = (count: number, troopType: string, tier: 
  * Create guard army display
  */
 export const createGuardArmyDisplay = (
-  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
+  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement => {
   const container = document.createElement("div");
   container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
@@ -364,7 +391,7 @@ export const createGuardArmyDisplay = (
         "text-[10px]",
         "font-bold",
         "border",
-        ...getTierStyle(guard.tier).split(" ")
+        ...getTierStyle(guard.tier).split(" "),
       );
       guardDiv.appendChild(tierBadge);
 
@@ -379,7 +406,7 @@ export const createGuardArmyDisplay = (
  * Create production display
  */
 export const createProductionDisplay = (
-  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>
+  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
 ): HTMLElement => {
   const container = document.createElement("div");
   container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs");
@@ -485,7 +512,7 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
   }
-  
+
   if (progressFill) {
     const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
     progressFill.style.width = `${percentage}%`;
