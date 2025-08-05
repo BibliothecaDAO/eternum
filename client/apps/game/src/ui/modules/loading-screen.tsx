@@ -23,6 +23,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
     "Extracting Ethereal Silica...",
     "Polishing Twilight Quartz...",
     "Awakening Ancient Spirits...",
+    "Conquering everything...",
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);

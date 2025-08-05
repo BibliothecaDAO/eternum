@@ -124,6 +124,7 @@
     "eslint": "^9.23.0",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
+    "sharp": "^0.34.3",
     "typescript": "^5.8.2",
     "vite": "^5.4.16",
     "vitest": "^2.1.9"

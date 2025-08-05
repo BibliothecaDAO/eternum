@@ -6,7 +6,7 @@ import { getIsBlitz } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
-import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
+import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
@@ -162,19 +162,9 @@ const DojoContextProvider = ({
     return <LoadingScreen backgroundImage={backgroundImage} />;
   }
 
-  if (isConnecting) {
-    return (
-      <>
-        <CountdownTimer backgroundImage={backgroundImage} />
-        <LoadingScreen backgroundImage={backgroundImage} />
-      </>
-    );
-  }
-
   if (!isConnected && !isConnecting && showBlankOverlay) {
     return (
       <>
-        <CountdownTimer backgroundImage={backgroundImage} />
         <OnboardingContainer backgroundImage={backgroundImage}>
           <StepContainer>
             <div className="flex flex-col justify-wrap space-y-4 mt-2">
