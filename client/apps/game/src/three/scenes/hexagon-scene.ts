@@ -493,7 +493,9 @@ export abstract class HexagonScene {
     this.interactiveHexManager.update();
     this.updateLights();
     this.updateHighlightPulse();
-    this.updateStormEffects();
+    if (this.shouldEnableStormEffects()) {
+      this.updateStormEffects();
+    }
     this.biomeModels.forEach((biome) => {
       try {
         biome.updateAnimations(deltaTime);
@@ -569,6 +571,11 @@ export abstract class HexagonScene {
 
     // Reset lightning state
     this.lightningEndTime = 0;
+  }
+
+  protected shouldEnableStormEffects(): boolean {
+    // Override this method in child classes to control storm effects
+    return true;
   }
 
   // Abstract methods
