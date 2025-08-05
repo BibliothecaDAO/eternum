@@ -23,7 +23,7 @@ export type ArmySystemUpdate = {
   isAlly: boolean;
   // Enhanced data from MapDataStore
   troopCount: number;
-  currentStamina: number;
+  currentStamina: (currentArmiesTick: number) => number;
   maxStamina: number;
 };
 

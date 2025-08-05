@@ -1,7 +1,7 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { MapDataStore } from "@/three/managers/map-data-store";
+import { ActiveProduction, GuardArmy, MapDataStore } from "@/three/managers/map-data-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -11,10 +11,12 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   StaminaManager,
+  unpackBuildingCounts,
 } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
   BiomeType,
+  BuildingType,
   type HexPosition,
   type ID,
   RealmLevels,
@@ -311,10 +313,9 @@ export class SystemManager {
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 
-              const { currentArmiesTick } = getBlockTimestamp();
-
-              const currentStamina = armyMapData
-                ? Number(
+              const getCurrentStamina = (currentArmiesTick: number) => {
+                if (armyMapData) {
+                  return Number(
                     StaminaManager.getStamina(
                       {
                         category: explorer.troopType,
@@ -337,8 +338,10 @@ export class SystemManager {
                       },
                       currentArmiesTick,
                     ).amount,
-                  )
-                : 0;
+                  );
+                }
+                return 0;
+              };
 
               const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
@@ -359,7 +362,7 @@ export class SystemManager {
                 isAlly,
                 // Enhanced data from MapDataStore
                 troopCount: armyMapData?.count || 0,
-                currentStamina,
+                currentStamina: (currentArmiesTick: number) => getCurrentStamina(currentArmiesTick),
                 maxStamina,
               };
             }
@@ -672,6 +675,118 @@ export class SystemManager {
     }
 
     return StructureProgress.STAGE_1;
+  }
+
+  public get LabelUpdate() {
+    return {
+      onArmyUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(this.setup.components.ExplorerTroops, callback, (update: any) => {
+          if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+            const [currentState, _prevState] = update.value;
+
+            if (!currentState) return;
+
+            return {
+              entityId: currentState.explorer_id,
+              troopCount: divideByPrecision(Number(currentState.troops.count)),
+              stamina: currentState.troops.stamina.amount,
+              updatedTick: currentState.troops.stamina.updated_tick,
+            };
+          }
+        });
+      },
+      onStructureGuardUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(this.setup.components.Structure, callback, (update: any) => {
+          if (isComponentUpdate(update, this.setup.components.Structure)) {
+            const [currentState, _prevState] = update.value;
+
+            if (!currentState) return;
+
+            // Extract guard armies data from the structure
+            const guardArmies: GuardArmy[] = [];
+            if (currentState.troop_guards.alpha) {
+              guardArmies.push({
+                slot: 0,
+                category: currentState.troop_guards.alpha.category,
+                tier: Number(currentState.troop_guards.alpha.tier),
+                count: divideByPrecision(Number(currentState.troop_guards.alpha.count)),
+                stamina: Number(currentState.troop_guards.alpha.stamina.amount),
+              });
+            }
+            if (currentState.troop_guards.bravo) {
+              guardArmies.push({
+                slot: 1,
+                category: currentState.troop_guards.bravo.category,
+                tier: Number(currentState.troop_guards.bravo.tier),
+                count: divideByPrecision(Number(currentState.troop_guards.bravo.count)),
+                stamina: Number(currentState.troop_guards.bravo.stamina.amount),
+              });
+            }
+            if (currentState.troop_guards.charlie) {
+              guardArmies.push({
+                slot: 2,
+                category: currentState.troop_guards.charlie.category,
+                tier: Number(currentState.troop_guards.charlie.tier),
+                count: divideByPrecision(Number(currentState.troop_guards.charlie.count)),
+                stamina: Number(currentState.troop_guards.charlie.stamina.amount),
+              });
+            }
+            if (currentState.troop_guards.delta) {
+              guardArmies.push({
+                slot: 3,
+                category: currentState.troop_guards.delta.category,
+                tier: Number(currentState.troop_guards.delta.tier),
+                count: divideByPrecision(Number(currentState.troop_guards.delta.count)),
+                stamina: Number(currentState.troop_guards.delta.stamina.amount),
+              });
+            }
+
+            return {
+              entityId: currentState.entity_id,
+              guardArmies,
+            };
+          }
+        });
+      },
+      onStructureBuildingUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(this.setup.components.StructureBuildings, callback, (update: any) => {
+          if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
+            const [currentState, _prevState] = update.value;
+
+            if (!currentState) return;
+
+            // Convert hex strings to bigints
+            const packedValues: bigint[] = [
+              currentState.packed_counts_1 ? BigInt(currentState.packed_counts_1) : 0n,
+              currentState.packed_counts_2 ? BigInt(currentState.packed_counts_2) : 0n,
+              currentState.packed_counts_3 ? BigInt(currentState.packed_counts_3) : 0n,
+            ];
+
+            // Unpack the building counts
+            const buildingCounts = unpackBuildingCounts(packedValues);
+
+            const activeProductions: ActiveProduction[] = [];
+
+            // Iterate through all building types and create productions for non-zero counts
+            for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
+              const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
+
+              if (count > 0) {
+                activeProductions.push({
+                  buildingCount: count,
+                  buildingType: buildingType as BuildingType,
+                });
+              }
+            }
+
+            return {
+              entityId: currentState.entity_id,
+              activeProductions,
+            };
+          }
+        });
+      },
+    };
   }
 
   public get RelicEffect() {

@@ -15,7 +15,7 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
-import { MapDataStore } from "./map-data-store";
+import { GuardArmy, MapDataStore } from "./map-data-store";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -594,6 +594,49 @@ export class StructureManager {
   private updateStructureLabelData(entityId: ID, structure: any, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place
     updateStructureLabel(existingLabel.element, structure);
+  }
+
+  /**
+   * Update structure label from guard update (troop count/stamina changes)
+   */
+  public updateStructureLabelFromGuardUpdate(update: { entityId: ID; guardArmies: GuardArmy[] }): void {
+    const structure = this.structures.getStructureByEntityId(update.entityId);
+    if (!structure) return;
+
+    // Update cached guard armies data
+    structure.guardArmies = update.guardArmies.map((guard) => ({
+      slot: guard.slot,
+      category: guard.category,
+      tier: guard.tier,
+      count: guard.count,
+      stamina: guard.stamina,
+    }));
+
+    // Update the label if it exists
+    const label = this.entityIdLabels.get(update.entityId);
+    if (label) {
+      updateStructureLabel(label.element, structure);
+    }
+  }
+
+  /**
+   * Update structure label from building update (active productions)
+   */
+  public updateStructureLabelFromBuildingUpdate(update: { 
+    entityId: ID; 
+    activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> 
+  }): void {
+    const structure = this.structures.getStructureByEntityId(update.entityId);
+    if (!structure) return;
+
+    // Update cached active productions data
+    structure.activeProductions = update.activeProductions;
+
+    // Update the label if it exists
+    const label = this.entityIdLabels.get(update.entityId);
+    if (label) {
+      updateStructureLabel(label.element, structure);
+    }
   }
 }
 

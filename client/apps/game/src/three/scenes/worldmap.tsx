@@ -263,6 +263,27 @@ export default class WorldmapScene extends HexagonScene {
       this.updateVisibleChunks();
     });
 
+    // Listen for label updates (troop count and stamina changes)
+    this.systemManager.LabelUpdate.onArmyUpdate((update) => {
+      if (update && update.entityId) {
+        this.armyManager.updateArmyLabelFromSystemUpdate(update);
+      }
+    });
+
+    // Listen for structure guard updates
+    this.systemManager.LabelUpdate.onStructureGuardUpdate((update) => {
+      if (update && update.entityId) {
+        this.structureManager.updateStructureLabelFromGuardUpdate(update);
+      }
+    });
+
+    // Listen for structure building updates
+    this.systemManager.LabelUpdate.onStructureBuildingUpdate((update) => {
+      if (update && update.entityId) {
+        this.structureManager.updateStructureLabelFromBuildingUpdate(update);
+      }
+    });
+
     // Store the unsubscribe function for Tile updates
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 

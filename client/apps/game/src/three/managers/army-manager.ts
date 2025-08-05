@@ -178,6 +178,7 @@ export class ArmyManager {
     const { entityId, hexCoords, owner, troopType, troopTier, order } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
 
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
@@ -192,7 +193,7 @@ export class ArmyManager {
         update.isDaydreamsAgent,
         update.isAlly,
         update.troopCount,
-        update.currentStamina,
+        update.currentStamina(currentArmiesTick),
         update.maxStamina,
       );
     }
@@ -677,6 +678,56 @@ export class ArmyManager {
   private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place
     updateArmyLabel(existingLabel.element, army);
+  }
+
+  /**
+   * Update army label from system update (troop count/stamina changes)
+   */
+  public updateArmyLabelFromSystemUpdate(update: {
+    entityId: ID;
+    troopCount: number;
+    stamina: number;
+    updatedTick: number;
+  }): void {
+    const army = this.armies.get(update.entityId);
+    // todo: need to fix case where army has just appeared and is not in this.armies yet
+    if (!army) return;
+
+    // Update cached army data
+    army.troopCount = update.troopCount;
+
+    // Calculate current stamina using StaminaManager
+    const { currentArmiesTick } = getBlockTimestamp();
+    army.currentStamina = Number(
+      StaminaManager.getStamina(
+        {
+          category: army.category,
+          tier: army.tier,
+          count: BigInt(update.troopCount),
+          stamina: {
+            amount: BigInt(update.stamina),
+            updated_tick: BigInt(update.updatedTick),
+          },
+          boosts: {
+            incr_stamina_regen_percent_num: 0,
+            incr_stamina_regen_tick_count: 0,
+            incr_explore_reward_percent_num: 0,
+            incr_explore_reward_end_tick: 0,
+            incr_damage_dealt_percent_num: 0,
+            incr_damage_dealt_end_tick: 0,
+            decr_damage_gotten_percent_num: 0,
+            decr_damage_gotten_end_tick: 0,
+          },
+        },
+        currentArmiesTick,
+      ).amount,
+    );
+
+    // Update the label if it exists
+    const label = this.entityIdLabels.get(update.entityId);
+    if (label) {
+      updateArmyLabel(label.element, army);
+    }
   }
 
   public destroy() {
