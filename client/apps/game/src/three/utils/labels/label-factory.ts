@@ -120,6 +120,11 @@ const createLabelBase = (isMine: boolean, isAlly?: boolean, isDaydreamsAgent?: b
     "group",
     "shadow-md",
     "font-semibold",
+    "transition-[height]",
+    "duration-700",
+    "ease-in-out",
+    "h-auto",
+    "has-[.opacity-0]:h-12",
   );
 
   // Get appropriate style
