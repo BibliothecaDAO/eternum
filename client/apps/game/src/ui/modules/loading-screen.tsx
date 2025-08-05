@@ -22,7 +22,6 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
     "Training Crossbowmen...",
     "Extracting Ethereal Silica...",
     "Polishing Twilight Quartz...",
-    "Awakening Ancient Spirits...",
     "Conquering everything...",
   ];
 
