@@ -45,6 +45,8 @@ export abstract class HexagonScene {
   protected mainDirectionalLight!: THREE.DirectionalLight;
   protected hemisphereLight!: THREE.HemisphereLight;
   protected lightHelper!: THREE.DirectionalLightHelper;
+  protected stormLight!: THREE.PointLight;
+  protected ambientPurpleLight!: THREE.AmbientLight;
 
   private groundMesh!: THREE.Mesh;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
@@ -76,11 +78,11 @@ export abstract class HexagonScene {
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
-    this.scene.background = new THREE.Color(0x8790a1);
+    this.scene.background = new THREE.Color(0x2a1a3e);
     this.state = useUIStore.getState();
-    this.fog = new THREE.Fog(0xffffff, 21, 42);
+    this.fog = new THREE.Fog(0x2d1b4e, 15, 35);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
-      //this.scene.fog = this.fog;
+      // this.scene.fog = this.fog; // Disabled due to zoom level issues
     }
 
     // subscribe to state changes
@@ -101,16 +103,17 @@ export abstract class HexagonScene {
   private setupLighting(): void {
     this.setupHemisphereLight();
     this.setupDirectionalLight();
+    this.setupStormLighting();
     this.setupLightHelper();
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 0.3);
-    //this.scene.add(this.hemisphereLight);
+    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0x2a1a3a, 0.25);
+    this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0x9966ff, 2.0);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -129,6 +132,15 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.shadow.bias = -0.0285;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+  }
+
+  private setupStormLighting(): void {
+    this.ambientPurpleLight = new THREE.AmbientLight(0x3a1a3a, 0.1);
+    this.scene.add(this.ambientPurpleLight);
+
+    this.stormLight = new THREE.PointLight(0xaa77ff, 1.5, 80);
+    this.stormLight.position.set(0, 20, 0);
+    this.scene.add(this.stormLight);
   }
 
   private setupLightHelper(): void {
@@ -168,6 +180,8 @@ export abstract class HexagonScene {
     this.setupSceneGUI();
     this.setupHemisphereLightGUI();
     this.setupDirectionalLightGUI();
+    this.setupAmbientLightGUI();
+    this.setupStormLightGUI();
     this.setupShadowGUI();
     this.setupFogGUI();
   }
@@ -195,7 +209,7 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
-    directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.1);
+    directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.01);
     directionalLightFolder.close();
   }
 
@@ -209,6 +223,24 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
+  }
+
+  private setupAmbientLightGUI(): void {
+    const ambientLightFolder = this.GUIFolder.addFolder("Ambient Light");
+    ambientLightFolder.addColor(this.ambientPurpleLight, "color");
+    ambientLightFolder.add(this.ambientPurpleLight, "intensity", 0, 1, 0.01);
+    ambientLightFolder.close();
+  }
+
+  private setupStormLightGUI(): void {
+    const stormLightFolder = this.GUIFolder.addFolder("Storm Light");
+    stormLightFolder.addColor(this.stormLight, "color");
+    stormLightFolder.add(this.stormLight, "intensity", 0, 5, 0.1);
+    stormLightFolder.add(this.stormLight, "distance", 0, 200, 1);
+    stormLightFolder.add(this.stormLight.position, "x", -50, 50, 1);
+    stormLightFolder.add(this.stormLight.position, "y", 0, 50, 1);
+    stormLightFolder.add(this.stormLight.position, "z", -50, 50, 1);
+    stormLightFolder.close();
   }
 
   private setupFogGUI(): void {
@@ -426,7 +458,7 @@ export abstract class HexagonScene {
     const roughness = 0.66;
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
-    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
+    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
@@ -457,6 +489,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager.update();
     this.updateLights();
     this.updateHighlightPulse();
+    this.updateStormEffects();
     this.biomeModels.forEach((biome) => {
       try {
         biome.updateAnimations(deltaTime);
@@ -480,6 +513,42 @@ export abstract class HexagonScene {
     const elapsedTime = performance.now() / 1000;
     const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
     this.highlightHexManager.updateHighlightPulse(pulseFactor);
+  }
+
+  private updateStormEffects(): void {
+    const elapsedTime = performance.now() / 1000;
+
+    if (Math.random() < 0.002) {
+      this.triggerLightning();
+    }
+
+    const stormIntensity = 1.2 + Math.sin(elapsedTime * 0.3) * 0.4;
+    this.stormLight.intensity = stormIntensity;
+
+    const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
+    this.ambientPurpleLight.intensity = purpleFlicker;
+
+    const hemisphereFlicker = 0.22 + Math.sin(elapsedTime * 1.5) * 0.05;
+    this.hemisphereLight.intensity = hemisphereFlicker;
+  }
+
+  private triggerLightning(): void {
+    const originalIntensity = this.mainDirectionalLight.intensity;
+    const originalColor = this.mainDirectionalLight.color.getHex();
+    const originalStormIntensity = this.stormLight.intensity;
+
+    this.mainDirectionalLight.intensity = 3.5;
+    this.mainDirectionalLight.color.setHex(0xe6ccff);
+    this.stormLight.intensity = 4;
+
+    setTimeout(
+      () => {
+        this.mainDirectionalLight.intensity = originalIntensity;
+        this.mainDirectionalLight.color.setHex(originalColor);
+        this.stormLight.intensity = originalStormIntensity;
+      },
+      80 + Math.random() * 40,
+    );
   }
 
   // Abstract methods

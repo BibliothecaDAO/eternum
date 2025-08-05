@@ -189,8 +189,8 @@ export default class GameRenderer {
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = THREE.NoToneMapping;
-    this.renderer.toneMappingExposure = 1;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 0.8;
     this.renderer.autoClear = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
@@ -348,8 +348,8 @@ export default class GameRenderer {
       this.createToneMappingEffect(effectsConfig),
       new FXAAEffect(),
       this.createBloomEffect(),
-      this.createHueSaturationEffect(effectsConfig),
-      this.createBrightnessContrastEffect(effectsConfig),
+      // this.createHueSaturationEffect(effectsConfig),
+      // this.createBrightnessContrastEffect(effectsConfig),
       this.createVignetteEffect(effectsConfig),
     ];
 
@@ -359,18 +359,18 @@ export default class GameRenderer {
 
   private createEffectsConfiguration() {
     return {
-      brightness: -0.05,
-      contrast: 0.1,
+      brightness: 0,
+      contrast: 0,
       hue: 0,
-      saturation: 0.2,
+      saturation: 0.6,
       toneMapping: {
-        mode: ToneMappingMode.LINEAR,
-        exposure: 1.0,
-        whitePoint: 1.0,
+        mode: ToneMappingMode.ACES_FILMIC,
+        exposure: 0.7,
+        whitePoint: 1.2,
       },
       vignette: {
-        darkness: 0.7,
-        offset: 0.25,
+        darkness: 0.9,
+        offset: 0.35,
       },
     };
   }
@@ -498,8 +498,8 @@ export default class GameRenderer {
     const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
-      this.hexceptionScene.setEnvironment(envMap, 0.3);
-      this.worldmapScene.setEnvironment(envMap, 0.3);
+      this.hexceptionScene.setEnvironment(envMap, 0.1);
+      this.worldmapScene.setEnvironment(envMap, 0.1);
     });
   }
 
