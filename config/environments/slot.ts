@@ -46,8 +46,8 @@ export const SlotEternumGlobalConfig: Config = {
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 60 * 48,
-      creation_period_seconds: 60 * 60 * 1,
+      registration_period_seconds: 60 * 60 * 23, // 23 hours
+      creation_period_seconds: 60 * 60 * 1, // 1 hour
     },
   },
 };
