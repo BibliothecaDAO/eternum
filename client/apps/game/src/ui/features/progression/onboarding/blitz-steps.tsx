@@ -124,9 +124,11 @@ const NoGameState = ({
 const MakeHyperstructuresState = ({
   numHyperStructuresLeft,
   onMakeHyperstructures,
+  canMake,
 }: {
   numHyperStructuresLeft: number;
   onMakeHyperstructures: () => Promise<void>;
+  canMake: boolean;
 }) => {
   const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
   const handleMakeHyperstructures = async () => {
@@ -142,10 +144,10 @@ const MakeHyperstructuresState = ({
 
   return (
     <>
-      {numHyperStructuresLeft > 0 && (
+      {numHyperStructuresLeft > 0 && canMake && (
         <Button
           onClick={handleMakeHyperstructures}
-          disabled={isMakingHyperstructures}
+          disabled={isMakingHyperstructures || !canMake}
           className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
         >
           <div className="flex items-center justify-center">
@@ -157,7 +159,7 @@ const MakeHyperstructuresState = ({
             ) : (
               <div className="flex items-center justify-center">
                 <Sword className="w-5 h-5 mr-2 fill-brown" />
-                <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
+                <span>Make Hyperstructures [${numHyperStructuresLeft} left]</span>
               </div>
             )}
           </div>
@@ -564,11 +566,16 @@ export const BlitzOnboarding = () => {
 
   const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
 
+  // Determine if we are in registration phase
+  const now = Date.now() / 1000;
+  const canMakeHyperstructures = now >= registration_start_at && now < registration_end_at;
+
   return (
     <div className="space-y-6">
       <MakeHyperstructuresState
         numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
         onMakeHyperstructures={handleMakeHyperstructures}
+        canMake={canMakeHyperstructures}
       />
       {gameState === GameState.NO_GAME && registration_start_at && (
         <NoGameState
