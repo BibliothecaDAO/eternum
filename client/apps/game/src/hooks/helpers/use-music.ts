@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import useSound from "use-sound";
 
 // Define a type for your tracks
@@ -9,7 +9,8 @@ type Track = {
 };
 
 // Your tracks list
-export const tracks: Track[] = [
+const blitzTracks: Track[] = [{ name: "Blitz", url: "/sound/music/minstrels/blitz.flac" }];
+const normalTracks: Track[] = [
   { name: "Day Break", url: "/sound/music/DayBreak.mp3" },
   { name: "Morning Ember", url: "/sound/music/MorningEmber.mp3" },
   { name: "Beyond The Horizon", url: "/sound/music/BeyondTheHorizon.mp3" },
@@ -24,6 +25,7 @@ export const tracks: Track[] = [
   { name: "Wanderers Chronicle", url: "/sound/music/WanderersChronicle.mp3" },
   { name: "Happy Realm", url: "/sound/music/happy_realm.mp3" },
 ];
+export const tracks: Track[] = true ? blitzTracks : normalTracks;
 
 export const useMusicPlayer = () => {
   const isPlaying = useUIStore((state) => state.isPlaying);
@@ -36,6 +38,8 @@ export const useMusicPlayer = () => {
   const setTrackIndex = useUIStore((state) => state.setTrackIndex);
   const trackName = useUIStore((state) => state.trackName);
   const setTrackName = useUIStore((state) => state.setTrackName);
+  const isBlitz = true;
+  const tracks = useMemo(() => (isBlitz ? blitzTracks : normalTracks), [isBlitz]);
 
   const goToNextTrack = () => {
     const nextIndex = (trackIndex + 1) % tracks.length;
@@ -52,9 +56,11 @@ export const useMusicPlayer = () => {
     onplay: () => setIsPlaying(true),
     onstop: () => setIsPlaying(false),
     volume: musicLevel / 100,
+    loop: tracks.length === 1,
     onend: () => {
-      setIsPlaying(false);
-      goToNextTrack();
+      if (tracks.length > 1) {
+        goToNextTrack();
+      }
     },
   });
 

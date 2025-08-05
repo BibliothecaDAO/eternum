@@ -60,6 +60,9 @@ export default class InstancedModel {
         }
         if (name === "Outline") {
           tmp.renderOrder = 4;
+          child.material.color.setHex(0xffffff);
+          child.material.opacity = 0.075;
+          child.material.transparent = true;
         }
         if (name.toLowerCase().includes("ocean")) {
           tmp.renderOrder = 1;

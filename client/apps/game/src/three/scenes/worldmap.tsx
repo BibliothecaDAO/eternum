@@ -48,8 +48,8 @@ import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { FXManager } from "../managers/fx-manager";
+import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName, SelectableArmy } from "../types/common";
@@ -69,7 +69,6 @@ import {
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
-import { HoverLabelManager } from "../managers/hover-label-manager";
 
 const dummyObject = new THREE.Object3D();
 const dummyVector = new THREE.Vector3();
@@ -134,7 +133,7 @@ export default class WorldmapScene extends HexagonScene {
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
-  
+
   // Hover-based label expansion manager
   private hoverLabelManager: HoverLabelManager;
 
@@ -244,7 +243,7 @@ export default class WorldmapScene extends HexagonScene {
         chest: this.chestLabelsGroup,
       },
       (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
-      this.currentCameraView
+      this.currentCameraView,
     );
 
     // Subscribe hover label manager to camera view changes
@@ -494,17 +493,17 @@ export default class WorldmapScene extends HexagonScene {
     if (hex === null) {
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
-      
+
       // Handle label collapse on hex leave
       this.hoverLabelManager.onHexLeave();
       return;
     }
     const { hexCoords } = hex;
     this.state.setHoveredHex(hexCoords);
-    
+
     // Handle label expansion on hover
     this.hoverLabelManager.onHexHover(hexCoords);
-    
+
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
@@ -1780,4 +1779,8 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  protected shouldEnableStormEffects(): boolean {
+    // Disable storm effects for worldmap scene
+    return false;
+  }
 }
