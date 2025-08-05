@@ -154,25 +154,22 @@ export const PlayersPanel = ({
         {!isSeasonOver ? (
           <>
             <div className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20">
-              <div className="flex items-center justify-center gap-3 text-xs">
-                <div className="flex items-center gap-1">
-                  <span className="text-gold/50">Explore</span>
-                  <span className="text-gold font-semibold">5 VP</span>
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-gold/50">Explore a tile</span>
+                  <span className="text-gold font-semibold">50 VP</span>
                 </div>
-                <span className="text-gold/30">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-gold/50">Claim Structures</span>
-                  <span className="text-gold font-semibold">200 VP</span>
-                </div>
-                <span className="text-gold/30">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-gold/50">Claim Hyperstructures</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gold/50">Claim a World Structure from bandits</span>
                   <span className="text-gold font-semibold">500 VP</span>
                 </div>
-                <span className="text-gold/30">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-gold/50">Control Hyperstructures</span>
-                  <span className="text-gold font-semibold">1 VP/s</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
+                  <span className="text-gold font-semibold">2000 VP</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gold/50">Control a Hyperstructure</span>
+                  <span className="text-gold font-semibold">5 VP/s</span>
                 </div>
               </div>
             </div>
