@@ -1,11 +1,9 @@
-import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzOnboarding, LocalStepOne, SettleRealm, StepOne } from "@/ui/features/progression";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/features/settlement";
-import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -74,7 +72,7 @@ export const StepContainer = ({
           expandedWidth
         } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
-        {showToS ? (
+        {/* {showToS ? (
           <div className="flex flex-col h-full max-h-full pb-4">
             <Button
               className="!h-12 !w-24 !bg-gold/10 !border-none hover:scale-105 hover:-translate-y-1 !px-3 !shadow-none hover:text-gold"
@@ -88,34 +86,34 @@ export const StepContainer = ({
               <TermsOfService />
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col h-full">
-            <div className="w-full text-center flex-shrink-0">
-              <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8">
-                {loading ? (
-                  <img
-                    src="/images/logos/eternum-loader.png"
-                    className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
-                  />
-                ) : (
-                  <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-96 mx-auto" />
-                )}
+        ) : ( */}
+        <div className="flex flex-col h-full">
+          <div className="w-full text-center flex-shrink-0">
+            <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8">
+              {loading ? (
+                <img
+                  src="/images/logos/eternum-loader.png"
+                  className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
+                />
+              ) : (
+                <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-96 mx-auto" />
+              )}
+            </div>
+          </div>
+          <div className="flex-grow overflow-auto">{children}</div>
+          {tos && (
+            <div className="mt-auto pt-4 flex-shrink-0">
+              <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
+              <div className="w-full flex justify-center rounded-lg pt-2">
+                <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
+                  By continuing you are agreeing <br /> to Realms's{" "}
+                  <span className="inline underline">Terms of Service</span>
+                </p>
               </div>
             </div>
-            <div className="flex-grow overflow-auto">{children}</div>
-            {tos && (
-              <div className="mt-auto pt-4 flex-shrink-0">
-                <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
-                <div className="w-full flex justify-center rounded-lg pt-2">
-                  <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing <br /> to Realms's{" "}
-                    <span className="inline underline">Terms of Service</span>
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
+        {/* )} */}
       </div>
     </motion.div>
   );
@@ -314,7 +312,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </a>
           <a
             className="text-brown cursor-pointer w-full"
-            href="https://docs.eternum.realms.world/"
+            href="https://docs.realms.world/"
             target="_blank"
             rel="noopener noreferrer"
           >
