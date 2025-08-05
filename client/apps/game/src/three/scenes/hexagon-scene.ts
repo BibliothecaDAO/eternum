@@ -49,6 +49,10 @@ export abstract class HexagonScene {
   protected ambientPurpleLight!: THREE.AmbientLight;
 
   private groundMesh!: THREE.Mesh;
+  private lightningEndTime: number = 0;
+  private originalLightningIntensity: number = 0;
+  private originalLightningColor: number = 0;
+  private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
 
   protected cameraDistance = 10; // Maintain the same distance
@@ -516,14 +520,24 @@ export abstract class HexagonScene {
   }
 
   private updateStormEffects(): void {
-    const elapsedTime = performance.now() / 1000;
+    const currentTime = performance.now();
+    const elapsedTime = currentTime / 1000;
 
-    if (Math.random() < 0.002) {
+    // Check if lightning should end
+    if (this.lightningEndTime > 0 && currentTime >= this.lightningEndTime) {
+      this.endLightning();
+    }
+
+    // Trigger new lightning if not currently active
+    if (this.lightningEndTime === 0 && Math.random() < 0.002) {
       this.triggerLightning();
     }
 
-    const stormIntensity = 1.2 + Math.sin(elapsedTime * 0.3) * 0.4;
-    this.stormLight.intensity = stormIntensity;
+    // Only update normal storm effects if lightning is not active
+    if (this.lightningEndTime === 0) {
+      const stormIntensity = 1.2 + Math.sin(elapsedTime * 0.3) * 0.4;
+      this.stormLight.intensity = stormIntensity;
+    }
 
     const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
     this.ambientPurpleLight.intensity = purpleFlicker;
@@ -533,22 +547,28 @@ export abstract class HexagonScene {
   }
 
   private triggerLightning(): void {
-    const originalIntensity = this.mainDirectionalLight.intensity;
-    const originalColor = this.mainDirectionalLight.color.getHex();
-    const originalStormIntensity = this.stormLight.intensity;
+    // Store original values
+    this.originalLightningIntensity = this.mainDirectionalLight.intensity;
+    this.originalLightningColor = this.mainDirectionalLight.color.getHex();
+    this.originalStormLightningIntensity = this.stormLight.intensity;
 
+    // Apply lightning effect
     this.mainDirectionalLight.intensity = 3.5;
     this.mainDirectionalLight.color.setHex(0xe6ccff);
     this.stormLight.intensity = 4;
 
-    setTimeout(
-      () => {
-        this.mainDirectionalLight.intensity = originalIntensity;
-        this.mainDirectionalLight.color.setHex(originalColor);
-        this.stormLight.intensity = originalStormIntensity;
-      },
-      80 + Math.random() * 40,
-    );
+    // Set end time for lightning effect
+    this.lightningEndTime = performance.now() + (80 + Math.random() * 40);
+  }
+
+  private endLightning(): void {
+    // Restore original values
+    this.mainDirectionalLight.intensity = this.originalLightningIntensity;
+    this.mainDirectionalLight.color.setHex(this.originalLightningColor);
+    this.stormLight.intensity = this.originalStormLightningIntensity;
+
+    // Reset lightning state
+    this.lightningEndTime = 0;
   }
 
   // Abstract methods
