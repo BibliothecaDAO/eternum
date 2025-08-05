@@ -2,7 +2,6 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
@@ -516,9 +515,6 @@ export const BlitzOnboarding = () => {
     getUsername();
   }, [connector]);
 
-  const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
-  const setShowToS = useUIStore((state) => state.setShowToS);
-
   // Registration handler
   const handleRegister = async () => {
     if (!account?.address) return;
@@ -535,14 +531,6 @@ export const BlitzOnboarding = () => {
     if (!account?.address) return;
     await blitz_realm_create({ signer: account });
   };
-
-  if (!hasAcceptedTS) {
-    return (
-      <Button size="lg" className="!bg-gold border-none w-full" onClick={() => setShowToS(true)}>
-        <div className="text-black flex-grow text-center">Accept ToS</div>
-      </Button>
-    );
-  }
 
   if (!blitzConfig) {
     return (
