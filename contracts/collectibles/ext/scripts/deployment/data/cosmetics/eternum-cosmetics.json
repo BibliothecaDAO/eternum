@@ -2,7 +2,7 @@
     "name": "Realms: Cosmetic Items",
     "symbol": "RCI",
     "description": "Cosmetic Items for Realms",
-    "updateContractAddress": "0xef7b8fb331f4a69cba19279ec363c2411db56b538fa2b5a93e294fbf75ddcd",
+    "updateContractAddress": "",
     "defaultIpfsCid": "bafybeield35i6xi7vpwuq2qklnrt7blaiugeyqiuvox3km6xdnlrpmvv3q",
     "defaultIpfsCidOverwrite": false,
     "traits": [
