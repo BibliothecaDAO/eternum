@@ -13,19 +13,22 @@ import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount } from "@starknet-react/core";
 import { motion } from "framer-motion";
-import { AlertCircle, Clock, Users } from "lucide-react";
+import { AlertCircle, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SpectateButton } from "./spectate-button";
 
 // Helper function to format timestamp to local time
 const formatLocalTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  // Add weekday to the time string
+  return date.toLocaleTimeString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
 };
 
 const formatLocalDateTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
+  // Add weekday to the date/time string
   return date.toLocaleString([], {
+    weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -92,29 +95,23 @@ const NoGameState = ({
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
-      <div className="py-8">
-        <Clock className="w-16 h-16 mx-auto text-gold/50 mb-4" />
-        <h3 className="text-xl font-bold text-gold mb-2">No Active Game</h3>
-        <p className="text-gold/70">The next Blitz game will start soon!</p>
-      </div>
-
       <CountdownTimer targetTime={registrationStartAt} label="Next game starts in:" />
 
       <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
         <p className="text-sm text-gold/70">Upcoming Schedule:</p>
         <div className="text-sm space-y-2">
           <div>
-            <p className="text-gold">Registration Phase</p>
+            <p className="text-gold font-bold">Registration Phase</p>
             <p className="text-gold/60 text-xs">Starts: {formatLocalDateTime(registrationStartAt)}</p>
             <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
           </div>
           <div>
-            <p className="text-gold/70">Settlement Phase</p>
+            <p className="text-gold font-bold">Settlement Phase</p>
             <p className="text-gold/50 text-xs">Starts: {formatLocalDateTime(creationStartAt)}</p>
             <p className="text-gold/50 text-xs">Duration: {formatTime(settlementDuration)}</p>
           </div>
           <div>
-            <p className="text-gold/70">Game Starts</p>
+            <p className="text-gold font-bold">Game Starts</p>
             <p className="text-gold/50 text-xs">{formatLocalDateTime(creationEndAt)}</p>
           </div>
         </div>

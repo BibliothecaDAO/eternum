@@ -25,7 +25,7 @@ export const formatTime = (seconds: number) => {
     days > 0 ? `${days}d ` : "",
     hours > 0 ? `${hours}h ` : "",
     minutes > 0 ? `${minutes}m ` : "",
-    `${remainingSeconds}s`,
+    remainingSeconds > 0 ? `${remainingSeconds}s` : "",
   ].join("");
 };
 
