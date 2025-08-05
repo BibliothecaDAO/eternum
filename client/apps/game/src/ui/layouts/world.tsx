@@ -30,11 +30,11 @@ const ActionInstructions = lazy(() =>
 const BlankOverlayContainer = lazy(() =>
   import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
-const EntitiesInfoLabel = lazy(() =>
-  import("../features/world/components/entities/entities-label").then((module) => ({
-    default: module.EntitiesLabel,
-  })),
-);
+// const EntitiesInfoLabel = lazy(() =>
+//   import("../features/world/components/entities/entities-label").then((module) => ({
+//     default: module.EntitiesLabel,
+//   })),
+// );
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
   import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
@@ -148,7 +148,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
           <ActionInstructions />
           <ActionInfo />
-          <EntitiesInfoLabel />
+          {/* <EntitiesInfoLabel /> */}
 
           <div>
             <LeftMiddleContainer>
