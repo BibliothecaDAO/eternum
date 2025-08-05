@@ -347,9 +347,11 @@ export class SystemManager {
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
-                  address: BigInt(armyMapData?.ownerAddress || ""),
-                  ownerName: armyMapData?.ownerName || "",
-                  guildName: explorerPlayerData?.guildName || "",
+                  address: explorerOwnerAddress
+                    ? BigInt(explorerOwnerAddress)
+                    : BigInt(armyMapData?.ownerAddress || ""),
+                  ownerName: explorerOwnerAddress ? explorerPlayerData?.ownerName || "" : armyMapData?.ownerName || "",
+                  guildName: explorerOwnerAddress ? explorerPlayerData?.guildName || "" : "",
                 },
                 troopType: explorer.troopType as TroopType,
                 troopTier: explorer.troopTier as TroopTier,

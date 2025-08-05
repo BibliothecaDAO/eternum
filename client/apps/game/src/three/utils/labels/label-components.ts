@@ -244,9 +244,12 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
   progressBar.style.backgroundColor = "#374151"; // gray-700
   progressBar.style.borderRadius = "9999px";
   progressBar.style.height = "8px";
-  progressBar.style.width = "64px";
+  progressBar.style.width = "80px";
+  progressBar.style.minWidth = "80px";
+  progressBar.style.maxWidth = "80px";
   progressBar.style.overflow = "hidden";
   progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+  progressBar.setAttribute("data-role", "progress-container");
 
   const progressFill = document.createElement("div");
   progressFill.style.position = "absolute";
@@ -255,6 +258,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
   progressFill.style.height = "100%";
   progressFill.style.borderRadius = "9999px";
   progressFill.style.transition = "width 0.3s ease-in-out";
+  progressFill.setAttribute("data-role", "progress-fill");
 
   const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
   progressFill.style.width = `${percentage}%`;
@@ -278,6 +282,7 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
   text.style.fontFamily = "monospace";
   text.style.fontSize = "10px";
   text.style.fontWeight = "500";
+  text.setAttribute("data-role", "stamina-text");
   container.appendChild(text);
 
   return container;
@@ -506,8 +511,8 @@ export const createContentContainer = (cameraView: CameraView): HTMLElement & { 
  * Update an existing stamina bar with new values
  */
 export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
-  const progressFill = staminaBarElement.querySelector("div > div") as HTMLElement;
-  const textElement = staminaBarElement.querySelector("span:last-child") as HTMLElement;
+  const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
+  const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
 
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
