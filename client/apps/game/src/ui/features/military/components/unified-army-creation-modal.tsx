@@ -47,7 +47,7 @@ const DirectionButton = ({
   return (
     <Button
       variant={isSelected ? "gold" : isAvailable ? "outline" : "secondary"}
-      size="sm"
+      size="md"
       onClick={() => isAvailable && onClick(direction)}
       disabled={!isAvailable}
       className={clsx(
@@ -326,7 +326,7 @@ export const UnifiedArmyCreationModal = ({
                 size="md"
                 className={clsx(
                   "flex-1 py-3 font-bold transition-all duration-200",
-                  armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10"
+                  armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10",
                 )}
               >
                 ATTACK
@@ -337,7 +337,7 @@ export const UnifiedArmyCreationModal = ({
                 size="md"
                 className={clsx(
                   "flex-1 py-3 font-bold transition-all duration-200",
-                  !armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10"
+                  !armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10",
                 )}
               >
                 DEFENSE
@@ -361,7 +361,7 @@ export const UnifiedArmyCreationModal = ({
                       variant={isSelected ? "gold" : isSlotAvailable ? "outline" : "secondary"}
                       onClick={() => isSlotAvailable && setGuardSlot(slot)}
                       disabled={!isSlotAvailable}
-                      size="sm"
+                      size="md"
                       className={clsx(
                         "p-3 flex flex-col items-center text-center transition-all duration-200 rounded-lg",
                         isSelected ? "ring-2 ring-gold/60 shadow-lg shadow-gold/25" : "",
@@ -410,7 +410,9 @@ export const UnifiedArmyCreationModal = ({
                     selectedDirection={selectedDirection}
                     onClick={setSelectedDirection}
                   />
-                  <div className="flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg">🏰</div>
+                  <div className="flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg">
+                    🏰
+                  </div>
                   <DirectionButton
                     direction={Direction.EAST}
                     label="→"
