@@ -256,6 +256,16 @@ export class QuestManager {
   }
 
   // Label visibility transitions are now handled automatically by LabelManager
+
+  // Getter for compatibility with worldmap hover functionality
+  get entityIdLabels(): Map<ID, CSS2DObject> {
+    const labelMap = new Map<ID, CSS2DObject>();
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach(label => {
+      labelMap.set(label.data.entityId, label.css2dObject);
+    });
+    return labelMap;
+  }
 }
 
 class Quests {

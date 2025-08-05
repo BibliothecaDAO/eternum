@@ -402,6 +402,8 @@ export class StructureManager {
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2;
+    // Store entityId in userData for identification
+    label.userData.entityId = structure.entityId;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;

@@ -532,6 +532,8 @@ export class ArmyManager {
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
+    // Store entityId in userData for identification
+    label.userData.entityId = army.entityId;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;

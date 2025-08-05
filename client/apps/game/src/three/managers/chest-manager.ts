@@ -236,6 +236,8 @@ export class ChestManager {
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 1.5;
+    // Store entityId in userData for identification
+    label.userData.entityId = chest.entityId;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;
