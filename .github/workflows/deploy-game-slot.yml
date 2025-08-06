@@ -6,7 +6,7 @@ env:
   SLOT_NAME: "eternum-blitz-slot-1"
   SLOT_TEAM: "realms-eternum"
   SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
-  SLOT_TIER: "basic"
+  SLOT_TIER: "pro"
   TORII_VERSION: "v1.6.0-alpha.2"
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
