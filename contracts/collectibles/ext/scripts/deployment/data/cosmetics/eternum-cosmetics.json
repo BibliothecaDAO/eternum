@@ -162,6 +162,28 @@
                     "traitValueNameOverwrite": false
                 }
             ]        
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 4,
+            "traitTypeName": "Troop Type",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Knight",
+                    "traitValueNameOverwrite": false
+                }, 
+                {
+                    "traitValueId": 2,
+                    "traitValueName": "Crossbowman",
+                    "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 3,
+                    "traitValueName": "Paladin",
+                    "traitValueNameOverwrite": false
+                }
+            ]        
         }
     ],
     "traitsCombinedIpfsCid": [
@@ -171,7 +193,7 @@
             "overwrite": false 
         },
         { 
-            "traits": "Epoch:Season 1,Epoch Item:2,Rarity:Legendary,Type:Troop Armor", 
+            "traits": "Epoch:Season 1,Epoch Item:2,Rarity:Legendary,Type:Troop Armor,Troop Type:Knight", 
             "ipfsCid": "bafybeih2qvpsnwqaj36poj7a4smwngda3eovkkio6csrapeb2m24fliona", 
             "overwrite": false 
         },
@@ -196,22 +218,22 @@
             "overwrite": false 
         },
         { 
-            "traits": "Epoch:Season 1,Epoch Item:7,Rarity:Uncommon,Type:Troop Primary", 
+            "traits": "Epoch:Season 1,Epoch Item:7,Rarity:Uncommon,Type:Troop Primary,Troop Type:Paladin", 
             "ipfsCid": "bafybeigvb3vspqr6veqrxq72pb7tdw2lduubgrfrhk4klodf5uq6vezdty", 
             "overwrite": false 
         },
         { 
-            "traits": "Epoch:Season 1,Epoch Item:8,Rarity:Uncommon,Type:Troop Secondary", 
+            "traits": "Epoch:Season 1,Epoch Item:8,Rarity:Uncommon,Type:Troop Secondary,Troop Type:Paladin", 
             "ipfsCid": "bafybeibeubgezsjnhewhqjqzhnsdfhzakgolqpvkyisq4ac6rci7iccrze", 
             "overwrite": false 
         },
         { 
-            "traits": "Epoch:Season 1,Epoch Item:9,Rarity:Common,Type:Troop Primary", 
+            "traits": "Epoch:Season 1,Epoch Item:9,Rarity:Common,Type:Troop Primary,Troop Type:Crossbowman", 
             "ipfsCid": "bafybeib6agbyv47bymhz3aw2hzt25kqrjnca7rrjhgvtrfvtn62vi4dlrq", 
             "overwrite": false 
         },
         { 
-            "traits": "Epoch:Season 1,Epoch Item:10,Rarity:Common,Type:Troop Secondary", 
+            "traits": "Epoch:Season 1,Epoch Item:10,Rarity:Common,Type:Troop Secondary,Troop Type:Crossbowman", 
             "ipfsCid": "bafybeif5dts3wmed4hun6n2zoqlenqyybvjvfadhvuaromlmeiavnxhrpi", 
             "overwrite": false 
         },

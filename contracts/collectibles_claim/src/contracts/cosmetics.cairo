@@ -176,15 +176,15 @@ mod CosmeticCollectiblesClaim {
         fn collectibles_attributes_probabilities() -> (Span<u128>, Span<u128>) {
             (
                 array![
-                    0x7050201,
+                    0x107050201,
                     0x4050301,
                     0x2040401,
                     0x3030501,
                     0x2030601,
-                    0x5020701,
-                    0x6020801,
-                    0x5010901,
-                    0x6010a01,
+                    0x305020701,
+                    0x306020801,
+                    0x205010901,
+                    0x206010a01,
                     0x8010b01,
                 ]
                     .span(),
