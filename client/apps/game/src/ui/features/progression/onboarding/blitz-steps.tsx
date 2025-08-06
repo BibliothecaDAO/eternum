@@ -141,7 +141,6 @@ const MakeHyperstructuresState = ({
       setIsMakingHyperstructures(false);
     }
   };
-  console.log({ numHyperStructuresLeft, canMake });
 
   return (
     <>
