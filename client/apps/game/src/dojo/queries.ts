@@ -414,6 +414,30 @@ export const getMapFromTorii = async <S extends Schema>(
   );
 };
 
+export const getMapFromToriiExact = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  minCol: number,
+  maxCol: number,
+  minRow: number,
+  maxRow: number,
+) => {
+  return getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-Tile", "col", "Gte", minCol),
+      MemberClause("s1_eternum-Tile", "col", "Lte", maxCol),
+      MemberClause("s1_eternum-Tile", "row", "Gte", minRow),
+      MemberClause("s1_eternum-Tile", "row", "Lte", maxRow),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-Tile"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+};
+
 export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
     Keys: {

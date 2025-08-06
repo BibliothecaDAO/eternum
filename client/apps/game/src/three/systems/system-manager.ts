@@ -429,6 +429,8 @@ export class SystemManager {
 
               if (!structureInfo) return;
 
+              console.log("[STRUCTURE UPDATE]", currentState.occupier_id);
+
               const structureSynced = getComponentValue(
                 this.setup.components.Structure,
                 getEntityIdFromKeys([BigInt(currentState.occupier_id)]),

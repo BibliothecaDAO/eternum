@@ -55,7 +55,7 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
+import { BuildingSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const loader = gltfLoader;
@@ -331,13 +331,13 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
-    this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
-      if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
-        this.structureStage = update.level as RealmLevels;
-        this.removeCastleFromScene();
-        this.updateHexceptionGrid(this.hexceptionRadius);
-      }
-    });
+    // this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
+    //   if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
+    //     this.structureStage = update.level as RealmLevels;
+    //     this.removeCastleFromScene();
+    //     this.updateHexceptionGrid(this.hexceptionRadius);
+    //   }
+    // });
 
     this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
