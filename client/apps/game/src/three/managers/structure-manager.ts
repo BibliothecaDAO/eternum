@@ -622,9 +622,9 @@ export class StructureManager {
   /**
    * Update structure label from building update (active productions)
    */
-  public updateStructureLabelFromBuildingUpdate(update: { 
-    entityId: ID; 
-    activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> 
+  public updateStructureLabelFromBuildingUpdate(update: {
+    entityId: ID;
+    activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>;
   }): void {
     const structure = this.structures.getStructureByEntityId(update.entityId);
     if (!structure) return;

@@ -1,7 +1,7 @@
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { ActiveProduction, GuardArmy, MapDataStore } from "@/three/managers/map-data-store";
+import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "@/three/managers/map-data-store";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -367,7 +367,7 @@ export class SystemManager {
               };
             }
           },
-          true,
+          false,
         );
       },
       onDeadArmy: (callback: (value: ID) => void) => {
@@ -384,7 +384,7 @@ export class SystemManager {
               }
             }
           },
-          true,
+          false,
         );
       },
     };
@@ -393,110 +393,120 @@ export class SystemManager {
   public get Structure() {
     return {
       onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
-        this.setupSystem(this.setup.components.HyperstructureRequirements, callback, async (update: any) => {
-          const structure = getComponentValue(
-            this.setup.components.Structure,
-            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_id)]),
-          );
+        this.setupSystem(
+          this.setup.components.HyperstructureRequirements,
+          callback,
+          async (update: any) => {
+            const structure = getComponentValue(
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_id)]),
+            );
 
-          if (!structure) return;
+            if (!structure) return;
 
-          const category = structure.base.category as StructureType;
+            const category = structure.base.category as StructureType;
 
-          const stage = this.getStructureStage(category, structure.entity_id);
+            const stage = this.getStructureStage(category, structure.entity_id);
 
-          return {
-            entityId: structure.entity_id,
-            structureType: category,
-            stage,
-          };
-        });
+            return {
+              entityId: structure.entity_id,
+              structureType: category,
+              stage,
+            };
+          },
+          false,
+        );
       },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Tile, callback, async (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.Tile)) {
-            const [currentState, _prevState] = update.value;
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          async (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
 
-            const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
+              const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
 
-            if (!structureInfo) return;
+              if (!structureInfo) return;
 
-            const structureSynced = getComponentValue(
-              this.setup.components.Structure,
-              getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-            );
-
-            const hyperstructure = getComponentValue(
-              this.setup.components.Hyperstructure,
-              getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-            );
-
-            const initialized = hyperstructure?.initialized || false;
-
-            // Use the global player store instead of local instance
-            const playerStore = usePlayerStore.getState();
-
-            let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-              currentState.occupier_id.toString(),
-            );
-            const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
-            const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
-            if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
-              playerStore.updateStructureOwnerAddress(
-                currentState.occupier_id.toString(),
-                structureSyncedOwner.toString(),
+              const structureSynced = getComponentValue(
+                this.setup.components.Structure,
+                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
               );
-              structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
+
+              const hyperstructure = getComponentValue(
+                this.setup.components.Hyperstructure,
+                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+              );
+
+              const initialized = hyperstructure?.initialized || false;
+
+              // Use the global player store instead of local instance
+              const playerStore = usePlayerStore.getState();
+
+              let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
                 currentState.occupier_id.toString(),
               );
-              if (!structureOwnerDataQueried) {
-                // it is a new player
-                await playerStore.refreshPlayerData();
+              const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
+              const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
+              if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
+                playerStore.updateStructureOwnerAddress(
+                  currentState.occupier_id.toString(),
+                  structureSyncedOwner.toString(),
+                );
                 structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
                   currentState.occupier_id.toString(),
                 );
+                if (!structureOwnerDataQueried) {
+                  // it is a new player
+                  await playerStore.refreshPlayerData();
+                  structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
+                    currentState.occupier_id.toString(),
+                  );
+                }
               }
+
+              const structureOwnerAddress = structureOwnerDataQueried?.ownerAddress;
+
+              let loggedInAccountPlayerData = null;
+              if (structureOwnerAddress) {
+                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
+                  BigInt(loggedInAccount()).toString(),
+                );
+              }
+
+              const isAlly =
+                Boolean(loggedInAccountPlayerData?.guildId) &&
+                loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
+
+              // Get enhanced structure data from MapDataStore
+              const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
+
+              return {
+                entityId: currentState.occupier_id,
+                hexCoords: {
+                  col: currentState.col,
+                  row: currentState.row,
+                },
+                structureType: structureInfo.type,
+                initialized,
+                stage: structureInfo.stage,
+                level: structureInfo.level,
+                owner: {
+                  address: BigInt(structureOwnerAddress || "") || 0n,
+                  ownerName: structureOwnerDataQueried?.ownerName || "",
+                  guildName: structureOwnerDataQueried?.guildName || "",
+                },
+                hasWonder: structureInfo.hasWonder,
+                isAlly,
+                // Enhanced data from MapDataStore
+                guardArmies: structureMapData?.guardArmies || [],
+                activeProductions: structureMapData?.activeProductions || [],
+              };
             }
-
-            const structureOwnerAddress = structureOwnerDataQueried?.ownerAddress;
-
-            let loggedInAccountPlayerData = null;
-            if (structureOwnerAddress) {
-              loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                BigInt(loggedInAccount()).toString(),
-              );
-            }
-
-            const isAlly =
-              Boolean(loggedInAccountPlayerData?.guildId) &&
-              loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
-
-            // Get enhanced structure data from MapDataStore
-            const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
-
-            return {
-              entityId: currentState.occupier_id,
-              hexCoords: {
-                col: currentState.col,
-                row: currentState.row,
-              },
-              structureType: structureInfo.type,
-              initialized,
-              stage: structureInfo.stage,
-              level: structureInfo.level,
-              owner: {
-                address: BigInt(structureOwnerAddress || "") || 0n,
-                ownerName: structureOwnerDataQueried?.ownerName || "",
-                guildName: structureOwnerDataQueried?.guildName || "",
-              },
-              hasWonder: structureInfo.hasWonder,
-              isAlly,
-              // Enhanced data from MapDataStore
-              guardArmies: structureMapData?.guardArmies || [],
-              activeProductions: structureMapData?.activeProductions || [],
-            };
-          }
-        });
+          },
+          false,
+        );
       },
     };
   }
@@ -504,19 +514,24 @@ export class SystemManager {
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Tile, callback, async (update: any) => {
-          const newState = update.value[0];
-          const prevState = update.value[1];
+        this.setupSystem(
+          this.setup.components.Tile,
+          callback,
+          async (update: any) => {
+            const newState = update.value[0];
+            const prevState = update.value[1];
 
-          const newStateBiomeType = BiomeIdToType[newState?.biome];
-          const { col, row } = prevState || newState;
-          return {
-            hexCoords: { col, row },
-            removeExplored: !newState,
-            biome:
-              newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
-          };
-        });
+            const newStateBiomeType = BiomeIdToType[newState?.biome];
+            const { col, row } = prevState || newState;
+            return {
+              hexCoords: { col, row },
+              removeExplored: !newState,
+              biome:
+                newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
+            };
+          },
+          false,
+        );
       },
     };
   }
@@ -547,7 +562,7 @@ export class SystemManager {
               };
             }
           },
-          true,
+          false,
         );
       },
     };
@@ -576,7 +591,7 @@ export class SystemManager {
               };
             }
           },
-          true,
+          false,
         );
       },
     };
@@ -601,7 +616,7 @@ export class SystemManager {
               return result;
             }
           },
-          true,
+          false,
         );
       },
     };
@@ -630,7 +645,7 @@ export class SystemManager {
               };
             }
           },
-          true,
+          false,
         );
       },
       onDeadChest: (callback: (value: ID) => void) => {
@@ -680,111 +695,126 @@ export class SystemManager {
   public get LabelUpdate() {
     return {
       onArmyUpdate: (callback: (value: any) => void) => {
-        this.setupSystem(this.setup.components.ExplorerTroops, callback, (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-            const [currentState, _prevState] = update.value;
+        this.setupSystem(
+          this.setup.components.ExplorerTroops,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              const [currentState, _prevState] = update.value;
 
-            if (!currentState) return;
+              if (!currentState) return;
 
-            return {
-              entityId: currentState.explorer_id,
-              troopCount: divideByPrecision(Number(currentState.troops.count)),
-              stamina: currentState.troops.stamina.amount,
-              updatedTick: currentState.troops.stamina.updated_tick,
-            };
-          }
-        });
+              return {
+                entityId: currentState.explorer_id,
+                troopCount: divideByPrecision(Number(currentState.troops.count)),
+                stamina: currentState.troops.stamina.amount,
+                updatedTick: currentState.troops.stamina.updated_tick,
+              };
+            }
+          },
+          false,
+        );
       },
       onStructureGuardUpdate: (callback: (value: any) => void) => {
-        this.setupSystem(this.setup.components.Structure, callback, (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.Structure)) {
-            const [currentState, _prevState] = update.value;
+        this.setupSystem(
+          this.setup.components.Structure,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Structure)) {
+              const [currentState, _prevState] = update.value;
 
-            if (!currentState) return;
+              if (!currentState) return;
 
-            // Extract guard armies data from the structure
-            const guardArmies: GuardArmy[] = [];
-            if (currentState.troop_guards.alpha) {
-              guardArmies.push({
-                slot: 0,
-                category: currentState.troop_guards.alpha.category,
-                tier: Number(currentState.troop_guards.alpha.tier),
-                count: divideByPrecision(Number(currentState.troop_guards.alpha.count)),
-                stamina: Number(currentState.troop_guards.alpha.stamina.amount),
-              });
-            }
-            if (currentState.troop_guards.bravo) {
-              guardArmies.push({
-                slot: 1,
-                category: currentState.troop_guards.bravo.category,
-                tier: Number(currentState.troop_guards.bravo.tier),
-                count: divideByPrecision(Number(currentState.troop_guards.bravo.count)),
-                stamina: Number(currentState.troop_guards.bravo.stamina.amount),
-              });
-            }
-            if (currentState.troop_guards.charlie) {
-              guardArmies.push({
-                slot: 2,
-                category: currentState.troop_guards.charlie.category,
-                tier: Number(currentState.troop_guards.charlie.tier),
-                count: divideByPrecision(Number(currentState.troop_guards.charlie.count)),
-                stamina: Number(currentState.troop_guards.charlie.stamina.amount),
-              });
-            }
-            if (currentState.troop_guards.delta) {
-              guardArmies.push({
-                slot: 3,
-                category: currentState.troop_guards.delta.category,
-                tier: Number(currentState.troop_guards.delta.tier),
-                count: divideByPrecision(Number(currentState.troop_guards.delta.count)),
-                stamina: Number(currentState.troop_guards.delta.stamina.amount),
-              });
-            }
-
-            return {
-              entityId: currentState.entity_id,
-              guardArmies,
-            };
-          }
-        });
-      },
-      onStructureBuildingUpdate: (callback: (value: any) => void) => {
-        this.setupSystem(this.setup.components.StructureBuildings, callback, (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
-            const [currentState, _prevState] = update.value;
-
-            if (!currentState) return;
-
-            // Convert hex strings to bigints
-            const packedValues: bigint[] = [
-              currentState.packed_counts_1 ? BigInt(currentState.packed_counts_1) : 0n,
-              currentState.packed_counts_2 ? BigInt(currentState.packed_counts_2) : 0n,
-              currentState.packed_counts_3 ? BigInt(currentState.packed_counts_3) : 0n,
-            ];
-
-            // Unpack the building counts
-            const buildingCounts = unpackBuildingCounts(packedValues);
-
-            const activeProductions: ActiveProduction[] = [];
-
-            // Iterate through all building types and create productions for non-zero counts
-            for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
-              const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
-
-              if (count > 0) {
-                activeProductions.push({
-                  buildingCount: count,
-                  buildingType: buildingType as BuildingType,
+              // Extract guard armies data from the structure
+              const guardArmies: GuardArmy[] = [];
+              if (currentState.troop_guards.delta) {
+                guardArmies.push({
+                  slot: 0,
+                  category: currentState.troop_guards.delta.category,
+                  tier: TROOP_TIERS[currentState.troop_guards.delta.tier],
+                  count: divideByPrecision(Number(currentState.troop_guards.delta.count)),
+                  stamina: Number(currentState.troop_guards.delta.stamina.amount),
                 });
               }
-            }
+              if (currentState.troop_guards.charlie) {
+                guardArmies.push({
+                  slot: 1,
+                  category: currentState.troop_guards.charlie.category,
+                  tier: TROOP_TIERS[currentState.troop_guards.charlie.tier],
+                  count: divideByPrecision(Number(currentState.troop_guards.charlie.count)),
+                  stamina: Number(currentState.troop_guards.charlie.stamina.amount),
+                });
+              }
+              if (currentState.troop_guards.bravo) {
+                guardArmies.push({
+                  slot: 2,
+                  category: currentState.troop_guards.bravo.category,
+                  tier: TROOP_TIERS[currentState.troop_guards.bravo.tier],
+                  count: divideByPrecision(Number(currentState.troop_guards.bravo.count)),
+                  stamina: Number(currentState.troop_guards.bravo.stamina.amount),
+                });
+              }
+              if (currentState.troop_guards.alpha) {
+                guardArmies.push({
+                  slot: 3,
+                  category: currentState.troop_guards.alpha.category,
+                  tier: TROOP_TIERS[currentState.troop_guards.alpha.tier],
+                  count: divideByPrecision(Number(currentState.troop_guards.alpha.count)),
+                  stamina: Number(currentState.troop_guards.alpha.stamina.amount),
+                });
+              }
 
-            return {
-              entityId: currentState.entity_id,
-              activeProductions,
-            };
-          }
-        });
+              return {
+                entityId: currentState.entity_id,
+                guardArmies,
+              };
+            }
+          },
+          false,
+        );
+      },
+      onStructureBuildingUpdate: (callback: (value: any) => void) => {
+        this.setupSystem(
+          this.setup.components.StructureBuildings,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              // Convert hex strings to bigints
+              const packedValues: bigint[] = [
+                currentState.packed_counts_1 ? BigInt(currentState.packed_counts_1) : 0n,
+                currentState.packed_counts_2 ? BigInt(currentState.packed_counts_2) : 0n,
+                currentState.packed_counts_3 ? BigInt(currentState.packed_counts_3) : 0n,
+              ];
+
+              // Unpack the building counts
+              const buildingCounts = unpackBuildingCounts(packedValues);
+
+              const activeProductions: ActiveProduction[] = [];
+
+              // Iterate through all building types and create productions for non-zero counts
+              for (let buildingType = 1; buildingType <= buildingCounts.length; buildingType++) {
+                const count = buildingCounts[buildingType - 1]; // buildingCounts is 0-indexed, buildingType is 1-indexed
+
+                if (count > 0) {
+                  activeProductions.push({
+                    buildingCount: count,
+                    buildingType: buildingType as BuildingType,
+                  });
+                }
+              }
+
+              return {
+                entityId: currentState.entity_id,
+                activeProductions,
+              };
+            }
+          },
+          false,
+        );
       },
     };
   }
@@ -825,7 +855,7 @@ export class SystemManager {
               }
             }
           },
-          true,
+          false,
         );
       },
       onStructureGuardUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
@@ -851,7 +881,7 @@ export class SystemManager {
               };
             }
           },
-          true,
+          false,
         );
       },
       onStructureProductionUpdate: (callback: (value: RelicEffectSystemUpdate) => void) => {
@@ -883,6 +913,7 @@ export class SystemManager {
               };
             }
           },
+          false,
         );
       },
     };

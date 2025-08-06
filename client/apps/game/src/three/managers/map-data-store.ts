@@ -37,7 +37,7 @@ const ARMY_CATEGORY_NAMES: Record<string, string> = {
   "3": "Paladin",
 };
 
-const TROOP_TIERS: Record<string, number> = {
+export const TROOP_TIERS: Record<string, number> = {
   T1: 1,
   T2: 2,
   T3: 3,

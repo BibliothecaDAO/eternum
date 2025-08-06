@@ -102,6 +102,8 @@ export const TransferTroopsContainer = ({
     return {
       resourceId,
       balance: ResourceManager.balanceWithProduction(resources, currentDefaultTick, resourceId).balance,
+      category,
+      tier,
     };
   }, [selectedEntityData?.structureResources, targetEntityData?.explorer?.troops]);
 
@@ -301,7 +303,15 @@ export const TransferTroopsContainer = ({
         }
         return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
       } else {
-        const selectedTroop = selectedGuards[guardSlot]?.troops;
+        let selectedTroop;
+        if (useStructureBalance) {
+          selectedTroop = {
+            category: structureTroopBalance?.category,
+            tier: structureTroopBalance?.tier,
+          };
+        } else {
+          selectedTroop = selectedGuards[guardSlot]?.troops;
+        }
         const targetTroop = targetExplorerTroops?.troops;
         // If target troop count is 0, tier and category don't matter
         if (targetTroop?.count === 0n) {
@@ -334,17 +344,29 @@ export const TransferTroopsContainer = ({
         selectedTroop = selectedExplorerTroops?.troops;
         targetTroop = targetGuards[guardSlot]?.troops;
       } else {
-        selectedTroop = selectedGuards[guardSlot]?.troops;
+        if (useStructureBalance) {
+          selectedTroop = {
+            category: structureTroopBalance?.category,
+            tier: structureTroopBalance?.tier,
+          };
+        } else {
+          selectedTroop = selectedGuards[guardSlot]?.troops;
+        }
         targetTroop = targetExplorerTroops?.troops;
       }
 
-      // If target troop count is 0, no mismatch message needed
-      if (targetTroop?.count === 0) {
+      // If target troop count is 0 or 0n, no mismatch message needed
+      if (targetTroop?.count === 0 || targetTroop?.count === 0n || targetTroop?.count === undefined) {
+        return null;
+      }
+
+      // If selectedTroop is undefined, don't show a mismatch message
+      if (!selectedTroop) {
         return null;
       }
 
       if (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category) {
-        return `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${selectedTroop?.tier} ${selectedTroop?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
+        return `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${selectedTroop?.tier ?? "?"} ${selectedTroop?.category ?? "?"} ≠ Tier ${targetTroop?.tier ?? "?"} ${targetTroop?.category ?? "?"})`;
       }
     }
 
@@ -387,7 +409,15 @@ export const TransferTroopsContainer = ({
       }
     }
     if (transferDirection === TransferDirection.StructureToExplorer) {
-      const selectedTroop = selectedGuards[guardSlot]?.troops;
+      let selectedTroop;
+      if (useStructureBalance) {
+        selectedTroop = {
+          category: structureTroopBalance?.category,
+          tier: structureTroopBalance?.tier,
+        };
+      } else {
+        selectedTroop = selectedGuards[guardSlot]?.troops;
+      }
       const targetTroop = targetExplorerTroops?.troops;
       if (
         targetTroop?.count !== 0n &&
