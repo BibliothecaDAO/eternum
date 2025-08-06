@@ -2,6 +2,7 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
+import { useShortcut } from "@/hooks/shortcuts/useShortcuts";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
@@ -140,6 +141,7 @@ const MakeHyperstructuresState = ({
       setIsMakingHyperstructures(false);
     }
   };
+  console.log({ numHyperStructuresLeft, canMake });
 
   return (
     <>
@@ -450,6 +452,8 @@ const GameActiveState = ({ hasSettled, gameEndAt }: { hasSettled: boolean; gameE
 export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const [showMakeHyperstructures, setShowMakeHyperstructures] = useState(false);
+
   const {
     setup,
     setup: {
@@ -458,6 +462,14 @@ export const BlitzOnboarding = () => {
       systemCalls: { blitz_realm_register, blitz_realm_create, blitz_realm_make_hyperstructures },
     },
   } = useDojo();
+
+  // Register keyboard shortcut for 'H' key
+  useShortcut({
+    id: "toggle-make-hyperstructures",
+    key: "h",
+    description: "Toggle make hyperstructures button",
+    action: () => setShowMakeHyperstructures((prev) => !prev),
+  });
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
@@ -560,11 +572,13 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
-      <MakeHyperstructuresState
-        numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
-        onMakeHyperstructures={handleMakeHyperstructures}
-        canMake={canMakeHyperstructures}
-      />
+      {showMakeHyperstructures && (
+        <MakeHyperstructuresState
+          numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
+          onMakeHyperstructures={handleMakeHyperstructures}
+          canMake={canMakeHyperstructures}
+        />
+      )}
       {gameState === GameState.NO_GAME && registration_start_at && (
         <NoGameState
           registrationStartAt={registration_start_at}
