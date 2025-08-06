@@ -150,7 +150,7 @@ jobs:
           echo "  Version: $TORII_VERSION"
           echo "  Config: ${{ env.TORII_CONFIG }}"
           
-          cd contracts/game && slot d create \
+          cd contracts/game && slot d create -f \
             --team ${{ env.SLOT_TEAM }} \
             --tier ${{ env.SLOT_TIER }} \
             $SLOT_NAME torii \
