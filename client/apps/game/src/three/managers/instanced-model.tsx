@@ -53,6 +53,12 @@ export default class InstancedModel {
             material.emissiveIntensity = 1.5;
           }
         }
+        //name.includes("FragmentMine")
+        if (name.includes("FragmentMine")) {
+          if (material.emissiveIntensity > 1) {
+            material.emissiveIntensity = 15;
+          }
+        }
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
