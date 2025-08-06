@@ -179,6 +179,21 @@ export const TransferTroopsContainer = ({
     }));
   }, [selectedStructure]);
 
+  const selectedTroop = useMemo(() => {
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      if (useStructureBalance && structureTroopBalance) {
+        return {
+          category: structureTroopBalance.category,
+          tier: structureTroopBalance.tier,
+          count: divideByPrecision(Number(structureTroopBalance.balance)),
+        };
+      } else if (selectedGuards[guardSlot]) {
+        return selectedGuards[guardSlot].troops;
+      }
+    }
+    return null;
+  }, [transferDirection, useStructureBalance, structureTroopBalance, selectedGuards, guardSlot]);
+
   const maxTroops = (() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {
       if (useStructureBalance && structureTroopBalance) {
@@ -295,23 +310,14 @@ export const TransferTroopsContainer = ({
 
       // Check if troop tier and category match between selected and target
       if (transferDirection === TransferDirection.ExplorerToStructure) {
-        const selectedTroop = selectedExplorerTroops?.troops;
+        const selectedTroopData = selectedExplorerTroops?.troops;
         const targetTroop = targetGuards[guardSlot]?.troops;
         // If target troop count is 0, tier and category don't matter
         if (targetTroop?.count === 0) {
           return false;
         }
-        return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
+        return selectedTroopData?.tier !== targetTroop?.tier || selectedTroopData?.category !== targetTroop?.category;
       } else {
-        let selectedTroop;
-        if (useStructureBalance) {
-          selectedTroop = {
-            category: structureTroopBalance?.category,
-            tier: structureTroopBalance?.tier,
-          };
-        } else {
-          selectedTroop = selectedGuards[guardSlot]?.troops;
-        }
         const targetTroop = targetExplorerTroops?.troops;
         // If target troop count is 0, tier and category don't matter
         if (targetTroop?.count === 0n) {
@@ -338,20 +344,13 @@ export const TransferTroopsContainer = ({
         transferDirection === TransferDirection.StructureToExplorer) &&
       guardSlot !== undefined
     ) {
-      let selectedTroop, targetTroop;
+      let selectedTroopData, targetTroop;
 
       if (transferDirection === TransferDirection.ExplorerToStructure) {
-        selectedTroop = selectedExplorerTroops?.troops;
+        selectedTroopData = selectedExplorerTroops?.troops;
         targetTroop = targetGuards[guardSlot]?.troops;
       } else {
-        if (useStructureBalance) {
-          selectedTroop = {
-            category: structureTroopBalance?.category,
-            tier: structureTroopBalance?.tier,
-          };
-        } else {
-          selectedTroop = selectedGuards[guardSlot]?.troops;
-        }
+        selectedTroopData = selectedTroop;
         targetTroop = targetExplorerTroops?.troops;
       }
 
@@ -360,13 +359,13 @@ export const TransferTroopsContainer = ({
         return null;
       }
 
-      // If selectedTroop is undefined, don't show a mismatch message
-      if (!selectedTroop) {
+      // If selectedTroopData is undefined, don't show a mismatch message
+      if (!selectedTroopData) {
         return null;
       }
 
-      if (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category) {
-        return `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${selectedTroop?.tier ?? "?"} ${selectedTroop?.category ?? "?"} ≠ Tier ${targetTroop?.tier ?? "?"} ${targetTroop?.category ?? "?"})`;
+      if (selectedTroopData?.tier !== targetTroop?.tier || selectedTroopData?.category !== targetTroop?.category) {
+        return `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${selectedTroopData?.tier ?? "?"} ${selectedTroopData?.category ?? "?"} ≠ Tier ${targetTroop?.tier ?? "?"} ${targetTroop?.category ?? "?"})`;
       }
     }
 
@@ -399,25 +398,16 @@ export const TransferTroopsContainer = ({
       }
     }
     if (transferDirection === TransferDirection.ExplorerToStructure) {
-      const selectedTroop = selectedExplorerTroops?.troops;
+      const selectedTroopData = selectedExplorerTroops?.troops;
       const targetTroop = targetGuards[guardSlot]?.troops;
       if (
         targetTroop?.count !== 0 &&
-        (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category)
+        (selectedTroopData?.tier !== targetTroop?.tier || selectedTroopData?.category !== targetTroop?.category)
       ) {
-        return `Cannot transfer troops: Type mismatch (Tier ${selectedTroop?.tier} ${selectedTroop?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
+        return `Cannot transfer troops: Type mismatch (Tier ${selectedTroopData?.tier} ${selectedTroopData?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
       }
     }
     if (transferDirection === TransferDirection.StructureToExplorer) {
-      let selectedTroop;
-      if (useStructureBalance) {
-        selectedTroop = {
-          category: structureTroopBalance?.category,
-          tier: structureTroopBalance?.tier,
-        };
-      } else {
-        selectedTroop = selectedGuards[guardSlot]?.troops;
-      }
       const targetTroop = targetExplorerTroops?.troops;
       if (
         targetTroop?.count !== 0n &&
@@ -584,14 +574,11 @@ export const TransferTroopsContainer = ({
                   Type: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
                 </p>
               )}
-              {transferDirection === TransferDirection.StructureToExplorer &&
-                selectedGuards.length > 0 &&
-                guardSlot !== undefined &&
-                selectedGuards[guardSlot] && (
-                  <p className="text-blue-200/70 text-sm">
-                    Type: Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
-                  </p>
-                )}
+              {transferDirection === TransferDirection.StructureToExplorer && selectedTroop && (
+                <p className="text-blue-200/70 text-sm">
+                  Type: Tier {selectedTroop.tier} {selectedTroop.category}
+                </p>
+              )}
               {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
                 <p className="text-blue-200/70 text-sm">
                   Type: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
