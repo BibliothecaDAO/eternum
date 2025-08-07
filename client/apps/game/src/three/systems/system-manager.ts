@@ -1,4 +1,3 @@
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "@/three/managers/map-data-store";
@@ -43,7 +42,6 @@ import {
   type StructureSystemUpdate,
   type TileSystemUpdate,
 } from "../types";
-import { loggedInAccount } from "../utils/utils";
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
@@ -276,47 +274,6 @@ export class SystemManager {
 
               if (!explorer) return;
 
-              // Use the global player store instead of local instance
-              const playerStore = usePlayerStore.getState();
-
-              let explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
-              if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
-                // Attempt to get explorer owner structure id from RECS
-                let explorerTroops = null;
-                // todo: find a better way to get the explorer owner address
-                let retries = 5;
-                while (retries > 0) {
-                  explorerTroops = getComponentValue(
-                    this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-                  );
-
-                  if (explorerTroops) break;
-                  await new Promise((resolve) => setTimeout(resolve, 100)); // Wait 100ms between retries
-                  retries--;
-                }
-                if (explorerTroops?.owner) {
-                  playerStore.updateExplorerStructure(
-                    currentState.occupier_id.toString(),
-                    explorerTroops.owner.toString(),
-                  );
-                  explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
-                }
-              }
-
-              let explorerPlayerData = null;
-              let loggedInAccountPlayerData = null;
-              if (explorerOwnerAddress) {
-                explorerPlayerData = await playerStore.getPlayerDataByExplorerId(currentState.occupier_id.toString());
-                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                  BigInt(loggedInAccount()).toString(),
-                );
-              }
-
-              const isAlly =
-                Boolean(loggedInAccountPlayerData?.guildId) &&
-                loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
-
               // Get enhanced army data from MapDataStore
               const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
 
@@ -357,16 +314,14 @@ export class SystemManager {
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
-                  address: explorerOwnerAddress
-                    ? BigInt(explorerOwnerAddress)
-                    : BigInt(armyMapData?.ownerAddress || ""),
-                  ownerName: explorerOwnerAddress ? explorerPlayerData?.ownerName || "" : armyMapData?.ownerName || "",
-                  guildName: explorerOwnerAddress ? explorerPlayerData?.guildName || "" : "",
+                  address: BigInt(armyMapData?.ownerAddress || ""),
+                  ownerName: armyMapData?.ownerName || "",
+                  guildName: "",
                 },
                 troopType: explorer.troopType as TroopType,
                 troopTier: explorer.troopTier as TroopTier,
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
-                isAlly,
+                isAlly: false,
                 // Enhanced data from MapDataStore
                 troopCount: armyMapData?.count || 0,
                 currentStamina: (currentArmiesTick: number) => getCurrentStamina(currentArmiesTick),
@@ -438,55 +393,12 @@ export class SystemManager {
 
               console.log("[STRUCTURE UPDATE]", currentState.occupier_id);
 
-              const structureSynced = getComponentValue(
-                this.setup.components.Structure,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              );
-
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
                 getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
               );
 
               const initialized = hyperstructure?.initialized || false;
-
-              // Use the global player store instead of local instance
-              const playerStore = usePlayerStore.getState();
-
-              let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                currentState.occupier_id.toString(),
-              );
-              const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
-              const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
-              if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
-                playerStore.updateStructureOwnerAddress(
-                  currentState.occupier_id.toString(),
-                  structureSyncedOwner.toString(),
-                );
-                structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                  currentState.occupier_id.toString(),
-                );
-                if (!structureOwnerDataQueried) {
-                  // it is a new player
-                  await playerStore.refreshPlayerData();
-                  structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                    currentState.occupier_id.toString(),
-                  );
-                }
-              }
-
-              const structureOwnerAddress = structureOwnerDataQueried?.ownerAddress;
-
-              let loggedInAccountPlayerData = null;
-              if (structureOwnerAddress) {
-                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                  BigInt(loggedInAccount()).toString(),
-                );
-              }
-
-              const isAlly =
-                Boolean(loggedInAccountPlayerData?.guildId) &&
-                loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
 
               // Get enhanced structure data from MapDataStore
               const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
@@ -502,12 +414,12 @@ export class SystemManager {
                 stage: structureInfo.stage,
                 level: structureInfo.level,
                 owner: {
-                  address: BigInt(structureOwnerAddress || "") || 0n,
-                  ownerName: structureOwnerDataQueried?.ownerName || "",
-                  guildName: structureOwnerDataQueried?.guildName || "",
+                  address: BigInt(structureMapData?.ownerAddress || "") || 0n,
+                  ownerName: structureMapData?.ownerName || "",
+                  guildName: "",
                 },
                 hasWonder: structureInfo.hasWonder,
-                isAlly,
+                isAlly: false,
                 // Enhanced data from MapDataStore
                 guardArmies: structureMapData?.guardArmies || [],
                 activeProductions: structureMapData?.activeProductions || [],
