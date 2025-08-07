@@ -112,7 +112,7 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0x2a1a3a, 0.25);
+    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
     this.scene.add(this.hemisphereLight);
   }
 
@@ -544,7 +544,7 @@ export abstract class HexagonScene {
     const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
     this.ambientPurpleLight.intensity = purpleFlicker;
 
-    const hemisphereFlicker = 0.22 + Math.sin(elapsedTime * 1.5) * 0.05;
+    const hemisphereFlicker = 1.2 + Math.sin(elapsedTime * 1.5) * 0.05;
     this.hemisphereLight.intensity = hemisphereFlicker;
   }
 
