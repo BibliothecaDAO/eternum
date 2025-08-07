@@ -127,6 +127,7 @@ export default class HexceptionScene extends HexagonScene {
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
   private isBlitz: boolean;
+  private structureUpdateSubscription: any | null = null;
 
   constructor(
     controls: MapControls,
@@ -235,6 +236,32 @@ export default class HexceptionScene extends HexagonScene {
       (state) => state.useSimpleCost,
       (useSimpleCost) => {
         this.state.useSimpleCost = useSimpleCost;
+      },
+    );
+
+    // Subscribe to structureEntityId changes
+    useUIStore.subscribe(
+      (state) => state.structureEntityId,
+      (structureEntityId) => {
+        // Clean up previous subscription if it exists
+        if (this.structureUpdateSubscription) {
+          this.structureUpdateSubscription.unsubscribe();
+          this.structureUpdateSubscription = null;
+        }
+
+        // Only create a new subscription if we have a valid entity ID
+        if (structureEntityId && structureEntityId !== 0) {
+          console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+
+          this.structureUpdateSubscription = this.systemManager.StructureEntityListener.onLevelUpdate(
+            structureEntityId,
+            (update) => {
+              this.structureStage = update.level as RealmLevels;
+              this.removeCastleFromScene();
+              this.updateHexceptionGrid(this.hexceptionRadius);
+            },
+          );
+        }
       },
     );
   }
@@ -370,6 +397,12 @@ export default class HexceptionScene extends HexagonScene {
     // Clean up shortcuts when scene is actually destroyed
     if (this.shortcutManager instanceof SceneShortcutManager) {
       this.shortcutManager.cleanup();
+    }
+
+    // Clean up structure update subscription
+    if (this.structureUpdateSubscription) {
+      this.structureUpdateSubscription.unsubscribe();
+      this.structureUpdateSubscription = null;
     }
   }
 
