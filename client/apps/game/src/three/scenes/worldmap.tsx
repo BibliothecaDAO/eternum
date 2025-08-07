@@ -62,11 +62,7 @@ import {
   TileSystemUpdate,
 } from "../types/systems";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
-import {
-  navigateToStructure,
-  toggleMapHexView,
-  selectNextStructure as utilSelectNextStructure,
-} from "../utils/navigation";
+import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 
 const dummyObject = new THREE.Object3D();
@@ -264,14 +260,12 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for label updates (troop count and stamina changes)
     this.systemManager.LabelUpdate.onArmyUpdate((update) => {
-      console.log("[UPDATING ARMY LABEL]", update);
       this.updateArmyHexes(update);
       this.armyManager.updateArmyLabelFromSystemUpdate(update);
     });
 
     // Listen for structure guard updates
     this.systemManager.LabelUpdate.onStructureUpdate((update) => {
-      console.log("[UPDATE STRUCTURE LABEL]", update);
       this.updateStructureHexes(update);
       this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
@@ -515,7 +509,8 @@ export default class WorldmapScene extends HexagonScene {
     const { structure } = this.getHexagonEntity(hexCoords);
     if (structure && structure.owner === ContractAddress(useAccountStore.getState().account?.address || "")) {
       this.state.setStructureEntityId(structure.id);
-      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+      // remove this for now because not sure if best ux
+      // navigateToStructure(hexCoords.col, hexCoords.row, "hex");
     }
   }
 
@@ -541,7 +536,6 @@ export default class WorldmapScene extends HexagonScene {
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
-    console.log("[HEX CLICK]", { hexCoords, isMine, army, account, structure });
     this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
@@ -571,10 +565,14 @@ export default class WorldmapScene extends HexagonScene {
 
       if (isMine) {
         playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
-        this.armyManager.removeLabelsFromScene();
-        this.structureManager.removeLabelsFromScene();
-        this.questManager.removeLabelsFromScene();
-        this.chestManager.removeLabelsFromScene();
+        // Get the entity at the clicked hex
+        const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+
+        // Remove all labels except the clicked entity's label
+        this.armyManager.removeLabelsExcept(army?.id);
+        this.structureManager.removeLabelsExcept(structure?.id);
+        this.questManager.removeLabelsExcept(quest?.id);
+        this.chestManager.removeLabelsExcept(chest?.id);
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
@@ -930,7 +928,6 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    console.log("[UPDATING ARMY HEXES]", { newPos, entityId, address, isMine: isAddressEqualToAccount(address) });
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
   }
 
@@ -1805,16 +1802,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private selectNextArmy() {
-    console.log("selectNextArmy calling", this.selectableArmies);
     if (this.selectableArmies.length === 0) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
     const army = this.selectableArmies[this.armyIndex];
+    // army.position is already in contract coordinates, pass it directly
+    // handleHexSelection will normalize it internally when calling getHexagonEntity
     this.handleHexSelection(army.position, true);
     this.onArmySelection(army.entityId, account);
-    const position = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
-    this.moveCameraToColRow(position.x, position.y, 0.5);
+    const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+    // Use 0 duration for instant camera teleportation
+    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
   }
 
   private updateSelectableArmies(armies: SelectableArmy[]) {
@@ -1835,12 +1834,15 @@ export default class WorldmapScene extends HexagonScene {
     this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "map");
     if (this.playerStructures.length > 0) {
       const structure = this.playerStructures[this.structureIndex];
-      const position = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+      // structure.position is in contract coordinates, pass it directly
+      // handleHexSelection will normalize it internally when calling getHexagonEntity
+      this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
+      this.onStructureSelection(structure.entityId);
       // Set the structure entity ID in the UI store
       this.state.setStructureEntityId(structure.entityId);
-      this.moveCameraToColRow(position.x, position.y, 0.5);
-      this.handleHexSelection({ col: position.x, row: position.y }, true);
-      this.onStructureSelection(structure.entityId);
+      const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+      // Use 0 duration for instant camera teleportation
+      this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
     }
   }
 

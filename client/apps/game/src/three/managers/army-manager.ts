@@ -647,6 +647,10 @@ export class ArmyManager {
     this.armyModel.removeLabelsFromScene();
   }
 
+  removeLabelsExcept(entityId?: ID) {
+    this.armyModel.removeLabelsExcept(entityId ? Number(entityId) : undefined);
+  }
+
   addLabelsToScene() {
     this.armyModel.addLabelsToScene();
   }

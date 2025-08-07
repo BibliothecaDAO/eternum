@@ -478,6 +478,18 @@ export class StructureManager {
     }
   }
 
+  public removeLabelsExcept(entityId?: ID) {
+    this.entityIdLabels.forEach((label, labelEntityId) => {
+      if (labelEntityId !== entityId) {
+        this.labelsGroup.remove(label);
+        // Dispose of the label's DOM element
+        if (label.element && label.element.parentNode) {
+          label.element.parentNode.removeChild(label.element);
+        }
+      }
+    });
+  }
+
   public showLabels() {
     // First ensure all old labels are properly cleaned up
     this.removeLabelsFromScene();
