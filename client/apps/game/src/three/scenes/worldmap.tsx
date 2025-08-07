@@ -1841,6 +1841,6 @@ export default class WorldmapScene extends HexagonScene {
 
   protected shouldEnableStormEffects(): boolean {
     // Disable storm effects for worldmap scene
-    return false;
+    return true;
   }
 }

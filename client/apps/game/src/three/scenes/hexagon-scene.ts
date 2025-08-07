@@ -616,7 +616,7 @@ export abstract class HexagonScene {
 
   private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
     // Trigger lightning only at the start of each cycle (when progress is near 0)
-    const tolerance = 2; // 2% tolerance around cycle start
+    const tolerance = 20; // 15% tolerance around cycle start to catch larger tick jumps
 
     // Check if we're at the start of a cycle and haven't already triggered for this cycle
     if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
@@ -624,7 +624,7 @@ export abstract class HexagonScene {
       // Add 0.5 second delay before starting lightning sequence
       setTimeout(() => {
         this.startLightningSequence();
-      }, 500);
+      }, 2000);
       return false; // Don't trigger immediately
     }
 
