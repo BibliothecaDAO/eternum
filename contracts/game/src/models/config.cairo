@@ -566,7 +566,6 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
         now >= self.registration_start_at
     }
-
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

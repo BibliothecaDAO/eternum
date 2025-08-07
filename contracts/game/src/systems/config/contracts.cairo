@@ -836,7 +836,7 @@ pub mod config_systems {
             fee_recipient: starknet::ContractAddress,
             fee_amount: u256,
             registration_count_max: u16,
-            registration_start_at: u32
+            registration_start_at: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);

@@ -44,7 +44,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureBlitzDiscoveryImpl, iHyperstructureDiscoveryImpl};
+    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureDiscoveryImpl};
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};

@@ -123,12 +123,13 @@ export function defineContractComponents(world: World) {
           completed: RecsType.Boolean,
           access: RecsType.String,
           randomness: RecsType.BigInt,
+          points_multiplier: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Hyperstructure",
-            types: ["u32", "bool", "bool", "enum", "felt252"],
+            types: ["u32", "bool", "bool", "enum", "felt252", "u8"],
             customTypes: ["ConstructionAccess"],
           },
         },
