@@ -10,8 +10,8 @@ type Track = {
 
 // Your tracks list
 const blitzTracks: Track[] = [
-  { name: "Order of Anger", url: "/sound/music/minstrels/OrderOfAnger.mp3" },
   { name: "Blitz", url: "/sound/music/minstrels/blitz.flac" },
+  { name: "Order of Anger", url: "/sound/music/minstrels/OrderOfAnger.mp3" },
   { name: "Order of Rage", url: "/sound/music/minstrels/OrderOfRage.mp3" },
   { name: "Light Through The Darkness", url: "/sound/music/minstrels/LightThroughTheDarkness.mp3" },
 ];
