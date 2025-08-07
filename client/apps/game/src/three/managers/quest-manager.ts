@@ -250,6 +250,16 @@ export class QuestManager {
     // If needed, we could call labelManager.removeAllLabels() here
   }
 
+  public removeLabelsExcept(entityId?: ID): void {
+    // Remove all labels except the one with the specified entityId
+    const questLabels = this.labelManager.getLabelsByType("quest");
+    questLabels.forEach((label, labelEntityId) => {
+      if (labelEntityId !== entityId) {
+        this.labelManager.removeLabel(labelEntityId);
+      }
+    });
+  }
+
   public addLabelsToScene(): void {
     // Label visibility is managed by LabelManager  
     // Labels are automatically added when created

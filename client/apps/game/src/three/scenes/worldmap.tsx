@@ -1,7 +1,7 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
 import throttle from "lodash/throttle";
 
-import { getMapFromTorii } from "@/dojo/queries";
+import { getMapFromToriiExact } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -59,22 +59,17 @@ import {
   ExplorerMoveSystemUpdate,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
-  StructureSystemUpdate,
   TileSystemUpdate,
 } from "../types/systems";
-import { getWorldPositionForHex } from "../utils";
-import {
-  navigateToStructure,
-  toggleMapHexView,
-  selectNextStructure as utilSelectNextStructure,
-} from "../utils/navigation";
+import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 
 const dummyObject = new THREE.Object3D();
 const dummyVector = new THREE.Vector3();
 
 export default class WorldmapScene extends HexagonScene {
-  private chunkSize = 10; // Size of each chunk
+  private chunkSize = 8; // Size of each chunk
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private renderChunkSize = {
     width: 60,
@@ -125,6 +120,7 @@ export default class WorldmapScene extends HexagonScene {
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
+  private pendingChunks: Map<string, Promise<void>> = new Map();
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
@@ -264,23 +260,19 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for label updates (troop count and stamina changes)
     this.systemManager.LabelUpdate.onArmyUpdate((update) => {
-      if (update && update.entityId) {
-        this.armyManager.updateArmyLabelFromSystemUpdate(update);
-      }
+      this.updateArmyHexes(update);
+      this.armyManager.updateArmyLabelFromSystemUpdate(update);
     });
 
     // Listen for structure guard updates
-    this.systemManager.LabelUpdate.onStructureGuardUpdate((update) => {
-      if (update && update.entityId) {
-        this.structureManager.updateStructureLabelFromGuardUpdate(update);
-      }
+    this.systemManager.LabelUpdate.onStructureUpdate((update) => {
+      this.updateStructureHexes(update);
+      this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
 
     // Listen for structure building updates
     this.systemManager.LabelUpdate.onStructureBuildingUpdate((update) => {
-      if (update && update.entityId) {
-        this.structureManager.updateStructureLabelFromBuildingUpdate(update);
-      }
+      this.structureManager.updateStructureLabelFromBuildingUpdate(update);
     });
 
     // Store the unsubscribe function for Tile updates
@@ -499,7 +491,6 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    this.state.setHoveredHex(hexCoords);
 
     // Handle label expansion on hover
     this.hoverLabelManager.onHexHover(hexCoords);
@@ -518,7 +509,8 @@ export default class WorldmapScene extends HexagonScene {
     const { structure } = this.getHexagonEntity(hexCoords);
     if (structure && structure.owner === ContractAddress(useAccountStore.getState().account?.address || "")) {
       this.state.setStructureEntityId(structure.id);
-      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+      // remove this for now because not sure if best ux
+      // navigateToStructure(hexCoords.col, hexCoords.row, "hex");
     }
   }
 
@@ -543,7 +535,7 @@ export default class WorldmapScene extends HexagonScene {
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
-    const isMine = army?.owner === account || structure?.owner === account;
+    const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
@@ -573,10 +565,14 @@ export default class WorldmapScene extends HexagonScene {
 
       if (isMine) {
         playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
-        this.armyManager.removeLabelsFromScene();
-        this.structureManager.removeLabelsFromScene();
-        this.questManager.removeLabelsFromScene();
-        this.chestManager.removeLabelsFromScene();
+        // Get the entity at the clicked hex
+        const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+
+        // Remove all labels except the clicked entity's label
+        this.armyManager.removeLabelsExcept(army?.id);
+        this.structureManager.removeLabelsExcept(structure?.id);
+        this.questManager.removeLabelsExcept(quest?.id);
+        this.chestManager.removeLabelsExcept(chest?.id);
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
@@ -832,6 +828,15 @@ export default class WorldmapScene extends HexagonScene {
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
 
+    // Configure thunder bolts for worldmap - dramatic storm effect
+    this.getThunderBoltManager().setConfig({
+      radius: 18, // Large spread across the visible area
+      count: 12, // Many thunder bolts for dramatic effect
+      duration: 400, // Medium duration for good visibility
+      persistent: false, // Auto-fade for production use
+      debug: false, // Disable logging for performance
+    });
+
     // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
@@ -903,12 +908,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(update: ArmySystemUpdate) {
+  public updateArmyHexes(update: { entityId: ID; hexCoords: HexPosition; owner: { address: bigint | undefined } }) {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
     } = update;
+
+    if (address === undefined) return;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
@@ -933,13 +940,18 @@ export default class WorldmapScene extends HexagonScene {
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
   }
 
-  public updateStructureHexes(update: StructureSystemUpdate) {
+  public updateStructureHexes(update: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    owner: { address: bigint | undefined };
+  }) {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
     } = update;
 
+    if (address === undefined) return;
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
     const newCol = normalized.x;
@@ -1117,6 +1129,23 @@ export default class WorldmapScene extends HexagonScene {
     return false;
   }
 
+  private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
+    const chunkKeys: string[] = [];
+
+    // Load an asymmetric grid - more chunks toward the top of the screen (negative row direction)
+    // due to the oblique camera angle
+    for (let rowOffset = -2; rowOffset <= 1; rowOffset++) {
+      // More chunks above (-2) than below (+1)
+      for (let colOffset = -1; colOffset <= 1; colOffset++) {
+        const row = centerRow + rowOffset * this.chunkSize;
+        const col = centerCol + colOffset * this.chunkSize;
+        chunkKeys.push(`${row},${col}`);
+      }
+    }
+
+    return chunkKeys;
+  }
+
   getChunksAround(chunkKey: string) {
     const startRow = parseInt(chunkKey.split(",")[0]);
     const startCol = parseInt(chunkKey.split(",")[1]);
@@ -1135,8 +1164,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   removeCachedMatricesAroundColRow(col: number, row: number) {
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
+    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
         if (i === 0 && j === 0) {
           continue;
         }
@@ -1275,39 +1304,72 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private async computeTileEntities(chunkKey: string) {
-    const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
-    const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
-
-    //const range = this.chunkSize / 2;
-
-    const { width } = this.renderChunkSize;
-    const range = width / 2;
-
+  private async computeTileEntities(chunkKey: string): Promise<void> {
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
       console.log("Already fetched");
       return;
     }
 
-    // Add to fetched chunks before the query to prevent concurrent duplicate requests
-    this.fetchedChunks.add(chunkKey);
+    // If there's already a pending request for this chunk, return the existing promise
+    const existingPromise = this.pendingChunks.get(chunkKey);
+    if (existingPromise) {
+      console.log("Request already pending for chunk", chunkKey);
+      return existingPromise;
+    }
 
+    // Parse chunk coordinates
+    const chunkRow = parseInt(chunkKey.split(",")[0]);
+    const chunkCol = parseInt(chunkKey.split(",")[1]);
+
+    // Calculate exact chunk boundaries
+    const minCol = chunkCol;
+    const maxCol = chunkCol + this.chunkSize - 1;
+    const minRow = chunkRow;
+    const maxRow = chunkRow + this.chunkSize - 1;
+
+    console.log(
+      "[CHUNK KEY]",
+      chunkKey,
+      `cols: ${minCol}-${maxCol}`,
+      `rows: ${minRow}-${maxRow}`,
+      "fetched chunks",
+      this.fetchedChunks,
+    );
+
+    // Create the promise and add it to pending chunks immediately
+    const fetchPromise = this.executeTileEntitiesFetch(chunkKey, minCol, maxCol, minRow, maxRow);
+    this.pendingChunks.set(chunkKey, fetchPromise);
+
+    return fetchPromise;
+  }
+
+  private async executeTileEntitiesFetch(
+    chunkKey: string,
+    minCol: number,
+    maxCol: number,
+    minRow: number,
+    maxRow: number,
+  ): Promise<void> {
     const start = performance.now();
     try {
       this.state.setLoading(LoadingStateKey.Map, true);
-      await getMapFromTorii(
+      await getMapFromToriiExact(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as any,
-        startCol,
-        startRow,
-        range,
+        minCol + FELT_CENTER,
+        maxCol + FELT_CENTER,
+        minRow + FELT_CENTER,
+        maxRow + FELT_CENTER,
       );
+      // Only add to fetched chunks on success
+      this.fetchedChunks.add(chunkKey);
     } catch (error) {
-      // If there's an error, remove the chunk from cached set so it can be retried
-      this.fetchedChunks.delete(chunkKey);
       console.error("Error fetching tile entities:", error);
+      // Don't add to fetchedChunks on error so it can be retried
     } finally {
+      // Always remove from pending chunks
+      this.pendingChunks.delete(chunkKey);
       this.state.setLoading(LoadingStateKey.Map, false);
       const end = performance.now();
       console.log("[sync] map query", end - start);
@@ -1362,6 +1424,14 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     if (this.currentChunk !== chunkKey || force) {
       this.currentChunk = chunkKey;
+
+      // Load surrounding chunks for better UX (3x3 grid)
+      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+      console.log("Loading chunks:", surroundingChunks);
+
+      // Start loading all surrounding chunks (they will deduplicate automatically)
+      const loadPromises = surroundingChunks.map((chunk) => this.computeTileEntities(chunk));
+
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
@@ -1392,6 +1462,7 @@ export default class WorldmapScene extends HexagonScene {
 
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
+    this.pendingChunks.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
@@ -1740,16 +1811,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private selectNextArmy() {
-    console.log("selectNextArmy calling", this.selectableArmies);
     if (this.selectableArmies.length === 0) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
     const army = this.selectableArmies[this.armyIndex];
+    // army.position is already in contract coordinates, pass it directly
+    // handleHexSelection will normalize it internally when calling getHexagonEntity
     this.handleHexSelection(army.position, true);
     this.onArmySelection(army.entityId, account);
-    const position = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
-    this.moveCameraToColRow(position.x, position.y, 0.5);
+    const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+    // Use 0 duration for instant camera teleportation
+    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
   }
 
   private updateSelectableArmies(armies: SelectableArmy[]) {
@@ -1770,17 +1843,20 @@ export default class WorldmapScene extends HexagonScene {
     this.structureIndex = utilSelectNextStructure(this.playerStructures, this.structureIndex, "map");
     if (this.playerStructures.length > 0) {
       const structure = this.playerStructures[this.structureIndex];
-      const position = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+      // structure.position is in contract coordinates, pass it directly
+      // handleHexSelection will normalize it internally when calling getHexagonEntity
+      this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
+      this.onStructureSelection(structure.entityId);
       // Set the structure entity ID in the UI store
       this.state.setStructureEntityId(structure.entityId);
-      this.moveCameraToColRow(position.x, position.y, 0.5);
-      this.handleHexSelection({ col: position.x, row: position.y }, true);
-      this.onStructureSelection(structure.entityId);
+      const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
+      // Use 0 duration for instant camera teleportation
+      this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
     }
   }
 
   protected shouldEnableStormEffects(): boolean {
     // Disable storm effects for worldmap scene
-    return false;
+    return true;
   }
 }
