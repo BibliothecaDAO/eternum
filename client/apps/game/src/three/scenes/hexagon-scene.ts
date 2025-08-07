@@ -54,6 +54,15 @@ export abstract class HexagonScene {
   private originalLightningColor: number = 0;
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
+  private lastLightningTriggerProgress: number = -1;
+  private lightningSequenceTimeout: NodeJS.Timeout | null = null;
+  private currentStrikeIndex: number = 0;
+  private lightningStrikes: Array<{ delay: number; duration: number }> = [
+    { delay: 0, duration: 80 },
+    { delay: 200, duration: 60 },
+    { delay: 450, duration: 100 },
+    { delay: 700, duration: 40 },
+  ];
 
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
@@ -95,11 +104,15 @@ export abstract class HexagonScene {
         leftNavigationView: state.leftNavigationView,
         rightNavigationView: state.rightNavigationView,
         structureEntityId: state.structureEntityId,
+        cycleProgress: state.cycleProgress,
+        cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, rightNavigationView, structureEntityId }) => {
+      ({ leftNavigationView, rightNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.rightNavigationView = rightNavigationView;
         this.state.structureEntityId = structureEntityId;
+        this.state.cycleProgress = cycleProgress;
+        this.state.cycleTime = cycleTime;
       },
     );
   }
@@ -530,10 +543,9 @@ export abstract class HexagonScene {
       this.endLightning();
     }
 
-    // Trigger new lightning if not currently active
-    if (this.lightningEndTime === 0 && Math.random() < 0.002) {
-      this.triggerLightning();
-    }
+    // Check for lightning trigger based on cycle timing instead of random
+    const cycleProgress = this.state.cycleProgress || 0;
+    this.shouldTriggerLightningAtCycleProgress(cycleProgress);
 
     // Only update normal storm effects if lightning is not active
     if (this.lightningEndTime === 0) {
@@ -548,19 +560,48 @@ export abstract class HexagonScene {
     this.hemisphereLight.intensity = hemisphereFlicker;
   }
 
-  private triggerLightning(): void {
-    // Store original values
-    this.originalLightningIntensity = this.mainDirectionalLight.intensity;
-    this.originalLightningColor = this.mainDirectionalLight.color.getHex();
-    this.originalStormLightningIntensity = this.stormLight.intensity;
+  private startLightningSequence(): void {
+    // Clear any existing sequence
+    if (this.lightningSequenceTimeout) {
+      clearTimeout(this.lightningSequenceTimeout);
+    }
+
+    this.currentStrikeIndex = 0;
+    this.executeNextStrike();
+  }
+
+  private executeNextStrike(): void {
+    if (this.currentStrikeIndex >= this.lightningStrikes.length) {
+      // Sequence complete
+      this.currentStrikeIndex = 0;
+      return;
+    }
+
+    const strike = this.lightningStrikes[this.currentStrikeIndex];
+
+    // Schedule this strike
+    this.lightningSequenceTimeout = setTimeout(() => {
+      this.triggerSingleLightningStrike(strike.duration);
+      this.currentStrikeIndex++;
+      this.executeNextStrike(); // Schedule next strike
+    }, strike.delay);
+  }
+
+  private triggerSingleLightningStrike(duration: number): void {
+    // Store original values only once
+    if (this.lightningEndTime === 0) {
+      this.originalLightningIntensity = this.mainDirectionalLight.intensity;
+      this.originalLightningColor = this.mainDirectionalLight.color.getHex();
+      this.originalStormLightningIntensity = this.stormLight.intensity;
+    }
 
     // Apply lightning effect
     this.mainDirectionalLight.intensity = 3.5;
     this.mainDirectionalLight.color.setHex(0xe6ccff);
     this.stormLight.intensity = 4;
 
-    // Set end time for lightning effect
-    this.lightningEndTime = performance.now() + (80 + Math.random() * 40);
+    // Set end time for this strike
+    this.lightningEndTime = performance.now() + duration;
   }
 
   private endLightning(): void {
@@ -573,9 +614,43 @@ export abstract class HexagonScene {
     this.lightningEndTime = 0;
   }
 
+  private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
+    // Trigger lightning only at the start of each cycle (when progress is near 0)
+    const tolerance = 2; // 2% tolerance around cycle start
+
+    // Check if we're at the start of a cycle and haven't already triggered for this cycle
+    if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
+      this.lastLightningTriggerProgress = 0;
+      // Add 0.5 second delay before starting lightning sequence
+      setTimeout(() => {
+        this.startLightningSequence();
+      }, 500);
+      return false; // Don't trigger immediately
+    }
+
+    // Reset the trigger flag when we're well into the cycle
+    if (cycleProgress > tolerance * 2) {
+      this.lastLightningTriggerProgress = -1;
+    }
+
+    return false;
+  }
+
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
     return true;
+  }
+
+  // Cleanup method for lightning sequence
+  protected cleanupLightning(): void {
+    if (this.lightningSequenceTimeout) {
+      clearTimeout(this.lightningSequenceTimeout);
+      this.lightningSequenceTimeout = null;
+    }
+    // Reset lightning state
+    if (this.lightningEndTime > 0) {
+      this.endLightning();
+    }
   }
 
   // Abstract methods

@@ -9,7 +9,10 @@ type Track = {
 };
 
 // Your tracks list
-const blitzTracks: Track[] = [{ name: "Blitz", url: "/sound/music/minstrels/blitz.flac" }];
+const blitzTracks: Track[] = [
+  { name: "Blitz", url: "/sound/music/minstrels/blitz.flac" },
+  { name: "Light Through The Darkness", url: "/sound/music/minstrels/LightThroughTheDarkness.mp3" },
+];
 const normalTracks: Track[] = [
   { name: "Day Break", url: "/sound/music/DayBreak.mp3" },
   { name: "Morning Ember", url: "/sound/music/MorningEmber.mp3" },
