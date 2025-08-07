@@ -25,7 +25,14 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import {
+  type Component,
+  defineComponentSystem,
+  defineQuery,
+  getComponentValue,
+  HasValue,
+  isComponentUpdate,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   type ArmySystemUpdate,
@@ -817,6 +824,32 @@ export class SystemManager {
           },
           false,
         );
+      },
+    };
+  }
+
+  public get StructureEntityListener() {
+    return {
+      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => {
+        // Create a query for the Structure component
+        const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
+          runOnInit: false,
+        });
+
+        // Subscribe to the query updates
+        const subscription = query.update$.subscribe((update) => {
+          if (isComponentUpdate(update, this.setup.components.Structure)) {
+            const [currentState, _prevState] = update.value;
+            if (!currentState) return;
+            callback({
+              entityId,
+              level: currentState.base.level,
+            });
+          }
+        });
+
+        // Return the subscription so it can be cleaned up later
+        return subscription;
       },
     };
   }
