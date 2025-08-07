@@ -828,6 +828,15 @@ export default class WorldmapScene extends HexagonScene {
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
 
+    // Configure thunder bolts for worldmap - dramatic storm effect
+    this.getThunderBoltManager().setConfig({
+      radius: 18, // Large spread across the visible area
+      count: 12, // Many thunder bolts for dramatic effect
+      duration: 400, // Medium duration for good visibility
+      persistent: false, // Auto-fade for production use
+      debug: false, // Disable logging for performance
+    });
+
     // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
@@ -1848,6 +1857,6 @@ export default class WorldmapScene extends HexagonScene {
 
   protected shouldEnableStormEffects(): boolean {
     // Disable storm effects for worldmap scene
-    return false;
+    return true;
   }
 }

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { RainEffect } from "@/three/effects/rain-effect";
 import { Navigator } from "@/three/managers/navigator";
 import { SceneManager } from "@/three/scene-manager";
 import { GUIManager } from "@/three/utils/";
@@ -14,6 +15,7 @@ export default class HUDScene {
   private navigator: Navigator;
   private ambientLight!: THREE.AmbientLight;
   private hemisphereLight!: THREE.HemisphereLight;
+  private rainEffect!: RainEffect;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new THREE.Scene();
@@ -36,7 +38,9 @@ export default class HUDScene {
     this.GUIFolder.close();
 
     this.addAmbientLight();
-    this.addHemisphereLight(); // Add this line
+    this.addHemisphereLight();
+    this.rainEffect = new RainEffect(this.scene);
+    this.rainEffect.addGUIControls(this.GUIFolder);
 
     useUIStore.subscribe(
       (state) => state.navigationTarget,
@@ -103,6 +107,7 @@ export default class HUDScene {
 
   update(deltaTime: number) {
     this.navigator.update();
+    this.rainEffect.update(deltaTime);
   }
 
   onWindowResize(width: number, height: number) {

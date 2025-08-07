@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView } from "../../scenes/hexagon-scene";
+import { getWorldPositionForHex } from "../utils";
 import { getCameraViewConfig, mergeConfigs, TRANSITION_CLASSES } from "./label-config";
 import {
   CreateLabelOptions,
@@ -303,7 +304,6 @@ export class LabelManager {
     // In a real implementation, this would be injected or imported
     try {
       // Try to import the actual utility
-      const { getWorldPositionForHex } = require("../../utils");
       return getWorldPositionForHex(coords);
     } catch {
       // Fallback to simple hex grid calculation

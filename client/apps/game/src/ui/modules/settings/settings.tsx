@@ -9,6 +9,7 @@ import { useMusicPlayer } from "@/hooks/helpers/use-music";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ToriiSetting } from "@/types";
 import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import { getIsBlitz } from "@/ui/constants";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
@@ -414,10 +415,12 @@ const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
     }
   }, []);
 
+  const isBlitz = getIsBlitz();
+
   return (
     <div className="w-full p-1 overflow-hidden text-xs border border-gold">
       <div className="track-name" ref={trackNameRef}>
-        {trackName} - Casey Wescot
+        {trackName} - {isBlitz ? "Casey Wescot" : "The Minstrels"}
       </div>
     </div>
   );

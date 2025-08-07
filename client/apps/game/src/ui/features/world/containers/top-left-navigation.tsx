@@ -481,10 +481,12 @@ ProgressBar.displayName = "ProgressBar";
 
 const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const setCycleProgress = useUIStore((state) => state.setCycleProgress);
+  const setCycleTime = useUIStore((state) => state.setCycleTime);
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
-  const { play } = useUiSounds(soundSelector.gong);
+  const { play } = useUiSounds(getIsBlitz() ? soundSelector.blitzGong : soundSelector.gong);
 
   const lastProgressRef = useRef(0);
 
@@ -493,6 +495,12 @@ const TickProgress = memo(() => {
     const elapsedTime = currentBlockTimestamp % cycleTime;
     return (elapsedTime / cycleTime) * 100;
   }, [currentBlockTimestamp, cycleTime]);
+
+  // Update store with cycle timing for storm effects
+  useEffect(() => {
+    setCycleProgress(progress);
+    setCycleTime(cycleTime);
+  }, [progress, cycleTime, setCycleProgress, setCycleTime]);
 
   // Play sound when progress resets
   useEffect(() => {
