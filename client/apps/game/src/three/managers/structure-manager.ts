@@ -5,6 +5,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz } from "@/ui/constants";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -24,6 +25,12 @@ const WONDER_MODEL_INDEX = 4;
 export enum RelicSource {
   Guard = "guard",
   Production = "production",
+}
+
+interface PendingLabelUpdate {
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  owner: { address: bigint; ownerName: string; guildName: string };
 }
 
 export class StructureManager {
@@ -51,6 +58,7 @@ export class StructureManager {
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private mapDataStore: MapDataStore;
   private isBlitz: boolean;
+  private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
 
   constructor(
     scene: THREE.Scene,
@@ -117,6 +125,12 @@ export class StructureManager {
     // Clean up MapDataStore refresh callback
     this.mapDataStore.offRefresh(this.onMapDataRefresh);
 
+    // Clean up all pending label updates
+    if (this.pendingLabelUpdates.size > 0) {
+      console.log(`[PENDING LABEL UPDATE] Clearing ${this.pendingLabelUpdates.size} pending updates on destroy`);
+      this.pendingLabelUpdates.clear();
+    }
+
     // Clean up all relic effects
     this.structureRelicEffects.forEach((entityEffectsMap, entityId) => {
       // Clear effects for all sources
@@ -182,7 +196,7 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureSystemUpdate) {
-    console.log("StructureManager: onUpdate", update);
+    console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
     await Promise.all(this.modelLoadPromises);
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
@@ -199,6 +213,30 @@ export class StructureManager {
     }
 
     const key = structureType;
+
+    // Check for pending label updates and apply them if they exist
+    let finalOwner = {
+      address: owner.address || 0n,
+      ownerName: owner.ownerName || "",
+      guildName: owner.guildName || "",
+    };
+    let finalGuardArmies = update.guardArmies;
+    let finalActiveProductions = update.activeProductions;
+
+    const pendingUpdate = this.pendingLabelUpdates.get(entityId);
+    if (pendingUpdate) {
+      console.log(`[PENDING LABEL UPDATE] Applying pending update for structure ${entityId}`);
+      finalOwner = pendingUpdate.owner;
+      if (pendingUpdate.guardArmies) {
+        finalGuardArmies = pendingUpdate.guardArmies;
+      }
+      if (pendingUpdate.activeProductions) {
+        finalActiveProductions = pendingUpdate.activeProductions;
+      }
+      // Clear the pending update
+      this.pendingLabelUpdates.delete(entityId);
+    }
+
     // Add the structure to the structures map with the complete owner info
     this.structures.addStructure(
       entityId,
@@ -207,15 +245,11 @@ export class StructureManager {
       update.initialized,
       stage,
       level,
-      {
-        address: owner.address,
-        ownerName: owner.ownerName || "",
-        guildName: owner.guildName || "",
-      },
+      finalOwner,
       hasWonder,
       update.isAlly,
-      update.guardArmies,
-      update.activeProductions,
+      finalGuardArmies,
+      finalActiveProductions,
     );
 
     // Clear existing relic effects for this specific structure before re-rendering
@@ -397,6 +431,7 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
+    console.log("[ADD ENTITY ID LABEL]", structure);
     const labelDiv = createStructureLabel(structure, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
@@ -558,37 +593,6 @@ export class StructureManager {
   }
 
   /**
-   * Handle MapDataStore refresh by updating all structure data and visible labels
-   */
-  private handleMapDataRefresh(): void {
-    console.log("StructureManager: Handling map data refresh, updating cached structure data");
-
-    // Update ALL cached structure data, not just visible ones
-    this.structures.getStructures().forEach((structureMap, structureType) => {
-      structureMap.forEach((structure, entityId) => {
-        // Get fresh structure data from MapDataStore
-        const structureMapData = this.mapDataStore.getStructureById(entityId);
-        if (!structureMapData) return;
-
-        // Update the structure with fresh guard armies and production info
-        structure.guardArmies = structureMapData.guardArmies;
-        structure.activeProductions = structureMapData.activeProductions;
-      });
-    });
-
-    console.log("StructureManager: Updated cached data, now updating", this.entityIdLabels.size, "visible labels");
-
-    // Update visible structure labels with the refreshed cached data
-    this.entityIdLabels.forEach((label, entityId) => {
-      const structure = this.structures.getStructureByEntityId(entityId);
-      if (!structure) return;
-
-      // Update the label with fresh data
-      this.updateStructureLabelData(entityId, structure, label);
-    });
-  }
-
-  /**
    * Update a structure label with fresh data from MapDataStore
    */
   private updateStructureLabelData(entityId: ID, structure: any, existingLabel: CSS2DObject): void {
@@ -599,9 +603,30 @@ export class StructureManager {
   /**
    * Update structure label from guard update (troop count/stamina changes)
    */
-  public updateStructureLabelFromGuardUpdate(update: { entityId: ID; guardArmies: GuardArmy[] }): void {
+  public updateStructureLabelFromStructureUpdate(update: {
+    entityId: ID;
+    guardArmies: GuardArmy[];
+    owner: { address: bigint; ownerName: string; guildName: string };
+  }): void {
     const structure = this.structures.getStructureByEntityId(update.entityId);
-    if (!structure) return;
+    console.log("[UPDATING STRUCTURE LABEL]", update);
+
+    // If structure doesn't exist yet, store the update as pending
+    if (!structure) {
+      console.log(`[PENDING LABEL UPDATE] Storing pending update for structure ${update.entityId}`);
+      const { currentArmiesTick } = getBlockTimestamp();
+      this.pendingLabelUpdates.set(update.entityId, {
+        guardArmies: update.guardArmies.map((guard) => ({
+          slot: guard.slot,
+          category: guard.category,
+          tier: guard.tier,
+          count: guard.count,
+          stamina: guard.stamina,
+        })),
+        owner: update.owner,
+      });
+      return;
+    }
 
     // Update cached guard armies data
     structure.guardArmies = update.guardArmies.map((guard) => ({
@@ -611,11 +636,15 @@ export class StructureManager {
       count: guard.count,
       stamina: guard.stamina,
     }));
+    structure.owner = update.owner;
+    structure.isMine = isAddressEqualToAccount(update.owner.address);
+
+    this.structures.updateStructure(update.entityId, structure);
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
-      updateStructureLabel(label.element, structure);
+      this.updateStructureLabelData(update.entityId, structure, label);
     }
   }
 
@@ -627,7 +656,25 @@ export class StructureManager {
     activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>;
   }): void {
     const structure = this.structures.getStructureByEntityId(update.entityId);
-    if (!structure) return;
+
+    // If structure doesn't exist yet, store the update as pending
+    if (!structure) {
+      console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${update.entityId}`);
+
+      // Check if there's already a pending update for this structure
+      const existingPending = this.pendingLabelUpdates.get(update.entityId);
+      if (existingPending) {
+        // Update the existing pending with new active productions
+        existingPending.activeProductions = update.activeProductions;
+      } else {
+        // Create a new pending update with just the active productions
+        this.pendingLabelUpdates.set(update.entityId, {
+          activeProductions: update.activeProductions,
+          owner: { address: 0n, ownerName: "", guildName: "" }, // Will be updated when structure is created
+        });
+      }
+      return;
+    }
 
     // Update cached active productions data
     structure.activeProductions = update.activeProductions;
@@ -635,7 +682,7 @@ export class StructureManager {
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
-      updateStructureLabel(label.element, structure);
+      this.updateStructureLabelData(update.entityId, structure, label);
     }
   }
 }
@@ -691,6 +738,10 @@ class Structures {
         }
       });
     });
+  }
+
+  updateStructure(entityId: ID, structure: StructureInfo) {
+    this.structures.get(structure.structureType)?.set(entityId, structure);
   }
 
   removeStructure(entityId: ID): StructureInfo | null {

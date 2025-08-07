@@ -220,7 +220,7 @@ export class SystemManager {
     });
 
     // Start automatic refresh timer
-    this.mapDataStore.startAutoRefresh();
+    // this.mapDataStore.startAutoRefresh();
   }
 
   /**
@@ -275,7 +275,7 @@ export class SystemManager {
               if (!explorer) return;
 
               // Get enhanced army data from MapDataStore
-              const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
+              const armyMapData = await this.mapDataStore.getArmyByIdAsync(currentState.occupier_id);
 
               const getCurrentStamina = (currentArmiesTick: number) => {
                 if (armyMapData) {
@@ -314,7 +314,7 @@ export class SystemManager {
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
-                  address: BigInt(armyMapData?.ownerAddress || ""),
+                  address: armyMapData ? BigInt(armyMapData.ownerAddress) : undefined,
                   ownerName: armyMapData?.ownerName || "",
                   guildName: "",
                 },
@@ -391,7 +391,7 @@ export class SystemManager {
 
               if (!structureInfo) return;
 
-              console.log("[STRUCTURE UPDATE]", currentState.occupier_id);
+              console.log("[STRUCTURE UPDATE]", currentState);
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -401,7 +401,7 @@ export class SystemManager {
               const initialized = hyperstructure?.initialized || false;
 
               // Get enhanced structure data from MapDataStore
-              const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
+              const structureMapData = await this.mapDataStore.getStructureByIdAsync(currentState.occupier_id);
 
               return {
                 entityId: currentState.occupier_id,
@@ -414,7 +414,7 @@ export class SystemManager {
                 stage: structureInfo.stage,
                 level: structureInfo.level,
                 owner: {
-                  address: BigInt(structureMapData?.ownerAddress || "") || 0n,
+                  address: structureMapData ? BigInt(structureMapData.ownerAddress) : undefined,
                   ownerName: structureMapData?.ownerName || "",
                   guildName: "",
                 },
@@ -615,32 +615,82 @@ export class SystemManager {
 
   public get LabelUpdate() {
     return {
-      onArmyUpdate: (callback: (value: any) => void) => {
+      onArmyUpdate: (
+        callback: (value: {
+          entityId: ID;
+          troopCount: number;
+          stamina: number;
+          updatedTick: number;
+          hexCoords: HexPosition;
+          owner: { address: bigint; ownerName: string; guildName: string };
+        }) => void,
+      ) => {
         this.setupSystem(
           this.setup.components.ExplorerTroops,
           callback,
-          (update: any) => {
+          async (
+            update: any,
+          ): Promise<
+            | {
+                entityId: ID;
+                troopCount: number;
+                stamina: number;
+                updatedTick: number;
+                hexCoords: HexPosition;
+                owner: { address: bigint; ownerName: string; guildName: string };
+              }
+            | undefined
+          > => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, _prevState] = update.value;
 
               if (!currentState) return;
 
+              console.log("[LABEL UPDATE] Army Update", { currentState });
+
+              const structure = await this.mapDataStore.getStructureByIdAsync(currentState.owner);
+              const address = structure?.ownerAddress || 0n;
+              const playerName = await this.mapDataStore.getPlayerNameAsync(address.toString());
+
               return {
                 entityId: currentState.explorer_id,
                 troopCount: divideByPrecision(Number(currentState.troops.count)),
-                stamina: currentState.troops.stamina.amount,
-                updatedTick: currentState.troops.stamina.updated_tick,
+                stamina: Number(currentState.troops.stamina.amount),
+                updatedTick: Number(currentState.troops.stamina.updated_tick),
+                hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
+                owner: {
+                  address: BigInt(address),
+                  ownerName: playerName,
+                  guildName: "",
+                },
               };
             }
           },
           false,
         );
       },
-      onStructureGuardUpdate: (callback: (value: any) => void) => {
+      onStructureUpdate: (
+        callback: (value: {
+          entityId: ID;
+          guardArmies: GuardArmy[];
+          owner: { address: bigint; ownerName: string; guildName: string };
+          hexCoords: HexPosition;
+        }) => void,
+      ) => {
         this.setupSystem(
           this.setup.components.Structure,
           callback,
-          (update: any) => {
+          async (
+            update: any,
+          ): Promise<
+            | {
+                entityId: ID;
+                guardArmies: GuardArmy[];
+                owner: { address: bigint; ownerName: string; guildName: string };
+                hexCoords: HexPosition;
+              }
+            | undefined
+          > => {
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
 
@@ -685,9 +735,17 @@ export class SystemManager {
                 });
               }
 
+              const playerName = await this.mapDataStore.getPlayerNameAsync(currentState.owner.toString());
+
               return {
                 entityId: currentState.entity_id,
                 guardArmies,
+                owner: {
+                  address: currentState.owner,
+                  ownerName: playerName,
+                  guildName: "",
+                },
+                hexCoords: { col: currentState.base.coord_x, row: currentState.base.coord_y },
               };
             }
           },

@@ -59,10 +59,9 @@ import {
   ExplorerMoveSystemUpdate,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
-  StructureSystemUpdate,
   TileSystemUpdate,
 } from "../types/systems";
-import { getWorldPositionForHex } from "../utils";
+import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -265,23 +264,21 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for label updates (troop count and stamina changes)
     this.systemManager.LabelUpdate.onArmyUpdate((update) => {
-      if (update && update.entityId) {
-        this.armyManager.updateArmyLabelFromSystemUpdate(update);
-      }
+      console.log("[UPDATING ARMY LABEL]", update);
+      this.updateArmyHexes(update);
+      this.armyManager.updateArmyLabelFromSystemUpdate(update);
     });
 
     // Listen for structure guard updates
-    this.systemManager.LabelUpdate.onStructureGuardUpdate((update) => {
-      if (update && update.entityId) {
-        this.structureManager.updateStructureLabelFromGuardUpdate(update);
-      }
+    this.systemManager.LabelUpdate.onStructureUpdate((update) => {
+      console.log("[UPDATE STRUCTURE LABEL]", update);
+      this.updateStructureHexes(update);
+      this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
 
     // Listen for structure building updates
     this.systemManager.LabelUpdate.onStructureBuildingUpdate((update) => {
-      if (update && update.entityId) {
-        this.structureManager.updateStructureLabelFromBuildingUpdate(update);
-      }
+      this.structureManager.updateStructureLabelFromBuildingUpdate(update);
     });
 
     // Store the unsubscribe function for Tile updates
@@ -500,7 +497,6 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    this.state.setHoveredHex(hexCoords);
 
     // Handle label expansion on hover
     this.hoverLabelManager.onHexHover(hexCoords);
@@ -544,7 +540,8 @@ export default class WorldmapScene extends HexagonScene {
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
-    const isMine = army?.owner === account || structure?.owner === account;
+    const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
+    console.log("[HEX CLICK]", { hexCoords, isMine, army, account, structure });
     this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
@@ -904,12 +901,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(update: ArmySystemUpdate) {
+  public updateArmyHexes(update: { entityId: ID; hexCoords: HexPosition; owner: { address: bigint | undefined } }) {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
     } = update;
+
+    if (address === undefined) return;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
@@ -931,16 +930,22 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
+    console.log("[UPDATING ARMY HEXES]", { newPos, entityId, address, isMine: isAddressEqualToAccount(address) });
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
   }
 
-  public updateStructureHexes(update: StructureSystemUpdate) {
+  public updateStructureHexes(update: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    owner: { address: bigint | undefined };
+  }) {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
     } = update;
 
+    if (address === undefined) return;
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
     const newCol = normalized.x;

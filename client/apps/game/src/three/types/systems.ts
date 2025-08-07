@@ -18,7 +18,7 @@ export type ArmySystemUpdate = {
   order: number;
   troopType: TroopType;
   troopTier: TroopTier;
-  owner: { address: bigint; ownerName: string; guildName: string };
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
   isDaydreamsAgent: boolean;
   isAlly: boolean;
   // Enhanced data from MapDataStore
@@ -35,7 +35,7 @@ export type StructureSystemUpdate = {
   initialized: boolean;
   level: number;
   isAlly: boolean;
-  owner: { address: bigint; ownerName: string; guildName: string };
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
   hasWonder: boolean;
   // Enhanced data from MapDataStore
   guardArmies?: GuardArmy[];
