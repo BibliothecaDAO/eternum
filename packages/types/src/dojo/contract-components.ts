@@ -1424,9 +1424,6 @@ export function defineContractComponents(world: World) {
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
-            registration_end_at: RecsType.Number,
-            creation_start_at: RecsType.Number,
-            creation_end_at: RecsType.Number,
             assigned_positions_count: RecsType.Number,
           },
           tick_config: {
@@ -1614,9 +1611,6 @@ export function defineContractComponents(world: World) {
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
-              "u32", // BlitzRegistrationConfig registration_end_at
-              "u32", // BlitzRegistrationConfig creation_start_at
-              "u32", // BlitzRegistrationConfig creation_end_at
               "u16", // BlitzRegistrationConfig assigned_positions_count
               "u64", // TickConfig armies_tick_in_seconds
               "u64", // TickConfig delivery_tick_in_seconds

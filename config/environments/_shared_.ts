@@ -214,7 +214,6 @@ const BLITZ_REGISTRATION_FEE_AMOUNT = 0;
 const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
 const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * ONE_HOUR_IN_SECONDS;
-const BLITZ_CREATION_PERIOD_SECONDS = 1 * ONE_HOUR_IN_SECONDS;
 
 export const EternumGlobalConfig: Config = {
   agent: {
@@ -411,7 +410,6 @@ export const EternumGlobalConfig: Config = {
       registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
       registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
       registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
-      creation_period_seconds: BLITZ_CREATION_PERIOD_SECONDS,
     },
   },
   setup: {

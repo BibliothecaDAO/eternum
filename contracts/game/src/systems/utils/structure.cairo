@@ -123,7 +123,8 @@ pub impl iStructureImpl of IStructureTrait {
                 // only do village settings when category is realm
                 if explore_village_coord {
                     // explore village tile so that no structure can be built on it
-                    let village_coord = coord.neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
+                    let village_coord = coord
+                        .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
                     let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
                     if !village_tile.discovered() {
                         let village_biome: Biome = get_biome(village_coord.x.into(), village_coord.y.into());

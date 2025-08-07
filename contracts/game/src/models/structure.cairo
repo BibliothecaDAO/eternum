@@ -21,6 +21,14 @@ pub struct Wonder {
     pub realm_id: u16,
 }
 
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureReservation {
+    #[key]
+    pub coord: Coord,
+    pub reserved: bool,
+}
+
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]

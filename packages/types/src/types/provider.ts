@@ -665,9 +665,6 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   fee_amount: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
-  registration_end_at: BigNumberish;
-  creation_start_at: BigNumberish;
-  creation_end_at: BigNumberish;
 }
 export interface MintTestRealmProps extends SystemSigner {
   token_id: BigNumberish;

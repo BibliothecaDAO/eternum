@@ -1416,18 +1416,13 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
 
   let registration_delay_seconds = config.config.blitz.registration.registration_delay_seconds;
   let registration_period_seconds = config.config.blitz.registration.registration_period_seconds;
-  let creation_period_seconds = config.config.blitz.registration.creation_period_seconds;
 
   let registration_start_at = Math.floor(new Date().getTime() / 1000) + registration_delay_seconds;
   let registration_end_at = registration_start_at + registration_period_seconds;
-  let creation_start_at = registration_end_at + 1;
-  let creation_end_at = creation_start_at + creation_period_seconds;
 
   let startMainAt = config.config.season.startMainAt;
   if (startMainAt && startMainAt > 0) {
-    creation_end_at = startMainAt;
-    creation_start_at = creation_end_at - creation_period_seconds;
-    registration_end_at = creation_start_at - 1;
+    registration_end_at = startMainAt - 1;
     registration_start_at = registration_end_at - registration_period_seconds;
   }
 
@@ -1438,9 +1433,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     fee_amount: config.config.blitz.registration.fee_amount,
     registration_count_max: config.config.blitz.registration.registration_count_max,
     registration_start_at: registration_start_at,
-    registration_end_at: registration_end_at,
-    creation_start_at: creation_start_at,
-    creation_end_at: creation_end_at,
   };
 
   console.log(
@@ -1452,27 +1444,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     │  ${chalk.gray("Registration Count Max:")} ${chalk.white(registrationCalldata.registration_count_max)}
     │  ${chalk.gray("Registration Start At:")} ${chalk.white(
       new Date(registrationCalldata.registration_start_at * 1000).toLocaleString("en-US", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "UTC",
-      }),
-    )} UTC
-    │  ${chalk.gray("Registration End At:")} ${chalk.white(
-      new Date(registrationCalldata.registration_end_at * 1000).toLocaleString("en-US", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "UTC",
-      }),
-    )} UTC
-    │  ${chalk.gray("Creation Start At:")} ${chalk.white(
-      new Date(registrationCalldata.creation_start_at * 1000).toLocaleString("en-US", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "UTC",
-      }),
-    )} UTC
-    │  ${chalk.gray("Creation End At:")} ${chalk.white(
-      new Date(registrationCalldata.creation_end_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
@@ -1498,8 +1469,8 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     realms_address: "0x0",
     lords_address: config.config.setup!.addresses.lords,
     start_settling_at: registration_start_at,
-    start_main_at: creation_end_at,
-    end_at: creation_end_at + config.config.season.durationSeconds,
+    start_main_at: registration_end_at,
+    end_at: registration_end_at + config.config.season.durationSeconds,
     bridge_close_end_grace_seconds: 0,
     point_registration_grace_seconds: config.config.season.pointRegistrationCloseAfterEndSeconds,
   };
