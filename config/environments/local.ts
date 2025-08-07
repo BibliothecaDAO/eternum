@@ -128,7 +128,6 @@ export const LocalEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
       registration_period_seconds: 60 * 2,
-      creation_period_seconds: 60 * 2,
     },
   },
 };

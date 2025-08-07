@@ -13,7 +13,7 @@ use s1_eternum::models::record::{RelicRecord};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureImpl};
+use s1_eternum::models::structure::{StructureImpl, StructureReservation};
 use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::structure::iStructureImpl;
@@ -63,7 +63,8 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
 
         loop {
             let mut tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
-            if tile.occupied() {
+            let mut structure_reservation: StructureReservation = world.read_model(destination_coord);
+            if tile.occupied() || structure_reservation.reserved {
                 destination_coord = destination_coord.neighbor(Direction::East);
             } else {
                 if tile.not_discovered() {

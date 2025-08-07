@@ -2559,9 +2559,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       fee_amount,
       registration_count_max,
       registration_start_at,
-      registration_end_at,
-      creation_start_at,
-      creation_end_at,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -2573,10 +2570,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         fee_amount,
         0,
         registration_count_max,
-        registration_start_at,
-        registration_end_at,
-        creation_start_at,
-        creation_end_at,
+        registration_start_at
       ],
     });
   }

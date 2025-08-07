@@ -319,7 +319,9 @@ pub mod troop_movement_util_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
+    use s1_eternum::models::position::Coord;
     use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
+    use s1_eternum::models::structure::StructureReservation;
     use s1_eternum::models::{
         config::{CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
     };
@@ -360,6 +362,9 @@ pub mod troop_movement_util_systems {
             //////////////////////////////////////
             /// TIME BASED GLOBAL DISCOVERY
             //////////////////////////////////////
+
+            // note that relic chests cant be found on reserved tiles. the logic for
+            // that is handled in iRelicChestDiscoveryImpl::discover
             let (relic_chest_discovery_systems, _) = world.dns(@"relic_chest_discovery_systems").unwrap();
             let relic_chest_discovery_systems = ITroopMovementUtilSystemsDispatcher {
                 contract_address: relic_chest_discovery_systems,
@@ -379,6 +384,13 @@ pub mod troop_movement_util_systems {
             //////////////////////////////////////
             /// LOTTERY BASED PERSONAL DISCOVERY
             //////////////////////////////////////
+
+            // If the tile is reserved, no structure discovery can happen on it
+            let coord: Coord = tile.into();
+            let structure_reservation: StructureReservation = world.read_model(coord);
+            if structure_reservation.reserved {
+                return (false, ExploreFind::None);
+            }
 
             let (hyperstructure_discovery_systems, _) = world.dns(@"hyperstructure_discovery_systems").unwrap();
             let hyperstructure_discovery_systems = ITroopMovementUtilSystemsDispatcher {

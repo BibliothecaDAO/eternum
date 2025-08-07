@@ -39,11 +39,12 @@ pub mod blitz_realm_systems {
     use s1_eternum::models::structure::StructureOwnerStats;
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureReservation,
     };
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureBlitzDiscoveryImpl, iHyperstructureDiscoveryImpl};
+    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureDiscoveryImpl};
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -128,6 +129,11 @@ pub mod blitz_realm_systems {
             // save the updated blitz settlement config
             blitz_settlement_config.next();
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
+
+            // store structure reservation
+            for coord in coords {
+                world.write_model(@StructureReservation { coord: coord, reserved: true });
+            };
 
             ////////////////////////////////////////////////
             /// Update Hyperstructure Ring Count
@@ -244,14 +250,7 @@ pub mod blitz_realm_systems {
         fn create(ref self: ContractState) -> Array<ID> {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
-
-            // ensure time window is open for realm settlement
-            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_registration_config"),
-            );
-            let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-            assert!(blitz_registration_config.is_creation_open(now), "Eternum: Realm settlement period is over");
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure all hyperstructures have been created
             let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
@@ -273,6 +272,9 @@ pub mod blitz_realm_systems {
             world.write_model(@blitz_player_register);
 
             // find a random position for the player from the list of available positions
+            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
             let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                 world, selector!("vrf_provider_address"),
             );
@@ -334,6 +336,7 @@ pub mod blitz_realm_systems {
                 structure_weight.store(ref world, structure_id);
 
                 // emit realm settle event
+                let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
                 let address_name: AddressName = world.read_model(caller);
                 world
                     .emit_event(

@@ -1,15 +1,16 @@
 use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::{FixedTrait};
+use dojo::model::{Model};
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
 use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
-use s1_eternum::models::map::{TileOccupier};
+use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction, TravelImpl};
 
-use s1_eternum::models::structure::{StructureCategory, StructureImpl};
+use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
@@ -141,6 +142,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                     completed: hyperstructure_completed,
                     access: ConstructionAccess::Private,
                     randomness: vrf_seed.try_into().unwrap(),
+                    points_multiplier: 0,
                 },
             );
 
@@ -155,59 +157,40 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 }
 
 #[generate_trait]
-pub impl iHyperstructureBlitzDiscoveryImpl of iHyperstructureBlitzDiscoveryTrait {
-    fn ring_distance(ring_count: u32) -> u32 {
-        ring_count * 15
+pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
+    fn realm_tile_distance() -> u32 {
+        8 // manually counted. must be divisible by 2
     }
 
-    fn create_ring(
-        ref world: WorldStorage,
-        map_config: MapConfig,
-        troop_limit_config: TroopLimitConfig,
-        troop_stamina_config: TroopStaminaConfig,
-        ring_count: u32,
-        vrf_seed: u256,
-    ) {
-        let center_coord: Coord = CoordImpl::center();
-        if ring_count == 0 {
-            iHyperstructureDiscoveryImpl::create(
-                ref world,
-                center_coord,
-                Zero::zero(),
-                map_config,
-                troop_limit_config,
-                troop_stamina_config,
-                vrf_seed,
-                true,
-                true,
-            );
-            // create center hyperstructure
-        } else {
-            // create ring of hyperstructures (6 coords)
-            let distance_from_center = Self::ring_distance(ring_count);
-            let ring_coords = array![
-                center_coord.neighbor_after_distance(Direction::East, distance_from_center),
-                center_coord.neighbor_after_distance(Direction::NorthEast, distance_from_center),
-                center_coord.neighbor_after_distance(Direction::NorthWest, distance_from_center),
-                center_coord.neighbor_after_distance(Direction::SouthWest, distance_from_center),
-                center_coord.neighbor_after_distance(Direction::West, distance_from_center),
-                center_coord.neighbor_after_distance(Direction::SouthEast, distance_from_center),
-            ];
-            let mut salt = 3;
-            for coord in ring_coords {
-                iHyperstructureDiscoveryImpl::create(
-                    ref world,
-                    coord,
-                    Zero::zero(),
-                    map_config,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    vrf_seed + salt.into(),
-                    true,
-                    true,
-                );
-                salt += 1;
+    fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord) -> u8 {
+        let mut start_coord: Coord = hyperstructure_coord;
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::NorthEast, Direction::West),
+        ];
+
+        let mut count = 0;
+        for direction in start_directions {
+            let (start_direction, triangle_direction) = direction;
+            let potential_realm_coord = start_coord
+                .neighbor_after_distance(start_direction, Self::realm_tile_distance())
+                .neighbor_after_distance(triangle_direction, Self::realm_tile_distance() / 2);
+
+            let potential_realm_tile: Tile = world.read_model((potential_realm_coord.x, potential_realm_coord.y));
+            if potential_realm_tile.occupier_is_structure {
+                let structure_category: u8 = world
+                    .read_member(
+                        Model::<Structure>::ptr_from_keys(potential_realm_tile.occupier_id), selector!("category"),
+                    );
+                if structure_category == StructureCategory::Realm.into() {
+                    count += 1;
+                }
             }
-        }
+        };
+        return count;
     }
 }

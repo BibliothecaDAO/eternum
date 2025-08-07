@@ -110,7 +110,7 @@ export class LeaderboardManager {
    */
   private updateUnregisteredShareholderPointsCache() {
     const configManager = ClientConfigManager.instance();
-    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle;
+    const pointsPerSecondWithoutMultiplier = configManager.getHyperstructureConfig().pointsPerCycle;
     const seasonConfig = configManager.getSeasonConfig();
 
     // Use season end time if season has ended, otherwise use current time
@@ -131,6 +131,8 @@ export class LeaderboardManager {
       );
       if (!hyperstructureShareholders) continue;
 
+      const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
+      const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
       const startTimestamp = Number(hyperstructureShareholders.start_at);
       if (startTimestamp === 0) continue;

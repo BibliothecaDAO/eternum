@@ -151,11 +151,14 @@ pub mod hyperstructure_systems {
     use dojo::world::WorldStorage;
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::map::Tile;
+
     use s1_eternum::models::owner::OwnerAddressImpl;
+    use s1_eternum::models::position::Coord;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::weight::{Weight, WeightImpl};
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::random::VRFImpl;
@@ -412,22 +415,6 @@ pub mod hyperstructure_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
             structure_owner.assert_caller_owner();
 
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
-            match blitz_mode_on {
-                true => {
-                    assert!(shareholders.len() == 1, "too many shareholders, maximum of 1");
-                    let (address, percentage) = *shareholders.at(0);
-                    assert!(percentage.into() == PercentageValueImpl::_100(), "percentage must be 100%");
-                    assert!(address.is_non_zero(), "shareholder must be set");
-                    assert!(address == structure_owner, "shareholder must be the structure owner");
-                },
-                false => {
-                    assert!( // 20 is the max for non-blitz mode
-                        shareholders.len() <= 20, "too many shareholders, maximum of 20",
-                    );
-                },
-            };
-
             // ensure the structure is a hyperstructure
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
             assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
@@ -436,6 +423,34 @@ pub mod hyperstructure_systems {
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
             assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
             assert!(hyperstructure.completed, "hyperstructure has not been completed");
+
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            match blitz_mode_on {
+                true => {
+                    assert!(shareholders.len() == 1, "too many shareholders, maximum of 1");
+                    let (address, percentage) = *shareholders.at(0);
+                    assert!(percentage.into() == PercentageValueImpl::_100(), "percentage must be 100%");
+                    assert!(address.is_non_zero(), "shareholder must be set");
+                    assert!(address == structure_owner, "shareholder must be the structure owner");
+
+                    // count surrounding realms and determine points per second multiplier
+                    let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
+                    let structure_coord: Coord = Coord { x: structure.coord_x, y: structure.coord_y };
+                    let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
+                        ref world, structure_coord,
+                    );
+                    hyperstructure.points_multiplier = surrounding_realms_count;
+                    world.write_model(@hyperstructure);
+                },
+                false => {
+                    assert!( // 20 is the max for non-blitz mode
+                        shareholders.len() <= 20, "too many shareholders, maximum of 20",
+                    );
+
+                    hyperstructure.points_multiplier = 1;
+                    world.write_model(@hyperstructure);
+                },
+            };
 
             // ensure the allocated percentage does not exceed 100%
             let mut allocated_percentage: u16 = 0;
@@ -505,7 +520,8 @@ pub mod hyperstructure_systems {
                     if shareholder_address.is_non_zero() {
                         let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
                         let generated_points: u256 = time_elapsed.into()
-                            * victory_points_grant_config.hyp_points_per_second.into()
+                            * (victory_points_grant_config.hyp_points_per_second.into()
+                                * hyperstructure.points_multiplier.into())
                             * (*shareholder_percentage).into()
                             / PercentageValueImpl::_100().into();
                         let generated_points: u128 = generated_points.try_into().unwrap();

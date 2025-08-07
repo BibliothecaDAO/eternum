@@ -169,7 +169,7 @@ export const PlayersPanel = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Control a Hyperstructure</span>
-                  <span className="text-gold font-semibold">5 VP/s</span>
+                  <span className="text-gold font-semibold">0 - 6 VP/s</span>
                 </div>
               </div>
             </div>

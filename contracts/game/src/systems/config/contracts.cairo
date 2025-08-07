@@ -190,9 +190,6 @@ pub trait ISettlementConfig<T> {
         fee_amount: u256,
         registration_count_max: u16,
         registration_start_at: u32,
-        registration_end_at: u32,
-        creation_start_at: u32,
-        creation_end_at: u32,
     );
 }
 
@@ -840,9 +837,6 @@ pub mod config_systems {
             fee_amount: u256,
             registration_count_max: u16,
             registration_start_at: u32,
-            registration_end_at: u32,
-            creation_start_at: u32,
-            creation_end_at: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -852,9 +846,6 @@ pub mod config_systems {
             );
             blitz_registration_config.registration_count_max = registration_count_max;
             blitz_registration_config.registration_start_at = registration_start_at;
-            blitz_registration_config.registration_end_at = registration_end_at;
-            blitz_registration_config.creation_start_at = creation_start_at;
-            blitz_registration_config.creation_end_at = creation_end_at;
             blitz_registration_config.fee_token = fee_token;
             blitz_registration_config.fee_recipient = fee_recipient;
             blitz_registration_config.fee_amount = fee_amount;

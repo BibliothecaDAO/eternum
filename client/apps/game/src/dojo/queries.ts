@@ -59,6 +59,7 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-ProductionBoostBonus",
     // needed to check for hyperstructure shareholders 100% in blitz mode
     "s1_eternum-HyperstructureShareholders",
+    "s1_eternum-Hyperstructure",
   ];
 
   // Create promises for all queries without awaiting them

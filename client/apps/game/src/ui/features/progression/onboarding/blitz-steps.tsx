@@ -40,7 +40,6 @@ const formatLocalDateTime = (timestamp: number): string => {
 enum GameState {
   NO_GAME = "NO_GAME",
   REGISTRATION = "REGISTRATION",
-  SETTLEMENT = "SETTLEMENT",
   GAME_ACTIVE = "GAME_ACTIVE",
 }
 
@@ -91,7 +90,6 @@ const NoGameState = ({
   creationEndAt: number;
 }) => {
   const registrationDuration = registrationEndAt - registrationStartAt;
-  const settlementDuration = creationEndAt - creationStartAt;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
@@ -106,13 +104,8 @@ const NoGameState = ({
             <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
           </div>
           <div>
-            <p className="text-gold font-bold">Settlement Phase</p>
-            <p className="text-gold/50 text-xs">Starts: {formatLocalDateTime(creationStartAt)}</p>
-            <p className="text-gold/50 text-xs">Duration: {formatTime(settlementDuration)}</p>
-          </div>
-          <div>
             <p className="text-gold font-bold">Game Starts</p>
-            <p className="text-gold/50 text-xs">{formatLocalDateTime(creationEndAt)}</p>
+            <p className="text-gold/50 text-xs">{formatLocalDateTime(creationStartAt)}</p>
           </div>
         </div>
       </div>
@@ -214,20 +207,7 @@ const RegistrationState = ({
       <div className="text-center space-y-4">
         <h3 className="text-xl font-bold text-gold">Registration Open</h3>
         <PlayerCount count={registrationCount} />
-        <CountdownTimer targetTime={registrationEndAt} label="Registration closes in:" />
-
-        <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm space-y-2">
-          <div>
-            <p className="text-gold/70">Current Phase Duration: {formatTime(registrationDuration)}</p>
-            <p className="text-gold/60 text-xs">Ends at: {formatLocalTime(registrationEndAt)}</p>
-          </div>
-          <div>
-            <p className="text-gold/70">Next: Settlement phase</p>
-            <p className="text-gold/60 text-xs">
-              Starts at: {formatLocalTime(creationStartAt)} ({formatTime(settlementDuration)})
-            </p>
-          </div>
-        </div>
+        <CountdownTimer targetTime={registrationEndAt} label="Registration closes and Game Starts in:" />
       </div>
 
       <div className="space-y-4">
@@ -235,7 +215,7 @@ const RegistrationState = ({
           <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center">
             <TreasureChest className="w-8 h-8 mx-auto mb-2 fill-gold" />
             <p className="text-gold font-medium">You are registered!</p>
-            <p className="text-sm text-gold/70 mt-1">Wait for the settlement phase to begin</p>
+            <p className="text-sm text-gold/70 mt-1">Wait for the game to begin</p>
           </div>
         ) : (
           <Button
@@ -263,29 +243,16 @@ const RegistrationState = ({
   );
 };
 
-// Settlement state component
-const SettlementState = ({
-  creationStartAt,
-  creationEndAt,
-  isRegistered,
-  hasSettled,
-  onSettle,
-}: {
-  creationStartAt: number;
-  creationEndAt: number;
-  isRegistered: boolean;
-  hasSettled: boolean;
-  onSettle: () => Promise<void>;
-}) => {
+// Game active state component
+const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { hasSettled: boolean; gameEndAt?: number; isRegistered: boolean; onSettle: () => Promise<void> }) => {
   const {
     setup: { components },
   } = useDojo();
 
-  const [isSettling, setIsSettling] = useState(false);
-
   const goToStructure = useGoToStructure();
   const realmEntities = usePlayerOwnedRealmEntities();
   const onSpectatorModeClick = useSpectatorModeClick(components);
+  const [isSettling, setIsSettling] = useState(false);
 
   const handleSettle = async () => {
     setIsSettling(true);
@@ -297,104 +264,6 @@ const SettlementState = ({
       setIsSettling(false);
     }
   };
-
-  const handlePlay = () => {
-    const firstRealm = realmEntities[0];
-    if (!firstRealm) return;
-
-    const structure = getComponentValue(components.Structure, firstRealm);
-    if (!structure) return;
-
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="text-center space-y-4">
-        <h3 className="text-xl font-bold text-gold">Settlement Phase</h3>
-        <CountdownTimer targetTime={creationEndAt} label="Settlement phase ends in:" />
-
-        <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm space-y-2">
-          <div>
-            <p className="text-gold/70">Current Phase Duration: {formatTime(creationEndAt - creationStartAt)}</p>
-            <p className="text-gold/60 text-xs">Ends at: {formatLocalTime(creationEndAt)}</p>
-          </div>
-          <p className="text-gold/70">Game starts at: {formatLocalTime(creationEndAt)}</p>
-          <p className="text-gold font-semibold">⚡ Settle quickly to secure your spot!</p>
-        </div>
-      </div>
-
-      {isRegistered ? (
-        <div className="space-y-4">
-          {hasSettled ? (
-            <>
-              <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center">
-                <TreasureChest className="w-8 h-8 mx-auto mb-2 fill-gold" />
-                <p className="text-gold font-medium">Settlement Complete!</p>
-                <p className="text-sm text-gold/70 mt-1">Wait for the settlement phase to finish before playing</p>
-              </div>
-
-              <Button
-                disabled={true}
-                onClick={handlePlay}
-                className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md"
-              >
-                <div className="flex items-center justify-center">
-                  <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Play Blitz</span>
-                </div>
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
-                <p className="text-gold text-sm">
-                  In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
-                </p>
-              </div>
-              <Button
-                onClick={handleSettle}
-                disabled={isSettling}
-                className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-              >
-                {isSettling ? (
-                  <div className="flex items-center justify-center">
-                    <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                    <span>Settling...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
-                    <span>Settle Realm</span>
-                  </div>
-                )}
-              </Button>
-            </>
-          )}
-
-          <SpectateButton onClick={onSpectatorModeClick} />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
-            <p className="text-gold/70">You are not registered for this game</p>
-          </div>
-          <SpectateButton onClick={onSpectatorModeClick} />
-        </div>
-      )}
-    </motion.div>
-  );
-};
-
-// Game active state component
-const GameActiveState = ({ hasSettled, gameEndAt }: { hasSettled: boolean; gameEndAt?: number }) => {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const goToStructure = useGoToStructure();
-  const realmEntities = usePlayerOwnedRealmEntities();
-  const onSpectatorModeClick = useSpectatorModeClick(components);
 
   const handlePlay = () => {
     const firstRealm = realmEntities[0];
@@ -424,24 +293,55 @@ const GameActiveState = ({ hasSettled, gameEndAt }: { hasSettled: boolean; gameE
       </div>
 
       <div className="space-y-4">
-        {hasSettled ? (
-          <>
-            <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md ">
-              <div className="flex items-center justify-center">
-                <Sword className="w-5 h-5 mr-2 fill-brown" />
-                <span>Play Blitz</span>
-              </div>
-            </Button>
-            <SpectateButton onClick={onSpectatorModeClick} />
+        {isRegistered ? (
+            <>
+          {hasSettled ? (
+            <>
+              <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md ">
+                <div className="flex items-center justify-center">
+                  <Sword className="w-5 h-5 mr-2 fill-brown" />
+                  <span>Play Blitz</span>
+                </div>
+              </Button>
+              <SpectateButton onClick={onSpectatorModeClick} />
+            </>
+          ) : (
+            <>
+                <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
+                  <p className="text-gold text-sm">
+                    In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
+                  </p>
+                </div>
+                <Button
+                  onClick={handleSettle}
+                  disabled={isSettling}
+                  className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+                >
+                  {isSettling ? (
+                    <div className="flex items-center justify-center">
+                      <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                      <span>Settling...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                      <span>Settle Realm</span>
+                    </div>
+                    
+                  )}
+                </Button>
+              <SpectateButton onClick={onSpectatorModeClick} />
+            </>
+          )}
           </>
         ) : (
-          <>
+          <div className="space-y-4">
             <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
-              <p className="text-gold/70">You did not settle in this game</p>
+              <p className="text-gold/70">You are not registered for this game</p>
             </div>
-            <SpectateButton onClick={onSpectatorModeClick} />
-          </>
+          </div>
         )}
+
       </div>
     </motion.div>
   );
@@ -497,10 +397,7 @@ export const BlitzOnboarding = () => {
       } else if (now >= blitzConfig.registration_start_at && now < blitzConfig.registration_end_at) {
         // Registration period
         setGameState(GameState.REGISTRATION);
-      } else if (now >= blitzConfig.creation_start_at && now < blitzConfig.creation_end_at) {
-        // Settlement period
-        setGameState(GameState.SETTLEMENT);
-      } else if (now >= blitzConfig.creation_end_at) {
+      } else if (now >= blitzConfig.creation_start_at) {
         // Game is active
         setGameState(GameState.GAME_ACTIVE);
       }
@@ -567,7 +464,7 @@ export const BlitzOnboarding = () => {
 
   // Determine if we are in registration phase
   const now = Date.now() / 1000;
-  const canMakeHyperstructures = now >= registration_start_at && now < registration_end_at;
+  const canMakeHyperstructures = now >= registration_start_at;
 
   return (
     <div className="space-y-6">
@@ -597,17 +494,12 @@ export const BlitzOnboarding = () => {
           onRegister={handleRegister}
         />
       )}
-      {gameState === GameState.SETTLEMENT && (
-        <SettlementState
-          creationStartAt={creation_start_at}
-          creationEndAt={creation_end_at}
-          isRegistered={playerRegistered?.registered || !!playerSettled}
-          hasSettled={!!playerSettled}
-          onSettle={handleSettle}
-        />
-      )}
       {gameState === GameState.GAME_ACTIVE && (
-        <GameActiveState hasSettled={!!playerSettled} gameEndAt={seasonConfig?.endAt} />
+        <GameActiveState 
+        isRegistered={playerRegistered?.registered || !!playerSettled}
+        onSettle={handleSettle}
+        hasSettled={!!playerSettled} 
+        gameEndAt={seasonConfig?.endAt} />
       )}
     </div>
   );

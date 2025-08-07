@@ -550,9 +550,6 @@ pub struct BlitzRegistrationConfig {
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
-    pub registration_end_at: u32,
-    pub creation_start_at: u32,
-    pub creation_end_at: u32,
     pub assigned_positions_count: u16,
 }
 
@@ -567,11 +564,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 
     fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
-        now >= self.registration_start_at && now <= self.registration_end_at
-    }
-
-    fn is_creation_open(self: BlitzRegistrationConfig, now: u32) -> bool {
-        now >= self.creation_start_at && now <= self.creation_end_at
+        now >= self.registration_start_at
     }
 }
 

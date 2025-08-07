@@ -24,6 +24,7 @@ pub struct Hyperstructure {
     pub completed: bool,
     pub access: ConstructionAccess,
     pub randomness: felt252,
+    pub points_multiplier: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, Default)]

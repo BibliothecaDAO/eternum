@@ -604,7 +604,6 @@ export interface Config {
       registration_count_max: number;
       registration_delay_seconds: number;
       registration_period_seconds: number;
-      creation_period_seconds: number;
     };
   };
 
