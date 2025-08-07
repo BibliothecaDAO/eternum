@@ -87,6 +87,11 @@ interface UIStore {
   // shortcut navigation
   selectableArmies: SelectableArmy[];
   setSelectableArmies: (armies: SelectableArmy[]) => void;
+  // cycle timing for storm effects
+  cycleProgress: number;
+  setCycleProgress: (progress: number) => void;
+  cycleTime: number;
+  setCycleTime: (time: number) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -190,5 +195,10 @@ export const useUIStore = create(
     // shortcut navigation - dummy data for now
     selectableArmies: [],
     setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
+    // cycle timing for storm effects
+    cycleProgress: 0,
+    setCycleProgress: (progress: number) => set({ cycleProgress: progress }),
+    cycleTime: 0,
+    setCycleTime: (time: number) => set({ cycleTime: time }),
   })),
 );

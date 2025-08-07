@@ -375,6 +375,16 @@ export default class HexceptionScene extends HexagonScene {
 
     this.moveCameraToURLLocation();
     this.changeCameraView(2);
+
+    // Configure thunder bolts for hexception - focused storm effect
+    this.getThunderBoltManager().setConfig({
+      radius: 6, // Medium spread around the hex settlement
+      count: 7, // Moderate number of bolts for hex view
+      duration: 400, // Longer duration for better visibility in close view
+      persistent: false, // Auto-fade for production use
+      debug: false, // Disable logging for performance
+    });
+
     // select center hex
     this.state.setSelectedBuildingHex({
       outerCol: col,

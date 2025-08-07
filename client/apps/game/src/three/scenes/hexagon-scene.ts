@@ -4,6 +4,7 @@ import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
+import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { SystemManager } from "@/three/systems/system-manager";
 import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
@@ -36,6 +37,7 @@ export abstract class HexagonScene {
   protected systemManager!: SystemManager;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
+  protected thunderBoltManager!: ThunderBoltManager;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
   protected modelLoadPromises: Array<Promise<void>> = [];
@@ -54,6 +56,18 @@ export abstract class HexagonScene {
   private originalLightningColor: number = 0;
   private originalStormLightningIntensity: number = 0;
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
+  private lastLightningTriggerProgress: number = -1;
+  private lightningSequenceTimeout: NodeJS.Timeout | null = null;
+  private currentStrikeIndex: number = 0;
+  private lightningStrikes: Array<{ delay: number; duration: number }> = [
+    { delay: 0, duration: 80 },
+    { delay: 200, duration: 60 },
+    { delay: 450, duration: 100 },
+    { delay: 700, duration: 40 },
+  ];
+
+  private reusableVector3 = new THREE.Vector3();
+  private reusableMatrix4 = new THREE.Matrix4();
 
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
@@ -82,6 +96,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
+    this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new THREE.Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0x2d1b4e, 15, 35);
@@ -95,11 +110,15 @@ export abstract class HexagonScene {
         leftNavigationView: state.leftNavigationView,
         rightNavigationView: state.rightNavigationView,
         structureEntityId: state.structureEntityId,
+        cycleProgress: state.cycleProgress,
+        cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, rightNavigationView, structureEntityId }) => {
+      ({ leftNavigationView, rightNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.rightNavigationView = rightNavigationView;
         this.state.structureEntityId = structureEntityId;
+        this.state.cycleProgress = cycleProgress;
+        this.state.cycleTime = cycleTime;
       },
     );
   }
@@ -112,7 +131,7 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0x2a1a3a, 0.25);
+    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
     this.scene.add(this.hemisphereLight);
   }
 
@@ -188,6 +207,7 @@ export abstract class HexagonScene {
     this.setupStormLightGUI();
     this.setupShadowGUI();
     this.setupFogGUI();
+    this.thunderBoltManager.setupGUI(this.GUIFolder);
   }
 
   private setupSceneGUI(): void {
@@ -278,6 +298,10 @@ export abstract class HexagonScene {
 
   public getCamera() {
     return this.camera;
+  }
+
+  public getThunderBoltManager(): ThunderBoltManager {
+    return this.thunderBoltManager;
   }
 
   public setEnvironment(texture: THREE.Texture, intensity: number = 1) {
@@ -493,6 +517,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager.update();
     this.updateLights();
     this.updateHighlightPulse();
+    this.thunderBoltManager.update();
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
@@ -530,10 +555,9 @@ export abstract class HexagonScene {
       this.endLightning();
     }
 
-    // Trigger new lightning if not currently active
-    if (this.lightningEndTime === 0 && Math.random() < 0.002) {
-      this.triggerLightning();
-    }
+    // Check for lightning trigger based on cycle timing instead of random
+    const cycleProgress = this.state.cycleProgress || 0;
+    this.shouldTriggerLightningAtCycleProgress(cycleProgress);
 
     // Only update normal storm effects if lightning is not active
     if (this.lightningEndTime === 0) {
@@ -544,23 +568,55 @@ export abstract class HexagonScene {
     const purpleFlicker = 0.08 + Math.sin(elapsedTime * 2) * 0.03;
     this.ambientPurpleLight.intensity = purpleFlicker;
 
-    const hemisphereFlicker = 0.22 + Math.sin(elapsedTime * 1.5) * 0.05;
+    const hemisphereFlicker = 1.2 + Math.sin(elapsedTime * 1.5) * 0.05;
     this.hemisphereLight.intensity = hemisphereFlicker;
   }
 
-  private triggerLightning(): void {
-    // Store original values
-    this.originalLightningIntensity = this.mainDirectionalLight.intensity;
-    this.originalLightningColor = this.mainDirectionalLight.color.getHex();
-    this.originalStormLightningIntensity = this.stormLight.intensity;
+  private startLightningSequence(): void {
+    // Clear any existing sequence
+    if (this.lightningSequenceTimeout) {
+      clearTimeout(this.lightningSequenceTimeout);
+    }
+
+    this.currentStrikeIndex = 0;
+    this.executeNextStrike();
+  }
+
+  private executeNextStrike(): void {
+    if (this.currentStrikeIndex >= this.lightningStrikes.length) {
+      // Sequence complete
+      this.currentStrikeIndex = 0;
+      return;
+    }
+
+    const strike = this.lightningStrikes[this.currentStrikeIndex];
+
+    // Schedule this strike
+    this.lightningSequenceTimeout = setTimeout(() => {
+      this.triggerSingleLightningStrike(strike.duration);
+      this.currentStrikeIndex++;
+      this.executeNextStrike(); // Schedule next strike
+    }, strike.delay);
+  }
+
+  private triggerSingleLightningStrike(duration: number): void {
+    // Store original values only once
+    if (this.lightningEndTime === 0) {
+      this.originalLightningIntensity = this.mainDirectionalLight.intensity;
+      this.originalLightningColor = this.mainDirectionalLight.color.getHex();
+      this.originalStormLightningIntensity = this.stormLight.intensity;
+    }
 
     // Apply lightning effect
     this.mainDirectionalLight.intensity = 3.5;
     this.mainDirectionalLight.color.setHex(0xe6ccff);
     this.stormLight.intensity = 4;
 
-    // Set end time for lightning effect
-    this.lightningEndTime = performance.now() + (80 + Math.random() * 40);
+    // Spawn thunder bolts around center
+    this.thunderBoltManager.spawnThunderBolts();
+
+    // Set end time for this strike
+    this.lightningEndTime = performance.now() + duration;
   }
 
   private endLightning(): void {
@@ -573,9 +629,45 @@ export abstract class HexagonScene {
     this.lightningEndTime = 0;
   }
 
+  private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
+    // Trigger lightning only at the start of each cycle (when progress is near 0)
+    const tolerance = 20; // 15% tolerance around cycle start to catch larger tick jumps
+
+    // Check if we're at the start of a cycle and haven't already triggered for this cycle
+    if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
+      this.lastLightningTriggerProgress = 0;
+      // Add 0.5 second delay before starting lightning sequence
+      setTimeout(() => {
+        this.startLightningSequence();
+      }, 2000);
+      return false; // Don't trigger immediately
+    }
+
+    // Reset the trigger flag when we're well into the cycle
+    if (cycleProgress > tolerance * 2) {
+      this.lastLightningTriggerProgress = -1;
+    }
+
+    return false;
+  }
+
   protected shouldEnableStormEffects(): boolean {
     // Override this method in child classes to control storm effects
     return true;
+  }
+
+  // Cleanup method for lightning sequence
+  protected cleanupLightning(): void {
+    if (this.lightningSequenceTimeout) {
+      clearTimeout(this.lightningSequenceTimeout);
+      this.lightningSequenceTimeout = null;
+    }
+    // Reset lightning state
+    if (this.lightningEndTime > 0) {
+      this.endLightning();
+    }
+    // Cleanup thunder bolts
+    this.thunderBoltManager.cleanup();
   }
 
   // Abstract methods
