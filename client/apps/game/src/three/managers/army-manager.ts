@@ -30,8 +30,7 @@ import { MapDataStore } from "./map-data-store";
 
 interface PendingLabelUpdate {
   troopCount: number;
-  stamina: number;
-  updatedTick: number;
+  onChainStamina: { amount: bigint; updatedTick: number };
   owner: { address: bigint; ownerName: string; guildName: string };
 }
 
@@ -58,6 +57,8 @@ export class ArmyManager {
   private mapDataStore: MapDataStore;
   private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
+  private lastKnownArmiesTick: number = 0;
+  private tickCheckTimeout: NodeJS.Timeout | null = null;
 
   constructor(
     scene: THREE.Scene,
@@ -114,6 +115,10 @@ export class ArmyManager {
               false,
               10,
               10,
+              {
+                amount: 100n,
+                updatedTick: getBlockTimestamp().currentArmiesTick,
+              },
               100,
             );
           },
@@ -146,6 +151,24 @@ export class ArmyManager {
     useAccountStore.subscribe(() => {
       this.recheckOwnership();
     });
+
+    // Initialize the last known armies tick to current tick
+    this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
+
+    // Start checking for tick changes every second
+    this.scheduleTickCheck();
+  }
+
+  private scheduleTickCheck() {
+    this.tickCheckTimeout = setTimeout(() => {
+      const { currentArmiesTick } = getBlockTimestamp();
+      if (currentArmiesTick > this.lastKnownArmiesTick) {
+        this.lastKnownArmiesTick = currentArmiesTick;
+        this.recomputeStaminaForAllArmies();
+      }
+      // Schedule the next check
+      this.scheduleTickCheck();
+    }, 1000);
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -182,7 +205,6 @@ export class ArmyManager {
     const { entityId, hexCoords, owner, troopType, troopTier, order } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
 
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
@@ -197,7 +219,8 @@ export class ArmyManager {
         update.isDaydreamsAgent,
         update.isAlly,
         update.troopCount,
-        update.currentStamina(currentArmiesTick),
+        update.currentStamina,
+        update.onChainStamina,
         update.maxStamina,
       );
     }
@@ -309,6 +332,7 @@ export class ArmyManager {
         troopCount: army.troopCount,
         currentStamina: army.currentStamina,
         maxStamina: army.maxStamina,
+        onChainStamina: army.onChainStamina,
       }));
 
     return visibleArmies;
@@ -325,6 +349,7 @@ export class ArmyManager {
     isAlly: boolean,
     troopCount: number,
     currentStamina: number,
+    onChainStamina: { amount: bigint; updatedTick: number } | undefined,
     maxStamina: number,
   ) {
     if (this.armies.has(entityId)) return;
@@ -353,6 +378,7 @@ export class ArmyManager {
     const pendingUpdate = this.pendingLabelUpdates.get(entityId);
     if (pendingUpdate) {
       console.log(`[PENDING LABEL UPDATE] Applying pending update for army ${entityId}`);
+      onChainStamina = pendingUpdate.onChainStamina;
 
       isMine = isAddressEqualToAccount(pendingUpdate.owner.address);
       color = isMine
@@ -369,8 +395,8 @@ export class ArmyManager {
             tier,
             count: BigInt(pendingUpdate.troopCount),
             stamina: {
-              amount: BigInt(pendingUpdate.stamina),
-              updated_tick: BigInt(pendingUpdate.updatedTick),
+              amount: BigInt(pendingUpdate.onChainStamina.amount),
+              updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
             },
             boosts: {
               incr_stamina_regen_percent_num: 0,
@@ -391,6 +417,7 @@ export class ArmyManager {
       troopCount = pendingUpdate.troopCount;
       currentStamina = updatedStamina;
       owner = pendingUpdate.owner;
+      onChainStamina = pendingUpdate.onChainStamina;
 
       // Clear the pending update
       this.pendingLabelUpdates.delete(entityId);
@@ -416,6 +443,8 @@ export class ArmyManager {
       troopCount,
       currentStamina,
       maxStamina,
+      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+      onChainStamina: onChainStamina || { amount: 0n, updatedTick: 0 },
     });
 
     // Apply any pending relic effects for this army
@@ -674,6 +703,51 @@ export class ArmyManager {
   }
 
   /**
+   * Recompute stamina for all armies and update visible labels when armies tick changes
+   */
+  private recomputeStaminaForAllArmies(): void {
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    // Update all army data in cache
+    this.armies.forEach((army, entityId) => {
+      // Calculate current stamina using StaminaManager with the last known stamina values
+      const updatedStamina = Number(
+        StaminaManager.getStamina(
+          {
+            category: army.category,
+            tier: army.tier,
+            count: BigInt(army.troopCount),
+            stamina: {
+              amount: BigInt(army.onChainStamina.amount),
+              updated_tick: BigInt(army.onChainStamina.updatedTick),
+            },
+            boosts: {
+              incr_stamina_regen_percent_num: 0,
+              incr_stamina_regen_tick_count: 0,
+              incr_explore_reward_percent_num: 0,
+              incr_explore_reward_end_tick: 0,
+              incr_damage_dealt_percent_num: 0,
+              incr_damage_dealt_end_tick: 0,
+              decr_damage_gotten_percent_num: 0,
+              decr_damage_gotten_end_tick: 0,
+            },
+          },
+          currentArmiesTick,
+        ).amount,
+      );
+
+      // Update cached army data with new stamina
+      army.currentStamina = updatedStamina;
+
+      // Update visible label if it exists
+      const label = this.entityIdLabels.get(entityId);
+      if (label) {
+        this.updateArmyLabelData(entityId, army, label);
+      }
+    });
+  }
+
+  /**
    * Update an army label with fresh data from MapDataStore
    */
   private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
@@ -682,13 +756,21 @@ export class ArmyManager {
   }
 
   /**
+   * Handle MapDataStore refresh by updating all army data and visible labels
+   */
+  private handleMapDataRefresh(): void {
+    // This method can be extended in the future to handle map data refresh events
+    // For now, the stamina updates are handled by the periodic timer
+    console.log("ArmyManager: Handling map data refresh");
+  }
+
+  /**
    * Update army label from system update (troop count/stamina changes)
    */
   public updateArmyLabelFromSystemUpdate(update: {
     entityId: ID;
     troopCount: number;
-    stamina: number;
-    updatedTick: number;
+    onChainStamina: { amount: bigint; updatedTick: number };
     owner: { address: bigint; ownerName: string; guildName: string };
   }): void {
     const army = this.armies.get(update.entityId);
@@ -699,8 +781,7 @@ export class ArmyManager {
       console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId}`);
       this.pendingLabelUpdates.set(update.entityId, {
         troopCount: update.troopCount,
-        stamina: update.stamina,
-        updatedTick: update.updatedTick,
+        onChainStamina: update.onChainStamina,
         owner: update.owner,
       });
       return;
@@ -718,8 +799,8 @@ export class ArmyManager {
           tier: army.tier,
           count: BigInt(update.troopCount),
           stamina: {
-            amount: BigInt(update.stamina),
-            updated_tick: BigInt(update.updatedTick),
+            amount: BigInt(update.onChainStamina.amount),
+            updated_tick: BigInt(update.onChainStamina.updatedTick),
           },
           boosts: {
             incr_stamina_regen_percent_num: 0,
@@ -739,6 +820,7 @@ export class ArmyManager {
     army.troopCount = update.troopCount;
     army.owner = update.owner;
     army.isMine = isAddressEqualToAccount(update.owner.address);
+    army.onChainStamina = update.onChainStamina;
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
@@ -755,6 +837,12 @@ export class ArmyManager {
 
     // Clean up MapDataStore refresh callback
     this.mapDataStore.offRefresh(this.onMapDataRefresh);
+
+    // Clean up tick check timeout
+    if (this.tickCheckTimeout) {
+      clearTimeout(this.tickCheckTimeout);
+      this.tickCheckTimeout = null;
+    }
 
     // Clean up relic effects
     for (const [entityId] of this.armyRelicEffects) {

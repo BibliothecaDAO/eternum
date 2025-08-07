@@ -9,14 +9,13 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
-import { GuardArmy, MapDataStore } from "./map-data-store";
+import { GuardArmy } from "./map-data-store";
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
@@ -53,10 +52,8 @@ export class StructureManager {
     ID,
     Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
   > = new Map();
-  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
-  private mapDataStore: MapDataStore;
   private isBlitz: boolean;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
 
@@ -84,10 +81,6 @@ export class StructureManager {
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
-
-    // Initialize MapDataStore as instance property
-    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
-    this.mapDataStore.onRefresh(this.onMapDataRefresh);
 
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
@@ -121,9 +114,6 @@ export class StructureManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
-
-    // Clean up MapDataStore refresh callback
-    this.mapDataStore.offRefresh(this.onMapDataRefresh);
 
     // Clean up all pending label updates
     if (this.pendingLabelUpdates.size > 0) {

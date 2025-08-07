@@ -277,6 +277,8 @@ export class SystemManager {
               // Get enhanced army data from MapDataStore
               const armyMapData = await this.mapDataStore.getArmyByIdAsync(currentState.occupier_id);
 
+              const { currentArmiesTick } = getBlockTimestamp();
+
               const getCurrentStamina = (currentArmiesTick: number) => {
                 if (armyMapData) {
                   return Number(
@@ -324,7 +326,15 @@ export class SystemManager {
                 isAlly: false,
                 // Enhanced data from MapDataStore
                 troopCount: armyMapData?.count || 0,
-                currentStamina: (currentArmiesTick: number) => getCurrentStamina(currentArmiesTick),
+                currentStamina: getCurrentStamina(currentArmiesTick),
+                // need to be very careful here, if we set values to 0 when missing data, these will be taken by the army manager as the onchain stamina and will be wrong
+                // check addArmy army function on how the missing data is handled from the pending labels updates
+                onChainStamina: armyMapData
+                  ? {
+                      amount: BigInt(armyMapData?.stamina.amount),
+                      updatedTick: Number(armyMapData?.stamina.updated_tick) || 0,
+                    }
+                  : undefined,
                 maxStamina,
               };
             }
@@ -619,8 +629,7 @@ export class SystemManager {
         callback: (value: {
           entityId: ID;
           troopCount: number;
-          stamina: number;
-          updatedTick: number;
+          onChainStamina: { amount: bigint; updatedTick: number };
           hexCoords: HexPosition;
           owner: { address: bigint; ownerName: string; guildName: string };
         }) => void,
@@ -634,8 +643,7 @@ export class SystemManager {
             | {
                 entityId: ID;
                 troopCount: number;
-                stamina: number;
-                updatedTick: number;
+                onChainStamina: { amount: bigint; updatedTick: number };
                 hexCoords: HexPosition;
                 owner: { address: bigint; ownerName: string; guildName: string };
               }
@@ -655,8 +663,10 @@ export class SystemManager {
               return {
                 entityId: currentState.explorer_id,
                 troopCount: divideByPrecision(Number(currentState.troops.count)),
-                stamina: Number(currentState.troops.stamina.amount),
-                updatedTick: Number(currentState.troops.stamina.updated_tick),
+                onChainStamina: {
+                  amount: BigInt(currentState.troops.stamina.amount),
+                  updatedTick: Number(currentState.troops.stamina.updated_tick),
+                },
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
                 owner: {
                   address: BigInt(address),
