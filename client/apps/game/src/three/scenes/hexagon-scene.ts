@@ -4,6 +4,7 @@ import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
+import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { SystemManager } from "@/three/systems/system-manager";
 import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
@@ -36,6 +37,7 @@ export abstract class HexagonScene {
   protected systemManager!: SystemManager;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
+  protected thunderBoltManager!: ThunderBoltManager;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
   protected modelLoadPromises: Array<Promise<void>> = [];
@@ -64,6 +66,9 @@ export abstract class HexagonScene {
     { delay: 700, duration: 40 },
   ];
 
+  private reusableVector3 = new THREE.Vector3();
+  private reusableMatrix4 = new THREE.Matrix4();
+
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
@@ -91,6 +96,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.systemManager = new SystemManager(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
+    this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new THREE.Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0x2d1b4e, 15, 35);
@@ -201,6 +207,7 @@ export abstract class HexagonScene {
     this.setupStormLightGUI();
     this.setupShadowGUI();
     this.setupFogGUI();
+    this.thunderBoltManager.setupGUI(this.GUIFolder);
   }
 
   private setupSceneGUI(): void {
@@ -291,6 +298,10 @@ export abstract class HexagonScene {
 
   public getCamera() {
     return this.camera;
+  }
+
+  public getThunderBoltManager(): ThunderBoltManager {
+    return this.thunderBoltManager;
   }
 
   public setEnvironment(texture: THREE.Texture, intensity: number = 1) {
@@ -506,6 +517,7 @@ export abstract class HexagonScene {
     this.interactiveHexManager.update();
     this.updateLights();
     this.updateHighlightPulse();
+    this.thunderBoltManager.update();
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
@@ -600,6 +612,9 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.color.setHex(0xe6ccff);
     this.stormLight.intensity = 4;
 
+    // Spawn thunder bolts around center
+    this.thunderBoltManager.spawnThunderBolts();
+
     // Set end time for this strike
     this.lightningEndTime = performance.now() + duration;
   }
@@ -651,6 +666,8 @@ export abstract class HexagonScene {
     if (this.lightningEndTime > 0) {
       this.endLightning();
     }
+    // Cleanup thunder bolts
+    this.thunderBoltManager.cleanup();
   }
 
   // Abstract methods
