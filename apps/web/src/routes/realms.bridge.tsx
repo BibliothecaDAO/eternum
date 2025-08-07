@@ -8,8 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
+import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
-
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -21,9 +22,7 @@ import {
 import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
-import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { CollectionAddresses } from "@realms-world/constants";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -55,9 +54,7 @@ function RouteComponent() {
     if (selectedAsset === "Ethereum") {
       return (
         l1Realms?.tokens?.map((realm: any) => ({
-          token_id: realm.token?.tokenId && typeof realm.token.tokenId === 'string'
-            ? parseInt(realm.token.tokenId.split(":")[1], 16)
-            : undefined,
+          token_id: parseInt(realm.token?.tokenId),
           name: realm.token?.name,
           attributes:
             realm.token?.attributes?.map((attribute: any) => ({
@@ -81,9 +78,9 @@ function RouteComponent() {
           attributes: attributes,
         };
       });
-    } 
+    }
   }, [selectedAsset, l2Realms, l1Realms]);
-  
+
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
@@ -166,7 +163,7 @@ function RouteComponent() {
               <Button
                 className="pl-0 pr-2"
                 variant={"link"}
-               // onClick={openConnectModal}
+                // onClick={openConnectModal}
               >
                 Connect
               </Button>
