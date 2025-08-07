@@ -441,12 +441,12 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest),
-            (Direction::SouthEast, Direction::NorthEast),
-            (Direction::SouthWest, Direction::East),
-            (Direction::West, Direction::SouthEast),
-            (Direction::NorthWest, Direction::SouthWest),
             (Direction::NorthEast, Direction::West),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::NorthEast),
+            (Direction::NorthWest, Direction::SouthWest),
+            (Direction::SouthWest, Direction::East),
+            (Direction::East, Direction::NorthWest),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");

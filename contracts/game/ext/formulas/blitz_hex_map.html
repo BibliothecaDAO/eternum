@@ -350,12 +350,12 @@
 
         // Start directions for each side (matching Cairo array)
         const START_DIRECTIONS = [
-            [Direction.East, Direction.NorthWest],
-            [Direction.SouthEast, Direction.NorthEast],
-            [Direction.SouthWest, Direction.East],
+            [Direction.NorthEast, Direction.West],
             [Direction.West, Direction.SouthEast],
+            [Direction.SouthEast, Direction.NorthEast],
             [Direction.NorthWest, Direction.SouthWest],
-            [Direction.NorthEast, Direction.West]
+            [Direction.SouthWest, Direction.East],
+            [Direction.East, Direction.NorthWest]
         ];
 
         class Coord {
