@@ -1,5 +1,7 @@
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
+import { MapDataStore } from "@/three/managers/map-data-store";
 import { Position } from "@/types/position";
 import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
@@ -17,6 +19,7 @@ import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
 import { Loader, MapPin, MessageCircle, Shield } from "lucide-react";
 import { useMemo, useState } from "react";
+import { HyperstructureVPDisplay } from "./hyperstructure-vp-display";
 
 export const BlitzHyperstructuresMenu = () => {
   const {
@@ -68,6 +71,11 @@ export const BlitzHyperstructuresMenu = () => {
 
       const structureName = getStructureName(structure, false).name;
 
+      // Get hyperstructure realm count
+      const hyperstructureRealmCount = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).getHyperstructureRealmCount(
+        structure.entity_id,
+      );
+
       return {
         ...hyperstructure,
         addressName,
@@ -79,6 +87,7 @@ export const BlitzHyperstructuresMenu = () => {
         structureName,
         playerGuild: guild,
         hyperstructurePosition,
+        hyperstructureRealmCount,
       };
     });
   }, [hyperstructures, userAddress, userPosition, components]);
@@ -240,6 +249,7 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
     hyperstructurePosition,
     playerGuild,
     owner,
+    hyperstructureRealmCount,
   } = hyperstructure;
 
   const displayName = addressName || displayAddress("0x0" + owner.toString(16) || "0x0");
@@ -247,16 +257,16 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
   return (
     <div className="bg-gray-800/40 rounded-lg p-4 border border-gold/20 hover:border-gold/40 transition-colors">
       {/* Header */}
-      <div className="flex items-start justify-between mb-3 gap-2">
+      <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <h4 className="text-lg font-semibold text-gold truncate" title={structureName}>
               {structureName}
             </h4>
             <div
               className={`px-2 py-1 rounded text-xs whitespace-nowrap flex-shrink-0 ${
                 isBanditOwned
-                  ? "bg-red/30 border-red/50 border text-red-200"
+                  ? "bg-enemy border-enemy border text-gray-300"
                   : isAlly
                     ? "bg-green/30 border-green/50 border text-green-200"
                     : "bg-yellow/30 border-yellow/50 border text-yellow-200"
@@ -265,18 +275,24 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
               {isBanditOwned ? "Bandits" : isAlly ? "Ally" : "Enemy"}
             </div>
           </div>
-          <div className="text-sm text-gold/80 truncate" title={`Owner: ${displayName}`}>
-            Owner: {displayName}
-          </div>
-          {playerGuild && (
-            <div className="text-xs text-gold/60 truncate" title={`< ${playerGuild.name} >`}>
-              {"< "}
-              {playerGuild.name}
-              {" >"}
+
+          {/* Owner and Guild Info */}
+          <div className="space-y-1 mb-2">
+            <div className="text-sm text-gold/80 truncate" title={`Owner: ${displayName}`}>
+              Owner: {displayName}
             </div>
-          )}
+            {playerGuild && (
+              <div className="text-xs text-gold/60 truncate" title={`< ${playerGuild.name} >`}>
+                {"< "}
+                {playerGuild.name}
+                {" >"}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 flex-shrink-0">
           <NavigationButton
             size="sm"
             showText={true}
@@ -286,7 +302,7 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
           {!isBanditOwned && (
             <button
               onClick={() => onChat(hyperstructure)}
-              className="p-2 rounded bg-gold/20 hover:bg-gold/30 transition-colors"
+              className="p-2 rounded bg-gold/20 hover:bg-gold/30 transition-colors flex items-center justify-center"
               title="Chat with owner"
             >
               <MessageCircle className="w-4 h-4 text-gold" />
@@ -295,26 +311,37 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
         </div>
       </div>
 
-      {/* Details */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <div className="text-gold/70 mb-1">Position</div>
-          <div className="text-gold">
-            ({hyperstructurePosition.getNormalized().x}, {hyperstructurePosition.getNormalized().y})
+      {/* Hyperstructure VP/s display */}
+      {hyperstructureRealmCount !== undefined && (
+        <HyperstructureVPDisplay
+          realmCount={hyperstructureRealmCount}
+          isOwned={owner !== undefined && owner !== null && owner !== 0n}
+          className="mb-2"
+        />
+      )}
+
+      {/* Position and Distance */}
+      <div className="flex items-center justify-between mb-3 text-sm bg-brown/20 rounded p-2">
+        <div className="flex items-center gap-4">
+          <div>
+            <span className="text-gold/70">Position:</span>
+            <span className="text-gold ml-1">
+              ({hyperstructurePosition.getNormalized().x}, {hyperstructurePosition.getNormalized().y})
+            </span>
           </div>
-        </div>
-        <div>
-          <div className="text-gold/70 mb-1">Distance</div>
-          <div className="text-gold">{distance.toFixed(1)} tiles</div>
+          <div>
+            <span className="text-gold/70">Distance:</span>
+            <span className="text-gold ml-1">{distance.toFixed(1)} tiles</span>
+          </div>
         </div>
       </div>
 
       {/* Guards */}
       {guards.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gold/20">
+        <div className="border-t border-gold/20 pt-3">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-4 h-4 text-gold/70" />
-            <span className="text-sm text-gold/70">Defense ({guards.length} armies)</span>
+            <span className="text-sm text-gold/70 font-medium">Defense ({guards.length} armies)</span>
           </div>
           <CompactDefenseDisplay
             troops={guards.map((guard: any) => ({

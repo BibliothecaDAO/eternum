@@ -32,7 +32,7 @@ const STYLES = {
     "px-6 py-2 bg-gold from-yellow-600 to-yellow-700 font-semibold text-lg uppercase tracking-wider shadow-md focus:outline-none border-2 outline-gold !text-brown border-y border-gold",
   default: "bg-brown px-6 py-2 text-gold",
   enabledStyle: "bg-brown/10 hover:bg-brown/30 focus:outline-none",
-  disabledStyle: "!bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
+  disabledStyle: "cursor-not-allowed !border-gray-gold !text-gray-gold",
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
   red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
   outline: "border border-gold text-gold bg-transparent hover:bg-gold/10",

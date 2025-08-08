@@ -6,6 +6,7 @@ import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { RealmResourcesIO } from "@/ui/features/economy/resources";
 import { NavigateToPositionIcon } from "@/ui/features/military";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   configManager,
   getAddressName,
@@ -48,15 +49,15 @@ export const PlayerId = ({
 
   const hyperstructuresPointsGivenPerSecondMap = useMemo(() => {
     const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
-    const hyperstructureConfig = configManager.getHyperstructureConfig()
-    const hyps: Map<string, number> = new Map()
-    hyperstructureEntities.forEach(e => {
-      const hyp = getComponentValue(components.Hyperstructure, e)
+    const hyperstructureConfig = configManager.getHyperstructureConfig();
+    const hyps: Map<string, number> = new Map();
+    hyperstructureEntities.forEach((e) => {
+      const hyp = getComponentValue(components.Hyperstructure, e);
       if (hyp) {
-        hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier)
+        hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier);
       }
-    })
-    return hyps
+    });
+    return hyps;
   }, [selectedPlayer]);
 
   // Fetch player structures from API
@@ -109,7 +110,10 @@ export const PlayerId = ({
   // Get hyperstructure shareholder points breakdown
   const unregisteredShareholderPointsBreakdown = useMemo(() => {
     if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
+    return LeaderboardManager.instance(
+      components,
+      getRealmCountPerHyperstructure(),
+    ).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
   const isBlitz = getIsBlitz();
@@ -189,7 +193,8 @@ export const PlayerId = ({
             <h5 className="text-sm font-semibold text-gold mb-3 px-1">Hyperstructure Shareholdings</h5>
             <div className="space-y-2">
               {unregisteredShareholderPointsBreakdown.map((breakdown) => {
-                const hyperstructurePointsPerSecond = hyperstructuresPointsGivenPerSecondMap.get(breakdown.hyperstructureId.toString()) ?? 0
+                const hyperstructurePointsPerSecond =
+                  hyperstructuresPointsGivenPerSecondMap.get(breakdown.hyperstructureId.toString()) ?? 0;
                 const pointsPerSecond = (breakdown.shareholderPercentage * hyperstructurePointsPerSecond).toFixed(2);
                 return (
                   <div

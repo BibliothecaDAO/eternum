@@ -46,6 +46,7 @@ export type StructureSystemUpdate = {
   // Enhanced data from MapDataStore
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
+  hyperstructureRealmCount?: number;
 };
 
 export type TileSystemUpdate = {

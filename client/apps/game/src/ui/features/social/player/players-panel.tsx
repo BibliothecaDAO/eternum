@@ -160,15 +160,17 @@ export const PlayersPanel = ({
                   <span className="text-gold font-semibold">50 VP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim a World Structure from bandits</span>
+                  <span className="text-gold/50">Claim an Essence Rift or Camp from bandits</span>
                   <span className="text-gold font-semibold">500 VP</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
-                  <span className="text-gold font-semibold">2000 VP</span>
+                  <span className="text-gold font-semibold">3000 VP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Control a Hyperstructure</span>
+                  <span className="text-gold/50">
+                    Control a Hyperstructure (1 point per realm settled in 8 tile radius)
+                  </span>
                   <span className="text-gold font-semibold">0 - 6 VP/s</span>
                 </div>
               </div>

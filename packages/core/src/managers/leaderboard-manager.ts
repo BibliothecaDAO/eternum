@@ -35,19 +35,30 @@ export class LeaderboardManager {
   private unregisteredShareholderPointsCache: Map<ContractAddress, number> = new Map();
   private lastUnregisteredShareholderPointsUpdate: number = 0;
   private readonly unregisteredShareholderPointsUpdateInterval: number;
+  private readonly realmCountPerHyperstructures: Map<ID, number> = new Map();
 
   constructor(
     private readonly components: ClientComponents,
     unregisteredShareholderPointsUpdateInterval: number = 60000,
+    realmCountPerHyperstructures: Map<ID, number> = new Map(),
   ) {
     this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
+    this.realmCountPerHyperstructures = realmCountPerHyperstructures;
     // Start the periodic update for unregistered shareholder points
     this.startUnregisteredShareholderPointsUpdater();
   }
 
-  public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
+  public static instance(
+    components: ClientComponents,
+    realmCountPerHyperstructures: Map<ID, number>,
+    unregisteredShareholderPointsUpdateInterval?: number,
+  ) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
+      LeaderboardManager._instance = new LeaderboardManager(
+        components,
+        unregisteredShareholderPointsUpdateInterval,
+        realmCountPerHyperstructures,
+      );
     }
     return LeaderboardManager._instance;
   }
@@ -116,7 +127,9 @@ export class LeaderboardManager {
     // Use season end time if season has ended, otherwise use current time
     let now = Math.floor(Date.now() / 1000);
     const currentTimestamp =
-      seasonConfig.endAt && Number(seasonConfig.endAt) > 0  &&  now >= Number(seasonConfig.endAt) ? Number(seasonConfig.endAt) : now;
+      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 && now >= Number(seasonConfig.endAt)
+        ? Number(seasonConfig.endAt)
+        : now;
 
     // Clear previous cache
     this.unregisteredShareholderPointsCache.clear();
@@ -132,7 +145,12 @@ export class LeaderboardManager {
       if (!hyperstructureShareholders) continue;
 
       const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
-      const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
+
+      const pointsPerSecond = hyperstructure
+        ? pointsPerSecondWithoutMultiplier *
+          hyperstructure.points_multiplier *
+          (this.realmCountPerHyperstructures.get(hyperstructure.hyperstructure_id) || 0)
+        : 0;
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
       const startTimestamp = Number(hyperstructureShareholders.start_at);
       if (startTimestamp === 0) continue;
@@ -224,7 +242,7 @@ export class LeaderboardManager {
     totalPoints: number;
   }> {
     const configManager = ClientConfigManager.instance();
-    const pointsPerSecond = configManager.getHyperstructureConfig().pointsPerCycle;
+    const pointsPerSecondPerRealmCount = configManager.getHyperstructureConfig().pointsPerCycle;
     const seasonConfig = configManager.getSeasonConfig();
 
     // Use season end time if season has ended, otherwise use current time
@@ -265,7 +283,10 @@ export class LeaderboardManager {
       if (totalShareholderPercentage === 0) continue;
 
       const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
-      const playerPointsPerSecond = pointsPerSecond * totalShareholderPercentage;
+      const playerPointsPerSecond =
+        pointsPerSecondPerRealmCount *
+        (this.realmCountPerHyperstructures.get(hyperstructureShareholders.hyperstructure_id) || 0) *
+        totalShareholderPercentage;
       const totalPoints = Math.floor(playerPointsPerSecond * timeElapsed);
 
       breakdown.push({

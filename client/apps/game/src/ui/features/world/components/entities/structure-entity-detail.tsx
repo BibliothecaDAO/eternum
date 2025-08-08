@@ -6,16 +6,18 @@ import {
   getStructureArmyRelicEffects,
   getStructureName,
   getStructureRelicEffects,
-  unpackValue,
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
+import { MapDataStore } from "@/three/managers/map-data-store";
 import { Position } from "@/types/position";
 import { getIsBlitz } from "@/ui/constants";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
+import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { useDojo } from "@bibliothecadao/react";
@@ -91,6 +93,7 @@ export const StructureEntityDetail = memo(
             isAlly: false,
             addressName: MERCENARIES,
             isMine: false,
+            hyperstructureRealmCount: undefined,
           };
 
         const isMine = structure.owner === userAddress;
@@ -99,6 +102,12 @@ export const StructureEntityDetail = memo(
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
         const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
+
+        // Get hyperstructure realm count if this is a hyperstructure
+        const hyperstructureRealmCount =
+          structure.base.category === StructureType.Hyperstructure
+            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).getHyperstructureRealmCount(structure.entity_id)
+            : undefined;
 
         return {
           structure,
@@ -109,6 +118,7 @@ export const StructureEntityDetail = memo(
           addressName,
           isMine,
           relicEffects,
+          hyperstructureRealmCount,
         };
       },
       staleTime: 30000, // 30 seconds
@@ -138,6 +148,7 @@ export const StructureEntityDetail = memo(
     const isAlly = structureDetails?.isAlly || false;
     const addressName = structureDetails?.addressName;
     const isMine = structureDetails?.isMine || false;
+    const hyperstructureRealmCount = structureDetails?.hyperstructureRealmCount;
 
     const isRealmOrVillage =
       structure?.base.category === StructureType.Realm || structure?.base.category === StructureType.Village;
@@ -174,10 +185,6 @@ export const StructureEntityDetail = memo(
 
     const structureName = useMemo(() => {
       return structure ? getStructureName(structure, getIsBlitz()).name : undefined;
-    }, [structure]);
-
-    const resourcesProduced = useMemo(() => {
-      return unpackValue(structure?.resources_packed || 0n);
     }, [structure]);
 
     if (isLoadingStructure) {
@@ -251,6 +258,14 @@ export const StructureEntityDetail = memo(
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                 <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
               </div>
+
+              {/* Hyperstructure VP/s display */}
+              {isHyperstructure && hyperstructureRealmCount !== undefined && (
+                <HyperstructureVPDisplay
+                  realmCount={hyperstructureRealmCount}
+                  isOwned={structure?.owner !== undefined && structure?.owner !== null && structure?.owner !== 0n}
+                />
+              )}
             </div>
 
             {/* Progress bar for hyperstructures */}

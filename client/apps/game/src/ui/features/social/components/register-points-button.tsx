@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -26,7 +27,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
 
   const { registeredPoints, unregisteredShareholderPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components);
+    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
     return {
       registeredPoints: leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address)),
       unregisteredShareholderPoints: leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(

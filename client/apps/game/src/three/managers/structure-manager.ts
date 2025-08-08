@@ -5,7 +5,6 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz } from "@/ui/constants";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -240,6 +239,7 @@ export class StructureManager {
       update.isAlly,
       finalGuardArmies,
       finalActiveProductions,
+      update.hyperstructureRealmCount,
     );
 
     // Clear existing relic effects for this specific structure before re-rendering
@@ -616,7 +616,6 @@ export class StructureManager {
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
       console.log(`[PENDING LABEL UPDATE] Storing pending update for structure ${update.entityId}`);
-      const { currentArmiesTick } = getBlockTimestamp();
       this.pendingLabelUpdates.set(update.entityId, {
         guardArmies: update.guardArmies.map((guard) => ({
           slot: guard.slot,
@@ -704,6 +703,7 @@ class Structures {
     isAlly: boolean,
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
+    hyperstructureRealmCount?: number,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -722,6 +722,7 @@ class Structures {
       // Enhanced data
       guardArmies,
       activeProductions,
+      hyperstructureRealmCount,
     });
   }
 

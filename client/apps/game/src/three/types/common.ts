@@ -32,6 +32,7 @@ export interface StructureInfo {
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  hyperstructureRealmCount?: number;
 }
 
 export interface ArmyData {

@@ -1,7 +1,8 @@
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { Info, Shield, Sword, Target } from "lucide-react";
+import { Info } from "lucide-react";
 
 enum BiomeFilenames {
   Bare = "bare.png",
@@ -30,31 +31,31 @@ const getBiomeImage = (biome: BiomeType) => {
   return `/images/biomes/${BiomeFilenames[biomeKey]}`;
 };
 
-// Troop type configuration with icons and labels
+// Troop type configuration with resource names for ResourceIcon
 const troopConfig = {
   [TroopType.Knight]: {
-    icon: Sword,
+    resourceName: "Knight",
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    icon: Target,
+    resourceName: "Crossbowman",
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    icon: Shield,
+    resourceName: "Paladin",
     label: "Paladins",
   },
 };
 
 // Get bonus styling based on value
 const getBonusStyles = (bonus: number) => {
-  if (bonus > 0) {
+  if (bonus > 1) {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
       textClass: "text-green-300",
       iconClass: "text-green-400",
     };
-  } else if (bonus < 0) {
+  } else if (bonus < 1) {
     return {
       containerClass: "border-red-500/60 bg-red-900/30 shadow-red-500/20",
       textClass: "text-red-300",
@@ -104,37 +105,31 @@ export const BiomeInfoPanel = ({ biome }: { biome: BiomeType }) => {
         <div className="flex flex-row gap-2 flex-shrink-0">
           {troopTypes.map((troopType) => {
             const config = troopConfig[troopType];
-            const Icon = config.icon;
             const bonus = configManager.getBiomeCombatBonus(troopType, biome);
             const styles = getBonusStyles(bonus);
 
             return (
               <div
                 key={troopType}
-                className={`group relative px-2 py-1.5 min-w-[70px] rounded-lg border-2 shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105  ${
+                className={`group relative flex-1 px-2 py-2 rounded-lg border-2 shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105  ${
                   styles.containerClass
                 }`}
                 role="tooltip"
                 aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
               >
-                {/* Tooltip (removed description) */}
-
-                {/* Icon and Label */}
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Icon className={`w-3 h-3 ${styles.iconClass}`} />
-                  <div className={`text-xs uppercase tracking-wider font-semibold ${styles.textClass}`}>
-                    {config.label}
-                  </div>
+                {/* Icon */}
+                <div className="flex justify-center mb-1.5">
+                  <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
                 </div>
 
                 {/* Bonus Value */}
                 <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
 
                 {/* Subtle glow effect for active bonuses */}
-                {bonus !== 0 && (
+                {bonus !== 1 && (
                   <div
                     className={`absolute inset-0 rounded-lg opacity-20 ${
-                      bonus > 0 ? "bg-green-400" : "bg-red-400"
+                      bonus > 1 ? "bg-green-400/20" : "bg-red-400/20"
                     } animate-pulse pointer-events-none`}
                   />
                 )}

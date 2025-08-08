@@ -4,7 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HyperstructureDetails, HyperstructureResourceChip } from "@/ui/features/world";
-import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import {
+  currencyIntlFormat,
+  formatStringNumber,
+  getEntityIdFromKeys,
+  getRealmCountPerHyperstructure,
+} from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
@@ -245,7 +250,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   ]);
 
   const myShares = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
+    return LeaderboardManager.instance(dojo.setup.components, getRealmCountPerHyperstructure()).getPlayerShares(
       ContractAddress(account.address),
       entity.entity_id,
     );
@@ -442,7 +447,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
         <div className="flex justify-between px-3 items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-[10px]">Points/cycle</div>
           <div className="font-bold text-sm">
-            {currencyIntlFormat((myShares || 0) * configManager.getHyperstructureConfig().pointsPerCycle)}
+            {currencyIntlFormat(
+              (myShares || 0) *
+                configManager.getHyperstructureConfig().pointsPerCycle *
+                (hyperstructure?.points_multiplier || 1),
+            )}
           </div>
         </div>
       </div>

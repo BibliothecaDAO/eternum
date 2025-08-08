@@ -26,7 +26,7 @@ import { sqlApi } from "@/services/api";
 import { getIsBlitz } from "@/ui/constants";
 import { divideByPrecision, getStructureTypeName, unpackBuildingCounts } from "@bibliothecadao/eternum";
 import { StructureMapDataRaw } from "@bibliothecadao/torii";
-import { BuildingType, StructureType, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";
 
@@ -89,6 +89,7 @@ export class MapDataStore {
   private static instance: MapDataStore;
   private structuresMap: Map<number, StructureMapData> = new Map();
   private armiesMap: Map<number, ArmyMapData> = new Map();
+  private hyperstructureRealmCountMap: Map<ID, number> = new Map();
   private addressToNameMap: Map<string, string> = new Map();
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
@@ -304,9 +305,10 @@ export class MapDataStore {
     const realmsData = realms as Record<string, { name: string }>;
 
     // Fetch all structures and armies in parallel
-    const [structuresRaw, armiesRaw] = await Promise.all([
+    const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
       sqlApi.fetchAllStructuresMapData(),
       sqlApi.fetchAllArmiesMapData(),
+      sqlApi.fetchHyperstructuresWithRealmCount(8),
     ]);
 
     // Transform and store structures
@@ -375,7 +377,19 @@ export class MapDataStore {
       this.addressToNameMap.set(armyData.ownerAddress, ownerName);
     });
 
+    // Store hyperstructure realm counts
+    hyperstructuresWithRealmCount.forEach((hyperstructure) => {
+      this.hyperstructureRealmCountMap.set(
+        hyperstructure.hyperstructure_entity_id,
+        hyperstructure.realm_count_within_radius,
+      );
+    });
+
     this.lastFetchTime = Date.now();
+  }
+
+  public getRealmCountPerHyperstructure(): Map<ID, number> {
+    return this.hyperstructureRealmCountMap;
   }
 
   private _checkRefresh(): void {
@@ -481,6 +495,21 @@ export class MapDataStore {
 
   public getArmyCount(): number {
     return this.armiesMap.size;
+  }
+
+  public getHyperstructureRealmCount(hyperstructureEntityId: ID): number | undefined {
+    this._checkRefresh();
+    return this.hyperstructureRealmCountMap.get(hyperstructureEntityId);
+  }
+
+  public async getHyperstructureRealmCountAsync(hyperstructureEntityId: number): Promise<number | undefined> {
+    await this.waitForData();
+    return this.hyperstructureRealmCountMap.get(hyperstructureEntityId);
+  }
+
+  public getAllHyperstructureRealmCounts(): number[] {
+    this._checkRefresh();
+    return Array.from(this.hyperstructureRealmCountMap.values());
   }
 
   /**

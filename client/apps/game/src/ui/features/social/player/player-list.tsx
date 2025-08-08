@@ -2,7 +2,7 @@ import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
+import { currencyIntlFormat, getRealmCountPerHyperstructure, sortItems } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
@@ -37,7 +37,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 
   // Calculate real-time points for all players including unregistered shareholder points
   const playersWithRealTimePoints = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components);
+    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
 
     return players.map((player) => {
       // Get only registered points to avoid double-counting

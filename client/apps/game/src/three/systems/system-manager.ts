@@ -410,6 +410,12 @@ export class SystemManager {
 
               const initialized = hyperstructure?.initialized || false;
 
+              let hyperstructureRealmCount: number | undefined;
+
+              if (structureInfo.type === StructureType.Hyperstructure) {
+                hyperstructureRealmCount = this.mapDataStore.getHyperstructureRealmCount(currentState.occupier_id);
+              }
+
               // Get enhanced structure data from MapDataStore
               const structureMapData = await this.mapDataStore.getStructureByIdAsync(currentState.occupier_id);
 
@@ -425,6 +431,7 @@ export class SystemManager {
                 level: structureInfo.level,
                 owner: {
                   address: structureMapData ? BigInt(structureMapData.ownerAddress) : undefined,
+                  // todo: check if "" string is not gonna screw up the UI with the pending labels
                   ownerName: structureMapData?.ownerName || "",
                   guildName: "",
                 },
@@ -433,6 +440,7 @@ export class SystemManager {
                 // Enhanced data from MapDataStore
                 guardArmies: structureMapData?.guardArmies || [],
                 activeProductions: structureMapData?.activeProductions || [],
+                hyperstructureRealmCount,
               };
             }
           },

@@ -9,7 +9,7 @@ import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { NavigateToPositionIcon } from "@/ui/features/military";
 import { HintSection } from "@/ui/features/progression";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/features/world";
-import { currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyIntlFormat, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
@@ -49,9 +49,10 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
 
   // Get list of hyperstructures with player contributions
   const myHyperstructureIds = useMemo(() => {
-    const myStructures = LeaderboardManager.instance(components).getHyperstructuresWithSharesFromPlayer(
-      ContractAddress(account.address),
-    );
+    const myStructures = LeaderboardManager.instance(
+      components,
+      getRealmCountPerHyperstructure(),
+    ).getHyperstructuresWithSharesFromPlayer(ContractAddress(account.address));
     return Array.isArray(myStructures) ? myStructures.map((h) => Number(h.entity_id)) : [];
   }, [components, account.address]);
 
@@ -335,13 +336,19 @@ const HyperstructureContentRow = ({
   const entityId = Number(hyperstructure.entity_id);
 
   // Get latest co-owner change event
-  const latestCoOwnerChange = LeaderboardManager.instance(components).getCurrentCoOwners(entityId);
+  const latestCoOwnerChange = LeaderboardManager.instance(
+    components,
+    getRealmCountPerHyperstructure(),
+  ).getCurrentCoOwners(entityId);
   // If no co-owner event and progress is 100%, co-owners need to be set
   const needsCoOwners = !latestCoOwnerChange && progress.percentage === 100;
 
   // Player's shares in this hyperstructure
   const playerShares =
-    LeaderboardManager.instance(components).getPlayerShares(ContractAddress(account.address), entityId) || 0;
+    LeaderboardManager.instance(components, getRealmCountPerHyperstructure()).getPlayerShares(
+      ContractAddress(account.address),
+      entityId,
+    ) || 0;
 
   // Owner and guild info
   const ownerName = hyperstructure.ownerName;

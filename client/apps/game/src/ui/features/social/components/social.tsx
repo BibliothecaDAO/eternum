@@ -8,6 +8,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { HintSection } from "@/ui/features/progression";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
+import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -44,7 +45,11 @@ export const Social = () => {
 
   useEffect(() => {
     // update first time - initialize with interval on first call
-    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
+    const manager = LeaderboardManager.instance(
+      components,
+      getRealmCountPerHyperstructure(),
+      LEADERBOARD_UPDATE_INTERVAL,
+    );
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
   }, [components, setPlayersByRank]);
@@ -52,7 +57,7 @@ export const Social = () => {
   // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
     const interval = setInterval(() => {
-      const manager = LeaderboardManager.instance(components);
+      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
       manager.updatePoints();
       setPlayersByRank(manager.playersByRank);
     }, LEADERBOARD_UPDATE_INTERVAL);

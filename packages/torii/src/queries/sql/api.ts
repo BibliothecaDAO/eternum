@@ -35,6 +35,7 @@ import {
   hexToBigInt,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
+import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
@@ -512,5 +513,30 @@ export class SqlApi {
 
     const firstResult = extractFirstOrNull(results);
     return firstResult?.contract_address ?? null;
+  }
+
+  /**
+   * Fetch hyperstructures with count of realms within a given radius.
+   * SQL queries always return arrays.
+   */
+  async fetchHyperstructuresWithRealmCount(radius: number): Promise<
+    Array<{
+      hyperstructure_entity_id: ID;
+      hyperstructure_coord_x: number;
+      hyperstructure_coord_y: number;
+      realm_count_within_radius: number;
+    }>
+  > {
+    const query = HYPERSTRUCTURE_QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replace(
+      "{radius}",
+      (radius * radius).toString(),
+    );
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<{
+      hyperstructure_entity_id: ID;
+      hyperstructure_coord_x: number;
+      hyperstructure_coord_y: number;
+      realm_count_within_radius: number;
+    }>(url, "Failed to fetch hyperstructures with realm count");
   }
 }

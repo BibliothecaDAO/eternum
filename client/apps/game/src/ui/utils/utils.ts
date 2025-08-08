@@ -1,3 +1,5 @@
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
+import { MapDataStore } from "@/three/managers/map-data-store";
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, toHexString } from "@bibliothecadao/eternum";
@@ -220,4 +222,9 @@ export const formatArrivalTime = (date: Date | null) => {
   const minutes = date.getMinutes();
 
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
+};
+
+export const getRealmCountPerHyperstructure = () => {
+  const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
+  return mapDataStore.getRealmCountPerHyperstructure();
 };
