@@ -105,6 +105,34 @@ export const UnifiedArmyCreationModal = ({
     return new ArmyManager(dojo.setup.systemCalls, components, structureId);
   }, [structureId, components, dojo.setup.systemCalls]);
 
+  // Auto-select the first troop with balance or fallback to first
+  useEffect(() => {
+    const troopTypes = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
+    const troopTiers = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+
+    // Check all combinations and find first one with balance
+    let firstTroopWithBalance: { type: TroopType; tier: TroopTier } | null = null;
+
+    for (const type of troopTypes) {
+      for (const tier of troopTiers) {
+        const balance = getBalance(structureId, getTroopResourceId(type, tier), currentDefaultTick, components).balance;
+
+        const available = Number(divideByPrecision(balance) || 0);
+
+        if (available > 0 && !firstTroopWithBalance) {
+          firstTroopWithBalance = { type, tier };
+          break;
+        }
+      }
+      if (firstTroopWithBalance) break;
+    }
+
+    // If we found a troop with balance, use it; otherwise keep the default
+    if (firstTroopWithBalance) {
+      setSelectedTroopCombo(firstTroopWithBalance);
+    }
+  }, [structureId, currentDefaultTick, components]);
+
   // Load available directions for explorer armies
   useEffect(() => {
     const fetchDirections = async () => {
