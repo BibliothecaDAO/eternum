@@ -497,4 +497,20 @@ export class SqlApi {
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA);
     return await fetchWithErrorHandling<ArmyMapDataRaw>(url, "Failed to fetch all armies map data");
   }
+
+  /**
+   * Fetch the world contract address from the SQL database.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchWorldAddress(): Promise<ContractAddress | null> {
+    const query = `SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'`;
+    const url = buildApiUrl(this.baseUrl, query);
+    const results = await fetchWithErrorHandling<{ contract_address: ContractAddress }>(
+      url,
+      "Failed to fetch world address",
+    );
+
+    const firstResult = extractFirstOrNull(results);
+    return firstResult?.contract_address ?? null;
+  }
 }
