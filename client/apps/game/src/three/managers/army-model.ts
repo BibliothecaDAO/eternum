@@ -670,6 +670,14 @@ export class ArmyModel {
     });
   }
 
+  public removeLabelsExcept(entityId?: number): void {
+    this.labels.forEach((labelData) => {
+      if (labelData.entityId !== entityId) {
+        this.labelsGroup.remove(labelData.label);
+      }
+    });
+  }
+
   public addLabelsToScene(): void {
     this.labels.forEach((labelData) => {
       if (!this.labelsGroup.children.includes(labelData.label)) {

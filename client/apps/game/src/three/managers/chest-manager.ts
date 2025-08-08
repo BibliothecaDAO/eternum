@@ -262,6 +262,14 @@ export class ChestManager {
     });
   }
 
+  public removeLabelsExcept(entityId?: ID): void {
+    this.entityIdLabels.forEach((labelData, labelEntityId) => {
+      if (labelEntityId !== entityId) {
+        this.labelsGroup.remove(labelData);
+      }
+    });
+  }
+
   public addLabelsToScene(): void {
     this.entityIdLabels.forEach((labelData) => {
       if (!this.labelsGroup.children.includes(labelData)) {

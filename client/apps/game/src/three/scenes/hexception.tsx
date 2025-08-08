@@ -55,7 +55,7 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { BuildingSystemUpdate, RealmSystemUpdate, SceneName, StructureProgress } from "../types";
+import { BuildingSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const loader = gltfLoader;
@@ -127,6 +127,7 @@ export default class HexceptionScene extends HexagonScene {
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
   private isBlitz: boolean;
+  private structureUpdateSubscription: any | null = null;
 
   constructor(
     controls: MapControls,
@@ -237,6 +238,32 @@ export default class HexceptionScene extends HexagonScene {
         this.state.useSimpleCost = useSimpleCost;
       },
     );
+
+    // Subscribe to structureEntityId changes
+    useUIStore.subscribe(
+      (state) => state.structureEntityId,
+      (structureEntityId) => {
+        // Clean up previous subscription if it exists
+        if (this.structureUpdateSubscription) {
+          this.structureUpdateSubscription.unsubscribe();
+          this.structureUpdateSubscription = null;
+        }
+
+        // Only create a new subscription if we have a valid entity ID
+        if (structureEntityId && structureEntityId !== 0) {
+          console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+
+          this.structureUpdateSubscription = this.systemManager.StructureEntityListener.onLevelUpdate(
+            structureEntityId,
+            (update) => {
+              this.structureStage = update.level as RealmLevels;
+              this.removeCastleFromScene();
+              this.updateHexceptionGrid(this.hexceptionRadius);
+            },
+          );
+        }
+      },
+    );
   }
 
   private clearBuildingMode() {
@@ -331,13 +358,13 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
-    this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
-      if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
-        this.structureStage = update.level as RealmLevels;
-        this.removeCastleFromScene();
-        this.updateHexceptionGrid(this.hexceptionRadius);
-      }
-    });
+    // this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
+    //   if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
+    //     this.structureStage = update.level as RealmLevels;
+    //     this.removeCastleFromScene();
+    //     this.updateHexceptionGrid(this.hexceptionRadius);
+    //   }
+    // });
 
     this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
@@ -348,6 +375,16 @@ export default class HexceptionScene extends HexagonScene {
 
     this.moveCameraToURLLocation();
     this.changeCameraView(2);
+
+    // Configure thunder bolts for hexception - focused storm effect
+    this.getThunderBoltManager().setConfig({
+      radius: 6, // Medium spread around the hex settlement
+      count: 7, // Moderate number of bolts for hex view
+      duration: 400, // Longer duration for better visibility in close view
+      persistent: false, // Auto-fade for production use
+      debug: false, // Disable logging for performance
+    });
+
     // select center hex
     this.state.setSelectedBuildingHex({
       outerCol: col,
@@ -370,6 +407,12 @@ export default class HexceptionScene extends HexagonScene {
     // Clean up shortcuts when scene is actually destroyed
     if (this.shortcutManager instanceof SceneShortcutManager) {
       this.shortcutManager.cleanup();
+    }
+
+    // Clean up structure update subscription
+    if (this.structureUpdateSubscription) {
+      this.structureUpdateSubscription.unsubscribe();
+      this.structureUpdateSubscription = null;
     }
   }
 

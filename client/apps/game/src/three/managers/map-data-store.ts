@@ -97,6 +97,7 @@ export class MapDataStore {
   private retryCount: number = 0;
   private refreshTimer: NodeJS.Timeout | null = null;
   private refreshCallbacks: Array<() => void> = [];
+  private loadingPromise: Promise<void> | null = null;
 
   private hexToBigInt(hex: string | null): bigint {
     if (!hex || hex === "0x0") return 0n;
@@ -269,11 +270,18 @@ export class MapDataStore {
 
   public async refresh(): Promise<void> {
     console.log("Refreshing map data store");
-    if (this.isLoading) return;
+    if (this.isLoading) {
+      // If already loading, return the existing promise
+      if (this.loadingPromise) {
+        return this.loadingPromise;
+      }
+      return;
+    }
 
     try {
       this.isLoading = true;
-      await this.fetchAndStoreMapData();
+      this.loadingPromise = this.fetchAndStoreMapData();
+      await this.loadingPromise;
       console.log("Map data store refreshed at ", new Date().toISOString());
       this.retryCount = 0;
 
@@ -287,6 +295,7 @@ export class MapDataStore {
       }
     } finally {
       this.isLoading = false;
+      this.loadingPromise = null;
     }
   }
 
@@ -380,8 +389,18 @@ export class MapDataStore {
     return this.structuresMap.get(entityId);
   }
 
+  public async getStructureByIdAsync(entityId: number): Promise<StructureMapData | undefined> {
+    await this.waitForData();
+    return this.structuresMap.get(entityId);
+  }
+
   public getArmyById(entityId: number): ArmyMapData | undefined {
     this._checkRefresh();
+    return this.armiesMap.get(entityId);
+  }
+
+  public async getArmyByIdAsync(entityId: number): Promise<ArmyMapData | undefined> {
+    await this.waitForData();
     return this.armiesMap.get(entityId);
   }
 
@@ -443,6 +462,12 @@ export class MapDataStore {
     return this.addressToNameMap.get(normalizedAddress) || "";
   }
 
+  public async getPlayerNameAsync(ownerAddress: string): Promise<string> {
+    await this.waitForData();
+    const normalizedAddress = BigInt(ownerAddress).toString();
+    return this.addressToNameMap.get(normalizedAddress) || "";
+  }
+
   public clear(): void {
     this.structuresMap.clear();
     this.armiesMap.clear();
@@ -456,6 +481,28 @@ export class MapDataStore {
 
   public getArmyCount(): number {
     return this.armiesMap.size;
+  }
+
+  /**
+   * Wait for data to be loaded before proceeding
+   * Returns immediately if data is already available
+   */
+  public async waitForData(): Promise<void> {
+    // If data is already loaded and not currently loading, return immediately
+    if (!this.isLoading && this.lastFetchTime > 0) {
+      return;
+    }
+
+    // If currently loading, wait for the loading promise
+    if (this.isLoading && this.loadingPromise) {
+      await this.loadingPromise;
+      return;
+    }
+
+    // If no data and not loading, trigger a refresh
+    if (this.lastFetchTime === 0) {
+      await this.refresh();
+    }
   }
 
   /**

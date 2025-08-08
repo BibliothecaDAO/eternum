@@ -226,6 +226,28 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
   },
 
   updateElement: (element: HTMLElement, data: ArmyLabelData, cameraView: CameraView): void => {
+    // Update container colors based on ownership
+    const styles = getOwnershipStyle(data.isMine, data.isAlly, data.isDaydreamsAgent);
+    element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+    element.style.setProperty("color", styles.default.textColor!, "important");
+
+    element.onmouseenter = () => {
+      element.style.setProperty("background-color", styles.hover.backgroundColor!, "important");
+    };
+
+    element.onmouseleave = () => {
+      element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    };
+
+    // Update army icon based on ownership
+    const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
+    if (armyIcon) {
+      armyIcon.src = data.isDaydreamsAgent
+        ? "/images/logos/daydreams.png"
+        : `/images/labels/${data.isMine ? "army" : data.isAlly ? "allies_army" : "enemy_army"}.png`;
+    }
+
     // Update troop count if present
     const troopCountElement = element.querySelector('[data-component="troop-count"] [data-role="count"]');
     if (troopCountElement && data.troopCount !== undefined) {
@@ -285,20 +307,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       isAlly: data.isAlly,
       cameraView,
     });
-    contentContainer.appendChild(ownerText);
 
-    // Add structure type and level
-    // const typeText = document.createElement("strong");
-    // typeText.textContent = `${getStructureTypeName(data.structureType, isBlitz)} ${
-    //   data.structureType === StructureType.Realm ? `(${getLevelName(data.level)})` : ""
-    // } ${
-    //   data.structureType === StructureType.Hyperstructure
-    //     ? data.initialized
-    //       ? `(Stage ${data.stage + 1})`
-    //       : "Foundation"
-    //     : ""
-    // }`;
-    // contentContainer.appendChild(typeText);
+    contentContainer.appendChild(ownerText);
 
     // Add guard armies display
     if (data.guardArmies && data.guardArmies.length > 0) {
@@ -317,6 +327,37 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   },
 
   updateElement: (element: HTMLElement, data: StructureLabelData, cameraView: CameraView): void => {
+    const isBlitz = getIsBlitz();
+
+    // Update container colors based on ownership
+    const styles = getOwnershipStyle(data.isMine, data.isAlly);
+    element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+    element.style.setProperty("color", styles.default.textColor!, "important");
+
+    // Update hover effect
+    element.onmouseenter = () => {
+      element.style.setProperty("background-color", styles.hover.backgroundColor!, "important");
+    };
+
+    element.onmouseleave = () => {
+      element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
+    };
+
+    // Update structure icon based on ownership
+    const structureIcon = element.querySelector('[data-component="structure-icon"]') as HTMLImageElement;
+    if (structureIcon) {
+      let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+      if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+        iconPath = data.isMine
+          ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
+          : data.isAlly
+            ? STRUCTURE_ICONS(isBlitz).ALLY_STRUCTURES[data.structureType]
+            : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+      }
+      structureIcon.src = iconPath;
+    }
+
     // Update guard armies display
     const guardDisplay = element.querySelector('[data-component="guard-armies"]');
     if (guardDisplay && data.guardArmies) {
@@ -325,6 +366,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       while (newGuardDisplay.firstChild) {
         guardDisplay.appendChild(newGuardDisplay.firstChild);
       }
+    }
+
+    const ownerText = element.querySelector('[data-component="owner"]');
+    if (ownerText) {
+      ownerText.textContent = data.owner.ownerName;
     }
 
     // Update active productions display

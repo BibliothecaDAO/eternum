@@ -1,4 +1,3 @@
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
 import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "@/three/managers/map-data-store";
@@ -25,7 +24,14 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import {
+  type Component,
+  defineComponentSystem,
+  defineQuery,
+  getComponentValue,
+  HasValue,
+  isComponentUpdate,
+} from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   type ArmySystemUpdate,
@@ -36,7 +42,6 @@ import {
   type StructureSystemUpdate,
   type TileSystemUpdate,
 } from "../types";
-import { loggedInAccount } from "../utils/utils";
 
 export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
@@ -215,7 +220,7 @@ export class SystemManager {
     });
 
     // Start automatic refresh timer
-    this.mapDataStore.startAutoRefresh();
+    // this.mapDataStore.startAutoRefresh();
   }
 
   /**
@@ -269,49 +274,10 @@ export class SystemManager {
 
               if (!explorer) return;
 
-              // Use the global player store instead of local instance
-              const playerStore = usePlayerStore.getState();
-
-              let explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
-              if (!Boolean(explorerOwnerAddress) && !explorer.isDaydreamsAgent) {
-                // Attempt to get explorer owner structure id from RECS
-                let explorerTroops = null;
-                // todo: find a better way to get the explorer owner address
-                let retries = 5;
-                while (retries > 0) {
-                  explorerTroops = getComponentValue(
-                    this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-                  );
-
-                  if (explorerTroops) break;
-                  await new Promise((resolve) => setTimeout(resolve, 100)); // Wait 100ms between retries
-                  retries--;
-                }
-                if (explorerTroops?.owner) {
-                  playerStore.updateExplorerStructure(
-                    currentState.occupier_id.toString(),
-                    explorerTroops.owner.toString(),
-                  );
-                  explorerOwnerAddress = await playerStore.getExplorerOwnerAddress(currentState.occupier_id.toString());
-                }
-              }
-
-              let explorerPlayerData = null;
-              let loggedInAccountPlayerData = null;
-              if (explorerOwnerAddress) {
-                explorerPlayerData = await playerStore.getPlayerDataByExplorerId(currentState.occupier_id.toString());
-                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                  BigInt(loggedInAccount()).toString(),
-                );
-              }
-
-              const isAlly =
-                Boolean(loggedInAccountPlayerData?.guildId) &&
-                loggedInAccountPlayerData?.guildId === explorerPlayerData?.guildId;
-
               // Get enhanced army data from MapDataStore
-              const armyMapData = this.mapDataStore.getArmyById(currentState.occupier_id);
+              const armyMapData = await this.mapDataStore.getArmyByIdAsync(currentState.occupier_id);
+
+              const { currentArmiesTick } = getBlockTimestamp();
 
               const getCurrentStamina = (currentArmiesTick: number) => {
                 if (armyMapData) {
@@ -350,19 +316,25 @@ export class SystemManager {
                 hexCoords: { col: currentState.col, row: currentState.row },
                 order: 1,
                 owner: {
-                  address: explorerOwnerAddress
-                    ? BigInt(explorerOwnerAddress)
-                    : BigInt(armyMapData?.ownerAddress || ""),
-                  ownerName: explorerOwnerAddress ? explorerPlayerData?.ownerName || "" : armyMapData?.ownerName || "",
-                  guildName: explorerOwnerAddress ? explorerPlayerData?.guildName || "" : "",
+                  address: armyMapData ? BigInt(armyMapData.ownerAddress) : undefined,
+                  ownerName: armyMapData?.ownerName || "",
+                  guildName: "",
                 },
                 troopType: explorer.troopType as TroopType,
                 troopTier: explorer.troopTier as TroopTier,
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
-                isAlly,
+                isAlly: false,
                 // Enhanced data from MapDataStore
                 troopCount: armyMapData?.count || 0,
-                currentStamina: (currentArmiesTick: number) => getCurrentStamina(currentArmiesTick),
+                currentStamina: getCurrentStamina(currentArmiesTick),
+                // need to be very careful here, if we set values to 0 when missing data, these will be taken by the army manager as the onchain stamina and will be wrong
+                // check addArmy army function on how the missing data is handled from the pending labels updates
+                onChainStamina: armyMapData
+                  ? {
+                      amount: BigInt(armyMapData?.stamina.amount),
+                      updatedTick: Number(armyMapData?.stamina.updated_tick) || 0,
+                    }
+                  : undefined,
                 maxStamina,
               };
             }
@@ -429,10 +401,7 @@ export class SystemManager {
 
               if (!structureInfo) return;
 
-              const structureSynced = getComponentValue(
-                this.setup.components.Structure,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              );
+              console.log("[STRUCTURE UPDATE]", currentState);
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -441,46 +410,8 @@ export class SystemManager {
 
               const initialized = hyperstructure?.initialized || false;
 
-              // Use the global player store instead of local instance
-              const playerStore = usePlayerStore.getState();
-
-              let structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                currentState.occupier_id.toString(),
-              );
-              const structureQueriedOwner = BigInt(structureOwnerDataQueried?.ownerAddress || 0n);
-              const structureSyncedOwner = BigInt(structureSynced?.owner.toString() || 0n);
-              if (structureSyncedOwner !== 0n && structureQueriedOwner !== structureSyncedOwner) {
-                playerStore.updateStructureOwnerAddress(
-                  currentState.occupier_id.toString(),
-                  structureSyncedOwner.toString(),
-                );
-                structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                  currentState.occupier_id.toString(),
-                );
-                if (!structureOwnerDataQueried) {
-                  // it is a new player
-                  await playerStore.refreshPlayerData();
-                  structureOwnerDataQueried = await playerStore.getPlayerDataByStructureId(
-                    currentState.occupier_id.toString(),
-                  );
-                }
-              }
-
-              const structureOwnerAddress = structureOwnerDataQueried?.ownerAddress;
-
-              let loggedInAccountPlayerData = null;
-              if (structureOwnerAddress) {
-                loggedInAccountPlayerData = await playerStore.getPlayerDataByAddress(
-                  BigInt(loggedInAccount()).toString(),
-                );
-              }
-
-              const isAlly =
-                Boolean(loggedInAccountPlayerData?.guildId) &&
-                loggedInAccountPlayerData?.guildId === structureOwnerDataQueried?.guildId;
-
               // Get enhanced structure data from MapDataStore
-              const structureMapData = this.mapDataStore.getStructureById(currentState.occupier_id);
+              const structureMapData = await this.mapDataStore.getStructureByIdAsync(currentState.occupier_id);
 
               return {
                 entityId: currentState.occupier_id,
@@ -493,12 +424,12 @@ export class SystemManager {
                 stage: structureInfo.stage,
                 level: structureInfo.level,
                 owner: {
-                  address: BigInt(structureOwnerAddress || "") || 0n,
-                  ownerName: structureOwnerDataQueried?.ownerName || "",
-                  guildName: structureOwnerDataQueried?.guildName || "",
+                  address: structureMapData ? BigInt(structureMapData.ownerAddress) : undefined,
+                  ownerName: structureMapData?.ownerName || "",
+                  guildName: "",
                 },
                 hasWonder: structureInfo.hasWonder,
-                isAlly,
+                isAlly: false,
                 // Enhanced data from MapDataStore
                 guardArmies: structureMapData?.guardArmies || [],
                 activeProductions: structureMapData?.activeProductions || [],
@@ -694,32 +625,82 @@ export class SystemManager {
 
   public get LabelUpdate() {
     return {
-      onArmyUpdate: (callback: (value: any) => void) => {
+      onArmyUpdate: (
+        callback: (value: {
+          entityId: ID;
+          troopCount: number;
+          onChainStamina: { amount: bigint; updatedTick: number };
+          hexCoords: HexPosition;
+          owner: { address: bigint; ownerName: string; guildName: string };
+        }) => void,
+      ) => {
         this.setupSystem(
           this.setup.components.ExplorerTroops,
           callback,
-          (update: any) => {
+          async (
+            update: any,
+          ): Promise<
+            | {
+                entityId: ID;
+                troopCount: number;
+                onChainStamina: { amount: bigint; updatedTick: number };
+                hexCoords: HexPosition;
+                owner: { address: bigint; ownerName: string; guildName: string };
+              }
+            | undefined
+          > => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, _prevState] = update.value;
 
               if (!currentState) return;
 
+              console.log("[LABEL UPDATE] Army Update", { currentState });
+
+              const structure = await this.mapDataStore.getStructureByIdAsync(currentState.owner);
+              const address = structure?.ownerAddress || 0n;
+              const playerName = await this.mapDataStore.getPlayerNameAsync(address.toString());
+
               return {
                 entityId: currentState.explorer_id,
                 troopCount: divideByPrecision(Number(currentState.troops.count)),
-                stamina: currentState.troops.stamina.amount,
-                updatedTick: currentState.troops.stamina.updated_tick,
+                onChainStamina: {
+                  amount: BigInt(currentState.troops.stamina.amount),
+                  updatedTick: Number(currentState.troops.stamina.updated_tick),
+                },
+                hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
+                owner: {
+                  address: BigInt(address),
+                  ownerName: playerName,
+                  guildName: "",
+                },
               };
             }
           },
           false,
         );
       },
-      onStructureGuardUpdate: (callback: (value: any) => void) => {
+      onStructureUpdate: (
+        callback: (value: {
+          entityId: ID;
+          guardArmies: GuardArmy[];
+          owner: { address: bigint; ownerName: string; guildName: string };
+          hexCoords: HexPosition;
+        }) => void,
+      ) => {
         this.setupSystem(
           this.setup.components.Structure,
           callback,
-          (update: any) => {
+          async (
+            update: any,
+          ): Promise<
+            | {
+                entityId: ID;
+                guardArmies: GuardArmy[];
+                owner: { address: bigint; ownerName: string; guildName: string };
+                hexCoords: HexPosition;
+              }
+            | undefined
+          > => {
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
 
@@ -764,9 +745,17 @@ export class SystemManager {
                 });
               }
 
+              const playerName = await this.mapDataStore.getPlayerNameAsync(currentState.owner.toString());
+
               return {
                 entityId: currentState.entity_id,
                 guardArmies,
+                owner: {
+                  address: currentState.owner,
+                  ownerName: playerName,
+                  guildName: "",
+                },
+                hexCoords: { col: currentState.base.coord_x, row: currentState.base.coord_y },
               };
             }
           },
@@ -815,6 +804,32 @@ export class SystemManager {
           },
           false,
         );
+      },
+    };
+  }
+
+  public get StructureEntityListener() {
+    return {
+      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => {
+        // Create a query for the Structure component
+        const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
+          runOnInit: false,
+        });
+
+        // Subscribe to the query updates
+        const subscription = query.update$.subscribe((update) => {
+          if (isComponentUpdate(update, this.setup.components.Structure)) {
+            const [currentState, _prevState] = update.value;
+            if (!currentState) return;
+            callback({
+              entityId,
+              level: currentState.base.level,
+            });
+          }
+        });
+
+        // Return the subscription so it can be cleaned up later
+        return subscription;
       },
     };
   }

@@ -50,6 +50,7 @@ export interface ArmyData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
+  onChainStamina: { amount: bigint; updatedTick: number };
 }
 
 export interface QuestData {
