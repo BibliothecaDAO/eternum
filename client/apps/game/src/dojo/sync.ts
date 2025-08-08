@@ -2,6 +2,8 @@ import type { AppStore } from "@/hooks/store/use-ui-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
+import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
+import { MapDataStore } from "@/three/managers/map-data-store";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -196,17 +198,23 @@ export const initialSync = async (
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
-  setInitialSyncProgress(75);
+  setInitialSyncProgress(50);
 
   start = performance.now();
   await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] address names query", end - start);
-  setInitialSyncProgress(90);
+  setInitialSyncProgress(75);
 
   start = performance.now();
   await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] guilds query", end - start);
+  setInitialSyncProgress(90);
+
+  start = performance.now();
+  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).refresh();
+  end = performance.now();
+  console.log("[sync] fetching the map data store", end - start);
   setInitialSyncProgress(100);
 };
