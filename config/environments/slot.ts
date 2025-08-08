@@ -33,7 +33,7 @@ export const SlotEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 2, // 2 hours
+    durationSeconds: 60 * 60 * 24 * 90, // 2 hours
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,
@@ -46,7 +46,7 @@ export const SlotEternumGlobalConfig: Config = {
     registration: {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
-      registration_period_seconds: 60 * 60 * 23, // 23 hours
+      registration_period_seconds: 60 * 5, // 5 mins
     },
   },
 };

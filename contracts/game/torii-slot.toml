@@ -1,6 +1,6 @@
 # Please be mindful that changing the content of this file will impact the Eternum Launcher app
 
-rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-dev/katana"
+rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-dev2/katana"
 
 world_address = "0x073902d79676eac8155fc13fb12e327dc03ecd5a8ca0715fe5deb03b56ad6fb5"
 
