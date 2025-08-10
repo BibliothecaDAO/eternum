@@ -26,15 +26,13 @@ export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
     const percentage = (Number(currentWeight) / Number(totalCapacity)) * 100;
 
     if (remainingCapacity < BigInt(Math.floor(exploreReward))) {
-      return "bg-danger"; // Critical - can't explore
-    } else if (percentage > 75) {
-      return "bg-danger"; // Very full
-    } else if (percentage > 50) {
-      return "bg-orange"; // Medium-full
-    } else if (percentage > 25) {
-      return "bg-yellow"; // Medium
+      return "bg-red-500"; // Critical - can't explore
+    } else if (percentage > 66) {
+      return "bg-green-500"; // Good capacity
+    } else if (percentage > 33) {
+      return "bg-amber-500"; // Medium
     } else {
-      return "bg-brilliance"; // Good capacity
+      return "bg-red-500"; // Low capacity
     }
   }, [remainingCapacity, currentWeight, totalCapacity]);
 

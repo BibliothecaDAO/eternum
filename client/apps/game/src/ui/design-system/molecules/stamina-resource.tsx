@@ -19,18 +19,15 @@ export const StaminaResource = ({
   const staminaColor = useMemo(() => {
     const minStaminaCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
     const percentage = (Number(stamina.amount) / maxStamina) * 100;
-
-    // Use more granular color system based on stamina percentage
+    // Use color system based on stamina percentage thresholds
     if (stamina.amount < minStaminaCost) {
-      return "bg-danger"; // Critical - can't travel
-    } else if (percentage < 25) {
-      return "bg-danger"; // Very low
-    } else if (percentage < 50) {
-      return "bg-orange"; // Medium-low
-    } else if (percentage < 75) {
-      return "bg-yellow"; // Medium
+      return "bg-red-500"; // Critical - can't travel
+    } else if (percentage > 66) {
+      return "bg-green-500"; // Good
+    } else if (percentage > 33) {
+      return "bg-amber-500"; // Medium
     } else {
-      return "bg-brilliance"; // Good
+      return "bg-red-500"; // Low
     }
   }, [stamina.amount, maxStamina]);
 
