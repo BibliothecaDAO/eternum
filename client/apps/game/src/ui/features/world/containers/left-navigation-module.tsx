@@ -5,7 +5,6 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { getIsBlitz } from "@/ui/constants";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
-import { ChatModule } from "@/ui/features/social";
 import { construction, hyperstructures, military, trade } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
@@ -285,7 +284,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       <div className="flex">
         {/* <Chat /> */}
-        <ChatModule />
+        {/* <ChatModule /> */}
       </div>
     </div>
   );
