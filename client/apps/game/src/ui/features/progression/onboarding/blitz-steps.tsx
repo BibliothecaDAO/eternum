@@ -431,7 +431,7 @@ export const BlitzOnboarding = () => {
 
   const handleMakeHyperstructures = async () => {
     if (!account?.address) return;
-    await blitz_realm_make_hyperstructures({ count: 6, signer: account });
+    await blitz_realm_make_hyperstructures({ count: 5, signer: account });
   };
 
   // Settlement handler
