@@ -84,7 +84,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
       {stamina.amount < minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore/travel</span>
@@ -92,7 +92,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
         </div>
       )}
       {stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
@@ -100,7 +100,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
         </div>
       )}
       {hasNoTotalCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Need more troops to explore (min 75)</span>
@@ -108,7 +108,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
         </div>
       )}
       {!hasNoTotalCapacityToExplore && hasNoRemainingCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Too heavy to explore</span>
@@ -116,7 +116,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
         </div>
       )}
       {notEnoughFood && (
-        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>
