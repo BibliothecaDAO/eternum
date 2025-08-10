@@ -33,6 +33,11 @@ export const HexEntityDetails = () => {
     return tile.occupier_id !== 0;
   }, [tile]);
 
+  const isExplored = useMemo(() => {
+    if (!tile) return false;
+    return tile.biome !== 0;
+  }, [tile]);
+
   const isStructure = useMemo(() => {
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
@@ -59,29 +64,47 @@ export const HexEntityDetails = () => {
         </div>
       )}
 
-      {/* Biome panel - takes remaining space when no occupier */}
-      <div className={hasOccupier ? "flex-shrink-0 mb-4" : "flex-1 min-h-0"}>
-        <div className={hasOccupier ? "" : "h-full"}>
-          <BiomeInfoPanel biome={biome} />
+      {/* Show unexplored message if hex is not explored */}
+      {!isExplored ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="mb-3">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-700 flex items-center justify-center">
+                <span className="text-2xl">🗺️</span>
+              </div>
+            </div>
+            <p className="text-lg font-medium mb-2 text-gray-300">Unexplored Territory</p>
+            <p className="text-sm text-gray-500">This hex has not been explored yet.</p>
+            <p className="text-xs text-gray-600 mt-2">Send an explorer to discover what lies here.</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Biome panel - takes remaining space when no occupier */}
+          <div className={hasOccupier ? "flex-shrink-0 mb-4" : "flex-1 min-h-0"}>
+            <div className={hasOccupier ? "" : "h-full"}>
+              <BiomeInfoPanel biome={biome} />
+            </div>
+          </div>
 
-      {/* Occupier details - only shown when there's an occupier */}
-      {hasOccupier && tile && (
-        <div className="flex-shrink-0">
-          {isStructure ? (
-            <StructureEntityDetail
-              structureEntityId={tile.occupier_id}
-              compact={false}
-              maxInventory={Infinity}
-              showButtons={true}
-            />
-          ) : isTileOccupierQuest(tile.occupier_type) ? (
-            <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
-          ) : (
-            <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} showButtons={true} />
+          {/* Occupier details - only shown when there's an occupier */}
+          {hasOccupier && tile && (
+            <div className="flex-shrink-0">
+              {isStructure ? (
+                <StructureEntityDetail
+                  structureEntityId={tile.occupier_id}
+                  compact={false}
+                  maxInventory={Infinity}
+                  showButtons={true}
+                />
+              ) : isTileOccupierQuest(tile.occupier_type) ? (
+                <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
+              ) : (
+                <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} showButtons={true} />
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
