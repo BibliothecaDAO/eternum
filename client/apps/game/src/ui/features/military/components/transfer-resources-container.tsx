@@ -1,5 +1,5 @@
-import Button from "@/ui/design-system/atoms/button";
 import { MaxButton } from "@/ui/design-system/atoms";
+import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -417,7 +417,7 @@ export const TransferResourcesContainer = ({
 
           {/* Add Select All / Unselect All buttons here */}
           <div className="flex justify-end space-x-2 mb-3">
-            {actorTypes?.target === ActorType.Structure && (
+            {
               <Button
                 onClick={handleSelectAllResources}
                 variant="outline"
@@ -426,7 +426,7 @@ export const TransferResourcesContainer = ({
               >
                 Select All Available
               </Button>
-            )}
+            }
             <Button
               onClick={handleUnselectAllResources}
               variant="outline"
