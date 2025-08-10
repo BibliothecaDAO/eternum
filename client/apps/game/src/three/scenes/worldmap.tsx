@@ -83,6 +83,7 @@ export default class WorldmapScene extends HexagonScene {
   private currentChunk: string = "null";
 
   private armyManager: ArmyManager;
+  private pendingArmyMovements: Set<ID> = new Set();
   private structureManager: StructureManager;
   private chestManager: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
@@ -648,10 +649,20 @@ export default class WorldmapScene extends HexagonScene {
         }
       };
 
-      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick).catch((e) => {
-        cleanup();
-        console.error("Army movement failed:", e);
-      });
+      // Mark army as having pending movement transaction
+      this.pendingArmyMovements.add(selectedEntityId);
+
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
+        .then(() => {
+          // Transaction submitted successfully, cleanup visual effects
+          cleanup();
+        })
+        .catch((e) => {
+          // Transaction failed, remove from pending and cleanup
+          this.pendingArmyMovements.delete(selectedEntityId);
+          cleanup();
+          console.error("Army movement failed:", e);
+        });
 
       this.state.updateEntityActionHoveredHex(null);
     }
@@ -743,6 +754,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
+    // Don't allow selection of armies with pending movement transactions
+    if (this.pendingArmyMovements.has(selectedEntityId)) {
+      return;
+    }
+
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
@@ -938,6 +954,9 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.set(newPos.col, new Map());
     }
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+
+    // Remove from pending movements when position is updated from blockchain
+    this.pendingArmyMovements.delete(entityId);
   }
 
   public updateStructureHexes(update: {
@@ -1474,7 +1493,6 @@ export default class WorldmapScene extends HexagonScene {
    */
   private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate, relicSource?: RelicSource) {
     const { entityId, relicEffects } = update;
-    console.log({ updateWorldmap: update, relicSource });
 
     let entityFound = false;
 
@@ -1814,15 +1832,26 @@ export default class WorldmapScene extends HexagonScene {
     if (this.selectableArmies.length === 0) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
-    this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
-    const army = this.selectableArmies[this.armyIndex];
-    // army.position is already in contract coordinates, pass it directly
-    // handleHexSelection will normalize it internally when calling getHexagonEntity
-    this.handleHexSelection(army.position, true);
-    this.onArmySelection(army.entityId, account);
-    const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
-    // Use 0 duration for instant camera teleportation
-    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
+    // Find the next army that doesn't have a pending movement transaction
+    let attempts = 0;
+    while (attempts < this.selectableArmies.length) {
+      this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
+      const army = this.selectableArmies[this.armyIndex];
+      
+      // Skip armies with pending movement transactions
+      if (!this.pendingArmyMovements.has(army.entityId)) {
+        // army.position is already in contract coordinates, pass it directly
+        // handleHexSelection will normalize it internally when calling getHexagonEntity
+        this.handleHexSelection(army.position, true);
+        this.onArmySelection(army.entityId, account);
+        const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+        // Use 0 duration for instant camera teleportation
+        this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
+        break;
+      }
+      attempts++;
+    }
+    // If all armies have pending movements, do nothing
   }
 
   private updateSelectableArmies(armies: SelectableArmy[]) {
