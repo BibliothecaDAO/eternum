@@ -9,6 +9,10 @@ export const policies = toSessionPolicies({
     [getContractByName(dojoConfig.manifest, "s1_eternum", "blitz_realm_systems").address]: {
       methods: [
         {
+          name: "make_hyperstructures",
+          entrypoint: "make_hyperstructures",
+        },
+        {
           name: "register",
           entrypoint: "register",
         },
