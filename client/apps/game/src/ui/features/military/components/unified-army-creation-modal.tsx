@@ -115,7 +115,12 @@ export const UnifiedArmyCreationModal = ({
 
     for (const type of troopTypes) {
       for (const tier of troopTiers) {
-        const balance = getBalance(structureId, getTroopResourceId(type, tier), currentDefaultTick, components).balance;
+        const balance = getBalance(
+          structureId,
+          getTroopResourceId(type, tier),
+          getBlockTimestamp().currentDefaultTick,
+          components,
+        ).balance;
 
         const available = Number(divideByPrecision(balance) || 0);
 
@@ -131,7 +136,7 @@ export const UnifiedArmyCreationModal = ({
     if (firstTroopWithBalance) {
       setSelectedTroopCombo(firstTroopWithBalance);
     }
-  }, [structureId, currentDefaultTick, components]);
+  }, [structureId]);
 
   // Load available directions for explorer armies
   useEffect(() => {
