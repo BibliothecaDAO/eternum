@@ -1566,7 +1566,7 @@
   "victoryPoints": {
     "pointsForWin": "0",
     "hyperstructurePointsPerCycle": "1000000",
-    "pointsForHyperstructureClaimAgainstBandits": "2000000000",
+    "pointsForHyperstructureClaimAgainstBandits": "3000000000",
     "pointsForNonHyperstructureClaimAgainstBandits": "500000000",
     "pointsForTileExploration": "50000000"
   },
