@@ -26,7 +26,7 @@ const envSchema = z.object({
     .default("false"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]), // Add other chains as needed
 
   VITE_PUBLIC_CONSTRUCTION_FLAG: z
     .string()

@@ -1108,6 +1108,7 @@ export const setSeasonConfig = async (config: Config) => {
 
   const seasonCalldata = {
     signer: config.account,
+    dev_mode_on: config.config.dev.mode.on,
     season_pass_address: config.config.setup!.addresses.seasonPass,
     realms_address: config.config.setup!.addresses.realms,
     lords_address: config.config.setup!.addresses.lords,
@@ -1121,6 +1122,7 @@ export const setSeasonConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Season Parameters")}
+    │  ${chalk.gray("Dev Mode On:")}   ${chalk.white(config.config.dev.mode.on)}
     │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
       new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
@@ -1465,6 +1467,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
 
   const seasonCalldata = {
     signer: config.account,
+    dev_mode_on: config.config.dev.mode.on,
     season_pass_address: "0x0",
     realms_address: "0x0",
     lords_address: config.config.setup!.addresses.lords,
@@ -1478,6 +1481,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Season Parameters")}
+    │  ${chalk.gray("Dev Mode On:")}   ${chalk.white(config.config.dev.mode.on)}
     │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
       new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
@@ -1662,6 +1666,9 @@ export const nodeReadConfig = async (chain: Chain) => {
         break;
       case "slot":
         path += "/slot.json";
+        break;
+      case "slottest":
+        path += "/slottest.json";
         break;
       case "local":
         path += "/local.json";

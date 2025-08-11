@@ -399,6 +399,11 @@ export const EternumGlobalConfig: Config = {
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,
   questGames: QUEST_GAME_LEVELS,
+  dev: {
+    mode: {
+      on: false,
+    },
+  },
   blitz: {
     mode: {
       on: true,

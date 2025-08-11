@@ -122,6 +122,13 @@ export const LocalEternumGlobalConfig: Config = {
     //   [BuildingType.ResourceWheat]: 0,
     // },
   },
+  dev: {
+    ...CommonEternumGlobalConfig.dev,
+    mode: {
+      ...CommonEternumGlobalConfig.dev.mode,
+      on: true,
+    },
+  },
   blitz: {
     ...CommonEternumGlobalConfig.blitz,
     registration: {

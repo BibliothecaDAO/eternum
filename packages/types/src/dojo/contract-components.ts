@@ -1515,6 +1515,7 @@ export function defineContractComponents(world: World) {
             count: RecsType.Number,
           },
           season_config: {
+            dev_mode_on: RecsType.Boolean,
             start_settling_at: RecsType.Number,
             start_main_at: RecsType.Number,
             end_at: RecsType.Number,
@@ -1674,6 +1675,7 @@ export function defineContractComponents(world: World) {
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig hyperstructure_immunity_ticks
               "u16", // RealmCountConfig realm_count
+              "bool", // SeasonConfig dev_mode_on
               "u64", // SeasonConfig start_settling_at
               "u64", // SeasonConfig start_main_at
               "u64", // SeasonConfig end_at
