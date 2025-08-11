@@ -208,46 +208,52 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
               </div>
             </div>
             <div className="flex flex-col gap-2 overflow-y-auto max-h-[60vH]">
-              {tokens.map((token) => (
-                <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
-                  <div className="flex items-center gap-2 col-span-2">
-                    <img
-                      src={
-                        token.metadata?.image?.startsWith("ipfs://")
-                          ? token.metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-                          : token.metadata?.image
-                      }
-                      alt={token.metadata?.name ?? "Token"}
-                      className="w-8 h-8 rounded"
-                    />
-                    <span className="truncate max-w-[120px]">{token.metadata?.name}</span>
+              {tokens.map((token) => {
+                const imageSrc = token.metadata?.image?.startsWith("ipfs://")
+                  ? token.metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                  : token.metadata?.image;
+                console.log({ imageSrc });
+                return (
+                  <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
+                    <div className="flex items-center gap-2 col-span-2">
+                      <img
+                        src={
+                          token.metadata?.image?.startsWith("ipfs://")
+                            ? token.metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                            : token.metadata?.image
+                        }
+                        alt={token.metadata?.name ?? "Token"}
+                        className="w-8 h-8 rounded"
+                      />
+                      <span className="truncate max-w-[120px]">{token.metadata?.name}</span>
+                    </div>
+                    <div className="text-xs">{token.collection_floor_price?.toLocaleString()} LORDS</div>
+                    <div className="text-xs">
+                      {tokenPrices[token.token_id.toString()] && parseFloat(tokenPrices[token.token_id.toString()]) > 0
+                        ? (
+                            (parseFloat(tokenPrices[token.token_id.toString()]) * MARKETPLACE_FEE_PERCENT) /
+                            100
+                          ).toLocaleString("en-US", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          })
+                        : "--"}
+                      <span className="ml-1">LORDS</span>
+                    </div>
+                    <div className="justify-self-end relative col-span-2">
+                      <Input
+                        id={`list-price-${token.token_id}`}
+                        value={tokenPrices[token.token_id.toString()] || ""}
+                        onChange={(e) => handlePriceChange(token.token_id.toString(), e.target.value)}
+                        placeholder="0"
+                        disabled={isLoading || isSyncing}
+                        className="w-full max-w-36"
+                      />
+                      <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
+                    </div>
                   </div>
-                  <div className="text-xs">{token.collection_floor_price?.toLocaleString()} LORDS</div>
-                  <div className="text-xs">
-                    {tokenPrices[token.token_id.toString()] && parseFloat(tokenPrices[token.token_id.toString()]) > 0
-                      ? (
-                          (parseFloat(tokenPrices[token.token_id.toString()]) * MARKETPLACE_FEE_PERCENT) /
-                          100
-                        ).toLocaleString("en-US", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })
-                      : "--"}
-                    <span className="ml-1">LORDS</span>
-                  </div>
-                  <div className="justify-self-end relative col-span-2">
-                    <Input
-                      id={`list-price-${token.token_id}`}
-                      value={tokenPrices[token.token_id.toString()] || ""}
-                      onChange={(e) => handlePriceChange(token.token_id.toString(), e.target.value)}
-                      placeholder="0"
-                      disabled={isLoading || isSyncing}
-                      className="w-full max-w-36"
-                    />
-                    <span className="absolute text-xs right-1.5 top-2.5">LORDS</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {/* Proceeds below the table */}
             <div className="mb-1 flex justify-between border-t py-3 font-semibold">

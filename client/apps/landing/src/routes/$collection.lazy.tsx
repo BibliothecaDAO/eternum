@@ -233,7 +233,9 @@ function ManageCollectionRoute() {
                     <div className="flex -space-x-2">
                       {selectedPasses.slice(0, 3).map((pass) => {
                         const metadata = pass.metadata;
-                        const image = metadata?.image;
+                        const image = metadata?.image?.startsWith("ipfs://")
+                          ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                          : metadata?.image;
                         return (
                           <div
                             key={pass.token_id}
