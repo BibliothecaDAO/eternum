@@ -125,7 +125,8 @@ if [ -f ".dojo-versions" ]; then
         echo -e "${YELLOW}► No katana version specified in .dojo-versions, using system katana${NC}"
     fi
 else
-
+    KATANA_COMMAND="katana"
+    KATANA_REQUIRED_VERSION=""
 fi
 
 KATANA_VERSION=$($KATANA_COMMAND --version)
