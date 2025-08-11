@@ -37,7 +37,6 @@ import {
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
-  getNeighborOffsets,
   HexEntityInfo,
   HexPosition,
   ID,
@@ -1095,19 +1094,6 @@ export default class WorldmapScene extends HexagonScene {
       // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
-      // Add border hexes for newly explored hex
-      const neighborOffsets = getNeighborOffsets(row);
-
-      neighborOffsets.forEach(({ i, j }) => {
-        const neighborCol = col + i;
-        const neighborRow = row + j;
-        const isNeighborExplored = this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-
-        if (!isNeighborExplored) {
-          this.interactiveHexManager.addHex({ col: neighborCol, row: neighborRow });
-        }
-      });
-
       // Update which hexes are visible in the current chunk
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
@@ -1261,20 +1247,8 @@ export default class WorldmapScene extends HexagonScene {
             dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
           }
 
-          if (!isExplored) {
-            const neighborOffsets = getNeighborOffsets(globalRow);
-            const isBorder = neighborOffsets.some(({ i, j }) => {
-              const neighborCol = globalCol + i;
-              const neighborRow = globalRow + j;
-              return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-            });
-
-            if (isBorder) {
-              this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-            }
-          } else {
-            this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-          }
+          // Make all hexes in the current chunk interactive regardless of exploration status
+          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
 
           const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
           const rotationIndex = Math.floor(rotationSeed * 6);
