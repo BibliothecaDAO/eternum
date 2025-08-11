@@ -54,6 +54,7 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
       const playVideo = async () => {
         try {
           videoRef.current!.currentTime = 0;
+          videoRef.current!.volume = 1; // Reset volume to full
           await videoRef.current!.play();
           console.log("Video playing successfully");
           setVideoState("playing");
@@ -79,6 +80,28 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
     }
   }, [isOpen, isVideoReady]);
 
+  // Fade out audio before video ends
+  useEffect(() => {
+    if (!videoRef.current || videoState !== "playing") return;
+
+    const fadeOutDuration = 1000; // 1 second fade out
+    const checkInterval = 100; // Check every 100ms
+
+    const interval = setInterval(() => {
+      if (!videoRef.current) return;
+
+      const timeUntilEnd = (videoRef.current.duration - videoRef.current.currentTime) * 1000;
+
+      if (timeUntilEnd <= fadeOutDuration && timeUntilEnd > 0) {
+        // Calculate volume based on time remaining
+        const newVolume = Math.max(0, timeUntilEnd / fadeOutDuration);
+        videoRef.current.volume = newVolume;
+      }
+    }, checkInterval);
+
+    return () => clearInterval(interval);
+  }, [videoState]);
+
   const handleVideoEnd = () => {
     console.log("Video ended");
 
@@ -90,7 +113,7 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
     setTimeout(() => {
       setShowContent(true);
       onChestOpened?.();
-    }, 3000);
+    }, 500);
   };
 
   const handleOpenNext = () => {
@@ -99,6 +122,7 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
       setShowContent(false);
       setShowWhiteScreen(false);
       videoRef.current.currentTime = 0;
+      videoRef.current.volume = 1; // Reset volume to full
       videoRef.current.play();
     }
   };
