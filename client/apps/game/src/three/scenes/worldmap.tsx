@@ -251,6 +251,9 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
       this.updateArmyHexes(update);
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+
+      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
     });
 
     // Listen for troop count and stamina changes
@@ -949,6 +952,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
 
     // Add to new position
@@ -956,6 +960,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.set(newPos.col, new Map());
     }
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
 
     // Remove from pending movements when position is updated from blockchain
     this.pendingArmyMovements.delete(entityId);
@@ -1090,6 +1095,8 @@ export default class WorldmapScene extends HexagonScene {
     const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
 
+    this.invalidateAllChunkCachesContainingHex(col, row);
+
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
     if (this.isColRowInVisibleChunk(col, row)) {
       await this.updateHexagonGridPromise;
@@ -1114,10 +1121,7 @@ export default class WorldmapScene extends HexagonScene {
       hexMesh.needsUpdate();
 
       // Cache the updated matrices for the chunk
-      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
       this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
-    } else {
-      this.removeCachedMatricesAroundColRow(hexChunkCol, hexChunkRow);
     }
   }
 
@@ -1179,6 +1183,33 @@ export default class WorldmapScene extends HexagonScene {
         }
         this.removeCachedMatricesForChunk(row + i, col + j);
       }
+    }
+  }
+
+  private invalidateAllChunkCachesContainingHex(col: number, row: number) {
+    const pos = getWorldPositionForHex({ row, col });
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
+
+    const baseChunkCol = chunkX * this.chunkSize;
+    const baseChunkRow = chunkZ * this.chunkSize;
+
+    const chunksToInvalidate = [
+      `${baseChunkRow},${baseChunkCol}`,
+      `${baseChunkRow - this.chunkSize},${baseChunkCol - this.chunkSize}`,
+      `${baseChunkRow - this.chunkSize},${baseChunkCol}`,
+      `${baseChunkRow - this.chunkSize},${baseChunkCol + this.chunkSize}`,
+      `${baseChunkRow},${baseChunkCol - this.chunkSize}`,
+      `${baseChunkRow},${baseChunkCol + this.chunkSize}`,
+      `${baseChunkRow + this.chunkSize},${baseChunkCol - this.chunkSize}`,
+      `${baseChunkRow + this.chunkSize},${baseChunkCol}`,
+      `${baseChunkRow + this.chunkSize},${baseChunkCol + this.chunkSize}`,
+    ];
+
+    for (const chunkKey of chunksToInvalidate) {
+      const [chunkRowStr, chunkColStr] = chunkKey.split(",");
+      const chunkRow = parseInt(chunkRowStr);
+      const chunkCol = parseInt(chunkColStr);
+      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
     }
   }
 
@@ -1420,6 +1451,10 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     if (this.currentChunk !== chunkKey || force) {
       this.currentChunk = chunkKey;
+
+      if (!force) {
+        this.removeCachedMatricesForChunk(startRow, startCol);
+      }
 
       // Load surrounding chunks for better UX (3x3 grid)
       const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
