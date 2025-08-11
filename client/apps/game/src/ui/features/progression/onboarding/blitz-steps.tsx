@@ -114,16 +114,25 @@ const NoGameState = ({
 };
 
 // Make hyperstructures state component
-const MakeHyperstructuresState = ({
+const DevOptionsState = ({
   numHyperStructuresLeft,
   onMakeHyperstructures,
+  onDevModeRegister,
+  onDevModeSettle,
   canMake,
+  devMode,
 }: {
   numHyperStructuresLeft: number;
   onMakeHyperstructures: () => Promise<void>;
+  onDevModeRegister: () => Promise<void>;
+  onDevModeSettle: () => Promise<void>;
   canMake: boolean;
+  devMode: boolean;
 }) => {
   const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
+  const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
+  const [isDevModeSettling, setIsDevModeSettling] = useState(false);
+  
   const handleMakeHyperstructures = async () => {
     setIsMakingHyperstructures(true);
     try {
@@ -132,6 +141,28 @@ const MakeHyperstructuresState = ({
       console.error("Make hyperstructures failed:", error);
     } finally {
       setIsMakingHyperstructures(false);
+    }
+  };
+
+  const handleDevModeRegister = async () => {
+    setIsDevModeRegistering(true);
+    try {
+      await onDevModeRegister();
+    } catch (error) {
+      console.error("Registration failed:", error);
+    } finally {
+      setIsDevModeRegistering(false);
+    }
+  };
+
+  const handleDevModeSettle = async () => {
+    setIsDevModeSettling(true);
+    try {
+      await onDevModeSettle();
+    } catch (error) {
+      console.error("Settlement failed:", error);
+    } finally {
+      setIsDevModeSettling(false);
     }
   };
 
@@ -152,11 +183,44 @@ const MakeHyperstructuresState = ({
             ) : (
               <div className="flex items-center justify-center">
                 <Sword className="w-5 h-5 mr-2 fill-brown" />
-                <span>Make Hyperstructures [${numHyperStructuresLeft} left]</span>
+                <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
               </div>
             )}
           </div>
         </Button>
+      )}
+
+      {devMode && (
+        <>
+        {isDevModeRegistering ? (
+          <div className="flex items-center justify-center">
+            <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+            <span>Registering...</span>
+          </div>
+        ) : (
+          <Button
+            onClick={handleDevModeRegister}
+            disabled={isDevModeRegistering || !devMode}
+            className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+          >
+            <span>Dev Mode Register for Blitz</span>
+          </Button>
+        )}
+        {isDevModeSettling ? (
+          <div className="flex items-center justify-center">
+            <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+            <span>Settling...</span>
+          </div>
+        ) : (
+          <Button
+            onClick={handleDevModeSettle}
+            disabled={isDevModeSettling || !devMode}
+            className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+          >
+            <span>Dev Mode Settle Realm</span>
+          </Button>
+        )}
+        </>
       )}
     </>
   );
@@ -373,6 +437,7 @@ export const BlitzOnboarding = () => {
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
   const seasonConfig = configManager.getSeasonConfig();
+  const devMode = configManager.getDevModeConfig()?.dev_mode_on;
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
     getEntityIdFromKeys([BigInt(account.address)]),
@@ -469,9 +534,12 @@ export const BlitzOnboarding = () => {
   return (
     <div className="space-y-6">
       {showMakeHyperstructures && (
-        <MakeHyperstructuresState
+        <DevOptionsState
           numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
           onMakeHyperstructures={handleMakeHyperstructures}
+          onDevModeRegister={handleRegister}
+          onDevModeSettle={handleSettle}
+          devMode={devMode || false}
           canMake={canMakeHyperstructures}
         />
       )}

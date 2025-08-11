@@ -593,6 +593,11 @@ export interface Config {
     levels: Level[];
     overwrite: boolean;
   }[];
+  dev: {
+    mode: {
+      on: boolean;
+    };
+  };
   blitz: {
     mode: {
       on: boolean;

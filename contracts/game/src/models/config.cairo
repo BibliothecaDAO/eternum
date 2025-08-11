@@ -78,6 +78,7 @@ pub struct VillageControllerConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct SeasonConfig {
+    pub dev_mode_on: bool,
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub end_at: u64,
@@ -92,6 +93,9 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
     }
 
     fn has_ended(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return false;
+        }
         let now = starknet::get_block_timestamp();
         if self.end_at == 0 {
             return false;
@@ -100,11 +104,17 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
     }
 
     fn has_settling_started(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return true;
+        }
         let now = starknet::get_block_timestamp();
         now >= self.start_settling_at
     }
 
     fn has_main_started(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return true;
+        }
         let now = starknet::get_block_timestamp();
         now >= self.start_main_at
     }

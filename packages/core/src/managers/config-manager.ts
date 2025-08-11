@@ -848,6 +848,22 @@ export class ClientConfigManager {
     );
   }
 
+  getDevModeConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        if (!config) return;
+
+        return {
+          dev_mode_on: config?.season_config.dev_mode_on ?? false,
+        };
+      },
+      {
+        dev_mode_on: false,
+      },
+    );
+  }
+
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {

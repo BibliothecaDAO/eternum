@@ -551,6 +551,7 @@ export interface SetDonkeySpeedConfigProps extends SystemSigner {
 }
 
 export interface SetSeasonConfigProps extends SystemSigner {
+  dev_mode_on: boolean;
   season_pass_address: BigNumberish;
   realms_address: BigNumberish;
   lords_address: BigNumberish;

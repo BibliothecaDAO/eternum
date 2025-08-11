@@ -121,9 +121,15 @@ pub mod blitz_realm_systems {
                 world, selector!("blitz_settlement_config"),
             );
             let mut coords: Array<Coord> = blitz_settlement_config.generate_coords();
-            let mut blitz_position_register: BlitzRealmPositionRegister = world
-                .read_model(blitz_registration_config.registration_count);
-            blitz_position_register.coords = coords.span();
+            // let player_position_spot_number: u16 = blitz_registration_config.registration_count;
+
+            // this allows dev mode registration as opposed to the previous line
+            let player_position_spot_number: u16 = blitz_registration_config.registration_count
+                - blitz_registration_config.assigned_positions_count;
+
+            let mut blitz_position_register: BlitzRealmPositionRegister = BlitzRealmPositionRegister {
+                spot_number: player_position_spot_number, coords: coords.span(),
+            };
             world.write_model(@blitz_position_register);
 
             // save the updated blitz settlement config
