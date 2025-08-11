@@ -6,7 +6,7 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
-import { SystemManager } from "@/three/systems/system-manager";
+import { WorldUpdateListener } from "@/three/systems/world-update-listener";
 import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
@@ -34,7 +34,7 @@ export abstract class HexagonScene {
   protected inputManager!: InputManager;
   protected shortcutManager!: SceneShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
-  protected systemManager!: SystemManager;
+  protected worldUpdateListener!: WorldUpdateListener;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected thunderBoltManager!: ThunderBoltManager;
@@ -94,7 +94,7 @@ export abstract class HexagonScene {
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
-    this.systemManager = new SystemManager(this.dojo);
+    this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new THREE.Color(0x2a1a3e);

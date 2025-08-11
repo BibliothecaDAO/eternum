@@ -65,7 +65,17 @@ export const HOVER_STYLES: Record<string, LabelStyle> = {
  * Base configuration shared by all label types
  */
 export const BASE_LABEL_CONFIG: LabelConfig = {
-  baseClasses: ["rounded-md", "p-0.5", "-translate-x-1/2", "text-xxs", "flex", "items-center", "group", "shadow-md", "font-semibold"],
+  baseClasses: [
+    "rounded-md",
+    "p-0.5",
+    "-translate-x-1/2",
+    "text-xxs",
+    "flex",
+    "items-center",
+    "group",
+    "shadow-md",
+    "font-semibold",
+  ],
   transitions: {
     duration: 700,
     easing: "ease-in-out",
@@ -81,18 +91,21 @@ export const BASE_LABEL_CONFIG: LabelConfig = {
  * Camera view specific configurations
  */
 export const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
-  1: { // CameraView.Close
+  1: {
+    // CameraView.Close
     transitions: {
       collapseBehavior: "never",
     },
   },
-  2: { // CameraView.Medium
+  2: {
+    // CameraView.Medium
     transitions: {
       collapseBehavior: "delayed",
       collapseDelay: 2000,
     },
   },
-  3: { // CameraView.Far
+  3: {
+    // CameraView.Far
     transitions: {
       collapseBehavior: "immediate",
     },
@@ -128,15 +141,13 @@ export const TRANSITION_CLASSES = {
 /**
  * Get the appropriate style based on ownership and state
  */
-export function getOwnershipStyle(isMine: boolean, isAlly?: boolean, isDaydreams?: boolean): { default: LabelStyle; hover: LabelStyle } {
+export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { default: LabelStyle; hover: LabelStyle } {
   let styleKey = "ENEMY";
-  
+
   if (isDaydreams) {
     styleKey = "DAYDREAMS";
   } else if (isMine) {
     styleKey = "MINE";
-  } else if (isAlly) {
-    styleKey = "ALLY";
   }
 
   return {

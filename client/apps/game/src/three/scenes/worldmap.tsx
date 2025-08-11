@@ -249,38 +249,38 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     // Store the unsubscribe function for Army updates
-    this.systemManager.Army.onUpdate(async (update: ArmySystemUpdate) => {
+    this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
       this.updateArmyHexes(update);
-      await this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+      await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
     });
-    this.systemManager.Army.onDeadArmy((entityId) => {
+    this.worldUpdateListener.Army.onDeadArmy((entityId) => {
       // If the army is marked as deleted, remove it from the map
       this.deleteArmy(entityId);
       this.updateVisibleChunks();
     });
 
     // Listen for label updates (troop count and stamina changes)
-    this.systemManager.LabelUpdate.onArmyUpdate((update) => {
+    this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
       this.updateArmyHexes(update);
-      this.armyManager.updateArmyLabelFromSystemUpdate(update);
+      this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
 
     // Listen for structure guard updates
-    this.systemManager.LabelUpdate.onStructureUpdate((update) => {
+    this.worldUpdateListener.Structure.onStructureUpdate((update) => {
       this.updateStructureHexes(update);
       this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
 
     // Listen for structure building updates
-    this.systemManager.LabelUpdate.onStructureBuildingUpdate((update) => {
+    this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
       this.structureManager.updateStructureLabelFromBuildingUpdate(update);
     });
 
     // Store the unsubscribe function for Tile updates
-    this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
+    this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value));
 
     // Store the unsubscribe function for Structure updates
-    this.systemManager.Structure.onUpdate(async (value) => {
+    this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
       this.updateStructureHexes(value);
 
       const optimisticStructure = this.structureManager.structures.removeStructure(
@@ -302,41 +302,41 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     // Store the unsubscribe function for Structure contributions
-    this.systemManager.Structure.onContribution((value) => {
+    this.worldUpdateListener.Structure.onContribution((value) => {
       this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
       this.structureManager.updateChunk(this.currentChunk);
     });
 
     // perform some updates for the quest manager
-    this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
+    this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
     });
 
     // perform some updates for the chest manager
-    this.systemManager.Chest.onUpdate((update: ChestSystemUpdate) => {
+    this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
       this.updateChestHexes(update);
       this.chestManager.onUpdate(update);
     });
-    this.systemManager.Chest.onDeadChest((entityId) => {
+    this.worldUpdateListener.Chest.onDeadChest((entityId) => {
       // If the chest is opened, remove it from the map
       this.deleteChest(entityId);
     });
 
     // Store the unsubscribe function for Relic Effect updates
-    this.systemManager.RelicEffect.onArmyUpdate(async (update: RelicEffectSystemUpdate) => {
+    this.worldUpdateListener.RelicEffect.onExplorerTroopsUpdate(async (update: RelicEffectSystemUpdate) => {
       this.handleRelicEffectUpdate(update);
     });
 
-    this.systemManager.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
+    this.worldUpdateListener.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
       this.handleRelicEffectUpdate(update, RelicSource.Guard);
     });
 
-    this.systemManager.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
+    this.worldUpdateListener.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
       this.handleRelicEffectUpdate(update, RelicSource.Production);
     });
 
-    this.systemManager.ExplorerMove.onUpdate((update: ExplorerMoveSystemUpdate) => {
+    this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
       const { explorerId, resourceId, amount } = update;
 
       // Find the army position using explorerId
@@ -652,7 +652,8 @@ export default class WorldmapScene extends HexagonScene {
       // Mark army as having pending movement transaction
       this.pendingArmyMovements.add(selectedEntityId);
 
-      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
+      armyActionManager
+        .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
           // Transaction submitted successfully, cleanup visual effects
           cleanup();
@@ -924,14 +925,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(update: { entityId: ID; hexCoords: HexPosition; owner: { address: bigint | undefined } }) {
+  public updateArmyHexes(update: { entityId: ID; hexCoords: HexPosition; ownerAddress?: bigint | undefined }) {
     const {
       hexCoords: { col, row },
-      owner: { address },
+      ownerAddress,
       entityId,
     } = update;
 
-    if (address === undefined) return;
+    if (ownerAddress === undefined) return;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
@@ -953,7 +954,7 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
 
     // Remove from pending movements when position is updated from blockchain
     this.pendingArmyMovements.delete(entityId);
@@ -1837,7 +1838,7 @@ export default class WorldmapScene extends HexagonScene {
     while (attempts < this.selectableArmies.length) {
       this.armyIndex = (this.armyIndex + 1) % this.selectableArmies.length;
       const army = this.selectableArmies[this.armyIndex];
-      
+
       // Skip armies with pending movement transactions
       if (!this.pendingArmyMovements.has(army.entityId)) {
         // army.position is already in contract coordinates, pass it directly

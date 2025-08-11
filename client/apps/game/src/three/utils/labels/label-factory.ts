@@ -43,7 +43,6 @@ export interface ArmyLabelData extends LabelData {
   category: TroopType;
   tier: TroopTier;
   isMine: boolean;
-  isAlly: boolean;
   isDaydreamsAgent: boolean;
   owner: {
     address: bigint;
@@ -62,7 +61,6 @@ export interface StructureLabelData extends LabelData {
   initialized: boolean;
   level: number;
   isMine: boolean;
-  isAlly: boolean;
   hasWonder: boolean;
   owner: {
     address: bigint;
@@ -83,7 +81,6 @@ export interface StructureInfoCompat {
   initialized: boolean;
   level: number;
   isMine: boolean;
-  isAlly: boolean;
   hasWonder: boolean;
   owner: {
     address: bigint;
@@ -106,7 +103,7 @@ export interface QuestLabelData extends LabelData {
 /**
  * Create base label element with common properties
  */
-const createLabelBase = (isMine: boolean, isAlly?: boolean, isDaydreamsAgent?: boolean): HTMLElement => {
+const createLabelBase = (isMine: boolean, isDaydreamsAgent?: boolean): HTMLElement => {
   const labelDiv = document.createElement("div");
 
   // Add common classes
@@ -128,7 +125,7 @@ const createLabelBase = (isMine: boolean, isAlly?: boolean, isDaydreamsAgent?: b
   );
 
   // Get appropriate style
-  const styles = getOwnershipStyle(isMine, isAlly, isDaydreamsAgent);
+  const styles = getOwnershipStyle(isMine, isDaydreamsAgent);
 
   // Apply styles directly
   labelDiv.style.setProperty("background-color", styles.default.backgroundColor!, "important");
@@ -162,13 +159,13 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
   createElement: (data: ArmyLabelData, cameraView: CameraView): HTMLElement => {
     // Create base label
-    const labelDiv = createLabelBase(data.isMine, data.isAlly, data.isDaydreamsAgent);
+    const labelDiv = createLabelBase(data.isMine, data.isDaydreamsAgent);
 
     // Add army icon
     const img = document.createElement("img");
     img.src = data.isDaydreamsAgent
       ? "/images/logos/daydreams.png"
-      : `/images/labels/${data.isMine ? "army" : data.isAlly ? "allies_army" : "enemy_army"}.png`;
+      : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "army-icon");
     labelDiv.appendChild(img);
@@ -180,7 +177,6 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     const ownerDisplay = createOwnerDisplayElement({
       owner: data.owner,
       isMine: data.isMine,
-      isAlly: data.isAlly,
       cameraView,
       color: data.color,
       isDaydreamsAgent: data.isDaydreamsAgent,
@@ -228,7 +224,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
   updateElement: (element: HTMLElement, data: ArmyLabelData, cameraView: CameraView): void => {
     // Update container colors based on ownership
-    const styles = getOwnershipStyle(data.isMine, data.isAlly, data.isDaydreamsAgent);
+    const styles = getOwnershipStyle(data.isMine, data.isDaydreamsAgent);
     element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
     element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
     element.style.setProperty("color", styles.default.textColor!, "important");
@@ -246,7 +242,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     if (armyIcon) {
       armyIcon.src = data.isDaydreamsAgent
         ? "/images/logos/daydreams.png"
-        : `/images/labels/${data.isMine ? "army" : data.isAlly ? "allies_army" : "enemy_army"}.png`;
+        : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     }
 
     // Update troop count if present
@@ -274,7 +270,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const isBlitz = getIsBlitz();
 
     // Create base label
-    const labelDiv = createLabelBase(data.isMine, data.isAlly);
+    const labelDiv = createLabelBase(data.isMine);
 
     // Create icon container
     const iconContainer = document.createElement("div");
@@ -285,9 +281,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
       iconPath = data.isMine
         ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
-        : data.isAlly
-          ? STRUCTURE_ICONS(isBlitz).ALLY_STRUCTURES[data.structureType]
-          : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+        : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
     }
 
     // Create and set icon image
@@ -305,7 +299,6 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const ownerText = createOwnerDisplayElement({
       owner: data.owner,
       isMine: data.isMine,
-      isAlly: data.isAlly,
       cameraView,
     });
 
@@ -406,7 +399,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     const isBlitz = getIsBlitz();
 
     // Update container colors based on ownership
-    const styles = getOwnershipStyle(data.isMine, data.isAlly);
+    const styles = getOwnershipStyle(data.isMine);
     element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
     element.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
     element.style.setProperty("color", styles.default.textColor!, "important");
@@ -427,9 +420,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
         iconPath = data.isMine
           ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
-          : data.isAlly
-            ? STRUCTURE_ICONS(isBlitz).ALLY_STRUCTURES[data.structureType]
-            : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+          : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
       }
       structureIcon.src = iconPath;
     }
