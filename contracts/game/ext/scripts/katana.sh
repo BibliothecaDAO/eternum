@@ -116,18 +116,8 @@ setup_log_handling() {
 #==============================================================================
 # MAIN EXECUTION
 #==============================================================================
-if [ -f ".dojo-versions" ]; then
-    KATANA_REQUIRED_VERSION=$(grep "^katana " .dojo-versions | awk '{print $2}')
-    if [ ! -z "$KATANA_REQUIRED_VERSION" ]; then
-        KATANA_COMMAND="$HOME/.dojo/bin/katana"
-    else
-        KATANA_COMMAND="katana"
-        echo -e "${YELLOW}► No katana version specified in .dojo-versions, using system katana${NC}"
-    fi
-else
-    KATANA_COMMAND="katana"
-    KATANA_REQUIRED_VERSION=""
-fi
+KATANA_COMMAND="katana"
+KATANA_REQUIRED_VERSION=""
 
 KATANA_VERSION=$($KATANA_COMMAND --version)
 
