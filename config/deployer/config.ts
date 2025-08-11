@@ -1667,6 +1667,9 @@ export const nodeReadConfig = async (chain: Chain) => {
       case "slot":
         path += "/slot.json";
         break;
+      case "slottest":
+        path += "/slottest.json";
+        break;
       case "local":
         path += "/local.json";
         break;

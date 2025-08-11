@@ -533,7 +533,7 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
-      {showMakeHyperstructures && (
+      { (devMode || showMakeHyperstructures) && (
         <DevOptionsState
           numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
           onMakeHyperstructures={handleMakeHyperstructures}

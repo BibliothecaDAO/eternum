@@ -4,6 +4,7 @@
   "scripts": {
     "local": "bun --env-file=../client/apps/game/.env.local run ./deployer/index.ts",
     "slot": "bun --env-file=../client/apps/game/.env.slot run ./deployer/index.ts",
+    "slottest": "bun --env-file=../client/apps/game/.env.slottest run ./deployer/index.ts",
     "sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./deployer/index.ts",
     "mainnet": "bun --env-file=../client/apps/game/.env.mainnet run ./deployer/index.ts",
     "add-quest-games-sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./scripts/add-quest-games.ts",

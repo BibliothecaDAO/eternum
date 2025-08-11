@@ -1,4 +1,4 @@
-export type NetworkType = "local" | "sepolia" | "slot" | "mainnet";
+export type NetworkType = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
 
 export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
   const fs = require("fs");
@@ -74,6 +74,14 @@ export function logNetwork(network: NetworkType): void {
       },
       emoji: "⚡",
       label: "SLOT NETWORK",
+    },
+    slottest: {
+      colors: {
+        primary: "\x1b[38;5;183m",
+        secondary: "\x1b[38;5;219m",
+      },
+      emoji: "⚡",
+      label: "SLOTTEST Network",
     },
     mainnet: {
       colors: {

@@ -49,3 +49,5 @@ max-line-length = 120
 [profile.sepolia]
 
 [profile.mainnet]
+
+[profile.slottest]
