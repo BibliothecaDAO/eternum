@@ -12,26 +12,36 @@ import {
   ContractAddress,
   HexEntityInfo,
   ID,
-  orders,
   RelicEffect,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { MAP_DATA_REFRESH_INTERVAL } from "../constants/map-data";
-import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
+import { ArmyData, ArmySystemUpdate, ExplorerTroopsSystemUpdate, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
-import { MapDataStore } from "./map-data-store";
 
-interface PendingLabelUpdate {
+interface PendingExplorerTroopsUpdate {
   troopCount: number;
   onChainStamina: { amount: bigint; updatedTick: number };
-  owner: { address: bigint; ownerName: string; guildName: string };
+  ownerAddress: bigint;
+}
+
+interface AddArmyParams {
+  entityId: ID;
+  hexCoords: Position;
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  category: TroopType;
+  tier: TroopTier;
+  isDaydreamsAgent: boolean;
+  troopCount?: number;
+  currentStamina?: number;
+  onChainStamina?: { amount: bigint; updatedTick: number };
+  maxStamina?: number;
 }
 
 export class ArmyManager {
@@ -54,9 +64,7 @@ export class ArmyManager {
   > = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
-  private mapDataStore: MapDataStore;
-  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
-  private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
+  private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: NodeJS.Timeout | null = null;
 
@@ -97,10 +105,10 @@ export class ArmyManager {
       .add(
         {
           addArmy: () => {
-            this.addArmy(
-              createArmyParams.entityId,
-              new Position({ x: createArmyParams.col, y: createArmyParams.row }),
-              {
+            this.addArmy({
+              entityId: createArmyParams.entityId,
+              hexCoords: new Position({ x: createArmyParams.col, y: createArmyParams.row }),
+              owner: {
                 address: createArmyParams.isMine
                   ? ContractAddress(useAccountStore.getState().account?.address || "0")
                   : 0n,
@@ -108,19 +116,17 @@ export class ArmyManager {
                 ownerName: "Neutral",
                 guildName: "None",
               },
-              1,
-              TroopType.Paladin,
-              TroopTier.T1,
-              false,
-              false,
-              10,
-              10,
-              {
+              category: TroopType.Paladin,
+              tier: TroopTier.T1,
+              isDaydreamsAgent: false,
+              troopCount: 10,
+              currentStamina: 10,
+              onChainStamina: {
                 amount: 100n,
                 updatedTick: getBlockTimestamp().currentArmiesTick,
               },
-              100,
-            );
+              maxStamina: 100,
+            });
           },
         },
         "addArmy",
@@ -143,10 +149,6 @@ export class ArmyManager {
       )
       .name("Delete army");
     deleteArmyFolder.close();
-
-    // Initialize MapDataStore as instance property
-    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
-    this.mapDataStore.onRefresh(this.onMapDataRefresh);
 
     useAccountStore.subscribe(() => {
       this.recheckOwnership();
@@ -195,34 +197,36 @@ export class ArmyManager {
     }
   }
 
-  async onUpdate(
+  async onTileUpdate(
     update: ArmySystemUpdate,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, owner, troopType, troopTier, order } = update;
+    const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(
+      this.addArmy({
         entityId,
-        newPosition,
-        owner,
-        order,
-        troopType,
-        troopTier,
-        update.isDaydreamsAgent,
-        update.isAlly,
-        update.troopCount,
-        update.currentStamina,
-        update.onChainStamina,
-        update.maxStamina,
-      );
+        hexCoords: newPosition,
+        owner: {
+          address: ownerAddress,
+          ownerName,
+          guildName,
+        },
+        category: troopType,
+        tier: troopTier,
+        isDaydreamsAgent: update.isDaydreamsAgent,
+        troopCount: update.troopCount,
+        currentStamina: update.currentStamina,
+        onChainStamina: update.onChainStamina,
+        maxStamina: update.maxStamina,
+      });
     }
     return false;
   }
@@ -324,8 +328,6 @@ export class ArmyManager {
         color: army.color,
         matrixIndex: index,
         owner: army.owner,
-        isAlly: army.isAlly,
-        order: army.order,
         category: army.category,
         tier: army.tier,
         isDaydreamsAgent: army.isDaydreamsAgent,
@@ -338,20 +340,19 @@ export class ArmyManager {
     return visibleArmies;
   }
 
-  public async addArmy(
-    entityId: ID,
-    hexCoords: Position,
-    owner: { address: bigint | undefined; ownerName: string; guildName: string },
-    order: number,
-    category: TroopType,
-    tier: TroopTier,
-    isDaydreamsAgent: boolean,
-    isAlly: boolean,
-    troopCount: number,
-    currentStamina: number,
-    onChainStamina: { amount: bigint; updatedTick: number } | undefined,
-    maxStamina: number,
-  ) {
+  public async addArmy(params: AddArmyParams) {
+    const {
+      entityId,
+      hexCoords,
+      owner,
+      category,
+      tier,
+      isDaydreamsAgent,
+      troopCount,
+      currentStamina,
+      onChainStamina,
+      maxStamina,
+    } = params;
     if (this.armies.has(entityId)) return;
 
     const { x, y } = hexCoords.getContract();
@@ -359,33 +360,21 @@ export class ArmyManager {
     const modelType = this.armyModel.getModelTypeForEntity(entityId, category, tier, biome);
     this.armyModel.assignModelToEntity(entityId, modelType);
 
-    const orderData = orders.find((_order) => _order.orderId === order);
-    let isMine = owner.address ? isAddressEqualToAccount(owner.address) : false;
-
-    // Determine the color based on ownership (consistent with structure labels)
-    let color: string;
-    if (isDaydreamsAgent) {
-      color = COLORS.SELECTED;
-    } else if (isMine) {
-      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
-    } else if (isAlly) {
-      color = LABEL_STYLES.ALLY.textColor || "#bae6fd";
-    } else {
-      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
-    }
+    // Variables to hold the final values
+    let finalTroopCount = troopCount || 0;
+    let finalCurrentStamina = currentStamina || 0;
+    let finalOnChainStamina = onChainStamina || { amount: 0n, updatedTick: 0 };
+    let finalMaxStamina = maxStamina || 0;
+    let finalOwnerAddress = owner.address;
+    let finalOwnerName = owner.ownerName;
+    let finalGuildName = owner.guildName;
 
     // Check for pending label updates and apply them if they exist
-    const pendingUpdate = this.pendingLabelUpdates.get(entityId);
+    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(entityId);
     if (pendingUpdate) {
       console.log(`[PENDING LABEL UPDATE] Applying pending update for army ${entityId}`);
-      onChainStamina = pendingUpdate.onChainStamina;
+      finalOnChainStamina = pendingUpdate.onChainStamina;
 
-      isMine = isAddressEqualToAccount(pendingUpdate.owner.address);
-      color = isMine
-        ? LABEL_STYLES.MINE.textColor || "#d9f99d"
-        : isAlly
-          ? LABEL_STYLES.ALLY.textColor || "#bae6fd"
-          : LABEL_STYLES.ENEMY.textColor || "#fecdd3";
       // Calculate current stamina using the pending update data
       const { currentArmiesTick } = getBlockTimestamp();
       const updatedStamina = Number(
@@ -398,6 +387,7 @@ export class ArmyManager {
               amount: BigInt(pendingUpdate.onChainStamina.amount),
               updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
             },
+            // todo: add boosts
             boosts: {
               incr_stamina_regen_percent_num: 0,
               incr_stamina_regen_tick_count: 0,
@@ -414,13 +404,25 @@ export class ArmyManager {
       );
 
       // Use pending update data instead of initial data
-      troopCount = pendingUpdate.troopCount;
-      currentStamina = updatedStamina;
-      owner = pendingUpdate.owner;
-      onChainStamina = pendingUpdate.onChainStamina;
+      finalTroopCount = pendingUpdate.troopCount;
+      finalCurrentStamina = updatedStamina;
+      finalOwnerAddress = pendingUpdate.ownerAddress;
+      finalOnChainStamina = pendingUpdate.onChainStamina;
 
       // Clear the pending update
-      this.pendingLabelUpdates.delete(entityId);
+      this.pendingExplorerTroopsUpdate.delete(entityId);
+    }
+
+    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
+
+    // Determine the color based on ownership (consistent with structure labels)
+    let color: string;
+    if (isDaydreamsAgent) {
+      color = COLORS.SELECTED;
+    } else if (isMine) {
+      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
+    } else {
+      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
     }
 
     this.armies.set(entityId, {
@@ -428,23 +430,21 @@ export class ArmyManager {
       matrixIndex: this.armies.size - 1,
       hexCoords,
       isMine,
-      isAlly,
       owner: {
-        address: owner.address || 0n,
-        ownerName: owner.ownerName,
-        guildName: owner.guildName,
+        address: finalOwnerAddress || 0n,
+        ownerName: finalOwnerName,
+        guildName: finalGuildName,
       },
       color,
-      order: (orderData?.orderName ?? "") as string,
       category,
       tier,
       isDaydreamsAgent,
       // Enhanced data
-      troopCount,
-      currentStamina,
-      maxStamina,
+      troopCount: finalTroopCount,
+      currentStamina: finalCurrentStamina,
+      maxStamina: finalMaxStamina,
       // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-      onChainStamina: onChainStamina || { amount: 0n, updatedTick: 0 },
+      onChainStamina: finalOnChainStamina,
     });
 
     // Apply any pending relic effects for this army
@@ -567,9 +567,9 @@ export class ArmyManager {
     }
 
     // Clear any pending label updates for this army
-    if (this.pendingLabelUpdates.has(entityId)) {
+    if (this.pendingExplorerTroopsUpdate.has(entityId)) {
       console.log(`[PENDING LABEL UPDATE] Clearing pending update for removed army ${entityId}`);
-      this.pendingLabelUpdates.delete(entityId);
+      this.pendingExplorerTroopsUpdate.delete(entityId);
     }
 
     const { promise } = this.fxManager.playFxAtCoords(
@@ -752,7 +752,7 @@ export class ArmyManager {
   }
 
   /**
-   * Update an army label with fresh data from MapDataStore
+   * Update an army label with fresh data
    */
   private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place
@@ -760,33 +760,19 @@ export class ArmyManager {
   }
 
   /**
-   * Handle MapDataStore refresh by updating all army data and visible labels
-   */
-  private handleMapDataRefresh(): void {
-    // This method can be extended in the future to handle map data refresh events
-    // For now, the stamina updates are handled by the periodic timer
-    console.log("ArmyManager: Handling map data refresh");
-  }
-
-  /**
    * Update army label from system update (troop count/stamina changes)
    */
-  public updateArmyLabelFromSystemUpdate(update: {
-    entityId: ID;
-    troopCount: number;
-    onChainStamina: { amount: bigint; updatedTick: number };
-    owner: { address: bigint; ownerName: string; guildName: string };
-  }): void {
+  public updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
     const army = this.armies.get(update.entityId);
     console.log("[UPDATING ARMY LABEL FROM SYSTEM UPDATE]", { army });
 
     // If army doesn't exist yet, store the update as pending
     if (!army) {
       console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId}`);
-      this.pendingLabelUpdates.set(update.entityId, {
+      this.pendingExplorerTroopsUpdate.set(update.entityId, {
         troopCount: update.troopCount,
         onChainStamina: update.onChainStamina,
-        owner: update.owner,
+        ownerAddress: update.ownerAddress,
       });
       return;
     }
@@ -822,8 +808,10 @@ export class ArmyManager {
     );
 
     army.troopCount = update.troopCount;
-    army.owner = update.owner;
-    army.isMine = isAddressEqualToAccount(update.owner.address);
+    army.owner.address = update.ownerAddress;
+    // Update ownership status - this ensures armies are correctly marked as owned when the user's account
+    // becomes available after initial load, since tile updates may occur before account authentication
+    army.isMine = isAddressEqualToAccount(update.ownerAddress);
     army.onChainStamina = update.onChainStamina;
 
     // Update the label if it exists
@@ -838,9 +826,6 @@ export class ArmyManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
-
-    // Clean up MapDataStore refresh callback
-    this.mapDataStore.offRefresh(this.onMapDataRefresh);
 
     // Clean up tick check timeout
     if (this.tickCheckTimeout) {
