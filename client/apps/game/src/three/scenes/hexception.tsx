@@ -55,6 +55,7 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { getStructureStage } from "../systems/utils";
 import { BuildingSystemUpdate, SceneName, StructureProgress } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
@@ -253,7 +254,7 @@ export default class HexceptionScene extends HexagonScene {
         if (structureEntityId && structureEntityId !== 0) {
           console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
 
-          this.structureUpdateSubscription = this.systemManager.StructureEntityListener.onLevelUpdate(
+          this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
             structureEntityId,
             (update) => {
               this.structureStage = update.level as RealmLevels;
@@ -347,7 +348,7 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingMixers.clear();
 
     // subscribe to buiding updates (create and destroy)
-    this.systemManager.Buildings.onUpdate(
+    this.worldUpdateListener.Buildings.onBuildingUpdate(
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
@@ -357,14 +358,6 @@ export default class HexceptionScene extends HexagonScene {
         this.updateHexceptionGrid(this.hexceptionRadius);
       },
     );
-
-    // this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
-    //   if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
-    //     this.structureStage = update.level as RealmLevels;
-    //     this.removeCastleFromScene();
-    //     this.updateHexceptionGrid(this.hexceptionRadius);
-    //   }
-    // });
 
     this.removeCastleFromScene();
     this.updateHexceptionGrid(this.hexceptionRadius);
@@ -555,9 +548,10 @@ export default class HexceptionScene extends HexagonScene {
     if (structureType === StructureType.Realm || structureType === StructureType.Village) {
       this.structureStage = this.tileManager.getRealmLevel(this.state.structureEntityId);
     } else if (structureType === StructureType.Hyperstructure) {
-      this.structureStage = this.systemManager.getStructureStage(
+      this.structureStage = getStructureStage(
         structureType,
         useUIStore.getState().structureEntityId,
+        this.dojo.components,
       );
     }
   }

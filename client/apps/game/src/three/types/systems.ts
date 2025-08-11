@@ -12,25 +12,38 @@ import {
 import type { ActiveProduction, GuardArmy } from "../managers/map-data-store";
 import { StructureProgress } from "./common";
 
+// data that you can get from the tile + mapdatastore
 export type ArmySystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
-  order: number;
   troopType: TroopType;
   troopTier: TroopTier;
-  owner: { address: bigint | undefined; ownerName: string; guildName: string };
   isDaydreamsAgent: boolean;
-  isAlly: boolean;
   // Enhanced data from MapDataStore
-  troopCount: number;
-  currentStamina: number;
-  maxStamina: number;
-  onChainStamina:
+  ownerName: string;
+  guildName: string;
+  troopCount?: number | undefined;
+  ownerAddress?: bigint | undefined;
+  currentStamina?: number | undefined;
+  maxStamina?: number | undefined;
+  onChainStamina?:
     | {
         amount: bigint;
         updatedTick: number;
       }
     | undefined;
+};
+
+// data that you can get only from the explorer troops
+export type ExplorerTroopsSystemUpdate = {
+  entityId: ID;
+  hexCoords: HexPosition;
+  troopCount: number;
+  onChainStamina: {
+    amount: bigint;
+    updatedTick: number;
+  };
+  ownerAddress: bigint;
 };
 
 export type StructureSystemUpdate = {

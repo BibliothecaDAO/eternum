@@ -18,7 +18,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder());
 
 export function isAddressEqualToAccount(address: bigint): boolean {
-  return BigInt(address) === BigInt(ContractAddress(useAccountStore.getState().account?.address || "0"));
+  return BigInt(address) === BigInt(useAccountStore.getState().account?.address || "0");
 }
 
 export function loggedInAccount(): ContractAddress {
