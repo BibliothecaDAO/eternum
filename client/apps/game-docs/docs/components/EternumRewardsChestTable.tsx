@@ -6,7 +6,8 @@ const ETERNUM_REWARDS_CHEST_ITEMS = [
     itemName: "Legacy Guardian",
     epochItemNo: 2,
     rarity: "Legendary",
-    description: "An impressive and timeless Knight armor set, inspired by the Knight troop models of Eternum Season 1. Part of the First Legacy Set.",
+    description:
+      "An impressive and timeless Knight armor set, inspired by the Knight troop models of Eternum Season 1. Part of the First Legacy Set.",
     type: "Troop Armor",
     troopType: "Knight",
     drawChance: 1.41,
@@ -60,7 +61,8 @@ const ETERNUM_REWARDS_CHEST_ITEMS = [
     itemName: "Shield of the Winter Paladin",
     epochItemNo: 8,
     rarity: "Uncommon",
-    description: "An elegant, snowflake-patterned cavalry shield wielded by Winter Paladins. Part of the Winter Lord Set.",
+    description:
+      "An elegant, snowflake-patterned cavalry shield wielded by Winter Paladins. Part of the Winter Lord Set.",
     type: "Troop Secondary",
     troopType: "Paladin",
     drawChance: 12.68,
@@ -173,9 +175,7 @@ const EternumRewardsChestTable = () => {
               return (
                 <tr key={item.epochItemNo}>
                   <td style={componentStyles.itemNameCell}>
-                    <div style={componentStyles.itemImage}>
-                      🎁
-                    </div>
+                    <div style={componentStyles.itemImage}>🎁</div>
                     <span style={{ color: colors.text.light }}>{item.itemName}</span>
                   </td>
                   <td style={table.cell}>
@@ -198,9 +198,7 @@ const EternumRewardsChestTable = () => {
                   <td style={table.cell}>
                     <span style={{ color: colors.text.light }}>{item.troopType}</span>
                   </td>
-                  <td style={componentStyles.drawChanceCell}>
-                    {item.drawChance}%
-                  </td>
+                  <td style={componentStyles.drawChanceCell}>{item.drawChance}%</td>
                 </tr>
               );
             })}
@@ -211,4 +209,4 @@ const EternumRewardsChestTable = () => {
   );
 };
 
-export default EternumRewardsChestTable; 
+export default EternumRewardsChestTable;
