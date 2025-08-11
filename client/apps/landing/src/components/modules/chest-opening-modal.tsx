@@ -1,4 +1,9 @@
-import chestOpeningVideo from "@/assets/videos/chest-opening.mp4";
+import chestOpeningCommon from "@/assets/videos/chest-opening/common.mp4";
+import chestOpeningEpic from "@/assets/videos/chest-opening/epic.mp4";
+import chestOpeningLegendary from "@/assets/videos/chest-opening/legendary.mp4";
+import chestOpeningRare from "@/assets/videos/chest-opening/rare.mp4";
+import chestOpeningUncommon from "@/assets/videos/chest-opening/uncommon.mp4";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
@@ -12,6 +17,14 @@ interface ChestOpeningModalProps {
   onChestOpened?: () => void;
 }
 
+const chestOpeningVideo: Record<string, string> = {
+  common: chestOpeningCommon,
+  uncommon: chestOpeningUncommon,
+  rare: chestOpeningRare,
+  epic: chestOpeningEpic,
+  legendary: chestOpeningLegendary,
+};
+
 export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChestOpened }: ChestOpeningModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoState, setVideoState] = useState<"loading" | "playing" | "ended">("loading");
@@ -19,12 +32,14 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
   const [showContent, setShowContent] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [chestType, setChestType] = useState<string>("common");
 
   console.log("ChestOpeningModal - State:", {
     remainingChests,
     videoState,
     videoRef: videoRef.current,
-    videoSrc: chestOpeningVideo,
+    videoSrc: chestOpeningVideo[chestType],
+    chestType,
     isOpen,
     isVideoReady,
     loadError,
@@ -140,12 +155,12 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
               }
             }}
             playsInline
-            muted
+            muted={false}
             autoPlay={false}
             preload="auto"
             controls={false}
           >
-            <source src={chestOpeningVideo} type="video/mp4" />
+            <source src={chestOpeningVideo[chestType]} type="video/mp4" />
           </video>
 
           {/* Loading state */}
