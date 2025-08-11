@@ -44,6 +44,7 @@ export type ExplorerTroopsSystemUpdate = {
     updatedTick: number;
   };
   ownerAddress: bigint;
+  ownerName: string;
 };
 
 export type StructureSystemUpdate = {

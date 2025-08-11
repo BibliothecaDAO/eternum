@@ -55,12 +55,12 @@ export const TroopDisplay = ({
               <div
                 className={`text-xs font-bold ${
                   remainingTroops > troopCount * 0.8
-                    ? "text-green"
+                    ? "text-progress-bar-good"
                     : remainingTroops > troopCount * 0.5
-                      ? "text-yellow"
+                      ? "text-progress-bar-medium"
                       : remainingTroops > 0
-                        ? "text-orange"
-                        : "text-red"
+                        ? "text-progress-bar-danger"
+                        : "text-progress-bar-danger"
                 }`}
               >
                 {Math.floor(remainingTroops)} left
@@ -130,23 +130,23 @@ export const TroopDisplay = ({
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${
                         remainingTroops > troopCount * 0.8
-                          ? "bg-green"
+                          ? "bg-progress-bar-good"
                           : remainingTroops > troopCount * 0.5
-                            ? "bg-yellow"
+                            ? "bg-progress-bar-medium"
                             : remainingTroops > 0
-                              ? "bg-orange"
-                              : "bg-red"
+                              ? "bg-progress-bar-danger"
+                              : "bg-progress-bar-danger"
                       }`}
                     />
                     <span
                       className={`text-xs font-bold ${
                         remainingTroops > troopCount * 0.8
-                          ? "text-green"
+                          ? "text-progress-bar-good"
                           : remainingTroops > troopCount * 0.5
-                            ? "text-yellow"
+                            ? "text-progress-bar-medium"
                             : remainingTroops > 0
-                              ? "text-orange"
-                              : "text-red"
+                              ? "text-progress-bar-danger"
+                              : "text-progress-bar-danger"
                       }`}
                     >
                       {Math.max(0, Math.floor(remainingTroops))} <span className="hidden sm:inline">after battle</span>
@@ -161,12 +161,12 @@ export const TroopDisplay = ({
                       h-full rounded transition-all duration-500
                       ${
                         remainingTroops > troopCount * 0.8
-                          ? "bg-green"
+                          ? "bg-progress-bar-good"
                           : remainingTroops > troopCount * 0.5
-                            ? "bg-yellow"
+                            ? "bg-progress-bar-medium"
                             : remainingTroops > 0
-                              ? "bg-orange"
-                              : "bg-red"
+                              ? "bg-progress-bar-danger"
+                              : "bg-progress-bar-danger"
                       }
                     `}
                     style={{

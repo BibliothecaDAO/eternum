@@ -47,7 +47,6 @@ import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getS
 export class WorldUpdateListener {
   private mapDataStore: MapDataStore;
   private dataEnhancer: DataEnhancer;
-  private onMapDataRefresh = this.handleMapDataRefresh.bind(this);
 
   constructor(private setup: SetupResult) {
     // Initialize MapDataStore with centralized refresh interval
@@ -56,36 +55,10 @@ export class WorldUpdateListener {
     // Initialize DataEnhancer to handle all data fetching
     this.dataEnhancer = new DataEnhancer(this.mapDataStore);
 
-    // Register callback to update labels when map data refreshes
-    this.mapDataStore.onRefresh(this.onMapDataRefresh);
-
     // Start initial data fetch
     this.mapDataStore.refresh().catch((error) => {
       console.warn("Initial MapDataStore refresh failed:", error);
     });
-
-    // Start automatic refresh timer
-    // this.mapDataStore.startAutoRefresh();
-  }
-
-  /**
-   * Handle map data refresh by updating all visible labels
-   */
-  private handleMapDataRefresh(): void {
-    console.log("WorldUpdateListener: Handling map data refresh, updating labels");
-
-    // Trigger label updates by calling the onUpdate methods for all visible entities
-    // This will fetch fresh data from the MapDataStore and update the labels
-    this.refreshAllVisibleLabels();
-  }
-
-  /**
-   * Refresh all visible army and structure labels with updated data
-   */
-  private refreshAllVisibleLabels(): void {
-    // Note: We would need access to the HexagonScene managers here
-    // This will be implemented once we have access to army and structure managers
-    console.log("WorldUpdateListener: Refreshing all visible labels (placeholder)");
   }
 
   private setupSystem<T>(
@@ -165,7 +138,7 @@ export class WorldUpdateListener {
 
               console.log("Army: onExplorerTroopsUpdate", { currentState });
               // maybe don't use mapdatastore here since these are all available from the tile listener
-              const ownerAddress = await this.dataEnhancer.getStructureOwnerAddress(currentState.owner);
+              const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
 
               return {
                 entityId: currentState.explorer_id,
@@ -175,7 +148,8 @@ export class WorldUpdateListener {
                   updatedTick: Number(currentState.troops.stamina.updated_tick),
                 },
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
-                ownerAddress: ownerAddress || 0n,
+                ownerAddress: owner?.address || 0n,
+                ownerName: owner?.ownerName || "",
               };
             }
           },

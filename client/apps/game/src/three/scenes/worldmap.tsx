@@ -252,16 +252,18 @@ export default class WorldmapScene extends HexagonScene {
       this.updateArmyHexes(update);
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
     });
+
+    // Listen for troop count and stamina changes
+    this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+      this.updateArmyHexes(update);
+      this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
+    });
+
+    // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
       // If the army is marked as deleted, remove it from the map
       this.deleteArmy(entityId);
       this.updateVisibleChunks();
-    });
-
-    // Listen for label updates (troop count and stamina changes)
-    this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-      this.updateArmyHexes(update);
-      this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
 
     // Listen for structure guard updates

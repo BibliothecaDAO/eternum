@@ -23,16 +23,17 @@ export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
 
   const capacityColor = useMemo(() => {
     const exploreReward = configManager.getExploreReward().resource_weight;
+    // percentage is the percentage of capacity used
     const percentage = (Number(currentWeight) / Number(totalCapacity)) * 100;
 
     if (remainingCapacity < BigInt(Math.floor(exploreReward))) {
-      return "bg-red-500"; // Critical - can't explore
-    } else if (percentage > 66) {
-      return "bg-green-500"; // Good capacity
-    } else if (percentage > 33) {
-      return "bg-amber-500"; // Medium
+      return "bg-progress-bar-danger"; // Critical - can't explore
+    } else if (percentage < 33) {
+      return "bg-progress-bar-good"; // Good capacity (low usage)
+    } else if (percentage < 66) {
+      return "bg-progress-bar-medium"; // Medium capacity
     } else {
-      return "bg-red-500"; // Low capacity
+      return "bg-progress-bar-danger"; // High usage - approaching full
     }
   }, [remainingCapacity, currentWeight, totalCapacity]);
 

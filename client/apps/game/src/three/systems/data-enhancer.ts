@@ -94,9 +94,11 @@ export class DataEnhancer {
   /**
    * Get structure owner address
    */
-  async getStructureOwnerAddress(structureId: ID): Promise<bigint | undefined> {
+  async getStructureOwner(structureId: ID): Promise<{ address: bigint | undefined; ownerName: string } | undefined> {
     const structureMapData = await this.mapDataStore.getStructureByIdAsync(structureId);
-    return structureMapData ? BigInt(structureMapData.ownerAddress) : undefined;
+    return structureMapData
+      ? { address: BigInt(structureMapData.ownerAddress), ownerName: structureMapData.ownerName }
+      : undefined;
   }
 
   /**
