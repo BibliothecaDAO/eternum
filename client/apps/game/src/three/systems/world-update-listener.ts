@@ -109,7 +109,8 @@ export class WorldUpdateListener {
               return {
                 entityId: currentState.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
-                ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : undefined,
+                // need to set it to 0n if no owner address because else it won't be registered on the worldmap
+                ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
                 ownerName: enhancedData?.owner.ownerName || "",
                 guildName: enhancedData?.owner.guildName || "",
                 troopType: explorer.troopType as TroopType,

@@ -23,7 +23,7 @@ export type ArmySystemUpdate = {
   ownerName: string;
   guildName: string;
   troopCount?: number | undefined;
-  ownerAddress?: bigint | undefined;
+  ownerAddress: bigint;
   currentStamina?: number | undefined;
   maxStamina?: number | undefined;
   onChainStamina?:
