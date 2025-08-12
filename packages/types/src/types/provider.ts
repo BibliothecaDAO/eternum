@@ -905,6 +905,13 @@ export interface StructureTroopAdjacentTransferProps extends SystemSigner {
   resources: Resource[];
 }
 
+export interface OpenLootChestProps {
+  signer: AccountInterface;
+  token_id: bigint;
+  loot_chest_address: string;
+  claim_address: string;
+}
+
 export interface CreateMarketplaceOrdersProps {
   marketplace_address: num.BigNumberish;
   tokens: {

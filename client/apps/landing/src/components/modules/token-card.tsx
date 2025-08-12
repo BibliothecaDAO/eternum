@@ -1,12 +1,13 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useChestContent } from "@/hooks/use-open-chest";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -63,6 +64,16 @@ export const TokenCard = ({
     }
     return false;
   }, [token.expiration, token.best_price_hex]);
+
+  const chestContent = useChestContent(BigInt(token_id));
+
+  const [canShowChestVideo, setCanShowChestVideo] = useState(false);
+
+  useEffect(() => {
+    if (chestContent.length > 0 && isChestModalOpen) {
+      setCanShowChestVideo(true);
+    }
+  }, [chestContent, isChestModalOpen]);
 
   return (
     <>
@@ -150,16 +161,6 @@ export const TokenCard = ({
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
-
-              {/*listingActive && (
-                <div className="text-sm text-muted-foreground mt-1">
-                  {timeRemaining ? (
-                    <span className="text-red-500 font-medium">{timeRemaining}</span>
-                  ) : (
-                    `Expires ${new Date(Number(pass.expiration) * 1000).toLocaleString()}`
-                  )}
-                </div>
-              )}*/}
             </div>
           </div>
         </CardContent>
@@ -190,6 +191,10 @@ export const TokenCard = ({
               <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
                 <ArrowRightLeft className="h-4 w-4" />
               </Button>
+
+              // <Button variant="default" size="icon" onClick={handleOpenChestClick} title="Open Chest">
+              //   <ChevronDown className="h-4 w-4" />
+              // </Button>
             )}
           </div>
         </CardFooter>
@@ -217,12 +222,13 @@ export const TokenCard = ({
         />
       )}
 
-      {isOwner && isLootChest && (
+      {isOwner && isLootChest && canShowChestVideo && (
         <ChestOpeningModal
           isOpen={isChestModalOpen}
           onOpenChange={setIsChestModalOpen}
           remainingChests={remainingChests - 1}
           onChestOpened={() => setRemainingChests((prev) => Math.max(0, prev - 1))}
+          chestContent={chestContent}
         />
       )}
     </>

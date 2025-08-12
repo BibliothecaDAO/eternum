@@ -6,9 +6,18 @@ import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 interface ModelViewerProps {
   modelPath: string;
   className?: string;
+  positionY?: number;
+  scale?: number;
+  rotationY?: number;
 }
 
-export const ModelViewer = ({ modelPath, className = "" }: ModelViewerProps) => {
+export const ModelViewer = ({
+  modelPath,
+  positionY = 0,
+  scale = 1,
+  rotationY = 0,
+  className = "",
+}: ModelViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -114,15 +123,18 @@ export const ModelViewer = ({ modelPath, className = "" }: ModelViewerProps) => 
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
 
-        // Center the model horizontally and place on ground
+        // Center the model horizontally and position vertically
         model.position.x = -center.x;
         model.position.z = -center.z;
-        model.position.y = -box.min.y; // Place bottom of model on ground (y=0)
+        model.position.y = -box.min.y + positionY; // Apply Y offset from prop
 
         // Scale model appropriately
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2 / maxDim;
-        model.scale.setScalar(scale);
+        const autoScale = 2 / maxDim;
+        model.scale.setScalar(autoScale * scale);
+
+        // Apply Y rotation
+        model.rotation.y = rotationY;
 
         // Enable shadows
         model.traverse((child) => {
@@ -206,7 +218,7 @@ export const ModelViewer = ({ modelPath, className = "" }: ModelViewerProps) => 
 
       dracoLoader.dispose();
     };
-  }, [modelPath]);
+  }, [modelPath, positionY, scale, rotationY]);
 
   return (
     <div className={`relative ${className}`}>

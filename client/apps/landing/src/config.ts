@@ -1,5 +1,6 @@
 import {
   getCosmeticsAddress,
+  getCosmeticsClaimAddress,
   getLootChestsAddress,
   getLordsAddress,
   getMarketplaceAddress,
@@ -14,6 +15,8 @@ export const realmsAddress = getRealmsAddress();
 export const marketplaceAddress = getMarketplaceAddress();
 export const lootChestsAddress = getLootChestsAddress();
 export const cosmeticsAddress = getCosmeticsAddress();
+export const cosmeticsClaimAddress = getCosmeticsClaimAddress();
+
 // Collection IDs for different networks
 const COLLECTION_IDS = {
   mainnet: {

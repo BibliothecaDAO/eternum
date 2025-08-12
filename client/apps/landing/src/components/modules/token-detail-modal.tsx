@@ -6,6 +6,7 @@ import { seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useOpenChest } from "@/hooks/use-open-chest";
 import { formatRelativeTime } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
@@ -60,7 +61,7 @@ export const TokenDetailModal = ({
   const image = originalImage?.startsWith("ipfs://")
     ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
     : originalImage;
-  const { cancelOrder, editOrder, acceptOrders, isLoading } = marketplaceActions;
+  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
 
   const { data: activeMarketOrder } = useQuery({
     queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
@@ -79,7 +80,7 @@ export const TokenDetailModal = ({
     if (isOpen) {
       const id = (connector as any)?.controller?.id;
       const hasController = id === "controller";
-      setIsController(hasController);
+      setIsController(true);
     }
   }, [connectors, isOpen]);
 
@@ -91,14 +92,27 @@ export const TokenDetailModal = ({
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
-  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      console.log({ tokenData, tokenId: tokenData.token_id });
+    }
+  }, [tokenData, isOpen]);
+
+  const { openChest, isLoading: isChestOpeningLoading, error: chestOpeningError } = useOpenChest();
 
   const handleOpenChest = () => {
-    setIsChestOpeningLoading(true);
-    setTimeout(() => {
-      setIsChestOpeningLoading(false);
-      onChestOpen();
-    }, 2000);
+    openChest({
+      tokenId: BigInt(tokenData.token_id),
+      onSuccess: () => {
+        console.log("Chest opened successfully");
+        onChestOpen();
+        toast.success("Chest opened successfully");
+      },
+      onError: (error) => {
+        console.error("Failed to open chest:", error);
+      },
+    });
   };
 
   // Calculate time remaining for auctions about to expire
@@ -129,16 +143,6 @@ export const TokenDetailModal = ({
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [expiration]);
-
-  // Reset inputs AND syncing state when modal closes or relevant props change
-  /*useEffect(() => {
-    setShowEditInputs(false);
-    setEditPrice(price ? formatUnits(price, 18) : "");
-
-    if (!isOpen) {
-      setIsSyncing(false);
-    }
-  }, [isOpen, price]);*/
 
   // Effect to detect when indexer data has updated props
   useEffect(() => {

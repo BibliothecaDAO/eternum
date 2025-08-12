@@ -29,6 +29,9 @@ export const getLootChestsAddress = () => {
 };
 
 export const getCosmeticsAddress = () => {
-  // TODO: Replace with actual cosmetics address from getSeasonAddresses
-  return "0x0000000000000000000000000000000000000000000000000000000000000001";
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmetics;
+};
+
+export const getCosmeticsClaimAddress = () => {
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).cosmeticsClaim;
 };

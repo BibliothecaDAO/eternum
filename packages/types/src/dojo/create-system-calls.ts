@@ -299,6 +299,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.create_village(props);
   };
 
+  const open_loot_chest = async (props: SystemProps.OpenLootChestProps): Promise<Result> => {
+    return await provider.open_loot_chest(props);
+  };
+
   const create_marketplace_orders = async (props: SystemProps.CreateMarketplaceOrdersProps): Promise<Result> => {
     return await provider.create_marketplace_orders(props);
   };
@@ -429,6 +433,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
 
+    // Loot Chest
+    open_loot_chest: withAuth(open_loot_chest),
+
+    // Marketplace
     create_marketplace_orders: withAuth(create_marketplace_orders),
     accept_marketplace_orders: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),

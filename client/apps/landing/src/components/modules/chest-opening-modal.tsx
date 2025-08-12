@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ChestContent } from "./chest-content";
+import { ChestAsset, ChestContent } from "./chest-content";
 
 interface ChestOpeningModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   remainingChests: number;
   onChestOpened?: () => void;
+  chestContent: ChestAsset[];
 }
 
 const chestOpeningVideo: Record<string, string> = {
@@ -25,7 +26,13 @@ const chestOpeningVideo: Record<string, string> = {
   legendary: chestOpeningLegendary,
 };
 
-export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChestOpened }: ChestOpeningModalProps) => {
+export const ChestOpeningModal = ({
+  isOpen,
+  onOpenChange,
+  remainingChests,
+  onChestOpened,
+  chestContent,
+}: ChestOpeningModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoState, setVideoState] = useState<"loading" | "playing" | "ended">("loading");
   const [showWhiteScreen, setShowWhiteScreen] = useState(false);
@@ -209,7 +216,7 @@ export const ChestOpeningModal = ({ isOpen, onOpenChange, remainingChests, onChe
           )}
 
           {/* Complete state content */}
-          {videoState === "ended" && <ChestContent showContent={showContent} />}
+          {videoState === "ended" && <ChestContent showContent={showContent} chestContent={chestContent} />}
 
           {/* Controls */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-[60]">

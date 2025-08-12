@@ -190,6 +190,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        rarity: {
+          common: "#848484",
+          uncommon: "#6cc95e",
+          rare: "#56c8da",
+          epic: "#e9b062",
+          legendary: "#ba37d4",
+        },
       },
     },
   },
