@@ -10,7 +10,7 @@ import { ExplorationRewards } from "@/components/ExplorationRewards";
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +60 stamina per Eternum Day. Each
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +30 stamina per Eternum Day. Each
 troop type possesses different maximum stamina capacities, outlined in the table below:
 
 <BlitzTroopMovementTable />
@@ -21,7 +21,7 @@ themselves severely disadvantaged if attacked by enemy forces.
 ## Movement
 
 Armies can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a Realm, another
-army, or a world structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
+army, or a World Structure such as a Hyperstructure. Armies may also move to more distant hexes, provided there is a
 continuous path of adjacent, unoccupied hexes leading to the destination, and the army has sufficient stamina available
 for the entire journey.
 
@@ -34,6 +34,9 @@ The amount of stamina consumed when moving into a hex depends on both the biome 
 within the army. The table below details biome-specific stamina costs for each troop type:
 
 <BiomeStamina />
+
+Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each troop
+consumes **0.1** Wheat to explore a tile, or **0.05** Wheat to traverse an already explored tile.
 
 ## Exploring
 

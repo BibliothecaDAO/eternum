@@ -34,7 +34,7 @@ export default defineConfig({
     google: "Open Sans",
   },
 
-  title: "Eternum (Season 1 - Concluded)",
+  title: "Realms Docs",
   sidebar: [
     {
       text: "Overview",
@@ -43,7 +43,15 @@ export default defineConfig({
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "$LORDS Token", link: "/overview/lords" },
-        { text: "Loot Chests", link: "/overview/loot-chests" },
+        {
+          text: "Loot Chests",
+          collapsed: true,
+          items: [
+            { text: "Loot Chests", link: "/overview/chests/loot-chests" },
+            { text: "Chest Contents", link: "/overview/chests/contents" },
+            { text: "Cosmetic Items", link: "/overview/chests/cosmetics" },
+          ],
+        },
         { text: "Quick Links", link: "/overview/links" },
         { text: "Disclaimer - MUST READ", link: "/overview/disclaimer" },
         { text: "Resource Addresses", link: "/overview/resource-addresses" },

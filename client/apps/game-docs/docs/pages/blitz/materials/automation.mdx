@@ -48,7 +48,7 @@ The automation system periodically checks and processes active orders for each e
 
 ## Production Types
 
-There are three types of production automation:
+There are two types of production automation:
 
 1. **Standard (Resource-to-Resource)**:
    - Converts one or more input resources into a different output resource.
@@ -56,9 +56,6 @@ There are three types of production automation:
 2. **Simple (Labor-to-Resource)**:
    - Utilizes Labor from the realm to produce a specific resource.
    - Example: Using Labor to harvest Food.
-3. **Resource-to-Labor**:
-   - Converts a specified resource into Labor for the realm.
-   - Example: Burning Food to generate Labor.
 
 ## Production Order Modes
 
@@ -116,10 +113,9 @@ Production automation is managed within individual realm interfaces.
    - **Production Type**:
      - `Standard (Resource-based)`
      - `Simple (Labor-based)`
-     - `Resource to Labor`
    - **Priority (1-9)**:
      - Set the execution priority. `1` is the highest priority, `9` is the lowest.
-   - **Resource to Produce / Resource Input for Labor**:
+   - **Resource to Produce**:
      - Select the resource you want to produce or consume.
      - The UI shows required input resources for Resource-to-Resource recipes.
    - **Target Amount**:
