@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Calendar, Crown, Map, Package, ShoppingBag, Ticket, TwitterIcon, X } from "lucide-react";
+import { Calendar, Crown, Map, Package, ShoppingBag, Sparkles, Ticket, TwitterIcon, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -40,6 +40,11 @@ const items = [
     title: "Loot Chests",
     url: "/loot-chests",
     icon: Package,
+  },
+  {
+    title: "Cosmetics",
+    url: "/cosmetics",
+    icon: Sparkles,
   },
   {
     title: "Marketplace",

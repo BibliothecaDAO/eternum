@@ -59,9 +59,10 @@ export default function TransferSeasonPassDialog({
   const { sendAsync, error } = useSendTransaction({
     calls:
       contract && address && transferTo
-        ? selectedRealms.map((tokenId) =>
-            contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]),
-          )
+        ? selectedRealms.map((tokenId) => {
+            console.log("Creating transfer call for tokenId:", tokenId, "from:", address, "to:", transferTo);
+            return contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]);
+          })
         : undefined,
   });
 

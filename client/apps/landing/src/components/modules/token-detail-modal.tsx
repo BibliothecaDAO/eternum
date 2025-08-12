@@ -11,7 +11,7 @@ import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Info, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
@@ -72,6 +72,15 @@ export const TokenDetailModal = ({
   // Get wallet state
   const { address } = useAccount();
   const { connectors, connect } = useConnect();
+
+  const [isController, setIsController] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const hasController = connectors.some((connector) => connector.id === "cartridgeController");
+      setIsController(hasController);
+    }
+  }, [connectors, isOpen]);
 
   const { lordsBalance } = useLords();
 
@@ -239,18 +248,31 @@ export const TokenDetailModal = ({
           </Button>
         </div>
       ) : (
-        <div className="flex gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2">
           {isOwner && isLootChest && (
-            <Button variant="default" className="w-full" onClick={handleOpenChest} disabled={isLoading}>
-              {isChestOpeningLoading ? (
-                <>
-                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                  Opening...
-                </>
-              ) : (
-                "Open Chest"
+            <>
+              {!isController && (
+                <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3 mb-2">
+                  <Info className="h-4 w-4 flex-shrink-0" />
+                  <span>Send to Cartridge Controller to open chests</span>
+                </div>
               )}
-            </Button>
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={handleOpenChest}
+                disabled={isLoading || !isController}
+              >
+                {isChestOpeningLoading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Opening...
+                  </>
+                ) : (
+                  "Open Chest"
+                )}
+              </Button>
+            </>
           )}
           <CreateListingsDrawer
             isLoading={isLoading}

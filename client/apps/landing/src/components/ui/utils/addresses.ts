@@ -27,3 +27,8 @@ export const getMarketplaceAddress = () => {
 export const getLootChestsAddress = () => {
   return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lootChests;
 };
+
+export const getCosmeticsAddress = () => {
+  // TODO: Replace with actual cosmetics address from getSeasonAddresses
+  return "0x0000000000000000000000000000000000000000000000000000000000000001";
+};
