@@ -212,7 +212,6 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
                 const imageSrc = token.metadata?.image?.startsWith("ipfs://")
                   ? token.metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
                   : token.metadata?.image;
-                console.log({ imageSrc });
                 return (
                   <div key={token.token_id.toString()} className="grid grid-cols-6 gap-2 items-center py-2">
                     <div className="flex items-center gap-2 col-span-2">

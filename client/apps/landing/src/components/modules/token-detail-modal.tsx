@@ -71,13 +71,14 @@ export const TokenDetailModal = ({
 
   // Get wallet state
   const { address } = useAccount();
-  const { connectors, connect } = useConnect();
+  const { connector, connectors, connect } = useConnect();
 
   const [isController, setIsController] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      const hasController = connectors.some((connector) => connector.id === "cartridgeController");
+      const id = (connector as any)?.controller?.id;
+      const hasController = id === "controller";
       setIsController(hasController);
     }
   }, [connectors, isOpen]);
