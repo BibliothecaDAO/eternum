@@ -2,7 +2,7 @@ import { CollectionTokenGrid } from "@/components/modules/collection-token-grid"
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
+import TransferNftDialog from "@/components/modules/transfer-nft-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Pagination,
@@ -313,10 +313,12 @@ function ManageCollectionRoute() {
         {/* End Pagination Controls */}
 
         {isTransferOpen && tokenBalanceQuery.data && (
-          <TransferSeasonPassDialog
+          <TransferNftDialog
             isOpen={isTransferOpen}
             setIsOpen={handleDialogClose}
-            seasonPassMints={tokenBalanceQuery.data}
+            nfts={tokenBalanceQuery.data}
+            collectionName={collectionName}
+            collectionAddress={collectionAddress}
             initialSelectedTokenId={initialSelectedTokenId}
           />
         )}
