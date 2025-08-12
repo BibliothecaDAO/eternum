@@ -41,18 +41,6 @@ export const ChestOpeningModal = ({
   const [loadError, setLoadError] = useState(false);
   const [chestType, setChestType] = useState<string>("common");
 
-  console.log("ChestOpeningModal - State:", {
-    remainingChests,
-    videoState,
-    videoRef: videoRef.current,
-    videoSrc: chestOpeningVideo[chestType],
-    chestType,
-    isOpen,
-    isVideoReady,
-    loadError,
-    showWhiteScreen,
-  });
-
   // Handle video loading and playing
   useEffect(() => {
     if (isOpen && isVideoReady && videoRef.current) {

@@ -41,18 +41,23 @@ export const useOpenChest = () => {
         }
 
         // Call the claim entrypoint with the token ID
+        // const startTime = Date.now();
         // const tx = await open_loot_chest({
         //   signer: account,
         //   token_id: tokenId,
         //   loot_chest_address: lootChestsAddress,
         //   claim_address: cosmeticsClaimAddress,
         // });
+        // const endTime = Date.now();
+        // const transactionTime = endTime - startTime;
+
+        // console.log("Transaction time:", transactionTime);
 
         // Wait for transaction confirmation
         toast.success("Transaction sent! Opening chest...");
 
         // wait for 5 seconds
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        // await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // The transaction complete event will be handled by the TxEmit component
         // which listens to provider events

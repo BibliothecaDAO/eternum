@@ -80,7 +80,7 @@ export const TokenDetailModal = ({
     if (isOpen) {
       const id = (connector as any)?.controller?.id;
       const hasController = id === "controller";
-      setIsController(true);
+      setIsController(hasController);
     }
   }, [connectors, isOpen]);
 

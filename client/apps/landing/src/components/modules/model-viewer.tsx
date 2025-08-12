@@ -9,13 +9,32 @@ interface ModelViewerProps {
   positionY?: number;
   scale?: number;
   rotationY?: number;
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
 }
+
+const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
+  switch (rarity) {
+    case "common":
+      return "#848484";
+    case "uncommon":
+      return "#6cc95e";
+    case "rare":
+      return "#56c8da";
+    case "epic":
+      return "#e9b062";
+    case "legendary":
+      return "#ba37d4";
+    default:
+      return "#666666";
+  }
+};
 
 export const ModelViewer = ({
   modelPath,
   positionY = 0,
   scale = 1,
   rotationY = 0,
+  rarity,
   className = "",
 }: ModelViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -74,9 +93,9 @@ export const ModelViewer = ({
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Dramatic lighting setup like Three.js decals example
-    // Low ambient light for dark surroundings
-    const ambientLight = new THREE.AmbientLight(0x666666, 0.3);
+    // Dramatic lighting setup with rarity-based ambient light
+    const rarityColor = getRarityAmbientColor(rarity);
+    const ambientLight = new THREE.AmbientLight(rarityColor, 0.4);
     scene.add(ambientLight);
 
     // Warm directional light
@@ -218,7 +237,7 @@ export const ModelViewer = ({
 
       dracoLoader.dispose();
     };
-  }, [modelPath, positionY, scale, rotationY]);
+  }, [modelPath, positionY, scale, rotationY, rarity]);
 
   return (
     <div className={`relative ${className}`}>
