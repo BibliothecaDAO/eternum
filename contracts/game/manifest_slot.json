@@ -2149,6 +2149,18 @@
             },
             {
               "type": "function",
+              "name": "make_hyperstructures",
+              "inputs": [
+                {
+                  "name": "count",
+                  "type": "core::integer::u8"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
               "name": "create",
               "inputs": [],
               "outputs": [
@@ -2280,6 +2292,7 @@
       "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",
       "systems": [
         "register",
+        "make_hyperstructures",
         "make_hyperstructures",
         "create",
         "upgrade"
@@ -14158,6 +14171,7 @@
     {
       "members": [],
       "class_hash": "0x46b52e0365a27d597bea4cc25e72bc4f03098b72df82d8ed04f5f4d90a58c92",
+      "class_hash": "0x46b52e0365a27d597bea4cc25e72bc4f03098b72df82d8ed04f5f4d90a58c92",
       "tag": "s1_eternum-Hyperstructure",
       "selector": "0x5894102a0f9c53bf2298d3bdaf4b0f8a0f92777d57ff0d585ca3b5c5b25b7bc"
     },
@@ -14370,6 +14384,12 @@
       "class_hash": "0x77b816452363f9001b479336364d126c7d32658fbb7ebb247a9e34138136059",
       "tag": "s1_eternum-StructureOwnerStats",
       "selector": "0x1d52c8d6f2bdc7f57662f1790b92a4900fe725cc3e8277418acdde65bb1cd5b"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6df873d5c77090714e8cc984b459750091917a587fc4a7c1a627ed4afdeb24c",
+      "tag": "s1_eternum-StructureReservation",
+      "selector": "0x34cc8f5f0dee3ca4503076679b9be23ba6782a15c6920ef0ecd7dadd70d297e"
     },
     {
       "members": [],

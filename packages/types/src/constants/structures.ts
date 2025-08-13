@@ -387,3 +387,12 @@ export const isEconomyBuilding = (buildingType: BuildingType) => {
 export const isFoodBuilding = (buildingType: BuildingType) => {
   return buildingType === BuildingType.ResourceWheat || buildingType === BuildingType.ResourceFish;
 };
+
+export const PROGRESS_HALF_THRESHOLD = 50;
+export const PROGRESS_FINAL_THRESHOLD = 100;
+
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}

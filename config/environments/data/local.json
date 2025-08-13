@@ -800,6 +800,7 @@
   "settlement": {
     "center": 2147483646,
     "base_distance": 8,
+    "base_distance": 8,
     "subsequent_distance": 10
   },
   "buildings": {

@@ -36,7 +36,7 @@ export function LoginPage() {
 
     try {
       await connectWallet();
-      navigate({ to: ROUTES.REALM });
+      navigate({ to: ROUTES.HOME });
     } catch (error) {
       console.error("Failed to connect:", error);
     }
