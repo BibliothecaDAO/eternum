@@ -128,10 +128,10 @@ export default function TransferNftDialog({
 
   const renderNftDetails = (nft: MergedNftData) => {
     const metadata = nft?.metadata;
-    
+
     // Check if it's a Season Pass by looking for resources
     const hasResources = metadata?.attributes?.some((attr: any) => attr.trait_type === "Resource");
-    
+
     if (hasResources) {
       // Season Pass specific rendering
       return (
@@ -141,11 +141,7 @@ export default function TransferNftDialog({
             {metadata?.attributes
               ?.filter((attribute: any) => attribute.trait_type === "Resource")
               .map((attribute: any, index: number) => (
-                <ResourceIcon
-                  resource={attribute.value as string}
-                  size="lg"
-                  key={`${attribute.trait_type}-${index}`}
-                />
+                <ResourceIcon resource={attribute.value as string} size="lg" key={`${attribute.trait_type}-${index}`} />
               ))}
           </TableCell>
         </>
@@ -157,11 +153,12 @@ export default function TransferNftDialog({
           <TableCell>{metadata?.name || `${collectionName} #${nft.token_id}`}</TableCell>
           <TableCell>
             {metadata?.image && (
-              <img 
-                src={metadata.image.startsWith("ipfs://") 
-                  ? metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-                  : metadata.image
-                } 
+              <img
+                src={
+                  metadata.image.startsWith("ipfs://")
+                    ? metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                    : metadata.image
+                }
                 alt={metadata?.name || `Token #${nft.token_id}`}
                 className="w-16 h-16 object-cover rounded"
               />
@@ -189,7 +186,11 @@ export default function TransferNftDialog({
               <TableRow className="uppercase">
                 <TableHead>Token ID</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>{nfts[0]?.metadata?.attributes?.some((attr: any) => attr.trait_type === "Resource") ? "Resources" : "Preview"}</TableHead>
+                <TableHead>
+                  {nfts[0]?.metadata?.attributes?.some((attr: any) => attr.trait_type === "Resource")
+                    ? "Resources"
+                    : "Preview"}
+                </TableHead>
                 <TableHead>Select</TableHead>
               </TableRow>
             </TableHeader>
