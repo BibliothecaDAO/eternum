@@ -271,12 +271,6 @@ const calculateRarityStats = (items: ChestAsset[]) => {
   return stats;
 };
 
-// Function to shuffle array and pick 3 random items
-export const getRandomAssets = (assets: ChestAsset[], count: number = 3): ChestAsset[] => {
-  const shuffled = [...assets].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-};
-
 // Function to sort assets by rarity (rarest first)
 const sortAssetsByRarity = (assets: ChestAsset[]): ChestAsset[] => {
   const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
