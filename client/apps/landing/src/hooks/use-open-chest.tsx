@@ -1,7 +1,6 @@
-import { ChestAsset, chestAssets, getRandomAssets } from "@/components/modules/chest-content";
 import { cosmeticsClaimAddress, lootChestsAddress } from "@/config";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useDojo } from "./context/dojo-context";
 
@@ -42,12 +41,12 @@ export const useOpenChest = () => {
 
         // Call the claim entrypoint with the token ID
         // const startTime = Date.now();
-        // const tx = await open_loot_chest({
-        //   signer: account,
-        //   token_id: tokenId,
-        //   loot_chest_address: lootChestsAddress,
-        //   claim_address: cosmeticsClaimAddress,
-        // });
+        const tx = await open_loot_chest({
+          signer: account,
+          token_id: tokenId,
+          loot_chest_address: lootChestsAddress,
+          claim_address: cosmeticsClaimAddress,
+        });
         // const endTime = Date.now();
         // const transactionTime = endTime - startTime;
 
@@ -80,17 +79,4 @@ export const useOpenChest = () => {
     isLoading,
     error,
   };
-};
-
-interface ChestContent {
-  tokenId: bigint;
-  content: ChestAsset[];
-}
-
-export const useChestContent = (tokenId: bigint) => {
-  const [chestContent, setChestContent] = useState<ChestAsset[]>([]);
-
-  const randomAssets = useMemo(() => getRandomAssets(chestAssets, 3), []);
-
-  return randomAssets;
 };

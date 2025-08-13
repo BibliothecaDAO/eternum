@@ -18,6 +18,13 @@ export interface ChestAsset {
   scale: number;
   rotationY?: number | undefined;
 }
+const RARITY_PERCENTAGES = {
+  common: 50.7, // 16.9 * 3 items
+  uncommon: 25.36, // 12.68 * 2 items
+  rare: 16.9, // 8.45 * 2 items
+  epic: 2.82, // 1.41 * 2 items
+  legendary: 4.22, // 4.22 * 1 item
+};
 
 export const chestAssets: ChestAsset[] = [
   {
@@ -176,15 +183,15 @@ const getTypeClass = (type: ChestAsset["type"]) => {
 const getRarityClass = (rarity: ChestAsset["rarity"]) => {
   switch (rarity) {
     case "common":
-      return "text-white";
+      return "text-[#848484]";
     case "uncommon":
-      return "text-white";
+      return "text-[#6cc95e]";
     case "rare":
-      return "text-white";
+      return "text-[#56c8da]";
     case "epic":
-      return "text-white";
+      return "text-[#e9b062]";
     case "legendary":
-      return "text-white";
+      return "text-[#ba37d4]";
     default:
       return "bg-gray-500 text-white";
   }
@@ -303,7 +310,15 @@ const scrollbarStyles = `
   }
 `;
 
-export const ChestContent = ({ showContent, chestContent }: { showContent: boolean; chestContent: ChestAsset[] }) => {
+export const ChestContent = ({
+  chestType,
+  showContent,
+  chestContent,
+}: {
+  chestType: ChestAsset["rarity"];
+  showContent: boolean;
+  chestContent: ChestAsset[];
+}) => {
   // Sort assets by rarity (rarest first)
   const sortedChestContent = sortAssetsByRarity(chestContent);
   const [selectedAsset, setSelectedAsset] = useState<ChestAsset>(sortedChestContent[0]);
@@ -323,13 +338,13 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
   const renderTitle = () => {
     return (
       <h1
-        className="flex items-center justify-center gap-2 text-4xl font-bold text-chest-gold text-center"
+        className="flex items-center justify-center gap-2 text-4xl font-bold text-center text-white"
         style={{
           transition: "opacity 5000ms",
           opacity: showContent ? 1 : 0,
         }}
       >
-        Loot Chest Content
+        <span className={getRarityClass(chestType)}>{chestType.toUpperCase()} Chest</span>
         <span className="text-sm text-white">(3 items)</span>
       </h1>
     );
@@ -338,7 +353,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
-      <div className="relative w-full h-screen">
+      <div className="relative w-full h-screen text-white">
         {/* Full-screen 3D background */}
         <div
           className="absolute inset-0"
@@ -384,35 +399,35 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                       <Diamond className="w-3 h-3" />
                       Legendary
                     </span>
-                    <span className="text-gray-300 text-xs font-heading">2.82%</span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.legendary}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-[#e9b062] font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Epic
                     </span>
-                    <span className="text-gray-300 text-xs font-heading">4.22%</span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.epic}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-[#56c8da] font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Rare
                     </span>
-                    <span className="text-gray-300 text-xs font-heading">16.90%</span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.rare}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-[#6cc95e] font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Uncommon
                     </span>
-                    <span className="text-gray-300 text-xs font-heading">25.36%</span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.uncommon}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-[#848484] font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Common
                     </span>
-                    <span className="text-gray-300 text-xs font-heading">50.70%</span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.common}%</span>
                   </div>
                 </div>
               </div>
@@ -455,7 +470,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                   <h3 className="text-base font-bold text-white break-words">{selectedAsset.name}</h3>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs px-3 py-1 rounded-full font-medium ${getRarityBgClass(selectedAsset.rarity)} ${getRarityClass(selectedAsset.rarity)}`}
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${getRarityBgClass(selectedAsset.rarity)} `}
                     >
                       {selectedAsset.rarity.toUpperCase()}
                     </span>
@@ -463,7 +478,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                       {selectedAsset.type.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 leading-relaxed mt-2">Drop chance: {selectedAsset.drawChance}%</p>
+                  <p className="text-xs text-white leading-relaxed mt-2">Drop chance: {selectedAsset.drawChance}%</p>
                 </div>
               </div>
             </div>
@@ -480,7 +495,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
               <div className="backdrop-blur-md rounded-2xl p-6 bg-gradient-to-br from-black/80 to-gray-900/60 border-2 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]">
                 {/* Container header */}
                 <div className="mb-4 text-center">
-                  <div className="text-sm text-gray-300 font-heading font-semibold tracking-wider uppercase flex items-center justify-center gap-2">
+                  <div className="text-sm text-white font-heading font-semibold tracking-wider uppercase flex items-center justify-center gap-2">
                     <Swords className="w-4 h-4" />
                     Item Selection
                     <Swords className="w-4 h-4" />
@@ -547,7 +562,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                             {/* Left side - Asset image/icon */}
                             <div className="flex-shrink-0">
                               <div
-                                className={`w-12 h-12 rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border ${getRarityClass(asset.rarity)}`}
+                                className={`w-12 h-12 text-white rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border `}
                               >
                                 {asset.type === "armor" && <Swords className="w-6 h-6" />}
                                 {asset.type === "skin" && <Target className="w-6 h-6" />}
@@ -566,7 +581,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                                   </h3>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span
-                                      className={`text-xs px-2 py-1 rounded-full font-medium ${getRarityBgClass(asset.rarity)} ${getRarityClass(asset.rarity)}`}
+                                      className={`text-xs px-2 py-1 rounded-full font-medium text-white ${getRarityBgClass(asset.rarity)}`}
                                     >
                                       {asset.rarity.charAt(0).toUpperCase() + asset.rarity.slice(1)}
                                     </span>
@@ -600,7 +615,7 @@ export const ChestContent = ({ showContent, chestContent }: { showContent: boole
                               {/* Expandable description */}
                               {isSelected && (
                                 <div className="mt-3 pt-3 border-t border-gray-700/50">
-                                  <p className="text-xs text-gray-300 leading-relaxed">{asset.description}</p>
+                                  <p className="text-xs text-white leading-relaxed">{asset.description}</p>
                                 </div>
                               )}
                             </div>

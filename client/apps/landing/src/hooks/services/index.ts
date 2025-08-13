@@ -337,3 +337,26 @@ export async function fetchSeasonDay(): Promise<SeasonDay> {
     dayString: `Day ${currentDay}`,
   };
 }
+
+interface CollectibleClaimed {
+  token_address: string;
+  attributes_raw: string;
+  token_recipient: string;
+  timestamp: number;
+}
+
+/**
+ * Fetch collectible claimed events for a specific player
+ */
+export async function fetchCollectibleClaimed(
+  playerAddress: string,
+  minTimestamp: number = 0,
+): Promise<CollectibleClaimed[]> {
+  const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{playerAddress}", playerAddress).replace(
+    "{minTimestamp}",
+    minTimestamp.toString(),
+  );
+
+  console.log({ query });
+  return await gameClientFetch<CollectibleClaimed[]>(query);
+}

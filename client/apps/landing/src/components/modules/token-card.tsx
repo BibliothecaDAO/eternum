@@ -1,17 +1,15 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { useChestContent } from "@/hooks/use-open-chest";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-import { ChestOpeningModal } from "./chest-opening-modal";
 import { TokenDetailModal } from "./token-detail-modal";
 
 interface TokenCardProps {
@@ -33,8 +31,6 @@ export const TokenCard = ({
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isChestModalOpen, setIsChestModalOpen] = useState(false);
-  const [remainingChests, setRemainingChests] = useState(totalOwnedChests);
 
   const isOwner = token.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
@@ -64,16 +60,6 @@ export const TokenCard = ({
     }
     return false;
   }, [token.expiration, token.best_price_hex]);
-
-  const chestContent = useChestContent(BigInt(token_id));
-
-  const [canShowChestVideo, setCanShowChestVideo] = useState(false);
-
-  useEffect(() => {
-    if (chestContent.length > 0 && isChestModalOpen) {
-      setCanShowChestVideo(true);
-    }
-  }, [chestContent, isChestModalOpen]);
 
   return (
     <>
@@ -191,27 +177,16 @@ export const TokenCard = ({
               <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
                 <ArrowRightLeft className="h-4 w-4" />
               </Button>
-
-              // <Button variant="default" size="icon" onClick={handleOpenChestClick} title="Open Chest">
-              //   <ChevronDown className="h-4 w-4" />
-              // </Button>
             )}
           </div>
         </CardFooter>
       </Card>
 
-      {collection?.id && (
+      {collection?.id && isModalOpen && (
         <TokenDetailModal
-          isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
+          isOpen={isModalOpen}
           isLootChest={isLootChest}
-          onChestOpen={() => {
-            setIsChestModalOpen(true);
-            setTimeout(() => {
-              // This is a hack to prevent the modal from closing immediately
-              setIsModalOpen(false);
-            }, 100);
-          }}
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
@@ -219,16 +194,6 @@ export const TokenCard = ({
           orderId={token.order_id?.toString() ?? undefined}
           isListed={token.expiration !== null}
           expiration={token.expiration ? Number(token.expiration) : undefined}
-        />
-      )}
-
-      {isOwner && isLootChest && canShowChestVideo && (
-        <ChestOpeningModal
-          isOpen={isChestModalOpen}
-          onOpenChange={setIsChestModalOpen}
-          remainingChests={remainingChests - 1}
-          onChestOpened={() => setRemainingChests((prev) => Math.max(0, prev - 1))}
-          chestContent={chestContent}
         />
       )}
     </>

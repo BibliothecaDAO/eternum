@@ -1,21 +1,30 @@
 import chestOpeningCommon from "@/assets/videos/chest-opening/common.mp4";
-import chestOpeningEpic from "@/assets/videos/chest-opening/epic.mp4";
-import chestOpeningLegendary from "@/assets/videos/chest-opening/legendary.mp4";
+// todo: fix this
+import chestOpeningLegendary from "@/assets/videos/chest-opening/epic.mp4";
+import chestOpeningEpic from "@/assets/videos/chest-opening/legendary.mp4";
 import chestOpeningRare from "@/assets/videos/chest-opening/rare.mp4";
 import chestOpeningUncommon from "@/assets/videos/chest-opening/uncommon.mp4";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useChestContent } from "@/hooks/use-chest-content";
+import { useOpenChest } from "@/hooks/use-open-chest";
+import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ChestAsset, ChestContent } from "./chest-content";
 
+const LoadingAnimation = () => {
+  return (
+    <div className="p-10 w-1/6 flex justify-center">
+      <img src="/images/logos/eternum-loader.png" className="scale-50 self-center" />
+    </div>
+  );
+};
+
 interface ChestOpeningModalProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
   remainingChests: number;
-  onChestOpened?: () => void;
-  chestContent: ChestAsset[];
+  nextToken: string | null;
 }
 
 const chestOpeningVideo: Record<string, string> = {
@@ -26,24 +35,68 @@ const chestOpeningVideo: Record<string, string> = {
   legendary: chestOpeningLegendary,
 };
 
-export const ChestOpeningModal = ({
-  isOpen,
-  onOpenChange,
-  remainingChests,
-  onChestOpened,
-  chestContent,
-}: ChestOpeningModalProps) => {
+const loadingMessages = [
+  "Preparing ancient relics from the depths...",
+  "Revealing the spirits of the First Legacy...",
+  "Unlocking weapons forged in winter's flame...",
+  "Unleashing the aura of distinguished Realms...",
+  "Blessing shields with winter magic...",
+  "Gathering the Hunter's arsenal...",
+  "Revealing platforms carved from sacred wood...",
+  "Summoning the guardians of old...",
+  "Manifesting golden magnificence...",
+  "Blessing armor with timeless power...",
+  "Unlocking blades of frozen steel...",
+  "Revealing arrows touched by frost...",
+];
+
+export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoState, setVideoState] = useState<"loading" | "playing" | "ended">("loading");
   const [showWhiteScreen, setShowWhiteScreen] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [chestType, setChestType] = useState<string>("common");
+  const [chestType, setChestType] = useState<ChestAsset["rarity"]>("common");
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  // Handle video loading and playing
+  const { chestContent, resetChestContent } = useChestContent();
+
+  // Cycle through loading messages every 2 seconds
   useEffect(() => {
-    if (isOpen && isVideoReady && videoRef.current) {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (chestContent && chestContent.length > 0) {
+      // Find the rarest item from all chest content
+      const rarityOrder = ["common", "uncommon", "rare", "epic", "legendary"];
+      const rarestItem = chestContent.reduce((rarest, current) => {
+        const rarestIndex = rarityOrder.indexOf(rarest.rarity);
+        const currentIndex = rarityOrder.indexOf(current.rarity);
+        return currentIndex > rarestIndex ? current : rarest;
+      });
+      setChestType(rarestItem.rarity);
+      setIsChestOpeningLoading(false);
+
+      // Reset all modal states when new chest content is detected
+      setVideoState("loading");
+      setShowWhiteScreen(false);
+      setShowContent(false);
+      setIsVideoReady(false);
+      setLoadError(false);
+    }
+  }, [chestContent]);
+
+  const { clearLootChestOpening, setOpenedChestTokenId } = useLootChestOpeningStore();
+
+  // Handle video loading and playing - only when chestContent is available
+  useEffect(() => {
+    if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0) {
       console.log("Video is ready, attempting to play...");
 
       const playVideo = async () => {
@@ -73,7 +126,7 @@ export const ChestOpeningModal = ({
 
       playVideo();
     }
-  }, [isOpen, isVideoReady]);
+  }, [isVideoReady, chestContent]);
 
   // Fade out audio before video ends
   useEffect(() => {
@@ -107,21 +160,37 @@ export const ChestOpeningModal = ({
     // After 3 seconds, show text and trigger fade
     setTimeout(() => {
       setShowContent(true);
-      onChestOpened?.();
     }, 500);
   };
 
-  const handleOpenNext = () => {
-    if (remainingChests > 0 && videoRef.current) {
-      setVideoState("playing");
-      setShowContent(false);
-      setShowWhiteScreen(false);
-      videoRef.current.currentTime = 0;
-      videoRef.current.volume = 1; // Reset volume to full
-      videoRef.current.play();
-    }
-  };
+  const { openChest, error: chestOpeningError } = useOpenChest();
+  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
 
+  const handleOpenChest = () => {
+    if (!nextToken) return;
+    setIsChestOpeningLoading(true);
+
+    // Immediately reset video state to loading when opening new chest
+    setVideoState("loading");
+    setShowWhiteScreen(false);
+    setShowContent(false);
+    setIsVideoReady(false);
+    setLoadError(false);
+
+    // Reset chest content to empty array
+    resetChestContent();
+
+    openChest({
+      tokenId: BigInt(nextToken),
+      onSuccess: () => {
+        console.log("Chest opened successfully");
+        setOpenedChestTokenId(nextToken);
+      },
+      onError: (error) => {
+        console.error("Failed to open chest:", error);
+      },
+    });
+  };
   const handleSkip = () => {
     console.log("Skipping video");
 
@@ -132,61 +201,65 @@ export const ChestOpeningModal = ({
     setVideoState("ended");
     setShowWhiteScreen(false);
     setShowContent(true);
-    onChestOpened?.();
   };
 
   const handleClose = () => {
     setShowWhiteScreen(false);
     setShowContent(false);
     setVideoState("loading");
-    onOpenChange(false);
+    clearLootChestOpening();
   };
 
+  // Check if we should show loading state
+  const shouldShowLoading = !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={true} onOpenChange={clearLootChestOpening}>
       <DialogContent className="max-w-full w-full h-full p-0 border-0 bg-black">
         <DialogTitle className="sr-only">Chest Opening</DialogTitle>
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Video */}
-          <video
-            ref={videoRef}
-            className={`absolute inset-0 w-full h-full object-cover ${
-              videoState === "ended" ? "hidden" : videoState === "loading" ? "opacity-0" : "opacity-100"
-            }`}
-            onEnded={handleVideoEnd}
-            onError={(e) => {
-              console.error("Video error:", e);
-              setLoadError(true);
-              setVideoState("playing");
-            }}
-            onLoadedData={() => {
-              console.log("Video data loaded");
-              setIsVideoReady(true);
-            }}
-            onLoadedMetadata={() => console.log("Video metadata loaded")}
-            onCanPlay={() => console.log("Video can play")}
-            onPlay={() => console.log("Video started playing")}
-            onPause={() => console.log("Video paused")}
-            onTimeUpdate={(e) => {
-              const video = e.currentTarget;
-              if (video.currentTime > 0 && video.currentTime < 1) {
-                console.log("Video is playing, current time:", video.currentTime);
-              }
-            }}
-            playsInline
-            muted={false}
-            autoPlay={false}
-            preload="auto"
-            controls={false}
-          >
-            <source src={chestOpeningVideo[chestType]} type="video/mp4" />
-          </video>
+          {/* Video - only show when chestContent is available */}
+          {chestContent && chestContent.length > 0 && (
+            <video
+              ref={videoRef}
+              className={`absolute inset-0 w-full h-full object-cover ${
+                videoState === "ended" ? "hidden" : videoState === "loading" ? "opacity-0" : "opacity-100"
+              }`}
+              onEnded={handleVideoEnd}
+              onError={(e) => {
+                console.error("Video error:", e);
+                setLoadError(true);
+                setVideoState("playing");
+              }}
+              onLoadedData={() => {
+                console.log("Video data loaded");
+                setIsVideoReady(true);
+              }}
+              onLoadedMetadata={() => console.log("Video metadata loaded")}
+              onCanPlay={() => console.log("Video can play")}
+              onPlay={() => console.log("Video started playing")}
+              onPause={() => console.log("Video paused")}
+              onTimeUpdate={(e) => {
+                const video = e.currentTarget;
+                if (video.currentTime > 0 && video.currentTime < 1) {
+                  console.log("Video is playing, current time:", video.currentTime);
+                }
+              }}
+              playsInline
+              muted={false}
+              autoPlay={false}
+              preload="auto"
+              controls={false}
+            >
+              <source src={chestOpeningVideo[chestType]} type="video/mp4" />
+            </video>
+          )}
 
           {/* Loading state */}
-          {videoState === "loading" && !loadError && (
+          {shouldShowLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-gold" />
-              <div className="text-gold text-xl">Loading chest...</div>
+              <LoadingAnimation />
+              <div className="text-gold text-xl">{loadingMessages[currentMessageIndex]}</div>
             </div>
           )}
 
@@ -204,7 +277,9 @@ export const ChestOpeningModal = ({
           )}
 
           {/* Complete state content */}
-          {videoState === "ended" && <ChestContent showContent={showContent} chestContent={chestContent} />}
+          {videoState === "ended" && (
+            <ChestContent chestType={chestType} showContent={showContent} chestContent={chestContent} />
+          )}
 
           {/* Controls */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-[60]">
@@ -223,9 +298,16 @@ export const ChestOpeningModal = ({
             )}
 
             {/* Open Next button */}
-            {remainingChests > 0 && videoState === "ended" && showContent && (
-              <Button variant="cta" size="lg" onClick={handleOpenNext} className="">
-                Open Next Chest ({remainingChests} remaining)
+            {remainingChests > 0 && nextToken && videoState === "ended" && showContent && (
+              <Button variant="cta" size="lg" onClick={handleOpenChest} className="" disabled={isChestOpeningLoading}>
+                {isChestOpeningLoading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Opening...
+                  </>
+                ) : (
+                  `Open Next Chest (${remainingChests} remaining)`
+                )}
               </Button>
             )}
           </div>

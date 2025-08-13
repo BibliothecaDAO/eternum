@@ -8,6 +8,7 @@ import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { formatRelativeTime } from "@/lib/utils";
+import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
@@ -26,96 +27,14 @@ import { EditListingDrawer } from "./marketplace-edit-listing-drawer";
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
 
-// Define the props for the modal component
-interface TokenDetailModalProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  tokenData: MergedNftData;
-  isOwner: boolean;
-  isLootChest: boolean;
-  onChestOpen: () => void;
-  marketplaceActions: ReturnType<typeof useMarketplace>;
-  // Listing details passed from RealmCard
-  isListed: boolean;
-  price?: bigint;
-  orderId?: string;
-  expiration?: number; // Added: Expiration timestamp (seconds)
+// Timer component for auction countdown
+interface TimerProps {
+  expiration?: number;
 }
 
-export const TokenDetailModal = ({
-  isOpen,
-  onOpenChange,
-  tokenData,
-  isOwner,
-  isLootChest,
-  onChestOpen,
-  marketplaceActions,
-  isListed,
-  price,
-  orderId,
-  expiration, // Added
-}: TokenDetailModalProps) => {
-  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
-
-  // Transform IPFS URLs to use Pinata gateway
-  const image = originalImage?.startsWith("ipfs://")
-    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
-    : originalImage;
-  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
-
-  const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
-    refetchInterval: 30_000,
-    enabled: isOpen,
-  });
-
-  // Get wallet state
-  const { address } = useAccount();
-  const { connector, connectors, connect } = useConnect();
-
-  const [isController, setIsController] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const id = (connector as any)?.controller?.id;
-      const hasController = id === "controller";
-      setIsController(hasController);
-    }
-  }, [connectors, isOpen]);
-
-  const { lordsBalance } = useLords();
-
-  const userBalance = lordsBalance ?? BigInt(0);
-  const nftPrice = price ?? BigInt(0);
-  const hasSufficientBalance = userBalance >= nftPrice;
-
-  const [isSyncing, setIsSyncing] = useState(false);
+const Timer = ({ expiration }: TimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      console.log({ tokenData, tokenId: tokenData.token_id });
-    }
-  }, [tokenData, isOpen]);
-
-  const { openChest, isLoading: isChestOpeningLoading, error: chestOpeningError } = useOpenChest();
-
-  const handleOpenChest = () => {
-    openChest({
-      tokenId: BigInt(tokenData.token_id),
-      onSuccess: () => {
-        console.log("Chest opened successfully");
-        onChestOpen();
-        toast.success("Chest opened successfully");
-      },
-      onError: (error) => {
-        console.error("Failed to open chest:", error);
-      },
-    });
-  };
-
-  // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!expiration) return;
 
@@ -143,6 +62,111 @@ export const TokenDetailModal = ({
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [expiration]);
+
+  if (timeRemaining) {
+    return <span className="text-red-500 font-medium">{timeRemaining}</span>;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
+        <TooltipTrigger asChild>
+          <span>Expires {formatRelativeTime(expiration)}</span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{new Date(Number(expiration) * 1000).toLocaleString()}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+// Define the props for the modal component
+interface TokenDetailModalProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  tokenData: MergedNftData;
+  isOwner: boolean;
+  isLootChest: boolean;
+  marketplaceActions: ReturnType<typeof useMarketplace>;
+  // Listing details passed from RealmCard
+  isListed: boolean;
+  price?: bigint;
+  orderId?: string;
+  expiration?: number; // Added: Expiration timestamp (seconds)
+}
+
+export const TokenDetailModal = ({
+  isOpen,
+  onOpenChange,
+  tokenData,
+  isOwner,
+  isLootChest,
+  marketplaceActions,
+  isListed,
+  price,
+  orderId,
+  expiration, // Added
+}: TokenDetailModalProps) => {
+  const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
+
+  // Transform IPFS URLs to use Pinata gateway
+  const image = originalImage?.startsWith("ipfs://")
+    ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+    : originalImage;
+  const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
+
+  const { data: activeMarketOrder } = useQuery({
+    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
+    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
+    refetchInterval: 30_000,
+    enabled: isOpen,
+  });
+
+  console.log("[TokenDetailModal] tokenData", tokenData);
+
+  const { setShowLootChestOpening } = useLootChestOpeningStore();
+
+  // Get wallet state
+  const { address } = useAccount();
+  const { connector, connectors, connect } = useConnect();
+
+  const [isController, setIsController] = useState(false);
+  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
+  const { setOpenedChestTokenId } = useLootChestOpeningStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      const id = (connector as any)?.controller?.id;
+      const hasController = id === "controller";
+      setIsController(hasController);
+    }
+  }, [connectors, isOpen]);
+
+  const { lordsBalance } = useLords();
+
+  const userBalance = lordsBalance ?? BigInt(0);
+  const nftPrice = price ?? BigInt(0);
+  const hasSufficientBalance = userBalance >= nftPrice;
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const { openChest, error: chestOpeningError } = useOpenChest();
+
+  const handleOpenChest = () => {
+    setIsChestOpeningLoading(true);
+    setOpenedChestTokenId(tokenData.token_id.toString());
+    openChest({
+      tokenId: BigInt(tokenData.token_id),
+      onSuccess: () => {
+        console.log("Chest opened successfully");
+        setShowLootChestOpening(true);
+      },
+      onError: (error) => {
+        console.error("Failed to open chest:", error);
+      },
+    });
+  };
 
   // Effect to detect when indexer data has updated props
   useEffect(() => {
@@ -207,20 +231,7 @@ export const TokenDetailModal = ({
           </div>
           <ResourceIcon resource="Lords" size="sm" />
           <div className="text-sm text-muted-foreground">
-            {timeRemaining ? (
-              <span className="text-red-500 font-medium">{timeRemaining}</span>
-            ) : (
-              <TooltipProvider>
-                <Tooltip delayDuration={0} defaultOpen={false} disableHoverableContent>
-                  <TooltipTrigger asChild>
-                    <span>Expires {formatRelativeTime(expiration)}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{new Date(Number(expiration) * 1000).toLocaleString()}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            <Timer expiration={expiration} />
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
@@ -266,7 +277,7 @@ export const TokenDetailModal = ({
                 variant="default"
                 className="w-full"
                 onClick={handleOpenChest}
-                disabled={isLoading || !isController}
+                disabled={isLoading || !isController || isChestOpeningLoading}
               >
                 {isChestOpeningLoading ? (
                   <>
