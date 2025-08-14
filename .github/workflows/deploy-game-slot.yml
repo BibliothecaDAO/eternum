@@ -14,8 +14,8 @@ env:
 
 on:
   schedule:
-    - cron: '0 0,5,10,15,20 * * 0,2,4,6'     # Sunday, Tuesday, Thursday, Saturday: 12am, 5am, 10am, 3pm, 8pm (5 runs)
-    - cron: '0 2,7,12,17 * * 1,3,5'     # Monday, Wednesday, Friday: 2am, 7am, 12pm, 5pm (4 runs)
+    - cron: '8 0,5,10,15,20 * * 0,2,4,6'     # Sunday, Tuesday, Thursday, Saturday: 12:08am, 5:08am, 10:08am, 3:08pm, 8:08pm (5 runs)
+    - cron: '8 2,7,12,17 * * 1,3,5'     # Monday, Wednesday, Friday: 2:08am, 7:08am, 12:08pm, 5:08pm (4 runs)
   workflow_dispatch:
     inputs:
       slot_name:
