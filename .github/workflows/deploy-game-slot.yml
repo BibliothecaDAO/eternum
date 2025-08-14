@@ -11,14 +11,11 @@ env:
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
   CI: "true"
-  CONFIG_START_MAIN_AT: ${{ github.event.inputs.config_start_main_at }}
 
 on:
-  # Scheduled deployment every 6 hours
-  # schedule:
-  #   - cron: '0 */6 * * *'
-  
-  # Manual trigger
+  schedule:
+    # - cron: '0 0,5,10,15,20 * * 0,2,4,6'     # Sunday, Tuesday, Thursday, Saturday: 12am, 5am, 10am, 3pm, 8pm (5 runs)
+    - cron: '0 2,7,12,17 * * 1,3,5'     # Monday, Wednesday, Friday: 2am, 7am, 12pm, 5pm (4 runs)
   workflow_dispatch:
     inputs:
       slot_name:
@@ -29,9 +26,7 @@ on:
         description: 'Torii version to deploy'
         required: false
         default: 'v1.6.0-alpha.2'
-      config_start_main_at:
-        description: 'Unix timestamp of when game should start. It should be at least 1h, 20 mins from now'
-        required: true
+
 
 jobs:
   deploy-slot:
@@ -92,6 +87,20 @@ jobs:
       - name: 📚 Install Dependencies
         run: pnpm install
 
+      - name: ⏰ Calculate Game Start Time
+        id: game-timing
+        run: |
+          # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
+          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
+          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
+          
+          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+
       - name: 🎲 Generate New Seed
         id: generate-seed
         working-directory: ./contracts/game
@@ -126,9 +135,11 @@ jobs:
       - name: ⚙️ Deploy Configuration
         working-directory: ./contracts
         run: |
-          CONFIG_START_MAIN_AT="${{ github.event.inputs.config_start_main_at || env.CONFIG_START_MAIN_AT }}"
+          CONFIG_START_MAIN_AT="${{ steps.game-timing.outputs.timestamp }}"
+          export CONFIG_START_MAIN_AT
 
           echo "🔧 Deploying slot configuration..."
+          echo "🕐 Game will start at: ${{ steps.game-timing.outputs.readable }}"
           pnpm run config:deploy:slot
 
       - name: 🌍 Update Torii Configuration
@@ -184,6 +195,7 @@ jobs:
           echo "| **Seed** | ✅ Updated | \`${{ steps.generate-seed.outputs.new_seed }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Game Migration** | ✅ Completed | Slot profile |" >> $GITHUB_STEP_SUMMARY
           echo "| **Configuration** | ✅ Deployed | Slot environment |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Game Start Time** | 🕐 Scheduled | ${{ steps.game-timing.outputs.readable }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Torii Slot** | ✅ Created | \`${{ github.event.inputs.slot_name || env.SLOT_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Version** | 📦 ${{ github.event.inputs.torii_version || env.TORII_VERSION }} | Latest deployment |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
