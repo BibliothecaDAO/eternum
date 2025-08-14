@@ -1,0 +1,102 @@
+name: 🚀 Test WKF
+
+# Configuration Variables - Update these as needed
+env:
+  BRANCH: "blitz"
+  SLOT_NAME: "eternum-blitz-slot-1"
+  SLOT_TEAM: "realms-eternum"
+  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+  SLOT_TIER: "pro"
+  TORII_VERSION: "v1.6.0-alpha.2"
+  TORII_CONFIG: "torii-slot.toml"
+  NODE_VERSION: "18"
+  CI: "true"
+
+on:
+  schedule:
+    - cron: '0 0,5,10,15,20 * * 0,2,4,6'     # Sunday, Tuesday, Thursday, Saturday: 12am, 5am, 10am, 3pm, 8pm (5 runs)
+    - cron: '0 2,7,12,17 * * 1,3,5'     # Monday, Wednesday, Friday: 2am, 7am, 12pm, 5pm (4 runs)
+  workflow_dispatch:
+    inputs:
+      slot_name:
+        description: 'Slot deployment name'
+        required: false
+        default: 'eternum-blitz-slot-1'
+      torii_version:
+        description: 'Torii version to deploy'
+        required: false
+        default: 'v1.6.0-alpha.2'
+
+
+jobs:
+  deploy-slot:
+    name: 🎯 Deploy New Game on Slot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: 🍳 Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: 🔧 Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.10.1"
+
+      - name: 📥 Download Dojo Release
+        run: |
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.6.0-alpha.2/dojo_v1.6.0-alpha.2_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+
+      - name: 🎰 Install Slot CLI
+        run: |
+          echo "🎰 Installing Slot CLI..."
+          
+          # Install slotup (slot version manager)
+          curl -L https://slot.cartridge.sh | bash
+          
+          # Run slotup to install slot
+          echo "🚀 Running slotup to install slot..."
+          /home/runner/.config/.slot/bin/slotup
+          
+          # Add to PATH for subsequent steps
+          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
+          export PATH="/home/runner/.config/.slot/bin:$PATH"
+          
+          # Verify slot command works
+          slot --version
+          echo "✅ Slot CLI installed successfully"
+
+      - name: 📚 Install Dependencies
+        run: pnpm install
+
+      - name: ⏰ Calculate Game Start Time
+        id: game-timing
+        run: |
+          # Calculate game start time as current time + 2 hours 30 minutes, rounded to start of hour (Unix timestamp)
+          CURRENT_PLUS_2H30M=$(date -d "+2 hours +30 minutes" '+%Y-%m-%d %H')
+          GAME_START_TIMESTAMP=$(date -d "$CURRENT_PLUS_2H30M:00:00" +%s)
+          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
+          
+          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
