@@ -45,54 +45,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-
-      - name: 🍳 Setup Bun
-        uses: oven-sh/setup-bun@v1
-
-      - name: 🔧 Setup Scarb
-        uses: software-mansion/setup-scarb@v1
-        with:
-          scarb-version: "2.10.1"
-
-      - name: 📥 Download Dojo Release
-        run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.6.0-alpha.2/dojo_v1.6.0-alpha.2_linux_amd64.tar.gz
-          tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv sozo /usr/local/bin/
-
-      - name: 🎰 Install Slot CLI
-        run: |
-          echo "🎰 Installing Slot CLI..."
-          
-          # Install slotup (slot version manager)
-          curl -L https://slot.cartridge.sh | bash
-          
-          # Run slotup to install slot
-          echo "🚀 Running slotup to install slot..."
-          /home/runner/.config/.slot/bin/slotup
-          
-          # Add to PATH for subsequent steps
-          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
-          export PATH="/home/runner/.config/.slot/bin:$PATH"
-          
-          # Verify slot command works
-          slot --version
-          echo "✅ Slot CLI installed successfully"
-
-      - name: 📚 Install Dependencies
-        run: pnpm install
-
       - name: ⏰ Calculate Game Start Time
         id: game-timing
         run: |
           # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
-          CURRENT_HOUR_START=$(date '+%Y-%m-%d %H:00:00')
-          GAME_START_TIMESTAMP=$(date -d "$CURRENT_HOUR_START +2 hours +30 minutes" +%s)
+          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
+          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
           echo "🕐 Game start time set to: $GAME_START_READABLE"
