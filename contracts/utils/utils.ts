@@ -28,6 +28,10 @@ export interface SeasonAddresses {
   };
   /** Address of the marketplace contract */
   marketplace: string;
+  /** Address of the cosmetics contract */
+  cosmetics: string;
+  /** Address of the cosmetics claim contract */
+  cosmeticsClaim: string;
 }
 
 /** Valid chain identifiers */

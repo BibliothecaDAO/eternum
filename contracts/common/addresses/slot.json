@@ -5,6 +5,8 @@
   "villagePass": "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
   "lootChests": "",
   "marketplace": "",
+  "cosmetics": "",
+  "cosmeticsClaim": "",
   "resources": {
     "STONE": [1, "0x1d0e42592e69ce773e4af49ebc806e8e4b18d68349675a720b310f524bc1047"],
     "COAL": [2, "0x116e5c167e15ce74d6ceabab3ee1d654ba7d715cc3e313f0a7644460d930647"],

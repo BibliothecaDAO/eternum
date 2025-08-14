@@ -110,7 +110,9 @@ function ActivityPage() {
                     <div className="w-full">
                       {events.map((event) => {
                         const metadata = event.metadata;
-                        const image = metadata?.image || "";
+                        const image = metadata?.image?.startsWith("ipfs://")
+                          ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                          : metadata?.image;
                         const price = event.price
                           ? parseFloat(Number(formatUnits(BigInt(event.price), 18)).toFixed(2)).toLocaleString()
                           : "0";

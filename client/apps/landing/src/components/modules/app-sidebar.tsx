@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Database, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
+import { Calendar, Crown, Map, Package, ShoppingBag, Sparkles, Ticket, TwitterIcon, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -17,39 +17,39 @@ const items = [
   {
     title: "Home",
     url: "/",
-    icon: Home,
+    icon: Crown,
   },
   // { title: "Claim", url: "/claim", icon: Coins },
 
   {
     title: "Claim Passes",
     url: "/mint",
-    icon: Castle,
+    icon: Ticket,
   },
   {
     title: "Realms",
     url: "/realms",
-    icon: Gamepad2,
+    icon: Map,
   },
   {
     title: "Season Passes",
     url: "/season-passes",
-    icon: Gamepad2,
+    icon: Calendar,
   },
   {
     title: "Loot Chests",
     url: "/loot-chests",
-    icon: Gamepad2,
+    icon: Package,
+  },
+  {
+    title: "Cosmetics",
+    url: "/cosmetics",
+    icon: Sparkles,
   },
   {
     title: "Marketplace",
     url: "/trade",
-    icon: Scale,
-  },
-  {
-    title: "Data",
-    icon: Database,
-    url: "/data",
+    icon: ShoppingBag,
   },
 ];
 
@@ -131,7 +131,7 @@ export function AppSidebar() {
                 rel="noopener noreferrer"
                 onClick={handleLinkClick}
               >
-                <Twitter />
+                <TwitterIcon />
               </a>
             </div>
           </SidebarGroupContent>

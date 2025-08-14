@@ -283,6 +283,17 @@ WITH limited_active_orders AS (
   AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
+  COLLECTIBLE_CLAIMED: `
+    SELECT 
+      token_address,
+      attributes_raw,
+      token_recipient,
+      timestamp
+    FROM "s1_eternum-CollectibleClaimed"
+    WHERE token_recipient = '{playerAddress}'
+      AND timestamp > {minTimestamp}
+    ORDER BY timestamp DESC
+  `,
   DONKEY_BURN: `
     SELECT 
         json_extract(data, '$.amount') as amount

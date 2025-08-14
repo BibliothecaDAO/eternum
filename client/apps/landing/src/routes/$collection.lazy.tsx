@@ -1,8 +1,9 @@
+import { ChestOpeningModal } from "@/components/modules/chest-opening-modal";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { CreateListingsDrawer } from "@/components/modules/marketplace-create-listings-drawer";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
-import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
+import TransferNftDialog from "@/components/modules/transfer-nft-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Pagination,
@@ -19,6 +20,7 @@ import { fetchCollectionStatistics, fetchTokenBalancesWithMetadata } from "@/hoo
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
+import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 
 import { MergedNftData } from "@/types";
@@ -26,7 +28,7 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Grid2X2, Grid3X3 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 
 export const Route = createLazyFileRoute("/$collection")({
@@ -48,6 +50,8 @@ function ManageCollectionRoute() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
+  const { showLootChestOpening, openedChestTokenId } = useLootChestOpeningStore();
+
   const [tokenBalanceQuery] = useSuspenseQueries({
     queries: [
       {
@@ -57,6 +61,7 @@ function ManageCollectionRoute() {
       },
     ],
   });
+
   const { data: collectionStats } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
     queryFn: () => fetchCollectionStatistics(collectionAddress),
@@ -79,6 +84,18 @@ function ManageCollectionRoute() {
       collection_floor_price: floorPrice,
     }));
   }, [tokenBalanceQuery.data, collectionStats]);
+
+  const [nextChestToken, setNextChestToken] = useState<string | null>(null);
+  const [remainingChests, setRemainingChests] = useState<number>(0);
+
+  useEffect(() => {
+    if (!tokensWithFloorPrice || !openedChestTokenId) return;
+    const remainingTokens = tokensWithFloorPrice.filter(
+      (token) => token.token_id !== openedChestTokenId && token.token_id !== "42",
+    );
+    setNextChestToken(remainingTokens.length > 0 ? remainingTokens[0].token_id.toString() : null);
+    setRemainingChests(remainingTokens.length);
+  }, [tokensWithFloorPrice, openedChestTokenId]);
 
   const {
     selectedFilters,
@@ -233,7 +250,9 @@ function ManageCollectionRoute() {
                     <div className="flex -space-x-2">
                       {selectedPasses.slice(0, 3).map((pass) => {
                         const metadata = pass.metadata;
-                        const image = metadata?.image;
+                        const image = metadata?.image?.startsWith("ipfs://")
+                          ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
+                          : metadata?.image;
                         return (
                           <div
                             key={pass.token_id}
@@ -311,13 +330,16 @@ function ManageCollectionRoute() {
         {/* End Pagination Controls */}
 
         {isTransferOpen && tokenBalanceQuery.data && (
-          <TransferSeasonPassDialog
+          <TransferNftDialog
             isOpen={isTransferOpen}
             setIsOpen={handleDialogClose}
-            seasonPassMints={tokenBalanceQuery.data}
+            nfts={tokenBalanceQuery.data}
+            collectionName={collectionName}
+            collectionAddress={collectionAddress}
             initialSelectedTokenId={initialSelectedTokenId}
           />
         )}
+        {showLootChestOpening && <ChestOpeningModal remainingChests={remainingChests} nextToken={nextChestToken} />}
       </>
     </div>
   );

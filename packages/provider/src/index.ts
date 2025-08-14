@@ -2651,6 +2651,41 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  // Loot Chest functions
+
+  public async open_loot_chest(props: SystemProps.OpenLootChestProps) {
+    const { signer, token_id, loot_chest_address, claim_address } = props;
+
+    let callData: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [claim_address, 0, signer.address],
+      };
+
+      callData = [requestRandomCall];
+    }
+
+    // create multicall
+    // first approve
+    callData.push({
+      contractAddress: loot_chest_address,
+      entrypoint: "approve",
+      calldata: [claim_address, token_id.toString(), 0],
+    });
+
+    // then claim
+    callData.push({
+      contractAddress: claim_address,
+      entrypoint: "claim",
+      calldata: [token_id.toString(), 0],
+    });
+
+    return await signer.execute(callData);
+  }
+
   // Marketplace functions
 
   /**
