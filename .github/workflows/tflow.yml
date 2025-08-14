@@ -58,3 +58,13 @@ jobs:
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+    
+      - name: ⚙️ Deploy Configuration Test
+        working-directory: ./contracts
+        run: |
+          CONFIG_START_MAIN_AT="${{ steps.game-timing.outputs.timestamp }}"
+          export CONFIG_START_MAIN_AT
+
+          echo "readable: ${{ steps.game-timing.outputs.readable }}"
+          echo "now logging the environment variable"
+          echo "config_start_main_at: $CONFIG_START_MAIN_AT"
