@@ -112,10 +112,16 @@ jobs:
           grep "^seed = " dojo_slot.toml
 
       - name: 🏗️ Run Game Migration
-        working-directory: ./contracts
-        run: |
-          echo "🚀 Starting game migration for slot..."
-          pnpm run game:migrate:slot
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 20
+          max_attempts: 10
+          retry_on: error
+          on_retry_command: echo "Retrying game migration due to network error (possibly 504 Gateway Timeout)..."
+          command: |
+            cd contracts
+            echo "🚀 Starting game migration for slot..."
+            pnpm run game:migrate:slot
 
       - name: ⚙️ Deploy Configuration
         working-directory: ./contracts
