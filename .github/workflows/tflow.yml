@@ -90,9 +90,8 @@ jobs:
       - name: ⏰ Calculate Game Start Time
         id: game-timing
         run: |
-          # Calculate game start time as current time + 2 hours 30 minutes, rounded to start of hour (Unix timestamp)
-          CURRENT_PLUS_2H30M=$(date -d "+2 hours +30 minutes" '+%Y-%m-%d %H')
-          GAME_START_TIMESTAMP=$(date -d "$CURRENT_PLUS_2H30M:00:00" +%s)
+          # Calculate game start time as current time + 2 hours 30 minutes (Unix timestamp)
+          GAME_START_TIMESTAMP=$(date -d "+2 hours +30 minutes" +%s)
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
           echo "🕐 Game start time set to: $GAME_START_READABLE"
