@@ -49,13 +49,20 @@ jobs:
           DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
+          # Calculate registration start time (10 minutes from now)
+          CURRENT_TIMESTAMP=$(date +%s)
+          REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
+          REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
+          
           echo "🕐 Game start time set to: $GAME_START_READABLE"
           echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
+          echo "🕐 Registration timestamp: $REGISTRATION_DISCORD_TIMESTAMP"
           echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
           echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "registration_timestamp=$REGISTRATION_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
 
       # Discord Success Notification
       - name: 📢 Discord Success Notification
@@ -76,13 +83,8 @@ jobs:
                     "inline": false
                   },
                   {
-                    "name": "🌿 Branch",
-                    "value": "`${{ env.BRANCH }}`",
-                    "inline": true
-                  },
-                  {
                     "name": "⚡ Registration Starts",
-                    "value": "In 10 minutes",
+                    "value": "${{ steps.game-timing.outputs.registration_timestamp }}",
                     "inline": true
                   },
                   {
