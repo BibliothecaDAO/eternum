@@ -14,8 +14,6 @@ env:
 
 on:
   # schedule:
-  #   - cron: '8 0,5,10,15,20 * * 0,2,4,6'     # Sunday, Tuesday, Thursday, Saturday: 12:08am, 5:08am, 10:08am, 3:08pm, 8:08pm (5 runs)
-  #   - cron: '8 2,7,12,17 * * 1,3,5'    # Monday, Wednesday, Friday: 2:08am, 7:08am, 12:08pm, 5:08pm (4 runs)
   workflow_dispatch:
     inputs:
       slot_name:
@@ -93,13 +91,31 @@ jobs:
           # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
           CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
           GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          
+          # Create Discord timestamp format for automatic timezone conversion
+          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
+          # Calculate registration start time (10 minutes from now)
+          CURRENT_TIMESTAMP=$(date +%s)
+          REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
+          REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
+          
+          # Calculate next deployment time (5 hours from now)
+          NEXT_DEPLOYMENT_TIMESTAMP=$((CURRENT_TIMESTAMP + 18000))
+          NEXT_DEPLOYMENT_DISCORD_TIMESTAMP="<t:$NEXT_DEPLOYMENT_TIMESTAMP:R>"
+          
           echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
+          echo "🕐 Registration timestamp: $REGISTRATION_DISCORD_TIMESTAMP"
+          echo "🕐 Next deployment timestamp: $NEXT_DEPLOYMENT_DISCORD_TIMESTAMP"
           echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+          echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "registration_timestamp=$REGISTRATION_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "next_deployment_timestamp=$NEXT_DEPLOYMENT_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: 🎲 Generate New Seed
         id: generate-seed
@@ -200,6 +216,79 @@ jobs:
           echo "| **Version** | 📦 ${{ github.event.inputs.torii_version || env.TORII_VERSION }} | Latest deployment |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment completed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      # Discord Success Notification
+      - name: 📢 Discord Success Notification
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_SUCCESS_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "Babe wake up! New Blitz game just dropped! 🚀",
+                "description": "New game has been deployed",
+                "color": 65280,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🕐 Game Starts",
+                    "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
+                    "inline": false
+                  },
+                  {
+                    "name": "⚡ Registration Starts",
+                    "value": "${{ steps.game-timing.outputs.registration_timestamp }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "⚡ Next Deployment",
+                    "value": "${{ steps.game-timing.outputs.next_deployment_timestamp }}",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Blitz Auto-Deploy Bot"
+                },
+                "thumbnail": {
+                  "url": "https://eternum.realms.world/images/buildings/construction/farm.png"
+                }
+              }]
+            }'
+
+      # Discord Failure Notification
+      - name: 🚨 Discord Failure Notification
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Eternum Blitz Deployment Failed!",
+                "description": "The deployment encountered an error and needs attention.",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🌿 Branch",
+                    "value": "`${{ env.BRANCH }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🏷️ Slot Name",
+                    "value": "`${{ github.event.inputs.slot_name || env.SLOT_NAME }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Auto-Deploy Bot"
+                }
+              }]
+            }'
 
       - name: 🚨 Notify on Failure
         if: failure()
