@@ -78,7 +78,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "Babe wake up! New Blitz Game Deployed 🚀 ! [Test]",
+                "title": "Babe wake up! New Blitz game just dropped 🚀 ! [Test]",
                 "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
