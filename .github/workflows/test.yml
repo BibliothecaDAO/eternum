@@ -78,13 +78,13 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "🚀 New Blitz Game! [Test]",
+                "title": "Babe wake up! New Blitz Game Deployed 🚀 ! [Test]",
                 "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
                 "fields": [
                   {
-                    "name": "🕐 Game Start Time",
+                    "name": "🕐 Game Starts",
                     "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
                     "inline": false
                   },
@@ -100,7 +100,7 @@ jobs:
                   }
                 ],
                 "footer": {
-                  "text": "Eternum Auto-Deploy Bot"
+                  "text": "Eternum Blitz Auto-Deploy Bot"
                 },
                 "thumbnail": {
                   "url": "https://eternum.realms.world/images/buildings/construction/farm.png"
