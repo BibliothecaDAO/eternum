@@ -2,7 +2,6 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { useShortcut } from "@/hooks/shortcuts/useShortcuts";
 import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
@@ -112,26 +111,191 @@ const NoGameState = ({
     </motion.div>
   );
 };
+// Animation variants for cleaner code organization
+const buttonVariants = {
+  idle: {
+    scale: 1,
+    rotate: 0
+  },
+  hover: {
+    scale: 1.1,
+    rotate: [0, -2, 2, -2, 2, 0],
+    transition: { 
+      scale: { duration: 0.2 },
+      rotate: { duration: 0.6, repeat: Infinity }
+    }
+  },
+  tap: {
+    scale: 0.9,
+    rotate: 0,
+    transition: { duration: 0.1 }
+  }
+};
+
+const numberVariants = {
+  enter: {
+    scale: 2,
+    opacity: 0,
+    rotate: 180
+  },
+  center: {
+    scale: 1,
+    opacity: 1,
+    rotate: 0,
+    transition: {
+      type: "spring",
+      damping: 12,
+      stiffness: 100,
+      duration: 0.8
+    }
+  },
+  breathing: {
+    scale: [1, 1.05, 1],
+    y: [0, -2, 0],
+    transition: {
+      duration: 1.8,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
+
+const rippleVariants = {
+  pulse: {
+    scale: [1, 1.5, 1],
+    opacity: [0.6, 0, 0.6],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeOut"
+    }
+  }
+};
+
+// Hyperstructure Forge Button Component
+const HyperstructureForgeButton = ({
+  count,
+  isLoading,
+  onClick,
+}: {
+  count: number;
+  isLoading: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <motion.button
+      onClick={onClick}
+      disabled={isLoading}
+      variants={buttonVariants}
+      initial="idle"
+      whileHover="hover"
+      whileTap="tap"
+      className="relative w-24 h-24 rounded-full cursor-pointer transform-gpu disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-yellow-300/50"
+      style={{
+        background: 'radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)',
+        boxShadow: '0 8px 32px rgba(251, 191, 36, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1)',
+        border: '4px solid #fef3c7',
+        transition: 'border-color 0.3s ease'
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#ffffff'}
+      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#fef3c7'}
+    >
+      {/* Ripple Effect */}
+      <motion.div
+        className="absolute inset-0 rounded-full border-2 border-yellow-400/40"
+        variants={rippleVariants}
+        animate="pulse"
+      />
+      
+      {/* Content */}
+      <motion.div 
+        className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900"
+        animate={isLoading ? {} : numberVariants.breathing}
+      >
+        {isLoading ? (
+          <motion.img 
+            src="/images/logos/eternum-loader.png" 
+            className="w-8 h-8" 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+        ) : (
+          <motion.span
+            key={count}
+            variants={numberVariants}
+            initial="enter"
+            animate="center"
+          >
+            {count}
+          </motion.span>
+        )}
+      </motion.div>
+
+      {/* Sparkles */}
+      {!isLoading && (
+        <>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-white rounded-full"
+              style={{
+                top: `${20 + i * 20}%`,
+                left: `${10 + i * 30}%`,
+              }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.5,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </>
+      )}
+    </motion.button>
+  );
+};
 
 // Make hyperstructures state component
-const DevOptionsState = ({
+const MakeHyperstructuresState = ({
   numHyperStructuresLeft,
   onMakeHyperstructures,
-  onDevModeRegister,
-  onDevModeSettle,
   canMake,
-  devMode,
 }: {
   numHyperStructuresLeft: number;
   onMakeHyperstructures: () => Promise<void>;
-  onDevModeRegister: () => Promise<void>;
-  onDevModeSettle: () => Promise<void>;
   canMake: boolean;
-  devMode: boolean;
 }) => {
   const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
-  const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
-  const [isDevModeSettling, setIsDevModeSettling] = useState(false);
+  const [rerenderTrigger, setRerenderTrigger] = useState(0);
+  const [currentNumHyperStructuresLeft, setCurrentNumHyperStructuresLeft] = useState(numHyperStructuresLeft);
+
+  // Auto-rerender and check config every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRerenderTrigger(prev => prev + 1);
+      
+      // Check for updated config
+      const latestBlitzConfig = configManager.getBlitzConfig();
+      const latestNumHyperStructuresLeft = latestBlitzConfig?.blitz_num_hyperstructures_left;
+      if (latestNumHyperStructuresLeft !== undefined) {
+        setCurrentNumHyperStructuresLeft(latestNumHyperStructuresLeft);
+      }
+      
+      console.log("Rerendering MakeHyperstructuresState");
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update state when prop changes
+  useEffect(() => {
+    setCurrentNumHyperStructuresLeft(numHyperStructuresLeft);
+  }, [numHyperStructuresLeft]);
   
   const handleMakeHyperstructures = async () => {
     setIsMakingHyperstructures(true);
@@ -143,6 +307,44 @@ const DevOptionsState = ({
       setIsMakingHyperstructures(false);
     }
   };
+
+  return (
+    <>
+    {currentNumHyperStructuresLeft > 0 && canMake && (
+      <div className="flex flex-col items-center space-y-4">
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h3 className="text-gold font-semibold text-sm">Forge Hyperstructures</h3>
+        </motion.div>
+
+        {/* Forge Button */}
+        <HyperstructureForgeButton
+          count={currentNumHyperStructuresLeft}
+          isLoading={isMakingHyperstructures}
+          onClick={handleMakeHyperstructures}
+        />
+      </div>
+    )}
+    </>
+  );
+};
+
+const DevOptionsState = ({
+  onDevModeRegister,
+  onDevModeSettle,
+  devMode,
+}: {
+  onDevModeRegister: () => Promise<void>;
+  onDevModeSettle: () => Promise<void>;
+  devMode: boolean;
+}) => {
+  const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
+  const [isDevModeSettling, setIsDevModeSettling] = useState(false);
+  
 
   const handleDevModeRegister = async () => {
     setIsDevModeRegistering(true);
@@ -168,28 +370,6 @@ const DevOptionsState = ({
 
   return (
     <>
-      {numHyperStructuresLeft > 0 && canMake && (
-        <Button
-          onClick={handleMakeHyperstructures}
-          disabled={isMakingHyperstructures || !canMake}
-          className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-        >
-          <div className="flex items-center justify-center">
-            {isMakingHyperstructures ? (
-              <div className="flex items-center justify-center">
-                <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                <span>...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <Sword className="w-5 h-5 mr-2 fill-brown" />
-                <span>Make Hyperstructures [{numHyperStructuresLeft} left]</span>
-              </div>
-            )}
-          </div>
-        </Button>
-      )}
-
       {devMode && (
         <>
         {isDevModeRegistering ? (
@@ -417,8 +597,6 @@ const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { ha
 export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
-  const [showMakeHyperstructures, setShowMakeHyperstructures] = useState(false);
-
   const {
     setup,
     setup: {
@@ -428,13 +606,6 @@ export const BlitzOnboarding = () => {
     },
   } = useDojo();
 
-  // Register keyboard shortcut for 'H' key
-  useShortcut({
-    id: "toggle-make-hyperstructures",
-    key: "h",
-    description: "Toggle make hyperstructures button",
-    action: () => setShowMakeHyperstructures((prev) => !prev),
-  });
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
@@ -535,14 +706,18 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
-      { (devMode || showMakeHyperstructures) && (
-        <DevOptionsState
+      {(
+        <MakeHyperstructuresState
           numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
           onMakeHyperstructures={handleMakeHyperstructures}
+          canMake={canMakeHyperstructures}
+        />
+      )}
+      { devMode && (
+        <DevOptionsState
           onDevModeRegister={handleRegister}
           onDevModeSettle={handleSettle}
           devMode={devMode || false}
-          canMake={canMakeHyperstructures}
         />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && (
