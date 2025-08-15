@@ -72,8 +72,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "🚀 Eternum Blitz Deployment Successful! [Test]",
-                "description": "New game slot has been deployed and is ready to play!",
+                "title": "🚀 New Game! [Test]",
+                "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
                 "fields": [
