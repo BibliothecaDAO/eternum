@@ -403,6 +403,8 @@ const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { ha
             <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
               <p className="text-gold/70">You are not registered for this game</p>
             </div>
+            <SpectateButton onClick={onSpectatorModeClick} />
+
           </div>
         )}
 

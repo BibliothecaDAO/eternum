@@ -101,6 +101,9 @@ export default {
         ally: "#2B2E3E",
         cta: "#FFA200",
         enemy: "#46201D", // New color for enemies
+        "progress-bar-good": "#10b981", // green-500
+        "progress-bar-medium": "#f59e0b", // amber-500
+        "progress-bar-danger": "#ef4444", // red-500
         order: {
           power: "#F4B547",
           giants: "#EB544D",

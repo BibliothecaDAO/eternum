@@ -23,7 +23,7 @@ export type ArmySystemUpdate = {
   ownerName: string;
   guildName: string;
   troopCount?: number | undefined;
-  ownerAddress?: bigint | undefined;
+  ownerAddress: bigint;
   currentStamina?: number | undefined;
   maxStamina?: number | undefined;
   onChainStamina?:
@@ -44,6 +44,7 @@ export type ExplorerTroopsSystemUpdate = {
     updatedTick: number;
   };
   ownerAddress: bigint;
+  ownerName: string;
 };
 
 export type StructureSystemUpdate = {

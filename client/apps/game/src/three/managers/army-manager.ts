@@ -29,6 +29,7 @@ interface PendingExplorerTroopsUpdate {
   troopCount: number;
   onChainStamina: { amount: bigint; updatedTick: number };
   ownerAddress: bigint;
+  ownerName: string;
 }
 
 interface AddArmyParams {
@@ -408,6 +409,7 @@ export class ArmyManager {
       finalCurrentStamina = updatedStamina;
       finalOwnerAddress = pendingUpdate.ownerAddress;
       finalOnChainStamina = pendingUpdate.onChainStamina;
+      finalOwnerName = pendingUpdate.ownerName;
 
       // Clear the pending update
       this.pendingExplorerTroopsUpdate.delete(entityId);
@@ -773,6 +775,7 @@ export class ArmyManager {
         troopCount: update.troopCount,
         onChainStamina: update.onChainStamina,
         ownerAddress: update.ownerAddress,
+        ownerName: update.ownerName,
       });
       return;
     }
@@ -813,6 +816,7 @@ export class ArmyManager {
     // becomes available after initial load, since tile updates may occur before account authentication
     army.isMine = isAddressEqualToAccount(update.ownerAddress);
     army.onChainStamina = update.onChainStamina;
+    army.owner.ownerName = update.ownerName;
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);

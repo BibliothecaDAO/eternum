@@ -21,13 +21,13 @@ export const StaminaResource = ({
     const percentage = (Number(stamina.amount) / maxStamina) * 100;
     // Use color system based on stamina percentage thresholds
     if (stamina.amount < minStaminaCost) {
-      return "bg-red-500"; // Critical - can't travel
+      return "bg-progress-bar-danger"; // Critical - can't travel
     } else if (percentage > 66) {
-      return "bg-green-500"; // Good
+      return "bg-progress-bar-good"; // Good
     } else if (percentage > 33) {
-      return "bg-amber-500"; // Medium
+      return "bg-progress-bar-medium"; // Medium
     } else {
-      return "bg-red-500"; // Low
+      return "bg-progress-bar-danger"; // Low
     }
   }, [stamina.amount, maxStamina]);
 
