@@ -44,13 +44,18 @@ jobs:
           # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
           CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
           GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          
+          # Create Discord timestamp format for automatic timezone conversion
+          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
           echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
           echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+          echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
 
       # Discord Success Notification
       - name: 📢 Discord Success Notification
@@ -67,7 +72,7 @@ jobs:
                 "fields": [
                   {
                     "name": "🕐 Game Start Time",
-                    "value": "${{ steps.game-timing.outputs.readable }}",
+                    "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
                     "inline": false
                   },
                   {
