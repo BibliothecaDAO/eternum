@@ -1,0 +1,140 @@
+name: Test Notifications
+
+# Configuration Variables - Update these as needed
+env:
+  BRANCH: "blitz"
+  SLOT_NAME: "eternum-blitz-slot-1"
+  SLOT_TEAM: "realms-eternum"
+  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+  SLOT_TIER: "pro"
+  TORII_VERSION: "v1.6.0-alpha.2"
+  TORII_CONFIG: "torii-slot.toml"
+  NODE_VERSION: "18"
+  CI: "true"
+
+on:
+  workflow_dispatch:
+    inputs:
+      slot_name:
+        description: 'Slot deployment name'
+        required: false
+        default: 'eternum-blitz-slot-1'
+      torii_version:
+        description: 'Torii version to deploy'
+        required: false
+        default: 'v1.6.0-alpha.2'
+
+
+jobs:
+  deploy-slot:
+    name: 🎯 Deploy New Game on Slot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: ⏰ Calculate Game Start Time
+        id: game-timing
+        run: |
+          # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
+          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
+          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
+          
+          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+
+      # Discord Success Notification
+      - name: 📢 Discord Success Notification
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_SUCCESS_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🚀 Eternum Blitz Deployment Successful! [Test]",
+                "description": "New game slot has been deployed and is ready to play!",
+                "color": 65280,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🕐 Game Start Time",
+                    "value": "${{ steps.game-timing.outputs.readable }}",
+                    "inline": false
+                  },
+                  {
+                    "name": "🌿 Branch",
+                    "value": "`${{ env.BRANCH }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "⚡ Registration Starts",
+                    "value": "In 10 minutes",
+                    "inline": true
+                  },
+                  {
+                    "name": "⚡ Next Deployment",
+                    "value": "In 6 hours",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Auto-Deploy Bot"
+                },
+                "thumbnail": {
+                  "url": "https://eternum.realms.world/images/buildings/construction/farm.png"
+                }
+              }]
+            }'
+
+      # Discord Failure Notification
+      - name: 🚨 Discord Failure Notification
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Eternum Blitz Deployment Failed!",
+                "description": "The deployment encountered an error and needs attention.",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🌿 Branch",
+                    "value": "`${{ env.BRANCH }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🏷️ Slot Name",
+                    "value": "`${{ github.event.inputs.slot_name || env.SLOT_NAME }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Auto-Deploy Bot"
+                }
+              }]
+            }'
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        run: |
+          echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The slot deployment encountered an error. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY 
