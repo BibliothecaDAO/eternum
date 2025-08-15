@@ -54,15 +54,21 @@ jobs:
           REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
           REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
           
+          # Calculate next deployment time (6 hours from now)
+          NEXT_DEPLOYMENT_TIMESTAMP=$((CURRENT_TIMESTAMP + 21600))
+          NEXT_DEPLOYMENT_DISCORD_TIMESTAMP="<t:$NEXT_DEPLOYMENT_TIMESTAMP:R>"
+          
           echo "🕐 Game start time set to: $GAME_START_READABLE"
           echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
           echo "🕐 Registration timestamp: $REGISTRATION_DISCORD_TIMESTAMP"
+          echo "🕐 Next deployment timestamp: $NEXT_DEPLOYMENT_DISCORD_TIMESTAMP"
           echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
           echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "registration_timestamp=$REGISTRATION_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "next_deployment_timestamp=$NEXT_DEPLOYMENT_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
 
       # Discord Success Notification
       - name: 📢 Discord Success Notification
@@ -72,7 +78,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "🚀 New Game! [Test]",
+                "title": "🚀 New Blitz Game! [Test]",
                 "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
@@ -89,7 +95,7 @@ jobs:
                   },
                   {
                     "name": "⚡ Next Deployment",
-                    "value": "In 6 hours",
+                    "value": "${{ steps.game-timing.outputs.next_deployment_timestamp }}",
                     "inline": true
                   }
                 ],
