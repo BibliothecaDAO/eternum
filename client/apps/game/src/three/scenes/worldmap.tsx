@@ -250,9 +250,20 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
       this.updateArmyHexes(update);
+      
+      // Ensure army spawn location is marked as explored for pathfinding
+      // This fixes the bug where newly spawned armies can't see movement options
+      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      if (!this.exploredTiles.has(normalizedPos.x)) {
+        this.exploredTiles.set(normalizedPos.x, new Map());
+      }
+      if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
+        // Mark spawn location as grassland (default safe biome for pathfinding)
+        this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+      }
+      
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
 
-      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
     });
 

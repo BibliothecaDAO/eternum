@@ -57,6 +57,8 @@ export class StructureManager {
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private isBlitz: boolean;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
+  private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -152,6 +154,7 @@ export class StructureManager {
     this.wonderEntityIdMaps.clear();
     this.structures.getStructures().clear();
     this.structureHexCoords.clear();
+    this.structureUpdateTimestamps.clear();
 
     console.log("StructureManager: Destroyed and cleaned up");
   }
@@ -273,22 +276,42 @@ export class StructureManager {
       update.hyperstructureRealmCount,
     );
 
-    // Clear existing relic effects for this specific structure before re-rendering
-    // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
-    // Clear effects for all sources when structure is updated
-    const entityEffectsMap = this.structureRelicEffects.get(entityId);
-    if (entityEffectsMap) {
-      for (const relicSource of entityEffectsMap.keys()) {
-        this.updateRelicEffects(entityId, [], relicSource);
+    // Smart relic effects management - only clear if this is a genuine structure update
+    const currentTime = Date.now();
+    const lastUpdateTime = this.structureUpdateTimestamps.get(entityId) || 0;
+    const isNewUpdate = currentTime - lastUpdateTime > 1000; // Only clear if > 1 second since last update
+    
+    if (isNewUpdate) {
+      console.log(`[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects`);
+      // This is a genuine structure update, clear existing relic effects
+      const entityEffectsMap = this.structureRelicEffects.get(entityId);
+      if (entityEffectsMap) {
+        for (const relicSource of entityEffectsMap.keys()) {
+          this.updateRelicEffects(entityId, [], relicSource);
+        }
       }
-    }
-
-    // Apply any pending relic effects for this structure
-    if (this.applyPendingRelicEffectsCallback) {
-      try {
-        await this.applyPendingRelicEffectsCallback(entityId);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+      
+      // Apply any pending relic effects for this structure
+      if (this.applyPendingRelicEffectsCallback) {
+        try {
+          await this.applyPendingRelicEffectsCallback(entityId);
+        } catch (error) {
+          console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+        }
+      }
+      
+      // Update timestamp
+      this.structureUpdateTimestamps.set(entityId, currentTime);
+    } else {
+      console.log(`[RELIC EFFECTS] Structure ${entityId} chunk reload - preserving existing effects`);
+      // This is likely a chunk reload, preserve existing relic effects
+      // Still apply pending effects in case there are new ones
+      if (this.applyPendingRelicEffectsCallback) {
+        try {
+          await this.applyPendingRelicEffectsCallback(entityId);
+        } catch (error) {
+          console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
+        }
       }
     }
 
@@ -298,10 +321,41 @@ export class StructureManager {
     }
   }
 
-  updateChunk(chunkKey: string) {
+  async updateChunk(chunkKey: string) {
+    if (this.currentChunk === chunkKey) {
+      return;
+    }
+
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(`[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous structure chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunk === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
     this.currentChunk = chunkKey;
-    this.updateVisibleStructures();
-    this.showLabels();
+    
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = Promise.resolve().then(() => {
+      this.updateVisibleStructures();
+      this.showLabels();
+    });
+    
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Structure chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {

@@ -71,6 +71,7 @@ export class ArmyManager {
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: NodeJS.Timeout | null = null;
   private cleanupTimeout: NodeJS.Timeout | null = null;
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -270,8 +271,33 @@ export class ArmyManager {
       return;
     }
 
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunkKey === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    await this.renderVisibleArmies(chunkKey);
+    
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey);
+    
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Army chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   private async renderVisibleArmies(chunkKey: string) {
