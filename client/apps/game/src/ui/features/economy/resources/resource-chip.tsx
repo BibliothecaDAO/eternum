@@ -337,7 +337,11 @@ export const ResourceChip = ({
         )}
 
         <div className={`ml-2 text-xs text-gold/40  ${size === "large" ? "" : ""}`}>
-          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
+          {timeUntilValueReached > 1000000000
+            ? "∞"
+            : timeUntilValueReached !== 0
+              ? formatTime(timeUntilValueReached)
+              : ""}
         </div>
       </div>
       {showTransfer && (

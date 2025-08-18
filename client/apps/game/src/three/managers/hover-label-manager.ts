@@ -6,7 +6,7 @@ import { HexPosition, ID, HexEntityInfo } from "@bibliothecadao/types";
 
 /**
  * Manager responsible for handling label expansion/collapse on hex hover
- * 
+ *
  * This class encapsulates all logic related to expanding labels when hovering over hexes
  * and collapsing them when moving away, while respecting camera view states.
  */
@@ -42,7 +42,7 @@ export class HoverLabelManager {
       quest?: HexEntityInfo;
       chest?: HexEntityInfo;
     },
-    initialCameraView: CameraView = CameraView.Medium
+    initialCameraView: CameraView = CameraView.Medium,
   ) {
     this.armyLabelsGroup = labelGroups.army;
     this.structureLabelsGroup = labelGroups.structure;
@@ -58,15 +58,16 @@ export class HoverLabelManager {
    */
   onHexHover(hexCoords: HexPosition): void {
     // Check if this is a different hex than currently hovered
-    if (!this.currentHoveredHex || 
-        this.currentHoveredHex.col !== hexCoords.col || 
-        this.currentHoveredHex.row !== hexCoords.row) {
-      
+    if (
+      !this.currentHoveredHex ||
+      this.currentHoveredHex.col !== hexCoords.col ||
+      this.currentHoveredHex.row !== hexCoords.row
+    ) {
       // Collapse labels for previously hovered hex if any
       if (this.currentHoveredHex) {
         this.collapseLabelsForHex(this.currentHoveredHex);
       }
-      
+
       // Expand labels for newly hovered hex
       this.expandLabelsForHex(hexCoords);
       this.currentHoveredHex = hexCoords;
@@ -90,7 +91,7 @@ export class HoverLabelManager {
    */
   updateCameraView(newCameraView: CameraView): void {
     this.currentCameraView = newCameraView;
-    
+
     // If we're currently hovering over a hex, re-expand its labels
     // to ensure they're in the correct state for the new camera view
     if (this.currentHoveredHex) {
@@ -105,10 +106,10 @@ export class HoverLabelManager {
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
     const styleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
-    
+
     // Clear any previously expanded labels
     this.expandedLabelIds.clear();
-    
+
     // Helper function to expand a label by finding it in the labels group
     const expandLabel = (entityId: ID, labelsGroup: THREE.Group) => {
       // Search through the labels group for the label with matching entity ID
@@ -122,11 +123,11 @@ export class HoverLabelManager {
               const containerId = `hover_${entityId}_${Date.now()}`;
               (wrapperContainer as HTMLElement).dataset.hoverId = containerId;
               this.expandedLabelIds.add(containerId);
-              
+
               // Remove collapsed styles and add expanded styles
               wrapperContainer.classList.remove(...styleCollapsed);
               wrapperContainer.classList.add(...styleExtended);
-              
+
               // Clear any existing timeout for this label
               const existingContainerId = (wrapperContainer as HTMLElement).dataset.containerId;
               if (existingContainerId) {
@@ -137,7 +138,7 @@ export class HoverLabelManager {
         }
       });
     };
-    
+
     // Expand labels for all entities at this hex
     if (army) {
       expandLabel(army.id, this.armyLabelsGroup);
@@ -160,7 +161,7 @@ export class HoverLabelManager {
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
     const styleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
-    
+
     // Helper function to restore label state based on camera view
     const restoreLabel = (entityId: ID, labelsGroup: THREE.Group) => {
       // Search through the labels group for the label with matching entity ID
@@ -176,10 +177,10 @@ export class HoverLabelManager {
                 // Remove hover tracking
                 delete (wrapperContainer as HTMLElement).dataset.hoverId;
                 this.expandedLabelIds.delete(hoverId);
-                
+
                 // Apply appropriate state based on camera view
                 wrapperContainer.classList.remove(...styleExtended, ...styleCollapsed);
-                
+
                 if (this.currentCameraView === CameraView.Far) {
                   // Far view: always collapsed
                   wrapperContainer.classList.add(...styleCollapsed);
@@ -203,7 +204,7 @@ export class HoverLabelManager {
         }
       });
     };
-    
+
     // Restore labels for all entities at this hex
     if (army) {
       restoreLabel(army.id, this.armyLabelsGroup);
@@ -217,7 +218,7 @@ export class HoverLabelManager {
     if (chest) {
       restoreLabel(chest.id, this.chestLabelsGroup);
     }
-    
+
     // Clear the expanded label tracking
     this.expandedLabelIds.clear();
   }
@@ -230,7 +231,7 @@ export class HoverLabelManager {
     if (this.currentHoveredHex) {
       this.collapseLabelsForHex(this.currentHoveredHex);
     }
-    
+
     // Clear tracking
     this.currentHoveredHex = null;
     this.expandedLabelIds.clear();

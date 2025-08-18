@@ -27,6 +27,7 @@ export class QuestManager {
   private currentCameraView: CameraView;
   private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -38,7 +39,7 @@ export class QuestManager {
     this.hexagonScene = hexagonScene;
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    
+
     // Initialize the label manager
     this.labelManager = new LabelManager({
       labelsGroup: labelsGroup || new THREE.Group(),
@@ -46,7 +47,7 @@ export class QuestManager {
       maxLabels: 1000,
       autoCleanup: true,
     });
-    
+
     // Register the quest label type
     this.labelManager.registerLabelType(QuestLabelType);
     this.loadModels().then(() => {
@@ -73,7 +74,7 @@ export class QuestManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
-    
+
     // Clean up the label manager
     this.labelManager.destroy();
   }
@@ -140,8 +141,35 @@ export class QuestManager {
       return;
     }
 
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(`[CHUNK SYNC] Waiting for previous quest chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous quest chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunkKey === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    this.renderVisibleQuests(chunkKey);
+
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = Promise.resolve().then(() => {
+      this.renderVisibleQuests(chunkKey);
+    });
+
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Quest chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   private getQuestWorldPosition = (questEntityId: ID, hexCoords: Position) => {
@@ -261,7 +289,7 @@ export class QuestManager {
   }
 
   public addLabelsToScene(): void {
-    // Label visibility is managed by LabelManager  
+    // Label visibility is managed by LabelManager
     // Labels are automatically added when created
   }
 
@@ -271,7 +299,7 @@ export class QuestManager {
   get entityIdLabels(): Map<ID, CSS2DObject> {
     const labelMap = new Map<ID, CSS2DObject>();
     const questLabels = this.labelManager.getLabelsByType("quest");
-    questLabels.forEach(label => {
+    questLabels.forEach((label) => {
       labelMap.set(label.data.entityId, label.css2dObject);
     });
     return labelMap;

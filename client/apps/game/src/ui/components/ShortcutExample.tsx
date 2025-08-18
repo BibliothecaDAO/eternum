@@ -19,7 +19,7 @@ export const ShortcutExample: React.FC = () => {
         action: () => setCount((prev) => prev + 1),
       },
       {
-        id: "decrement", 
+        id: "decrement",
         key: "ArrowDown",
         description: "Decrement counter",
         action: () => setCount((prev) => prev - 1),
@@ -42,30 +42,42 @@ export const ShortcutExample: React.FC = () => {
     key: "t",
     modifiers: { shift: true },
     description: "Toggle debug mode",
-    action: () => setMode((prev) => prev === "normal" ? "debug" : "normal"),
+    action: () => setMode((prev) => (prev === "normal" ? "debug" : "normal")),
   });
 
   return (
     <div className="p-4 border rounded-lg bg-gray-50">
       <h3 className="text-lg font-semibold mb-4">Shortcut System Example</h3>
-      
+
       <div className="space-y-2 mb-4">
-        <div>Current Count: <span className="font-mono">{count}</span></div>
-        <div>Current Mode: <span className="font-mono">{mode}</span></div>
+        <div>
+          Current Count: <span className="font-mono">{count}</span>
+        </div>
+        <div>
+          Current Mode: <span className="font-mono">{mode}</span>
+        </div>
       </div>
 
       <div className="text-sm text-gray-600 space-y-1">
-        <div><kbd>↑</kbd> - Increment</div>
-        <div><kbd>↓</kbd> - Decrement</div>
-        <div><kbd>Ctrl + R</kbd> - Reset (only when count ≠ 0)</div>
-        <div><kbd>Shift + T</kbd> - Toggle mode</div>
+        <div>
+          <kbd>↑</kbd> - Increment
+        </div>
+        <div>
+          <kbd>↓</kbd> - Decrement
+        </div>
+        <div>
+          <kbd>Ctrl + R</kbd> - Reset (only when count ≠ 0)
+        </div>
+        <div>
+          <kbd>Shift + T</kbd> - Toggle mode
+        </div>
       </div>
 
       <div className="mt-4 text-xs text-gray-500">
         <p>
-          This component demonstrates both the useShortcuts hook (for multiple shortcuts with a prefix)
-          and the useShortcut hook (for single shortcuts). All shortcuts are automatically cleaned up
-          when the component unmounts. For scene-specific shortcuts in Three.js contexts, use SceneShortcutManager instead.
+          This component demonstrates both the useShortcuts hook (for multiple shortcuts with a prefix) and the
+          useShortcut hook (for single shortcuts). All shortcuts are automatically cleaned up when the component
+          unmounts. For scene-specific shortcuts in Three.js contexts, use SceneShortcutManager instead.
         </p>
       </div>
     </div>

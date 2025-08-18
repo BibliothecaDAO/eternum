@@ -76,6 +76,8 @@ export const SettingsWindow = () => {
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const toggleSound = useUIStore((state) => state.toggleSound);
+  const enableMapZoom = useUIStore((state) => state.enableMapZoom);
+  const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
@@ -268,6 +270,13 @@ export const SettingsWindow = () => {
             >
               <Checkbox enabled={fullScreen} />
               <div>Fullscreen</div>
+            </div>
+            <div
+              className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold"
+              onClick={() => setEnableMapZoom(!enableMapZoom)}
+            >
+              <Checkbox enabled={enableMapZoom} />
+              <div>Enable Map Zoom</div>
             </div>
           </section>
 

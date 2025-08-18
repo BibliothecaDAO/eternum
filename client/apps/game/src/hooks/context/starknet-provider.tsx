@@ -7,7 +7,6 @@ import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 
-
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
@@ -22,12 +21,11 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f31";
+const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana";
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f31"
-const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
-
-const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354"
-const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"
+const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
+const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana";
 
 const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
 const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
@@ -38,11 +36,11 @@ const chain_id = isLocal
   ? KATANA_CHAIN_ID
   : isSlot
     ? SLOT_CHAIN_ID
-  : isSlottest
-    ? SLOT_CHAIN_ID_TEST
-  : env.VITE_PUBLIC_CHAIN === "sepolia"
-    ? constants.StarknetChainId.SN_SEPOLIA
-    : constants.StarknetChainId.SN_MAIN;
+    : isSlottest
+      ? SLOT_CHAIN_ID_TEST
+      : env.VITE_PUBLIC_CHAIN === "sepolia"
+        ? constants.StarknetChainId.SN_SEPOLIA
+        : constants.StarknetChainId.SN_MAIN;
 
 const controller = new ControllerConnector({
   chains: [
@@ -51,22 +49,22 @@ const controller = new ControllerConnector({
         ? KATANA_RPC_URL
         : isSlot
           ? SLOT_RPC_URL
-        : isSlottest
-          ? SLOT_RPC_URL_TEST
-        : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
-          ? env.VITE_PUBLIC_NODE_URL
-          : "https://api.cartridge.gg/x/starknet/sepolia",
+          : isSlottest
+            ? SLOT_RPC_URL_TEST
+            : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
+              ? env.VITE_PUBLIC_NODE_URL
+              : "https://api.cartridge.gg/x/starknet/sepolia",
     },
   ],
   defaultChainId: isLocal
     ? KATANA_CHAIN_ID
     : isSlot
       ? SLOT_CHAIN_ID
-    : isSlottest
-      ? SLOT_CHAIN_ID_TEST
-    : env.VITE_PUBLIC_CHAIN === "mainnet"
-      ? constants.StarknetChainId.SN_MAIN
-      : constants.StarknetChainId.SN_SEPOLIA,
+      : isSlottest
+        ? SLOT_CHAIN_ID_TEST
+        : env.VITE_PUBLIC_CHAIN === "mainnet"
+          ? constants.StarknetChainId.SN_MAIN
+          : constants.StarknetChainId.SN_SEPOLIA,
   preset,
   policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : policies,
   slot,
@@ -101,7 +99,15 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StarknetConfig
-      chains={isLocal ? [katanaLocalChain] : isSlot ? [getSlotChain(SLOT_CHAIN_ID)] : isSlottest ? [getSlotChain(SLOT_CHAIN_ID_TEST)] : [mainnet, sepolia]}
+      chains={
+        isLocal
+          ? [katanaLocalChain]
+          : isSlot
+            ? [getSlotChain(SLOT_CHAIN_ID)]
+            : isSlottest
+              ? [getSlotChain(SLOT_CHAIN_ID_TEST)]
+              : [mainnet, sepolia]
+      }
       provider={jsonRpcProvider({ rpc })}
       connectors={[controller as unknown as Connector]}
       explorer={voyager}

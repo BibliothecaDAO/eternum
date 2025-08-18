@@ -31,6 +31,7 @@ export class ChestManager {
   chestHexCoords: Map<number, Set<number>> = new Map();
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -140,8 +141,35 @@ export class ChestManager {
       return;
     }
 
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(`[CHUNK SYNC] Waiting for previous chest chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous chest chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunkKey === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    this.renderVisibleChests(chunkKey);
+
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = Promise.resolve().then(() => {
+      this.renderVisibleChests(chunkKey);
+    });
+
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Chest chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   private getChestWorldPosition = (chestEntityId: ID, hexCoords: Position) => {
@@ -277,7 +305,6 @@ export class ChestManager {
       }
     });
   }
-
 
   public async removeChest(entityId: ID) {
     if (!this.chests.getChest(entityId)) {

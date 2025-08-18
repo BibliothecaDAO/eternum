@@ -2,6 +2,7 @@
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { captureSystemError, initPostHog } from "@/posthog";
+import { cleanupTracing } from "@/tracing";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
@@ -40,6 +41,24 @@ window.Buffer = Buffer;
 async function init() {
   // Initialize PostHog for analytics and error reporting
   initPostHog();
+
+  // // Initialize tracing system
+  // initializeTracing({
+  //   enableMetricsCollection: true,
+  //   metricsInterval: 1000,
+  // });
+
+  // Set up cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    cleanupTracing();
+  });
+
+  // // Load test utilities in development
+  // if (import.meta.env.DEV) {
+  //   import("./tracing/test-tracing").then(() => {
+  //     console.log("🧪 Tracing test utilities loaded. Use TestTracing.runAllTests() to test.");
+  //   });
+  // }
 
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
@@ -199,6 +218,42 @@ async function init() {
   if (env.VITE_PUBLIC_GRAPHICS_DEV == true) {
     graphic.initStats();
   }
+
+  // Set up GameRenderer cleanup - multiple triggers for safety
+  let isDestroyed = false;
+  const cleanupGameRenderer = () => {
+    if (isDestroyed) return;
+    isDestroyed = true;
+
+    try {
+      graphic.destroy();
+      console.log("GameRenderer cleaned up");
+    } catch (error) {
+      console.error("Error during GameRenderer cleanup:", error);
+    }
+  };
+
+  // Cleanup on page unload
+  const existingUnloadHandler = window.onbeforeunload;
+  window.onbeforeunload = (event) => {
+    if (existingUnloadHandler) {
+      existingUnloadHandler.call(window, event);
+    }
+    cleanupGameRenderer();
+  };
+
+  // Cleanup on page hide (mobile/tab switching)
+  window.addEventListener("pagehide", cleanupGameRenderer);
+
+  // Cleanup on visibility change (when page becomes hidden)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      cleanupGameRenderer();
+    }
+  });
+
+  // Make cleanup function globally available for manual cleanup if needed
+  (window as any).__cleanupGameRenderer = cleanupGameRenderer;
 
   inject();
   root.render(

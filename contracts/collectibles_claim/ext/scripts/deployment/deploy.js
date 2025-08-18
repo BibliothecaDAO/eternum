@@ -13,7 +13,6 @@ import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
  * @returns {Promise<bigint>} The deployed contract address
  */
 export const deployCosmeticsClaim = async () => {
-
   // Pretty console header
   console.log("\n\n");
   console.log(`╔══════════════════════════════════════════════════════════╗`.green);
@@ -52,7 +51,6 @@ export const deployCosmeticsClaim = async () => {
 
   console.log(`\n\n 🎨 Deployed Cosmetics Claim contract: ${toHex(cosmeticsClaimAddress)}`);
 
-  
   console.log("\n\n");
   console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
   console.log(`     Cosmetics Claim Contract: Deployed `.yellow + toHex(cosmeticsClaimAddress).magenta + " ");
@@ -70,6 +68,5 @@ const toHex = (address) => {
   }
   return "0x" + address.toString(16);
 };
-
 
 await deployCosmeticsClaim();

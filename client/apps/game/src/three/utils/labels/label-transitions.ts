@@ -3,16 +3,16 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 /**
  * Label transition management system.
- * 
+ *
  * This module provides transition management for label visibility and camera view changes.
  * It maintains backward compatibility with existing managers while the label system
  * is being migrated to the new LabelManager architecture.
- * 
+ *
  * Key features:
  * - LabelTransitionDB: In-memory database for tracking label transition states
- * - transitionManager: Simple interface for managing label transitions  
+ * - transitionManager: Simple interface for managing label transitions
  * - applyLabelTransitions: Handles camera view transitions for existing labels
- * 
+ *
  * For new label functionality, use the label-manager.ts system.
  */
 

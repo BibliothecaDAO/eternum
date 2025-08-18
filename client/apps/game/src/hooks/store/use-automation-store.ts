@@ -42,6 +42,41 @@ export interface AutomationOrder {
   transferResources?: { resourceId: ResourcesIds; amount: number }[]; // Resources and amounts to transfer
 }
 
+// Export/Import type definitions
+export interface AutomationExportData {
+  version: string; // Version for future compatibility
+  exportedAt: number; // Timestamp when exported
+  ordersByRealm: Record<string, AutomationOrder[]>;
+  pausedRealms: Record<string, boolean>;
+  isGloballyPaused: boolean;
+  nextRunTimestamp: number | null;
+}
+
+// Template types for sharing automation strategies without entity-specific data
+export interface AutomationTemplate {
+  version: string;
+  exportedAt: number;
+  isTemplate: true; // Flag to identify this as a template
+  templateName?: string; // Optional name for the template
+  description?: string; // Optional description of the strategy
+  orders: AutomationOrderTemplate[];
+}
+
+export interface AutomationOrderTemplate {
+  priority: number;
+  resourceToUse: ResourcesIds;
+  mode: OrderMode;
+  maxAmount: number | "infinite";
+  productionType: ProductionType;
+  bufferPercentage?: number;
+
+  // Transfer-specific fields (without entity IDs)
+  transferMode?: TransferMode;
+  transferInterval?: number;
+  transferThreshold?: number;
+  transferResources?: { resourceId: ResourcesIds; amount: number }[];
+}
+
 interface AutomationState {
   ordersByRealm: Record<string, AutomationOrder[]>;
   pausedRealms: Record<string, boolean>; // Track paused state by realm ID
@@ -57,6 +92,10 @@ interface AutomationState {
   toggleRealmPause: (realmEntityId: string) => void; // Toggle pause state for a realm
   isRealmPaused: (realmEntityId: string) => boolean; // Check if a realm is paused
   toggleGlobalPause: () => void; // Toggle global pause state
+  exportAutomation: () => AutomationExportData; // Export current automation state
+  importAutomation: (data: AutomationExportData) => { success: boolean; error?: string }; // Import automation state
+  exportAsTemplate: (name?: string, description?: string) => AutomationTemplate; // Export as shareable template
+  importTemplate: (template: AutomationTemplate) => AutomationOrderTemplate[]; // Import template and return orders for manual assignment
 }
 
 export const useAutomationStore = create<AutomationState>()(
@@ -147,6 +186,127 @@ export const useAutomationStore = create<AutomationState>()(
         set((state) => ({
           isGloballyPaused: !state.isGloballyPaused,
         })),
+      exportAutomation: () => {
+        const state = get();
+        const exportData: AutomationExportData = {
+          version: "1.0.0", // Version for future compatibility
+          exportedAt: Date.now(),
+          ordersByRealm: state.ordersByRealm,
+          pausedRealms: state.pausedRealms,
+          isGloballyPaused: state.isGloballyPaused,
+          nextRunTimestamp: state.nextRunTimestamp,
+        };
+        return exportData;
+      },
+      importAutomation: (data: AutomationExportData) => {
+        try {
+          // Validate the import data structure
+          if (!data || typeof data !== "object") {
+            return { success: false, error: "Invalid data format" };
+          }
+
+          if (!data.version || !data.exportedAt) {
+            return { success: false, error: "Missing version or export timestamp" };
+          }
+
+          // Validate ordersByRealm structure
+          if (!data.ordersByRealm || typeof data.ordersByRealm !== "object") {
+            return { success: false, error: "Invalid ordersByRealm structure" };
+          }
+
+          // Validate each order has required fields
+          for (const [realmId, orders] of Object.entries(data.ordersByRealm)) {
+            if (!Array.isArray(orders)) {
+              return { success: false, error: `Orders for realm ${realmId} must be an array` };
+            }
+
+            for (const order of orders) {
+              if (!order.id || !order.realmEntityId || typeof order.priority !== "number") {
+                return { success: false, error: "Order missing required fields" };
+              }
+
+              if (!Object.values(ProductionType).includes(order.productionType)) {
+                return { success: false, error: `Invalid production type: ${order.productionType}` };
+              }
+
+              if (!Object.values(OrderMode).includes(order.mode)) {
+                return { success: false, error: `Invalid order mode: ${order.mode}` };
+              }
+
+              // Validate transfer-specific fields if it's a transfer order
+              if (order.productionType === ProductionType.Transfer) {
+                if (!order.targetEntityId || !order.transferMode || !order.transferResources) {
+                  return { success: false, error: "Transfer order missing required fields" };
+                }
+
+                if (!Object.values(TransferMode).includes(order.transferMode)) {
+                  return { success: false, error: `Invalid transfer mode: ${order.transferMode}` };
+                }
+              }
+            }
+          }
+
+          // If validation passes, update the store
+          set({
+            ordersByRealm: data.ordersByRealm,
+            pausedRealms: data.pausedRealms || {},
+            isGloballyPaused: data.isGloballyPaused || false,
+            nextRunTimestamp: data.nextRunTimestamp || null,
+          });
+
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: error instanceof Error ? error.message : "Unknown error occurred" };
+        }
+      },
+      exportAsTemplate: (name?: string, description?: string) => {
+        const state = get();
+        const allOrders: AutomationOrder[] = [];
+
+        // Collect all orders from all realms
+        Object.values(state.ordersByRealm).forEach((realmOrders) => {
+          allOrders.push(...realmOrders);
+        });
+
+        // Convert orders to templates (removing entity-specific data)
+        const templateOrders: AutomationOrderTemplate[] = allOrders.map((order) => ({
+          priority: order.priority,
+          resourceToUse: order.resourceToUse,
+          mode: order.mode,
+          maxAmount: order.maxAmount,
+          productionType: order.productionType,
+          bufferPercentage: order.bufferPercentage,
+          // Transfer-specific fields (without entity IDs)
+          transferMode: order.transferMode,
+          transferInterval: order.transferInterval,
+          transferThreshold: order.transferThreshold,
+          transferResources: order.transferResources,
+        }));
+
+        // Sort by priority for better readability
+        templateOrders.sort((a, b) => a.priority - b.priority);
+
+        const template: AutomationTemplate = {
+          version: "1.0.0",
+          exportedAt: Date.now(),
+          isTemplate: true,
+          templateName: name,
+          description: description,
+          orders: templateOrders,
+        };
+
+        return template;
+      },
+      importTemplate: (template: AutomationTemplate) => {
+        // Validate template structure
+        if (!template || !template.isTemplate || !Array.isArray(template.orders)) {
+          throw new Error("Invalid template format");
+        }
+
+        // Return the template orders for manual assignment
+        // The UI will need to handle assigning these to specific realms
+        return template.orders;
+      },
     }),
     {
       name: "eternum-automation-orders-by-realm",

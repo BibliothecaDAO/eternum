@@ -1,11 +1,19 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getIsBlitz } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getStructureName } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ID, RealmInfo, resources } from "@bibliothecadao/types";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getStructureName,
+  getStructureRelicEffects,
+} from "@bibliothecadao/eternum";
+import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getProducedResource, ID, RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
+import { SparklesIcon } from "lucide-react";
 import { memo, useMemo } from "react";
+import { ResourceChip } from "../../economy/resources";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -24,12 +32,9 @@ const SidebarRealm = ({
 }) => {
   const {
     setup: {
-      components: { Building },
+      components: { Building, Resource, ProductionBoostBonus },
     },
   } = useDojo();
-
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const isCurrentStructure = realm.entityId === structureEntityId;
 
   const buildings = useMemo(() => {
     const buildings = runQuery([
@@ -41,29 +46,113 @@ const SidebarRealm = ({
     return buildings;
   }, [realm]);
 
+  // Get production data
+  const buildingsData = useBuildings(realm.position.x, realm.position.y);
+  const productionBuildings = buildingsData.filter((building) => building && getProducedResource(building.category));
+  const producedResources = Array.from(
+    new Set(
+      productionBuildings
+        .filter((building) => building.produced && building.produced.resource)
+        .map((building) => building.produced.resource),
+    ),
+  );
+
+  // Get resource manager for production rates
+  const resourceManager = useResourceManager(realm.entityId);
+  const resourceData = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId)]));
+
+  // Get bonuses
+  const productionBoostBonus = useComponentValue(ProductionBoostBonus, getEntityIdFromKeys([BigInt(realm.entityId)]));
+
+  const { wonderBonus, hasActivatedWonderBonus } = useMemo(() => {
+    const wonderBonusConfig = configManager.getWonderBonusConfig();
+    const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
+    return {
+      wonderBonus: hasActivatedWonderBonus ? 1 + wonderBonusConfig.bonusPercentNum / 10000 : 1,
+      hasActivatedWonderBonus,
+    };
+  }, [productionBoostBonus]);
+
+  const activeRelics = useMemo(() => {
+    if (!productionBoostBonus) return [];
+    return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
+  }, [productionBoostBonus]);
+
   return (
     <div
       onClick={onSelect}
-      className={`px-2 py-1 rounded-lg cursor-pointer transition-colors ${isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-70"}`}
+      className={`px-4 py-3 rounded-lg panel-wood cursor-pointer transition-all transform hover:scale-[1.02] ${
+        isSelected ? "panel-gold  shadow-lg" : "border-transparent hover:bg-gold/5"
+      }`}
     >
-      <div className="flex justify-between items-start">
-        <h3 className="text-xl font-bold mb-2">{getStructureName(realm.structure, getIsBlitz()).name}</h3>
-        {/* {isCurrentStructure && <span className="text-xs bg-gold/30 text-white px-2 py-1 rounded">Current</span>} */}
-        <div className="space-y-2">
-          <div className="text-sm text-gold/80">
-            <span>{buildings.size} buildings</span>
-          </div>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="text-xl font-bold text-gold">{getStructureName(realm.structure, getIsBlitz()).name}</h3>
+          <p className="text-sm text-gold/60">
+            {buildings.size} buildings • {productionBuildings.length} producing
+          </p>
         </div>
+        {/* Active Bonuses */}
+        {(hasActivatedWonderBonus || activeRelics.length > 0) && (
+          <div className="flex gap-1">
+            {hasActivatedWonderBonus && (
+              <div className="bg-gold/20 p-1 rounded" title={`Wonder Bonus: +${((wonderBonus - 1) * 100).toFixed(2)}%`}>
+                <SparklesIcon className="w-4 h-4 text-gold" />
+              </div>
+            )}
+            {activeRelics.length > 0 && (
+              <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
+                <span className="text-xs font-bold text-relic-activated">{activeRelics.length}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-2">
+      {/* Resource Production */}
+      {producedResources.length > 0 ? (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-gold/80 mb-1">Production:</h4>
+          <div className="grid grid-cols-1 gap-1">
+            {producedResources.map((resourceId) => {
+              const buildingCount = productionBuildings.filter((b) => b.produced.resource === resourceId).length;
+
+              return (
+                <div key={resourceId} className="flex items-center bg-dark-brown/50 rounded px-2 py-1 gap-3">
+                  <div className="flex items-center gap-1">
+                    <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                    <span className="text-xs text-gold/80">{buildingCount}b</span>
+                  </div>
+                  <div className="">
+                    <ResourceChip
+                      resourceId={resourceId}
+                      resourceManager={resourceManager}
+                      size="default"
+                      showTransfer={false}
+                      storageCapacity={0}
+                      storageCapacityUsed={0}
+                      activeRelicEffects={activeRelics}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-gold/60 text-center py-2">No production buildings</div>
+      )}
+
+      {/* Realm Resources (Compact) */}
+      <div className="flex flex-wrap gap-1 mt-3 pt-2 border-t border-gold/20">
         {Object.values(realm.resources).map((resource) => {
           return (
             <ResourceIcon
               key={resource}
               resource={resources.find((r) => r.id === resource)?.trait || ""}
-              size="sm"
-              className="opacity-80"
+              size="xs"
+              className="opacity-60"
             />
           );
         })}

@@ -8,6 +8,9 @@ type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mouse
 export class InputManager {
   private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
   private isDragged = false;
+  private currentDragListener: ((e: MouseEvent) => void) | null = null;
+  private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
+  private mouseDownHandler: (e: MouseEvent) => void;
 
   constructor(
     private sceneName: SceneName,
@@ -16,7 +19,8 @@ export class InputManager {
     private mouse: THREE.Vector2,
     private camera: THREE.Camera,
   ) {
-    window.addEventListener("mousedown", this.handleMouseDown.bind(this));
+    this.mouseDownHandler = this.handleMouseDown.bind(this);
+    window.addEventListener("mousedown", this.mouseDownHandler);
   }
 
   addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
@@ -57,24 +61,54 @@ export class InputManager {
   }
 
   private handleMouseDown(e: MouseEvent): void {
+    // Clean up any existing drag listeners to prevent race conditions
+    this.cleanupDragListeners();
+
     const mouseX = e.clientX;
     const mouseY = e.clientY;
     this.isDragged = false;
-    const checkDrag = (e: MouseEvent) => {
+
+    this.currentDragListener = (e: MouseEvent) => {
       if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
         this.isDragged = true;
         // Clear tooltip when dragging starts
         useUIStore.getState().setTooltip(null);
-        window.removeEventListener("mousemove", checkDrag);
+        this.cleanupDragListeners();
       }
     };
-    window.addEventListener("mousemove", checkDrag);
-    window.addEventListener(
-      "mouseup",
-      () => {
-        window.removeEventListener("mousemove", checkDrag);
-      },
-      { once: true },
-    );
+
+    this.currentMouseUpListener = () => {
+      this.cleanupDragListeners();
+    };
+
+    window.addEventListener("mousemove", this.currentDragListener);
+    window.addEventListener("mouseup", this.currentMouseUpListener, { once: true });
+  }
+
+  private cleanupDragListeners(): void {
+    if (this.currentDragListener) {
+      window.removeEventListener("mousemove", this.currentDragListener);
+      this.currentDragListener = null;
+    }
+    if (this.currentMouseUpListener) {
+      window.removeEventListener("mouseup", this.currentMouseUpListener);
+      this.currentMouseUpListener = null;
+    }
+  }
+
+  public destroy(): void {
+    // Clean up main mousedown handler
+    window.removeEventListener("mousedown", this.mouseDownHandler);
+
+    // Clean up any active drag listeners
+    this.cleanupDragListeners();
+
+    // Clean up all registered listeners
+    for (const listener of this.listeners) {
+      window.removeEventListener(listener.event, listener.handler);
+    }
+    this.listeners = [];
+
+    console.log("InputManager: Destroyed and cleaned up all event listeners");
   }
 }

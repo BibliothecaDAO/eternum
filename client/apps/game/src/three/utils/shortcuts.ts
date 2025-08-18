@@ -52,10 +52,10 @@ export class SceneShortcutManager {
    */
   private isCurrentSceneAllowed(allowedScenes: SceneName | SceneName[]): boolean {
     if (!this.sceneManager) return true; // Allow if no scene manager
-    
+
     const currentScene = this.sceneManager.getCurrentScene();
     if (!currentScene) return true; // Allow if no current scene
-    
+
     const scenesToCheck = Array.isArray(allowedScenes) ? allowedScenes : [allowedScenes];
     return scenesToCheck.includes(currentScene);
   }
@@ -89,12 +89,12 @@ export class SceneShortcutManager {
       if (config.condition && !config.condition()) {
         return false;
       }
-      
+
       // Then check scene restriction if it exists
       if (config.sceneRestriction && !this.isCurrentSceneAllowed(config.sceneRestriction)) {
         return false;
       }
-      
+
       return true;
     };
 
@@ -146,7 +146,6 @@ export class ShortcutUtils {
       action,
     };
   }
-
 
   static conditional(id: string, key: string, description: string, condition: () => boolean, action: () => void) {
     return {
