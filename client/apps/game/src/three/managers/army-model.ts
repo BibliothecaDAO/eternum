@@ -17,6 +17,7 @@ import {
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import { MaterialPool } from "../utils/material-pool";
 
 export class ArmyModel {
   // Core properties
@@ -33,9 +34,12 @@ export class ArmyModel {
   private readonly labelsGroup: THREE.Group;
   private currentCameraView: CameraView = CameraView.Medium;
 
-  // Reusable objects for matrix operations
+  // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: THREE.Matrix4 = new THREE.Matrix4();
   private readonly dummyEuler: THREE.Euler = new THREE.Euler();
+  private readonly tempVector1: THREE.Vector3 = new THREE.Vector3();
+  private readonly tempVector2: THREE.Vector3 = new THREE.Vector3();
+  private readonly tempVector3: THREE.Vector3 = new THREE.Vector3();
 
   // Animation and state management
   private readonly animationStates: Float32Array;
@@ -59,6 +63,9 @@ export class ArmyModel {
 
   // Memory monitoring
   private memoryMonitor: MemoryMonitor;
+  
+  // Material sharing
+  private static materialPool = MaterialPool.getInstance();
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group, cameraView?: CameraView) {
     this.scene = scene;
@@ -160,16 +167,11 @@ export class ArmyModel {
 
   private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry.clone();
-    const material = new THREE.MeshBasicMaterial({
-      map: (mesh.material as THREE.MeshStandardMaterial).map,
-      transparent: (mesh.material as THREE.MeshStandardMaterial).transparent,
-      side: (mesh.material as THREE.MeshStandardMaterial).side,
-    });
-    // @ts-ignore
-    if (mesh.material.name.includes("stand")) {
-      // @ts-ignore
-      material.opacity = 0.9;
-    }
+    
+    // Handle both single material and material array cases
+    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
+    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
@@ -352,6 +354,11 @@ export class ArmyModel {
 
     // Monitor memory usage before starting movement
     this.memoryMonitor.getCurrentStats(`startMovement-${entityId}`);
+    
+    // Log material sharing stats periodically (every 10th movement)
+    if (entityId % 10 === 0) {
+      ArmyModel.materialPool.logSharingStats();
+    }
 
     this.stopMovement(entityId);
     const [currentPos, nextPos] = [path[0], path[1]];
@@ -372,8 +379,8 @@ export class ArmyModel {
   ): void {
     this.instanceData.set(entityId, {
       entityId,
-      position: currentPos.clone(),
-      scale: this.normalScale.clone(),
+      position: new THREE.Vector3().copy(currentPos), // Create once per army
+      scale: new THREE.Vector3().copy(this.normalScale), // Create once per army
       isMoving: true,
       path,
       category,
@@ -387,8 +394,8 @@ export class ArmyModel {
       this.dummyEuler.setFromRotationMatrix(this.dummyMatrix);
 
       this.movingInstances.set(entityId, {
-        startPos: currentPos.clone(),
-        endPos: nextPos.clone(),
+        startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
+        endPos: new THREE.Vector3().copy(nextPos),     // Create once per movement  
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -398,8 +405,8 @@ export class ArmyModel {
       });
     } else {
       this.movingInstances.set(entityId, {
-        startPos: currentPos.clone(),
-        endPos: nextPos.clone(),
+        startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
+        endPos: new THREE.Vector3().copy(nextPos),     // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -445,22 +452,23 @@ export class ArmyModel {
       movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
     }
 
-    const displayPosition = movement.startPos.clone();
+    // Use reusable vector instead of cloning
+    this.tempVector1.copy(movement.startPos);
     if (!isBoat) {
-      displayPosition.y += movement.floatingHeight;
+      this.tempVector1.y += movement.floatingHeight;
     }
 
     this.updateRotation(movement, deltaTime);
     this.updateInstance(
       entityId,
       movement.matrixIndex,
-      displayPosition,
+      this.tempVector1,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
 
-    this.updateLabelPosition(entityId, displayPosition);
+    this.updateLabelPosition(entityId, this.tempVector1);
 
     if (movement.floatingHeight <= 0 || isBoat) {
       this.movingInstances.delete(entityId);
@@ -490,21 +498,22 @@ export class ArmyModel {
       this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
     }
 
-    const displayPosition = instanceData.position.clone();
+    // Use reusable vector instead of cloning
+    this.tempVector2.copy(instanceData.position);
     if (!isBoat) {
-      displayPosition.y += movement.floatingHeight;
+      this.tempVector2.y += movement.floatingHeight;
     }
 
     this.updateInstance(
       entityId,
       movement.matrixIndex,
-      displayPosition,
+      this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
 
-    this.updateLabelPosition(entityId, displayPosition);
+    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private updateRotation(movement: MovementData, deltaTime: number): void {
@@ -631,8 +640,8 @@ export class ArmyModel {
     }
 
     this.movingInstances.set(entityId, {
-      startPos: instanceData.position.clone(),
-      endPos: instanceData.position.clone(),
+      startPos: new THREE.Vector3().copy(instanceData.position), // Create once for descent
+      endPos: new THREE.Vector3().copy(instanceData.position),   // Create once for descent
       progress: 0,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
@@ -648,6 +657,26 @@ export class ArmyModel {
    */
   public setIsAgent(isAgent: boolean): void {
     this.isAgent = isAgent;
+  }
+
+  /**
+   * Get material sharing statistics for debugging
+   */
+  public getMaterialSharingStats(): {
+    loadedModels: number;
+    totalMeshes: number;
+    materialPoolStats: any;
+  } {
+    let totalMeshes = 0;
+    this.models.forEach(model => {
+      totalMeshes += model.instancedMeshes.length;
+    });
+    
+    return {
+      loadedModels: this.models.size,
+      totalMeshes,
+      materialPoolStats: ArmyModel.materialPool.getStats(),
+    };
   }
 
   /**
@@ -778,5 +807,40 @@ export class ArmyModel {
       const intersectsB = raycaster.intersectObject(b.mesh);
       return intersectsA[0].distance - intersectsB[0].distance;
     });
+  }
+
+  /**
+   * Dispose of all resources including shared materials
+   */
+  public dispose(): void {
+    // Dispose geometries and release materials from pool
+    this.models.forEach(modelData => {
+      modelData.instancedMeshes.forEach(mesh => {
+        // Release material from pool (handle both single and array materials)
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        ArmyModel.materialPool.releaseMaterial(material);
+        
+        // Dispose geometry
+        mesh.geometry.dispose();
+        
+        // Remove from scene
+        this.scene.remove(mesh);
+      });
+      
+      // Dispose animations
+      modelData.mixer.stopAllAction();
+      
+      // Remove group from scene
+      this.scene.remove(modelData.group);
+    });
+    
+    // Clear all data structures
+    this.models.clear();
+    this.entityModelMap.clear();
+    this.movingInstances.clear();
+    this.instanceData.clear();
+    this.labels.clear();
+    
+    console.log('ArmyModel: Disposed all resources');
   }
 }

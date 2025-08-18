@@ -29,6 +29,7 @@ import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
+import { MaterialPool } from "./utils/material-pool";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -270,7 +271,11 @@ export default class GameRenderer {
         const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
         const stats = this.memoryMonitor.getCurrentStats(currentScene);
         const summary = this.memoryMonitor.getSummary();
-
+        
+        // Get material pool stats
+        const materialStats = MaterialPool.getInstance().getStats();
+        const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
+        
         // Update display
         this.memoryStatsElement.innerHTML = `
           <strong>Memory Monitor</strong><br>
@@ -279,6 +284,7 @@ export default class GameRenderer {
           Trend: ${summary.trendMBPerSecond > 0 ? "+" : ""}${summary.trendMBPerSecond.toFixed(2)}MB/s<br>
           Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
           Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
+          Materials: ${materialStats.uniqueMaterials} shared (${sharingRatio.toFixed(1)}:1)<br>
           ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
         `;
 

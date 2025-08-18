@@ -241,6 +241,9 @@ export default class WorldmapScene extends HexagonScene {
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
+    
+    // Expose material sharing debug to global console
+    (window as any).testMaterialSharing = () => this.armyManager.logMaterialSharingStats();
     this.structureManager = new StructureManager(
       this.scene,
       this.renderChunkSize,

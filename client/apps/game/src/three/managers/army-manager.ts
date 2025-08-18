@@ -74,6 +74,9 @@ export class ArmyManager {
   private cleanupTimeout: NodeJS.Timeout | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor: MemoryMonitor;
+  
+  // Reusable objects for memory optimization
+  private readonly tempPosition: THREE.Vector3 = new THREE.Vector3();
 
   constructor(
     scene: THREE.Scene,
@@ -713,6 +716,7 @@ export class ArmyManager {
     // Create label using centralized function
     const labelDiv = createArmyLabel(army, this.currentCameraView);
 
+    // Create CSS2DObject normally (revert pooling for now)
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
@@ -749,6 +753,7 @@ export class ArmyManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
+    // Remove label normally (revert pooling for now)
     this.armyModel.removeLabel(entityId);
     this.entityIdLabels.delete(entityId);
   }
@@ -783,6 +788,41 @@ export class ArmyManager {
     return this.armies.has(entityId) && this.isArmySelectable(entityId);
   }
 
+  /**
+   * Debug method to test material sharing effectiveness
+   */
+  public logMaterialSharingStats(): void {
+    const stats = this.armyModel.getMaterialSharingStats();
+    const efficiency = stats.materialPoolStats.totalReferences / Math.max(stats.materialPoolStats.uniqueMaterials, 1);
+    const theoreticalWaste = stats.totalMeshes - stats.materialPoolStats.uniqueMaterials;
+    
+    console.log(`
+🎨 MATERIAL SHARING TEST RESULTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Model Stats:
+   • Loaded Models: ${stats.loadedModels}
+   • Total Meshes: ${stats.totalMeshes}
+
+🎯 Material Pool Stats:
+   • Unique Materials: ${stats.materialPoolStats.uniqueMaterials}
+   • Total References: ${stats.materialPoolStats.totalReferences}
+   • Sharing Efficiency: ${efficiency.toFixed(1)}:1
+   • Memory Saved: ~${stats.materialPoolStats.memoryEstimateMB}MB
+
+💾 Theoretical Comparison:
+   • Without Sharing: ${stats.totalMeshes} materials
+   • With Sharing: ${stats.materialPoolStats.uniqueMaterials} materials
+   • Materials Saved: ${theoreticalWaste} (${((theoreticalWaste/stats.totalMeshes)*100).toFixed(1)}%)
+   • Est. Memory Saved: ${(theoreticalWaste * 0.005).toFixed(1)}MB
+
+${efficiency > 5 ? '✅ EXCELLENT sharing efficiency!' : 
+  efficiency > 2 ? '✅ GOOD sharing efficiency' : 
+  '⚠️  Low sharing efficiency - check for duplicate materials'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    `);
+  }
+
+
   public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
     const effects = this.armyRelicEffects.get(entityId);
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
@@ -798,16 +838,17 @@ export class ArmyManager {
       const instanceData = this.armyModel["instanceData"]?.get(entityId);
       if (instanceData && instanceData.isMoving) {
         // Army is currently moving, update relic effects to follow the current interpolated position
-        const currentPosition = instanceData.position.clone();
-        currentPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+        // Use reusable vector to avoid cloning every frame
+        this.tempPosition.copy(instanceData.position);
+        this.tempPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
 
         relicEffects.forEach((relicEffect) => {
           // Update the position of each relic effect to follow the army
           if (relicEffect.fx.instance) {
             // Update the base position that the orbital animation uses
-            relicEffect.fx.instance.initialX = currentPosition.x;
-            relicEffect.fx.instance.initialY = currentPosition.y;
-            relicEffect.fx.instance.initialZ = currentPosition.z;
+            relicEffect.fx.instance.initialX = this.tempPosition.x;
+            relicEffect.fx.instance.initialY = this.tempPosition.y;
+            relicEffect.fx.instance.initialZ = this.tempPosition.z;
           }
         });
       }
@@ -976,6 +1017,13 @@ export class ArmyManager {
     for (const [entityId] of this.armyRelicEffects) {
       this.updateRelicEffects(entityId, []);
     }
+    
+    // Dispose army model resources including shared materials
+    this.armyModel.dispose();
+    
+    // Clear entity ID labels
+    this.entityIdLabels.clear();
+    
     // Clean up any other resources...
   }
 }
