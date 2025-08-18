@@ -591,4 +591,37 @@ export default class GameRenderer {
       this.animate();
     });
   }
+
+  public destroy(): void {
+    // Clean up intervals
+    this.cleanupIntervals.forEach(interval => clearInterval(interval));
+    this.cleanupIntervals = [];
+
+    // Clean up renderer resources
+    this.renderer.dispose();
+    this.composer.dispose();
+
+    // Clean up scenes
+    if (this.worldmapScene && typeof this.worldmapScene.destroy === 'function') {
+      this.worldmapScene.destroy();
+    }
+    if (this.hexceptionScene && typeof this.hexceptionScene.destroy === 'function') {
+      this.hexceptionScene.destroy();
+    }
+    if (this.hudScene && typeof this.hudScene.destroy === 'function') {
+      this.hudScene.destroy();
+    }
+
+    // Clean up controls
+    if (this.controls) {
+      this.controls.dispose();
+    }
+
+    // Remove event listeners
+    window.removeEventListener("urlChanged", this.handleURLChange);
+    window.removeEventListener("popstate", this.handleURLChange);
+    window.removeEventListener("resize", this.onWindowResize.bind(this));
+
+    console.log("GameRenderer: Destroyed and cleaned up");
+  }
 }

@@ -125,7 +125,18 @@ export class InteractiveHexManager {
   renderAllHexes() {
     if (this.instanceMesh) {
       this.scene.remove(this.instanceMesh);
-      this.instanceMesh.dispose();
+      // Dispose geometry and material properly
+      if (this.instanceMesh.geometry) {
+        this.instanceMesh.geometry.dispose();
+      }
+      if (this.instanceMesh.material) {
+        if (Array.isArray(this.instanceMesh.material)) {
+          this.instanceMesh.material.forEach(mat => mat.dispose());
+        } else {
+          this.instanceMesh.material.dispose();
+        }
+      }
+      this.instanceMesh = null;
     }
 
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
@@ -153,7 +164,18 @@ export class InteractiveHexManager {
   renderHexes() {
     if (this.instanceMesh) {
       this.scene.remove(this.instanceMesh);
-      this.instanceMesh.dispose();
+      // Dispose geometry and material properly
+      if (this.instanceMesh.geometry) {
+        this.instanceMesh.geometry.dispose();
+      }
+      if (this.instanceMesh.material) {
+        if (Array.isArray(this.instanceMesh.material)) {
+          this.instanceMesh.material.forEach(mat => mat.dispose());
+        } else {
+          this.instanceMesh.material.dispose();
+        }
+      }
+      this.instanceMesh = null;
     }
 
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
@@ -180,5 +202,34 @@ export class InteractiveHexManager {
 
   update() {
     this.hoverAura.rotate();
+  }
+
+  public destroy(): void {
+    // Clean up instance mesh
+    if (this.instanceMesh) {
+      this.scene.remove(this.instanceMesh);
+      if (this.instanceMesh.geometry) {
+        this.instanceMesh.geometry.dispose();
+      }
+      if (this.instanceMesh.material) {
+        if (Array.isArray(this.instanceMesh.material)) {
+          this.instanceMesh.material.forEach(mat => mat.dispose());
+        } else {
+          this.instanceMesh.material.dispose();
+        }
+      }
+      this.instanceMesh = null;
+    }
+
+    // Clean up hover aura
+    if (this.hoverAura.isInScene(this.scene)) {
+      this.hoverAura.removeFromScene(this.scene);
+    }
+
+    // Clear hex collections
+    this.allHexes.clear();
+    this.visibleHexes.clear();
+
+    console.log("InteractiveHexManager: Destroyed and cleaned up");
   }
 }

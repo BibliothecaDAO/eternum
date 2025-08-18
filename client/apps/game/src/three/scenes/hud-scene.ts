@@ -123,4 +123,34 @@ export default class HUDScene {
   setNavigationTarget(col: number, row: number) {
     this.navigator.setNavigationTarget(col, row);
   }
+
+  public destroy(): void {
+    // Clean up navigator (if it has a destroy method)
+    if (this.navigator && 'destroy' in this.navigator && typeof (this.navigator as any).destroy === 'function') {
+      (this.navigator as any).destroy();
+    }
+
+    // Clean up rain effect (if it has a destroy method)
+    if (this.rainEffect && 'destroy' in this.rainEffect && typeof (this.rainEffect as any).destroy === 'function') {
+      (this.rainEffect as any).destroy();
+    }
+
+    // Clean up lights
+    if (this.ambientLight) {
+      this.scene.remove(this.ambientLight);
+    }
+    if (this.hemisphereLight) {
+      this.scene.remove(this.hemisphereLight);
+    }
+
+    // Clean up GUI folder (if it has a destroy method)
+    if (this.GUIFolder && 'destroy' in this.GUIFolder && typeof this.GUIFolder.destroy === 'function') {
+      this.GUIFolder.destroy();
+    }
+
+    // Clear scene
+    this.scene.clear();
+
+    console.log("HUDScene: Destroyed and cleaned up");
+  }
 }

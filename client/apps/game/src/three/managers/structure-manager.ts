@@ -131,6 +131,27 @@ export class StructureManager {
         this.clearPendingRelicEffectsCallback(entityId);
       }
     });
+
+    // Dispose of all structure models
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => {
+        if (typeof model.dispose === 'function') {
+          model.dispose();
+        }
+        if (model.group.parent) {
+          model.group.parent.remove(model.group);
+        }
+      });
+    });
+    this.structureModels.clear();
+
+    // Clear all maps
+    this.entityIdMaps.clear();
+    this.wonderEntityIdMaps.clear();
+    this.structures.getStructures().clear();
+    this.structureHexCoords.clear();
+
+    console.log("StructureManager: Destroyed and cleaned up");
   }
 
   getTotalStructures() {
