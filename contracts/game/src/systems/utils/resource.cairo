@@ -4,7 +4,7 @@ use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{all_resource_ids, is_bank};
-use s1_eternum::models::config::{SpeedImpl};
+use s1_eternum::models::config::{SpeedImpl, WorldConfigUtilImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
@@ -136,9 +136,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::_instant_arrivals_transfer(
-            ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false,
+        Self::_instant_transfer(
+            ref world, from_troop_id, ref from_troop_weight, to_structure_id, ref to_structure_weight, resources, false,
         );
+        // Self::_instant_arrivals_transfer(
+    //     ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false,
+    // );
     }
 
     #[inline(always)]
@@ -150,6 +153,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        assert!(!blitz_mode_on, "Eternum: no structure to troop transfer in blitz mode");
+
         Self::ensure_no_troop_resource(resources);
         Self::_instant_transfer(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources, false,
