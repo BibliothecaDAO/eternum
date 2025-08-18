@@ -2,6 +2,7 @@ import { HEX_SIZE } from "@/three/constants";
 import { createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
+import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
@@ -33,9 +34,11 @@ export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
   private material: THREE.ShaderMaterial;
   private yOffset: number = 0;
+  private hexGeometryPool: HexGeometryPool;
 
   constructor(private scene: THREE.Scene) {
     this.material = highlightHexMaterial;
+    this.hexGeometryPool = HexGeometryPool.getInstance();
   }
 
   highlightHexes(actionPaths: ActionPath[]) {
@@ -43,15 +46,19 @@ export class HighlightHexManager {
     this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];
 
-    // Create new highlight meshes
-    const bigHexagonShape = createRoundedHexagonShape(HEX_SIZE * 0.975);
-    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-    hexGeometryDebugger.trackGeometryCreation('HighlightHexManager.highlightHexes');
+    if (actionPaths.length === 0) return;
+
+    // Use shared geometry instead of creating new one
+    const hexagonGeometry = this.hexGeometryPool.getGeometry('highlight');
+    hexGeometryDebugger.trackSharedGeometryUsage('highlight', 'HighlightHexManager.highlightHexes');
 
     actionPaths.forEach((hex) => {
       const position = getWorldPositionForHex(hex.hex);
+      
+      // Still cloning material for now - TODO: Share materials too
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       hexGeometryDebugger.trackMaterialClone('HighlightHexManager.highlightHexes');
+      
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
       highlightMesh.position.set(position.x, 0.175 + this.yOffset, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;

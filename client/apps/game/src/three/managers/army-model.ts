@@ -18,6 +18,7 @@ import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, Movement
 import { getHexForWorldPosition } from "../utils";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { MaterialPool } from "../utils/material-pool";
+import { applyEasing, EasingType } from "../utils/easing";
 
 export class ArmyModel {
   // Core properties
@@ -66,6 +67,14 @@ export class ArmyModel {
   
   // Material sharing
   private static materialPool = MaterialPool.getInstance();
+  
+  // Movement easing configuration
+  private defaultEasingType: EasingType = EasingType.EaseOut;
+  private tierEasingMap: Map<TroopTier, EasingType> = new Map([
+    ["T1" as TroopTier, EasingType.EaseOut],
+    ["T2" as TroopTier, EasingType.EaseOutCubic], 
+    ["T3" as TroopTier, EasingType.EaseOutQuart],
+  ]);
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group, cameraView?: CameraView) {
     this.scene = scene;
@@ -531,7 +540,10 @@ export class ArmyModel {
     if (movement.progress >= 1) {
       this.handlePathCompletion(movement, instanceData);
     } else {
-      instanceData.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
+      // Apply dynamic easing based on army type for juicy movement
+      const easingType = this.getEasingTypeForMovement(instanceData.entityId, instanceData);
+      const easedProgress = applyEasing(movement.progress, easingType);
+      instanceData.position.copy(movement.startPos).lerp(movement.endPos, easedProgress);
     }
   }
 
@@ -685,6 +697,53 @@ export class ArmyModel {
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+  
+  /**
+   * Gets the appropriate easing type for an army's movement
+   * @param entityId - The entity ID
+   * @param instanceData - The army instance data
+   * @returns The easing type to use
+   */
+  private getEasingTypeForMovement(entityId: number, instanceData: ArmyInstanceData): EasingType {
+    // Use tier-specific easing if available
+    if (instanceData.tier && this.tierEasingMap.has(instanceData.tier)) {
+      return this.tierEasingMap.get(instanceData.tier)!;
+    }
+    return this.defaultEasingType;
+  }
+  
+  /**
+   * Sets the default easing type for army movement
+   * @param easingType - The easing type to use as default
+   */
+  public setDefaultEasingType(easingType: EasingType): void {
+    this.defaultEasingType = easingType;
+  }
+  
+  /**
+   * Sets easing type for a specific troop tier
+   * @param tier - The troop tier
+   * @param easingType - The easing type for this tier
+   */
+  public setTierEasingType(tier: TroopTier, easingType: EasingType): void {
+    this.tierEasingMap.set(tier, easingType);
+  }
+  
+  /**
+   * Gets current easing configuration for debugging
+   */
+  public getEasingConfig(): {
+    defaultEasing: EasingType;
+    tierEasing: Array<{ tier: TroopTier; easing: EasingType }>;
+  } {
+    return {
+      defaultEasing: this.defaultEasingType,
+      tierEasing: Array.from(this.tierEasingMap.entries()).map(([tier, easing]) => ({
+        tier,
+        easing,
+      })),
+    };
   }
 
   // Label Management Methods
@@ -844,3 +903,14 @@ export class ArmyModel {
     console.log('ArmyModel: Disposed all resources');
   }
 }
+
+// Global debug functions for testing easing in armies
+(window as any).setArmyEasing = (easingType: EasingType) => {
+  console.log(`🎮 Setting army default easing to: ${easingType}`);
+  // Note: This requires access to ArmyModel instance - implement in army manager if needed
+};
+
+(window as any).setTierEasing = (tier: TroopTier, easingType: EasingType) => {
+  console.log(`🎮 Setting tier ${tier} easing to: ${easingType}`);
+  // Note: This requires access to ArmyModel instance - implement in army manager if needed
+};
