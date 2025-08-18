@@ -246,7 +246,7 @@ export default class InstancedModel {
     // Dispose of animation mixer
     if (this.mixer) {
       this.mixer.stopAllAction();
-      this.mixer.dispose();
+
       this.mixer = null;
     }
 

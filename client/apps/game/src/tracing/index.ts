@@ -8,11 +8,11 @@ import { initTracing, shutdownTracing } from "./tracer";
 // Re-export all modules
 export * from "./correlation/trace-context";
 export * from "./errors/error-reporter";
-export * from "./instrumentation/dojo-instrumentation";
-export * from "./instrumentation/react-instrumentation";
-export * from "./instrumentation/three-instrumentation";
-export * from "./instrumentation/torii-instrumentation";
-export * from "./instrumentation/websocket-instrumentation";
+// export * from "./instrumentation/dojo-instrumentation";
+// export * from "./instrumentation/react-instrumentation";
+// export * from "./instrumentation/three-instrumentation";
+// export * from "./instrumentation/torii-instrumentation";
+// export * from "./instrumentation/websocket-instrumentation";
 export * from "./performance/metrics-collector";
 export * from "./tracer";
 
