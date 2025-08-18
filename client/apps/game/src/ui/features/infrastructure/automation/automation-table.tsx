@@ -62,6 +62,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const isRealmPaused = useMemo(() => pausedRealms[realmEntityId] || false, [pausedRealms, realmEntityId]);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showHints, setShowHints] = useState(false);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
     priority: 5,
     resourceToUse: availableResourcesForRealm[0]?.id,
@@ -190,13 +191,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   };
 
   return (
-    <div className="p-2 border rounded-lg shadow-md panel-wood">
-      <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
+    <div className="bord">
+      <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs bg-red-200/20 text-white">
         IMPORTANT: Your browser must stay open for automation. Automation runs every minute.
         <br />
       </div>
       <h4 className="mb-2">
-        [BETA] Automation for Realm {getStructureName(realmInfo.structure, getIsBlitz()).name} ({realmEntityId})
+        Automation for Realm {getStructureName(realmInfo.structure, getIsBlitz()).name} ({realmEntityId})
       </h4>
 
       {/* Add pause checkbox */}
@@ -214,20 +215,33 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         {isRealmPaused && <span className="text-red ml-2 text-xs">(PAUSED - No orders will run)</span>}
       </div>
 
-      <ul className="list-disc pl-4">
-        <li>
-          <span className="font-bold">Produce Once:</span> Automation will produce resources until the target amount is
-          reached, then stop.
-        </li>
-        <li>
-          <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
-          level. Production triggers when balance drops below target minus buffer percentage.
-        </li>
-        <li>Resources produced will increase your realm's balance and may cause resource loss if storage is full.</li>
-        <li>
-          Process activates every <span className="font-bold">1 minute</span> automatically.
-        </li>
-      </ul>
+      <div className="mb-3">
+        <Button
+          onClick={() => setShowHints(!showHints)}
+          variant="default"
+          size="xs"
+          className="text-gold/70 hover:text-gold"
+        >
+          {showHints ? "Hide Hints" : "Show Hints"}
+        </Button>
+      </div>
+
+      {showHints && (
+        <ul className="list-disc pl-4 mb-4 text-sm text-gold/70">
+          <li>
+            <span className="font-bold">Produce Once:</span> Automation will produce resources until the target amount
+            is reached, then stop.
+          </li>
+          <li>
+            <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
+            level. Production triggers when balance drops below target minus buffer percentage.
+          </li>
+          <li>Resources produced will increase your realm's balance and may cause resource loss if storage is full.</li>
+          <li>
+            Process activates every <span className="font-bold">1 minute</span> automatically.
+          </li>
+        </ul>
+      )}
 
       <div className="my-4">
         {!showAddForm && (

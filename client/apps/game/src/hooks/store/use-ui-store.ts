@@ -92,6 +92,9 @@ interface UIStore {
   setCycleProgress: (progress: number) => void;
   cycleTime: number;
   setCycleTime: (time: number) => void;
+  // map zoom controls
+  enableMapZoom: boolean;
+  setEnableMapZoom: (enable: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -200,5 +203,11 @@ export const useUIStore = create(
     setCycleProgress: (progress: number) => set({ cycleProgress: progress }),
     cycleTime: 0,
     setCycleTime: (time: number) => set({ cycleTime: time }),
+    // map zoom controls - disabled by default for better UX
+    enableMapZoom: localStorage.getItem("enableMapZoom") ? localStorage.getItem("enableMapZoom") === "true" : false,
+    setEnableMapZoom: (enable: boolean) => {
+      set({ enableMapZoom: enable });
+      localStorage.setItem("enableMapZoom", String(enable));
+    },
   })),
 );

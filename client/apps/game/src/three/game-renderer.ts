@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
@@ -227,7 +228,9 @@ export default class GameRenderer {
     // Adjust OrbitControls for new camera angle
     this.controls = new MapControls(this.camera, this.renderer.domElement);
     this.controls.enableRotate = false;
-    this.controls.enableZoom = true;
+    const zoomSetting = useUIStore.getState().enableMapZoom;
+    console.log(`[GameRenderer] Setting enableZoom to: ${zoomSetting}`);
+    this.controls.enableZoom = zoomSetting;
     this.controls.enablePan = true;
     this.controls.panSpeed = 1;
     this.controls.zoomToCursor = true;
@@ -258,6 +261,17 @@ export default class GameRenderer {
     };
     this.controls.keyPanSpeed = 75.0;
     this.controls.listenToKeyEvents(document.body);
+
+    // Subscribe to zoom setting changes
+    useUIStore.subscribe(
+      (state) => state.enableMapZoom,
+      (enableMapZoom) => {
+        console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
+        if (this.controls) {
+          this.controls.enableZoom = enableMapZoom;
+        }
+      },
+    );
 
     document.addEventListener(
       "focus",

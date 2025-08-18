@@ -183,11 +183,9 @@ export const BuildingsList = ({
           animate={{ ...motionConfig.animateBase, height: "100%", overflow: "scroll" }}
           exit={motionConfig.exit}
           transition={motionConfig.transition}
-          className="pt-6 h-[500px] overflow-y-auto"
+          className="pt-6"
         >
-          <h3>Production Buildings</h3>
-          <p className="text-gold/70 pb-2 text-lg">Select a building to start production.</p>
-          <div className="space-y-2 min-h-[300px] overflow-y-auto custom-scrollbar">
+          <div className=" grid grid-cols-2 gap-2">
             {productions.length === 0 ? (
               <div className="panel-wood p-6 text-center">
                 <h4 className="text-xl font-semibold text-gold mb-2">No Production Buildings</h4>
@@ -222,7 +220,7 @@ export const BuildingsList = ({
                     <div className="flex items-start justify-between space-x-2">
                       <div className="flex-1 self-center">
                         <div className="flex items-center gap-2">
-                          <ResourceIcon resource={ResourcesIds[production.resource]} size="xl" />
+                          <ResourceIcon resource={ResourcesIds[production.resource]} size="lg" />
                           <div>
                             <h4 className="text-xl font-semibold text-gold tracking-wide">
                               {ResourcesIds[production.resource]}
@@ -234,7 +232,7 @@ export const BuildingsList = ({
                         </div>
                       </div>
 
-                      <div className="w-[480px] flex-shrink-0 self-center">
+                      <div className=" flex-shrink-0 self-center">
                         <ResourceChip
                           resourceId={production.resource}
                           resourceManager={resourceManager}

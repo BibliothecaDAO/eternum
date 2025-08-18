@@ -27,6 +27,7 @@ export class QuestManager {
   private currentCameraView: CameraView;
   private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -140,8 +141,35 @@ export class QuestManager {
       return;
     }
 
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(`[CHUNK SYNC] Waiting for previous quest chunk switch to complete before switching to ${chunkKey}`);
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous quest chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunkKey === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    this.renderVisibleQuests(chunkKey);
+    
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = Promise.resolve().then(() => {
+      this.renderVisibleQuests(chunkKey);
+    });
+    
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Quest chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   private getQuestWorldPosition = (questEntityId: ID, hexCoords: Position) => {
