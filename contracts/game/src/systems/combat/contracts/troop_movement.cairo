@@ -171,14 +171,25 @@ pub mod troop_movement_systems {
                     );
                     explore_reward_type = _explore_reward_type;
                     explore_reward_amount = _explore_reward_amount;
-                    let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
-                    let mut resource = SingleResourceStoreImpl::retrieve(
-                        ref world, explorer_id, explore_reward_type, ref explorer_weight, resource_weight_grams, false,
+
+                    let exploration_reward_receiver: ID = iExplorerImpl::exploration_reward_receiver(
+                        ref world, explorer, explore_reward_type,
                     );
-                    resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
+                    let mut reward_receiver_weight: Weight = WeightStoreImpl::retrieve(
+                        ref world, exploration_reward_receiver,
+                    );
+                    let mut resource = SingleResourceStoreImpl::retrieve(
+                        ref world,
+                        exploration_reward_receiver,
+                        explore_reward_type,
+                        ref reward_receiver_weight,
+                        resource_weight_grams,
+                        true,
+                    );
+                    resource.add(explore_reward_amount, ref reward_receiver_weight, resource_weight_grams);
                     resource.store(ref world);
-                    explorer_weight.store(ref world, explorer_id);
+                    reward_receiver_weight.store(ref world, exploration_reward_receiver);
 
                     // emit explore achievement progression
                     AchievementTrait::progress(

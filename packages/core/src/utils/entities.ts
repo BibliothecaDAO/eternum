@@ -76,6 +76,7 @@ export const getEntityInfo = (
     isMine: ContractAddress(owner || 0n) === playerAccount,
     structureCategory: structure?.base.category,
     structure,
+    explorer,
     name,
   };
 };

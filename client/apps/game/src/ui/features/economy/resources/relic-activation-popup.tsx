@@ -15,7 +15,8 @@ import {
 import React, { useMemo, useState } from "react";
 
 interface RelicActivationPopupProps {
-  structureEntityId: ID;
+  entityId: ID;
+  entityOwnerId: ID;
   recipientType: RelicRecipientType;
   relicId: ID;
   relicBalance: number;
@@ -23,7 +24,8 @@ interface RelicActivationPopupProps {
 }
 
 export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
-  structureEntityId,
+  entityId,
+  entityOwnerId,
   recipientType,
   relicId,
   relicBalance,
@@ -43,7 +45,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
 
   const isCompatible = recipientType === relicInfo?.recipientType;
 
-  const resourceManager = useResourceManager(structureEntityId);
+  const resourceManager = useResourceManager(entityOwnerId);
 
   const essenceCostPerLevel = RELIC_COST_PER_LEVEL[relicInfo?.level ?? 1];
 
@@ -87,7 +89,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       // recipient_type: 0 = Explorer, 1 = Structure (based on RelicRecipientTypeParam enum)
       const applyRelicCall = systemCalls.apply_relic({
         signer: account,
-        entity_id: structureEntityId,
+        entity_id: entityId,
         relic_resource_id: relicId,
         recipient_type: relicInfo.recipientTypeParam,
       });

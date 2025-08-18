@@ -17,8 +17,8 @@ use s1_eternum::models::owner::OwnerAddressTrait;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 
 use s1_eternum::models::resource::resource::{
-    Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
-    WeightStoreImpl,
+    RelicResourceImpl, Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl,
+    SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::stamina::{StaminaImpl};
 use s1_eternum::models::structure::{
@@ -218,7 +218,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         return explorer;
     }
 
-    fn is_daydreams_agent(ref self: ExplorerTroops) -> bool {
+    fn is_daydreams_agent(self: ExplorerTroops) -> bool {
         self.owner == DAYDREAMS_AGENT_ID
     }
 
@@ -391,6 +391,20 @@ pub impl iExplorerImpl of iExplorerTrait {
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
         Self::_explorer_delete(ref world, ref explorer);
+    }
+
+    fn exploration_reward_receiver(
+        ref world: WorldStorage, explorer: ExplorerTroops, explorer_reward_resource: u8,
+    ) -> ID {
+        if RelicResourceImpl::is_relic(explorer_reward_resource) {
+            return explorer.explorer_id;
+        }
+
+        if explorer.is_daydreams_agent() {
+            return explorer.explorer_id;
+        } else {
+            return explorer.owner;
+        }
     }
 
     fn exploration_reward(

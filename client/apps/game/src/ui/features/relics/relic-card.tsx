@@ -11,13 +11,14 @@ interface RelicCardProps {
   resourceId: ID;
   amount: number;
   entityId: ID;
+  entityOwnerId: ID;
   entityType: RelicRecipientType;
   isActive?: boolean;
   onActivate?: (resourceId: ID, amount: number) => void;
 }
 
 export const RelicCard = React.memo(
-  ({ resourceId, amount, entityId, entityType, isActive, onActivate }: RelicCardProps) => {
+  ({ resourceId, amount, entityId, entityType, entityOwnerId, isActive, onActivate }: RelicCardProps) => {
     const setTooltip = useUIStore((state) => state.setTooltip);
     const toggleModal = useUIStore((state) => state.toggleModal);
 
@@ -38,7 +39,8 @@ export const RelicCard = React.memo(
 
         toggleModal(
           <RelicActivationPopup
-            structureEntityId={entityId}
+            entityId={entityId}
+            entityOwnerId={entityOwnerId}
             recipientType={recipientType}
             relicId={resourceId}
             relicBalance={divideByPrecision(amount)}
