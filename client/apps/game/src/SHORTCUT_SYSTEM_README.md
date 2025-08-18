@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document describes the centralized shortcut manager system implemented for the Eternum game. The system uses Zustand for state management and provides a singleton architecture that allows shortcuts to be managed globally across React components and Three.js scenes.
+This document describes the centralized shortcut manager system implemented for the Eternum game. The system uses
+Zustand for state management and provides a singleton architecture that allows shortcuts to be managed globally across
+React components and Three.js scenes.
 
 ## Architecture
 
@@ -40,16 +42,16 @@ const MyComponent = () => {
         modifiers: { ctrl: true },
         description: "Save document",
         action: () => saveDocument(),
-        sceneRestriction: SceneName.WorldMap
+        sceneRestriction: SceneName.WorldMap,
       },
       {
         id: "toggle-mode",
         key: "t",
         description: "Toggle mode",
         action: () => toggleMode(),
-      }
+      },
     ],
-    prefix: "my-component" // All shortcuts will be prefixed for easy cleanup
+    prefix: "my-component", // All shortcuts will be prefixed for easy cleanup
   });
 
   // Single shortcut
@@ -75,7 +77,7 @@ export default class MyScene extends HexagonScene {
 
   constructor(/* ... */) {
     super(/* ... */);
-    
+
     // Initialize shortcut manager for this scene
     this.sceneShortcuts = new SceneShortcutManager("my-scene");
 
@@ -124,6 +126,7 @@ unregisterShortcut("global-shortcut");
 ## Key Interfaces
 
 ### KeyboardShortcut
+
 ```typescript
 interface KeyboardShortcut {
   id: string; // Unique identifier
@@ -137,6 +140,7 @@ interface KeyboardShortcut {
 ```
 
 ### KeyModifiers
+
 ```typescript
 interface KeyModifiers {
   ctrl?: boolean;
@@ -149,22 +153,27 @@ interface KeyModifiers {
 ## Implementation Details
 
 ### Store Structure
+
 The Zustand store maintains:
+
 - A Map of shortcuts keyed by shortcut ID
 - An enabled flag to temporarily disable all shortcuts
 - Actions for adding, removing, and executing shortcuts
 
 ### Event Handling
+
 - Global keydown listener captures all keyboard events
 - Events are ignored when focus is on input elements
 - Shortcuts are matched by key combination and executed if conditions are met
 
 ### Scene Integration
+
 - The centralized manager is initialized with a reference to the SceneManager
 - Current scene is checked when executing shortcuts with scene restrictions
 - Scene-specific shortcut managers automatically prefix their shortcuts
 
 ### Memory Management
+
 - React components automatically clean up shortcuts on unmount
 - Scene shortcut managers clean up when scenes are switched
 - Shortcuts can be removed by ID or by prefix for bulk operations
@@ -193,6 +202,7 @@ The refactored scenes (worldmap.tsx and hexception.tsx) demonstrate the migratio
 ## Testing
 
 The system includes an example component (`ShortcutExample.tsx`) that demonstrates:
+
 - Multiple shortcut registration with prefixes
 - Single shortcut registration
 - Scene-restricted shortcuts
@@ -202,6 +212,7 @@ The system includes an example component (`ShortcutExample.tsx`) that demonstrat
 ## Future Enhancements
 
 Potential improvements could include:
+
 - Shortcut conflict detection and warnings
 - Visual shortcut help overlay
 - Shortcut customization by users

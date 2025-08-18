@@ -445,7 +445,6 @@ jobs:
 #### 5.2 Team Workflows
 
 1. **Component Development Workflow**:
-
    - Create component
    - Write stories
    - Test in isolation

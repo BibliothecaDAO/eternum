@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Jaeger - All-in-one image for development
@@ -9,10 +9,10 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
       - SPAN_STORAGE_TYPE=memory
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "4318:4318"    # OTLP HTTP
-      - "4317:4317"    # OTLP gRPC
-      - "14268:14268"  # Jaeger collector HTTP
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP
+      - "4317:4317" # OTLP gRPC
+      - "14268:14268" # Jaeger collector HTTP
     networks:
       - eternum-tracing
 
@@ -24,8 +24,8 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4319:4318"   # Alternative OTLP HTTP port
-      - "8888:8888"   # Prometheus metrics
+      - "4319:4318" # Alternative OTLP HTTP port
+      - "8888:8888" # Prometheus metrics
       - "13133:13133" # Health check
     depends_on:
       - jaeger

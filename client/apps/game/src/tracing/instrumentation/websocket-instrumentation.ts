@@ -1,7 +1,7 @@
-import { SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import { Socket } from 'socket.io-client';
-import { withSpan, startSpan, getCurrentTraceId } from '../tracer';
-import { reportNetworkError, addBreadcrumb } from '../errors/error-reporter';
+import { SpanKind, SpanStatusCode } from "@opentelemetry/api";
+import { Socket } from "socket.io-client";
+import { withSpan, startSpan, getCurrentTraceId } from "../tracer";
+import { reportNetworkError, addBreadcrumb } from "../errors/error-reporter";
 
 interface WebSocketMetrics {
   messagesReceived: number;
@@ -31,7 +31,7 @@ export class WebSocketInstrumentation {
     return WebSocketInstrumentation.instance;
   }
 
-  public instrumentSocket(socket: Socket, socketName: string = 'default'): Socket {
+  public instrumentSocket(socket: Socket, socketName: string = "default"): Socket {
     const metrics: WebSocketMetrics = {
       messagesReceived: 0,
       messagesSent: 0,
@@ -63,9 +63,9 @@ export class WebSocketInstrumentation {
       const span = startSpan(`websocket.${socketName}.connect`, {
         kind: SpanKind.CLIENT,
         attributes: {
-          'websocket.name': socketName,
-          'websocket.url': socket.io.uri,
-          'trace.id': getCurrentTraceId(),
+          "websocket.name": socketName,
+          "websocket.url": socket.io.uri,
+          "trace.id": getCurrentTraceId(),
         },
       });
 
@@ -73,8 +73,8 @@ export class WebSocketInstrumentation {
       metrics.connectTime = Date.now();
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} connecting`,
         data: {
           url: socket.io.uri,
@@ -84,14 +84,14 @@ export class WebSocketInstrumentation {
       return originalConnect();
     };
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       const span = this.activeSpans.get(`${socketName}_connect`);
       if (span) {
         const duration = Date.now() - (metrics.connectTime || 0);
         span.setAttributes({
-          'websocket.connect.duration_ms': duration,
-          'websocket.connect.success': true,
-          'websocket.id': socket.id,
+          "websocket.connect.duration_ms": duration,
+          "websocket.connect.success": true,
+          "websocket.id": socket.id,
         });
         span.setStatus({ code: SpanStatusCode.OK });
         span.end();
@@ -99,8 +99,8 @@ export class WebSocketInstrumentation {
       }
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} connected`,
         data: {
           socketId: socket.id,
@@ -108,13 +108,13 @@ export class WebSocketInstrumentation {
       });
     });
 
-    socket.on('disconnect', (reason: string) => {
+    socket.on("disconnect", (reason: string) => {
       metrics.disconnectTime = Date.now();
       const sessionDuration = metrics.disconnectTime - (metrics.connectTime || 0);
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} disconnected`,
         data: {
           reason,
@@ -127,22 +127,22 @@ export class WebSocketInstrumentation {
       // Create span for disconnect event
       const span = startSpan(`websocket.${socketName}.disconnect`, {
         attributes: {
-          'websocket.name': socketName,
-          'websocket.disconnect.reason': reason,
-          'websocket.session.duration_ms': sessionDuration,
-          'websocket.session.messages_received': metrics.messagesReceived,
-          'websocket.session.messages_sent': metrics.messagesSent,
+          "websocket.name": socketName,
+          "websocket.disconnect.reason": reason,
+          "websocket.session.duration_ms": sessionDuration,
+          "websocket.session.messages_received": metrics.messagesReceived,
+          "websocket.session.messages_sent": metrics.messagesSent,
         },
       });
       span.end();
     });
 
-    socket.on('reconnect', (attemptNumber: number) => {
+    socket.on("reconnect", (attemptNumber: number) => {
       metrics.reconnectCount++;
-      
+
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} reconnected`,
         data: {
           attemptNumber,
@@ -152,9 +152,9 @@ export class WebSocketInstrumentation {
 
       const span = startSpan(`websocket.${socketName}.reconnect`, {
         attributes: {
-          'websocket.name': socketName,
-          'websocket.reconnect.attempt': attemptNumber,
-          'websocket.reconnect.total': metrics.reconnectCount,
+          "websocket.name": socketName,
+          "websocket.reconnect.attempt": attemptNumber,
+          "websocket.reconnect.total": metrics.reconnectCount,
         },
       });
       span.setStatus({ code: SpanStatusCode.OK });
@@ -168,7 +168,7 @@ export class WebSocketInstrumentation {
     socket.emit = (event: string, ...args: any[]) => {
       const messageId = `${Date.now()}_${Math.random()}`;
       const data = args[0];
-      const callback = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+      const callback = typeof args[args.length - 1] === "function" ? args[args.length - 1] : null;
 
       metrics.messagesSent++;
       const messageSize = JSON.stringify(data || {}).length;
@@ -182,13 +182,13 @@ export class WebSocketInstrumentation {
       const span = startSpan(`websocket.${socketName}.send.${event}`, {
         kind: SpanKind.PRODUCER,
         attributes: {
-          'websocket.name': socketName,
-          'websocket.event': event,
-          'websocket.message.size': messageSize,
-          'websocket.message.id': messageId,
-          'messaging.system': 'websocket',
-          'messaging.destination': event,
-          'messaging.operation': 'send',
+          "websocket.name": socketName,
+          "websocket.event": event,
+          "websocket.message.size": messageSize,
+          "websocket.message.id": messageId,
+          "messaging.system": "websocket",
+          "messaging.destination": event,
+          "messaging.operation": "send",
         },
       });
 
@@ -199,17 +199,17 @@ export class WebSocketInstrumentation {
             const latency = Date.now() - (this.messageTimings.get(messageId) || Date.now());
             metrics.latencySum += latency;
             metrics.latencyCount++;
-            
+
             span.setAttributes({
-              'websocket.message.latency_ms': latency,
+              "websocket.message.latency_ms": latency,
             });
             span.setStatus({ code: SpanStatusCode.OK });
             span.end();
-            
+
             this.messageTimings.delete(messageId);
             return callback(...callbackArgs);
           };
-          
+
           const newArgs = [...args.slice(0, -1), wrappedCallback];
           return originalEmit(event, ...newArgs);
         } else {
@@ -241,7 +241,7 @@ export class WebSocketInstrumentation {
             } catch (error) {
               reportNetworkError(error as Error, {
                 url: `websocket://${socketName}`,
-                method: 'RECEIVE',
+                method: "RECEIVE",
               });
               throw error;
             }
@@ -249,14 +249,14 @@ export class WebSocketInstrumentation {
           {
             kind: SpanKind.CONSUMER,
             attributes: {
-              'websocket.name': socketName,
-              'websocket.event': event,
-              'websocket.message.size': messageSize,
-              'messaging.system': 'websocket',
-              'messaging.destination': event,
-              'messaging.operation': 'receive',
+              "websocket.name": socketName,
+              "websocket.event": event,
+              "websocket.message.size": messageSize,
+              "messaging.system": "websocket",
+              "messaging.destination": event,
+              "messaging.operation": "receive",
             },
-          }
+          },
         );
       };
 
@@ -265,7 +265,7 @@ export class WebSocketInstrumentation {
   }
 
   private instrumentErrorEvents(socket: Socket, socketName: string, metrics: WebSocketMetrics): void {
-    socket.on('connect_error', (error: Error) => {
+    socket.on("connect_error", (error: Error) => {
       metrics.errorCount++;
 
       const span = this.activeSpans.get(`${socketName}_connect`);
@@ -278,12 +278,12 @@ export class WebSocketInstrumentation {
 
       reportNetworkError(error, {
         url: `websocket://${socketName}`,
-        method: 'CONNECT',
+        method: "CONNECT",
       });
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} connection error`,
         data: {
           error: error.message,
@@ -292,17 +292,17 @@ export class WebSocketInstrumentation {
       });
     });
 
-    socket.on('error', (error: Error) => {
+    socket.on("error", (error: Error) => {
       metrics.errorCount++;
 
       reportNetworkError(error, {
         url: `websocket://${socketName}`,
-        method: 'UNKNOWN',
+        method: "UNKNOWN",
       });
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${socketName} error`,
         data: {
           error: error.message,
@@ -312,7 +312,7 @@ export class WebSocketInstrumentation {
     });
   }
 
-  public getMetrics(socketName: string = 'default'): WebSocketMetrics | undefined {
+  public getMetrics(socketName: string = "default"): WebSocketMetrics | undefined {
     return this.socketMetrics.get(socketName);
   }
 
@@ -320,13 +320,13 @@ export class WebSocketInstrumentation {
     return new Map(this.socketMetrics);
   }
 
-  public getAverageLatency(socketName: string = 'default'): number {
+  public getAverageLatency(socketName: string = "default"): number {
     const metrics = this.socketMetrics.get(socketName);
     if (!metrics || metrics.latencyCount === 0) return 0;
     return metrics.latencySum / metrics.latencyCount;
   }
 
-  public resetMetrics(socketName: string = 'default'): void {
+  public resetMetrics(socketName: string = "default"): void {
     const metrics = this.socketMetrics.get(socketName);
     if (metrics) {
       metrics.messagesReceived = 0;
@@ -339,10 +339,7 @@ export class WebSocketInstrumentation {
     }
   }
 
-  public instrumentCustomWebSocket<T extends WebSocket>(
-    ws: T,
-    wsName: string = 'default'
-  ): T {
+  public instrumentCustomWebSocket<T extends WebSocket>(ws: T, wsName: string = "default"): T {
     const metrics: WebSocketMetrics = {
       messagesReceived: 0,
       messagesSent: 0,
@@ -360,32 +357,32 @@ export class WebSocketInstrumentation {
     const connectSpan = startSpan(`websocket.${wsName}.connect`, {
       kind: SpanKind.CLIENT,
       attributes: {
-        'websocket.name': wsName,
-        'websocket.url': ws.url,
+        "websocket.name": wsName,
+        "websocket.url": ws.url,
       },
     });
 
     metrics.connectTime = Date.now();
 
-    ws.addEventListener('open', () => {
+    ws.addEventListener("open", () => {
       connectSpan.setStatus({ code: SpanStatusCode.OK });
       connectSpan.end();
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${wsName} opened`,
         data: { url: ws.url },
       });
     });
 
-    ws.addEventListener('close', (event) => {
+    ws.addEventListener("close", (event) => {
       metrics.disconnectTime = Date.now();
       const sessionDuration = metrics.disconnectTime - (metrics.connectTime || 0);
 
       addBreadcrumb({
-        type: 'api',
-        category: 'websocket',
+        type: "api",
+        category: "websocket",
         message: `WebSocket ${wsName} closed`,
         data: {
           code: event.code,
@@ -395,14 +392,14 @@ export class WebSocketInstrumentation {
       });
     });
 
-    ws.addEventListener('error', () => {
+    ws.addEventListener("error", () => {
       metrics.errorCount++;
       connectSpan.setStatus({ code: SpanStatusCode.ERROR });
       connectSpan.end();
 
-      reportNetworkError(new Error('WebSocket error'), {
+      reportNetworkError(new Error("WebSocket error"), {
         url: ws.url,
-        method: 'WEBSOCKET',
+        method: "WEBSOCKET",
       });
     });
 
@@ -410,14 +407,14 @@ export class WebSocketInstrumentation {
     const originalSend = ws.send.bind(ws);
     ws.send = (data: string | ArrayBufferLike | Blob | ArrayBufferView) => {
       metrics.messagesSent++;
-      const size = typeof data === 'string' ? data.length : data.byteLength || 0;
+      const size = typeof data === "string" ? data.length : data.byteLength || 0;
       metrics.bytesSent += size;
 
       const span = startSpan(`websocket.${wsName}.send`, {
         kind: SpanKind.PRODUCER,
         attributes: {
-          'websocket.name': wsName,
-          'websocket.message.size': size,
+          "websocket.name": wsName,
+          "websocket.message.size": size,
         },
       });
 
@@ -434,7 +431,7 @@ export class WebSocketInstrumentation {
     };
 
     // Instrument message reception
-    ws.addEventListener('message', (event) => {
+    ws.addEventListener("message", (event) => {
       metrics.messagesReceived++;
       const size = event.data.length || 0;
       metrics.bytesReceived += size;
@@ -442,8 +439,8 @@ export class WebSocketInstrumentation {
       const span = startSpan(`websocket.${wsName}.receive`, {
         kind: SpanKind.CONSUMER,
         attributes: {
-          'websocket.name': wsName,
-          'websocket.message.size': size,
+          "websocket.name": wsName,
+          "websocket.message.size": size,
         },
       });
       span.setStatus({ code: SpanStatusCode.OK });
@@ -459,5 +456,6 @@ export const webSocketInstrumentation = WebSocketInstrumentation.getInstance();
 
 // Export convenience functions
 export const instrumentSocket = webSocketInstrumentation.instrumentSocket.bind(webSocketInstrumentation);
-export const instrumentCustomWebSocket = webSocketInstrumentation.instrumentCustomWebSocket.bind(webSocketInstrumentation);
+export const instrumentCustomWebSocket =
+  webSocketInstrumentation.instrumentCustomWebSocket.bind(webSocketInstrumentation);
 export const getWebSocketMetrics = webSocketInstrumentation.getMetrics.bind(webSocketInstrumentation);

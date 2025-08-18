@@ -56,18 +56,12 @@ export const BasePopup: React.FC<BasePopupProps> = ({
             <X className="w-4 h-4" />
           </Button>
         </div>
-        
+
         {title && <h5 className="text-gold font-bold mb-4">{title}</h5>}
-        
-        <div className={`text-center mt-4 w-full ${contentClassName}`}>
-          {children}
-        </div>
-        
-        {footer && (
-          <div className="flex justify-center mt-4 w-full">
-            {footer}
-          </div>
-        )}
+
+        <div className={`text-center mt-4 w-full ${contentClassName}`}>{children}</div>
+
+        {footer && <div className="flex justify-center mt-4 w-full">{footer}</div>}
       </div>
     </div>
   );

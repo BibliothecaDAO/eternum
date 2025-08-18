@@ -1,5 +1,5 @@
-import { context, trace, Context } from '@opentelemetry/api';
-import { v4 as uuidv4 } from 'uuid';
+import { context, trace, Context } from "@opentelemetry/api";
+import { v4 as uuidv4 } from "uuid";
 
 interface TraceContext {
   traceId: string;
@@ -7,12 +7,12 @@ interface TraceContext {
   userId?: string;
   sessionId: string;
   realmId?: string;
-  gamePhase?: 'early' | 'mid' | 'late';
+  gamePhase?: "early" | "mid" | "late";
   serverShard?: string;
   clientVersion: string;
   platform: string;
   device: {
-    type: 'desktop' | 'mobile' | 'tablet';
+    type: "desktop" | "mobile" | "tablet";
     os: string;
     browser: string;
   };
@@ -44,19 +44,18 @@ class TraceContextManager {
   }
 
   private initializeContext(): TraceContext {
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const connection =
+      (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
 
     return {
       traceId: this.generateTraceId(),
       sessionId: this.getOrCreateSessionId(),
-      clientVersion: import.meta.env.VITE_PUBLIC_GAME_VERSION || '0.0.1',
-      platform: 'web',
+      clientVersion: import.meta.env.VITE_PUBLIC_GAME_VERSION || "0.0.1",
+      platform: "web",
       device: this.getDeviceInfo(),
       network: {
-        type: connection?.type || 'unknown',
-        effectiveType: connection?.effectiveType || 'unknown',
+        type: connection?.type || "unknown",
+        effectiveType: connection?.effectiveType || "unknown",
         rtt: connection?.rtt || 0,
         downlink: connection?.downlink || 0,
       },
@@ -65,58 +64,57 @@ class TraceContextManager {
 
   private generateTraceId(): string {
     // Generate OpenTelemetry compatible trace ID (32 hex characters)
-    return uuidv4().replace(/-/g, '') + uuidv4().replace(/-/g, '').substring(0, 16);
+    return uuidv4().replace(/-/g, "") + uuidv4().replace(/-/g, "").substring(0, 16);
   }
 
   private getOrCreateSessionId(): string {
-    const stored = sessionStorage.getItem('eternum_session_id');
+    const stored = sessionStorage.getItem("eternum_session_id");
     if (stored) return stored;
 
     const sessionId = uuidv4();
-    sessionStorage.setItem('eternum_session_id', sessionId);
+    sessionStorage.setItem("eternum_session_id", sessionId);
     return sessionId;
   }
 
-  private getDeviceInfo(): TraceContext['device'] {
+  private getDeviceInfo(): TraceContext["device"] {
     const userAgent = navigator.userAgent;
     const platform = navigator.platform;
 
     // Detect device type
-    let deviceType: 'desktop' | 'mobile' | 'tablet' = 'desktop';
+    let deviceType: "desktop" | "mobile" | "tablet" = "desktop";
     if (/Mobile|Android|iPhone/i.test(userAgent)) {
-      deviceType = 'mobile';
+      deviceType = "mobile";
     } else if (/iPad|Tablet/i.test(userAgent)) {
-      deviceType = 'tablet';
+      deviceType = "tablet";
     }
 
     // Detect OS
-    let os = 'Unknown';
-    if (/Windows/i.test(platform)) os = 'Windows';
-    else if (/Mac/i.test(platform)) os = 'macOS';
-    else if (/Linux/i.test(platform)) os = 'Linux';
-    else if (/Android/i.test(userAgent)) os = 'Android';
-    else if (/iOS|iPhone|iPad/i.test(userAgent)) os = 'iOS';
+    let os = "Unknown";
+    if (/Windows/i.test(platform)) os = "Windows";
+    else if (/Mac/i.test(platform)) os = "macOS";
+    else if (/Linux/i.test(platform)) os = "Linux";
+    else if (/Android/i.test(userAgent)) os = "Android";
+    else if (/iOS|iPhone|iPad/i.test(userAgent)) os = "iOS";
 
     // Detect browser
-    let browser = 'Unknown';
-    if (/Chrome/i.test(userAgent) && !/Edge/i.test(userAgent)) browser = 'Chrome';
-    else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) browser = 'Safari';
-    else if (/Firefox/i.test(userAgent)) browser = 'Firefox';
-    else if (/Edge/i.test(userAgent)) browser = 'Edge';
+    let browser = "Unknown";
+    if (/Chrome/i.test(userAgent) && !/Edge/i.test(userAgent)) browser = "Chrome";
+    else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) browser = "Safari";
+    else if (/Firefox/i.test(userAgent)) browser = "Firefox";
+    else if (/Edge/i.test(userAgent)) browser = "Edge";
 
     return { type: deviceType, os, browser };
   }
 
   private setupNetworkMonitoring(): void {
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const connection =
+      (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
 
     if (connection) {
-      connection.addEventListener('change', () => {
+      connection.addEventListener("change", () => {
         this.currentContext.network = {
-          type: connection.type || 'unknown',
-          effectiveType: connection.effectiveType || 'unknown',
+          type: connection.type || "unknown",
+          effectiveType: connection.effectiveType || "unknown",
           rtt: connection.rtt || 0,
           downlink: connection.downlink || 0,
         };
@@ -134,7 +132,7 @@ class TraceContextManager {
     this.propagateContext();
   }
 
-  public setGamePhase(phase: 'early' | 'mid' | 'late'): void {
+  public setGamePhase(phase: "early" | "mid" | "late"): void {
     this.currentContext.gamePhase = phase;
     this.propagateContext();
   }
@@ -184,18 +182,18 @@ class TraceContextManager {
     const span = trace.getSpan(context.active());
     if (span) {
       span.setAttributes({
-        'user.id': this.currentContext.userId || 'anonymous',
-        'session.id': this.currentContext.sessionId,
-        'realm.id': this.currentContext.realmId || 'none',
-        'game.phase': this.currentContext.gamePhase || 'unknown',
-        'server.shard': this.currentContext.serverShard || 'default',
-        'client.version': this.currentContext.clientVersion,
-        'device.type': this.currentContext.device.type,
-        'device.os': this.currentContext.device.os,
-        'device.browser': this.currentContext.device.browser,
-        'network.type': this.currentContext.network.type,
-        'network.effective_type': this.currentContext.network.effectiveType,
-        'network.rtt': this.currentContext.network.rtt,
+        "user.id": this.currentContext.userId || "anonymous",
+        "session.id": this.currentContext.sessionId,
+        "realm.id": this.currentContext.realmId || "none",
+        "game.phase": this.currentContext.gamePhase || "unknown",
+        "server.shard": this.currentContext.serverShard || "default",
+        "client.version": this.currentContext.clientVersion,
+        "device.type": this.currentContext.device.type,
+        "device.os": this.currentContext.device.os,
+        "device.browser": this.currentContext.device.browser,
+        "network.type": this.currentContext.network.type,
+        "network.effective_type": this.currentContext.network.effectiveType,
+        "network.rtt": this.currentContext.network.rtt,
       });
     }
   }
@@ -209,24 +207,24 @@ class TraceContextManager {
   public getCorrelationHeaders(): Record<string, string> {
     const span = trace.getSpan(context.active());
     const traceId = span?.spanContext().traceId || this.currentContext.traceId;
-    const spanId = span?.spanContext().spanId || '';
+    const spanId = span?.spanContext().spanId || "";
 
     return {
-      'X-Trace-Id': traceId,
-      'X-Span-Id': spanId,
-      'X-Session-Id': this.currentContext.sessionId,
-      'X-User-Id': this.currentContext.userId || 'anonymous',
-      'X-Realm-Id': this.currentContext.realmId || '',
-      'X-Client-Version': this.currentContext.clientVersion,
+      "X-Trace-Id": traceId,
+      "X-Span-Id": spanId,
+      "X-Session-Id": this.currentContext.sessionId,
+      "X-User-Id": this.currentContext.userId || "anonymous",
+      "X-Realm-Id": this.currentContext.realmId || "",
+      "X-Client-Version": this.currentContext.clientVersion,
     };
   }
 
   public createChildContext(name: string, attributes?: Record<string, any>): Context {
-    const span = trace.getTracer('eternum-game').startSpan(name, {
+    const span = trace.getTracer("eternum-game").startSpan(name, {
       attributes: {
         ...attributes,
-        'parent.trace_id': this.currentContext.traceId,
-        'session.id': this.currentContext.sessionId,
+        "parent.trace_id": this.currentContext.traceId,
+        "session.id": this.currentContext.sessionId,
       },
     });
 
@@ -269,7 +267,7 @@ class TraceContextManager {
         this.userActions = parsed.userActions;
       }
     } catch (error) {
-      console.error('Failed to deserialize trace context:', error);
+      console.error("Failed to deserialize trace context:", error);
     }
   }
 }

@@ -1,13 +1,13 @@
 /**
  * Integration Examples for the Eternum Tracing System
- * 
+ *
  * This file demonstrates how to integrate the tracing system into various parts of the game.
  */
 
-import React, { useEffect } from 'react';
-import { ToriiClient } from '@dojoengine/torii-client';
-import { Socket } from 'socket.io-client';
-import * as THREE from 'three';
+import React, { useEffect } from "react";
+import { ToriiClient } from "@dojoengine/torii-client";
+import { Socket } from "socket.io-client";
+import * as THREE from "three";
 
 // Import tracing utilities
 import {
@@ -24,7 +24,7 @@ import {
   setUserId,
   setRealmId,
   recordUserAction,
-} from './index';
+} from "./index";
 
 // ============================================
 // 1. INITIALIZE TRACING ON APP START
@@ -44,43 +44,34 @@ export function initializeAppTracing(userId?: string, realmId?: string) {
 // 2. INSTRUMENT DOJO SYSTEM CALLS
 // ============================================
 
-export async function makeTracedDojoCall(
-  systemName: string,
-  method: string,
-  params: any
-): Promise<any> {
-  return instrumentSystemCall(
-    systemName,
-    method,
-    params,
-    async () => {
-      // Your actual Dojo system call here
-      // const result = await dojoClient.call(systemName, method, params);
-      // return result;
-      return Promise.resolve({ success: true });
-    }
-  );
+export async function makeTracedDojoCall(systemName: string, method: string, params: any): Promise<any> {
+  return instrumentSystemCall(systemName, method, params, async () => {
+    // Your actual Dojo system call here
+    // const result = await dojoClient.call(systemName, method, params);
+    // return result;
+    return Promise.resolve({ success: true });
+  });
 }
 
 // Example: Trading system call
 export async function executeTrade(fromRealm: string, toRealm: string, resource: string, amount: number) {
   try {
     const result = await instrumentSystemCall(
-      'trading_system',
-      'execute_trade',
+      "trading_system",
+      "execute_trade",
       { fromRealm, toRealm, resource, amount },
       async () => {
         // Actual trade execution
         // return await tradingSystem.executeTrade(fromRealm, toRealm, resource, amount);
-        return Promise.resolve({ transactionHash: '0x123' });
-      }
+        return Promise.resolve({ transactionHash: "0x123" });
+      },
     );
-    
-    recordUserAction('trade_executed', { resource, amount });
+
+    recordUserAction("trade_executed", { resource, amount });
     return result;
   } catch (error) {
     reportGameError(error as Error, {
-      action: 'execute_trade',
+      action: "execute_trade",
       fromRealm,
       toRealm,
       resource,
@@ -94,22 +85,19 @@ export async function executeTrade(fromRealm: string, toRealm: string, resource:
 // 3. INSTRUMENT TORII QUERIES
 // ============================================
 
-export async function fetchRealmData(
-  client: ToriiClient,
-  realmId: string
-): Promise<any> {
+export async function fetchRealmData(client: ToriiClient, realmId: string): Promise<any> {
   return instrumentToriiQuery(
-    'fetch_realm_data',
+    "fetch_realm_data",
     {
       client,
-      models: ['Realm', 'Resource', 'Army'],
+      models: ["Realm", "Resource", "Army"],
       limit: 100,
     },
     async () => {
       // Actual Torii query
       // return await client.getEntities({ realm_id: realmId });
       return Promise.resolve({ entities: [] });
-    }
+    },
   );
 }
 
@@ -119,17 +107,20 @@ export async function fetchRealmData(
 
 export function setupTracedWebSocket(socket: Socket): Socket {
   // Instrument the socket
-  const instrumentedSocket = instrumentSocket(socket, 'game-socket');
+  const instrumentedSocket = instrumentSocket(socket, "game-socket");
 
   // Add specific event handlers with tracing
-  instrumentedSocket.on('game_update', TracingHelpers.tracedHandler('game_update', (data) => {
-    console.log('Game update received:', data);
-    recordUserAction('received_game_update', { updateType: data.type });
-  }));
+  instrumentedSocket.on(
+    "game_update",
+    TracingHelpers.tracedHandler("game_update", (data) => {
+      console.log("Game update received:", data);
+      recordUserAction("received_game_update", { updateType: data.type });
+    }),
+  );
 
-  instrumentedSocket.on('error', (error) => {
+  instrumentedSocket.on("error", (error) => {
     reportGameError(new Error(error), {
-      action: 'websocket_error',
+      action: "websocket_error",
       socketId: socket.id,
     });
   });
@@ -152,14 +143,14 @@ class TracedGameBoard extends React.Component {
 // Using hook for functional components
 export const TracedRealmView: React.FC<{ realmId: string }> = ({ realmId }) => {
   // Track component lifecycle
-  useComponentTrace('RealmView');
-  
+  useComponentTrace("RealmView");
+
   // Track user interactions
-  const trackClick = useInteractionTrace('realm_action_click');
+  const trackClick = useInteractionTrace("realm_action_click");
 
   useEffect(() => {
     setRealmId(realmId);
-    recordUserAction('viewed_realm', { realmId });
+    recordUserAction("viewed_realm", { realmId });
   }, [realmId]);
 
   return (
@@ -171,40 +162,32 @@ export const TracedRealmView: React.FC<{ realmId: string }> = ({ realmId }) => {
 };
 
 // Wrap existing components
-export const TracedArmyManager = withTrace(
-  ({ armyId }: { armyId: string }) => {
-    const moveArmy = TracingHelpers.tracedHandler('move_army', async (destination) => {
-      await makeTracedDojoCall('army_system', 'move', { armyId, destination });
-    });
+export const TracedArmyManager = withTrace(({ armyId }: { armyId: string }) => {
+  const moveArmy = TracingHelpers.tracedHandler("move_army", async (destination) => {
+    await makeTracedDojoCall("army_system", "move", { armyId, destination });
+  });
 
-    return (
-      <div>
-        <button onClick={() => moveArmy({ x: 10, y: 20 })}>
-          Move Army
-        </button>
-      </div>
-    );
-  },
-  'ArmyManager'
-);
+  return (
+    <div>
+      <button onClick={() => moveArmy({ x: 10, y: 20 })}>Move Army</button>
+    </div>
+  );
+}, "ArmyManager");
 
 // ============================================
 // 6. INSTRUMENT THREE.JS RENDERING
 // ============================================
 
-export function setupTracedRenderer(
-  renderer: THREE.WebGLRenderer,
-  scene: THREE.Scene
-): void {
+export function setupTracedRenderer(renderer: THREE.WebGLRenderer, scene: THREE.Scene): void {
   // Instrument the renderer
-  instrumentRenderer(renderer, 'main-renderer');
+  instrumentRenderer(renderer, "main-renderer");
 
   // Track scene updates
   const originalAdd = scene.add.bind(scene);
   scene.add = (...objects: THREE.Object3D[]) => {
-    recordUserAction('scene_objects_added', {
+    recordUserAction("scene_objects_added", {
       count: objects.length,
-      types: objects.map(o => o.type),
+      types: objects.map((o) => o.type),
     });
     return originalAdd(...objects);
   };
@@ -214,30 +197,24 @@ export function setupTracedRenderer(
 // 7. MEASURE GAME OPERATIONS
 // ============================================
 
-export async function calculateBattleOutcome(
-  attacker: any,
-  defender: any
-): Promise<any> {
-  return TracingHelpers.measureGameOperation(
-    'battle_calculation',
-    async () => {
-      // Complex battle simulation
-      const startTime = performance.now();
-      
-      // Simulate calculation
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const result = {
-        winner: Math.random() > 0.5 ? 'attacker' : 'defender',
-        casualties: Math.floor(Math.random() * 100),
-      };
+export async function calculateBattleOutcome(attacker: any, defender: any): Promise<any> {
+  return TracingHelpers.measureGameOperation("battle_calculation", async () => {
+    // Complex battle simulation
+    const startTime = performance.now();
 
-      const duration = performance.now() - startTime;
-      TracingHelpers.recordMetric('battleSimulationTime', duration);
+    // Simulate calculation
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-      return result;
-    }
-  );
+    const result = {
+      winner: Math.random() > 0.5 ? "attacker" : "defender",
+      casualties: Math.floor(Math.random() * 100),
+    };
+
+    const duration = performance.now() - startTime;
+    TracingHelpers.recordMetric("battleSimulationTime", duration);
+
+    return result;
+  });
 }
 
 // ============================================
@@ -255,13 +232,10 @@ export function handleGameError(error: Error, context: any): void {
   });
 
   // Add breadcrumb for debugging
-  TracingHelpers.addBreadcrumb(
-    `Error in ${context.action}`,
-    {
-      error: error.message,
-      ...context,
-    }
-  );
+  TracingHelpers.addBreadcrumb(`Error in ${context.action}`, {
+    error: error.message,
+    ...context,
+  });
 }
 
 // ============================================
@@ -270,23 +244,23 @@ export function handleGameError(error: Error, context: any): void {
 
 export function monitorGamePerformance(): void {
   // Set custom thresholds
-  const { metricsCollector } = require('./performance/metrics-collector');
-  
-  metricsCollector.setThreshold('fps', 45, 30);
-  metricsCollector.setThreshold('memory', 70, 85);
-  
+  const { metricsCollector } = require("./performance/metrics-collector");
+
+  metricsCollector.setThreshold("fps", 45, 30);
+  metricsCollector.setThreshold("memory", 70, 85);
+
   // React to performance issues
-  metricsCollector.onAlert('performance-monitor', (metric, value, threshold) => {
-    if (metric === 'fps' && value < 30) {
-      console.warn('Low FPS detected, reducing quality settings');
+  metricsCollector.onAlert("performance-monitor", (metric, value, threshold) => {
+    if (metric === "fps" && value < 30) {
+      console.warn("Low FPS detected, reducing quality settings");
       // Reduce graphics quality
-      recordUserAction('auto_quality_reduction', { reason: 'low_fps', fps: value });
+      recordUserAction("auto_quality_reduction", { reason: "low_fps", fps: value });
     }
-    
-    if (metric === 'memory' && value > 85) {
-      console.warn('High memory usage, clearing caches');
+
+    if (metric === "memory" && value > 85) {
+      console.warn("High memory usage, clearing caches");
       // Clear unnecessary caches
-      recordUserAction('auto_cache_clear', { reason: 'high_memory', usage: value });
+      recordUserAction("auto_cache_clear", { reason: "high_memory", usage: value });
     }
   });
 }
@@ -295,31 +269,21 @@ export function monitorGamePerformance(): void {
 // 10. BATCH OPERATIONS TRACING
 // ============================================
 
-export async function batchUpdateEntities(
-  entities: Array<{ id: string; updates: any }>
-): Promise<void> {
-  return TracingHelpers.measureGameOperation(
-    'batch_entity_update',
-    async () => {
-      // Track individual operations within the batch
-      const results = await Promise.all(
-        entities.map((entity, index) =>
-          instrumentSystemCall(
-            'entity_system',
-            'update',
-            entity,
-            async () => {
-              // Update entity
-              return Promise.resolve({ success: true });
-            }
-          )
-        )
-      );
+export async function batchUpdateEntities(entities: Array<{ id: string; updates: any }>): Promise<void> {
+  return TracingHelpers.measureGameOperation("batch_entity_update", async () => {
+    // Track individual operations within the batch
+    const results = await Promise.all(
+      entities.map((entity, index) =>
+        instrumentSystemCall("entity_system", "update", entity, async () => {
+          // Update entity
+          return Promise.resolve({ success: true });
+        }),
+      ),
+    );
 
-      TracingHelpers.recordMetric('batchUpdateSize', entities.length);
-      return results;
-    }
-  );
+    TracingHelpers.recordMetric("batchUpdateSize", entities.length);
+    return results;
+  });
 }
 
 // ============================================
@@ -337,17 +301,14 @@ export class UserJourneyTracker {
       previousStep: this.journeySteps[this.journeySteps.length - 2],
     });
 
-    TracingHelpers.addBreadcrumb(
-      `User journey: ${step}`,
-      {
-        journey: this.journeySteps,
-        ...data,
-      }
-    );
+    TracingHelpers.addBreadcrumb(`User journey: ${step}`, {
+      journey: this.journeySteps,
+      ...data,
+    });
   }
 
-  completeJourney(outcome: 'success' | 'abandon' | 'error'): void {
-    recordUserAction('journey_complete', {
+  completeJourney(outcome: "success" | "abandon" | "error"): void {
+    recordUserAction("journey_complete", {
       outcome,
       steps: this.journeySteps,
       duration: Date.now(), // Would calculate from start
@@ -357,7 +318,7 @@ export class UserJourneyTracker {
 
 // Usage example
 const journeyTracker = new UserJourneyTracker();
-journeyTracker.trackStep('login');
-journeyTracker.trackStep('select_realm', { realmId: '0x123' });
-journeyTracker.trackStep('first_action', { actionType: 'build' });
-journeyTracker.completeJourney('success');
+journeyTracker.trackStep("login");
+journeyTracker.trackStep("select_realm", { realmId: "0x123" });
+journeyTracker.trackStep("first_action", { actionType: "build" });
+journeyTracker.completeJourney("success");

@@ -131,7 +131,7 @@ export class InteractiveHexManager {
       }
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach(mat => mat.dispose());
+          this.instanceMesh.material.forEach((mat) => mat.dispose());
         } else {
           this.instanceMesh.material.dispose();
         }
@@ -170,7 +170,7 @@ export class InteractiveHexManager {
       }
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach(mat => mat.dispose());
+          this.instanceMesh.material.forEach((mat) => mat.dispose());
         } else {
           this.instanceMesh.material.dispose();
         }
@@ -213,7 +213,7 @@ export class InteractiveHexManager {
       }
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach(mat => mat.dispose());
+          this.instanceMesh.material.forEach((mat) => mat.dispose());
         } else {
           this.instanceMesh.material.dispose();
         }

@@ -608,7 +608,7 @@ export default class GameRenderer {
 
   public destroy(): void {
     // Clean up intervals
-    this.cleanupIntervals.forEach(interval => clearInterval(interval));
+    this.cleanupIntervals.forEach((interval) => clearInterval(interval));
     this.cleanupIntervals = [];
 
     // Clean up renderer resources
@@ -616,13 +616,13 @@ export default class GameRenderer {
     this.composer.dispose();
 
     // Clean up scenes
-    if (this.worldmapScene && typeof this.worldmapScene.destroy === 'function') {
+    if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
       this.worldmapScene.destroy();
     }
-    if (this.hexceptionScene && typeof this.hexceptionScene.destroy === 'function') {
+    if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
       this.hexceptionScene.destroy();
     }
-    if (this.hudScene && typeof this.hudScene.destroy === 'function') {
+    if (this.hudScene && typeof this.hudScene.destroy === "function") {
       this.hudScene.destroy();
     }
 

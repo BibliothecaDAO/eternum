@@ -1,6 +1,6 @@
-import { SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import { withSpan, startSpan, setSpanAttributes, getCurrentTraceId } from '../tracer';
-import { reportSystemError, addBreadcrumb } from '../errors/error-reporter';
+import { SpanKind, SpanStatusCode } from "@opentelemetry/api";
+import { withSpan, startSpan, setSpanAttributes, getCurrentTraceId } from "../tracer";
+import { reportSystemError, addBreadcrumb } from "../errors/error-reporter";
 
 interface DojoSystemCall {
   contractAddress: string;
@@ -10,7 +10,7 @@ interface DojoSystemCall {
 
 interface DojoTransaction {
   hash: string;
-  status?: 'pending' | 'success' | 'failed';
+  status?: "pending" | "success" | "failed";
   error?: string;
 }
 
@@ -31,14 +31,14 @@ export class DojoInstrumentation {
     systemName: string,
     method: string,
     params: any,
-    executeCall: () => Promise<T>
+    executeCall: () => Promise<T>,
   ): Promise<T> {
     const spanName = `dojo.system.${systemName}.${method}`;
-    
+
     // Add breadcrumb for system call
     addBreadcrumb({
-      type: 'api',
-      category: 'dojo',
+      type: "api",
+      category: "dojo",
       message: `Calling ${systemName}.${method}`,
       data: {
         system: systemName,
@@ -51,10 +51,10 @@ export class DojoInstrumentation {
       spanName,
       async (span) => {
         span.setAttributes({
-          'dojo.system': systemName,
-          'dojo.method': method,
-          'dojo.params': JSON.stringify(this.sanitizeParams(params)),
-          'trace.id': getCurrentTraceId(),
+          "dojo.system": systemName,
+          "dojo.method": method,
+          "dojo.params": JSON.stringify(this.sanitizeParams(params)),
+          "trace.id": getCurrentTraceId(),
         });
 
         const startTime = performance.now();
@@ -64,16 +64,16 @@ export class DojoInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'dojo.duration_ms': duration,
-            'dojo.success': true,
+            "dojo.duration_ms": duration,
+            "dojo.success": true,
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
 
           // Add success breadcrumb
           addBreadcrumb({
-            type: 'api',
-            category: 'dojo',
+            type: "api",
+            category: "dojo",
             message: `${systemName}.${method} completed successfully`,
             data: {
               duration,
@@ -87,15 +87,15 @@ export class DojoInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'dojo.duration_ms': duration,
-            'dojo.success': false,
-            'dojo.error': true,
-            'dojo.error_message': (error as Error).message,
+            "dojo.duration_ms": duration,
+            "dojo.success": false,
+            "dojo.error": true,
+            "dojo.error_message": (error as Error).message,
           });
 
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
 
           // Report error with context
@@ -107,8 +107,8 @@ export class DojoInstrumentation {
 
           // Add error breadcrumb
           addBreadcrumb({
-            type: 'api',
-            category: 'dojo',
+            type: "api",
+            category: "dojo",
             message: `${systemName}.${method} failed`,
             data: {
               duration,
@@ -124,27 +124,24 @@ export class DojoInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'dojo',
-          'rpc.system': 'dojo',
-          'rpc.service': systemName,
-          'rpc.method': method,
+          component: "dojo",
+          "rpc.system": "dojo",
+          "rpc.service": systemName,
+          "rpc.method": method,
         },
-      }
+      },
     );
   }
 
-  public instrumentTransaction<T>(
-    transactionName: string,
-    executeTransaction: () => Promise<T>
-  ): Promise<T> {
+  public instrumentTransaction<T>(transactionName: string, executeTransaction: () => Promise<T>): Promise<T> {
     const spanName = `dojo.transaction.${transactionName}`;
 
     return withSpan(
       spanName,
       async (span) => {
         span.setAttributes({
-          'dojo.transaction.name': transactionName,
-          'dojo.transaction.timestamp': Date.now(),
+          "dojo.transaction.name": transactionName,
+          "dojo.transaction.timestamp": Date.now(),
         });
 
         const startTime = performance.now();
@@ -157,7 +154,7 @@ export class DojoInstrumentation {
           const txHash = this.extractTransactionHash(result);
           if (txHash) {
             span.setAttributes({
-              'dojo.transaction.hash': txHash,
+              "dojo.transaction.hash": txHash,
             });
             this.pendingTransactions.set(txHash, {
               name: transactionName,
@@ -167,15 +164,15 @@ export class DojoInstrumentation {
           }
 
           span.setAttributes({
-            'dojo.transaction.duration_ms': duration,
-            'dojo.transaction.status': 'submitted',
+            "dojo.transaction.duration_ms": duration,
+            "dojo.transaction.status": "submitted",
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
 
           addBreadcrumb({
-            type: 'api',
-            category: 'dojo',
+            type: "api",
+            category: "dojo",
             message: `Transaction ${transactionName} submitted`,
             data: {
               txHash,
@@ -188,19 +185,19 @@ export class DojoInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'dojo.transaction.duration_ms': duration,
-            'dojo.transaction.status': 'failed',
-            'dojo.transaction.error': (error as Error).message,
+            "dojo.transaction.duration_ms": duration,
+            "dojo.transaction.status": "failed",
+            "dojo.transaction.error": (error as Error).message,
           });
 
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
 
           reportSystemError(error as Error, {
-            system: 'dojo',
-            method: 'transaction',
+            system: "dojo",
+            method: "transaction",
             transactionName,
           });
 
@@ -210,26 +207,22 @@ export class DojoInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'dojo',
-          'transaction.type': 'blockchain',
+          component: "dojo",
+          "transaction.type": "blockchain",
         },
-      }
+      },
     );
   }
 
-  public instrumentQuery<T>(
-    queryName: string,
-    queryParams: any,
-    executeQuery: () => Promise<T>
-  ): Promise<T> {
+  public instrumentQuery<T>(queryName: string, queryParams: any, executeQuery: () => Promise<T>): Promise<T> {
     const spanName = `dojo.query.${queryName}`;
 
     return withSpan(
       spanName,
       async (span) => {
         span.setAttributes({
-          'dojo.query.name': queryName,
-          'dojo.query.params': JSON.stringify(this.sanitizeParams(queryParams)),
+          "dojo.query.name": queryName,
+          "dojo.query.params": JSON.stringify(this.sanitizeParams(queryParams)),
         });
 
         const startTime = performance.now();
@@ -239,9 +232,9 @@ export class DojoInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'dojo.query.duration_ms': duration,
-            'dojo.query.success': true,
-            'dojo.query.result_size': this.getResultSize(result),
+            "dojo.query.duration_ms": duration,
+            "dojo.query.success": true,
+            "dojo.query.result_size": this.getResultSize(result),
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
@@ -249,8 +242,8 @@ export class DojoInstrumentation {
           // Only add breadcrumb for slow queries
           if (duration > 100) {
             addBreadcrumb({
-              type: 'api',
-              category: 'dojo',
+              type: "api",
+              category: "dojo",
               message: `Slow query: ${queryName} (${duration.toFixed(2)}ms)`,
               data: {
                 duration,
@@ -264,19 +257,19 @@ export class DojoInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'dojo.query.duration_ms': duration,
-            'dojo.query.success': false,
-            'dojo.query.error': (error as Error).message,
+            "dojo.query.duration_ms": duration,
+            "dojo.query.success": false,
+            "dojo.query.error": (error as Error).message,
           });
 
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
 
           reportSystemError(error as Error, {
-            system: 'dojo',
-            method: 'query',
+            system: "dojo",
+            method: "query",
             queryName,
             queryParams: this.sanitizeParams(queryParams),
           });
@@ -287,23 +280,23 @@ export class DojoInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'dojo',
-          'db.system': 'dojo',
-          'db.operation': 'query',
+          component: "dojo",
+          "db.system": "dojo",
+          "db.operation": "query",
         },
-      }
+      },
     );
   }
 
-  public recordTransactionConfirmation(txHash: string, status: 'success' | 'failed', error?: string): void {
+  public recordTransactionConfirmation(txHash: string, status: "success" | "failed", error?: string): void {
     const txInfo = this.pendingTransactions.get(txHash);
     if (!txInfo) return;
 
     const duration = Date.now() - txInfo.startTime;
-    
+
     addBreadcrumb({
-      type: 'api',
-      category: 'dojo',
+      type: "api",
+      category: "dojo",
       message: `Transaction ${txInfo.name} ${status}`,
       data: {
         txHash,
@@ -316,21 +309,21 @@ export class DojoInstrumentation {
     // Create a new span for the confirmation
     const span = startSpan(`dojo.transaction.confirmation.${txInfo.name}`, {
       attributes: {
-        'dojo.transaction.hash': txHash,
-        'dojo.transaction.status': status,
-        'dojo.transaction.confirmation_duration_ms': duration,
-        'dojo.transaction.error': error,
+        "dojo.transaction.hash": txHash,
+        "dojo.transaction.status": status,
+        "dojo.transaction.confirmation_duration_ms": duration,
+        "dojo.transaction.error": error,
       },
     });
 
-    if (status === 'success') {
+    if (status === "success") {
       span.setStatus({ code: SpanStatusCode.OK });
     } else {
       span.setStatus({ code: SpanStatusCode.ERROR, message: error });
       if (error) {
         reportSystemError(new Error(error), {
-          system: 'dojo',
-          method: 'transaction_confirmation',
+          system: "dojo",
+          method: "transaction_confirmation",
           txHash,
           transactionName: txInfo.name,
         });
@@ -343,33 +336,33 @@ export class DojoInstrumentation {
 
   private sanitizeParams(params: any): any {
     if (!params) return null;
-    
+
     // Deep clone and sanitize sensitive data
     const sanitized = JSON.parse(JSON.stringify(params));
-    
+
     // Remove or mask sensitive fields
-    const sensitiveFields = ['privateKey', 'password', 'secret', 'token'];
-    
+    const sensitiveFields = ["privateKey", "password", "secret", "token"];
+
     const sanitizeObject = (obj: any): any => {
-      if (typeof obj !== 'object' || obj === null) return obj;
-      
+      if (typeof obj !== "object" || obj === null) return obj;
+
       for (const key in obj) {
-        if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
-          obj[key] = '[REDACTED]';
-        } else if (typeof obj[key] === 'object') {
+        if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
+          obj[key] = "[REDACTED]";
+        } else if (typeof obj[key] === "object") {
           obj[key] = sanitizeObject(obj[key]);
         }
       }
-      
+
       return obj;
     };
-    
+
     return sanitizeObject(sanitized);
   }
 
   private extractTransactionHash(result: any): string | null {
     if (!result) return null;
-    if (typeof result === 'string') return result;
+    if (typeof result === "string") return result;
     if (result.transaction_hash) return result.transaction_hash;
     if (result.hash) return result.hash;
     if (result.tx_hash) return result.tx_hash;
@@ -379,7 +372,7 @@ export class DojoInstrumentation {
   private getResultSize(result: any): number {
     if (!result) return 0;
     if (Array.isArray(result)) return result.length;
-    if (typeof result === 'object') return Object.keys(result).length;
+    if (typeof result === "object") return Object.keys(result).length;
     return 1;
   }
 }

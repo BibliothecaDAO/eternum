@@ -63,11 +63,11 @@ export class InputManager {
   private handleMouseDown(e: MouseEvent): void {
     // Clean up any existing drag listeners to prevent race conditions
     this.cleanupDragListeners();
-    
+
     const mouseX = e.clientX;
     const mouseY = e.clientY;
     this.isDragged = false;
-    
+
     this.currentDragListener = (e: MouseEvent) => {
       if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
         this.isDragged = true;
@@ -76,11 +76,11 @@ export class InputManager {
         this.cleanupDragListeners();
       }
     };
-    
+
     this.currentMouseUpListener = () => {
       this.cleanupDragListeners();
     };
-    
+
     window.addEventListener("mousemove", this.currentDragListener);
     window.addEventListener("mouseup", this.currentMouseUpListener, { once: true });
   }
@@ -99,16 +99,16 @@ export class InputManager {
   public destroy(): void {
     // Clean up main mousedown handler
     window.removeEventListener("mousedown", this.mouseDownHandler);
-    
+
     // Clean up any active drag listeners
     this.cleanupDragListeners();
-    
+
     // Clean up all registered listeners
     for (const listener of this.listeners) {
       window.removeEventListener(listener.event, listener.handler);
     }
     this.listeners = [];
-    
+
     console.log("InputManager: Destroyed and cleaned up all event listeners");
   }
 }

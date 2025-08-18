@@ -288,10 +288,10 @@ export class ArmyManager {
 
     console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    
+
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey);
-    
+
     try {
       await this.chunkSwitchPromise;
       console.log(`[CHUNK SYNC] Army chunk switch to ${chunkKey} completed`);

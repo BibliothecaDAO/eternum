@@ -39,7 +39,7 @@ export class QuestManager {
     this.hexagonScene = hexagonScene;
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    
+
     // Initialize the label manager
     this.labelManager = new LabelManager({
       labelsGroup: labelsGroup || new THREE.Group(),
@@ -47,7 +47,7 @@ export class QuestManager {
       maxLabels: 1000,
       autoCleanup: true,
     });
-    
+
     // Register the quest label type
     this.labelManager.registerLabelType(QuestLabelType);
     this.loadModels().then(() => {
@@ -74,7 +74,7 @@ export class QuestManager {
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
-    
+
     // Clean up the label manager
     this.labelManager.destroy();
   }
@@ -158,12 +158,12 @@ export class QuestManager {
 
     console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    
+
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
       this.renderVisibleQuests(chunkKey);
     });
-    
+
     try {
       await this.chunkSwitchPromise;
       console.log(`[CHUNK SYNC] Quest chunk switch to ${chunkKey} completed`);
@@ -289,7 +289,7 @@ export class QuestManager {
   }
 
   public addLabelsToScene(): void {
-    // Label visibility is managed by LabelManager  
+    // Label visibility is managed by LabelManager
     // Labels are automatically added when created
   }
 
@@ -299,7 +299,7 @@ export class QuestManager {
   get entityIdLabels(): Map<ID, CSS2DObject> {
     const labelMap = new Map<ID, CSS2DObject>();
     const questLabels = this.labelManager.getLabelsByType("quest");
-    questLabels.forEach(label => {
+    questLabels.forEach((label) => {
       labelMap.set(label.data.entityId, label.css2dObject);
     });
     return labelMap;

@@ -83,7 +83,7 @@ const envSchema = z.object({
     .default("true"),
   VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
   VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
-  
+
   // Tracing Authentication (optional - for cloud providers)
   VITE_TRACING_AUTH_HEADER: z.string().optional(),
   VITE_DATADOG_API_KEY: z.string().optional(),

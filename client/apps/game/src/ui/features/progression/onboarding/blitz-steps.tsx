@@ -115,28 +115,28 @@ const NoGameState = ({
 const buttonVariants = {
   idle: {
     scale: 1,
-    rotate: 0
+    rotate: 0,
   },
   hover: {
     scale: 1.1,
     rotate: [0, -2, 2, -2, 2, 0],
-    transition: { 
+    transition: {
       scale: { duration: 0.2 },
-      rotate: { duration: 0.6, repeat: Infinity }
-    }
+      rotate: { duration: 0.6, repeat: Infinity },
+    },
   },
   tap: {
     scale: 0.9,
     rotate: 0,
-    transition: { duration: 0.1 }
-  }
+    transition: { duration: 0.1 },
+  },
 };
 
 const numberVariants = {
   enter: {
     scale: 2,
     opacity: 0,
-    rotate: 180
+    rotate: 180,
   },
   center: {
     scale: 1,
@@ -146,8 +146,8 @@ const numberVariants = {
       type: "spring",
       damping: 12,
       stiffness: 100,
-      duration: 0.8
-    }
+      duration: 0.8,
+    },
   },
   breathing: {
     scale: [1, 1.05, 1],
@@ -155,9 +155,9 @@ const numberVariants = {
     transition: {
       duration: 1.8,
       repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
+      ease: "easeInOut",
+    },
+  },
 };
 
 const rippleVariants = {
@@ -167,9 +167,9 @@ const rippleVariants = {
     transition: {
       duration: 2,
       repeat: Infinity,
-      ease: "easeOut"
-    }
-  }
+      ease: "easeOut",
+    },
+  },
 };
 
 // Hyperstructure Forge Button Component
@@ -192,13 +192,14 @@ const HyperstructureForgeButton = ({
       whileTap="tap"
       className="relative w-24 h-24 rounded-full cursor-pointer transform-gpu disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-yellow-300/50"
       style={{
-        background: 'radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)',
-        boxShadow: '0 8px 32px rgba(251, 191, 36, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1)',
-        border: '4px solid #fef3c7',
-        transition: 'border-color 0.3s ease'
+        background: "radial-gradient(circle at 30% 30%, #facc15, #ca8a04, #f59e0b)",
+        boxShadow:
+          "0 8px 32px rgba(251, 191, 36, 0.4), inset 0 2px 8px rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1)",
+        border: "4px solid #fef3c7",
+        transition: "border-color 0.3s ease",
       }}
-      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#ffffff'}
-      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#fef3c7'}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#fef3c7")}
     >
       {/* Ripple Effect */}
       <motion.div
@@ -206,26 +207,21 @@ const HyperstructureForgeButton = ({
         variants={rippleVariants}
         animate="pulse"
       />
-      
+
       {/* Content */}
-      <motion.div 
+      <motion.div
         className="flex items-center justify-center w-full h-full text-4xl font-black text-amber-900"
         animate={isLoading ? {} : numberVariants.breathing}
       >
         {isLoading ? (
-          <motion.img 
-            src="/images/logos/eternum-loader.png" 
-            className="w-8 h-8" 
+          <motion.img
+            src="/images/logos/eternum-loader.png"
+            className="w-8 h-8"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
         ) : (
-          <motion.span
-            key={count}
-            variants={numberVariants}
-            initial="enter"
-            animate="center"
-          >
+          <motion.span key={count} variants={numberVariants} initial="enter" animate="center">
             {count}
           </motion.span>
         )}
@@ -250,7 +246,7 @@ const HyperstructureForgeButton = ({
                 duration: 1.5,
                 repeat: Infinity,
                 delay: i * 0.5,
-                ease: "easeInOut"
+                ease: "easeInOut",
               }}
             />
           ))}
@@ -277,15 +273,15 @@ const MakeHyperstructuresState = ({
   // Auto-rerender and check config every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setRerenderTrigger(prev => prev + 1);
-      
+      setRerenderTrigger((prev) => prev + 1);
+
       // Check for updated config
       const latestBlitzConfig = configManager.getBlitzConfig();
       const latestNumHyperStructuresLeft = latestBlitzConfig?.blitz_num_hyperstructures_left;
       if (latestNumHyperStructuresLeft !== undefined) {
         setCurrentNumHyperStructuresLeft(latestNumHyperStructuresLeft);
       }
-      
+
       console.log("Rerendering MakeHyperstructuresState");
     }, 3000);
 
@@ -296,7 +292,7 @@ const MakeHyperstructuresState = ({
   useEffect(() => {
     setCurrentNumHyperStructuresLeft(numHyperStructuresLeft);
   }, [numHyperStructuresLeft]);
-  
+
   const handleMakeHyperstructures = async () => {
     setIsMakingHyperstructures(true);
     try {
@@ -310,25 +306,21 @@ const MakeHyperstructuresState = ({
 
   return (
     <>
-    {currentNumHyperStructuresLeft > 0 && canMake && (
-      <div className="flex flex-col items-center space-y-4">
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <h3 className="text-gold font-semibold text-sm">Forge Hyperstructures</h3>
-        </motion.div>
+      {currentNumHyperStructuresLeft > 0 && canMake && (
+        <div className="flex flex-col items-center space-y-4">
+          {/* Title */}
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+            <h3 className="text-gold font-semibold text-sm">Forge Hyperstructures</h3>
+          </motion.div>
 
-        {/* Forge Button */}
-        <HyperstructureForgeButton
-          count={currentNumHyperStructuresLeft}
-          isLoading={isMakingHyperstructures}
-          onClick={handleMakeHyperstructures}
-        />
-      </div>
-    )}
+          {/* Forge Button */}
+          <HyperstructureForgeButton
+            count={currentNumHyperStructuresLeft}
+            isLoading={isMakingHyperstructures}
+            onClick={handleMakeHyperstructures}
+          />
+        </div>
+      )}
     </>
   );
 };
@@ -344,7 +336,6 @@ const DevOptionsState = ({
 }) => {
   const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
   const [isDevModeSettling, setIsDevModeSettling] = useState(false);
-  
 
   const handleDevModeRegister = async () => {
     setIsDevModeRegistering(true);
@@ -372,34 +363,34 @@ const DevOptionsState = ({
     <>
       {devMode && (
         <>
-        {isDevModeRegistering ? (
-          <div className="flex items-center justify-center">
-            <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-            <span>Registering...</span>
-          </div>
-        ) : (
-          <Button
-            onClick={handleDevModeRegister}
-            disabled={isDevModeRegistering || !devMode}
-            className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-          >
-            <span>Dev Mode Register for Blitz</span>
-          </Button>
-        )}
-        {isDevModeSettling ? (
-          <div className="flex items-center justify-center">
-            <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-            <span>Settling...</span>
-          </div>
-        ) : (
-          <Button
-            onClick={handleDevModeSettle}
-            disabled={isDevModeSettling || !devMode}
-            className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-          >
-            <span>Dev Mode Settle Realm</span>
-          </Button>
-        )}
+          {isDevModeRegistering ? (
+            <div className="flex items-center justify-center">
+              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+              <span>Registering...</span>
+            </div>
+          ) : (
+            <Button
+              onClick={handleDevModeRegister}
+              disabled={isDevModeRegistering || !devMode}
+              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+            >
+              <span>Dev Mode Register for Blitz</span>
+            </Button>
+          )}
+          {isDevModeSettling ? (
+            <div className="flex items-center justify-center">
+              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+              <span>Settling...</span>
+            </div>
+          ) : (
+            <Button
+              onClick={handleDevModeSettle}
+              disabled={isDevModeSettling || !devMode}
+              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+            >
+              <span>Dev Mode Settle Realm</span>
+            </Button>
+          )}
         </>
       )}
     </>
@@ -488,7 +479,17 @@ const RegistrationState = ({
 };
 
 // Game active state component
-const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { hasSettled: boolean; gameEndAt?: number; isRegistered: boolean; onSettle: () => Promise<void> }) => {
+const GameActiveState = ({
+  hasSettled,
+  gameEndAt,
+  isRegistered,
+  onSettle,
+}: {
+  hasSettled: boolean;
+  gameEndAt?: number;
+  isRegistered: boolean;
+  onSettle: () => Promise<void>;
+}) => {
   const {
     setup: { components },
   } = useDojo();
@@ -538,19 +539,19 @@ const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { ha
 
       <div className="space-y-4">
         {isRegistered ? (
-            <>
-          {hasSettled ? (
-            <>
-              <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md ">
-                <div className="flex items-center justify-center">
-                  <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Play Blitz</span>
-                </div>
-              </Button>
-              <SpectateButton onClick={onSpectatorModeClick} />
-            </>
-          ) : (
-            <>
+          <>
+            {hasSettled ? (
+              <>
+                <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md ">
+                  <div className="flex items-center justify-center">
+                    <Sword className="w-5 h-5 mr-2 fill-brown" />
+                    <span>Play Blitz</span>
+                  </div>
+                </Button>
+                <SpectateButton onClick={onSpectatorModeClick} />
+              </>
+            ) : (
+              <>
                 <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
                   <p className="text-gold text-sm">
                     In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
@@ -571,12 +572,11 @@ const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { ha
                       <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
                       <span>Settle Realm</span>
                     </div>
-                    
                   )}
                 </Button>
-              <SpectateButton onClick={onSpectatorModeClick} />
-            </>
-          )}
+                <SpectateButton onClick={onSpectatorModeClick} />
+              </>
+            )}
           </>
         ) : (
           <div className="space-y-4">
@@ -584,10 +584,8 @@ const GameActiveState = ({ hasSettled, gameEndAt, isRegistered, onSettle }: { ha
               <p className="text-gold/70">You are not registered for this game</p>
             </div>
             <SpectateButton onClick={onSpectatorModeClick} />
-
           </div>
         )}
-
       </div>
     </motion.div>
   );
@@ -605,7 +603,6 @@ export const BlitzOnboarding = () => {
       systemCalls: { blitz_realm_register, blitz_realm_create, blitz_realm_make_hyperstructures },
     },
   } = useDojo();
-
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
@@ -706,19 +703,15 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
-      {(
+      {
         <MakeHyperstructuresState
           numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
           onMakeHyperstructures={handleMakeHyperstructures}
           canMake={canMakeHyperstructures}
         />
-      )}
-      { devMode && (
-        <DevOptionsState
-          onDevModeRegister={handleRegister}
-          onDevModeSettle={handleSettle}
-          devMode={devMode || false}
-        />
+      }
+      {devMode && (
+        <DevOptionsState onDevModeRegister={handleRegister} onDevModeSettle={handleSettle} devMode={devMode || false} />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && (
         <NoGameState
@@ -740,11 +733,12 @@ export const BlitzOnboarding = () => {
         />
       )}
       {gameState === GameState.GAME_ACTIVE && (
-        <GameActiveState 
-        isRegistered={playerRegistered?.registered || !!playerSettled}
-        onSettle={handleSettle}
-        hasSettled={!!playerSettled} 
-        gameEndAt={seasonConfig?.endAt} />
+        <GameActiveState
+          isRegistered={playerRegistered?.registered || !!playerSettled}
+          onSettle={handleSettle}
+          hasSettled={!!playerSettled}
+          gameEndAt={seasonConfig?.endAt}
+        />
       )}
     </div>
   );

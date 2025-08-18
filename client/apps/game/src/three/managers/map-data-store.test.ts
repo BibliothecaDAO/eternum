@@ -1,5 +1,5 @@
 // Simple test file to verify MapDataStore functionality
-import { MapDataStore } from './map-data-store';
+import { MapDataStore } from "./map-data-store";
 
 // This is a basic usage example demonstrating how to use the MapDataStore
 function exampleUsage() {
@@ -34,7 +34,9 @@ function exampleUsage() {
 
   // Example: Get entities within a radius
   const nearbyEntities = mapStore.getEntitiesInRadius(100, 100, 50);
-  console.log(`Found ${nearbyEntities.structures.length} structures and ${nearbyEntities.armies.length} armies within radius`);
+  console.log(
+    `Found ${nearbyEntities.structures.length} structures and ${nearbyEntities.armies.length} armies within radius`,
+  );
 
   // Example: Get all entities owned by a specific player
   const playerAddress = "0x123456789abcdef";

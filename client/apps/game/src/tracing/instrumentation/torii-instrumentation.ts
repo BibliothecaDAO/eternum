@@ -1,8 +1,8 @@
-import { SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import { ToriiClient } from '@dojoengine/torii-client';
-import { withSpan, getCurrentTraceId, setSpanAttributes } from '../tracer';
-import { reportNetworkError, addBreadcrumb } from '../errors/error-reporter';
-import { Component, Metadata, Schema } from '@dojoengine/recs';
+import { SpanKind, SpanStatusCode } from "@opentelemetry/api";
+import { ToriiClient } from "@dojoengine/torii-client";
+import { withSpan, getCurrentTraceId, setSpanAttributes } from "../tracer";
+import { reportNetworkError, addBreadcrumb } from "../errors/error-reporter";
+import { Component, Metadata, Schema } from "@dojoengine/recs";
 
 export class ToriiInstrumentation {
   private static instance: ToriiInstrumentation;
@@ -27,13 +27,13 @@ export class ToriiInstrumentation {
       models?: string[];
       limit?: number;
     },
-    executeQuery: () => Promise<T>
+    executeQuery: () => Promise<T>,
   ): Promise<T> {
     const spanName = `torii.query.${queryName}`;
-    
+
     addBreadcrumb({
-      type: 'api',
-      category: 'torii',
+      type: "api",
+      category: "torii",
       message: `Querying ${queryName}`,
       data: {
         models: queryParams.models,
@@ -45,11 +45,11 @@ export class ToriiInstrumentation {
       spanName,
       async (span) => {
         span.setAttributes({
-          'torii.query.name': queryName,
-          'torii.query.models': queryParams.models?.join(',') || '',
-          'torii.query.limit': queryParams.limit || 0,
-          'torii.query.has_clause': !!queryParams.clause,
-          'trace.id': getCurrentTraceId(),
+          "torii.query.name": queryName,
+          "torii.query.models": queryParams.models?.join(",") || "",
+          "torii.query.limit": queryParams.limit || 0,
+          "torii.query.has_clause": !!queryParams.clause,
+          "trace.id": getCurrentTraceId(),
         });
 
         const startTime = performance.now();
@@ -62,9 +62,9 @@ export class ToriiInstrumentation {
           this.updateQueryMetrics(queryName, duration);
 
           span.setAttributes({
-            'torii.query.duration_ms': duration,
-            'torii.query.success': true,
-            'torii.query.result_count': this.getResultCount(result),
+            "torii.query.duration_ms": duration,
+            "torii.query.success": true,
+            "torii.query.result_count": this.getResultCount(result),
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
@@ -72,8 +72,8 @@ export class ToriiInstrumentation {
           // Log slow queries
           if (duration > 500) {
             addBreadcrumb({
-              type: 'api',
-              category: 'torii',
+              type: "api",
+              category: "torii",
               message: `Slow query: ${queryName} took ${duration.toFixed(2)}ms`,
               data: {
                 duration,
@@ -88,25 +88,25 @@ export class ToriiInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'torii.query.duration_ms': duration,
-            'torii.query.success': false,
-            'torii.query.error': (error as Error).message,
+            "torii.query.duration_ms": duration,
+            "torii.query.success": false,
+            "torii.query.error": (error as Error).message,
           });
 
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
 
           reportNetworkError(error as Error, {
-            url: 'torii-query',
-            method: 'QUERY',
+            url: "torii-query",
+            method: "QUERY",
             duration,
           });
 
           addBreadcrumb({
-            type: 'api',
-            category: 'torii',
+            type: "api",
+            category: "torii",
             message: `Query ${queryName} failed`,
             data: {
               error: (error as Error).message,
@@ -121,11 +121,11 @@ export class ToriiInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'torii',
-          'db.system': 'torii',
-          'db.operation': 'query',
+          component: "torii",
+          "db.system": "torii",
+          "db.operation": "query",
         },
-      }
+      },
     );
   }
 
@@ -137,23 +137,23 @@ export class ToriiInstrumentation {
     },
     setupSubscription: () => T,
     onData?: (data: any) => void,
-    onError?: (error: Error) => void
+    onError?: (error: Error) => void,
   ): T {
     const subscriptionId = `${subscriptionName}_${Date.now()}`;
-    
+
     const span = withSpan(
       `torii.subscription.${subscriptionName}`,
       (span) => {
         span.setAttributes({
-          'torii.subscription.name': subscriptionName,
-          'torii.subscription.id': subscriptionId,
-          'torii.subscription.models': subscriptionParams.models?.join(',') || '',
-          'torii.subscription.has_clause': !!subscriptionParams.clause,
+          "torii.subscription.name": subscriptionName,
+          "torii.subscription.id": subscriptionId,
+          "torii.subscription.models": subscriptionParams.models?.join(",") || "",
+          "torii.subscription.has_clause": !!subscriptionParams.clause,
         });
 
         addBreadcrumb({
-          type: 'api',
-          category: 'torii',
+          type: "api",
+          category: "torii",
           message: `Starting subscription: ${subscriptionName}`,
           data: {
             subscriptionId,
@@ -163,7 +163,7 @@ export class ToriiInstrumentation {
 
         try {
           const subscription = setupSubscription();
-          
+
           // Store subscription info
           this.activeSubscriptions.set(subscriptionId, {
             name: subscriptionName,
@@ -173,19 +173,19 @@ export class ToriiInstrumentation {
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
-          
+
           // Don't end the span - it stays open for the subscription duration
           return subscription;
         } catch (error) {
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
           span.end();
 
           reportNetworkError(error as Error, {
-            url: 'torii-subscription',
-            method: 'SUBSCRIBE',
+            url: "torii-subscription",
+            method: "SUBSCRIBE",
           });
 
           throw error;
@@ -194,26 +194,26 @@ export class ToriiInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'torii',
-          'messaging.system': 'websocket',
-          'messaging.destination': subscriptionName,
+          component: "torii",
+          "messaging.system": "websocket",
+          "messaging.destination": subscriptionName,
         },
-      }
+      },
     );
 
     return span as unknown as T;
   }
 
-  public recordSubscriptionMessage(subscriptionId: string, messageType: 'data' | 'error', data?: any): void {
+  public recordSubscriptionMessage(subscriptionId: string, messageType: "data" | "error", data?: any): void {
     const subscription = this.activeSubscriptions.get(subscriptionId);
     if (!subscription) return;
 
     subscription.messageCount++;
 
-    if (messageType === 'data') {
+    if (messageType === "data") {
       addBreadcrumb({
-        type: 'api',
-        category: 'torii',
+        type: "api",
+        category: "torii",
         message: `Subscription ${subscription.name} received data`,
         data: {
           messageCount: subscription.messageCount,
@@ -222,8 +222,8 @@ export class ToriiInstrumentation {
       });
     } else {
       addBreadcrumb({
-        type: 'api',
-        category: 'torii',
+        type: "api",
+        category: "torii",
         message: `Subscription ${subscription.name} error`,
         data: {
           error: data,
@@ -233,8 +233,8 @@ export class ToriiInstrumentation {
 
       if (data instanceof Error) {
         reportNetworkError(data, {
-          url: 'torii-subscription',
-          method: 'MESSAGE',
+          url: "torii-subscription",
+          method: "MESSAGE",
         });
       }
     }
@@ -248,16 +248,16 @@ export class ToriiInstrumentation {
 
     if (subscription.span) {
       subscription.span.setAttributes({
-        'torii.subscription.duration_ms': duration,
-        'torii.subscription.message_count': subscription.messageCount,
-        'torii.subscription.messages_per_second': subscription.messageCount / (duration / 1000),
+        "torii.subscription.duration_ms": duration,
+        "torii.subscription.message_count": subscription.messageCount,
+        "torii.subscription.messages_per_second": subscription.messageCount / (duration / 1000),
       });
       subscription.span.end();
     }
 
     addBreadcrumb({
-      type: 'api',
-      category: 'torii',
+      type: "api",
+      category: "torii",
       message: `Subscription ${subscription.name} closed`,
       data: {
         duration,
@@ -268,11 +268,7 @@ export class ToriiInstrumentation {
     this.activeSubscriptions.delete(subscriptionId);
   }
 
-  public instrumentSQLQuery<T>(
-    query: string,
-    params?: any[],
-    executeQuery: () => Promise<T>
-  ): Promise<T> {
+  public instrumentSQLQuery<T>(query: string, params?: any[], executeQuery: () => Promise<T>): Promise<T> {
     const queryType = this.extractQueryType(query);
     const spanName = `torii.sql.${queryType}`;
 
@@ -280,10 +276,10 @@ export class ToriiInstrumentation {
       spanName,
       async (span) => {
         span.setAttributes({
-          'db.system': 'torii',
-          'db.statement': this.sanitizeQuery(query),
-          'db.operation': queryType,
-          'torii.sql.params_count': params?.length || 0,
+          "db.system": "torii",
+          "db.statement": this.sanitizeQuery(query),
+          "db.operation": queryType,
+          "torii.sql.params_count": params?.length || 0,
         });
 
         const startTime = performance.now();
@@ -293,9 +289,9 @@ export class ToriiInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'torii.sql.duration_ms': duration,
-            'torii.sql.success': true,
-            'torii.sql.row_count': this.getResultCount(result),
+            "torii.sql.duration_ms": duration,
+            "torii.sql.success": true,
+            "torii.sql.row_count": this.getResultCount(result),
           });
 
           span.setStatus({ code: SpanStatusCode.OK });
@@ -303,8 +299,8 @@ export class ToriiInstrumentation {
           // Log slow SQL queries
           if (duration > 1000) {
             addBreadcrumb({
-              type: 'api',
-              category: 'torii',
+              type: "api",
+              category: "torii",
               message: `Slow SQL query: ${queryType} took ${duration.toFixed(2)}ms`,
               data: {
                 duration,
@@ -319,18 +315,18 @@ export class ToriiInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'torii.sql.duration_ms': duration,
-            'torii.sql.success': false,
-            'torii.sql.error': (error as Error).message,
+            "torii.sql.duration_ms": duration,
+            "torii.sql.success": false,
+            "torii.sql.error": (error as Error).message,
           });
 
-          span.setStatus({ 
-            code: SpanStatusCode.ERROR, 
-            message: (error as Error).message 
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: (error as Error).message,
           });
 
           reportNetworkError(error as Error, {
-            url: 'torii-sql',
+            url: "torii-sql",
             method: queryType,
             duration,
           });
@@ -341,10 +337,10 @@ export class ToriiInstrumentation {
       {
         kind: SpanKind.CLIENT,
         attributes: {
-          'component': 'torii',
-          'db.type': 'sql',
+          component: "torii",
+          "db.type": "sql",
         },
-      }
+      },
     );
   }
 
@@ -369,40 +365,40 @@ export class ToriiInstrumentation {
     if (Array.isArray(result)) return result.length;
     if (result.entities && Array.isArray(result.entities)) return result.entities.length;
     if (result.data && Array.isArray(result.data)) return result.data.length;
-    if (typeof result === 'object') return Object.keys(result).length;
+    if (typeof result === "object") return Object.keys(result).length;
     return 1;
   }
 
   private extractQueryType(query: string): string {
     const normalizedQuery = query.trim().toUpperCase();
-    if (normalizedQuery.startsWith('SELECT')) return 'SELECT';
-    if (normalizedQuery.startsWith('INSERT')) return 'INSERT';
-    if (normalizedQuery.startsWith('UPDATE')) return 'UPDATE';
-    if (normalizedQuery.startsWith('DELETE')) return 'DELETE';
-    if (normalizedQuery.startsWith('CREATE')) return 'CREATE';
-    if (normalizedQuery.startsWith('DROP')) return 'DROP';
-    return 'UNKNOWN';
+    if (normalizedQuery.startsWith("SELECT")) return "SELECT";
+    if (normalizedQuery.startsWith("INSERT")) return "INSERT";
+    if (normalizedQuery.startsWith("UPDATE")) return "UPDATE";
+    if (normalizedQuery.startsWith("DELETE")) return "DELETE";
+    if (normalizedQuery.startsWith("CREATE")) return "CREATE";
+    if (normalizedQuery.startsWith("DROP")) return "DROP";
+    return "UNKNOWN";
   }
 
   private sanitizeQuery(query: string): string {
     // Remove potential sensitive data from queries
     return query
-      .replace(/0x[a-fA-F0-9]+/g, '0x[HASH]')  // Replace hex addresses
-      .replace(/\b\d{10,}\b/g, '[NUMBER]')     // Replace large numbers
-      .replace(/'[^']*'/g, "'[STRING]'")       // Replace string literals
-      .substring(0, 500);                       // Limit length
+      .replace(/0x[a-fA-F0-9]+/g, "0x[HASH]") // Replace hex addresses
+      .replace(/\b\d{10,}\b/g, "[NUMBER]") // Replace large numbers
+      .replace(/'[^']*'/g, "'[STRING]'") // Replace string literals
+      .substring(0, 500); // Limit length
   }
 
   public getMetrics(): Record<string, { avgDuration: number; count: number }> {
     const metrics: Record<string, { avgDuration: number; count: number }> = {};
-    
+
     this.queryMetrics.forEach((value, key) => {
       metrics[key] = {
         avgDuration: value.totalDuration / value.count,
         count: value.count,
       };
     });
-    
+
     return metrics;
   }
 }

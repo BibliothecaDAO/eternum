@@ -1,5 +1,5 @@
-import { captureError as postHogCaptureError, captureSystemError as postHogCaptureSystemError } from '@/posthog';
-import { getCurrentSpan, recordError as recordSpanError, getCurrentTraceId, addEvent } from '../tracer';
+import { captureError as postHogCaptureError, captureSystemError as postHogCaptureSystemError } from "@/posthog";
+import { getCurrentSpan, recordError as recordSpanError, getCurrentTraceId, addEvent } from "../tracer";
 
 export interface ErrorContext {
   component?: string;
@@ -16,14 +16,14 @@ export interface TracedError extends Error {
   traceId?: string;
   spanId?: string;
   timestamp: number;
-  errorType: 'system' | 'network' | 'game' | 'render' | 'unknown';
+  errorType: "system" | "network" | "game" | "render" | "unknown";
   context: ErrorContext;
   breadcrumbs: Breadcrumb[];
 }
 
 export interface Breadcrumb {
   timestamp: number;
-  type: 'navigation' | 'click' | 'api' | 'state' | 'custom';
+  type: "navigation" | "click" | "api" | "state" | "custom";
   category: string;
   message: string;
   data?: Record<string, any>;
@@ -40,22 +40,22 @@ class ErrorReporter {
 
   private setupGlobalErrorHandlers() {
     // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener("unhandledrejection", (event) => {
       this.reportError(new Error(event.reason), {
-        errorType: 'system',
+        errorType: "system",
         context: {
-          type: 'unhandledrejection',
+          type: "unhandledrejection",
           promise: event.promise,
         },
       });
     });
 
     // Handle global errors
-    window.addEventListener('error', (event) => {
+    window.addEventListener("error", (event) => {
       this.reportError(event.error || new Error(event.message), {
-        errorType: 'system',
+        errorType: "system",
         context: {
-          type: 'global_error',
+          type: "global_error",
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
@@ -67,10 +67,10 @@ class ErrorReporter {
   public reportError(
     error: Error | unknown,
     options: {
-      errorType?: TracedError['errorType'];
+      errorType?: TracedError["errorType"];
       context?: ErrorContext;
       fatal?: boolean;
-    } = {}
+    } = {},
   ): void {
     const errorType = options.errorType || this.classifyError(error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -78,7 +78,7 @@ class ErrorReporter {
 
     // Create traced error object
     const tracedError: TracedError = {
-      name: error instanceof Error ? error.name : 'Error',
+      name: error instanceof Error ? error.name : "Error",
       message: errorMessage,
       stack: errorStack,
       traceId: getCurrentTraceId(),
@@ -92,17 +92,17 @@ class ErrorReporter {
     // Record in current span
     if (error instanceof Error) {
       recordSpanError(error, {
-        'error.type': errorType,
-        'error.fatal': options.fatal || false,
+        "error.type": errorType,
+        "error.fatal": options.fatal || false,
         ...options.context,
       });
     }
 
     // Add error event to span
-    addEvent('error.reported', {
-      'error.message': errorMessage,
-      'error.type': errorType,
-      'error.stack': errorStack,
+    addEvent("error.reported", {
+      "error.message": errorMessage,
+      "error.type": errorType,
+      "error.stack": errorStack,
       ...options.context,
     });
 
@@ -128,74 +128,70 @@ class ErrorReporter {
       try {
         handler(tracedError);
       } catch (handlerError) {
-        console.error('Error in error handler:', handlerError);
+        console.error("Error in error handler:", handlerError);
       }
     });
 
     // Log to console in development
     if (import.meta.env.DEV) {
       console.group(`🔴 ${errorType.toUpperCase()} ERROR`);
-      console.error('Error:', error);
-      console.log('Trace ID:', tracedError.traceId);
-      console.log('Context:', options.context);
-      console.log('Breadcrumbs:', this.breadcrumbs.slice(-5));
+      console.error("Error:", error);
+      console.log("Trace ID:", tracedError.traceId);
+      console.log("Context:", options.context);
+      console.log("Breadcrumbs:", this.breadcrumbs.slice(-5));
       console.groupEnd();
     }
   }
 
-  private classifyError(error: unknown): TracedError['errorType'] {
-    if (!error) return 'unknown';
+  private classifyError(error: unknown): TracedError["errorType"] {
+    if (!error) return "unknown";
 
     const errorString = String(error).toLowerCase();
     const errorMessage = error instanceof Error ? error.message.toLowerCase() : errorString;
 
     // Network errors
     if (
-      errorMessage.includes('fetch') ||
-      errorMessage.includes('network') ||
-      errorMessage.includes('cors') ||
-      errorMessage.includes('timeout') ||
-      errorMessage.includes('socket') ||
-      errorMessage.includes('websocket')
+      errorMessage.includes("fetch") ||
+      errorMessage.includes("network") ||
+      errorMessage.includes("cors") ||
+      errorMessage.includes("timeout") ||
+      errorMessage.includes("socket") ||
+      errorMessage.includes("websocket")
     ) {
-      return 'network';
+      return "network";
     }
 
     // Rendering errors
     if (
-      errorMessage.includes('webgl') ||
-      errorMessage.includes('canvas') ||
-      errorMessage.includes('three') ||
-      errorMessage.includes('render') ||
-      errorMessage.includes('gpu')
+      errorMessage.includes("webgl") ||
+      errorMessage.includes("canvas") ||
+      errorMessage.includes("three") ||
+      errorMessage.includes("render") ||
+      errorMessage.includes("gpu")
     ) {
-      return 'render';
+      return "render";
     }
 
     // Game logic errors
     if (
-      errorMessage.includes('game') ||
-      errorMessage.includes('realm') ||
-      errorMessage.includes('army') ||
-      errorMessage.includes('resource') ||
-      errorMessage.includes('trade')
+      errorMessage.includes("game") ||
+      errorMessage.includes("realm") ||
+      errorMessage.includes("army") ||
+      errorMessage.includes("resource") ||
+      errorMessage.includes("trade")
     ) {
-      return 'game';
+      return "game";
     }
 
     // System errors
-    if (
-      errorMessage.includes('dojo') ||
-      errorMessage.includes('starknet') ||
-      errorMessage.includes('system')
-    ) {
-      return 'system';
+    if (errorMessage.includes("dojo") || errorMessage.includes("starknet") || errorMessage.includes("system")) {
+      return "system";
     }
 
-    return 'unknown';
+    return "unknown";
   }
 
-  public addBreadcrumb(breadcrumb: Omit<Breadcrumb, 'timestamp'>): void {
+  public addBreadcrumb(breadcrumb: Omit<Breadcrumb, "timestamp">): void {
     const fullBreadcrumb: Breadcrumb = {
       ...breadcrumb,
       timestamp: Date.now(),
@@ -209,7 +205,7 @@ class ErrorReporter {
     }
 
     // Add to current span as event
-    addEvent('breadcrumb', {
+    addEvent("breadcrumb", {
       type: breadcrumb.type,
       category: breadcrumb.category,
       message: breadcrumb.message,
@@ -241,16 +237,16 @@ class ErrorReporter {
       method?: string;
       status?: number;
       duration?: number;
-    }
+    },
   ): void {
     this.reportError(error, {
-      errorType: 'network',
+      errorType: "network",
       context: {
         url: request.url,
         method: request.method,
         status: request.status,
         duration: request.duration,
-        type: 'network_request',
+        type: "network_request",
       },
     });
   }
@@ -263,13 +259,13 @@ class ErrorReporter {
       realmId?: string;
       coordinates?: { x: number; y: number };
       [key: string]: any;
-    }
+    },
   ): void {
     this.reportError(error, {
-      errorType: 'game',
+      errorType: "game",
       context: {
         ...gameContext,
-        type: 'game_action',
+        type: "game_action",
       },
     });
   }
@@ -281,13 +277,13 @@ class ErrorReporter {
       object?: string;
       fps?: number;
       memory?: number;
-    }
+    },
   ): void {
     this.reportError(error, {
-      errorType: 'render',
+      errorType: "render",
       context: {
         ...renderContext,
-        type: 'render_error',
+        type: "render_error",
       },
     });
   }
@@ -298,13 +294,13 @@ class ErrorReporter {
       system: string;
       method: string;
       params?: any;
-    }
+    },
   ): void {
     this.reportError(error, {
-      errorType: 'system',
+      errorType: "system",
       context: {
         ...systemContext,
-        type: 'system_call',
+        type: "system_call",
       },
     });
   }

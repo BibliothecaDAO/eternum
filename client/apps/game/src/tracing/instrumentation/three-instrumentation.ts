@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { SpanKind } from '@opentelemetry/api';
-import { startSpan, getCurrentTraceId, withSpan } from '../tracer';
-import { reportRenderError, addBreadcrumb } from '../errors/error-reporter';
+import * as THREE from "three";
+import { SpanKind } from "@opentelemetry/api";
+import { startSpan, getCurrentTraceId, withSpan } from "../tracer";
+import { reportRenderError, addBreadcrumb } from "../errors/error-reporter";
 
 interface RenderMetrics {
   fps: number;
@@ -41,10 +41,7 @@ export class ThreeInstrumentation {
     return ThreeInstrumentation.instance;
   }
 
-  public instrumentRenderer(
-    renderer: THREE.WebGLRenderer,
-    rendererName: string = 'default'
-  ): THREE.WebGLRenderer {
+  public instrumentRenderer(renderer: THREE.WebGLRenderer, rendererName: string = "default"): THREE.WebGLRenderer {
     // Enable info tracking
     renderer.info.autoReset = false;
 
@@ -66,19 +63,17 @@ export class ThreeInstrumentation {
         timestamps.shift();
       }
 
-      const fps = timestamps.length > 1 
-        ? 1000 / (deltaTime || 16.67)
-        : 60;
+      const fps = timestamps.length > 1 ? 1000 / (deltaTime || 16.67) : 60;
 
       // Start render span
       const span = startSpan(`three.${rendererName}.render`, {
         kind: SpanKind.INTERNAL,
         attributes: {
-          'three.renderer': rendererName,
-          'three.scene.objects': scene.children.length,
-          'three.camera.type': camera.type,
-          'three.fps': Math.round(fps),
-          'trace.id': getCurrentTraceId(),
+          "three.renderer": rendererName,
+          "three.scene.objects": scene.children.length,
+          "three.camera.type": camera.type,
+          "three.fps": Math.round(fps),
+          "trace.id": getCurrentTraceId(),
         },
       });
 
@@ -110,25 +105,25 @@ export class ThreeInstrumentation {
 
         // Update span with metrics
         span.setAttributes({
-          'three.render.time_ms': renderTime,
-          'three.render.draw_calls': metric.drawCalls,
-          'three.render.triangles': metric.triangles,
-          'three.render.fps': Math.round(fps),
-          'three.memory.geometries': metric.geometryMemory,
-          'three.memory.textures': metric.textureMemory,
+          "three.render.time_ms": renderTime,
+          "three.render.draw_calls": metric.drawCalls,
+          "three.render.triangles": metric.triangles,
+          "three.render.fps": Math.round(fps),
+          "three.memory.geometries": metric.geometryMemory,
+          "three.memory.textures": metric.textureMemory,
         });
 
         // Check for performance issues
         if (renderTime > this.slowFrameThreshold) {
-          span.addEvent('slow_frame', {
+          span.addEvent("slow_frame", {
             render_time: renderTime,
             fps: Math.round(fps),
             draw_calls: metric.drawCalls,
           });
 
           addBreadcrumb({
-            type: 'custom',
-            category: 'three',
+            type: "custom",
+            category: "three",
             message: `Slow frame detected: ${renderTime.toFixed(2)}ms`,
             data: {
               renderer: rendererName,
@@ -141,7 +136,7 @@ export class ThreeInstrumentation {
 
         // Check for FPS drops
         if (fps < 30 && timestamps.length > 10) {
-          span.addEvent('fps_drop', {
+          span.addEvent("fps_drop", {
             fps: Math.round(fps),
             render_time: renderTime,
           });
@@ -170,7 +165,7 @@ export class ThreeInstrumentation {
     return renderer;
   }
 
-  public instrumentScene(scene: THREE.Scene, sceneName: string = 'default'): THREE.Scene {
+  public instrumentScene(scene: THREE.Scene, sceneName: string = "default"): THREE.Scene {
     const originalAdd = scene.add.bind(scene);
     const originalRemove = scene.remove.bind(scene);
 
@@ -178,9 +173,9 @@ export class ThreeInstrumentation {
       const span = startSpan(`three.${sceneName}.add`, {
         kind: SpanKind.INTERNAL,
         attributes: {
-          'three.scene': sceneName,
-          'three.objects.count': objects.length,
-          'three.objects.types': objects.map(o => o.type).join(','),
+          "three.scene": sceneName,
+          "three.objects.count": objects.length,
+          "three.objects.types": objects.map((o) => o.type).join(","),
         },
       });
 
@@ -204,9 +199,9 @@ export class ThreeInstrumentation {
       const span = startSpan(`three.${sceneName}.remove`, {
         kind: SpanKind.INTERNAL,
         attributes: {
-          'three.scene': sceneName,
-          'three.objects.count': objects.length,
-          'three.objects.types': objects.map(o => o.type).join(','),
+          "three.scene": sceneName,
+          "three.objects.count": objects.length,
+          "three.objects.types": objects.map((o) => o.type).join(","),
         },
       });
 
@@ -232,10 +227,7 @@ export class ThreeInstrumentation {
     return scene;
   }
 
-  public instrumentLoader<T extends THREE.Loader>(
-    loader: T,
-    loaderName: string = 'default'
-  ): T {
+  public instrumentLoader<T extends THREE.Loader>(loader: T, loaderName: string = "default"): T {
     const originalLoad = loader.load?.bind(loader) || loader.loadAsync?.bind(loader);
 
     if (loader.load) {
@@ -243,21 +235,21 @@ export class ThreeInstrumentation {
         url: string,
         onLoad?: (result: any) => void,
         onProgress?: (event: ProgressEvent) => void,
-        onError?: (error: Error) => void
+        onError?: (error: Error) => void,
       ) => {
         const span = startSpan(`three.loader.${loaderName}`, {
           kind: SpanKind.INTERNAL,
           attributes: {
-            'three.loader': loaderName,
-            'three.loader.url': url,
+            "three.loader": loaderName,
+            "three.loader.url": url,
           },
         });
 
         const startTime = performance.now();
 
         addBreadcrumb({
-          type: 'custom',
-          category: 'three',
+          type: "custom",
+          category: "three",
           message: `Loading asset: ${url}`,
           data: {
             loader: loaderName,
@@ -267,17 +259,17 @@ export class ThreeInstrumentation {
 
         const wrappedOnLoad = (result: any) => {
           const loadTime = performance.now() - startTime;
-          
+
           span.setAttributes({
-            'three.loader.duration_ms': loadTime,
-            'three.loader.success': true,
+            "three.loader.duration_ms": loadTime,
+            "three.loader.success": true,
           });
           span.setStatus({ code: 0 });
           span.end();
 
           addBreadcrumb({
-            type: 'custom',
-            category: 'three',
+            type: "custom",
+            category: "three",
             message: `Asset loaded: ${url}`,
             data: {
               loader: loaderName,
@@ -291,12 +283,12 @@ export class ThreeInstrumentation {
 
         const wrappedOnError = (error: Error) => {
           const loadTime = performance.now() - startTime;
-          
+
           span.recordException(error);
           span.setAttributes({
-            'three.loader.duration_ms': loadTime,
-            'three.loader.success': false,
-            'three.loader.error': error.message,
+            "three.loader.duration_ms": loadTime,
+            "three.loader.success": false,
+            "three.loader.error": error.message,
           });
           span.setStatus({ code: 1, message: error.message });
           span.end();
@@ -317,19 +309,15 @@ export class ThreeInstrumentation {
     return loader;
   }
 
-  public measureGeometryOperation<T>(
-    operationName: string,
-    geometry: THREE.BufferGeometry,
-    operation: () => T
-  ): T {
+  public measureGeometryOperation<T>(operationName: string, geometry: THREE.BufferGeometry, operation: () => T): T {
     return withSpan(
       `three.geometry.${operationName}`,
       (span) => {
         const vertexCount = geometry.attributes.position?.count || 0;
-        
+
         span.setAttributes({
-          'three.geometry.vertices': vertexCount,
-          'three.geometry.attributes': Object.keys(geometry.attributes).length,
+          "three.geometry.vertices": vertexCount,
+          "three.geometry.attributes": Object.keys(geometry.attributes).length,
         });
 
         const startTime = performance.now();
@@ -339,14 +327,14 @@ export class ThreeInstrumentation {
           const duration = performance.now() - startTime;
 
           span.setAttributes({
-            'three.geometry.duration_ms': duration,
-            'three.geometry.success': true,
+            "three.geometry.duration_ms": duration,
+            "three.geometry.success": true,
           });
 
           if (duration > 100) {
             addBreadcrumb({
-              type: 'custom',
-              category: 'three',
+              type: "custom",
+              category: "three",
               message: `Slow geometry operation: ${operationName}`,
               data: {
                 operation: operationName,
@@ -366,7 +354,7 @@ export class ThreeInstrumentation {
           throw error;
         }
       },
-      { kind: SpanKind.INTERNAL }
+      { kind: SpanKind.INTERNAL },
     );
   }
 
@@ -384,14 +372,14 @@ export class ThreeInstrumentation {
         lightCount++;
       }
 
-      if ('geometry' in object && object.geometry) {
+      if ("geometry" in object && object.geometry) {
         geometries.add(object.geometry as THREE.BufferGeometry);
       }
 
-      if ('material' in object && object.material) {
+      if ("material" in object && object.material) {
         const mat = object.material;
         if (Array.isArray(mat)) {
-          mat.forEach(m => materials.add(m));
+          mat.forEach((m) => materials.add(m));
         } else {
           materials.add(mat as THREE.Material);
         }
@@ -425,10 +413,7 @@ export class ThreeInstrumentation {
     this.sceneMetrics.set(sceneName, metrics);
   }
 
-  private estimateMemoryUsage(
-    geometries: Set<THREE.BufferGeometry>,
-    textures: Set<THREE.Texture>
-  ): number {
+  private estimateMemoryUsage(geometries: Set<THREE.BufferGeometry>, textures: Set<THREE.Texture>): number {
     let totalMemory = 0;
 
     // Estimate geometry memory
@@ -458,7 +443,7 @@ export class ThreeInstrumentation {
     return totalMemory;
   }
 
-  public getAverageMetrics(rendererName: string = 'default'): RenderMetrics | null {
+  public getAverageMetrics(rendererName: string = "default"): RenderMetrics | null {
     const metrics = this.renderMetrics.get(rendererName);
     if (!metrics || metrics.length === 0) return null;
 
@@ -488,7 +473,7 @@ export class ThreeInstrumentation {
     };
   }
 
-  public getSceneMetrics(sceneName: string = 'default'): SceneMetrics | undefined {
+  public getSceneMetrics(sceneName: string = "default"): SceneMetrics | undefined {
     return this.sceneMetrics.get(sceneName);
   }
 

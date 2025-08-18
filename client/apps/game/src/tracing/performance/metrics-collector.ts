@@ -1,5 +1,5 @@
-import { withSpan, addEvent, setSpanAttributes } from '../tracer';
-import { addBreadcrumb } from '../errors/error-reporter';
+import { withSpan, addEvent, setSpanAttributes } from "../tracer";
+import { addBreadcrumb } from "../errors/error-reporter";
 
 interface PerformanceMetrics {
   fps: number;
@@ -70,13 +70,13 @@ export class MetricsCollector {
   }
 
   private setupPerformanceObserver(): void {
-    if ('PerformanceObserver' in window) {
+    if ("PerformanceObserver" in window) {
       // Observe long tasks
       try {
         const longTaskObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (entry.duration > 50) {
-              addEvent('long_task', {
+              addEvent("long_task", {
                 duration: entry.duration,
                 name: entry.name,
                 startTime: entry.startTime,
@@ -84,8 +84,8 @@ export class MetricsCollector {
 
               if (entry.duration > 100) {
                 addBreadcrumb({
-                  type: 'custom',
-                  category: 'performance',
+                  type: "custom",
+                  category: "performance",
                   message: `Long task detected: ${entry.duration.toFixed(2)}ms`,
                   data: {
                     taskName: entry.name,
@@ -96,9 +96,9 @@ export class MetricsCollector {
             }
           }
         });
-        longTaskObserver.observe({ entryTypes: ['longtask'] });
+        longTaskObserver.observe({ entryTypes: ["longtask"] });
       } catch (e) {
-        console.warn('Long task observer not supported');
+        console.warn("Long task observer not supported");
       }
 
       // Observe layout shifts
@@ -111,14 +111,14 @@ export class MetricsCollector {
             }
           }
           if (clsValue > 0.1) {
-            addEvent('layout_shift', {
+            addEvent("layout_shift", {
               cls_value: clsValue,
             });
           }
         });
-        layoutShiftObserver.observe({ entryTypes: ['layout-shift'] });
+        layoutShiftObserver.observe({ entryTypes: ["layout-shift"] });
       } catch (e) {
-        console.warn('Layout shift observer not supported');
+        console.warn("Layout shift observer not supported");
       }
     }
   }
@@ -157,10 +157,10 @@ export class MetricsCollector {
 
     // Update span attributes with latest metrics
     setSpanAttributes({
-      'metrics.fps': metrics.fps,
-      'metrics.memory.percent': metrics.memory.percent,
-      'metrics.network.latency': metrics.network.latency,
-      'metrics.cpu.usage': metrics.cpu.usage,
+      "metrics.fps": metrics.fps,
+      "metrics.memory.percent": metrics.memory.percent,
+      "metrics.network.latency": metrics.network.latency,
+      "metrics.cpu.usage": metrics.cpu.usage,
     });
   }
 
@@ -168,7 +168,7 @@ export class MetricsCollector {
     // Use requestAnimationFrame to calculate FPS
     let fps = 60;
     let lastTime = performance.now();
-    
+
     requestAnimationFrame(() => {
       const currentTime = performance.now();
       const delta = currentTime - lastTime;
@@ -178,7 +178,7 @@ export class MetricsCollector {
     return fps;
   }
 
-  private getMemoryUsage(): PerformanceMetrics['memory'] {
+  private getMemoryUsage(): PerformanceMetrics["memory"] {
     const memory = (performance as any).memory;
     if (memory) {
       const used = memory.usedJSHeapSize;
@@ -192,8 +192,8 @@ export class MetricsCollector {
     return { used: 0, limit: 0, percent: 0 };
   }
 
-  private getNetworkMetrics(): PerformanceMetrics['network'] {
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+  private getNetworkMetrics(): PerformanceMetrics["network"] {
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
     const connection = (navigator as any).connection;
 
     return {
@@ -203,11 +203,10 @@ export class MetricsCollector {
     };
   }
 
-  private getCPUMetrics(): PerformanceMetrics['cpu'] {
+  private getCPUMetrics(): PerformanceMetrics["cpu"] {
     // Estimate CPU usage based on main thread blocking
-    const longTasks = performance.getEntriesByType('measure')
-      .filter(entry => entry.duration > 50);
-    
+    const longTasks = performance.getEntriesByType("measure").filter((entry) => entry.duration > 50);
+
     const totalBlockingTime = longTasks.reduce((sum, task) => sum + task.duration, 0);
     const timeWindow = 1000; // 1 second window
     const usage = Math.min((totalBlockingTime / timeWindow) * 100, 100);
@@ -218,8 +217,8 @@ export class MetricsCollector {
     };
   }
 
-  private getRenderingMetrics(): PerformanceMetrics['rendering'] {
-    const paintEntries = performance.getEntriesByType('paint');
+  private getRenderingMetrics(): PerformanceMetrics["rendering"] {
+    const paintEntries = performance.getEntriesByType("paint");
     const lastPaint = paintEntries[paintEntries.length - 1];
 
     return {
@@ -230,7 +229,7 @@ export class MetricsCollector {
   }
 
   public recordGameMetric(metric: Partial<GameMetrics>): void {
-    const currentMetrics = this.gameMetrics[this.gameMetrics.length - 1] || {} as GameMetrics;
+    const currentMetrics = this.gameMetrics[this.gameMetrics.length - 1] || ({} as GameMetrics);
     const newMetrics = { ...currentMetrics, ...metric };
 
     this.gameMetrics.push(newMetrics);
@@ -240,10 +239,10 @@ export class MetricsCollector {
 
     // Log slow operations
     Object.entries(metric).forEach(([key, value]) => {
-      if (typeof value === 'number' && value > 1000) {
+      if (typeof value === "number" && value > 1000) {
         addBreadcrumb({
-          type: 'custom',
-          category: 'game',
+          type: "custom",
+          category: "game",
           message: `Slow operation: ${key} took ${value}ms`,
           data: { metric: key, value },
         });
@@ -251,16 +250,13 @@ export class MetricsCollector {
     });
   }
 
-  public measureOperation<T>(
-    operationName: string,
-    operation: () => T | Promise<T>
-  ): T | Promise<T> {
+  public measureOperation<T>(operationName: string, operation: () => T | Promise<T>): T | Promise<T> {
     const startTime = performance.now();
 
     const recordMetric = () => {
       const duration = performance.now() - startTime;
       this.recordGameMetric({ [operationName]: duration } as any);
-      
+
       addEvent(`game.operation.${operationName}`, {
         duration_ms: duration,
       });
@@ -284,43 +280,43 @@ export class MetricsCollector {
 
     // Check FPS
     if (latestMetrics.fps < this.thresholds.fps.critical) {
-      this.triggerAlert('fps', latestMetrics.fps, this.thresholds.fps.critical);
+      this.triggerAlert("fps", latestMetrics.fps, this.thresholds.fps.critical);
     } else if (latestMetrics.fps < this.thresholds.fps.warning) {
-      this.triggerAlert('fps', latestMetrics.fps, this.thresholds.fps.warning);
+      this.triggerAlert("fps", latestMetrics.fps, this.thresholds.fps.warning);
     }
 
     // Check Memory
     if (latestMetrics.memory.percent > this.thresholds.memory.critical) {
-      this.triggerAlert('memory', latestMetrics.memory.percent, this.thresholds.memory.critical);
+      this.triggerAlert("memory", latestMetrics.memory.percent, this.thresholds.memory.critical);
     } else if (latestMetrics.memory.percent > this.thresholds.memory.warning) {
-      this.triggerAlert('memory', latestMetrics.memory.percent, this.thresholds.memory.warning);
+      this.triggerAlert("memory", latestMetrics.memory.percent, this.thresholds.memory.warning);
     }
 
     // Check Latency
     if (latestMetrics.network.latency > this.thresholds.latency.critical) {
-      this.triggerAlert('latency', latestMetrics.network.latency, this.thresholds.latency.critical);
+      this.triggerAlert("latency", latestMetrics.network.latency, this.thresholds.latency.critical);
     } else if (latestMetrics.network.latency > this.thresholds.latency.warning) {
-      this.triggerAlert('latency', latestMetrics.network.latency, this.thresholds.latency.warning);
+      this.triggerAlert("latency", latestMetrics.network.latency, this.thresholds.latency.warning);
     }
 
     // Check CPU
     if (latestMetrics.cpu.usage > this.thresholds.cpuUsage.critical) {
-      this.triggerAlert('cpu', latestMetrics.cpu.usage, this.thresholds.cpuUsage.critical);
+      this.triggerAlert("cpu", latestMetrics.cpu.usage, this.thresholds.cpuUsage.critical);
     } else if (latestMetrics.cpu.usage > this.thresholds.cpuUsage.warning) {
-      this.triggerAlert('cpu', latestMetrics.cpu.usage, this.thresholds.cpuUsage.warning);
+      this.triggerAlert("cpu", latestMetrics.cpu.usage, this.thresholds.cpuUsage.warning);
     }
   }
 
   private triggerAlert(metric: string, value: number, threshold: number): void {
-    this.alertCallbacks.forEach(callback => {
+    this.alertCallbacks.forEach((callback) => {
       callback(metric, value, threshold);
     });
 
-    addEvent('performance.alert', {
+    addEvent("performance.alert", {
       metric,
       value,
       threshold,
-      severity: threshold === this.thresholds[metric]?.critical ? 'critical' : 'warning',
+      severity: threshold === this.thresholds[metric]?.critical ? "critical" : "warning",
     });
   }
 

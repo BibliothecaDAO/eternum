@@ -16,9 +16,9 @@ interface UseShortcutsConfig {
 
 /**
  * React hook for managing keyboard shortcuts with automatic cleanup
- * 
+ *
  * @param config Configuration object containing shortcuts to register
- * 
+ *
  * @example
  * ```tsx
  * const MyComponent = () => {
@@ -35,7 +35,7 @@ interface UseShortcutsConfig {
  *     ],
  *     prefix: 'my-component'
  *   });
- * 
+ *
  *   return <div>My Component</div>;
  * };
  * ```
@@ -48,7 +48,7 @@ export const useShortcuts = (config: UseShortcutsConfig) => {
     // Register shortcuts
     config.shortcuts.forEach((shortcutConfig) => {
       const fullId = config.prefix ? `${config.prefix}.${shortcutConfig.id}` : shortcutConfig.id;
-      
+
       const shortcut: KeyboardShortcut = CentralizedShortcutManager.createShortcut({
         ...shortcutConfig,
         id: fullId,
@@ -76,7 +76,7 @@ export const useShortcuts = (config: UseShortcutsConfig) => {
 
 /**
  * React hook for accessing the shortcut manager instance
- * 
+ *
  * @returns The centralized shortcut manager instance
  */
 export const useShortcutManager = () => {
@@ -85,9 +85,9 @@ export const useShortcutManager = () => {
 
 /**
  * React hook for registering a single shortcut with automatic cleanup
- * 
+ *
  * @param shortcutConfig Configuration for a single shortcut
- * 
+ *
  * @example
  * ```tsx
  * const MyComponent = () => {
@@ -97,7 +97,7 @@ export const useShortcutManager = () => {
  *     description: 'Toggle mode',
  *     action: () => toggleMode(),
  *   });
- * 
+ *
  *   return <div>My Component</div>;
  * };
  * ```

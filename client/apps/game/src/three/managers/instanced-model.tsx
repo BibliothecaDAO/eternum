@@ -254,13 +254,13 @@ export default class InstancedModel {
     this.animationActions.clear();
 
     // Dispose of instanced meshes and their resources
-    this.instancedMeshes.forEach(mesh => {
+    this.instancedMeshes.forEach((mesh) => {
       if (mesh.geometry) {
         mesh.geometry.dispose();
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach(mat => mat.dispose());
+          mesh.material.forEach((mat) => mat.dispose());
         } else {
           mesh.material.dispose();
         }

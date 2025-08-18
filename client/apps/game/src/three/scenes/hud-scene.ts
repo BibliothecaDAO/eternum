@@ -126,12 +126,12 @@ export default class HUDScene {
 
   public destroy(): void {
     // Clean up navigator (if it has a destroy method)
-    if (this.navigator && 'destroy' in this.navigator && typeof (this.navigator as any).destroy === 'function') {
+    if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
       (this.navigator as any).destroy();
     }
 
     // Clean up rain effect (if it has a destroy method)
-    if (this.rainEffect && 'destroy' in this.rainEffect && typeof (this.rainEffect as any).destroy === 'function') {
+    if (this.rainEffect && "destroy" in this.rainEffect && typeof (this.rainEffect as any).destroy === "function") {
       (this.rainEffect as any).destroy();
     }
 
@@ -144,7 +144,7 @@ export default class HUDScene {
     }
 
     // Clean up GUI folder (if it has a destroy method)
-    if (this.GUIFolder && 'destroy' in this.GUIFolder && typeof this.GUIFolder.destroy === 'function') {
+    if (this.GUIFolder && "destroy" in this.GUIFolder && typeof this.GUIFolder.destroy === "function") {
       this.GUIFolder.destroy();
     }
 

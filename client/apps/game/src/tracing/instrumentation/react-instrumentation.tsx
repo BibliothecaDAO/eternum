@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, ComponentType, ReactNode } from 'react';
-import { SpanKind } from '@opentelemetry/api';
-import { withSpan, startSpan, getCurrentTraceId } from '../tracer';
-import { addBreadcrumb, reportError } from '../errors/error-reporter';
+import React, { useEffect, useRef, ComponentType, ReactNode } from "react";
+import { SpanKind } from "@opentelemetry/api";
+import { withSpan, startSpan, getCurrentTraceId } from "../tracer";
+import { addBreadcrumb, reportError } from "../errors/error-reporter";
 
 interface ComponentMetrics {
   renderCount: number;
@@ -26,11 +26,8 @@ class ReactInstrumentation {
     return ReactInstrumentation.instance;
   }
 
-  public traceComponent<P extends object>(
-    Component: ComponentType<P>,
-    componentName?: string
-  ): ComponentType<P> {
-    const displayName = componentName || Component.displayName || Component.name || 'Component';
+  public traceComponent<P extends object>(Component: ComponentType<P>, componentName?: string): ComponentType<P> {
+    const displayName = componentName || Component.displayName || Component.name || "Component";
 
     const TracedComponent: ComponentType<P> = (props: P) => {
       const renderStartRef = useRef<number>(0);
@@ -47,9 +44,9 @@ class ReactInstrumentation {
         const mountSpan = startSpan(`react.${displayName}.mount`, {
           kind: SpanKind.INTERNAL,
           attributes: {
-            'react.component': displayName,
-            'react.lifecycle': 'mount',
-            'trace.id': getCurrentTraceId(),
+            "react.component": displayName,
+            "react.lifecycle": "mount",
+            "trace.id": getCurrentTraceId(),
           },
         });
 
@@ -57,8 +54,8 @@ class ReactInstrumentation {
         this.componentMetrics.set(displayName, metricsRef.current);
 
         addBreadcrumb({
-          type: 'navigation',
-          category: 'react',
+          type: "navigation",
+          category: "react",
           message: `Component ${displayName} mounted`,
           data: {
             component: displayName,
@@ -72,13 +69,13 @@ class ReactInstrumentation {
           const unmountSpan = startSpan(`react.${displayName}.unmount`, {
             kind: SpanKind.INTERNAL,
             attributes: {
-              'react.component': displayName,
-              'react.lifecycle': 'unmount',
-              'react.component.lifetime_ms': Date.now() - (metricsRef.current.mountTime || 0),
-              'react.component.render_count': metricsRef.current.renderCount,
-              'react.component.avg_render_time': 
-                metricsRef.current.renderCount > 0 
-                  ? metricsRef.current.totalRenderTime / metricsRef.current.renderCount 
+              "react.component": displayName,
+              "react.lifecycle": "unmount",
+              "react.component.lifetime_ms": Date.now() - (metricsRef.current.mountTime || 0),
+              "react.component.render_count": metricsRef.current.renderCount,
+              "react.component.avg_render_time":
+                metricsRef.current.renderCount > 0
+                  ? metricsRef.current.totalRenderTime / metricsRef.current.renderCount
                   : 0,
             },
           });
@@ -86,8 +83,8 @@ class ReactInstrumentation {
           metricsRef.current.unmountTime = Date.now();
 
           addBreadcrumb({
-            type: 'navigation',
-            category: 'react',
+            type: "navigation",
+            category: "react",
             message: `Component ${displayName} unmounted`,
             data: {
               component: displayName,
@@ -110,20 +107,20 @@ class ReactInstrumentation {
 
         if (spanRef.current) {
           spanRef.current.setAttributes({
-            'react.render.duration_ms': renderTime,
-            'react.render.count': metricsRef.current.renderCount,
+            "react.render.duration_ms": renderTime,
+            "react.render.count": metricsRef.current.renderCount,
           });
 
           // Check for slow renders
           if (renderTime > this.renderThreshold) {
-            spanRef.current.addEvent('slow_render', {
+            spanRef.current.addEvent("slow_render", {
               duration_ms: renderTime,
               threshold_ms: this.renderThreshold,
             });
 
             addBreadcrumb({
-              type: 'custom',
-              category: 'react',
+              type: "custom",
+              category: "react",
               message: `Slow render in ${displayName}: ${renderTime.toFixed(2)}ms`,
               data: {
                 component: displayName,
@@ -142,9 +139,9 @@ class ReactInstrumentation {
       spanRef.current = startSpan(`react.${displayName}.render`, {
         kind: SpanKind.INTERNAL,
         attributes: {
-          'react.component': displayName,
-          'react.lifecycle': 'render',
-          'react.props': JSON.stringify(Object.keys(props || {})),
+          "react.component": displayName,
+          "react.lifecycle": "render",
+          "react.props": JSON.stringify(Object.keys(props || {})),
         },
       });
 
@@ -152,7 +149,7 @@ class ReactInstrumentation {
         return <Component {...props} />;
       } catch (error) {
         metricsRef.current.errorCount++;
-        
+
         if (spanRef.current) {
           spanRef.current.recordException(error as Error);
           spanRef.current.setStatus({ code: 1, message: (error as Error).message });
@@ -160,7 +157,7 @@ class ReactInstrumentation {
         }
 
         reportError(error, {
-          errorType: 'render',
+          errorType: "render",
           context: {
             component: displayName,
             props: Object.keys(props || {}),
@@ -176,10 +173,7 @@ class ReactInstrumentation {
     return TracedComponent;
   }
 
-  public withErrorBoundary<P extends object>(
-    Component: ComponentType<P>,
-    fallback?: ReactNode
-  ): ComponentType<P> {
+  public withErrorBoundary<P extends object>(Component: ComponentType<P>, fallback?: ReactNode): ComponentType<P> {
     return class extends React.Component<P, { hasError: boolean; error?: Error }> {
       static displayName = `ErrorBoundary(${Component.displayName || Component.name})`;
 
@@ -193,15 +187,15 @@ class ReactInstrumentation {
       }
 
       componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        const componentName = Component.displayName || Component.name || 'Unknown';
+        const componentName = Component.displayName || Component.name || "Unknown";
 
         const span = startSpan(`react.${componentName}.error`, {
           kind: SpanKind.INTERNAL,
           attributes: {
-            'react.component': componentName,
-            'react.error': error.message,
-            'react.error.stack': error.stack,
-            'react.error.component_stack': errorInfo.componentStack,
+            "react.component": componentName,
+            "react.error": error.message,
+            "react.error.stack": error.stack,
+            "react.error.component_stack": errorInfo.componentStack,
           },
         });
 
@@ -210,7 +204,7 @@ class ReactInstrumentation {
         span.end();
 
         reportError(error, {
-          errorType: 'render',
+          errorType: "render",
           context: {
             component: componentName,
             componentStack: errorInfo.componentStack,
@@ -218,8 +212,8 @@ class ReactInstrumentation {
         });
 
         addBreadcrumb({
-          type: 'custom',
-          category: 'react',
+          type: "custom",
+          category: "react",
           message: `Error in ${componentName}`,
           data: {
             error: error.message,
@@ -230,13 +224,13 @@ class ReactInstrumentation {
 
       render() {
         if (this.state.hasError) {
-          return fallback || (
-            <div className="error-boundary-fallback">
-              <h2>Something went wrong</h2>
-              <details style={{ whiteSpace: 'pre-wrap' }}>
-                {this.state.error?.toString()}
-              </details>
-            </div>
+          return (
+            fallback || (
+              <div className="error-boundary-fallback">
+                <h2>Something went wrong</h2>
+                <details style={{ whiteSpace: "pre-wrap" }}>{this.state.error?.toString()}</details>
+              </div>
+            )
           );
         }
 
@@ -265,26 +259,26 @@ export function useComponentTrace(componentName: string): void {
 
   useEffect(() => {
     mountTimeRef.current = Date.now();
-    
+
     const span = startSpan(`react.${componentName}.mount`, {
       kind: SpanKind.INTERNAL,
       attributes: {
-        'react.component': componentName,
-        'react.lifecycle': 'mount',
+        "react.component": componentName,
+        "react.lifecycle": "mount",
       },
     });
     span.end();
 
     return () => {
       const lifetime = Date.now() - mountTimeRef.current;
-      
+
       const unmountSpan = startSpan(`react.${componentName}.unmount`, {
         kind: SpanKind.INTERNAL,
         attributes: {
-          'react.component': componentName,
-          'react.lifecycle': 'unmount',
-          'react.component.lifetime_ms': lifetime,
-          'react.component.render_count': renderCountRef.current,
+          "react.component": componentName,
+          "react.lifecycle": "unmount",
+          "react.component.lifetime_ms": lifetime,
+          "react.component.render_count": renderCountRef.current,
         },
       });
       unmountSpan.end();
@@ -301,16 +295,16 @@ export function useInteractionTrace(action: string): (event?: any) => void {
     const span = startSpan(`react.interaction.${action}`, {
       kind: SpanKind.INTERNAL,
       attributes: {
-        'interaction.action': action,
-        'interaction.target': event?.target?.tagName,
-        'interaction.type': event?.type,
-        'trace.id': getCurrentTraceId(),
+        "interaction.action": action,
+        "interaction.target": event?.target?.tagName,
+        "interaction.type": event?.type,
+        "trace.id": getCurrentTraceId(),
       },
     });
 
     addBreadcrumb({
-      type: 'click',
-      category: 'user',
+      type: "click",
+      category: "user",
       message: `User interaction: ${action}`,
       data: {
         action,
@@ -340,9 +334,8 @@ export function useRenderMetrics(componentName: string): {
       if (componentMetrics) {
         setMetrics({
           renderCount: componentMetrics.renderCount,
-          avgRenderTime: componentMetrics.renderCount > 0
-            ? componentMetrics.totalRenderTime / componentMetrics.renderCount
-            : 0,
+          avgRenderTime:
+            componentMetrics.renderCount > 0 ? componentMetrics.totalRenderTime / componentMetrics.renderCount : 0,
           lastRenderTime: componentMetrics.lastRenderTime,
         });
       }
@@ -369,9 +362,6 @@ export function traced(componentName?: string) {
 }
 
 // HOC for functional components
-export function withTrace<P extends object>(
-  Component: ComponentType<P>,
-  componentName?: string
-): ComponentType<P> {
+export function withTrace<P extends object>(Component: ComponentType<P>, componentName?: string): ComponentType<P> {
   return reactInstrumentation.traceComponent(Component, componentName);
 }

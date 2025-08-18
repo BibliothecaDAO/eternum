@@ -3,7 +3,7 @@ import { useShortcutStore, KeyboardShortcut, KeyModifiers, createShortcutKey } f
 /**
  * Centralized Shortcut Manager - Singleton class that manages keyboard shortcuts
  * across the entire application using Zustand store for state management.
- * 
+ *
  * This manager is completely scene-agnostic and framework-agnostic.
  * It simply handles keyboard events and executes registered shortcuts.
  */
@@ -51,7 +51,7 @@ export class CentralizedShortcutManager {
 
     // Try to execute shortcut through the store
     const executed = useShortcutStore.getState().executeShortcut(shortcutKey);
-    
+
     if (executed) {
       event.preventDefault();
     }
@@ -87,7 +87,6 @@ export class CentralizedShortcutManager {
   public getShortcuts(): KeyboardShortcut[] {
     return useShortcutStore.getState().getShortcuts();
   }
-
 
   /**
    * Enable or disable shortcut handling

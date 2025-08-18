@@ -713,19 +713,16 @@ import { EmpireManagementView } from '@/ui/features/empire/empire-management-vie
 ## 🎮 Interaction Patterns
 
 1. **Node Selection**
-
    - Click to select and view details
    - Multi-select with Ctrl/Cmd + Click
    - Box select by dragging
 
 2. **Edge Creation**
-
    - Enter route creation mode
    - Click source node, then target
    - Configure route details in modal
 
 3. **Graph Navigation**
-
    - Pan: Click and drag background
    - Zoom: Scroll wheel or pinch
    - Fit: Double-click background
@@ -778,13 +775,11 @@ useEffect(() => {
 ## 🎨 Visual Polish
 
 1. **Animations**
-
    - Smooth layout transitions
    - Node hover effects
    - Edge flow animations for active routes
 
 2. **Visual Feedback**
-
    - Highlight connected nodes on hover
    - Pulse animation for active trades
    - Color coding for resource types

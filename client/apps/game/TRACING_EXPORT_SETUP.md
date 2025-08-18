@@ -75,8 +75,8 @@ VITE_TRACING_AUTH_HEADER=Basic <base64_encoded_user:api_key>
 const otlpExporter = new OTLPTraceExporter({
   url: finalConfig.endpoint,
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': env.VITE_TRACING_AUTH_HEADER || '',
+    "Content-Type": "application/json",
+    Authorization: env.VITE_TRACING_AUTH_HEADER || "",
   },
 });
 ```
@@ -106,8 +106,8 @@ VITE_DATADOG_SITE=datadoghq.com  # or datadoghq.eu for EU
 const otlpExporter = new OTLPTraceExporter({
   url: finalConfig.endpoint,
   headers: {
-    'DD-API-KEY': env.VITE_DATADOG_API_KEY || '',
-    'Content-Type': 'application/json',
+    "DD-API-KEY": env.VITE_DATADOG_API_KEY || "",
+    "Content-Type": "application/json",
   },
 });
 ```
@@ -136,7 +136,7 @@ VITE_NEW_RELIC_LICENSE_KEY=your_license_key_here
 const otlpExporter = new OTLPTraceExporter({
   url: finalConfig.endpoint,
   headers: {
-    'api-key': env.VITE_NEW_RELIC_LICENSE_KEY || '',
+    "api-key": env.VITE_NEW_RELIC_LICENSE_KEY || "",
   },
 });
 ```
@@ -149,7 +149,7 @@ Use the OpenTelemetry Collector to export to multiple backends simultaneously.
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   otel-collector:
@@ -158,9 +158,9 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4318:4318"   # OTLP HTTP
-      - "4317:4317"   # OTLP gRPC
-      - "8888:8888"   # Prometheus metrics
+      - "4318:4318" # OTLP HTTP
+      - "4317:4317" # OTLP gRPC
+      - "8888:8888" # Prometheus metrics
 
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -217,7 +217,7 @@ service:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [jaeger, logging]
-    
+
     metrics:
       receivers: [otlp]
       processors: [batch]
@@ -235,6 +235,7 @@ VITE_TRACING_ENDPOINT=http://localhost:4318/v1/traces
 ### 1. Verify Tracing is Enabled
 
 Open browser console and look for:
+
 ```
 🔍 Tracing system initialized
 ```
@@ -244,18 +245,15 @@ Open browser console and look for:
 ```javascript
 // In browser console
 window.testTracing = async () => {
-  const { TracingHelpers } = await import('./tracing');
-  
+  const { TracingHelpers } = await import("./tracing");
+
   // Generate a test trace
-  await TracingHelpers.measureGameOperation(
-    'test_operation',
-    async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return { success: true };
-    }
-  );
-  
-  console.log('Test trace sent!');
+  await TracingHelpers.measureGameOperation("test_operation", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return { success: true };
+  });
+
+  console.log("Test trace sent!");
 };
 
 window.testTracing();
@@ -266,13 +264,13 @@ window.testTracing();
 ```javascript
 // In browser console
 window.testError = () => {
-  throw new Error('Test error for tracing');
+  throw new Error("Test error for tracing");
 };
 
 try {
   window.testError();
 } catch (e) {
-  console.log('Error captured');
+  console.log("Error captured");
 }
 ```
 
@@ -374,21 +372,21 @@ alerts:
 
 ```typescript
 // src/tracing/exporters/custom-exporter.ts
-import { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { SpanExporter } from "@opentelemetry/sdk-trace-base";
 
 export class CustomExporter implements SpanExporter {
   export(spans, resultCallback) {
     // Send to your custom backend
-    fetch('https://your-backend.com/traces', {
-      method: 'POST',
+    fetch("https://your-backend.com/traces", {
+      method: "POST",
       body: JSON.stringify(spans),
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'your-api-key',
+        "Content-Type": "application/json",
+        "X-API-Key": "your-api-key",
       },
     })
-    .then(() => resultCallback({ code: 0 }))
-    .catch(err => resultCallback({ code: 1, error: err }));
+      .then(() => resultCallback({ code: 0 }))
+      .catch((err) => resultCallback({ code: 1, error: err }));
   }
 
   shutdown() {
@@ -404,16 +402,16 @@ export class CustomExporter implements SpanExporter {
 export class GameAwareSampler {
   shouldSample(context, traceId, spanName, spanKind, attributes) {
     // Always sample critical game operations
-    if (spanName.includes('battle') || spanName.includes('trade')) {
+    if (spanName.includes("battle") || spanName.includes("trade")) {
       return { decision: 1 }; // RECORD_AND_SAMPLED
     }
-    
+
     // Sample based on user tier
-    const userTier = attributes['user.tier'];
-    if (userTier === 'premium') {
+    const userTier = attributes["user.tier"];
+    if (userTier === "premium") {
       return { decision: Math.random() < 0.5 ? 1 : 0 };
     }
-    
+
     // Default sampling
     return { decision: Math.random() < 0.01 ? 1 : 0 };
   }

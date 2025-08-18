@@ -271,7 +271,7 @@ export class MapDataStore {
 
   public async refresh(): Promise<void> {
     console.log("Refreshing map data store");
-    
+
     // If already loading, wait for the existing promise
     if (this.isLoading) {
       if (this.loadingPromise) {
@@ -279,7 +279,7 @@ export class MapDataStore {
       }
       // If isLoading is true but loadingPromise is null, wait a bit and retry
       // This can happen during the race condition in the finally block
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       if (this.isLoading && this.loadingPromise) {
         return this.loadingPromise;
       }
@@ -307,7 +307,7 @@ export class MapDataStore {
         this.retryCount++;
         // Use setTimeout to avoid recursive call stack issues
         setTimeout(() => {
-          this.refresh().catch(err => {
+          this.refresh().catch((err) => {
             console.error("Retry refresh failed:", err);
           });
         }, 1000 * this.retryCount);
@@ -415,7 +415,7 @@ export class MapDataStore {
     if (Date.now() - this.lastFetchTime > this.REFRESH_INTERVAL) {
       // Don't await here as this is a background refresh check
       // The refresh method now handles concurrent calls safely
-      this.refresh().catch(error => {
+      this.refresh().catch((error) => {
         console.error("Background refresh failed:", error);
       });
     }

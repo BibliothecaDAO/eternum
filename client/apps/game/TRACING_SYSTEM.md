@@ -2,7 +2,8 @@
 
 ## Overview
 
-This document describes the comprehensive tracing system implementation for the Eternum game client. The system provides end-to-end visibility into application performance, errors, and user interactions across all layers of the stack.
+This document describes the comprehensive tracing system implementation for the Eternum game client. The system provides
+end-to-end visibility into application performance, errors, and user interactions across all layers of the stack.
 
 ## Architecture
 
@@ -51,11 +52,11 @@ VITE_PERF_NETWORK_TIMEOUT=5000
 ### 1. Initialize Tracing
 
 ```typescript
-import { initTracing } from '@/tracing/tracer';
+import { initTracing } from "@/tracing/tracer";
 
 // Initialize at app startup
 initTracing({
-  serviceName: 'eternum-game',
+  serviceName: "eternum-game",
   environment: env.VITE_PUBLIC_CHAIN,
   version: env.VITE_PUBLIC_GAME_VERSION,
 });
@@ -75,12 +76,12 @@ export const MyComponent = () => {
 ### 3. Track Operations
 
 ```typescript
-import { startSpan } from '@/tracing/tracer';
+import { startSpan } from "@/tracing/tracer";
 
-const span = startSpan('operation.name', {
+const span = startSpan("operation.name", {
   attributes: {
-    'game.realm_id': realmId,
-    'game.action': 'trade',
+    "game.realm_id": realmId,
+    "game.action": "trade",
   },
 });
 
@@ -145,6 +146,7 @@ try {
 ### Error Context
 
 Each error includes:
+
 - Trace ID for correlation
 - User and session information
 - Game state snapshot
@@ -156,13 +158,13 @@ Each error includes:
 
 ### Key Metrics
 
-| Metric | Description | Target |
-|--------|-------------|--------|
-| FPS | Frames per second | > 30 |
-| TTI | Time to interactive | < 3s |
-| API Latency | P95 response time | < 500ms |
-| WebSocket Latency | Message round-trip | < 100ms |
-| Memory Usage | Heap size | < 500MB |
+| Metric            | Description         | Target  |
+| ----------------- | ------------------- | ------- |
+| FPS               | Frames per second   | > 30    |
+| TTI               | Time to interactive | < 3s    |
+| API Latency       | P95 response time   | < 500ms |
+| WebSocket Latency | Message round-trip  | < 100ms |
+| Memory Usage      | Heap size           | < 500MB |
 
 ### Custom Game Metrics
 
@@ -194,11 +196,11 @@ TraceID   Same TraceID   Same TraceID  End
 
 ```typescript
 const alertThresholds = {
-  errorRate: 0.01,        // 1% error rate
-  p95Latency: 1000,       // 1 second
-  fpsDrops: 5,            // 5 consecutive drops below 30 FPS
-  memoryUsage: 0.8,       // 80% of available memory
-  wsDisconnects: 3,       // 3 disconnects in 5 minutes
+  errorRate: 0.01, // 1% error rate
+  p95Latency: 1000, // 1 second
+  fpsDrops: 5, // 5 consecutive drops below 30 FPS
+  memoryUsage: 0.8, // 80% of available memory
+  wsDisconnects: 3, // 3 disconnects in 5 minutes
 };
 ```
 
@@ -339,16 +341,19 @@ class MyComponent extends React.Component
 ## Roadmap
 
 ### Phase 1 (Current)
+
 - [x] Core tracing infrastructure
 - [x] Basic error tracking
 - [x] Network instrumentation
 
 ### Phase 2
+
 - [ ] Advanced game metrics
 - [ ] AI-powered anomaly detection
 - [ ] Predictive error prevention
 
 ### Phase 3
+
 - [ ] Full observability platform
 - [ ] Custom dashboard builder
 - [ ] Automated incident response
@@ -356,6 +361,7 @@ class MyComponent extends React.Component
 ## Support
 
 For issues or questions about the tracing system:
+
 - Check the troubleshooting section
 - Review error logs in the console
 - Contact the platform team

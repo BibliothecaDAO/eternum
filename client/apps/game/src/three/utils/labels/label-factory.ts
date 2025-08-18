@@ -698,7 +698,11 @@ export const createArmyLabel = (army: ArmyLabelData, cameraView: CameraView): HT
   return ArmyLabelType.createElement(army, cameraView);
 };
 
-export const updateArmyLabel = (labelElement: HTMLElement, army: ArmyLabelData, cameraView: CameraView = CameraView.Medium): void => {
+export const updateArmyLabel = (
+  labelElement: HTMLElement,
+  army: ArmyLabelData,
+  cameraView: CameraView = CameraView.Medium,
+): void => {
   ArmyLabelType.updateElement?.(labelElement, army, cameraView);
 };
 
@@ -706,7 +710,11 @@ export const createStructureLabel = (structure: StructureInfoCompat, cameraView:
   return StructureLabelType.createElement(convertStructureInfo(structure), cameraView);
 };
 
-export const updateStructureLabel = (labelElement: HTMLElement, structure: StructureInfoCompat, cameraView: CameraView = CameraView.Medium): void => {
+export const updateStructureLabel = (
+  labelElement: HTMLElement,
+  structure: StructureInfoCompat,
+  cameraView: CameraView = CameraView.Medium,
+): void => {
   StructureLabelType.updateElement?.(labelElement, convertStructureInfo(structure), cameraView);
 };
 

@@ -158,12 +158,12 @@ export class ChestManager {
 
     console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
     this.currentChunkKey = chunkKey;
-    
+
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
       this.renderVisibleChests(chunkKey);
     });
-    
+
     try {
       await this.chunkSwitchPromise;
       console.log(`[CHUNK SYNC] Chest chunk switch to ${chunkKey} completed`);
@@ -305,7 +305,6 @@ export class ChestManager {
       }
     });
   }
-
 
   public async removeChest(entityId: ID) {
     if (!this.chests.getChest(entityId)) {

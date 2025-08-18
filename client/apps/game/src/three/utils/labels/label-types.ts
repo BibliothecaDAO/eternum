@@ -93,11 +93,7 @@ export type LabelEventType = "mouseenter" | "mouseleave" | "click" | "rightclick
  * Label event handler
  */
 export interface LabelEventHandler {
-  (event: {
-    type: LabelEventType;
-    labelInstance: LabelInstance;
-    originalEvent?: Event;
-  }): void;
+  (event: { type: LabelEventType; labelInstance: LabelInstance; originalEvent?: Event }): void;
 }
 
 /**

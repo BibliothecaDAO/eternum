@@ -14,7 +14,6 @@
   - UI/UX patterns & design system
   - Component development standards
   - Frontend-specific workflows
-  
 - **Contracts Guidelines**: `.claude/contracts-rules.md` ⚡
   - Smart contract patterns
   - Cairo best practices
@@ -92,6 +91,7 @@ pnpm dev               # Start development server
 ## 🏗️ Domain-Specific Guidelines
 
 ### Frontend Development
+
 - **Design System**: Check reusability before creating components
 - **TypeScript**: NEVER use `(as any)` - properly type your data
 - **Shortcuts**: Register via centralized manager only
@@ -99,11 +99,13 @@ pnpm dev               # Start development server
 - **Full details**: `.claude/frontend-rules.md`
 
 ### Contract Development
+
 - **Cairo patterns**: Follow established patterns
 - **Testing**: Comprehensive test coverage required
 - **Full details**: `.claude/contracts-rules.md`
 
 ### Adding New Features
+
 1. **Contract Entrypoints**: Follow 5-step process in frontend-rules.md
 2. **UI Components**: Check design system first
 3. **Torii Queries**: SQL by default, torii-client for complex joins
