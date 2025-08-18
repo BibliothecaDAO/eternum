@@ -130,12 +130,18 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           <CircularProgress progress={storagePercentage} size="sm" color={isStorageNearCapacity ? "red" : "gold"}>
             <ResourceIcon withTooltip={false} resource="Silo" size="xs" className="self-center" />
           </CircularProgress>
-          <div className="flex flex-col">
-            <div className={clsx("text-xs", isStorageNearCapacity && "text-red")}>
-              {Math.round(realmInfo.storehouses.capacityUsedKg).toLocaleString()} /{" "}
-              {Math.round(realmInfo.storehouses.capacityKg).toLocaleString()} kg
+            <div className="flex flex-col">              
+              <div className={clsx("text-xs", isStorageNearCapacity && "text-red")}>
+                {realmInfo.storehouses.capacityKg < Number((2n ** 64n - 1n) / 1000n) ? (
+                  <>
+                    {Math.round(realmInfo.storehouses.capacityUsedKg).toLocaleString()} /{" "}
+                    {Math.round(realmInfo.storehouses.capacityKg).toLocaleString()} kg
+                  </>
+                ) : (
+                  <span>∞</span>
+                )}
+              </div>
             </div>
-          </div>
         </div>
       )}
 

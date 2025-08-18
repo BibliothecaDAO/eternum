@@ -16,6 +16,7 @@ export const InventoryResources = ({
   resourcesIconSize = "sm",
   textSize,
   entityId,
+  entityOwnerId,
   recipientType,
   activateRelics = false,
 }: {
@@ -26,6 +27,7 @@ export const InventoryResources = ({
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
   entityId?: ID;
+  entityOwnerId?: ID;
   recipientType?: RelicRecipientType;
   activateRelics?: boolean;
 }) => {
@@ -69,11 +71,12 @@ export const InventoryResources = ({
   }, [showAll, max]);
 
   const handleRelicClick = (resourceId: number, amount: number) => {
-    if (!entityId || recipientType === undefined) return;
+    if (!entityId || !entityOwnerId || recipientType === undefined) return;
 
     toggleModal(
       <RelicActivationPopup
-        structureEntityId={entityId}
+        entityId={entityId}
+        entityOwnerId={entityOwnerId}
         recipientType={recipientType}
         relicId={resourceId}
         relicBalance={amount}

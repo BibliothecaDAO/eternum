@@ -364,7 +364,8 @@ export const ResourceChip = ({
             import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
               toggleModal(
                 <RelicActivationPopup
-                  structureEntityId={resourceManager.entityId}
+                  entityId={resourceManager.entityId}
+                  entityOwnerId={resourceManager.entityId}
                   recipientType={RelicRecipientType.Structure}
                   relicId={resourceId}
                   relicBalance={divideByPrecision(balance)}
