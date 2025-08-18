@@ -58,6 +58,7 @@ export class StructureManager {
   private isBlitz: boolean;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
   private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
+  private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
@@ -155,6 +156,7 @@ export class StructureManager {
     this.structures.getStructures().clear();
     this.structureHexCoords.clear();
     this.structureUpdateTimestamps.clear();
+    this.structureUpdateSources.clear();
 
     console.log("StructureManager: Destroyed and cleaned up");
   }
@@ -276,13 +278,24 @@ export class StructureManager {
       update.hyperstructureRealmCount,
     );
 
-    // Smart relic effects management - only clear if this is a genuine structure update
+    // Smart relic effects management - differentiate between genuine updates and chunk reloads
     const currentTime = Date.now();
     const lastUpdateTime = this.structureUpdateTimestamps.get(entityId) || 0;
-    const isNewUpdate = currentTime - lastUpdateTime > 1000; // Only clear if > 1 second since last update
+    const updateSource = `tile-${entityId}`; // Source identifier for this update
+    const lastUpdateSource = this.structureUpdateSources.get(entityId);
     
-    if (isNewUpdate) {
-      console.log(`[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects`);
+    // Consider it a genuine structure update if:
+    // 1. More than 2 seconds since last update (prevents rapid chunk switches), OR
+    // 2. The structure has never been seen before, OR  
+    // 3. This is the first time we've seen this source type for this entity
+    const isGenuineUpdate = (
+      currentTime - lastUpdateTime > 2000 || 
+      lastUpdateTime === 0 || 
+      lastUpdateSource !== updateSource
+    );
+    
+    if (isGenuineUpdate) {
+      console.log(`[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects (source: ${updateSource})`);
       // This is a genuine structure update, clear existing relic effects
       const entityEffectsMap = this.structureRelicEffects.get(entityId);
       if (entityEffectsMap) {
@@ -291,27 +304,19 @@ export class StructureManager {
         }
       }
       
-      // Apply any pending relic effects for this structure
-      if (this.applyPendingRelicEffectsCallback) {
-        try {
-          await this.applyPendingRelicEffectsCallback(entityId);
-        } catch (error) {
-          console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
-        }
-      }
-      
-      // Update timestamp
+      // Update tracking info
       this.structureUpdateTimestamps.set(entityId, currentTime);
+      this.structureUpdateSources.set(entityId, updateSource);
     } else {
-      console.log(`[RELIC EFFECTS] Structure ${entityId} chunk reload - preserving existing effects`);
-      // This is likely a chunk reload, preserve existing relic effects
-      // Still apply pending effects in case there are new ones
-      if (this.applyPendingRelicEffectsCallback) {
-        try {
-          await this.applyPendingRelicEffectsCallback(entityId);
-        } catch (error) {
-          console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
-        }
+      console.log(`[RELIC EFFECTS] Structure ${entityId} quick reload/chunk switch - preserving existing effects`);
+    }
+    
+    // Always apply pending relic effects (for both genuine updates and chunk reloads)
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for structure ${entityId}:`, error);
       }
     }
 
@@ -393,11 +398,19 @@ export class StructureManager {
           const position = getWorldPositionForHex(structure.hexCoords);
           position.y += 0.05;
 
-          // Always recreate the label to ensure it matches current camera view
-          if (this.entityIdLabels.has(structure.entityId)) {
-            this.removeEntityIdLabel(structure.entityId);
+          // Update existing label or create new one to preserve live data
+          const existingLabel = this.entityIdLabels.get(structure.entityId);
+          if (existingLabel) {
+            // Update existing label to preserve any pending updates
+            this.updateStructureLabelData(structure.entityId, structure, existingLabel);
+            // Update position if needed
+            const newPosition = getWorldPositionForHex(structure.hexCoords);
+            newPosition.y += 2;
+            existingLabel.position.copy(newPosition);
+          } else {
+            // Create new label if it doesn't exist
+            this.addEntityIdLabel(structure, position);
           }
-          this.addEntityIdLabel(structure, position);
 
           this.dummy.position.copy(position);
 
@@ -576,9 +589,8 @@ export class StructureManager {
   }
 
   public showLabels() {
-    // First ensure all old labels are properly cleaned up
-    this.removeLabelsFromScene();
-    // Update visible structures which will create new labels as needed
+    // Just update visible structures - this will handle labels appropriately
+    // without destroying existing labels and their live data
     this.updateVisibleStructures();
   }
 
@@ -682,9 +694,9 @@ export class StructureManager {
   /**
    * Update a structure label with fresh data from MapDataStore
    */
-  private updateStructureLabelData(entityId: ID, structure: any, existingLabel: CSS2DObject): void {
-    // Update the existing label content in-place
-    updateStructureLabel(existingLabel.element, structure);
+  private updateStructureLabelData(_entityId: ID, structure: any, existingLabel: CSS2DObject): void {
+    // Update the existing label content in-place with correct camera view
+    updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
 
   /**

@@ -826,8 +826,8 @@ export class ArmyManager {
    * Update an army label with fresh data
    */
   private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    // Update the existing label content in-place
-    updateArmyLabel(existingLabel.element, army);
+    // Update the existing label content in-place with correct camera view
+    updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }
 
   /**
