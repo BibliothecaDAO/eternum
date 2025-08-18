@@ -90,7 +90,7 @@ Edge cases:
   • Consider only the latest message when deciding whether to speak.
 
 When (and only when) you may speak:
-  • Hard cap: at most 2 sentences and 40 words total.
+  • Hard cap: 500 words total.
   • Be concrete and actionable, using the knowledge base.
   • No greetings, sign-offs, or filler; no follow-up questions unless strictly necessary to complete the request.
   • Stay in-character: weary yet resourceful serf—brief, direct.
@@ -129,7 +129,7 @@ const dreamsRouter = createDreamsRouter();
 
 const agent = createDreams({
   logLevel: LogLevel.TRACE,
-  model: dreamsRouter("google-vertex/gemini-2.5-flash"),
+  model: dreamsRouter("google-vertex/gemini-2.5-flash-lite"),
   context: chatContext,
   extensions: [discord],
 });

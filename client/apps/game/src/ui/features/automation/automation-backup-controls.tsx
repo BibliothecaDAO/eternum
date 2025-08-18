@@ -23,7 +23,8 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
   const [templateDescription, setTemplateDescription] = useState("");
   const [selectedRealmId, setSelectedRealmId] = useState<string>("");
 
-  const { exportAutomation, importAutomation, exportAsTemplate, importTemplate, getAvailableRealms } = useAutomationStore();
+  const { exportAutomation, importAutomation, exportAsTemplate, importTemplate, getAvailableRealms } =
+    useAutomationStore();
   const availableRealms = getAvailableRealms();
 
   const handleExport = () => {
@@ -33,9 +34,9 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
 
   const handleExportTemplate = () => {
     const template = exportAsTemplate(
-      templateName || undefined, 
-      templateDescription || undefined, 
-      selectedRealmId || undefined
+      templateName || undefined,
+      templateDescription || undefined,
+      selectedRealmId || undefined,
     );
     downloadAutomationTemplate(template);
     setShowTemplateModal(false);
@@ -198,7 +199,8 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
                     ))}
                   </select>
                   <p className="text-xs text-gold/60 mt-1">
-                    Select a specific realm to export only its automation strategy, or choose "All Realms" to export everything.
+                    Select a specific realm to export only its automation strategy, or choose "All Realms" to export
+                    everything.
                   </p>
                 </div>
 

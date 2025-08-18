@@ -222,13 +222,13 @@ export default class GameRenderer {
       spikeThresholdMB: 30, // Alert on 30MB+ spikes during gameplay
       onMemorySpike: (spike: MemorySpike) => {
         console.warn(`🚨 Memory spike in ${spike.context}: +${spike.increaseMB.toFixed(1)}MB`);
-        
+
         // Additional logging for large spikes
         if (spike.increaseMB > 100) {
           console.error("🔥 Large memory spike detected!", spike);
           // Could trigger additional debugging here
         }
-      }
+      },
     });
 
     // Provide renderer reference for better resource tracking
@@ -243,7 +243,7 @@ export default class GameRenderer {
   }
 
   private createMemoryStatsDisplay() {
-    this.memoryStatsElement = document.createElement('div');
+    this.memoryStatsElement = document.createElement("div");
     this.memoryStatsElement.style.cssText = `
       position: fixed;
       top: 50px;
@@ -267,29 +267,28 @@ export default class GameRenderer {
       }
 
       try {
-        const currentScene = this.sceneManager?.getCurrentScene() || 'unknown';
+        const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
         const stats = this.memoryMonitor.getCurrentStats(currentScene);
         const summary = this.memoryMonitor.getSummary();
-        
+
         // Update display
         this.memoryStatsElement.innerHTML = `
           <strong>Memory Monitor</strong><br>
           Heap: ${stats.heapUsedMB}MB / ${stats.heapTotalMB}MB<br>
           Avg: ${summary.averageMB}MB<br>
-          Trend: ${summary.trendMBPerSecond > 0 ? '+' : ''}${summary.trendMBPerSecond.toFixed(2)}MB/s<br>
+          Trend: ${summary.trendMBPerSecond > 0 ? "+" : ""}${summary.trendMBPerSecond.toFixed(2)}MB/s<br>
           Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
           Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
-          ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ''}
+          ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
         `;
 
         // Color coding based on memory usage
         const memoryPercent = (stats.heapUsedMB / stats.heapLimitMB) * 100;
-        let color = '#00ff00'; // Green
-        if (memoryPercent > 70) color = '#ffaa00'; // Orange
-        if (memoryPercent > 85) color = '#ff4444'; // Red
-        
+        let color = "#00ff00"; // Green
+        if (memoryPercent > 70) color = "#ffaa00"; // Orange
+        if (memoryPercent > 85) color = "#ff4444"; // Red
+
         this.memoryStatsElement.style.color = color;
-        
       } catch (error) {
         console.error("Error updating memory stats:", error);
       }
@@ -717,9 +716,9 @@ export default class GameRenderer {
       console.warn("GameRenderer already destroyed, skipping cleanup");
       return;
     }
-    
+
     this.isDestroyed = true;
-    
+
     try {
       // Clean up intervals
       if (this.cleanupIntervals) {

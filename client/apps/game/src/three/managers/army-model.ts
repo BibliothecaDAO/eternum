@@ -56,7 +56,7 @@ export class ArmyModel {
 
   // agent
   private isAgent: boolean = false;
-  
+
   // Memory monitoring
   private memoryMonitor: MemoryMonitor;
 
@@ -66,13 +66,13 @@ export class ArmyModel {
     this.loadPromise = this.loadModels();
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.currentCameraView = cameraView || CameraView.Medium;
-    
+
     // Initialize memory monitor for army model operations
     this.memoryMonitor = new MemoryMonitor({
       spikeThresholdMB: 20, // Lower threshold for model operations
       onMemorySpike: (spike) => {
         console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      }
+      },
     });
 
     // Initialize animation arrays
@@ -415,7 +415,7 @@ export class ArmyModel {
     if (this.movingInstances.size > 5) {
       this.memoryMonitor.getCurrentStats(`updateMovements-bulk-${this.movingInstances.size}`);
     }
-    
+
     this.movingInstances.forEach((movement, entityId) => {
       const instanceData = this.instanceData.get(entityId);
       if (!instanceData) {

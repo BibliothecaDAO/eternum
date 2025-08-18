@@ -7,7 +7,7 @@
         "@ai-sdk/anthropic": "^2.0.1",
         "@ai-sdk/groq": "^2.0.4",
         "@ai-sdk/openai": "^2.0.7",
-        "@daydreamsai/ai-sdk-provider": "^0.1.2",
+        "@daydreamsai/ai-sdk-provider": "^0.1.3",
         "@daydreamsai/chromadb": "0.3.14",
         "@daydreamsai/cli": "0.3.14",
         "@daydreamsai/core": "0.3.14",
@@ -52,7 +52,7 @@
 
     "@bundled-es-modules/tough-cookie": ["@bundled-es-modules/tough-cookie@0.1.6", "", { "dependencies": { "@types/tough-cookie": "^4.0.5", "tough-cookie": "^4.1.4" } }, "sha512-dvMHbL464C0zI+Yqxbz6kZ5TOEp7GLW+pry/RWndAR8MJQAXZ2rPmIs8tziTZjeIyhSNZgZbCePtfSbdWqStJw=="],
 
-    "@daydreamsai/ai-sdk-provider": ["@daydreamsai/ai-sdk-provider@0.1.2", "", { "peerDependencies": { "ai": "^5.0.11", "zod": "^4.0.5" } }, "sha512-azMx1IjHAaRfi2jAkHqdq+crVXPN1/v7hPMqBIdZEZSKfTSbBrdH7YaAh2I77hzWXUOBV8Z4ESVjeUqPqrRZOQ=="],
+    "@daydreamsai/ai-sdk-provider": ["@daydreamsai/ai-sdk-provider@0.1.3", "", { "peerDependencies": { "ai": "^5.0.11", "zod": "^4.0.5" } }, "sha512-FZg3LTIVTrmzhGVxeHHW90z22lZcuKNVwqn98IvTrCmq00thj1XT4JPslaWaWk1PasH0Uhk5e5+oQkJXg7359g=="],
 
     "@daydreamsai/chromadb": ["@daydreamsai/chromadb@0.3.14", "", { "dependencies": { "@daydreamsai/core": "0.3.14", "chromadb": "^1.10.5", "zod": "4.0.16" } }, "sha512-8SCOC6deJeBHP5++h882Ykv/H4VHrmjKXUyt8CuiNV/SXNprN99evGLmx8DvXoly2ZizeqNrN1KnxDbYyTPJjg=="],
 

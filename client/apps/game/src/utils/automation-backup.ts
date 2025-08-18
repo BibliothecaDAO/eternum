@@ -30,9 +30,9 @@ export const downloadAutomationTemplate = (template: AutomationTemplate, filenam
   const url = URL.createObjectURL(blob);
 
   const templateName = template.templateName ? `-${template.templateName.replace(/\s+/g, "-")}` : "";
-  const realmInfo = template.sourceRealmName 
+  const realmInfo = template.sourceRealmName
     ? `-${template.sourceRealmName.replace(/\s+/g, "-")}`
-    : template.sourceRealmId 
+    : template.sourceRealmId
       ? `-realm-${template.sourceRealmId}`
       : "-all-realms";
   const defaultFilename = `automation-template${realmInfo}${templateName}-${new Date().toISOString().slice(0, 10)}.json`;

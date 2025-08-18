@@ -16,7 +16,7 @@
     "@ai-sdk/anthropic": "^2.0.1",
     "@ai-sdk/groq": "^2.0.4",
     "@ai-sdk/openai": "^2.0.7",
-    "@daydreamsai/ai-sdk-provider": "^0.1.2",
+    "@daydreamsai/ai-sdk-provider": "^0.1.3",
     "@daydreamsai/chromadb": "0.3.14",
     "@daydreamsai/cli": "0.3.14",
     "@daydreamsai/core": "0.3.14",

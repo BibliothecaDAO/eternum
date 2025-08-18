@@ -154,13 +154,13 @@ export default class WorldmapScene extends HexagonScene {
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
-    
+
     // Initialize memory monitor for worldmap operations
     this.memoryMonitor = new MemoryMonitor({
       spikeThresholdMB: 30, // Higher threshold for world operations
       onMemorySpike: (spike) => {
         console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      }
+      },
     });
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
@@ -640,7 +640,7 @@ export default class WorldmapScene extends HexagonScene {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
       if (actionPath && account) {
         const actionType = ActionPaths.getActionType(actionPath);
-        
+
         // Only validate army availability for army-specific actions
         const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help];
         if (actionType && armyActions.includes(actionType)) {
@@ -650,7 +650,7 @@ export default class WorldmapScene extends HexagonScene {
             return;
           }
         }
-        
+
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
           this.onArmyMovement(account, actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
@@ -1301,12 +1301,12 @@ export default class WorldmapScene extends HexagonScene {
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
-    
+
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       console.log("cache applied");
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
-      
+
       // Track memory usage for cached operation
       if (memoryMonitor && preUpdateStats) {
         const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
@@ -1409,18 +1409,20 @@ export default class WorldmapScene extends HexagonScene {
           this.cacheMatricesForChunk(startRow, startCol);
           // After processing, just update visible hexes
           this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
-          
+
           // Track memory usage for full hex grid generation
           if (memoryMonitor && preUpdateStats) {
             const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
             const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-            console.log(`[HEX GRID] Full generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`);
-            
+            console.log(
+              `[HEX GRID] Full generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+            );
+
             if (memoryDelta > 50) {
               console.warn(`[HEX GRID] Large memory usage for hex generation: ${memoryDelta.toFixed(1)}MB`);
             }
           }
-          
+
           resolve();
         }
       };
@@ -1575,14 +1577,14 @@ export default class WorldmapScene extends HexagonScene {
 
   private async performChunkSwitch(chunkKey: string, startCol: number, startRow: number, force: boolean) {
     console.log(`[CHUNK SYNC] Starting synchronized chunk switch to ${chunkKey}`);
-    
+
     // Track memory usage during chunk switch
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
-    
+
     // Clear any existing selections to prevent interaction during switch
     this.clearEntitySelection();
-    
+
     this.currentChunk = chunkKey;
 
     if (!force) {
@@ -1614,20 +1616,22 @@ export default class WorldmapScene extends HexagonScene {
     await this.structureManager.updateChunk(chunkKey);
     await this.questManager.updateChunk(chunkKey);
     await this.chestManager.updateChunk(chunkKey);
-    
+
     // Track memory usage after chunk switch
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        console.log(`[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? '+' : ''}${memoryDelta.toFixed(1)}MB`);
-        
+        console.log(
+          `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+        );
+
         if (Math.abs(memoryDelta) > 20) {
           console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
         }
       }
     }
-    
+
     console.log(`[CHUNK SYNC] All managers synchronized to chunk ${chunkKey}`);
   }
 

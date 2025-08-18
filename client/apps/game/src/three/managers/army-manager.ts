@@ -95,13 +95,13 @@ export class ArmyManager {
     this.fxManager = new FXManager(scene, 1);
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
-    
+
     // Initialize memory monitor for tracking army operations
     this.memoryMonitor = new MemoryMonitor({
       spikeThresholdMB: 25, // Lower threshold for army operations
       onMemorySpike: (spike) => {
         console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      }
+      },
     });
 
     // Subscribe to camera view changes if scene is provided
@@ -422,7 +422,7 @@ export class ArmyManager {
       maxStamina,
     } = params;
     if (this.armies.has(entityId)) return;
-    
+
     // Monitor memory usage before adding army
     this.memoryMonitor.getCurrentStats(`addArmy-${entityId}`);
 
@@ -552,7 +552,7 @@ export class ArmyManager {
   ) {
     // Monitor memory usage before army movement
     this.memoryMonitor.getCurrentStats(`moveArmy-start-${entityId}`);
-    
+
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
 
@@ -585,7 +585,7 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
-    
+
     // Monitor memory usage after army movement setup
     this.memoryMonitor.getCurrentStats(`moveArmy-complete-${entityId}`);
   }
@@ -776,7 +776,7 @@ export class ArmyManager {
     }
 
     // Check if army is in the visible armies list
-    return this.visibleArmies.some(army => army.entityId === entityId);
+    return this.visibleArmies.some((army) => army.entityId === entityId);
   }
 
   public hasArmy(entityId: ID): boolean {
