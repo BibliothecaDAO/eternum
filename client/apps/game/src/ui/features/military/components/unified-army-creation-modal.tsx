@@ -13,7 +13,7 @@ import {
   getEntityIdFromKeys,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
   DEFENSE_NAMES,
   Direction,
@@ -24,8 +24,9 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Shield, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const DirectionButton = ({
@@ -51,17 +52,18 @@ const DirectionButton = ({
       onClick={() => isAvailable && onClick(direction)}
       disabled={!isAvailable}
       className={clsx(
-        "aspect-square text-xl sm:text-2xl lg:text-3xl font-bold transition-all duration-200",
-        "min-h-[48px] sm:min-h-[56px] lg:min-h-[64px]",
-        "min-w-[48px] sm:min-w-[56px] lg:min-w-[64px]",
+        "aspect-square text-2xl lg:text-3xl font-bold transition-all duration-300 transform rounded-xl",
+        "min-h-[56px] lg:min-h-[64px]",
+        "min-w-[56px] lg:min-w-[64px]",
         isSelected
-          ? "ring-2 ring-gold/60 shadow-lg shadow-gold/25 scale-105"
+          ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-110 bg-gradient-to-br from-gold/25 to-gold/15"
           : isAvailable
-            ? "hover:bg-gold/15 hover:border-gold/60 hover:scale-105 hover:shadow-md cursor-pointer"
+            ? "hover:bg-gold/15 hover:border-gold/60 hover:scale-105 hover:shadow-lg cursor-pointer hover:-translate-y-0.5"
             : "cursor-not-allowed opacity-40",
+        "border-2 backdrop-blur-sm",
       )}
     >
-      {label}
+      <span className="drop-shadow-md">{label}</span>
     </Button>
   );
 };
@@ -100,6 +102,32 @@ export const UnifiedArmyCreationModal = ({
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
+  // Get current structure data
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+
+  // Get current army counts for validation
+  const explorers = useExplorersByStructure({
+    structureEntityId: structureId,
+  });
+
+  const { data: guardsData } = useQuery({
+    queryKey: ["guards", String(structureId)],
+    queryFn: async () => {
+      const guards = await sqlApi.fetchGuardsByStructure(structureId);
+      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+    },
+    staleTime: 10000,
+  });
+
+  const currentExplorersCount = explorers.length;
+  const currentGuardsCount = guardsData?.length || 0;
+  const maxExplorers = structure?.base.troop_max_explorer_count || 0;
+  const maxGuards = structure?.base.troop_max_guard_count || maxDefenseSlots;
+
+  // Check if user can create armies
+  const canCreateAttackArmy = currentExplorersCount < maxExplorers;
+  const canCreateDefenseArmy = currentGuardsCount < maxGuards;
+
   // Create army manager for the structure
   const armyManager = useMemo(() => {
     return new ArmyManager(dojo.setup.systemCalls, components, structureId);
@@ -136,7 +164,7 @@ export const UnifiedArmyCreationModal = ({
     if (firstTroopWithBalance) {
       setSelectedTroopCombo(firstTroopWithBalance);
     }
-  }, [structureId]);
+  }, [structureId, components]);
 
   // Load available directions for explorer armies
   useEffect(() => {
@@ -170,6 +198,15 @@ export const UnifiedArmyCreationModal = ({
       setSelectedDirection(freeDirections[0]);
     }
   }, [freeDirections, selectedDirection, direction]);
+
+  // Auto-switch to available army type if current selection is not allowed
+  useEffect(() => {
+    if (armyType && !canCreateAttackArmy && canCreateDefenseArmy) {
+      setArmyType(false);
+    } else if (!armyType && !canCreateDefenseArmy && canCreateAttackArmy) {
+      setArmyType(true);
+    }
+  }, [armyType, canCreateAttackArmy, canCreateDefenseArmy]);
 
   const handleCreate = async () => {
     if (!armyManager || troopCount <= 0) return;
@@ -206,30 +243,33 @@ export const UnifiedArmyCreationModal = ({
     }
   };
 
-  const getMaxAffordable = () => {
+  const maxAffordable = useMemo(() => {
     const resourceId = getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier);
     const balance = getBalance(structureId, resourceId, currentDefaultTick, components).balance;
     return divideByPrecision(balance);
-  };
-
-  const maxAffordable = getMaxAffordable();
+  }, [structureId, selectedTroopCombo.type, selectedTroopCombo.tier, currentDefaultTick, components]);
   const troopResource = resources.find(
     (r) => r.id === getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
   );
 
   return (
     <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="large">
-      <div className="p-4 w-full h-full grid grid-cols-2 gap-4">
+      <div className="p-6 w-full h-full grid grid-cols-2 gap-6 bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
         {/* LEFT HALF: Troop Selection */}
         <div className="flex flex-col h-full">
           {/* Troop Selection Grid */}
           <div className="flex-1 flex flex-col justify-center">
-            <h6 className="text-center mb-3 text-gold text-base font-bold">SELECT TROOP</h6>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="text-center mb-6">
+              <h6 className="text-gold text-lg font-bold mb-1">SELECT TROOP TYPE</h6>
+              <p className="text-gold/60 text-sm">Choose your troop type and tier</p>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
               {[TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin].map((type) => (
-                <div key={type} className="space-y-1.5">
-                  <div className="text-center text-gold/80 text-xs font-semibold uppercase tracking-wide">
-                    {type === TroopType.Crossbowman ? "CROSSBOW" : type}
+                <div key={type} className="space-y-3">
+                  <div className="text-center">
+                    <div className="text-gold/90 text-sm font-bold uppercase tracking-wide mb-2 border-b border-gold/30 pb-1">
+                      {type === TroopType.Crossbowman ? "CROSSBOW" : type}
+                    </div>
                   </div>
                   {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => {
                     const balance = getBalance(
@@ -247,21 +287,25 @@ export const UnifiedArmyCreationModal = ({
                       <div
                         key={`${type}-${tier}`}
                         className={clsx(
-                          "p-2 flex flex-col cursor-pointer transition-all duration-200 rounded-lg border relative group",
+                          "p-3 flex flex-col cursor-pointer transition-all duration-300 rounded-xl border-2 relative group transform",
+                          "backdrop-blur-sm",
                           isSelected
-                            ? "border-gold bg-gold/20 ring-2 ring-gold/60 shadow-lg shadow-gold/25"
+                            ? "border-gold bg-gradient-to-br from-gold/25 to-gold/15 ring-2 ring-gold/40 shadow-xl shadow-gold/30 scale-105"
                             : available > 0
-                              ? "border-brown/50 bg-brown/10 hover:border-gold/60 hover:bg-gold/12 hover:shadow-md"
-                              : "border-gray/30 bg-gray/5 opacity-40 cursor-not-allowed",
+                              ? "border-brown/40 bg-gradient-to-br from-brown/15 to-brown/5 hover:border-gold/50 hover:bg-gradient-to-br hover:from-gold/20 hover:to-gold/10 hover:shadow-lg hover:scale-102 hover:-translate-y-0.5"
+                              : "border-gray/20 bg-gray/5 opacity-50 cursor-not-allowed",
+                          "hover:z-10 relative",
                         )}
                         onClick={() => available > 0 && setSelectedTroopCombo({ type, tier })}
                       >
                         {/* Tier Badge */}
-                        <div className="absolute -top-0.5 -right-0.5">
+                        <div className="absolute -top-2 -right-2 z-10">
                           <div
                             className={clsx(
-                              "w-4 h-4 rounded-full flex items-center justify-center text-xxs font-bold border shadow-sm",
+                              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 shadow-lg",
+                              "transition-all duration-300 bg-brown",
                               available > 0 ? getTierStyle(`T${tier}`) : "bg-gray/50 text-gray-400 border-gray-400",
+                              isSelected && "scale-110 shadow-gold/50",
                             )}
                           >
                             {tier}
@@ -269,20 +313,47 @@ export const UnifiedArmyCreationModal = ({
                         </div>
 
                         {/* Resource Icon */}
-                        <div className="flex items-center justify-center p-1.5 bg-dark-brown/40 rounded mb-1.5">
-                          <ResourceIcon resource={troopResourceForCard?.trait || ""} size="sm" withTooltip={false} />
+                        <div
+                          className={clsx(
+                            "flex items-center justify-center p-3 rounded-lg mb-3 transition-all duration-300",
+                            isSelected
+                              ? "bg-gold/20 shadow-inner"
+                              : available > 0
+                                ? "bg-brown/20 group-hover:bg-gold/15"
+                                : "bg-gray/10",
+                          )}
+                        >
+                          <ResourceIcon resource={troopResourceForCard?.trait || ""} size="md" withTooltip={false} />
                         </div>
 
                         {/* Available Count */}
-                        <div
-                          className={clsx(
-                            "text-center text-xs font-bold",
-                            isSelected ? "text-gold" : available > 0 ? "text-gold/90" : "text-gray-400",
-                          )}
-                        >
-                          {available > 0 ? (available > 999 ? `${Math.floor(available / 1000)}k` : available) : "0"}
+                        <div className="space-y-1">
+                          <div
+                            className={clsx(
+                              "text-center text-base font-bold transition-colors duration-300",
+                              isSelected ? "text-gold" : available > 0 ? "text-gold/90" : "text-gray-400",
+                            )}
+                          >
+                            {available > 0
+                              ? available > 999
+                                ? `${Math.floor(available / 1000)}k`
+                                : available.toLocaleString()
+                              : "0"}
+                          </div>
+                          <div
+                            className={clsx(
+                              "text-center text-xs font-medium transition-colors duration-300",
+                              isSelected ? "text-gold/80" : "text-gold/50",
+                            )}
+                          >
+                            available
+                          </div>
                         </div>
-                        <div className="text-center text-xxs text-gold/60 mt-0.5">available</div>
+
+                        {/* Selection Glow Effect */}
+                        {isSelected && (
+                          <div className="absolute inset-0 rounded-xl bg-gold/5 animate-pulse pointer-events-none" />
+                        )}
                       </div>
                     );
                   })}
@@ -292,97 +363,147 @@ export const UnifiedArmyCreationModal = ({
           </div>
 
           {/* Troop Count */}
-          <div className="mt-4">
-            <h6 className="text-center mb-2 text-gold text-base font-bold">TROOP COUNT</h6>
-            <div className="flex justify-center gap-2 mb-2">
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={() => setTroopCount(Math.min(troopCount + 100, maxAffordable))}
-                disabled={troopCount >= maxAffordable}
-                className="px-3"
-              >
-                +100
-              </Button>
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={() => setTroopCount(Math.min(troopCount + 500, maxAffordable))}
-                disabled={troopCount >= maxAffordable}
-                className="px-3"
-              >
-                +500
-              </Button>
-              <Button
-                variant="gold"
-                size="xs"
-                onClick={() => setTroopCount(maxAffordable)}
-                disabled={troopCount >= maxAffordable}
-                className="px-4 font-bold"
-              >
-                MAX
-              </Button>
+          <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
+            <div className="text-center mb-4">
+              <h6 className="text-gold text-lg font-bold mb-1">TROOP COUNT</h6>
+              <p className="text-gold/60 text-sm">Select the number of troops to deploy</p>
             </div>
-            <NumberInput
-              max={maxAffordable}
-              min={0}
-              step={100}
-              value={troopCount}
-              onChange={setTroopCount}
-              className="border border-gold/50 text-center text-base bg-dark-brown/30 focus:border-gold focus:ring-2 focus:ring-gold/50"
-            />
-            <div className="text-xs text-gold/70 text-center mt-1.5">Max: {maxAffordable.toLocaleString()}</div>
+
+            <div className="space-y-4">
+              {/* Quick Add Buttons */}
+              <div className="flex justify-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setTroopCount(Math.min(troopCount + 100, maxAffordable))}
+                  disabled={troopCount >= maxAffordable}
+                  className="px-4 py-2 font-semibold hover:bg-gold/10 transition-all duration-200"
+                >
+                  +100
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setTroopCount(Math.min(troopCount + 500, maxAffordable))}
+                  disabled={troopCount >= maxAffordable}
+                  className="px-4 py-2 font-semibold hover:bg-gold/10 transition-all duration-200"
+                >
+                  +500
+                </Button>
+                <Button
+                  variant="gold"
+                  onClick={() => setTroopCount(maxAffordable)}
+                  disabled={troopCount >= maxAffordable}
+                  className="px-6 py-2 font-bold shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  MAX
+                </Button>
+              </div>
+
+              {/* Number Input */}
+              <div className="space-y-2">
+                <NumberInput max={maxAffordable} min={0} step={100} value={troopCount} onChange={setTroopCount} />
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gold/60">Available:</span>
+                  <span className="text-gold font-semibold">{maxAffordable.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Resource Validation */}
           {troopCount > maxAffordable && (
-            <div className="bg-red/10 border border-red/40 rounded-lg p-2.5 mt-3">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className="w-4 h-4 text-red" />
-                <span className="text-red font-semibold text-sm">Insufficient Resources</span>
+            <div className="bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl p-4 mt-4 shadow-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-1 rounded-full bg-red/20">
+                  <AlertTriangle className="w-5 h-5 text-red" />
+                </div>
+                <span className="text-red font-bold text-base">Insufficient Resources</span>
               </div>
-              <p className="text-xs text-red/90">
-                Need {troopCount.toLocaleString()}, have {maxAffordable.toLocaleString()}
+              <p className="text-sm text-red/90 ml-8">
+                You need <span className="font-bold">{troopCount.toLocaleString()}</span> troops but only have{" "}
+                <span className="font-bold">{maxAffordable.toLocaleString()}</span> available
               </p>
             </div>
           )}
         </div>
 
         {/* RIGHT HALF: Army Type + Direction/Defense */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full space-y-6">
           {/* Army Type Toggle */}
-          <div className="mb-4">
-            <div className="flex gap-2">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
+            <div className="text-center mb-4">
+              <h6 className="text-gold text-lg font-bold mb-1">ARMY TYPE</h6>
+              <p className="text-gold/60 text-sm">Choose between attack or defense</p>
+            </div>
+
+            <div className="flex gap-3">
               <Button
                 variant={armyType ? "gold" : "outline"}
                 onClick={() => setArmyType(true)}
-                size="md"
+                size="lg"
+                disabled={!canCreateAttackArmy}
                 className={clsx(
-                  "flex-1 py-3 font-bold transition-all duration-200",
-                  armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10",
+                  "flex-1 py-4 font-bold transition-all duration-300 relative rounded-xl",
+                  "flex flex-col items-center gap-2",
+                  armyType
+                    ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105"
+                    : "hover:bg-gold/10 hover:scale-102",
+                  !canCreateAttackArmy && "opacity-50 cursor-not-allowed",
                 )}
               >
-                ATTACK
+                <Users className="w-5 h-5" />
+                <span>ATTACK</span>
+                <div className="absolute -top-3 -right-3 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-1 rounded-full border-2 border-gold shadow-lg font-bold">
+                  {currentExplorersCount}/{maxExplorers}
+                </div>
               </Button>
               <Button
                 variant={!armyType ? "gold" : "outline"}
                 onClick={() => setArmyType(false)}
-                size="md"
+                size="lg"
+                disabled={!canCreateDefenseArmy}
                 className={clsx(
-                  "flex-1 py-3 font-bold transition-all duration-200",
-                  !armyType ? "ring-2 ring-gold/50 shadow-lg shadow-gold/20" : "hover:bg-gold/10",
+                  "flex-1 py-4 font-bold transition-all duration-300 relative rounded-xl",
+                  "flex flex-col items-center gap-2",
+                  !armyType
+                    ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105"
+                    : "hover:bg-gold/10 hover:scale-102",
+                  !canCreateDefenseArmy && "opacity-50 cursor-not-allowed",
                 )}
               >
-                DEFENSE
+                <Shield className="w-5 h-5" />
+                <span>DEFENSE</span>
+                <div className="absolute -top-3 -right-3 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-1 rounded-full border-2 border-gold shadow-lg font-bold">
+                  {currentGuardsCount}/{maxGuards}
+                </div>
               </Button>
             </div>
+
+            {/* Army Limit Warning */}
+            {((armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy)) && (
+              <div className="bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl p-4 mt-4 shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-1 rounded-full bg-red/20">
+                    <AlertTriangle className="w-5 h-5 text-red" />
+                  </div>
+                  <span className="text-red font-bold text-base">Army Limit Reached</span>
+                </div>
+                <p className="text-sm text-red/90 ml-8">
+                  {armyType
+                    ? `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
+                    : `Maximum defense armies (${maxGuards}) created. Delete an existing defense to create a new one.`}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Defense Slot Selection */}
           {!armyType && (
-            <div className="flex-1 flex flex-col justify-center mb-4">
-              <h6 className="text-center mb-3 text-gold text-base font-bold">DEFENSE SLOT</h6>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="flex-1 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
+              <div className="text-center mb-4">
+                <h6 className="text-gold text-lg font-bold mb-1">DEFENSE SLOT</h6>
+                <p className="text-gold/60 text-sm">Choose which defense slot to reinforce</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 {Object.entries(DEFENSE_NAMES).map(([slotIndex, slotName]) => {
                   const slot = parseInt(slotIndex);
                   const isSelected = guardSlot === slot;
@@ -394,16 +515,18 @@ export const UnifiedArmyCreationModal = ({
                       variant={isSelected ? "gold" : isSlotAvailable ? "outline" : "secondary"}
                       onClick={() => isSlotAvailable && setGuardSlot(slot)}
                       disabled={!isSlotAvailable}
-                      size="md"
+                      size="lg"
                       className={clsx(
-                        "p-3 flex flex-col items-center text-center transition-all duration-200 rounded-lg",
-                        isSelected ? "ring-2 ring-gold/60 shadow-lg shadow-gold/25" : "",
-                        isSlotAvailable && !isSelected ? "hover:bg-gold/10 hover:border-gold/50" : "",
-                        !isSlotAvailable ? "opacity-40 cursor-not-allowed" : "",
+                        "p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl",
+                        isSelected
+                          ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
+                          : isSlotAvailable
+                            ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
+                            : "opacity-40 cursor-not-allowed",
                       )}
                     >
-                      <div className="text-sm font-bold mb-1">{slotName}</div>
-                      <div className="text-xs text-gold/70">{isSlotAvailable ? `Slot ${slot + 1}` : "N/A"}</div>
+                      <div className="text-base font-bold mb-1">{slotName}</div>
+                      <div className="text-sm text-gold/70">{isSlotAvailable ? `Slot ${slot + 1}` : "Unavailable"}</div>
                     </Button>
                   );
                 })}
@@ -413,14 +536,17 @@ export const UnifiedArmyCreationModal = ({
 
           {/* Direction Selection (for attack armies) */}
           {armyType && (
-            <div className="flex-1 flex flex-col justify-center mb-4">
-              <h6 className="text-center mb-3 text-gold text-base font-bold">SPAWN DIRECTION</h6>
+            <div className="flex-1 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
+              <div className="text-center mb-4">
+                <h6 className="text-gold text-lg font-bold mb-1">SPAWN DIRECTION</h6>
+                <p className="text-gold/60 text-sm">Select where your army will deploy</p>
+              </div>
               {isLoadingDirections ? (
-                <div className="flex justify-center py-6">
+                <div className="flex justify-center py-8">
                   <LoadingAnimation />
                 </div>
               ) : freeDirections.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3 sm:gap-4 lg:gap-5 mx-auto w-full max-w-[280px]">
+                <div className="grid grid-cols-3 gap-4 mx-auto w-full max-w-[320px]">
                   <DirectionButton
                     direction={Direction.SOUTH_WEST}
                     label="↖"
@@ -443,7 +569,7 @@ export const UnifiedArmyCreationModal = ({
                     selectedDirection={selectedDirection}
                     onClick={setSelectedDirection}
                   />
-                  <div className="flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg">
+                  <div className="flex items-center justify-center text-5xl lg:text-6xl drop-shadow-lg filter brightness-110">
                     🏰
                   </div>
                   <DirectionButton
@@ -470,28 +596,48 @@ export const UnifiedArmyCreationModal = ({
                   />
                 </div>
               ) : (
-                <div className="text-center p-3 bg-red/10 border border-red/30 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red mx-auto mb-1" />
-                  <p className="text-red text-sm">No adjacent tiles available</p>
+                <div className="text-center p-4 bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl shadow-lg">
+                  <div className="p-2 rounded-full bg-red/20 w-fit mx-auto mb-2">
+                    <AlertTriangle className="w-6 h-6 text-red" />
+                  </div>
+                  <p className="text-red font-semibold">No adjacent tiles available</p>
+                  <p className="text-red/80 text-sm mt-1">All surrounding tiles are occupied</p>
                 </div>
               )}
             </div>
           )}
 
           {/* Action Button */}
-          <div className="mt-auto">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
             <Button
               variant="gold"
               onClick={handleCreate}
               disabled={
-                troopCount <= 0 || troopCount > maxAffordable || isLoading || (armyType && selectedDirection === null)
+                troopCount <= 0 ||
+                troopCount > maxAffordable ||
+                isLoading ||
+                (armyType && selectedDirection === null) ||
+                (armyType && !canCreateAttackArmy) ||
+                (!armyType && !canCreateDefenseArmy)
               }
               isLoading={isLoading}
-              className="w-full py-4 text-base font-bold shadow-lg hover:shadow-xl transition-all duration-200"
+              className={clsx(
+                "w-full py-5 text-lg font-bold transition-all duration-300 rounded-xl",
+                "bg-gradient-to-br from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70",
+                "shadow-xl hover:shadow-2xl hover:shadow-gold/40",
+                "border-2 border-gold/60 hover:border-gold/80",
+                "transform hover:scale-[1.02] hover:-translate-y-0.5",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-lg",
+              )}
             >
-              {armyType
-                ? "CREATE ATTACK ARMY"
-                : `ADD DEFENSE - ${DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]?.toUpperCase()}`}
+              <div className="flex items-center justify-center gap-3">
+                {armyType ? <Users className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                <span className="drop-shadow-sm">
+                  {armyType
+                    ? "CREATE ATTACK ARMY"
+                    : `ADD DEFENSE - ${DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]?.toUpperCase()}`}
+                </span>
+              </div>
             </Button>
           </div>
         </div>

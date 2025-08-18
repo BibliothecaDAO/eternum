@@ -217,6 +217,8 @@ async function init() {
   graphic.initScene();
   if (env.VITE_PUBLIC_GRAPHICS_DEV == true) {
     graphic.initStats();
+    // Always enable memory monitoring for spike detection
+    graphic.initMemoryMonitoring();
   }
 
   // Set up GameRenderer cleanup - multiple triggers for safety
@@ -245,12 +247,8 @@ async function init() {
   // Cleanup on page hide (mobile/tab switching)
   window.addEventListener("pagehide", cleanupGameRenderer);
 
-  // Cleanup on visibility change (when page becomes hidden)
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      cleanupGameRenderer();
-    }
-  });
+  // Note: Removed visibilitychange cleanup as it was too aggressive
+  // The GameRenderer should persist when switching tabs/windows and returning
 
   // Make cleanup function globally available for manual cleanup if needed
   (window as any).__cleanupGameRenderer = cleanupGameRenderer;

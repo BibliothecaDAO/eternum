@@ -30,7 +30,12 @@ export const downloadAutomationTemplate = (template: AutomationTemplate, filenam
   const url = URL.createObjectURL(blob);
 
   const templateName = template.templateName ? `-${template.templateName.replace(/\s+/g, "-")}` : "";
-  const defaultFilename = `automation-template${templateName}-${new Date().toISOString().slice(0, 10)}.json`;
+  const realmInfo = template.sourceRealmName 
+    ? `-${template.sourceRealmName.replace(/\s+/g, "-")}`
+    : template.sourceRealmId 
+      ? `-realm-${template.sourceRealmId}`
+      : "-all-realms";
+  const defaultFilename = `automation-template${realmInfo}${templateName}-${new Date().toISOString().slice(0, 10)}.json`;
   const link = document.createElement("a");
   link.href = url;
   link.download = filename || defaultFilename;

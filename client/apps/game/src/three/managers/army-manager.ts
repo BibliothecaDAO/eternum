@@ -24,6 +24,7 @@ import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory"
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
+import { MemoryMonitor } from "../utils/memory-monitor";
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -72,6 +73,7 @@ export class ArmyManager {
   private tickCheckTimeout: NodeJS.Timeout | null = null;
   private cleanupTimeout: NodeJS.Timeout | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private memoryMonitor: MemoryMonitor;
 
   constructor(
     scene: THREE.Scene,
@@ -93,6 +95,14 @@ export class ArmyManager {
     this.fxManager = new FXManager(scene, 1);
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
+    
+    // Initialize memory monitor for tracking army operations
+    this.memoryMonitor = new MemoryMonitor({
+      spikeThresholdMB: 25, // Lower threshold for army operations
+      onMemorySpike: (spike) => {
+        console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+      }
+    });
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -412,6 +422,9 @@ export class ArmyManager {
       maxStamina,
     } = params;
     if (this.armies.has(entityId)) return;
+    
+    // Monitor memory usage before adding army
+    this.memoryMonitor.getCurrentStats(`addArmy-${entityId}`);
 
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
@@ -537,6 +550,9 @@ export class ArmyManager {
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
+    // Monitor memory usage before army movement
+    this.memoryMonitor.getCurrentStats(`moveArmy-start-${entityId}`);
+    
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
 
@@ -569,6 +585,9 @@ export class ArmyManager {
 
     // Start movement in ArmyModel with troop information
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
+    
+    // Monitor memory usage after army movement setup
+    this.memoryMonitor.getCurrentStats(`moveArmy-complete-${entityId}`);
   }
 
   public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
@@ -628,6 +647,9 @@ export class ArmyManager {
 
   public removeArmy(entityId: ID) {
     if (!this.armies.has(entityId)) return;
+
+    // Monitor memory usage before removing army
+    this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
 
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
@@ -742,8 +764,23 @@ export class ArmyManager {
     applyLabelTransitions(this.entityIdLabels, view);
   };
 
+  public isArmySelectable(entityId: ID): boolean {
+    // Check if army exists in our data
+    if (!this.armies.has(entityId)) {
+      return false;
+    }
+
+    // Check if we're currently switching chunks
+    if (this.chunkSwitchPromise) {
+      return false;
+    }
+
+    // Check if army is in the visible armies list
+    return this.visibleArmies.some(army => army.entityId === entityId);
+  }
+
   public hasArmy(entityId: ID): boolean {
-    return this.armies.has(entityId);
+    return this.armies.has(entityId) && this.isArmySelectable(entityId);
   }
 
   public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
