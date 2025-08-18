@@ -29,6 +29,8 @@ interface PendingLabelUpdate {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   owner: { address: bigint; ownerName: string; guildName: string };
+  timestamp: number; // When this update was received
+  updateType: "structure" | "building"; // Type of update for ordering
 }
 
 export class StructureManager {
@@ -55,6 +57,9 @@ export class StructureManager {
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private isBlitz: boolean;
   private pendingLabelUpdates: Map<ID, PendingLabelUpdate> = new Map();
+  private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
+  private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
+  private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
     scene: THREE.Scene,
@@ -131,6 +136,29 @@ export class StructureManager {
         this.clearPendingRelicEffectsCallback(entityId);
       }
     });
+
+    // Dispose of all structure models
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => {
+        if (typeof model.dispose === "function") {
+          model.dispose();
+        }
+        if (model.group.parent) {
+          model.group.parent.remove(model.group);
+        }
+      });
+    });
+    this.structureModels.clear();
+
+    // Clear all maps
+    this.entityIdMaps.clear();
+    this.wonderEntityIdMaps.clear();
+    this.structures.getStructures().clear();
+    this.structureHexCoords.clear();
+    this.structureUpdateTimestamps.clear();
+    this.structureUpdateSources.clear();
+
+    console.log("StructureManager: Destroyed and cleaned up");
   }
 
   getTotalStructures() {
@@ -214,16 +242,28 @@ export class StructureManager {
 
     const pendingUpdate = this.pendingLabelUpdates.get(entityId);
     if (pendingUpdate) {
-      console.log(`[PENDING LABEL UPDATE] Applying pending update for structure ${entityId}`);
-      finalOwner = pendingUpdate.owner;
-      if (pendingUpdate.guardArmies) {
-        finalGuardArmies = pendingUpdate.guardArmies;
+      // Check if pending update is not too old (max 30 seconds)
+      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
+
+      if (isPendingStale) {
+        console.warn(
+          `[PENDING LABEL UPDATE] Discarding stale pending update for structure ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
+        );
+        this.pendingLabelUpdates.delete(entityId);
+      } else {
+        console.log(
+          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType})`,
+        );
+        finalOwner = pendingUpdate.owner;
+        if (pendingUpdate.guardArmies) {
+          finalGuardArmies = pendingUpdate.guardArmies;
+        }
+        if (pendingUpdate.activeProductions) {
+          finalActiveProductions = pendingUpdate.activeProductions;
+        }
+        // Clear the pending update
+        this.pendingLabelUpdates.delete(entityId);
       }
-      if (pendingUpdate.activeProductions) {
-        finalActiveProductions = pendingUpdate.activeProductions;
-      }
-      // Clear the pending update
-      this.pendingLabelUpdates.delete(entityId);
     }
 
     // Add the structure to the structures map with the complete owner info
@@ -242,17 +282,39 @@ export class StructureManager {
       update.hyperstructureRealmCount,
     );
 
-    // Clear existing relic effects for this specific structure before re-rendering
-    // onUpdate is called multiple times when new chunks are loaded so need to clear existing relic effects for this entity
-    // Clear effects for all sources when structure is updated
-    const entityEffectsMap = this.structureRelicEffects.get(entityId);
-    if (entityEffectsMap) {
-      for (const relicSource of entityEffectsMap.keys()) {
-        this.updateRelicEffects(entityId, [], relicSource);
+    // Smart relic effects management - differentiate between genuine updates and chunk reloads
+    const currentTime = Date.now();
+    const lastUpdateTime = this.structureUpdateTimestamps.get(entityId) || 0;
+    const updateSource = `tile-${entityId}`; // Source identifier for this update
+    const lastUpdateSource = this.structureUpdateSources.get(entityId);
+
+    // Consider it a genuine structure update if:
+    // 1. More than 2 seconds since last update (prevents rapid chunk switches), OR
+    // 2. The structure has never been seen before, OR
+    // 3. This is the first time we've seen this source type for this entity
+    const isGenuineUpdate =
+      currentTime - lastUpdateTime > 2000 || lastUpdateTime === 0 || lastUpdateSource !== updateSource;
+
+    if (isGenuineUpdate) {
+      console.log(
+        `[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects (source: ${updateSource})`,
+      );
+      // This is a genuine structure update, clear existing relic effects
+      const entityEffectsMap = this.structureRelicEffects.get(entityId);
+      if (entityEffectsMap) {
+        for (const relicSource of entityEffectsMap.keys()) {
+          this.updateRelicEffects(entityId, [], relicSource);
+        }
       }
+
+      // Update tracking info
+      this.structureUpdateTimestamps.set(entityId, currentTime);
+      this.structureUpdateSources.set(entityId, updateSource);
+    } else {
+      console.log(`[RELIC EFFECTS] Structure ${entityId} quick reload/chunk switch - preserving existing effects`);
     }
 
-    // Apply any pending relic effects for this structure
+    // Always apply pending relic effects (for both genuine updates and chunk reloads)
     if (this.applyPendingRelicEffectsCallback) {
       try {
         await this.applyPendingRelicEffectsCallback(entityId);
@@ -267,10 +329,43 @@ export class StructureManager {
     }
   }
 
-  updateChunk(chunkKey: string) {
+  async updateChunk(chunkKey: string) {
+    if (this.currentChunk === chunkKey) {
+      return;
+    }
+
+    // Wait for any ongoing chunk switch to complete first
+    if (this.chunkSwitchPromise) {
+      console.log(
+        `[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`,
+      );
+      try {
+        await this.chunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous structure chunk switch failed:`, error);
+      }
+    }
+
+    // Check again if chunk key is still different (might have changed while waiting)
+    if (this.currentChunk === chunkKey) {
+      return;
+    }
+
+    console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
     this.currentChunk = chunkKey;
-    this.updateVisibleStructures();
-    this.showLabels();
+
+    // Create and track the chunk switch promise
+    this.chunkSwitchPromise = Promise.resolve().then(() => {
+      this.updateVisibleStructures();
+      this.showLabels();
+    });
+
+    try {
+      await this.chunkSwitchPromise;
+      console.log(`[CHUNK SYNC] Structure chunk switch to ${chunkKey} completed`);
+    } finally {
+      this.chunkSwitchPromise = null;
+    }
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
@@ -308,11 +403,19 @@ export class StructureManager {
           const position = getWorldPositionForHex(structure.hexCoords);
           position.y += 0.05;
 
-          // Always recreate the label to ensure it matches current camera view
-          if (this.entityIdLabels.has(structure.entityId)) {
-            this.removeEntityIdLabel(structure.entityId);
+          // Update existing label or create new one to preserve live data
+          const existingLabel = this.entityIdLabels.get(structure.entityId);
+          if (existingLabel) {
+            // Update existing label to preserve any pending updates
+            this.updateStructureLabelData(structure.entityId, structure, existingLabel);
+            // Update position if needed
+            const newPosition = getWorldPositionForHex(structure.hexCoords);
+            newPosition.y += 2;
+            existingLabel.position.copy(newPosition);
+          } else {
+            // Create new label if it doesn't exist
+            this.addEntityIdLabel(structure, position);
           }
-          this.addEntityIdLabel(structure, position);
 
           this.dummy.position.copy(position);
 
@@ -491,9 +594,8 @@ export class StructureManager {
   }
 
   public showLabels() {
-    // First ensure all old labels are properly cleaned up
-    this.removeLabelsFromScene();
-    // Update visible structures which will create new labels as needed
+    // Just update visible structures - this will handle labels appropriately
+    // without destroying existing labels and their live data
     this.updateVisibleStructures();
   }
 
@@ -597,9 +699,9 @@ export class StructureManager {
   /**
    * Update a structure label with fresh data from MapDataStore
    */
-  private updateStructureLabelData(entityId: ID, structure: any, existingLabel: CSS2DObject): void {
-    // Update the existing label content in-place
-    updateStructureLabel(existingLabel.element, structure);
+  private updateStructureLabelData(_entityId: ID, structure: any, existingLabel: CSS2DObject): void {
+    // Update the existing label content in-place with correct camera view
+    updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
 
   /**
@@ -615,17 +717,29 @@ export class StructureManager {
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
-      console.log(`[PENDING LABEL UPDATE] Storing pending update for structure ${update.entityId}`);
-      this.pendingLabelUpdates.set(update.entityId, {
-        guardArmies: update.guardArmies.map((guard) => ({
-          slot: guard.slot,
-          category: guard.category,
-          tier: guard.tier,
-          count: guard.count,
-          stamina: guard.stamina,
-        })),
-        owner: update.owner,
-      });
+      const currentTime = Date.now();
+
+      // Check if we already have a pending update for this entity
+      const existingPending = this.pendingLabelUpdates.get(update.entityId);
+
+      // Only store if this is newer than the existing pending update or it's a different type
+      if (!existingPending || currentTime >= existingPending.timestamp) {
+        console.log(`[PENDING LABEL UPDATE] Storing pending structure update for ${update.entityId}`);
+        this.pendingLabelUpdates.set(update.entityId, {
+          guardArmies: update.guardArmies.map((guard) => ({
+            slot: guard.slot,
+            category: guard.category,
+            tier: guard.tier,
+            count: guard.count,
+            stamina: guard.stamina,
+          })),
+          owner: update.owner,
+          timestamp: currentTime,
+          updateType: "structure",
+        });
+      } else {
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${update.entityId}`);
+      }
       return;
     }
 
@@ -660,19 +774,27 @@ export class StructureManager {
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
+      const currentTime = Date.now();
+
       console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${update.entityId}`);
 
       // Check if there's already a pending update for this structure
       const existingPending = this.pendingLabelUpdates.get(update.entityId);
-      if (existingPending) {
+      if (existingPending && currentTime >= existingPending.timestamp) {
         // Update the existing pending with new active productions
         existingPending.activeProductions = update.activeProductions;
-      } else {
+        existingPending.timestamp = currentTime;
+        existingPending.updateType = "building";
+      } else if (!existingPending) {
         // Create a new pending update with just the active productions
         this.pendingLabelUpdates.set(update.entityId, {
           activeProductions: update.activeProductions,
           owner: { address: 0n, ownerName: "", guildName: "" }, // Will be updated when structure is created
+          timestamp: currentTime,
+          updateType: "building",
         });
+      } else {
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${update.entityId}`);
       }
       return;
     }

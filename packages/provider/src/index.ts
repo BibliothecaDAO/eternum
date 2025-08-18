@@ -296,22 +296,22 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create hyperstructures for Blitz 
+   * Create hyperstructures for Blitz
    *
    * @param props - Properties for registration
    * @param props.count - Number of hyperstructures to create
    * @returns Transaction receipt
    */
-    public async blitz_realm_make_hyperstructures(props: SystemProps.BlitzRealmMakeHyperstructuresProps) {
-      const { count, signer } = props;
-      const call = this.createProviderCall(signer, {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
-        entrypoint: "make_hyperstructures",
-        calldata: [count],
-      });
-      return await this.promiseQueue.enqueue(call);
-    }
-  
+  public async blitz_realm_make_hyperstructures(props: SystemProps.BlitzRealmMakeHyperstructuresProps) {
+    const { count, signer } = props;
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "make_hyperstructures",
+      calldata: [count],
+    });
+    return await this.promiseQueue.enqueue(call);
+  }
+
   /**
    * Create Blitz Realms
    *
@@ -2555,25 +2555,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
-    const {
-      fee_token,
-      fee_recipient,
-      fee_amount,
-      registration_count_max,
-      registration_start_at,
-      signer,
-    } = props;
+    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_blitz_registration_config",
-      calldata: [
-        fee_token,
-        fee_recipient,
-        fee_amount,
-        0,
-        registration_count_max,
-        registration_start_at
-      ],
+      calldata: [fee_token, fee_recipient, fee_amount, 0, registration_count_max, registration_start_at],
     });
   }
 

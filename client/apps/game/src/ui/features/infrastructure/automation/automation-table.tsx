@@ -1,5 +1,6 @@
 import {
   AutomationOrder,
+  AutomationOrderTemplate,
   OrderMode,
   ProductionType,
   TransferMode,
@@ -10,6 +11,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { AutomationBackupControls } from "@/ui/features/automation/automation-backup-controls";
+import { TemplateAssignmentModal } from "@/ui/features/automation/template-assignment-modal";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
@@ -62,6 +65,9 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const isRealmPaused = useMemo(() => pausedRealms[realmEntityId] || false, [pausedRealms, realmEntityId]);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showHints, setShowHints] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateOrders, setTemplateOrders] = useState<AutomationOrderTemplate[]>([]);
   const [newOrder, setNewOrder] = useState<Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">>(() => ({
     priority: 5,
     resourceToUse: availableResourcesForRealm[0]?.id,
@@ -189,15 +195,28 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     setIsInfinite(false);
   };
 
+  const handleTemplateImport = (orders: AutomationOrderTemplate[]) => {
+    setTemplateOrders(orders);
+    setShowTemplateModal(true);
+  };
+
+  const availableRealms = [
+    {
+      entityId: realmEntityId,
+      name: getStructureName(realmInfo.structure, getIsBlitz()).name,
+    },
+  ];
+
   return (
-    <div className="p-2 border rounded-lg shadow-md panel-wood">
-      <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs border border-red/20">
-        IMPORTANT: Your browser must stay open for automation. Automation runs every minute.
-        <br />
-      </div>
+    <div className="bord">
       <h4 className="mb-2">
-        [BETA] Automation for Realm {getStructureName(realmInfo.structure, getIsBlitz()).name} ({realmEntityId})
+        Automation for Realm {getStructureName(realmInfo.structure, getIsBlitz()).name} ({realmEntityId})
       </h4>
+
+      {/* Automation Backup Controls */}
+      <div className="mb-4">
+        <AutomationBackupControls onTemplateImport={handleTemplateImport} />
+      </div>
 
       {/* Add pause checkbox */}
       <div className="flex items-center gap-2 mb-3 p-2 bg-black/20 rounded">
@@ -214,27 +233,45 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         {isRealmPaused && <span className="text-red ml-2 text-xs">(PAUSED - No orders will run)</span>}
       </div>
 
-      <ul className="list-disc pl-4">
-        <li>
-          <span className="font-bold">Produce Once:</span> Automation will produce resources until the target amount is
-          reached, then stop.
-        </li>
-        <li>
-          <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
-          level. Production triggers when balance drops below target minus buffer percentage.
-        </li>
-        <li>Resources produced will increase your realm's balance and may cause resource loss if storage is full.</li>
-        <li>
-          Process activates every <span className="font-bold">1 minute</span> automatically.
-        </li>
-      </ul>
+      {showHints && (
+        <div>
+          <div className="text-red/90 bg-red/10 rounded-md px-2 mb-2 text-xs bg-red-200/20 text-white">
+            IMPORTANT: Your browser must stay open for automation. Automation runs every minute.
+            <br />
+            <ul className="list-disc pl-4 mb-4 text-sm text-gold/70">
+              <li>
+                <span className="font-bold">Produce Once:</span> Automation will produce resources until the target
+                amount is reached, then stop.
+              </li>
+              <li>
+                <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
+                level. Production triggers when balance drops below target minus buffer percentage.
+              </li>
+              <li>
+                Resources produced will increase your realm's balance and may cause resource loss if storage is full.
+              </li>
+              <li>
+                Process activates every <span className="font-bold">1 minute</span> automatically.
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
 
-      <div className="my-4">
+      <div className="my-4 flex items-center gap-2">
         {!showAddForm && (
           <Button onClick={() => setShowAddForm(true)} variant="default" size="xs" disabled={isRealmPaused}>
             Add New Automation {isRealmPaused && "(Paused)"}
           </Button>
         )}
+        <Button
+          onClick={() => setShowHints(!showHints)}
+          variant="default"
+          size="xs"
+          className="text-gold/70 hover:text-gold"
+        >
+          {showHints ? "Hide Hints" : "Show Hints"}
+        </Button>
       </div>
 
       {showAddForm && (
@@ -576,6 +613,19 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Template Assignment Modal */}
+      {showTemplateModal && (
+        <TemplateAssignmentModal
+          templateOrders={templateOrders}
+          availableRealms={availableRealms}
+          onClose={() => setShowTemplateModal(false)}
+          onAssign={() => {
+            setShowTemplateModal(false);
+            // Orders are automatically added to the realm in the modal
+          }}
+        />
       )}
     </div>
   );

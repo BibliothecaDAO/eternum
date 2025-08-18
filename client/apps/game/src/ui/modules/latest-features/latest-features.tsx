@@ -22,10 +22,7 @@ export const LatestFeaturesWindow = () => {
           ) : (
             <div className="space-y-3">
               {featuresData.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col p-4 bg-brown/20 border border-gold/20 rounded-lg"
-                >
+                <div key={index} className="flex flex-col p-4 bg-brown/20 border border-gold/20 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-gold text-sm font-medium">{feature.title}</span>
                     <span className="text-gold/60 text-xs flex-shrink-0 ml-4">{feature.date}</span>

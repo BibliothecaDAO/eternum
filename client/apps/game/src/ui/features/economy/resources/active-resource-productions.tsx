@@ -25,12 +25,9 @@ export const ActiveResourceProductions = ({
     <div className="flex flex-wrap gap-2">
       {activeProductions.map(({ resourceId, productionRate }) => {
         const ratePerSecond = Number(divideByPrecision(Number(productionRate), false));
-        
+
         return (
-          <div 
-            key={resourceId} 
-            className="flex items-center gap-1 bg-gold/10 rounded px-2 py-1"
-          >
+          <div key={resourceId} className="flex items-center gap-1 bg-gold/10 rounded px-2 py-1">
             <ResourceIcon
               resource={ResourcesIds[resourceId]}
               size={size}

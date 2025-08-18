@@ -21,7 +21,7 @@ export interface KeyboardShortcut {
 interface ShortcutStore {
   shortcuts: Map<string, KeyboardShortcut>;
   enabled: boolean;
-  
+
   // Actions
   addShortcut: (shortcut: KeyboardShortcut) => void;
   removeShortcut: (shortcutId: string) => void;
@@ -29,7 +29,7 @@ interface ShortcutStore {
   clearAllShortcuts: () => void;
   getShortcuts: () => KeyboardShortcut[];
   setEnabled: (enabled: boolean) => void;
-  
+
   // Internal methods
   executeShortcut: (shortcutKey: string) => boolean;
 }
@@ -85,7 +85,7 @@ export const useShortcutStore = create<ShortcutStore>((set, get) => ({
     // Find shortcut by matching key combination
     for (const shortcut of state.shortcuts.values()) {
       const keyMatch = createShortcutKey(shortcut.key, shortcut.modifiers || {}) === shortcutKey;
-      
+
       if (keyMatch) {
         // Check additional condition
         if (shortcut.condition && !shortcut.condition()) {
@@ -97,7 +97,7 @@ export const useShortcutStore = create<ShortcutStore>((set, get) => ({
         return true;
       }
     }
-    
+
     return false;
   },
 }));

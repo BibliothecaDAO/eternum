@@ -539,7 +539,7 @@ export interface Config {
     // startMainAt takes precedence
     startMainAfterSeconds: number;
     startMainAt: number;
-    
+
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;
   };

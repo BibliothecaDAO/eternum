@@ -544,7 +544,8 @@ export const resources: Array<Resources> = [
     value: 52,
     colour: "#059669",
     id: ResourcesIds.ProductionRelic2,
-    description: "A powerful efficiency enhancement that increases resource production rate by 40% for 15 Eternum Days.",
+    description:
+      "A powerful efficiency enhancement that increases resource production rate by 40% for 15 Eternum Days.",
     img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/52.png?raw=true",
     ticker: "$PROD2",
   },

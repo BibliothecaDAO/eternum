@@ -5,13 +5,11 @@ This document explains how to set up PostHog analytics and error reporting for t
 ## Setup Instructions
 
 1. **Create a PostHog Project**
-
    - Go to [posthog.com](https://posthog.com) and create a new project
    - Copy the Project API Key from your project settings
    - Note your PostHog instance URL (default: https://us.i.posthog.com)
 
 2. **Configure Environment Variables**
-
    - Copy `.env.local.sample` to `.env.local`
    - Add your PostHog configuration:
      ```

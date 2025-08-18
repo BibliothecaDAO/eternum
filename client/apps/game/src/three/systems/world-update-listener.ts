@@ -47,6 +47,8 @@ import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getS
 export class WorldUpdateListener {
   private mapDataStore: MapDataStore;
   private dataEnhancer: DataEnhancer;
+  private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
+  private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
 
   constructor(private setup: SetupResult) {
     // Initialize MapDataStore with centralized refresh interval
@@ -97,31 +99,37 @@ export class WorldUpdateListener {
 
               const { currentArmiesTick } = getBlockTimestamp();
 
-              // Use DataEnhancer to fetch all enhanced data
-              const enhancedData = await this.dataEnhancer.enhanceArmyData(
-                currentState.occupier_id,
-                explorer,
-                currentArmiesTick,
-              );
+              // Use sequential update processing to prevent race conditions
+              const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
+                // Use DataEnhancer to fetch all enhanced data
+                const enhancedData = await this.dataEnhancer.enhanceArmyData(
+                  currentState.occupier_id,
+                  explorer,
+                  currentArmiesTick,
+                );
 
-              const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
+                const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
-              return {
-                entityId: currentState.occupier_id,
-                hexCoords: { col: currentState.col, row: currentState.row },
-                // need to set it to 0n if no owner address because else it won't be registered on the worldmap
-                ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
-                ownerName: enhancedData?.owner.ownerName || "",
-                guildName: enhancedData?.owner.guildName || "",
-                troopType: explorer.troopType as TroopType,
-                troopTier: explorer.troopTier as TroopTier,
-                isDaydreamsAgent: explorer.isDaydreamsAgent,
-                // Enhanced data from DataEnhancer
-                troopCount: enhancedData.troopCount,
-                currentStamina: enhancedData.currentStamina,
-                onChainStamina: enhancedData.onChainStamina,
-                maxStamina,
-              };
+                return {
+                  entityId: currentState.occupier_id,
+                  hexCoords: { col: currentState.col, row: currentState.row },
+                  // need to set it to 0n if no owner address because else it won't be registered on the worldmap
+                  ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
+                  ownerName: enhancedData?.owner.ownerName || "",
+                  guildName: enhancedData?.owner.guildName || "",
+                  troopType: explorer.troopType as TroopType,
+                  troopTier: explorer.troopTier as TroopTier,
+                  isDaydreamsAgent: explorer.isDaydreamsAgent,
+                  // Enhanced data from DataEnhancer
+                  troopCount: enhancedData.troopCount,
+                  currentStamina: enhancedData.currentStamina,
+                  onChainStamina: enhancedData.onChainStamina,
+                  maxStamina,
+                };
+              });
+
+              // Return undefined if update was cancelled due to being outdated
+              return result || undefined;
             }
           },
           false,
@@ -231,27 +239,33 @@ export class WorldUpdateListener {
                 hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(currentState.occupier_id);
               }
 
-              // Use DataEnhancer to fetch all enhanced data
-              const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
+              // Use sequential update processing to prevent race conditions
+              const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
+                // Use DataEnhancer to fetch all enhanced data
+                const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
 
-              return {
-                entityId: currentState.occupier_id,
-                hexCoords: {
-                  col: currentState.col,
-                  row: currentState.row,
-                },
-                structureType: structureInfo.type,
-                initialized,
-                stage: structureInfo.stage,
-                level: structureInfo.level,
-                owner: enhancedData.owner,
-                hasWonder: structureInfo.hasWonder,
-                isAlly: false,
-                // Enhanced data from DataEnhancer
-                guardArmies: enhancedData.guardArmies,
-                activeProductions: enhancedData.activeProductions,
-                hyperstructureRealmCount,
-              };
+                return {
+                  entityId: currentState.occupier_id,
+                  hexCoords: {
+                    col: currentState.col,
+                    row: currentState.row,
+                  },
+                  structureType: structureInfo.type,
+                  initialized,
+                  stage: structureInfo.stage,
+                  level: structureInfo.level,
+                  owner: enhancedData.owner,
+                  hasWonder: structureInfo.hasWonder,
+                  isAlly: false,
+                  // Enhanced data from DataEnhancer
+                  guardArmies: enhancedData.guardArmies,
+                  activeProductions: enhancedData.activeProductions,
+                  hyperstructureRealmCount,
+                };
+              });
+
+              // Return undefined if update was cancelled due to being outdated
+              return result || undefined;
             }
           },
           false,
@@ -675,9 +689,73 @@ export class WorldUpdateListener {
   }
 
   /**
+   * Ensures async updates are processed in the correct order
+   * Prevents race conditions where newer updates get overwritten by older ones
+   */
+  private async processSequentialUpdate<T>(entityId: ID, updateFunction: () => Promise<T>): Promise<T | null> {
+    // Generate a sequence number for this update
+    const currentSequence = (this.updateSequenceMap.get(entityId) || 0) + 1;
+    this.updateSequenceMap.set(entityId, currentSequence);
+
+    // Wait for any pending update for this entity to complete first
+    if (this.pendingUpdates.has(entityId)) {
+      try {
+        await this.pendingUpdates.get(entityId);
+      } catch (error) {
+        console.warn(`Previous update for entity ${entityId} failed:`, error);
+      }
+    }
+
+    // Create and execute the update promise
+    const updatePromise = (async () => {
+      try {
+        // Check if this update is still the latest before processing
+        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+          console.log(
+            `[UPDATE SEQUENCING] Skipping outdated update for entity ${entityId} (sequence ${currentSequence})`,
+          );
+          return null;
+        }
+
+        const result = await updateFunction();
+
+        // Double-check sequence number before returning result
+        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+          console.log(
+            `[UPDATE SEQUENCING] Discarding outdated result for entity ${entityId} (sequence ${currentSequence})`,
+          );
+          return null;
+        }
+
+        return result;
+      } catch (error) {
+        console.error(`Sequential update failed for entity ${entityId}:`, error);
+        throw error;
+      }
+    })();
+
+    // Track this update as pending
+    this.pendingUpdates.set(entityId, updatePromise);
+
+    // Clean up when the promise completes
+    updatePromise.finally(() => {
+      // Only clean up if this is still the current promise for this entity
+      if (this.pendingUpdates.get(entityId) === updatePromise) {
+        this.pendingUpdates.delete(entityId);
+      }
+    });
+
+    return updatePromise;
+  }
+
+  /**
    * Clean up resources and stop timers
    */
   public destroy(): void {
+    // Clear any pending updates
+    this.pendingUpdates.clear();
+    this.updateSequenceMap.clear();
+
     this.mapDataStore.destroy();
     console.log("WorldUpdateListener: Destroyed and cleaned up");
   }

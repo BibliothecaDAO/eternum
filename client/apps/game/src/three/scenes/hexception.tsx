@@ -265,6 +265,16 @@ export default class HexceptionScene extends HexagonScene {
         }
       },
     );
+
+    // Subscribe to zoom setting changes
+    useUIStore.subscribe(
+      (state) => state.enableMapZoom,
+      (enableMapZoom) => {
+        if (this.controls) {
+          this.controls.enableZoom = enableMapZoom;
+        }
+      },
+    );
   }
 
   private clearBuildingMode() {
@@ -363,7 +373,7 @@ export default class HexceptionScene extends HexagonScene {
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = IS_FLAT_MODE ? 36 : 20;
     this.controls.enablePan = false;
-    this.controls.enableZoom = true;
+    this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
@@ -407,6 +417,9 @@ export default class HexceptionScene extends HexagonScene {
       this.structureUpdateSubscription.unsubscribe();
       this.structureUpdateSubscription = null;
     }
+
+    // Clean up input manager event listeners
+    this.inputManager.destroy();
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {

@@ -40,8 +40,8 @@ const ProductionContainer = ({
   );
 
   return (
-    <div className="production-modal-selector container mx-auto grid grid-cols-12 bg-dark-wood  h-full row-span-12 rounded-2xl relative ">
-      <div className="col-span-3 p-1 pb-36 row-span-10 overflow-y-auto panel-wood-right">
+    <div className="production-modal-selector container mx-auto grid grid-cols-12 bg-dark-wood h-full row-span-12 rounded-2xl relative">
+      <div className="col-span-4 p-4 pb-36 row-span-10 overflow-y-auto panel-wood-right">
         <Suspense fallback={<LoadingAnimation />}>
           {playerRealmsAndVillages.length > 0 && (
             <ProductionSidebar
@@ -52,7 +52,7 @@ const ProductionContainer = ({
           )}
         </Suspense>
       </div>
-      <div className="col-span-9 h-full row-span-10 overflow-y-auto p-8 pb-36">
+      <div className="col-span-8 h-full row-span-10 overflow-y-auto p-8 pb-36">
         <Suspense fallback={<LoadingAnimation />}>
           {selectedRealm && <ProductionBody realm={selectedRealm} preSelectedResource={currentPreSelectedResource} />}
         </Suspense>

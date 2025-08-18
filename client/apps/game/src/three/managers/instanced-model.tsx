@@ -241,4 +241,49 @@ export default class InstancedModel {
       });
     }
   }
+
+  public dispose(): void {
+    // Dispose of animation mixer
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+
+      this.mixer = null;
+    }
+
+    // Dispose of animation actions
+    this.animationActions.clear();
+
+    // Dispose of instanced meshes and their resources
+    this.instancedMeshes.forEach((mesh) => {
+      if (mesh.geometry) {
+        mesh.geometry.dispose();
+      }
+      if (mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat) => mat.dispose());
+        } else {
+          mesh.material.dispose();
+        }
+      }
+      if (mesh.morphTexture) {
+        mesh.morphTexture.dispose();
+      }
+      // Remove from parent
+      if (mesh.parent) {
+        mesh.parent.remove(mesh);
+      }
+    });
+    this.instancedMeshes = [];
+
+    // Clear biome meshes array
+    this.biomeMeshes = [];
+
+    // Dispose of the group
+    if (this.group.parent) {
+      this.group.parent.remove(this.group);
+    }
+    this.group.clear();
+
+    console.log(`InstancedModel "${this.name}": Disposed and cleaned up`);
+  }
 }

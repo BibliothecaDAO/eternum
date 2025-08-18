@@ -39,27 +39,22 @@ export const NameChangePopup: React.FC<NameChangePopupProps> = ({
   );
 
   return (
-    <BasePopup
-      title="Change Structure Name"
-      onClose={onCancel}
-      footer={footer}
-      contentClassName=""
-    >
+    <BasePopup title="Change Structure Name" onClose={onCancel} footer={footer} contentClassName="">
       <div onKeyDown={handleKeyDown}>
-          <div className="mb-4">
-            <p className="text-sm text-gold/80">Current name: {currentName}</p>
-            {!isOriginalName && <p className="text-sm text-gold/80">Original name: {originalName}</p>}
-          </div>
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="bg-brown/20 border border-gold/30 rounded w-full px-3 py-2 text-gold mb-4"
-            placeholder="Enter new name"
-          />
-          <p className="text-sm text-gold/60 mb-4">
-            Note: This change is only visible to you locally and not to other players
-          </p>
+        <div className="mb-4">
+          <p className="text-sm text-gold/80">Current name: {currentName}</p>
+          {!isOriginalName && <p className="text-sm text-gold/80">Original name: {originalName}</p>}
+        </div>
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          className="bg-brown/20 border border-gold/30 rounded w-full px-3 py-2 text-gold mb-4"
+          placeholder="Enter new name"
+        />
+        <p className="text-sm text-gold/60 mb-4">
+          Note: This change is only visible to you locally and not to other players
+        </p>
       </div>
     </BasePopup>
   );

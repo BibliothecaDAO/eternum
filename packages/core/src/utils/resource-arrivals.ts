@@ -18,7 +18,6 @@ export const getAllArrivals = (structureEntityIds: ID[], components: ClientCompo
   return formatArrivals(arrivals);
 };
 
-
 export const formatArrivals = (arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[]) => {
   const deliveryTickSeconds = configManager.getTick(TickIds.Delivery);
   const arrivalsInfo: ResourceArrivalInfo[] = [];

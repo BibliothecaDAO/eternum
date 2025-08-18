@@ -88,7 +88,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
     document.addEventListener("click", clearTooltip);
     // Clear tooltip on drag start to handle dragging interactions
     document.addEventListener("dragstart", clearTooltip);
-    
+
     return () => {
       document.removeEventListener("click", clearTooltip);
       document.removeEventListener("dragstart", clearTooltip);

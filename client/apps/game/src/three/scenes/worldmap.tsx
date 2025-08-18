@@ -61,7 +61,11 @@ import {
   TileSystemUpdate,
 } from "../types/systems";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
-import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "../utils/navigation";
+import {
+  navigateToStructure,
+  toggleMapHexView,
+  selectNextStructure as utilSelectNextStructure,
+} from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 
 const dummyObject = new THREE.Object3D();
@@ -110,6 +114,9 @@ export default class WorldmapScene extends HexagonScene {
 
   // Relic effect validation timer
   private relicValidationInterval: NodeJS.Timeout | null = null;
+
+  // Global chunk switching coordination
+  private globalChunkSwitchPromise: Promise<void> | null = null;
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -189,6 +196,16 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
+    // Subscribe to zoom setting changes
+    useUIStore.subscribe(
+      (state) => state.enableMapZoom,
+      (enableMapZoom) => {
+        if (this.controls) {
+          this.controls.enableZoom = enableMapZoom;
+        }
+      },
+    );
+
     useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
       (selectedEntityId) => {
@@ -250,9 +267,20 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
       this.updateArmyHexes(update);
+
+      // Ensure army spawn location is marked as explored for pathfinding
+      // This fixes the bug where newly spawned armies can't see movement options
+      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+      if (!this.exploredTiles.has(normalizedPos.x)) {
+        this.exploredTiles.set(normalizedPos.x, new Map());
+      }
+      if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
+        // Mark spawn location as grassland (default safe biome for pathfinding)
+        this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+      }
+
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
 
-      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
     });
 
@@ -266,7 +294,7 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
       // If the army is marked as deleted, remove it from the map
       this.deleteArmy(entityId);
-      this.updateVisibleChunks();
+      this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
     });
 
     // Listen for structure guard updates
@@ -301,7 +329,7 @@ export default class WorldmapScene extends HexagonScene {
       if (this.totalStructures !== this.structureManager.getTotalStructures()) {
         this.totalStructures = this.structureManager.getTotalStructures();
         this.clearCache();
-        this.updateVisibleChunks(true);
+        this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
       }
     });
 
@@ -491,6 +519,9 @@ export default class WorldmapScene extends HexagonScene {
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
 
+      // Reset cursor when leaving hex
+      document.body.style.cursor = "default";
+
       // Handle label collapse on hex leave
       this.hoverLabelManager.onHexLeave();
       return;
@@ -515,7 +546,7 @@ export default class WorldmapScene extends HexagonScene {
     if (structure && structure.owner === ContractAddress(useAccountStore.getState().account?.address || "")) {
       this.state.setStructureEntityId(structure.id);
       // remove this for now because not sure if best ux
-      // navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
     }
   }
 
@@ -841,7 +872,7 @@ export default class WorldmapScene extends HexagonScene {
     this.camera.updateProjectionMatrix();
     this.mainDirectionalLight.castShadow = false;
     this.controls.enablePan = true;
-    this.controls.enableZoom = false;
+    this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
     this.moveCameraToURLLocation();
@@ -1048,7 +1079,7 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       this.removeCachedMatricesAroundColRow(chunkRow, chunkCol);
       this.currentChunk = "null"; // reset the current chunk to force a recomputation
-      this.updateVisibleChunks();
+      this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
       return;
     }
 
@@ -1438,7 +1469,17 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
-  updateVisibleChunks(force: boolean = false) {
+  async updateVisibleChunks(force: boolean = false) {
+    // Wait for any ongoing global chunk switch to complete first
+    if (this.globalChunkSwitchPromise) {
+      console.log(`[GLOBAL CHUNK SYNC] Waiting for previous global chunk switch to complete`);
+      try {
+        await this.globalChunkSwitchPromise;
+      } catch (error) {
+        console.warn(`Previous global chunk switch failed:`, error);
+      }
+    }
+
     const cameraPosition = dummyVector;
     cameraPosition.copy(this.controls.target);
     // Adjust the camera position to load chunks earlier in both directions
@@ -1449,37 +1490,53 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = chunkX * this.chunkSize;
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
+
     if (this.currentChunk !== chunkKey || force) {
-      this.currentChunk = chunkKey;
+      // Create and track the global chunk switch promise
+      this.globalChunkSwitchPromise = this.performChunkSwitch(chunkKey, startCol, startRow, force);
 
-      if (!force) {
-        this.removeCachedMatricesForChunk(startRow, startCol);
+      try {
+        await this.globalChunkSwitchPromise;
+        console.log(`[GLOBAL CHUNK SYNC] Global chunk switch to ${chunkKey} completed`);
+      } finally {
+        this.globalChunkSwitchPromise = null;
       }
-
-      // Load surrounding chunks for better UX (3x3 grid)
-      const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-      console.log("Loading chunks:", surroundingChunks);
-
-      // Start loading all surrounding chunks (they will deduplicate automatically)
-      const loadPromises = surroundingChunks.map((chunk) => this.computeTileEntities(chunk));
-
-      // Calculate the starting position for the new chunk
-      this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
-
-      // Update which interactive hexes are visible in the new chunk
-      this.interactiveHexManager.updateVisibleHexes(
-        startRow,
-        startCol,
-        this.renderChunkSize.width,
-        this.renderChunkSize.height,
-      );
-
-      console.log("updateVisibleChunks", chunkKey);
-      this.armyManager.updateChunk(chunkKey);
-      this.structureManager.updateChunk(chunkKey);
-      this.questManager.updateChunk(chunkKey);
-      this.chestManager.updateChunk(chunkKey);
     }
+  }
+
+  private async performChunkSwitch(chunkKey: string, startCol: number, startRow: number, force: boolean) {
+    this.currentChunk = chunkKey;
+
+    if (!force) {
+      this.removeCachedMatricesForChunk(startRow, startCol);
+    }
+
+    // Load surrounding chunks for better UX (3x3 grid)
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    console.log("Loading chunks:", surroundingChunks);
+
+    // Start loading all surrounding chunks (they will deduplicate automatically)
+    const loadPromises = surroundingChunks.map((chunk) => this.computeTileEntities(chunk));
+
+    // Calculate the starting position for the new chunk
+    this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+
+    // Update which interactive hexes are visible in the new chunk
+    this.interactiveHexManager.updateVisibleHexes(
+      startRow,
+      startCol,
+      this.renderChunkSize.width,
+      this.renderChunkSize.height,
+    );
+
+    console.log("performChunkSwitch", chunkKey);
+    // Update all managers concurrently to prevent sequential race conditions
+    await Promise.all([
+      this.armyManager.updateChunk(chunkKey),
+      this.structureManager.updateChunk(chunkKey),
+      this.questManager.updateChunk(chunkKey),
+      this.chestManager.updateChunk(chunkKey),
+    ]);
   }
 
   update(deltaTime: number) {
@@ -1702,6 +1759,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up hover label manager
     this.hoverLabelManager.destroy();
+
+    // Clean up input manager
+    this.inputManager.destroy();
 
     // Clean up shortcuts when scene is actually destroyed
     if (this.shortcutManager instanceof SceneShortcutManager) {
