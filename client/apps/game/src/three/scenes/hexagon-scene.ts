@@ -1,4 +1,5 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
+import { sqlApi } from "@/services/api";
 import { HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
@@ -6,12 +7,12 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
-import { WorldUpdateListener } from "@/three/systems/world-update-listener";
 import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
+import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
@@ -66,9 +67,6 @@ export abstract class HexagonScene {
     { delay: 700, duration: 40 },
   ];
 
-  private reusableVector3 = new THREE.Vector3();
-  private reusableMatrix4 = new THREE.Matrix4();
-
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
@@ -94,7 +92,7 @@ export abstract class HexagonScene {
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
-    this.worldUpdateListener = new WorldUpdateListener(this.dojo);
+    this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new THREE.Color(0x2a1a3e);
@@ -327,9 +325,6 @@ export abstract class HexagonScene {
   private getHexFromWorldPosition(position: THREE.Vector3): HexPosition {
     const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
     const verticalSpacing = (HEX_SIZE * 3) / 2;
-
-    // Calculate col first
-    const col = Math.round(position.x / horizontalSpacing);
 
     // Then use col to calculate row
     const row = Math.round(-position.z / verticalSpacing);

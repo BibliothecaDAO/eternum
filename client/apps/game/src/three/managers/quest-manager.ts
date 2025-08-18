@@ -1,15 +1,15 @@
 import { QuestModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
-import { Position } from "@/types/position";
+import { Position, QuestData, QuestSystemUpdate } from "@bibliothecadao/eternum";
+
 import { FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
-import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
-import { QuestLabelType, QuestLabelData } from "../utils/labels/label-factory";
 import { gltfLoader } from "../utils/utils";
 const MAX_INSTANCES = 1000;
 

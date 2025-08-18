@@ -1,8 +1,6 @@
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { MapDataStore } from "@/three/managers/map-data-store";
-import { Position } from "@/types/position";
+import { sqlApi } from "@/services/api";
 import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -14,6 +12,9 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getStructureName,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
+  Position,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
@@ -72,7 +73,7 @@ export const BlitzHyperstructuresMenu = () => {
       const structureName = getStructureName(structure, false).name;
 
       // Get hyperstructure realm count
-      const hyperstructureRealmCount = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).getHyperstructureRealmCount(
+      const hyperstructureRealmCount = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(
         structure.entity_id,
       );
 

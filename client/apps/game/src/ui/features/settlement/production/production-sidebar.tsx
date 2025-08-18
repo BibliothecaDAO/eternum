@@ -1,6 +1,8 @@
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   configManager,
   getEntityIdFromKeys,

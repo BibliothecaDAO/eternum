@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { configManager, getStructureName, unpackValue } from "@bibliothecadao/eternum";

@@ -1,6 +1,6 @@
-import { ActiveProduction, ArmyMapData, GuardArmy, MapDataStore } from "@/three/managers/map-data-store";
-import { StaminaManager } from "@bibliothecadao/eternum";
 import { ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { StaminaManager } from "../managers";
+import { ActiveProduction, ArmyMapData, GuardArmy, MapDataStore } from "../stores/map-data-store";
 
 /**
  * DataEnhancer - Handles all data fetching and enhancement from MapDataStore

@@ -1,5 +1,3 @@
-import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "@/three/constants";
-import { getHyperstructureProgress } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   type ID,
@@ -9,7 +7,9 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { StructureProgress } from "../types";
+import { getHyperstructureProgress } from "../utils";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
+import { StructureProgress } from "./types";
 
 export const getStructureStage = (structureType: StructureType, entityId: ID, components: ClientComponents): number => {
   if (structureType === StructureType.Hyperstructure) {

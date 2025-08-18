@@ -3,13 +3,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position } from "@bibliothecadao/eternum";
+
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { BiomeIdToType, HexPosition, ResourcesIds, StructureType, Tile, TileOccupier } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { CameraView } from "../scenes/hexagon-scene";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "../systems/utils";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = (isBlitz: boolean) => ({

@@ -4,7 +4,6 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import {
   getUnusedSeasonPasses,
@@ -16,6 +15,7 @@ import {
 } from "@/ui/features/settlement";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
+import { Position, Position as PositionInterface } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";

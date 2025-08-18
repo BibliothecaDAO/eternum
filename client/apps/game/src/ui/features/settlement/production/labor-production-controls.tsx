@@ -1,7 +1,8 @@
 import { Button, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceIcon, SelectResource } from "@/ui/design-system/molecules";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { configManager, divideByPrecision, formatTime, isRelic, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";

@@ -1,5 +1,7 @@
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { Position } from "@bibliothecadao/eternum";
+
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { getCharacterName } from "@/utils/agent";
 import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";

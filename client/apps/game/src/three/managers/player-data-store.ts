@@ -1,5 +1,6 @@
 import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { getStructureTypeName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import realms from "../../../../../public/jsons/realms.json";

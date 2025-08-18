@@ -1,15 +1,6 @@
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "@/three/managers/map-data-store";
-import { getBlockTimestamp } from "@/utils/timestamp";
+
 import { type SetupResult } from "@bibliothecadao/dojo";
-import {
-  divideByPrecision,
-  getArmyRelicEffects,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  StaminaManager,
-  unpackBuildingCounts,
-} from "@bibliothecadao/eternum";
+import { SqlApi } from "@bibliothecadao/torii";
 import {
   BiomeIdToType,
   BiomeType,
@@ -30,6 +21,18 @@ import {
   isComponentUpdate,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { StaminaManager } from "../managers";
+import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "../stores/map-data-store";
+import {
+  divideByPrecision,
+  getArmyRelicEffects,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+  unpackBuildingCounts,
+} from "../utils";
+import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
+import { getBlockTimestamp } from "../utils/timestamp";
+import { DataEnhancer } from "./data-enhancer";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
@@ -38,8 +41,7 @@ import {
   type RelicEffectSystemUpdate,
   type StructureSystemUpdate,
   type TileSystemUpdate,
-} from "../types";
-import { DataEnhancer } from "./data-enhancer";
+} from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getStructureStage } from "./utils";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
@@ -50,9 +52,9 @@ export class WorldUpdateListener {
   private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
   private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
 
-  constructor(private setup: SetupResult) {
+  constructor(private setup: SetupResult, sqlApi: SqlApi) {
     // Initialize MapDataStore with centralized refresh interval
-    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL);
+    this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
 
     // Initialize DataEnhancer to handle all data fetching
     this.dataEnhancer = new DataEnhancer(this.mapDataStore);
@@ -564,7 +566,7 @@ export class WorldUpdateListener {
 
   public get StructureEntityListener() {
     return {
-      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => {
+      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => any) => {
         // Create a query for the Structure component
         const query = defineQuery([HasValue(this.setup.components.Structure, { entity_id: entityId })], {
           runOnInit: false,
@@ -583,7 +585,7 @@ export class WorldUpdateListener {
         });
 
         // Return the subscription so it can be cleaned up later
-        return subscription;
+        return subscription as any;
       },
     };
   }

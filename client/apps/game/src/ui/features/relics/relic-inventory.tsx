@@ -1,5 +1,7 @@
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { Position } from "@bibliothecadao/eternum";
+
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";

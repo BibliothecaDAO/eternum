@@ -1,9 +1,10 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { Trophy, Timer, X } from "lucide-react";
+import { Timer, Trophy, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const formatTimeRemaining = (seconds: number): string => {

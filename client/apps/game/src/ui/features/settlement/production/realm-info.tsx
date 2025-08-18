@@ -1,4 +1,5 @@
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { CapacityInfo } from "@/ui/features/world";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";

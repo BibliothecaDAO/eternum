@@ -5,7 +5,8 @@ import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-th
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { StaminaResourceCost } from "@/ui/design-system/molecules/stamina-resource-cost";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   ActionPath,
   ActionPaths,

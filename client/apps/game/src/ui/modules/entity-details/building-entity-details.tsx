@@ -1,7 +1,8 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settlement";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";

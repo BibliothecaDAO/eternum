@@ -1,6 +1,6 @@
 import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz, Position } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";

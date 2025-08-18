@@ -1,5 +1,5 @@
-import { SelectableArmy } from "@/three/types";
 import { BattleViewInfo, LeftView, RightView } from "@/types";
+import { SelectableArmy } from "@bibliothecadao/eternum";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";

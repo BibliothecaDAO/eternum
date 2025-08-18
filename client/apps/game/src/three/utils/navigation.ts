@@ -1,4 +1,5 @@
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { Structure } from "@bibliothecadao/types";
 
 /**

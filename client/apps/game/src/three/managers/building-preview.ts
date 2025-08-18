@@ -2,7 +2,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
 import { gltfLoader } from "@/three/utils/utils";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import * as THREE from "three";

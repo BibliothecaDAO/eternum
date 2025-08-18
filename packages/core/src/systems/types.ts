@@ -3,14 +3,15 @@ import {
   BuildingType,
   HexPosition,
   ID,
+  QuestType,
   RelicEffectWithEndTick,
   ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import type { ActiveProduction, GuardArmy } from "../managers/map-data-store";
-import { StructureProgress } from "./common";
+import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
+import { Position } from "./position";
 
 // data that you can get from the tile + mapdatastore
 export type ArmySystemUpdate = {
@@ -101,3 +102,27 @@ export type RelicEffectSystemUpdate = {
   entityId: ID;
   relicEffects: RelicEffectWithEndTick[];
 };
+
+
+export interface QuestData {
+  entityId: ID;
+  questType: QuestType;
+  occupierId: ID;
+  hexCoords: Position;
+}
+
+export interface ChestData {
+  entityId: ID;
+  hexCoords: Position;
+}
+
+export interface SelectableArmy {
+  entityId: ID;
+  position: HexPosition;
+  name: string;
+}
+export enum StructureProgress {
+  STAGE_1 = 0,
+  STAGE_2 = 1,
+  STAGE_3 = 2,
+}

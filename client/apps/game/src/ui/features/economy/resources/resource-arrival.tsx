@@ -1,8 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { DepositResources } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { configManager, divideByPrecision, formatTime, getStructureName } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";
 import { ResourceArrivalInfo, Structure } from "@bibliothecadao/types";

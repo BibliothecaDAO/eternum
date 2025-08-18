@@ -1,15 +1,13 @@
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
-import { SettlementLocation } from "../utils/settlement-types";
 import { SettlementMinimapModal } from "@/ui/features/settlement";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getSeasonPassAddress } from "@/utils/addresses";
-import { getOffchainRealm, unpackValue } from "@bibliothecadao/eternum";
+import { getOffchainRealm, Position, unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { RealmInterface, ResourcesIds } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
@@ -18,6 +16,7 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
+import { SettlementLocation } from "../utils/settlement-types";
 
 const querySeasonPasses = async (accountAddress: string) => {
   const getAccountTokens = gql`

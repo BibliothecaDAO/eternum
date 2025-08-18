@@ -3,9 +3,11 @@ import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { COLORS } from "@/ui/features";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { ArmySystemUpdate, ExplorerTroopsSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
@@ -18,7 +20,7 @@ import {
 } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { ArmyData, ArmySystemUpdate, ExplorerTroopsSystemUpdate, RenderChunkSize } from "../types";
+import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";

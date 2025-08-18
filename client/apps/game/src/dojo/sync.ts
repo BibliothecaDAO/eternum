@@ -2,8 +2,7 @@ import type { AppStore } from "@/hooks/store/use-ui-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { MapDataStore } from "@/three/managers/map-data-store";
+import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -213,7 +212,7 @@ export const initialSync = async (
   setInitialSyncProgress(90);
 
   start = performance.now();
-  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).refresh();
+  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
   end = performance.now();
   console.log("[sync] fetching the map data store", end - start);
   setInitialSyncProgress(100);

@@ -1,6 +1,5 @@
 import { sqlApi } from "@/services/api";
-import { Position } from "@/types/position";
-import { Coord } from "@bibliothecadao/eternum";
+import { Coord, Position } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   ContractAddress,

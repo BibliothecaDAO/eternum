@@ -1,4 +1,5 @@
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { BiomeType, getNeighborOffsets, HexEntityInfo, HexPosition } from "@bibliothecadao/types";
 
 interface Node {

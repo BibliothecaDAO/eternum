@@ -1,4 +1,5 @@
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { QuestReward } from "@/ui/features/economy/resources";
 import { getStructureName } from "@bibliothecadao/eternum";

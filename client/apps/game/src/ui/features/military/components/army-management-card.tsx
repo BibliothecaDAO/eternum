@@ -1,5 +1,6 @@
 import { sqlApi } from "@/services/api";
-import { Position as PositionInterface } from "@/types/position";
+import { Position as PositionInterface } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -7,7 +8,8 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   ArmyManager,
   divideByPrecision,
