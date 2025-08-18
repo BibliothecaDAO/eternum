@@ -2,6 +2,7 @@ import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
+import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import * as THREE from "three";
 import { getHexagonCoordinates, getWorldPositionForHex } from "../utils";
 
@@ -141,6 +142,7 @@ export class InteractiveHexManager {
 
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+    hexGeometryDebugger.trackGeometryCreation('InteractiveHexManager.renderAllHexes');
     const instanceCount = this.allHexes.size;
 
     if (instanceCount === 0) return;
@@ -180,6 +182,7 @@ export class InteractiveHexManager {
 
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+    hexGeometryDebugger.trackGeometryCreation('InteractiveHexManager.renderHexes');
     const instanceCount = this.visibleHexes.size;
 
     if (instanceCount === 0) return;

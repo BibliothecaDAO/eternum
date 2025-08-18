@@ -1,6 +1,7 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
+import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
@@ -45,10 +46,12 @@ export class HighlightHexManager {
     // Create new highlight meshes
     const bigHexagonShape = createRoundedHexagonShape(HEX_SIZE * 0.975);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+    hexGeometryDebugger.trackGeometryCreation('HighlightHexManager.highlightHexes');
 
     actionPaths.forEach((hex) => {
       const position = getWorldPositionForHex(hex.hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
+      hexGeometryDebugger.trackMaterialClone('HighlightHexManager.highlightHexes');
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
       highlightMesh.position.set(position.x, 0.175 + this.yOffset, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
