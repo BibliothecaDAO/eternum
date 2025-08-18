@@ -30,6 +30,8 @@ interface PendingExplorerTroopsUpdate {
   onChainStamina: { amount: bigint; updatedTick: number };
   ownerAddress: bigint;
   ownerName: string;
+  timestamp: number; // When this update was received
+  updateTick: number; // Game tick when this update occurred
 }
 
 interface AddArmyParams {
@@ -68,6 +70,7 @@ export class ArmyManager {
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: NodeJS.Timeout | null = null;
+  private cleanupTimeout: NodeJS.Timeout | null = null;
 
   constructor(
     scene: THREE.Scene,
@@ -160,6 +163,9 @@ export class ArmyManager {
 
     // Start checking for tick changes every second
     this.scheduleTickCheck();
+
+    // Start periodic cleanup of stale pending updates every 60 seconds
+    this.startPendingUpdatesCleanup();
   }
 
   private scheduleTickCheck() {
@@ -172,6 +178,31 @@ export class ArmyManager {
       // Schedule the next check
       this.scheduleTickCheck();
     }, 1000);
+  }
+
+  private startPendingUpdatesCleanup() {
+    const cleanup = () => {
+      const now = Date.now();
+      const maxAge = 60000; // 60 seconds
+      let cleanedCount = 0;
+
+      for (const [entityId, pendingUpdate] of this.pendingExplorerTroopsUpdate.entries()) {
+        if (now - pendingUpdate.timestamp > maxAge) {
+          this.pendingExplorerTroopsUpdate.delete(entityId);
+          cleanedCount++;
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`[PENDING UPDATES CLEANUP] Removed ${cleanedCount} stale pending updates`);
+      }
+
+      // Schedule next cleanup
+      this.cleanupTimeout = setTimeout(cleanup, 60000);
+    };
+
+    // Start initial cleanup after 60 seconds
+    this.cleanupTimeout = setTimeout(cleanup, 60000);
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -373,92 +404,104 @@ export class ArmyManager {
     // Check for pending label updates and apply them if they exist
     const pendingUpdate = this.pendingExplorerTroopsUpdate.get(entityId);
     if (pendingUpdate) {
-      console.log(`[PENDING LABEL UPDATE] Applying pending update for army ${entityId}`);
-      finalOnChainStamina = pendingUpdate.onChainStamina;
+      // Check if pending update is not too old (max 30 seconds)
+      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
-      // Calculate current stamina using the pending update data
-      const { currentArmiesTick } = getBlockTimestamp();
-      const updatedStamina = Number(
-        StaminaManager.getStamina(
-          {
-            category,
-            tier,
-            count: BigInt(pendingUpdate.troopCount),
-            stamina: {
-              amount: BigInt(pendingUpdate.onChainStamina.amount),
-              updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
+      if (isPendingStale) {
+        console.warn(
+          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
+        );
+        this.pendingExplorerTroopsUpdate.delete(entityId);
+      } else {
+        console.log(
+          `[PENDING LABEL UPDATE] Applying pending update for army ${entityId} (tick: ${pendingUpdate.updateTick})`,
+        );
+        finalOnChainStamina = pendingUpdate.onChainStamina;
+
+        // Calculate current stamina using the pending update data
+        const { currentArmiesTick } = getBlockTimestamp();
+        const updatedStamina = Number(
+          StaminaManager.getStamina(
+            {
+              category,
+              tier,
+              count: BigInt(pendingUpdate.troopCount),
+              stamina: {
+                amount: BigInt(pendingUpdate.onChainStamina.amount),
+                updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
+              },
+              // todo: add boosts
+              boosts: {
+                incr_stamina_regen_percent_num: 0,
+                incr_stamina_regen_tick_count: 0,
+                incr_explore_reward_percent_num: 0,
+                incr_explore_reward_end_tick: 0,
+                incr_damage_dealt_percent_num: 0,
+                incr_damage_dealt_end_tick: 0,
+                decr_damage_gotten_percent_num: 0,
+                decr_damage_gotten_end_tick: 0,
+              },
             },
-            // todo: add boosts
-            boosts: {
-              incr_stamina_regen_percent_num: 0,
-              incr_stamina_regen_tick_count: 0,
-              incr_explore_reward_percent_num: 0,
-              incr_explore_reward_end_tick: 0,
-              incr_damage_dealt_percent_num: 0,
-              incr_damage_dealt_end_tick: 0,
-              decr_damage_gotten_percent_num: 0,
-              decr_damage_gotten_end_tick: 0,
-            },
-          },
-          currentArmiesTick,
-        ).amount,
-      );
+            currentArmiesTick,
+          ).amount,
+        );
 
-      // Use pending update data instead of initial data
-      finalTroopCount = pendingUpdate.troopCount;
-      finalCurrentStamina = updatedStamina;
-      finalOwnerAddress = pendingUpdate.ownerAddress;
-      finalOnChainStamina = pendingUpdate.onChainStamina;
-      finalOwnerName = pendingUpdate.ownerName;
+        // Use pending update data instead of initial data
+        finalTroopCount = pendingUpdate.troopCount;
+        finalCurrentStamina = updatedStamina;
+        finalOwnerAddress = pendingUpdate.ownerAddress;
+        finalOnChainStamina = pendingUpdate.onChainStamina;
+        finalOwnerName = pendingUpdate.ownerName;
 
-      // Clear the pending update
-      this.pendingExplorerTroopsUpdate.delete(entityId);
-    }
-
-    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
-
-    // Determine the color based on ownership (consistent with structure labels)
-    let color: string;
-    if (isDaydreamsAgent) {
-      color = COLORS.SELECTED;
-    } else if (isMine) {
-      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
-    } else {
-      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
-    }
-
-    this.armies.set(entityId, {
-      entityId,
-      matrixIndex: this.armies.size - 1,
-      hexCoords,
-      isMine,
-      owner: {
-        address: finalOwnerAddress || 0n,
-        ownerName: finalOwnerName,
-        guildName: finalGuildName,
-      },
-      color,
-      category,
-      tier,
-      isDaydreamsAgent,
-      // Enhanced data
-      troopCount: finalTroopCount,
-      currentStamina: finalCurrentStamina,
-      maxStamina: finalMaxStamina,
-      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-      onChainStamina: finalOnChainStamina,
-    });
-
-    // Apply any pending relic effects for this army
-    if (this.applyPendingRelicEffectsCallback) {
-      try {
-        await this.applyPendingRelicEffectsCallback(entityId);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+        // Clear the pending update
+        this.pendingExplorerTroopsUpdate.delete(entityId);
       }
-    }
 
-    await this.renderVisibleArmies(this.currentChunkKey!);
+      const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
+
+      // Determine the color based on ownership (consistent with structure labels)
+      let color: string;
+      if (isDaydreamsAgent) {
+        color = COLORS.SELECTED;
+      } else if (isMine) {
+        color = LABEL_STYLES.MINE.textColor || "#d9f99d";
+      } else {
+        color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
+      }
+
+      this.armies.set(entityId, {
+        entityId,
+        matrixIndex: this.armies.size - 1,
+        hexCoords,
+        isMine,
+        owner: {
+          address: finalOwnerAddress || 0n,
+          ownerName: finalOwnerName,
+          guildName: finalGuildName,
+        },
+        color,
+        category,
+        tier,
+        isDaydreamsAgent,
+        // Enhanced data
+        troopCount: finalTroopCount,
+        currentStamina: finalCurrentStamina,
+        maxStamina: finalMaxStamina,
+        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+        onChainStamina: finalOnChainStamina,
+      });
+
+      // Apply any pending relic effects for this army
+      if (this.applyPendingRelicEffectsCallback) {
+        try {
+          await this.applyPendingRelicEffectsCallback(entityId);
+        } catch (error) {
+          console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+        }
+      }
+
+      await this.renderVisibleArmies(this.currentChunkKey!);
+    }
   }
 
   public async moveArmy(
@@ -770,13 +813,28 @@ export class ArmyManager {
 
     // If army doesn't exist yet, store the update as pending
     if (!army) {
-      console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId}`);
-      this.pendingExplorerTroopsUpdate.set(update.entityId, {
-        troopCount: update.troopCount,
-        onChainStamina: update.onChainStamina,
-        ownerAddress: update.ownerAddress,
-        ownerName: update.ownerName,
-      });
+      const currentTime = Date.now();
+      const currentTick = update.onChainStamina.updatedTick;
+
+      // Check if we already have a pending update for this entity
+      const existingPending = this.pendingExplorerTroopsUpdate.get(update.entityId);
+
+      // Only store if this is newer than the existing pending update
+      if (!existingPending || currentTick >= existingPending.updateTick) {
+        console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
+        this.pendingExplorerTroopsUpdate.set(update.entityId, {
+          troopCount: update.troopCount,
+          onChainStamina: update.onChainStamina,
+          ownerAddress: update.ownerAddress,
+          ownerName: update.ownerName,
+          timestamp: currentTime,
+          updateTick: currentTick,
+        });
+      } else {
+        console.log(
+          `[PENDING LABEL UPDATE] Ignoring older pending update for army ${update.entityId} (tick: ${currentTick} vs ${existingPending.updateTick})`,
+        );
+      }
       return;
     }
 
@@ -835,6 +893,20 @@ export class ArmyManager {
     if (this.tickCheckTimeout) {
       clearTimeout(this.tickCheckTimeout);
       this.tickCheckTimeout = null;
+    }
+
+    // Clean up pending updates cleanup timeout
+    if (this.cleanupTimeout) {
+      clearTimeout(this.cleanupTimeout);
+      this.cleanupTimeout = null;
+    }
+
+    // Clear any remaining pending updates
+    if (this.pendingExplorerTroopsUpdate.size > 0) {
+      console.log(
+        `[PENDING UPDATES CLEANUP] Clearing ${this.pendingExplorerTroopsUpdate.size} remaining pending updates on destroy`,
+      );
+      this.pendingExplorerTroopsUpdate.clear();
     }
 
     // Clean up relic effects

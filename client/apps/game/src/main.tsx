@@ -2,7 +2,7 @@
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { captureSystemError, initPostHog } from "@/posthog";
-import { initializeTracing, cleanupTracing } from "@/tracing";
+import { cleanupTracing } from "@/tracing";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
@@ -42,23 +42,23 @@ async function init() {
   // Initialize PostHog for analytics and error reporting
   initPostHog();
 
-  // Initialize tracing system
-  initializeTracing({
-    enableMetricsCollection: true,
-    metricsInterval: 1000,
-  });
+  // // Initialize tracing system
+  // initializeTracing({
+  //   enableMetricsCollection: true,
+  //   metricsInterval: 1000,
+  // });
 
   // Set up cleanup on page unload
   window.addEventListener("beforeunload", () => {
     cleanupTracing();
   });
 
-  // Load test utilities in development
-  if (import.meta.env.DEV) {
-    import('./tracing/test-tracing').then(() => {
-      console.log('🧪 Tracing test utilities loaded. Use TestTracing.runAllTests() to test.');
-    });
-  }
+  // // Load test utilities in development
+  // if (import.meta.env.DEV) {
+  //   import("./tracing/test-tracing").then(() => {
+  //     console.log("🧪 Tracing test utilities loaded. Use TestTracing.runAllTests() to test.");
+  //   });
+  // }
 
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");
@@ -224,7 +224,7 @@ async function init() {
   const cleanupGameRenderer = () => {
     if (isDestroyed) return;
     isDestroyed = true;
-    
+
     try {
       graphic.destroy();
       console.log("GameRenderer cleaned up");
@@ -243,11 +243,11 @@ async function init() {
   };
 
   // Cleanup on page hide (mobile/tab switching)
-  window.addEventListener('pagehide', cleanupGameRenderer);
-  
+  window.addEventListener("pagehide", cleanupGameRenderer);
+
   // Cleanup on visibility change (when page becomes hidden)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
       cleanupGameRenderer();
     }
   });

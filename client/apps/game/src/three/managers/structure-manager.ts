@@ -29,6 +29,8 @@ interface PendingLabelUpdate {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   owner: { address: bigint; ownerName: string; guildName: string };
+  timestamp: number; // When this update was received
+  updateType: 'structure' | 'building'; // Type of update for ordering
 }
 
 export class StructureManager {
@@ -235,16 +237,24 @@ export class StructureManager {
 
     const pendingUpdate = this.pendingLabelUpdates.get(entityId);
     if (pendingUpdate) {
-      console.log(`[PENDING LABEL UPDATE] Applying pending update for structure ${entityId}`);
-      finalOwner = pendingUpdate.owner;
-      if (pendingUpdate.guardArmies) {
-        finalGuardArmies = pendingUpdate.guardArmies;
+      // Check if pending update is not too old (max 30 seconds)
+      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
+      
+      if (isPendingStale) {
+        console.warn(`[PENDING LABEL UPDATE] Discarding stale pending update for structure ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`);
+        this.pendingLabelUpdates.delete(entityId);
+      } else {
+        console.log(`[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType})`);
+        finalOwner = pendingUpdate.owner;
+        if (pendingUpdate.guardArmies) {
+          finalGuardArmies = pendingUpdate.guardArmies;
+        }
+        if (pendingUpdate.activeProductions) {
+          finalActiveProductions = pendingUpdate.activeProductions;
+        }
+        // Clear the pending update
+        this.pendingLabelUpdates.delete(entityId);
       }
-      if (pendingUpdate.activeProductions) {
-        finalActiveProductions = pendingUpdate.activeProductions;
-      }
-      // Clear the pending update
-      this.pendingLabelUpdates.delete(entityId);
     }
 
     // Add the structure to the structures map with the complete owner info
@@ -636,17 +646,29 @@ export class StructureManager {
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
-      console.log(`[PENDING LABEL UPDATE] Storing pending update for structure ${update.entityId}`);
-      this.pendingLabelUpdates.set(update.entityId, {
-        guardArmies: update.guardArmies.map((guard) => ({
-          slot: guard.slot,
-          category: guard.category,
-          tier: guard.tier,
-          count: guard.count,
-          stamina: guard.stamina,
-        })),
-        owner: update.owner,
-      });
+      const currentTime = Date.now();
+      
+      // Check if we already have a pending update for this entity
+      const existingPending = this.pendingLabelUpdates.get(update.entityId);
+      
+      // Only store if this is newer than the existing pending update or it's a different type
+      if (!existingPending || currentTime >= existingPending.timestamp) {
+        console.log(`[PENDING LABEL UPDATE] Storing pending structure update for ${update.entityId}`);
+        this.pendingLabelUpdates.set(update.entityId, {
+          guardArmies: update.guardArmies.map((guard) => ({
+            slot: guard.slot,
+            category: guard.category,
+            tier: guard.tier,
+            count: guard.count,
+            stamina: guard.stamina,
+          })),
+          owner: update.owner,
+          timestamp: currentTime,
+          updateType: 'structure',
+        });
+      } else {
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${update.entityId}`);
+      }
       return;
     }
 
@@ -681,19 +703,27 @@ export class StructureManager {
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
+      const currentTime = Date.now();
+      
       console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${update.entityId}`);
 
       // Check if there's already a pending update for this structure
       const existingPending = this.pendingLabelUpdates.get(update.entityId);
-      if (existingPending) {
+      if (existingPending && currentTime >= existingPending.timestamp) {
         // Update the existing pending with new active productions
         existingPending.activeProductions = update.activeProductions;
-      } else {
+        existingPending.timestamp = currentTime;
+        existingPending.updateType = 'building';
+      } else if (!existingPending) {
         // Create a new pending update with just the active productions
         this.pendingLabelUpdates.set(update.entityId, {
           activeProductions: update.activeProductions,
           owner: { address: 0n, ownerName: "", guildName: "" }, // Will be updated when structure is created
+          timestamp: currentTime,
+          updateType: 'building',
         });
+      } else {
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${update.entityId}`);
       }
       return;
     }

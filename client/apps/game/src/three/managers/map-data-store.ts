@@ -271,17 +271,30 @@ export class MapDataStore {
 
   public async refresh(): Promise<void> {
     console.log("Refreshing map data store");
+    
+    // If already loading, wait for the existing promise
     if (this.isLoading) {
-      // If already loading, return the existing promise
       if (this.loadingPromise) {
         return this.loadingPromise;
       }
-      return;
+      // If isLoading is true but loadingPromise is null, wait a bit and retry
+      // This can happen during the race condition in the finally block
+      await new Promise(resolve => setTimeout(resolve, 10));
+      if (this.isLoading && this.loadingPromise) {
+        return this.loadingPromise;
+      }
+      // If still no promise but still loading, something went wrong - reset state
+      if (this.isLoading && !this.loadingPromise) {
+        console.warn("MapDataStore: Inconsistent state detected, resetting...");
+        this.isLoading = false;
+      }
     }
 
+    // Set loading state and create promise atomically
+    this.isLoading = true;
+    this.loadingPromise = this.fetchAndStoreMapData();
+
     try {
-      this.isLoading = true;
-      this.loadingPromise = this.fetchAndStoreMapData();
       await this.loadingPromise;
       console.log("Map data store refreshed at ", new Date().toISOString());
       this.retryCount = 0;
@@ -292,9 +305,15 @@ export class MapDataStore {
       console.error("Failed to refresh map data store:", error);
       if (this.retryCount < this.MAX_RETRIES) {
         this.retryCount++;
-        setTimeout(() => this.refresh(), 1000 * this.retryCount);
+        // Use setTimeout to avoid recursive call stack issues
+        setTimeout(() => {
+          this.refresh().catch(err => {
+            console.error("Retry refresh failed:", err);
+          });
+        }, 1000 * this.retryCount);
       }
     } finally {
+      // Reset state atomically
       this.isLoading = false;
       this.loadingPromise = null;
     }
@@ -394,7 +413,11 @@ export class MapDataStore {
 
   private _checkRefresh(): void {
     if (Date.now() - this.lastFetchTime > this.REFRESH_INTERVAL) {
-      this.refresh();
+      // Don't await here as this is a background refresh check
+      // The refresh method now handles concurrent calls safely
+      this.refresh().catch(error => {
+        console.error("Background refresh failed:", error);
+      });
     }
   }
 
