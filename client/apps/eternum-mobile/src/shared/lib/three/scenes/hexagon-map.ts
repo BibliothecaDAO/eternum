@@ -364,20 +364,25 @@ export class HexagonMap {
         const actionType = ActionPaths.getActionType(actionPath);
 
         if (actionType === ActionType.Move || actionType === ActionType.Explore) {
+          // Clear selection immediately to prevent further interactions
+          this.selectionManager.clearSelection();
+          
           // Move the army to the clicked hex
           await this.handleArmyMovement(selectedObject.id, actionPath);
         } else if (actionType === ActionType.Attack) {
           console.log(`Attack action at (${col}, ${row})`);
           // Handle attack action
+          this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Help) {
           console.log(`Help action at (${col}, ${row})`);
           // Handle help action
+          this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Quest) {
           console.log(`Quest action at (${col}, ${row})`);
           // Handle quest action
+          this.selectionManager.clearSelection();
         }
 
-        this.selectionManager.clearSelection();
         return;
       }
     }
@@ -459,8 +464,8 @@ export class HexagonMap {
         return { col: normalized.x, row: normalized.y };
       });
 
-      // Start visual army movement
-      const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 200);
+      // Start visual army movement with slower speed (800ms instead of 200ms)
+      const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 800);
 
       // End effect when movement starts
       effect.end();
@@ -474,9 +479,13 @@ export class HexagonMap {
       );
     } catch (error) {
       console.error("Army movement failed:", error);
+      // Clean up effects and pending state on error
       effect.end();
       this.activeTravelEffects.delete(armyId);
       this.pendingArmyMovements.delete(armyId);
+      
+      // Re-throw error to let caller handle it
+      throw error;
     }
   }
 
@@ -922,5 +931,13 @@ export class HexagonMap {
 
   public getSelectionManager(): SelectionManager {
     return this.selectionManager;
+  }
+
+  public clearSelection(): void {
+    this.selectionManager.clearSelection();
+  }
+
+  public isArmySelectable(armyId: number): boolean {
+    return !this.pendingArmyMovements.has(armyId);
   }
 }
