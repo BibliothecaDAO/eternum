@@ -10,6 +10,7 @@ import { ArmyManager } from "@/three/managers/army-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
+import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -103,6 +104,7 @@ export default class WorldmapScene extends HexagonScene {
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private selectedHexManager: SelectedHexManager;
+  private selectionPulseManager: SelectionPulseManager;
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
@@ -421,6 +423,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
+    this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
     this.minimap = new Minimap(this, this.camera);
 
@@ -590,7 +593,7 @@ export default class WorldmapScene extends HexagonScene {
     if (army?.owner === account) {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
-      this.onStructureSelection(structure.id);
+      this.onStructureSelection(structure.id, hexCoords);
     } else if (quest) {
       // Handle quest click
       this.clearEntitySelection();
@@ -616,14 +619,8 @@ export default class WorldmapScene extends HexagonScene {
         if (this.state.isSoundOn) {
           AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
         }
-        // Get the entity at the clicked hex
-        const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
-
-        // Remove all labels except the clicked entity's label
-        this.armyManager.removeLabelsExcept(army?.id);
-        this.structureManager.removeLabelsExcept(structure?.id);
-        this.questManager.removeLabelsExcept(quest?.id);
-        this.chestManager.removeLabelsExcept(chest?.id);
+        // Note: Label filtering is now handled in entity selection methods
+        // to avoid removing labels too aggressively on initial selection
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
@@ -806,7 +803,7 @@ export default class WorldmapScene extends HexagonScene {
     );
   }
 
-  private onStructureSelection(selectedEntityId: ID) {
+  private onStructureSelection(selectedEntityId: ID, hexCoords?: HexPosition) {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const structure = new StructureActionManager(this.dojo.components, selectedEntityId);
@@ -820,6 +817,17 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+    
+    // Show selection pulse for the selected structure
+    if (hexCoords) {
+      const worldPos = getWorldPositionForHex(hexCoords);
+      this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
+      // Set structure-specific pulse colors (orange/gold for structures)
+      this.selectionPulseManager.setPulseColor(
+        new THREE.Color(1.0, 0.6, 0.2), // Orange base
+        new THREE.Color(1.0, 0.9, 0.4)  // Gold pulse
+      );
+    }
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
@@ -865,6 +873,18 @@ export default class WorldmapScene extends HexagonScene {
     );
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+    
+    // Show selection pulse for the selected army
+    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    if (armyPosition) {
+      const worldPos = getWorldPositionForHex(armyPosition);
+      this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
+      // Set army-specific pulse colors (blue/cyan for armies)
+      this.selectionPulseManager.setPulseColor(
+        new THREE.Color(0.2, 0.6, 1.0), // Blue base
+        new THREE.Color(0.8, 1.0, 1.0)  // Cyan pulse
+      );
+    }
   }
 
   // handle quest selection
@@ -912,6 +932,7 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes([]);
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
+    this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
@@ -1860,6 +1881,9 @@ export default class WorldmapScene extends HexagonScene {
     // Clean up hover label manager
     this.hoverLabelManager.destroy();
 
+    // Clean up selection pulse manager
+    this.selectionPulseManager.dispose();
+
     // Clean up input manager
     this.inputManager.destroy();
 
@@ -2047,7 +2071,7 @@ export default class WorldmapScene extends HexagonScene {
       // structure.position is in contract coordinates, pass it directly
       // handleHexSelection will normalize it internally when calling getHexagonEntity
       this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
-      this.onStructureSelection(structure.entityId);
+      this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
       // Set the structure entity ID in the UI store
       this.state.setStructureEntityId(structure.entityId);
       const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
