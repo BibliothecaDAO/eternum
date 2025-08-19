@@ -1,7 +1,7 @@
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::Coord;
-use s1_eternum::models::troop::{GuardSlot, TroopType, TroopTier };
-use s1_eternum::models::position::Direction;        
+use s1_eternum::models::position::Direction;
+use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -27,6 +27,8 @@ pub enum Story {
     ProductionStory: ProductionStory,
     // Structure Upgrade
     StructureLevelUpStory: StructureLevelUpStory,
+    // Troop Movement
+    ExplorerMoveStory: ExplorerMoveStory,
     // Troop Management
     GuardAddStory: GuardAddStory,
     GuardDeleteStory: GuardDeleteStory,
@@ -91,6 +93,34 @@ pub struct ProductionStory {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct StructureLevelUpStory {
     pub new_level: u8,
+}
+
+///////////////////////////////////////////////
+///  Troop Movement
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub enum ExploreFind {
+    None,
+    Hyperstructure,
+    Mine,
+    Agent,
+    Quest,
+    Village,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ExplorerMoveStory {
+    pub explorer_id: ID,
+    pub explorer_structure_id: ID,
+    pub start_coord: Coord,
+    pub directions: Span<Direction>,
+    pub end_coord: Coord,
+    pub explore: bool,
+    pub explore_find: ExploreFind,
+    pub reward_resource_type: u8,
+    pub reward_resource_amount: u128,
 }
 
 ///////////////////////////////////////////////
