@@ -94,7 +94,7 @@ export const TermsOfService = ({ onAccept }: TermsOfServiceProps) => {
             <li>
               Players are encouraged to review the{" "}
               <a
-                href="https://docs.eternum.realms.world/"
+                href="https://eternum-docs.realms.world/"
                 className="underline hover:text-gold cursor-pointer"
                 target="_blank"
                 rel="noopener noreferrer"
