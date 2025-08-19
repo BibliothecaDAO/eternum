@@ -3,8 +3,12 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  ArmySystemUpdate,
+  Position,
   StructureActionManager,
-  SystemManager,
+  StructureSystemUpdate,
+  TileSystemUpdate,
+  WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { BiomeType, FELT_CENTER, HexEntityInfo } from "@bibliothecadao/types";
@@ -13,8 +17,6 @@ import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { getBlockTimestamp } from "../../../../shared/hooks/use-block-timestamp";
 import { GUIManager } from "../helpers/gui-manager";
 import { loggedInAccount } from "../helpers/utils";
-import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "../types";
-import { Position } from "../types/position";
 import { FXManager } from "./fx-manager";
 import { createHexagonShape } from "./hexagon-geometry";
 import { HighlightRenderer } from "./highlight-renderer";
@@ -44,7 +46,7 @@ export class HexagonMap {
   private matrix = new THREE.Matrix4();
   private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
-  private systemManager: SystemManager;
+  private systemManager: WorldUpdateListener;
 
   private tempVector3 = new THREE.Vector3();
   private tempColor = new THREE.Color();
@@ -80,7 +82,7 @@ export class HexagonMap {
   // Travel effects tracking
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
 
-  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: SystemManager, fxManager: FXManager) {
+  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: WorldUpdateListener, fxManager: FXManager) {
     this.scene = scene;
     this.dojo = dojo;
     this.systemManager = systemManager;
@@ -101,10 +103,10 @@ export class HexagonMap {
     this.initializeStaticAssets();
     this.initializeMap();
 
-    this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
-    this.systemManager.Army.onUpdate((update) => this.updateArmyHexes(update));
+    this.systemManager.Tile.onTileUpdate((value) => this.updateExploredHex(value));
+    this.systemManager.Army.onTileUpdate((update) => this.updateArmyHexes(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
-    this.systemManager.Structure.onUpdate((update) => this.updateStructureHexes(update));
+    this.systemManager.Structure.onTileUpdate((update) => this.updateStructureHexes(update));
 
     // Setup GUI with duplicate prevention
     const folderName = "HexagonMap";
@@ -760,12 +762,13 @@ export class HexagonMap {
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
-      owner: { address, ownerName, guildName },
+      ownerAddress,
+      ownerName,
+      guildName,
       entityId,
       troopType,
       troopTier,
       isDaydreamsAgent,
-      isAlly,
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
@@ -775,20 +778,20 @@ export class HexagonMap {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
+    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
 
     const army: ArmyObject = {
       id: entityId,
       col: newPos.col,
       row: newPos.row,
-      owner: address,
+      owner: ownerAddress,
       type: "army",
       troopType,
       troopTier,
       ownerName,
       guildName,
       isDaydreamsAgent,
-      isAlly,
+      isAlly: false,
     };
 
     this.armyRenderer.updateObject(army);
@@ -807,13 +810,13 @@ export class HexagonMap {
     if (!this.structureHexes.has(normalized.x)) {
       this.structureHexes.set(normalized.x, new Map());
     }
-    this.structureHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: address });
+    this.structureHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: address || 0n });
 
     const structure: StructureObject = {
       id: entityId,
       col: normalized.x,
       row: normalized.y,
-      owner: address,
+      owner: address || 0n,
       type: "structure",
     };
 

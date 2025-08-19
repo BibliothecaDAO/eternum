@@ -1,10 +1,10 @@
+import { sqlApi } from "@/app/services/api";
 import useStore from "@/shared/store";
-import { SystemManager } from "@bibliothecadao/eternum";
+import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUIManager } from "../helpers/gui-manager";
-import { loggedInAccount } from "../helpers/utils";
 import { FXManager } from "./fx-manager";
 import { TileRenderer } from "./tile-renderer";
 import { getWorldPositionForHex } from "./utils";
@@ -12,7 +12,7 @@ import { getWorldPositionForHex } from "./utils";
 export abstract class BaseScene {
   protected scene: THREE.Scene;
   protected dojo: DojoResult;
-  protected systemManager: SystemManager;
+  protected systemManager: WorldUpdateListener;
   protected tileRenderer: TileRenderer;
   protected fxManager: FXManager;
   protected raycaster: THREE.Raycaster;
@@ -39,7 +39,7 @@ export abstract class BaseScene {
     this.controls = controls;
     this.sceneId = sceneId || "BaseScene";
     this.scene = new THREE.Scene();
-    this.systemManager = new SystemManager(this.dojo.setup, loggedInAccount());
+    this.systemManager = new WorldUpdateListener(this.dojo.setup, sqlApi);
     this.tileRenderer = new TileRenderer(this.scene);
     this.fxManager = new FXManager(this.scene);
     this.raycaster = new THREE.Raycaster();
@@ -53,7 +53,7 @@ export abstract class BaseScene {
         account: state.account,
       }),
       (account) => {
-        this.systemManager.setLoggedInAccount(BigInt(account?.account?.address || "0"));
+        // this.systemManager.setLoggedInAccount(BigInt(account?.account?.address || "0"));
       },
     );
   }
