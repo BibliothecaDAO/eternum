@@ -616,14 +616,8 @@ export default class WorldmapScene extends HexagonScene {
         if (this.state.isSoundOn) {
           AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
         }
-        // Get the entity at the clicked hex
-        const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
-
-        // Remove all labels except the clicked entity's label
-        this.armyManager.removeLabelsExcept(army?.id);
-        this.structureManager.removeLabelsExcept(structure?.id);
-        this.questManager.removeLabelsExcept(quest?.id);
-        this.chestManager.removeLabelsExcept(chest?.id);
+        // Note: Label filtering is now handled in entity selection methods
+        // to avoid removing labels too aggressively on initial selection
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
