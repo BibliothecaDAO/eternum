@@ -73,7 +73,7 @@ export const SettingsWindow = () => {
   // New audio system - lightweight version
   const { setCategoryVolume, setMuted, getCurrentState } = useSimpleAudio();
   const { trackName, next: nextTrack } = useMusicPlayer();
-  
+
   // Get current state for initial render only
   const [audioState] = useState(() => getCurrentState());
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);

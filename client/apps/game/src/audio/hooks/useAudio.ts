@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AudioManager } from '../core/AudioManager';
-import { AudioPlayOptions, AudioCategory } from '../types';
-import { getAllAssets } from '../config/registry';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AudioManager } from "../core/AudioManager";
+import { AudioPlayOptions, AudioCategory } from "../types";
+import { getAllAssets } from "../config/registry";
 
 export function useAudio() {
   const managerRef = useRef<AudioManager>();
@@ -12,15 +12,15 @@ export function useAudio() {
       try {
         managerRef.current = AudioManager.getInstance();
         await managerRef.current.initialize();
-        
+
         // Register all assets from registry
         const assets = getAllAssets();
-        assets.forEach(asset => managerRef.current!.registerAsset(asset));
-        
+        assets.forEach((asset) => managerRef.current!.registerAsset(asset));
+
         console.log(`Audio system ready! Registered ${assets.length} audio assets`);
         setIsReady(true);
       } catch (error) {
-        console.error('Failed to initialize audio system:', error);
+        console.error("Failed to initialize audio system:", error);
         setIsReady(false);
       }
     };
@@ -32,20 +32,23 @@ export function useAudio() {
     };
   }, []);
 
-  const play = useCallback(async (assetId: string, options?: AudioPlayOptions) => {
-    if (!managerRef.current || !isReady) {
-      console.warn('AudioManager not ready yet');
-      return null;
-    }
+  const play = useCallback(
+    async (assetId: string, options?: AudioPlayOptions) => {
+      if (!managerRef.current || !isReady) {
+        console.warn("AudioManager not ready yet");
+        return null;
+      }
 
-    try {
-      return await managerRef.current.play(assetId, options);
-    } catch (error) {
-      console.error(`Failed to play audio ${assetId}:`, error);
-      options?.onError?.(error as Error);
-      return null;
-    }
-  }, [isReady]);
+      try {
+        return await managerRef.current.play(assetId, options);
+      } catch (error) {
+        console.error(`Failed to play audio ${assetId}:`, error);
+        options?.onError?.(error as Error);
+        return null;
+      }
+    },
+    [isReady],
+  );
 
   const setMasterVolume = useCallback((volume: number) => {
     managerRef.current?.setMasterVolume(volume);
@@ -86,6 +89,6 @@ export function useAudio() {
     getState,
     getMetrics,
     audioState, // Provide reactive state
-    isReady
+    isReady,
   };
 }

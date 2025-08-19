@@ -241,7 +241,7 @@ export default class WorldmapScene extends HexagonScene {
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
-    
+
     // Expose material sharing debug to global console
     (window as any).testMaterialSharing = () => this.armyManager.logMaterialSharingStats();
     this.structureManager = new StructureManager(
@@ -614,7 +614,7 @@ export default class WorldmapScene extends HexagonScene {
 
       if (isMine) {
         if (this.state.isSoundOn) {
-          AudioManager.getInstance().play('ui.click', { volume: this.state.effectsLevel / 100 });
+          AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
         }
         // Get the entity at the clicked hex
         const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
@@ -679,7 +679,7 @@ export default class WorldmapScene extends HexagonScene {
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       if (this.state.isSoundOn) {
-        AudioManager.getInstance().play('unit.march', { volume: this.state.effectsLevel / 100 });
+        AudioManager.getInstance().play("unit.march", { volume: this.state.effectsLevel / 100 });
       }
 
       // Get the target position for the effect

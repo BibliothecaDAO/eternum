@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useAudio } from '../hooks/useAudio';
-import { AudioCategory } from '../types';
-import { getAssetsByCategory } from '../config/registry';
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useAudio } from "../hooks/useAudio";
+import { AudioCategory } from "../types";
+import { getAssetsByCategory } from "../config/registry";
 import { getIsBlitz } from "@/ui/constants";
 
 export const useMusicPlayer = () => {
@@ -13,12 +13,12 @@ export const useMusicPlayer = () => {
   const availableTracks = useMemo(() => {
     const musicTracks = getAssetsByCategory(AudioCategory.MUSIC);
     const isBlitz = getIsBlitz();
-    
-    return musicTracks.filter(track => {
+
+    return musicTracks.filter((track) => {
       if (isBlitz) {
-        return track.id.includes('blitz') || track.id.includes('order_of') || track.id.includes('light_through');
+        return track.id.includes("blitz") || track.id.includes("order_of") || track.id.includes("light_through");
       } else {
-        return !track.id.includes('blitz') && !track.id.includes('order_of') && !track.id.includes('light_through');
+        return !track.id.includes("blitz") && !track.id.includes("order_of") && !track.id.includes("light_through");
       }
     });
   }, []); // Empty deps - tracks don't change during runtime
@@ -29,27 +29,30 @@ export const useMusicPlayer = () => {
 
   const currentTrack = availableTracks[currentTrackIndex];
 
-  const playTrack = useCallback(async (trackId: string) => {
-    try {
-      if (!audioState?.muted && isReady) {
-        const source = await play(trackId, {
-          loop: true,
-          onComplete: () => {
-            setCurrentSource(null);
-            setIsPlaying(false);
-          }
-        });
+  const playTrack = useCallback(
+    async (trackId: string) => {
+      try {
+        if (!audioState?.muted && isReady) {
+          const source = await play(trackId, {
+            loop: true,
+            onComplete: () => {
+              setCurrentSource(null);
+              setIsPlaying(false);
+            },
+          });
 
-        if (source) {
-          setCurrentSource(source);
-          setIsPlaying(true);
+          if (source) {
+            setCurrentSource(source);
+            setIsPlaying(true);
+          }
         }
+      } catch (error) {
+        console.error("Failed to play track:", error);
+        setIsPlaying(false);
       }
-    } catch (error) {
-      console.error('Failed to play track:', error);
-      setIsPlaying(false);
-    }
-  }, [play, audioState?.muted, isReady]); // Removed problematic dependencies
+    },
+    [play, audioState?.muted, isReady],
+  ); // Removed problematic dependencies
 
   const nextTrack = useCallback(() => {
     const nextIndex = (currentTrackIndex + 1) % availableTracks.length;
@@ -77,14 +80,14 @@ export const useMusicPlayer = () => {
   }, [audioState?.muted, currentSource]);
 
   const getTrackDisplayName = (track: typeof currentTrack) => {
-    if (!track) return 'Loading...';
-    
+    if (!track) return "Loading...";
+
     // Convert track ID to display name
     const name = track.id
-      .replace('music.', '')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
-    
+      .replace("music.", "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+
     return name;
   };
 
@@ -92,7 +95,7 @@ export const useMusicPlayer = () => {
     trackName: getTrackDisplayName(currentTrack),
     next: nextTrack,
     isPlaying: isPlaying && isReady,
-    isReady
+    isReady,
   };
 };
 

@@ -32,10 +32,8 @@ export function AudioDemo() {
 
   return (
     <div className="p-6 bg-gray-100 rounded-lg max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">
-        Audio System Demo {isReady ? "✅" : "⏳"}
-      </h2>
-      
+      <h2 className="text-2xl font-bold mb-4">Audio System Demo {isReady ? "✅" : "⏳"}</h2>
+
       {!isReady && (
         <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded">
           <p className="text-yellow-800">Audio system initializing... Please wait.</p>

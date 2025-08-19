@@ -1,4 +1,4 @@
-import { AudioAsset } from '../types';
+import { AudioAsset } from "../types";
 
 /**
  * Manages a pool of AudioBufferSourceNode instances for a specific audio asset
@@ -17,7 +17,7 @@ export class AudioPool {
     this.audioBuffer = audioBuffer;
     this.asset = asset;
     this.maxPoolSize = asset.poolSize || 4;
-    
+
     // Pre-populate pool with initial nodes
     this.warmPool();
   }
@@ -39,9 +39,9 @@ export class AudioPool {
   private createNode(): AudioBufferSourceNode {
     const sourceNode = this.audioContext.createBufferSource();
     sourceNode.buffer = this.audioBuffer;
-    
+
     // Set up event listener for when sound finishes
-    sourceNode.addEventListener('ended', () => {
+    sourceNode.addEventListener("ended", () => {
       this.returnNode(sourceNode);
     });
 
@@ -53,12 +53,12 @@ export class AudioPool {
    */
   getNode(): AudioBufferSourceNode {
     let node = this.availableNodes.pop();
-    
+
     if (!node) {
       // Pool is empty, create a new node
       node = this.createNode();
     }
-    
+
     this.activeNodes.add(node);
     return node;
   }
@@ -69,14 +69,14 @@ export class AudioPool {
    */
   private returnNode(node: AudioBufferSourceNode): void {
     this.activeNodes.delete(node);
-    
+
     // Disconnect the used node
     try {
       node.disconnect();
     } catch (error) {
       // Node may already be disconnected, ignore error
     }
-    
+
     // Only create a fresh node if we haven't exceeded max pool size
     if (this.availableNodes.length < this.maxPoolSize) {
       // Create a fresh node to replace the used one
@@ -91,7 +91,7 @@ export class AudioPool {
    */
   stopAll(): void {
     // Stop all active nodes
-    this.activeNodes.forEach(node => {
+    this.activeNodes.forEach((node) => {
       try {
         node.stop();
         node.disconnect();
@@ -99,16 +99,16 @@ export class AudioPool {
         // Node may already be stopped, ignore error
       }
     });
-    
+
     // Disconnect all available nodes
-    this.availableNodes.forEach(node => {
+    this.availableNodes.forEach((node) => {
       try {
         node.disconnect();
       } catch (error) {
         // Node may already be disconnected, ignore error
       }
     });
-    
+
     this.activeNodes.clear();
     this.availableNodes.length = 0;
   }
@@ -138,11 +138,11 @@ export class AudioPool {
   resizePool(newMaxSize: number): void {
     // Don't allow pool size smaller than currently active nodes
     const minSize = Math.max(newMaxSize, this.activeNodes.size);
-    
+
     // If shrinking pool, remove excess available nodes
     if (newMaxSize < this.availableNodes.length) {
       const excessNodes = this.availableNodes.splice(newMaxSize);
-      excessNodes.forEach(node => {
+      excessNodes.forEach((node) => {
         try {
           node.disconnect();
         } catch (error) {
@@ -150,7 +150,7 @@ export class AudioPool {
         }
       });
     }
-    
+
     this.maxPoolSize = minSize;
   }
 }

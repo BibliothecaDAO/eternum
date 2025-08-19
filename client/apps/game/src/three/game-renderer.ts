@@ -271,11 +271,11 @@ export default class GameRenderer {
         const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
         const stats = this.memoryMonitor.getCurrentStats(currentScene);
         const summary = this.memoryMonitor.getSummary();
-        
+
         // Get material pool stats
         const materialStats = MaterialPool.getInstance().getStats();
         const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
-        
+
         // Update display
         this.memoryStatsElement.innerHTML = `
           <strong>Memory Monitor</strong><br>

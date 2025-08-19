@@ -17,13 +17,13 @@ export interface AudioAsset {
 }
 
 export enum AudioCategory {
-  MUSIC = 'music',
-  UI = 'ui',
-  RESOURCE = 'resource', 
-  BUILDING = 'building',
-  COMBAT = 'combat',
-  AMBIENT = 'ambient',
-  ENVIRONMENT = 'environment'
+  MUSIC = "music",
+  UI = "ui",
+  RESOURCE = "resource",
+  BUILDING = "building",
+  COMBAT = "combat",
+  AMBIENT = "ambient",
+  ENVIRONMENT = "environment",
 }
 
 export interface AudioPlayOptions {
@@ -51,7 +51,7 @@ export interface AudioState {
   categoryVolumes: Record<AudioCategory, number>;
   muted: boolean;
   spatialEnabled: boolean;
-  qualityTier: 'low' | 'medium' | 'high';
+  qualityTier: "low" | "medium" | "high";
 }
 
 export interface AudioMetrics {

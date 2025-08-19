@@ -1,5 +1,5 @@
-import { AudioAsset } from '../types';
-import { AudioPool } from './AudioPool';
+import { AudioAsset } from "../types";
+import { AudioPool } from "./AudioPool";
 
 /**
  * Manages multiple AudioPool instances for different audio assets
@@ -21,9 +21,9 @@ export class AudioPoolManager {
     if (this.pools.has(asset.id)) {
       return;
     }
-    
+
     this.audioBuffers.set(asset.id, audioBuffer);
-    
+
     // Create pool for this asset
     const pool = new AudioPool(this.audioContext, audioBuffer, asset);
     this.pools.set(asset.id, pool);
@@ -38,7 +38,7 @@ export class AudioPoolManager {
       console.warn(`AudioPoolManager: No pool found for asset ${assetId}`);
       return null;
     }
-    
+
     return pool.getNode();
   }
 
@@ -56,19 +56,22 @@ export class AudioPoolManager {
    * Stop all nodes across all pools
    */
   stopAll(): void {
-    this.pools.forEach(pool => pool.stopAll());
+    this.pools.forEach((pool) => pool.stopAll());
   }
 
   /**
    * Get statistics for all pools
    */
-  getAllStats(): Record<string, {
-    available: number;
-    active: number;
-    total: number;
-    maxPoolSize: number;
-    assetId: string;
-  }> {
+  getAllStats(): Record<
+    string,
+    {
+      available: number;
+      active: number;
+      total: number;
+      maxPoolSize: number;
+      assetId: string;
+    }
+  > {
     const stats: Record<string, any> = {};
     this.pools.forEach((pool, assetId) => {
       stats[assetId] = pool.getStats();
@@ -89,14 +92,14 @@ export class AudioPoolManager {
     let totalAvailable = 0;
     let totalActive = 0;
     let totalNodes = 0;
-    
-    this.pools.forEach(pool => {
+
+    this.pools.forEach((pool) => {
       const stats = pool.getStats();
       totalAvailable += stats.available;
       totalActive += stats.active;
       totalNodes += stats.total;
     });
-    
+
     return {
       totalPools: this.pools.size,
       totalAvailableNodes: totalAvailable,
@@ -112,13 +115,13 @@ export class AudioPoolManager {
   optimizePools(): void {
     this.pools.forEach((pool, assetId) => {
       const stats = pool.getStats();
-      
+
       // If pool is frequently fully utilized, consider increasing size
       if (stats.active === stats.maxPoolSize && stats.available === 0) {
         const newSize = Math.min(stats.maxPoolSize * 1.5, 16); // Cap at 16 nodes
         pool.resizePool(newSize);
       }
-      
+
       // If pool has been mostly unused, consider shrinking it
       else if (stats.active === 0 && stats.available > 2) {
         const newSize = Math.max(2, Math.floor(stats.maxPoolSize * 0.8));

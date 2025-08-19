@@ -131,7 +131,7 @@ export class InteractiveHexManager {
       this.scene.remove(this.instanceMesh);
       // Release shared geometry reference instead of disposing
       if (this.instanceMesh.geometry) {
-        this.hexGeometryPool.releaseGeometry('interactive');
+        this.hexGeometryPool.releaseGeometry("interactive");
       }
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
@@ -144,8 +144,8 @@ export class InteractiveHexManager {
     }
 
     // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry('interactive');
-    hexGeometryDebugger.trackSharedGeometryUsage('interactive', 'InteractiveHexManager.renderAllHexes');
+    const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
+    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.renderAllHexes");
     const instanceCount = this.allHexes.size;
 
     if (instanceCount === 0) return;
@@ -171,7 +171,7 @@ export class InteractiveHexManager {
       this.scene.remove(this.instanceMesh);
       // Release shared geometry reference instead of disposing
       if (this.instanceMesh.geometry) {
-        this.hexGeometryPool.releaseGeometry('interactive');
+        this.hexGeometryPool.releaseGeometry("interactive");
       }
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
@@ -184,8 +184,8 @@ export class InteractiveHexManager {
     }
 
     // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry('interactive');
-    hexGeometryDebugger.trackSharedGeometryUsage('interactive', 'InteractiveHexManager.renderHexes');
+    const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
+    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.renderHexes");
     const instanceCount = this.visibleHexes.size;
 
     if (instanceCount === 0) return;
@@ -214,12 +214,12 @@ export class InteractiveHexManager {
     // Clean up instance mesh
     if (this.instanceMesh) {
       this.scene.remove(this.instanceMesh);
-      
+
       // Release shared geometry reference instead of disposing
       if (this.instanceMesh.geometry) {
-        this.hexGeometryPool.releaseGeometry('interactive');
+        this.hexGeometryPool.releaseGeometry("interactive");
       }
-      
+
       if (this.instanceMesh.material) {
         if (Array.isArray(this.instanceMesh.material)) {
           this.instanceMesh.material.forEach((mat) => mat.dispose());

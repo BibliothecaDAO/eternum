@@ -82,7 +82,7 @@ export class AudioManager {
    */
   async registerAssetWithPreload(asset: AudioAsset): Promise<void> {
     this.audioAssets.set(asset.id, asset);
-    
+
     // Pre-load high-priority assets (UI sounds, etc.)
     if (asset.priority >= 8 && this.poolManager) {
       try {
@@ -97,7 +97,7 @@ export class AudioManager {
   async loadAsset(assetId: string): Promise<AudioBuffer> {
     const cached = this.loadedAudio.get(assetId);
     const asset = this.audioAssets.get(assetId);
-    
+
     if (!asset || !this.audioContext) {
       throw new Error(`Asset ${assetId} not found or AudioContext not initialized`);
     }
@@ -116,12 +116,12 @@ export class AudioManager {
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
       this.loadedAudio.set(assetId, audioBuffer);
-      
+
       // Register with pool manager if available
       if (this.poolManager) {
         this.poolManager.registerAsset(asset, audioBuffer);
       }
-      
+
       return audioBuffer;
     } catch (error) {
       throw new Error(`Failed to load audio asset ${assetId}: ${error}`);
@@ -183,7 +183,7 @@ export class AudioManager {
     if (asset.category === AudioCategory.MUSIC) {
       this.musicSources.add(source);
     }
-    
+
     source.start();
 
     return source;
@@ -198,7 +198,7 @@ export class AudioManager {
   }
 
   stopAllMusic(): void {
-    this.musicSources.forEach(source => {
+    this.musicSources.forEach((source) => {
       try {
         source.stop();
       } catch (e) {
@@ -244,7 +244,7 @@ export class AudioManager {
   getMetrics(): AudioMetrics {
     const memoryUsageMB = this.loadedAudio.size * 0.1; // Rough estimate
     const poolStats = this.poolManager?.getAggregatedStats();
-    
+
     return {
       memoryUsageMB,
       activeInstances: this.activeSources.size,

@@ -64,15 +64,15 @@ export class ArmyModel {
 
   // Memory monitoring
   private memoryMonitor: MemoryMonitor;
-  
+
   // Material sharing
   private static materialPool = MaterialPool.getInstance();
-  
+
   // Movement easing configuration
   private defaultEasingType: EasingType = EasingType.EaseOut;
   private tierEasingMap: Map<TroopTier, EasingType> = new Map([
     ["T1" as TroopTier, EasingType.EaseOut],
-    ["T2" as TroopTier, EasingType.EaseOutCubic], 
+    ["T2" as TroopTier, EasingType.EaseOutCubic],
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
@@ -176,7 +176,7 @@ export class ArmyModel {
 
   private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry.clone();
-    
+
     // Handle both single material and material array cases
     const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
@@ -363,7 +363,7 @@ export class ArmyModel {
 
     // Monitor memory usage before starting movement
     this.memoryMonitor.getCurrentStats(`startMovement-${entityId}`);
-    
+
     // Log material sharing stats periodically (every 10th movement)
     if (entityId % 10 === 0) {
       ArmyModel.materialPool.logSharingStats();
@@ -404,7 +404,7 @@ export class ArmyModel {
 
       this.movingInstances.set(entityId, {
         startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
-        endPos: new THREE.Vector3().copy(nextPos),     // Create once per movement  
+        endPos: new THREE.Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -415,7 +415,7 @@ export class ArmyModel {
     } else {
       this.movingInstances.set(entityId, {
         startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
-        endPos: new THREE.Vector3().copy(nextPos),     // Create once per movement
+        endPos: new THREE.Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -653,7 +653,7 @@ export class ArmyModel {
 
     this.movingInstances.set(entityId, {
       startPos: new THREE.Vector3().copy(instanceData.position), // Create once for descent
-      endPos: new THREE.Vector3().copy(instanceData.position),   // Create once for descent
+      endPos: new THREE.Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
@@ -680,10 +680,10 @@ export class ArmyModel {
     materialPoolStats: any;
   } {
     let totalMeshes = 0;
-    this.models.forEach(model => {
+    this.models.forEach((model) => {
       totalMeshes += model.instancedMeshes.length;
     });
-    
+
     return {
       loadedModels: this.models.size,
       totalMeshes,
@@ -698,7 +698,7 @@ export class ArmyModel {
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
   }
-  
+
   /**
    * Gets the appropriate easing type for an army's movement
    * @param entityId - The entity ID
@@ -712,7 +712,7 @@ export class ArmyModel {
     }
     return this.defaultEasingType;
   }
-  
+
   /**
    * Sets the default easing type for army movement
    * @param easingType - The easing type to use as default
@@ -720,7 +720,7 @@ export class ArmyModel {
   public setDefaultEasingType(easingType: EasingType): void {
     this.defaultEasingType = easingType;
   }
-  
+
   /**
    * Sets easing type for a specific troop tier
    * @param tier - The troop tier
@@ -729,7 +729,7 @@ export class ArmyModel {
   public setTierEasingType(tier: TroopTier, easingType: EasingType): void {
     this.tierEasingMap.set(tier, easingType);
   }
-  
+
   /**
    * Gets current easing configuration for debugging
    */
@@ -873,34 +873,34 @@ export class ArmyModel {
    */
   public dispose(): void {
     // Dispose geometries and release materials from pool
-    this.models.forEach(modelData => {
-      modelData.instancedMeshes.forEach(mesh => {
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
         // Release material from pool (handle both single and array materials)
         const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
         ArmyModel.materialPool.releaseMaterial(material);
-        
+
         // Dispose geometry
         mesh.geometry.dispose();
-        
+
         // Remove from scene
         this.scene.remove(mesh);
       });
-      
+
       // Dispose animations
       modelData.mixer.stopAllAction();
-      
+
       // Remove group from scene
       this.scene.remove(modelData.group);
     });
-    
+
     // Clear all data structures
     this.models.clear();
     this.entityModelMap.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
     this.labels.clear();
-    
-    console.log('ArmyModel: Disposed all resources');
+
+    console.log("ArmyModel: Disposed all resources");
   }
 }
 

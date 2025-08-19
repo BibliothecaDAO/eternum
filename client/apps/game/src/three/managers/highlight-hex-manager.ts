@@ -49,16 +49,16 @@ export class HighlightHexManager {
     if (actionPaths.length === 0) return;
 
     // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry('highlight');
-    hexGeometryDebugger.trackSharedGeometryUsage('highlight', 'HighlightHexManager.highlightHexes');
+    const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
+    hexGeometryDebugger.trackSharedGeometryUsage("highlight", "HighlightHexManager.highlightHexes");
 
     actionPaths.forEach((hex) => {
       const position = getWorldPositionForHex(hex.hex);
-      
+
       // Still cloning material for now - TODO: Share materials too
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
-      hexGeometryDebugger.trackMaterialClone('HighlightHexManager.highlightHexes');
-      
+      hexGeometryDebugger.trackMaterialClone("HighlightHexManager.highlightHexes");
+
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
       highlightMesh.position.set(position.x, 0.175 + this.yOffset, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;

@@ -21,7 +21,7 @@ class HexGeometryDebugger {
   public trackGeometryCreation(source: string): void {
     this.geometryCreationCount++;
     console.log(`🔶 Hex Geometry Created #${this.geometryCreationCount} from ${source}`);
-    
+
     // Log summary every 10 creations
     if (this.geometryCreationCount % 10 === 0) {
       this.logSummary();
@@ -36,7 +36,7 @@ class HexGeometryDebugger {
   public trackSharedGeometryUsage(type: string, source: string): void {
     this.sharedGeometryUsageCount++;
     console.log(`♻️  Shared Geometry Used #${this.sharedGeometryUsageCount}: ${type} from ${source}`);
-    
+
     // Log sharing summary every 10 usages
     if (this.sharedGeometryUsageCount % 10 === 0) {
       HexGeometryPool.getInstance().logSharingStats();
@@ -49,7 +49,7 @@ class HexGeometryDebugger {
     const materialRate = this.materialCloneCount / elapsed;
     const sharingRate = this.sharedGeometryUsageCount / elapsed;
     const sharingEfficiency = this.sharedGeometryUsageCount / Math.max(this.geometryCreationCount, 1);
-    
+
     console.log(`
 📊 HEX GEOMETRY MEMORY IMPACT SUMMARY:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -61,11 +61,15 @@ class HexGeometryDebugger {
 📈 Material Rate: ${materialRate.toFixed(2)}/sec
 📈 Sharing Rate: ${sharingRate.toFixed(2)}/sec
 🎯 Sharing Efficiency: ${sharingEfficiency.toFixed(1)}:1
-💾 Est. Memory Waste: ~${((this.geometryCreationCount * 3) + (this.materialCloneCount * 1.5)).toFixed(1)}KB
+💾 Est. Memory Waste: ~${(this.geometryCreationCount * 3 + this.materialCloneCount * 1.5).toFixed(1)}KB
 💰 Est. Memory Saved: ~${((this.sharedGeometryUsageCount - this.geometryCreationCount) * 3).toFixed(1)}KB
-${sharingEfficiency > 5 ? '🌟 EXCELLENT memory optimization!' : 
-  sharingEfficiency > 2 ? '✅ GOOD memory optimization' : 
-  '⚠️  Still creating new geometries - check implementation'}
+${
+  sharingEfficiency > 5
+    ? "🌟 EXCELLENT memory optimization!"
+    : sharingEfficiency > 2
+      ? "✅ GOOD memory optimization"
+      : "⚠️  Still creating new geometries - check implementation"
+}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
   }

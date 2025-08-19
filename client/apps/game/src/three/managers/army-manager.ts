@@ -74,7 +74,7 @@ export class ArmyManager {
   private cleanupTimeout: NodeJS.Timeout | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor: MemoryMonitor;
-  
+
   // Reusable objects for memory optimization
   private readonly tempPosition: THREE.Vector3 = new THREE.Vector3();
 
@@ -795,7 +795,7 @@ export class ArmyManager {
     const stats = this.armyModel.getMaterialSharingStats();
     const efficiency = stats.materialPoolStats.totalReferences / Math.max(stats.materialPoolStats.uniqueMaterials, 1);
     const theoreticalWaste = stats.totalMeshes - stats.materialPoolStats.uniqueMaterials;
-    
+
     console.log(`
 🎨 MATERIAL SHARING TEST RESULTS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -812,16 +812,19 @@ export class ArmyManager {
 💾 Theoretical Comparison:
    • Without Sharing: ${stats.totalMeshes} materials
    • With Sharing: ${stats.materialPoolStats.uniqueMaterials} materials
-   • Materials Saved: ${theoreticalWaste} (${((theoreticalWaste/stats.totalMeshes)*100).toFixed(1)}%)
+   • Materials Saved: ${theoreticalWaste} (${((theoreticalWaste / stats.totalMeshes) * 100).toFixed(1)}%)
    • Est. Memory Saved: ${(theoreticalWaste * 0.005).toFixed(1)}MB
 
-${efficiency > 5 ? '✅ EXCELLENT sharing efficiency!' : 
-  efficiency > 2 ? '✅ GOOD sharing efficiency' : 
-  '⚠️  Low sharing efficiency - check for duplicate materials'}
+${
+  efficiency > 5
+    ? "✅ EXCELLENT sharing efficiency!"
+    : efficiency > 2
+      ? "✅ GOOD sharing efficiency"
+      : "⚠️  Low sharing efficiency - check for duplicate materials"
+}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
   }
-
 
   public getArmyRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
     const effects = this.armyRelicEffects.get(entityId);
@@ -1017,13 +1020,13 @@ ${efficiency > 5 ? '✅ EXCELLENT sharing efficiency!' :
     for (const [entityId] of this.armyRelicEffects) {
       this.updateRelicEffects(entityId, []);
     }
-    
+
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
-    
+
     // Clear entity ID labels
     this.entityIdLabels.clear();
-    
+
     // Clean up any other resources...
   }
 }

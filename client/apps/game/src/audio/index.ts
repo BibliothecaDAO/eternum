@@ -4,14 +4,7 @@ export { AudioPoolManager } from "./core/AudioPoolManager";
 export { AudioPool } from "./core/AudioPool";
 
 // Types
-export type {
-  AudioAsset,
-  AudioMetrics,
-  AudioPlayOptions,
-  AudioState,
-  SpatialAudioOptions,
-  Vector3,
-} from "./types";
+export type { AudioAsset, AudioMetrics, AudioPlayOptions, AudioState, SpatialAudioOptions, Vector3 } from "./types";
 export { AudioCategory } from "./types";
 
 // Configuration
@@ -43,24 +36,24 @@ export async function initializeAudioSystem(): Promise<void> {
 
   // Register all assets from registry
   const assets = getAllAssets();
-  
+
   // Separate high and low priority assets
-  const highPriorityAssets = assets.filter(asset => asset.priority >= 8);
-  const lowPriorityAssets = assets.filter(asset => asset.priority < 8);
-  
+  const highPriorityAssets = assets.filter((asset) => asset.priority >= 8);
+  const lowPriorityAssets = assets.filter((asset) => asset.priority < 8);
+
   // Pre-load high-priority assets into pools
-  const preloadPromises = highPriorityAssets.map(asset => 
-    manager.registerAssetWithPreload(asset).catch(error => {
+  const preloadPromises = highPriorityAssets.map((asset) =>
+    manager.registerAssetWithPreload(asset).catch((error) => {
       console.warn(`Failed to pre-load ${asset.id}:`, error);
       // Fallback to regular registration
       manager.registerAsset(asset);
-    })
+    }),
   );
-  
+
   await Promise.all(preloadPromises);
-  
+
   // Register remaining assets normally
-  lowPriorityAssets.forEach(asset => manager.registerAsset(asset));
-  
+  lowPriorityAssets.forEach((asset) => manager.registerAsset(asset));
+
   initialized = true;
 }

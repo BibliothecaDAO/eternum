@@ -9,9 +9,9 @@ export class HoverSound {
 
   public play(isSound: boolean, volume: number) {
     if (!isSound) return;
-    
+
     // Use the ui.shovel sound which has variations that will alternate
-    AudioManager.getInstance().play('ui.shovel', { volume: volume / 100 });
+    AudioManager.getInstance().play("ui.shovel", { volume: volume / 100 });
     this.isFirst = !this.isFirst;
   }
 }

@@ -1,4 +1,4 @@
-import { AudioManager } from '../core/AudioManager';
+import { AudioManager } from "../core/AudioManager";
 
 /**
  * Debug utilities for monitoring audio pool performance
@@ -11,16 +11,16 @@ export class AudioDebugger {
     const manager = AudioManager.getInstance();
     const poolStats = manager.getPoolStats();
     const aggregatedStats = manager.getMetrics();
-    
-    console.group('🎵 Audio Pool Statistics');
-    console.log('📊 Aggregated Stats:', aggregatedStats);
-    console.log('🏊 Pool Details:');
-    
+
+    console.group("🎵 Audio Pool Statistics");
+    console.log("📊 Aggregated Stats:", aggregatedStats);
+    console.log("🏊 Pool Details:");
+
     Object.entries(poolStats).forEach(([assetId, stats]) => {
-      const efficiency = stats.total > 0 ? (stats.active / stats.total * 100).toFixed(1) : '0.0';
+      const efficiency = stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0.0";
       console.log(`  ${assetId}: ${stats.active}/${stats.total} (${efficiency}% efficiency)`);
     });
-    
+
     console.groupEnd();
   }
 
@@ -31,13 +31,13 @@ export class AudioDebugger {
     const interval = setInterval(() => {
       this.logPoolStats();
     }, intervalMs);
-    
+
     console.log(`🎵 Audio pool monitoring started (${intervalMs}ms intervals)`);
-    
+
     // Return cleanup function
     return () => {
       clearInterval(interval);
-      console.log('🎵 Audio pool monitoring stopped');
+      console.log("🎵 Audio pool monitoring stopped");
     };
   }
 
@@ -48,12 +48,16 @@ export class AudioDebugger {
     const manager = AudioManager.getInstance();
     const poolStats = manager.getPoolStats();
     const aggregatedStats = manager.getMetrics();
-    
-    return JSON.stringify({
-      timestamp: Date.now(),
-      aggregated: aggregatedStats,
-      pools: poolStats,
-    }, null, 2);
+
+    return JSON.stringify(
+      {
+        timestamp: Date.now(),
+        aggregated: aggregatedStats,
+        pools: poolStats,
+      },
+      null,
+      2,
+    );
   }
 
   /**
@@ -62,7 +66,7 @@ export class AudioDebugger {
   static optimizePools(): void {
     const manager = AudioManager.getInstance();
     manager.optimizePools();
-    console.log('🎵 Audio pools optimized');
+    console.log("🎵 Audio pools optimized");
     this.logPoolStats();
   }
 }
