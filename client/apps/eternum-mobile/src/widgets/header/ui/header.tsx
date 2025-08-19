@@ -1,7 +1,9 @@
 import { ROUTES } from "@/shared/consts/routes";
+import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { useMatches, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Route to title mapping
 const routeTitles: Record<string, string> = {
@@ -15,19 +17,10 @@ const routeTitles: Record<string, string> = {
 export function Header() {
   const navigate = useNavigate();
   const matches = useMatches();
-  const currentPath = matches.at(-1)?.pathname;
-
-  // Don't show header on home page
-  if (currentPath === ROUTES.HOME) {
-    return null;
-  }
-
-  const handleBack = () => {
-    window.history.back();
-  };
   const connector = useStore((state) => state.connector);
   const [userName, setUserName] = useState<string | undefined>(undefined);
-
+  const currentPath = matches.at(-1)?.pathname;
+  
   useEffect(() => {
     if (!connector || !connector!.controller) return;
 
@@ -38,7 +31,17 @@ export function Header() {
     }
   }, [connector]);
 
+
+  const handleBack = () => {
+    window.history.back();
+  };
+
+
   const currentTitle = routeTitles[currentPath || ""] || "Eternum";
+
+  if (currentPath === ROUTES.HOME) {
+    return null;
+  }
 
   return (
     <header className="border-b px-4">

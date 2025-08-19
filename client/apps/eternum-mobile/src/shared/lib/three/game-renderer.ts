@@ -1,3 +1,4 @@
+import { Position } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
@@ -7,7 +8,6 @@ import { GUIManager } from "./helpers/gui-manager";
 import { BaseScene } from "./scenes/base-scene";
 import { GenericScene } from "./scenes/generic-scene";
 import { WorldmapScene } from "./scenes/worldmap-scene";
-import { Position } from "./types/position";
 
 export class GameRenderer {
   private scene: THREE.Scene;
