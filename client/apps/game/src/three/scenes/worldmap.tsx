@@ -1,4 +1,4 @@
-import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+import { AudioManager } from "@/audio/core/AudioManager";
 import throttle from "lodash/throttle";
 
 import { getMapFromToriiExact } from "@/dojo/queries";
@@ -13,7 +13,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { playResourceSound, playSound } from "@/three/sound/utils";
+import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -613,7 +613,9 @@ export default class WorldmapScene extends HexagonScene {
       });
 
       if (isMine) {
-        playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
+        if (this.state.isSoundOn) {
+          AudioManager.getInstance().play('ui.click', { volume: this.state.effectsLevel / 100 });
+        }
         // Get the entity at the clicked hex
         const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
 
@@ -676,7 +678,9 @@ export default class WorldmapScene extends HexagonScene {
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
+      if (this.state.isSoundOn) {
+        AudioManager.getInstance().play('unit.march', { volume: this.state.effectsLevel / 100 });
+      }
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;

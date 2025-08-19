@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { getIsBlitz } from "@/ui/constants";
@@ -45,8 +45,8 @@ export const BuildingEntityDetails = () => {
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
-  const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
-  const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
+  const playDestroyStone = useUISound("building.destroy.stone");
+  const playDestroyWooden = useUISound("building.destroy.wooden");
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 

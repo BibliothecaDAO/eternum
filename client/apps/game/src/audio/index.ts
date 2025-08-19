@@ -18,6 +18,8 @@ export { AUDIO_REGISTRY, getAllAssets, getAssetsByCategory, getAudioAsset } from
 // Hooks
 export { useAudio } from "./hooks/useAudio";
 export { useSimpleAudio } from "./hooks/useSimpleAudio";
+export { useUISound } from "./hooks/useUISound";
+export { usePlayResourceSound } from "./hooks/usePlayResourceSound";
 
 // Components
 export { useMusicPlayer, ScrollingTrackName } from "./components/MusicPlayer";

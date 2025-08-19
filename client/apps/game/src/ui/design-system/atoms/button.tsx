@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import React from "react";
 
 type ButtonProps = {
@@ -63,7 +63,7 @@ const Button: React.FC<ButtonProps> = ({
   size = "md",
   ...props
 }) => {
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playClick = useUISound("ui.click");
 
   return (
     <button

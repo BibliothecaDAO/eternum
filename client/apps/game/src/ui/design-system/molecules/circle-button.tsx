@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import clsx from "clsx";
 
@@ -53,12 +53,12 @@ const CircleButton = ({
   secondaryNotification,
   ...props
 }: CircleButtonProps) => {
-  const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playHoverClick = useUISound("ui.hover");
+  const playClick = useUISound("ui.click");
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const handleMouseEnter = () => {
-    hoverClick();
+    playHoverClick();
     if (label) {
       setTooltip({
         position: tooltipLocation,

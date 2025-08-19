@@ -1,23 +1,17 @@
-import { dir, soundSelector } from "@/hooks/helpers/use-ui-sound";
+import { AudioManager } from "@/audio/core/AudioManager";
 
 export class HoverSound {
-  private firstSound: HTMLAudioElement;
-  private secondSound: HTMLAudioElement;
   private isFirst: boolean = true;
 
   constructor() {
-    this.firstSound = new Audio(dir + soundSelector.shovelMain);
-    this.secondSound = new Audio(dir + soundSelector.shovelAlternative);
+    // No need to preload since AudioManager handles this
   }
 
   public play(isSound: boolean, volume: number) {
-    if (this.isFirst) {
-      this.firstSound.volume = isSound ? volume / 100 : 0;
-      this.firstSound.play();
-    } else {
-      this.secondSound.volume = isSound ? volume / 100 : 0;
-      this.secondSound.play();
-    }
+    if (!isSound) return;
+    
+    // Use the ui.shovel sound which has variations that will alternate
+    AudioManager.getInstance().play('ui.shovel', { volume: volume / 100 });
     this.isFirst = !this.isFirst;
   }
 }
