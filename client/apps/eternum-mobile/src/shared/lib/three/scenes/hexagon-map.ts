@@ -75,12 +75,18 @@ export class HexagonMap {
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  
+  // Store armies positions by ID, to remove previous positions when army moves
+  private armiesPositions: Map<number, { col: number; row: number }> = new Map();
 
   // Debounced re-render for tile updates
   private tileUpdateTimeout: NodeJS.Timeout | null = null;
 
   // Travel effects tracking
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
+  
+  // Track armies with pending movement transactions
+  private pendingArmyMovements: Set<number> = new Set();
 
   constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: WorldUpdateListener, fxManager: FXManager) {
     this.scene = scene;
@@ -421,12 +427,16 @@ export class HexagonMap {
 
     this.activeTravelEffects.set(armyId, effect);
 
+    // Mark army as having pending movement transaction
+    this.pendingArmyMovements.add(armyId);
+
     // Get account from store
     const account = this.dojo.account.account;
     if (!account) {
       console.error("No account available for army movement");
       effect.end();
       this.activeTravelEffects.delete(armyId);
+      this.pendingArmyMovements.delete(armyId);
       return;
     }
 
@@ -466,10 +476,16 @@ export class HexagonMap {
       console.error("Army movement failed:", error);
       effect.end();
       this.activeTravelEffects.delete(armyId);
+      this.pendingArmyMovements.delete(armyId);
     }
   }
 
   private selectArmy(armyId: number): void {
+    // Check if army has pending movement transactions
+    if (this.pendingArmyMovements.has(armyId)) {
+      return;
+    }
+
     this.selectionManager.selectObject(armyId, "army");
 
     // Get army object to find current position
@@ -781,34 +797,30 @@ export class HexagonMap {
       isDaydreamsAgent,
     } = update;
 
+    if (ownerAddress === undefined) return;
+
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
+    const oldPos = this.armiesPositions.get(entityId);
 
-    // First, remove this army from ALL positions in armyHexes to prevent duplicates
-    for (const [col, rowMap] of this.armyHexes) {
-      for (const [row, armyInfo] of rowMap) {
-        if (armyInfo.id === entityId) {
-          rowMap.delete(row);
-          console.log(`[HexagonMap] Removed army ${entityId} from (${col}, ${row})`);
-        }
-      }
-      // Clean up empty row maps
-      if (rowMap.size === 0) {
-        this.armyHexes.delete(col);
-      }
-    }
+    // Update army position
+    this.armiesPositions.set(entityId, newPos);
 
-    // Move army in army hexes map if it exists, otherwise add it
-    const existingArmy = this.armyRenderer.getObject(entityId);
-    if (existingArmy) {
-      console.log(`[HexagonMap] Moved army ${entityId} from (${existingArmy.col}, ${existingArmy.row}) to (${newPos.col}, ${newPos.row})`);
+    // Remove from old position if it changed
+    if (
+      oldPos &&
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
+    ) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      console.log(`[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`);
       
       // Clear selection if this army is currently selected and has moved
       const selectedObject = this.selectionManager.getSelectedObject();
       if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
         this.selectionManager.clearSelection();
       }
-    } else {
+    } else if (!oldPos) {
       console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
     }
 
@@ -817,6 +829,9 @@ export class HexagonMap {
       this.armyHexes.set(newPos.col, new Map());
     }
     this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+
+    // Remove from pending movements when position is updated from blockchain
+    this.pendingArmyMovements.delete(entityId);
 
     const army: ArmyObject = {
       id: entityId,
@@ -863,9 +878,10 @@ export class HexagonMap {
 
   public deleteArmy(entityId: number) {
     // Remove from army hexes map
-    const army = this.armyRenderer.getObject(entityId);
-    if (army) {
-      this.armyHexes.get(army.col)?.delete(army.row);
+    const oldPos = this.armiesPositions.get(entityId);
+    if (oldPos) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      this.armiesPositions.delete(entityId);
     }
 
     this.armyRenderer.removeObject(entityId);
