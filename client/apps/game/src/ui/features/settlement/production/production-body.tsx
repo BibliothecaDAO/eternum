@@ -1,5 +1,6 @@
 import { AutomationTable } from "@/ui/features/infrastructure";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { configManager, getEntityIdFromKeys, getStructureRelicEffects } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";

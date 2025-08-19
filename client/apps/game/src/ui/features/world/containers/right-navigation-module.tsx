@@ -2,7 +2,8 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
 import { BattleLogsTable } from "@/ui/features/military";

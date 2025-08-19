@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
-import { HexPosition } from "@bibliothecadao/types";
+import { Position } from "@bibliothecadao/eternum";
 import { usePlayerArmyAtPosition, useQuery } from "@bibliothecadao/react";
+import { HexPosition } from "@bibliothecadao/types";
 import { SelectedArmyContent } from "../armies/selected-army-content";
 
 export const SelectedWorldmapEntity = () => {

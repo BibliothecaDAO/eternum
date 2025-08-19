@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { LiquidityResourceRow } from "@/ui/features/economy/banking";
 import { ID, ResourcesIds, getResourceTiers, resources } from "@bibliothecadao/types";
 import { useState } from "react";

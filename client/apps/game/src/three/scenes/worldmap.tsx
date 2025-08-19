@@ -15,20 +15,28 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, CombatModal, HelpModal } from "@/ui/features/military";
 import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { QuestModal } from "@/ui/features/progression";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  ArmySystemUpdate,
+  ChestSystemUpdate,
+  ExplorerMoveSystemUpdate,
+  getBlockTimestamp,
   isRelicActive,
+  QuestSystemUpdate,
+  RelicEffectSystemUpdate,
+  SelectableArmy,
   StructureActionManager,
+  TileSystemUpdate,
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
@@ -52,15 +60,7 @@ import { MemoryMonitor } from "../utils/memory-monitor";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { SceneName, SelectableArmy } from "../types/common";
-import {
-  ArmySystemUpdate,
-  ChestSystemUpdate,
-  ExplorerMoveSystemUpdate,
-  QuestSystemUpdate,
-  RelicEffectSystemUpdate,
-  TileSystemUpdate,
-} from "../types/systems";
+import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
   navigateToStructure,
@@ -1171,9 +1171,6 @@ export default class WorldmapScene extends HexagonScene {
 
     dummy.updateMatrix();
 
-    const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
-    const hexChunkCol = chunkX * this.chunkSize;
-    const hexChunkRow = chunkZ * this.chunkSize;
 
     const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
@@ -1603,7 +1600,7 @@ export default class WorldmapScene extends HexagonScene {
     console.log("Loading chunks:", surroundingChunks);
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
-    const loadPromises = surroundingChunks.map((chunk) => this.computeTileEntities(chunk));
+    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     // Calculate the starting position for the new chunk
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);

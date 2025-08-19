@@ -2,8 +2,8 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -11,7 +11,6 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   deleteEntityNameLocalStorage,

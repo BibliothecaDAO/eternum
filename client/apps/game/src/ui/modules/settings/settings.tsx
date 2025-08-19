@@ -14,7 +14,7 @@ import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
-import { getAddressName } from "@bibliothecadao/eternum";
+import { getAddressName, getIsBlitz } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import * as platform from "platform";

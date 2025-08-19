@@ -2,7 +2,8 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";

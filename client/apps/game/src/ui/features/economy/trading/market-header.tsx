@@ -1,10 +1,12 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { CooldownTimer, DefenseTroop, NavigateToPositionIcon, TroopChip } from "@/ui/features/military";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { getGuardsByStructure } from "@bibliothecadao/eternum";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
 import {

@@ -1,7 +1,8 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceChip } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   configManager,
   getEntityIdFromKeys,

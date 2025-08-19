@@ -6,13 +6,15 @@ import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { useSyncMarket } from "@/hooks/helpers/use-sync";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { Select, Tabs } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { LoadingAnimation, ResourceIcon } from "@/ui/design-system/molecules";
 import { ModalContainer } from "@/ui/shared";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";

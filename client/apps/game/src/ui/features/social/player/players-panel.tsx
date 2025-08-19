@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";

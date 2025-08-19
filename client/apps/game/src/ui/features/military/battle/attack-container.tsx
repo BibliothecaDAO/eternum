@@ -1,8 +1,10 @@
 import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   getArmyRelicEffects,
   getGuardsByStructure,

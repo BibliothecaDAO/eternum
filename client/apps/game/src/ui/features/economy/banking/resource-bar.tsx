@@ -5,7 +5,8 @@ import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { HintSection } from "@/ui/features/progression";
 import { formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/types";

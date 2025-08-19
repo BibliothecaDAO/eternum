@@ -1,6 +1,7 @@
 import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getCrateName } from "@bibliothecadao/eternum";

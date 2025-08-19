@@ -1,11 +1,12 @@
 import { ChestModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
+import { ChestData, ChestSystemUpdate } from "@bibliothecadao/eternum";
 import { FELT_CENTER, ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
-import { ChestData, ChestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
@@ -178,7 +179,7 @@ export class ChestManager {
     return basePosition;
   };
 
-  private isChestVisible(chest: { entityId: ID; hexCoords: Position }, startRow: number, startCol: number) {
+  private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
     const { x, y } = chest.hexCoords.getNormalized();
     const isVisible =
       x >= startCol - this.renderChunkSize.width / 2 &&

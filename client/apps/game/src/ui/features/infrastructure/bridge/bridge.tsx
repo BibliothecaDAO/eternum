@@ -1,7 +1,8 @@
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceBalance } from "@/hooks/use-resource-balance";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";

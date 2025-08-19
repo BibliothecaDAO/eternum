@@ -1,11 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position as PositionInterface } from "@/types/position";
 import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
 import {
   getEntityIdFromKeys,
   isTileOccupierChest,
   isTileOccupierQuest,
-  isTileOccupierStructure,
+  isTileOccupierStructure, Position as PositionInterface
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents } from "@bibliothecadao/types";

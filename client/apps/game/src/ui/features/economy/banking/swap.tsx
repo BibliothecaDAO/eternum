@@ -1,12 +1,13 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import { getIsBlitz } from "@bibliothecadao/eternum";
 import { useUISound } from "@/audio";
-import { getIsBlitz } from "@/ui/constants";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { ConfirmationPopup, ResourceBar } from "@/ui/features/economy/banking";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { setup } from "@bibliothecadao/dojo";
 import {
   computeTravelTime,

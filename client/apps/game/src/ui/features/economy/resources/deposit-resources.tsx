@@ -1,7 +1,8 @@
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ResourceArrivalInfo } from "@bibliothecadao/types";

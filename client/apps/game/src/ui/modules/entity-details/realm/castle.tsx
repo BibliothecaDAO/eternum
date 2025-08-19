@@ -8,7 +8,8 @@ import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } fr
 import { useEffect, useMemo, useState } from "react";
 // todo: fix this
 import { sqlApi } from "@/services/api";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import { useComponentValue } from "@dojoengine/react";
 import { AlertCircleIcon, ArrowUpRightIcon, ChevronDownIcon, CrownIcon, PlusIcon, SparklesIcon } from "lucide-react";
 

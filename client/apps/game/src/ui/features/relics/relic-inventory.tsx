@@ -1,5 +1,7 @@
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { Position } from "@bibliothecadao/eternum";
+
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
@@ -48,7 +50,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
           return {
             ...entity,
             position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
-            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()),
+            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()) as any,
           };
         });
     }, [entities]);

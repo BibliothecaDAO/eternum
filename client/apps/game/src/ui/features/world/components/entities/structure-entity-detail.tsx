@@ -9,17 +9,17 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { MAP_DATA_REFRESH_INTERVAL } from "@/three/constants/map-data";
-import { MapDataStore } from "@/three/managers/map-data-store";
-import { Position } from "@/types/position";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz, MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
+
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { useChatStore } from "@/ui/features/social";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
+import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -106,7 +106,7 @@ export const StructureEntityDetail = memo(
         // Get hyperstructure realm count if this is a hyperstructure
         const hyperstructureRealmCount =
           structure.base.category === StructureType.Hyperstructure
-            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL).getHyperstructureRealmCount(structure.entity_id)
+            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(structure.entity_id)
             : undefined;
 
         return {

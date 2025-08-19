@@ -1,6 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import Button from "@/ui/design-system/atoms/button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import CircleButton from "@/ui/design-system/molecules/circle-button";

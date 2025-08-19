@@ -7,7 +7,8 @@ import {
   LiquidityTableHeader,
   ResourceBar,
 } from "@/ui/features/economy/banking";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   divideByPrecision,
   getBalance,

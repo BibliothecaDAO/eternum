@@ -3,15 +3,16 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { SelectableArmy } from "@/three/types/common";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   getAddressName,
   getAllArrivals,
   getArmyName,
+  getBlockTimestamp,
   getEntityIdFromKeys,
   getEntityInfo,
   getGuildFromPlayerAddress,
+  getIsBlitz,
+  SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
@@ -21,7 +22,6 @@ import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
-import { getIsBlitz } from "./constants";
 
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);

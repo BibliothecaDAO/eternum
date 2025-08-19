@@ -1,7 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position as PositionInterface } from "@/types/position";
 import { ArmyEntityDetail, BiomeInfoPanel, QuestEntityDetail, StructureEntityDetail } from "@/ui/features/world";
-import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure } from "@bibliothecadao/eternum";
+import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure, Position as PositionInterface } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";

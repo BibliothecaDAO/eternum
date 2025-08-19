@@ -1,4 +1,5 @@
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { MarketResource } from "@/ui/features/economy/trading";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";

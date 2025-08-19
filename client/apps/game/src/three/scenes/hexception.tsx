@@ -22,9 +22,11 @@ import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from
 import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
-import { Position } from "@/types/position";
+import { BuildingSystemUpdate, Position, StructureProgress } from "@bibliothecadao/eternum";
+
 import { IS_FLAT_MODE } from "@/ui/config";
-import { getIsBlitz } from "@/ui/constants";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -34,6 +36,7 @@ import {
   ResourceManager,
   TileManager,
   getEntityIdFromKeys,
+  getStructureStage,
 } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
@@ -55,8 +58,7 @@ import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { getStructureStage } from "../systems/utils";
-import { BuildingSystemUpdate, SceneName, StructureProgress } from "../types";
+import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 
 const loader = gltfLoader;

@@ -1,5 +1,6 @@
-import { Position } from "@/types/position";
-import { BuildingType, HexPosition, ID, QuestType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Position } from "@bibliothecadao/eternum";
+
+import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export enum SceneName {
   WorldMap = "map",
@@ -12,11 +13,6 @@ export enum HyperstructureTypesNames {
   STAGE_3 = "hyperstructure_stage2",
 }
 
-export enum StructureProgress {
-  STAGE_1 = 0,
-  STAGE_2 = 1,
-  STAGE_3 = 2,
-}
 
 export interface StructureInfo {
   entityId: ID;
@@ -52,23 +48,6 @@ export interface ArmyData {
   onChainStamina: { amount: bigint; updatedTick: number };
 }
 
-export interface QuestData {
-  entityId: ID;
-  questType: QuestType;
-  occupierId: ID;
-  hexCoords: Position;
-}
-
-export interface ChestData {
-  entityId: ID;
-  hexCoords: Position;
-}
-
-export interface SelectableArmy {
-  entityId: ID;
-  position: HexPosition;
-  name: string;
-}
 
 export interface RenderChunkSize {
   width: number;

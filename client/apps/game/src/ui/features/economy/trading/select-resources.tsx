@@ -1,8 +1,9 @@
+import { getIsBlitz } from "@bibliothecadao/eternum";
 import { usePlayResourceSound } from "@/audio";
-import { getIsBlitz } from "@/ui/constants";
 import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceCost } from "@/ui/design-system/molecules";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   canTransferMilitaryResources,
   divideByPrecision,

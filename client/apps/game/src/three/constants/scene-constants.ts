@@ -1,4 +1,5 @@
 import { IS_FLAT_MODE } from "@/ui/config";
+import { StructureProgress } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   BuildingType,
@@ -10,7 +11,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { HyperstructureTypesNames, StructureProgress } from "../types";
+import { HyperstructureTypesNames } from "../types";
 
 export const HEX_SIZE = 1;
 
@@ -200,9 +201,6 @@ export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = 
   TropicalSeasonalForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
   Empty: BIOMES_MODELS_PATH + BiomeFilenames.Empty,
 };
-
-export const PROGRESS_HALF_THRESHOLD = 50;
-export const PROGRESS_FINAL_THRESHOLD = 100;
 
 export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
   return {

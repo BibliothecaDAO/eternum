@@ -1,6 +1,6 @@
 import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientConfigManager } from "..";
+import { ClientConfigManager, configManager } from "..";
 
 export { getEntityIdFromKeys };
 
@@ -129,3 +129,5 @@ export function divideWithPrecision(
   // convert to decimal
   return Number(Number(a).toFixed(round));
 }
+
+export const getIsBlitz = () => !!configManager.getBlitzConfig()?.blitz_mode_on;

@@ -22,13 +22,11 @@
  * const army = mapStore.getArmyById(456);
  */
 
-import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@/ui/constants";
-import { divideByPrecision, getStructureTypeName, unpackBuildingCounts } from "@bibliothecadao/eternum";
-import { StructureMapDataRaw } from "@bibliothecadao/torii";
+import { SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
 import { BuildingType, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import realms from "../../../../../public/jsons/realms.json";
+import realms from "../../../../client/public/jsons/realms.json";
+import { divideByPrecision, getIsBlitz, getStructureTypeName, unpackBuildingCounts } from "../utils";
 
 // Army category mapping
 const ARMY_CATEGORY_NAMES: Record<string, string> = {
@@ -99,6 +97,12 @@ export class MapDataStore {
   private refreshTimer: NodeJS.Timeout | null = null;
   private refreshCallbacks: Array<() => void> = [];
   private loadingPromise: Promise<void> | null = null;
+  private sqlApi: SqlApi;
+
+  private constructor(refreshInterval: number, sqlApi: SqlApi) {
+    this.REFRESH_INTERVAL = refreshInterval;
+    this.sqlApi = sqlApi;
+  }
 
   private hexToBigInt(hex: string | null): bigint {
     if (!hex || hex === "0x0") return 0n;
@@ -199,14 +203,10 @@ export class MapDataStore {
     return guards;
   }
 
-  private constructor(refreshInterval: number) {
-    this.REFRESH_INTERVAL = refreshInterval;
-  }
-
-  public static getInstance(refreshInterval: number): MapDataStore {
+  public static getInstance(refreshInterval: number, sqlApi: SqlApi): MapDataStore {
     if (!MapDataStore.instance) {
       console.log("MapDataStore: Creating new instance with refresh interval", refreshInterval);
-      MapDataStore.instance = new MapDataStore(refreshInterval);
+      MapDataStore.instance = new MapDataStore(refreshInterval, sqlApi);
     }
     return MapDataStore.instance;
   }
@@ -325,13 +325,13 @@ export class MapDataStore {
 
     // Fetch all structures and armies in parallel
     const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
-      sqlApi.fetchAllStructuresMapData(),
-      sqlApi.fetchAllArmiesMapData(),
-      sqlApi.fetchHyperstructuresWithRealmCount(8),
+      this.sqlApi.fetchAllStructuresMapData(),
+      this.sqlApi.fetchAllArmiesMapData(),
+      this.sqlApi.fetchHyperstructuresWithRealmCount(8),
     ]);
 
     // Transform and store structures
-    structuresRaw.forEach((structure) => {
+    structuresRaw.forEach((structure: StructureMapDataRaw) => {
       const guardArmies = this.parseGuardArmies(structure);
 
       const activeProductions = this.parseActiveProductions(

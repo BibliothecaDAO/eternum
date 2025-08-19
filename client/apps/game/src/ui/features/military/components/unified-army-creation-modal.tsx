@@ -5,7 +5,8 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ModalContainer } from "@/ui/shared/components/modal-container";
 import { getTierStyle } from "@/ui/utils/tier-styles";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
+
 import {
   ArmyManager,
   divideByPrecision,

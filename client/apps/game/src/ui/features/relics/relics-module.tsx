@@ -1,5 +1,6 @@
 import { sqlApi } from "@/services/api";
-import { Position } from "@/types/position";
+import { Position } from "@bibliothecadao/eternum";
+
 import { RangeInput } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { useDojo, useQuery } from "@bibliothecadao/react";

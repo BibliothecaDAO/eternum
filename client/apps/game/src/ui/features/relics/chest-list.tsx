@@ -1,7 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import { NavigationButton } from "@/ui/design-system/atoms/navigation-button";
-import { getCrateName } from "@bibliothecadao/eternum";
+import { getCrateName, Position } from "@bibliothecadao/eternum";
 import { ChestInfo } from "@bibliothecadao/torii";
 import { MapPin } from "lucide-react";
 import { useMemo } from "react";
