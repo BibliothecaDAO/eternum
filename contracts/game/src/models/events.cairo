@@ -29,6 +29,12 @@ pub enum Story {
     StructureLevelUpStory: StructureLevelUpStory,
     // Troop Movement
     ExplorerMoveStory: ExplorerMoveStory,
+    // Troop Battle
+    BattleStory: BattleStory,
+    // Resource Transfer
+    ResourceTransferStory: ResourceTransferStory,
+    ResourceBurnStory: ResourceBurnStory,
+    ResourceReceiveArrivalStory: ResourceReceiveArrivalStory,
     // Troop Management
     GuardAddStory: GuardAddStory,
     GuardDeleteStory: GuardDeleteStory,
@@ -121,6 +127,74 @@ pub struct ExplorerMoveStory {
     pub explore_find: ExploreFind,
     pub reward_resource_type: u8,
     pub reward_resource_amount: u128,
+}
+
+///////////////////////////////////////////////
+///  Troop Battle
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub enum BattleType {
+    ExplorerVsExplorer,
+    ExplorerVsGuard,
+    GuardVsExplorer,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct BattleStory {
+    pub battle_type: BattleType,
+    pub attacker_id: ID,
+    pub attacker_owner_id: ID,
+    pub attacker_owner_address: ContractAddress,
+    pub attacker_troops_type: TroopType,
+    pub attacker_troops_tier: TroopTier,
+    pub attacker_troops_before: u128,
+    pub attacker_troops_lost: u128,
+    pub defender_id: ID,
+    pub defender_owner_id: ID,
+    pub defender_owner_address: ContractAddress,
+    pub defender_troops_type: TroopType,
+    pub defender_troops_tier: TroopTier,
+    pub defender_troops_before: u128,
+    pub defender_troops_lost: u128,
+    pub winner_id: ID,
+    pub stolen_resources: Span<(u8, u128)>,
+}
+
+///////////////////////////////////////////////
+///  Resource Transfer
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub enum TransferType {
+    Instant,
+    InstantStorable,
+    InstantArrivals,
+    Delayed,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ResourceTransferStory {
+    pub transfer_type: TransferType,
+    pub from_entity_id: ID,
+    pub from_entity_owner_address: ContractAddress,
+    pub to_entity_id: ID,
+    pub to_entity_owner_address: ContractAddress,
+    pub resources: Span<(u8, u128)>,
+    pub is_mint: bool,
+    pub travel_time: u64 // 0 for instant transfers
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ResourceBurnStory {
+    pub resources: Span<(u8, u128)>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ResourceReceiveArrivalStory {
+    pub resources: Span<(u8, u128)>,
 }
 
 ///////////////////////////////////////////////
