@@ -28,6 +28,7 @@ import React, { useCallback, useMemo, useState } from "react";
 enum BuildingCategory {
   RESOURCE = "resource",
   ECONOMIC = "economic",
+  MILITARY = "military",
 }
 
 // Building interface
@@ -41,6 +42,14 @@ interface Building {
   canBuild: boolean;
   hasBalance: boolean;
   hasEnoughPopulation: boolean;
+  militaryType?: string;
+  tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 interface BuildingDetailsDrawerProps {
