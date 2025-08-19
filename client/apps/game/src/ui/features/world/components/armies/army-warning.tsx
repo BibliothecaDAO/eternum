@@ -30,10 +30,10 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return remainingCapacity < configManager.getExploreReward().resource_weight;
   }, [totalCapacity, remainingCapacity]);
 
-  const hasNoTotalCapacityToExplore = useMemo(() => {
-    return totalCapacity < configManager.getExploreReward().resource_weight;
-  }, [totalCapacity]);
-
+  // const hasNoTotalCapacityToExplore = useMemo(() => {
+  //   return totalCapacity < configManager.getExploreReward().resource_weight;
+  // }, [totalCapacity]);
+  const hasNoTotalCapacityToExplore = false;
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
