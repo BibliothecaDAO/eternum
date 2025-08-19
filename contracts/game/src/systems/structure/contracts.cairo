@@ -7,12 +7,14 @@ pub trait IStructureSystems<T> {
 
 #[dojo::contract]
 pub mod structure_systems {
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::events::{Story, StoryEvent, StructureLevelUpStory};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
@@ -29,6 +31,7 @@ pub mod structure_systems {
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
+
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
         fn level_up(ref self: ContractState, structure_id: ID) {
@@ -115,6 +118,18 @@ pub mod structure_systems {
                     world, structure_owner.into(), Tasks::UPGRADE_VILLAGE, 1, starknet::get_block_timestamp(),
                 );
             }
+
+            // emit event
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::StructureLevelUpStory(StructureLevelUpStory { new_level: next_level }),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }

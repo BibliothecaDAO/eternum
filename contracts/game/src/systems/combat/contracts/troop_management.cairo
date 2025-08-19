@@ -59,12 +59,17 @@ pub trait ITroopManagementSystems<TContractState> {
 #[dojo::contract]
 pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};
     use dojo::world::{WorldStorageTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{RESOURCE_PRECISION};
+    use s1_eternum::models::events::{
+        ExplorerAddStory, ExplorerCreateStory, ExplorerDeleteStory, ExplorerExplorerSwapStory, ExplorerGuardSwapStory,
+        GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
+    };
     use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::{
         config::{
@@ -87,6 +92,7 @@ pub mod troop_management_systems {
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
+    use starknet::ContractAddress;
 
     use super::ITroopManagementSystems;
 
@@ -145,6 +151,27 @@ pub mod troop_management_systems {
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
             StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(for_structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::GuardAddStory(
+                            GuardAddStory {
+                                structure_id: for_structure_id,
+                                slot: slot.into(),
+                                category: category.into(),
+                                tier: tier.into(),
+                                amount,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -176,6 +203,21 @@ pub mod troop_management_systems {
                     slot,
                     current_tick,
                 );
+
+                // emit event
+                let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+                world
+                    .emit_event(
+                        @StoryEvent {
+                            owner: Option::Some(structure_owner),
+                            entity_id: Option::Some(for_structure_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::GuardDeleteStory(
+                                GuardDeleteStory { structure_id: for_structure_id, slot: slot.into() },
+                            ),
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
             } else {
                 panic!("guard_delete: No troops in specified slot");
             }
@@ -246,6 +288,29 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 current_tick,
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerCreateStory(
+                            ExplorerCreateStory {
+                                structure_id: for_structure_id,
+                                explorer_id,
+                                category: category.into(),
+                                tier: tier.into(),
+                                amount,
+                                spawn_direction: spawn_direction.into(),
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
             explorer_id
         }
 
@@ -284,6 +349,23 @@ pub mod troop_management_systems {
                 explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per army",
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(to_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerAddStory(
+                            ExplorerAddStory {
+                                explorer_id: to_explorer_id, amount, home_direction: home_direction.into(),
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -318,6 +400,19 @@ pub mod troop_management_systems {
                 ref explorer_owner_structure,
                 explorer.owner,
             );
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerDeleteStory(ExplorerDeleteStory { explorer_id }),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -445,6 +540,26 @@ pub mod troop_management_systems {
 
             // update to_explorer model
             world.write_model(@to_explorer);
+
+            // emit event
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(from_owner),
+                        entity_id: Option::Some(from_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerExplorerSwapStory(
+                            ExplorerExplorerSwapStory {
+                                from_explorer_id,
+                                to_explorer_id,
+                                to_explorer_direction: to_explorer_direction.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -586,6 +701,27 @@ pub mod troop_management_systems {
             );
             StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
             StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
+
+            // emit event
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(from_owner),
+                        entity_id: Option::Some(from_explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ExplorerGuardSwapStory(
+                            ExplorerGuardSwapStory {
+                                from_explorer_id,
+                                to_structure_id,
+                                to_structure_direction: to_structure_direction.into(),
+                                to_guard_slot: to_guard_slot.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
 
 
@@ -711,6 +847,27 @@ pub mod troop_management_systems {
                     );
                 StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, from_structure_id);
             }
+
+            // emit event
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(structure_owner),
+                        entity_id: Option::Some(from_structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::GuardExplorerSwapStory(
+                            GuardExplorerSwapStory {
+                                from_structure_id,
+                                from_guard_slot: from_guard_slot.into(),
+                                to_explorer_id,
+                                to_explorer_direction: to_explorer_direction.into(),
+                                count,
+                            },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 }
