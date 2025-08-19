@@ -10,7 +10,7 @@ export class AudioPool {
   private readonly asset: AudioAsset;
   private readonly availableNodes: AudioBufferSourceNode[] = [];
   private readonly activeNodes = new Set<AudioBufferSourceNode>();
-  private readonly maxPoolSize: number;
+  private maxPoolSize: number;
 
   constructor(audioContext: AudioContext, audioBuffer: AudioBuffer, asset: AudioAsset) {
     this.audioContext = audioContext;

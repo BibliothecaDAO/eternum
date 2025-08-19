@@ -50,5 +50,5 @@ export function usePlayResourceSound() {
     [play],
   );
 
-  return playResourceSound;
+  return { playResourceSound };
 }
