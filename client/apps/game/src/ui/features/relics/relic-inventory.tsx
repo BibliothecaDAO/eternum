@@ -50,7 +50,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
           return {
             ...entity,
             position: new Position({ x: entity.position.x, y: entity.position.y }).getNormalized(),
-            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()),
+            info: getEntityInfo(entity.entityId, ContractAddress("0x0"), components, getIsBlitz()) as any,
           };
         });
     }, [entities]);
