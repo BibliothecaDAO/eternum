@@ -1,7 +1,6 @@
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { getIsBlitz } from "@bibliothecadao/eternum";
-
+import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { ConfirmationPopup, ResourceBar } from "@/ui/features/economy/banking";
@@ -42,7 +41,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
+  const playLordsSound = useUISound("resources.lords.add");
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);

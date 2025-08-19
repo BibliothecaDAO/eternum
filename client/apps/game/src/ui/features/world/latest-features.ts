@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-08-18",
+    title: "Blitz mode gameplay updates",
+    description:
+      "Major changes to Blitz mode: raiding is now disabled, structures cannot transfer items directly to troops, explorers only hold relic rewards (non-relic rewards go directly to realms), essence for relic activation is paid by the realm, and all structures now have maxed out storage capacity for streamlined gameplay. The UI will be updated soon to remove non functional features",
+  },
+  {
     date: "2025-08-04",
     title: "Enhanced Worldmap Labels",
     description:

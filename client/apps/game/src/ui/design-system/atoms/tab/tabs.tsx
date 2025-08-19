@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { Tab } from "@/ui/design-system/atoms/tab/tab";
 import { TabList } from "@/ui/design-system/atoms/tab/tab-list";
 import { TabPanel } from "@/ui/design-system/atoms/tab/tab-panel";
@@ -52,7 +52,7 @@ export const Tabs = ({
   selectedIndex = 0,
   onChange,
 }: TabsProps) => {
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playClick = useUISound("ui.click");
 
   return (
     <TabProvider variant={variant}>

@@ -548,9 +548,6 @@ importers:
       three-stdlib:
         specifier: ^2.29.5
         version: 2.36.0(three@0.166.1)
-      use-sound:
-        specifier: ^4.0.1
-        version: 4.0.4(react@18.3.1)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -8533,9 +8530,6 @@ packages:
     resolution: {integrity: sha512-5IAMJOXfpA5nT+K0MNjClchzz0IhBHs2Szl7WFAhrFOsbtQsYmNynFyJRg/a3IPsmCfxcrf8txUGiNShXpK5Rg==}
     engines: {node: '>=16.0.0'}
 
-  howler@2.2.4:
-    resolution: {integrity: sha512-iARIBPgcQrwtEr+tALF+rapJ8qSc+Set2GJQl7xT1MQzWaVkFebdJhR3alVlSiUf5U7nAANKuj3aWpwerocD5w==}
-
   hpke-js@1.6.4:
     resolution: {integrity: sha512-hssVL7cGvRNxE/YJ9RwxTsi48xKbX2O6SjPfGyeuFTBGDe/C/akLIjQYpE2Ea1GrSgH4htY0AW9z98w82C6OAA==}
     engines: {node: '>=16.0.0'}
@@ -12119,11 +12113,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  use-sound@4.0.4:
-    resolution: {integrity: sha512-SW81yRUu3K0rJHW0WVANCAK581A2qgD97+QrLxPhlAhvdIAIgw2J9d1VThdbHmPHjzCbwKE/is82V88sgFdjCg==}
-    peerDependencies:
-      react: '>=16.8'
 
   use-subscription@1.11.0:
     resolution: {integrity: sha512-CVJSTGxugcwnCDrunejSMUWb+GeImWrZPWVHep3r+7a5ad22tvBnUAaTHoNhTK547zcdrL5wja8NF+j8GKgKyA==}
@@ -22577,8 +22566,6 @@ snapshots:
 
   hono@3.12.12: {}
 
-  howler@2.2.4: {}
-
   hpke-js@1.6.4:
     dependencies:
       '@hpke/chacha20poly1305': 1.7.1
@@ -26997,11 +26984,6 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.3.23
-
-  use-sound@4.0.4(react@18.3.1):
-    dependencies:
-      howler: 2.2.4
-      react: 18.3.1
 
   use-subscription@1.11.0(react@18.3.1):
     dependencies:

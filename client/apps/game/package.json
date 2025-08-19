@@ -63,7 +63,6 @@
     "starknetkit": "catalog:",
     "three": "^0.166.0",
     "three-stdlib": "^2.29.5",
-    "use-sound": "^4.0.1",
     "uuid": "^11.1.0",
     "vite-plugin-pwa": "^0.20.5",
     "wouter": "^2.12.1",

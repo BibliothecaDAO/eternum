@@ -1,6 +1,5 @@
-import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { getIsBlitz } from "@bibliothecadao/eternum";
-
+import { usePlayResourceSound } from "@/audio";
 import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceCost } from "@/ui/design-system/molecules";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";

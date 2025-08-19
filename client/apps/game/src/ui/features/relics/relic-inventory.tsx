@@ -98,6 +98,7 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
                           resourceId={relic.resourceId}
                           amount={relic.amount}
                           entityId={entity.entityId}
+                          entityOwnerId={entity.structureType ? entity.entityId : Number(entity.info.explorer?.owner)}
                           entityType={entity.structureType ? RelicRecipientType.Structure : RelicRecipientType.Explorer}
                           isActive={isActive}
                           onActivate={(resourceId, amount) => {

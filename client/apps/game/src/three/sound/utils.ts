@@ -1,8 +1,8 @@
-import { dir, soundSelector } from "@/hooks/helpers/use-ui-sound";
+import { AudioManager } from "@/audio/core/AudioManager";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
 export const playSound = (sound: string, hasSound: boolean, volume: number) => {
-  const audio = new Audio(dir + sound);
+  const audio = new Audio("/sound/" + sound);
   if (!hasSound) {
     audio.volume = 0;
   } else {
@@ -12,86 +12,89 @@ export const playSound = (sound: string, hasSound: boolean, volume: number) => {
 };
 
 export const playBuildingSound = (buildingType: BuildingType | undefined, hasSound: boolean, volume: number) => {
+  if (!hasSound) return;
+
   const buildingSounds: Partial<Record<BuildingType, string>> = {
-    [BuildingType.ResourceLabor]: soundSelector.buildLabor,
-    [BuildingType.WorkersHut]: soundSelector.buildWorkHut,
-    [BuildingType.Storehouse]: soundSelector.buildStorehouse,
-    [BuildingType.ResourceAncientFragment]: soundSelector.buildMine,
-    [BuildingType.ResourceKnightT1]: soundSelector.buildBarracks,
-    [BuildingType.ResourceKnightT2]: soundSelector.buildBarracks,
-    [BuildingType.ResourceKnightT3]: soundSelector.buildBarracks,
-    [BuildingType.ResourceCrossbowmanT1]: soundSelector.buildArcherRange,
-    [BuildingType.ResourceCrossbowmanT2]: soundSelector.buildArcherRange,
-    [BuildingType.ResourceCrossbowmanT3]: soundSelector.buildArcherRange,
-    [BuildingType.ResourcePaladinT1]: soundSelector.buildStables,
-    [BuildingType.ResourcePaladinT2]: soundSelector.buildStables,
-    [BuildingType.ResourcePaladinT3]: soundSelector.buildStables,
-    [BuildingType.ResourceWheat]: soundSelector.buildFarm,
-    [BuildingType.ResourceFish]: soundSelector.buildFishingVillage,
-    [BuildingType.ResourceDonkey]: soundSelector.buildMarket,
-    [BuildingType.ResourceStone]: soundSelector.buildMine,
-    [BuildingType.ResourceCoal]: soundSelector.buildMine,
-    [BuildingType.ResourceWood]: soundSelector.buildLumberMill,
-    [BuildingType.ResourceCopper]: soundSelector.buildMine,
-    [BuildingType.ResourceIronwood]: soundSelector.buildLumberMill,
-    [BuildingType.ResourceObsidian]: soundSelector.buildMine,
-    [BuildingType.ResourceGold]: soundSelector.buildMine,
-    [BuildingType.ResourceSilver]: soundSelector.buildMine,
-    [BuildingType.ResourceMithral]: soundSelector.buildMine,
-    [BuildingType.ResourceAlchemicalSilver]: soundSelector.buildMine,
-    [BuildingType.ResourceColdIron]: soundSelector.buildMine,
-    [BuildingType.ResourceDeepCrystal]: soundSelector.buildMine,
-    [BuildingType.ResourceRuby]: soundSelector.buildMine,
-    [BuildingType.ResourceDiamonds]: soundSelector.buildMine,
-    [BuildingType.ResourceHartwood]: soundSelector.buildLumberMill,
-    [BuildingType.ResourceIgnium]: soundSelector.buildMageTower,
-    [BuildingType.ResourceTwilightQuartz]: soundSelector.buildMageTower,
-    [BuildingType.ResourceTrueIce]: soundSelector.buildMageTower,
-    [BuildingType.ResourceAdamantine]: soundSelector.buildMageTower,
-    [BuildingType.ResourceSapphire]: soundSelector.buildMageTower,
-    [BuildingType.ResourceEtherealSilica]: soundSelector.buildMageTower,
-    [BuildingType.ResourceDragonhide]: soundSelector.buildMageTower,
+    [BuildingType.ResourceLabor]: "building.construct.military",
+    [BuildingType.WorkersHut]: "building.construct.workhut",
+    [BuildingType.Storehouse]: "building.construct.storehouse",
+    [BuildingType.ResourceAncientFragment]: "building.construct.mine",
+    [BuildingType.ResourceKnightT1]: "building.construct.barracks",
+    [BuildingType.ResourceKnightT2]: "building.construct.barracks",
+    [BuildingType.ResourceKnightT3]: "building.construct.barracks",
+    [BuildingType.ResourceCrossbowmanT1]: "building.construct.archer_range",
+    [BuildingType.ResourceCrossbowmanT2]: "building.construct.archer_range",
+    [BuildingType.ResourceCrossbowmanT3]: "building.construct.archer_range",
+    [BuildingType.ResourcePaladinT1]: "building.construct.stables",
+    [BuildingType.ResourcePaladinT2]: "building.construct.stables",
+    [BuildingType.ResourcePaladinT3]: "building.construct.stables",
+    [BuildingType.ResourceWheat]: "building.construct.farm",
+    [BuildingType.ResourceFish]: "building.construct.fishing_village",
+    [BuildingType.ResourceDonkey]: "building.construct.market",
+    [BuildingType.ResourceStone]: "building.construct.mine",
+    [BuildingType.ResourceCoal]: "building.construct.mine",
+    [BuildingType.ResourceWood]: "building.construct.lumber_mill",
+    [BuildingType.ResourceCopper]: "building.construct.mine",
+    [BuildingType.ResourceIronwood]: "building.construct.lumber_mill",
+    [BuildingType.ResourceObsidian]: "building.construct.mine",
+    [BuildingType.ResourceGold]: "building.construct.mine",
+    [BuildingType.ResourceSilver]: "building.construct.mine",
+    [BuildingType.ResourceMithral]: "building.construct.mine",
+    [BuildingType.ResourceAlchemicalSilver]: "building.construct.mine",
+    [BuildingType.ResourceColdIron]: "building.construct.mine",
+    [BuildingType.ResourceDeepCrystal]: "building.construct.mine",
+    [BuildingType.ResourceRuby]: "building.construct.mine",
+    [BuildingType.ResourceDiamonds]: "building.construct.mine",
+    [BuildingType.ResourceHartwood]: "building.construct.lumber_mill",
+    [BuildingType.ResourceIgnium]: "building.construct.mage_tower",
+    [BuildingType.ResourceTwilightQuartz]: "building.construct.mage_tower",
+    [BuildingType.ResourceTrueIce]: "building.construct.mage_tower",
+    [BuildingType.ResourceAdamantine]: "building.construct.mage_tower",
+    [BuildingType.ResourceSapphire]: "building.construct.mage_tower",
+    [BuildingType.ResourceEtherealSilica]: "building.construct.mage_tower",
+    [BuildingType.ResourceDragonhide]: "building.construct.mage_tower",
   };
 
-  const soundFile =
+  const soundId =
     buildingType === undefined
-      ? soundSelector.buildCastle
-      : (buildingSounds[buildingType as BuildingType] ?? soundSelector.buildMine);
+      ? "building.construct.castle"
+      : (buildingSounds[buildingType as BuildingType] ?? "building.construct.mine");
 
-  playSound(soundFile, hasSound, volume);
+  AudioManager.getInstance().play(soundId, { volume: volume / 100 });
 };
 
 export const playResourceSound = (resourceId: ResourcesIds | undefined, hasSound: boolean, volume: number) => {
+  if (!hasSound) return;
+
   const resourceSounds: Partial<Record<ResourcesIds, string>> = {
-    [ResourcesIds.Wheat]: soundSelector.addWheat,
-    [ResourcesIds.Fish]: soundSelector.addFish,
-    [ResourcesIds.Wood]: soundSelector.addWood,
-    [ResourcesIds.Stone]: soundSelector.addStone,
-    [ResourcesIds.Coal]: soundSelector.addCoal,
-    [ResourcesIds.Copper]: soundSelector.addCopper,
-    [ResourcesIds.Obsidian]: soundSelector.addObsidian,
-    [ResourcesIds.Silver]: soundSelector.addSilver,
-    [ResourcesIds.Ironwood]: soundSelector.addIronwood,
-    [ResourcesIds.ColdIron]: soundSelector.addColdIron,
-    [ResourcesIds.Gold]: soundSelector.addGold,
-    [ResourcesIds.Hartwood]: soundSelector.addHartwood,
-    [ResourcesIds.Diamonds]: soundSelector.addDiamonds,
-    [ResourcesIds.Sapphire]: soundSelector.addSapphire,
-    [ResourcesIds.Ruby]: soundSelector.addRuby,
-    [ResourcesIds.DeepCrystal]: soundSelector.addDeepCrystal,
-    [ResourcesIds.Ignium]: soundSelector.addIgnium,
-    [ResourcesIds.EtherealSilica]: soundSelector.addEtherealSilica,
-    [ResourcesIds.TrueIce]: soundSelector.addTrueIce,
-    [ResourcesIds.TwilightQuartz]: soundSelector.addTwilightQuartz,
-    [ResourcesIds.AlchemicalSilver]: soundSelector.addAlchemicalSilver,
-    [ResourcesIds.Adamantine]: soundSelector.addAdamantine,
-    [ResourcesIds.Mithral]: soundSelector.addMithral,
-    [ResourcesIds.Dragonhide]: soundSelector.addDragonhide,
-    [ResourcesIds.Lords]: soundSelector.addLords,
+    [ResourcesIds.Wheat]: "resources.wheat.add",
+    [ResourcesIds.Fish]: "resources.fish.add",
+    [ResourcesIds.Wood]: "resources.wood.add",
+    [ResourcesIds.Stone]: "resources.stone.add",
+    [ResourcesIds.Coal]: "resources.coal.add",
+    [ResourcesIds.Copper]: "resources.copper.add",
+    [ResourcesIds.Obsidian]: "resources.obsidian.add",
+    [ResourcesIds.Silver]: "resources.silver.add",
+    [ResourcesIds.Ironwood]: "resources.ironwood.add",
+    [ResourcesIds.ColdIron]: "resources.coldiron.add",
+    [ResourcesIds.Gold]: "resources.gold.add",
+    [ResourcesIds.Hartwood]: "resources.hartwood.add",
+    [ResourcesIds.Diamonds]: "resources.diamonds.add",
+    [ResourcesIds.Sapphire]: "resources.sapphire.add",
+    [ResourcesIds.Ruby]: "resources.ruby.add",
+    [ResourcesIds.DeepCrystal]: "resources.deepcrystal.add",
+    [ResourcesIds.Ignium]: "resources.ignium.add",
+    [ResourcesIds.EtherealSilica]: "resources.etherealsilica.add",
+    [ResourcesIds.TrueIce]: "resources.trueice.add",
+    [ResourcesIds.TwilightQuartz]: "resources.twilightquartz.add",
+    [ResourcesIds.AlchemicalSilver]: "resources.alchemicalsilver.add",
+    [ResourcesIds.Adamantine]: "resources.adamantine.add",
+    [ResourcesIds.Mithral]: "resources.mithral.add",
+    [ResourcesIds.Dragonhide]: "resources.dragonhide.add",
+    [ResourcesIds.Lords]: "resources.lords.add",
   };
 
-  const soundFile =
-    resourceId === undefined ? soundSelector.click : (resourceSounds[resourceId] ?? soundSelector.click);
+  const soundId = resourceId === undefined ? "ui.click" : (resourceSounds[resourceId] ?? "ui.click");
 
-  playSound(soundFile, hasSound, volume);
+  AudioManager.getInstance().play(soundId, { volume: volume / 100 });
 };

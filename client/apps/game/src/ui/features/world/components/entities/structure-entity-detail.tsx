@@ -325,6 +325,7 @@ export const StructureEntityDetail = memo(
                 resourcesIconSize={compact ? "xs" : "sm"}
                 textSize={compact ? "xxs" : "xs"}
                 entityId={structureEntityId}
+                entityOwnerId={structureEntityId}
                 recipientType={RelicRecipientType.Structure}
                 activateRelics={showButtons && isMine}
               />

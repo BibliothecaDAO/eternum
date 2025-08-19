@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -24,7 +24,7 @@ export const DepositResources = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   // stone as proxy for depositing resources
-  const { play: playDeposit } = useUiSounds(soundSelector.addStone);
+  const playDeposit = useUISound("resources.stone.add");
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 

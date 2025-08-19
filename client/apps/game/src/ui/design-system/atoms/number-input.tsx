@@ -1,6 +1,6 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 
@@ -38,7 +38,7 @@ export const NumberInput = ({
     return String(num);
   };
 
-  const { play: playClick } = useUiSounds(soundSelector.click);
+  const playClick = useUISound("ui.click");
   const [displayValue, setDisplayValue] = useState(formatNumber(value));
 
   useEffect(() => {

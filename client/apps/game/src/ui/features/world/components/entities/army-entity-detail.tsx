@@ -300,6 +300,7 @@ export const ArmyEntityDetail = memo(
                 resourcesIconSize={compact ? "xs" : "sm"}
                 textSize={compact ? "xxs" : "xs"}
                 entityId={armyEntityId}
+                entityOwnerId={explorer.owner}
                 recipientType={RelicRecipientType.Explorer}
                 activateRelics={showButtons && derivedData.isMine}
               />

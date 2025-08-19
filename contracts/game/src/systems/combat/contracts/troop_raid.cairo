@@ -84,6 +84,9 @@ pub mod troop_raid_systems {
             let season_config: SeasonConfig = SeasonConfigImpl::get(world);
             season_config.assert_started_and_not_over();
 
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            assert!(!blitz_mode_on, "Eternum: no raid in blitz mode");
+
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
             explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);

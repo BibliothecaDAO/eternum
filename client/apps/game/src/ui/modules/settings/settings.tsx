@@ -1,14 +1,14 @@
+import { ReactComponent as Next } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
-import { ReactComponent as Next } from "@/assets/icons/common/fast-forward.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { useMusicPlayer } from "@/hooks/helpers/use-music";
+import { AudioCategory, ScrollingTrackName, useMusicPlayer, useSimpleAudio } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ToriiSetting } from "@/types";
-import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
@@ -18,7 +18,7 @@ import { getAddressName, getIsBlitz } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import * as platform from "platform";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Helper function to extract architecture from filename
@@ -69,12 +69,13 @@ export const SettingsWindow = () => {
   const addressName = getAddressName(ContractAddress(account.address), components);
 
   const [showSettings, setShowSettings] = useState(false);
-  const musicLevel = useUIStore((state) => state.musicLevel);
-  const effectsLevel = useUIStore((state) => state.effectsLevel);
-  const setMusicLevel = useUIStore((state) => state.setMusicLevel);
-  const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const toggleSound = useUIStore((state) => state.toggleSound);
+
+  // New audio system - lightweight version
+  const { setCategoryVolume, setMuted, getCurrentState } = useSimpleAudio();
+  const { trackName, next: nextTrack } = useMusicPlayer();
+
+  // Get current state for initial render only
+  const [audioState] = useState(() => getCurrentState());
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
 
@@ -83,8 +84,6 @@ export const SettingsWindow = () => {
 
   const initialToriiSetting = (localStorage.getItem("TORII_SETTING") as ToriiSetting) || DEFAULT_TORII_SETTING;
   const [toriiSetting, setToriiSetting] = useState<ToriiSetting>(initialToriiSetting);
-
-  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
 
   // State to hold download links with names and URLs
   const [eternumLoaderDownloadLinks, setEternumLoaderDownloadLinks] = useState<string[]>([]);
@@ -103,7 +102,7 @@ export const SettingsWindow = () => {
     toast("Copied address to clipboard!");
   };
 
-  const { trackName, next } = useMusicPlayer();
+  // Old music player system - replaced with new audio system
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
@@ -132,14 +131,7 @@ export const SettingsWindow = () => {
     toast("Guild whitelist cleared!");
   };
 
-  const toggleFlatMode = () => {
-    setIsFlatMode((prev) => {
-      const newFlatMode = !prev;
-      localStorage.setItem("FLAT_MODE", newFlatMode.toString());
-      window.location.reload(); // Reload the page to apply changes
-      return newFlatMode;
-    });
-  };
+  // Flat mode toggle removed - using new audio system
 
   useEffect(() => {
     (async () => {
@@ -344,23 +336,45 @@ export const SettingsWindow = () => {
           <section className="space-y-3">
             <Headline>Sound</Headline>
             <div className="flex space-x-2">
-              {isSoundOn ? (
-                <Button variant="outline" onClick={() => toggleSound()}>
+              {audioState && !audioState.muted ? (
+                <Button variant="outline" onClick={() => setMuted(true)}>
                   <Unmuted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => toggleSound()}>
+                <Button variant="outline" onClick={() => setMuted(false)}>
                   <Muted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               )}
-              <ScrollingTrackName trackName={trackName} />
-              <Button variant="outline" onClick={next}>
-                <Next className="h-4 cursor-pointer fill-gold stroke-gold" />
+              <ScrollingTrackName trackName={trackName || "Loading..."} />
+              <Button variant="outline" onClick={nextTrack}>
+                <Next className="h-4 cursor-pointer" />
               </Button>
             </div>
             <div className="space-y-2">
-              <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
-              <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
+                title="Music"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.UI, value / 100)}
+                title="UI Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.COMBAT] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.COMBAT, value / 100)}
+                title="Combat Effects"
+              />
+              <RangeInput
+                value={Math.round((audioState?.categoryVolumes[AudioCategory.RESOURCE] || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setCategoryVolume(AudioCategory.RESOURCE, value / 100)}
+                title="Resource Effects"
+              />
             </div>
           </section>
 
@@ -409,27 +423,4 @@ export const SettingsWindow = () => {
   );
 };
 
-const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
-  const trackNameRef = useRef<any>(null);
-
-  useEffect(() => {
-    const trackNameElement = trackNameRef.current;
-    const trackNameWidth = trackNameElement.offsetWidth;
-    const containerWidth = trackNameElement.parentElement.offsetWidth;
-
-    if (trackNameWidth > containerWidth) {
-      trackNameElement.style.animationDuration = `${trackNameWidth / 20}s`;
-      trackNameElement.classList.add("scrolling");
-    }
-  }, []);
-
-  const isBlitz = getIsBlitz();
-
-  return (
-    <div className="w-full p-1 overflow-hidden text-xs border border-gold">
-      <div className="track-name" ref={trackNameRef}>
-        {trackName} - {isBlitz ? "Casey Wescot" : "The Minstrels"}
-      </div>
-    </div>
-  );
-};
+// ScrollingTrackName moved to MusicPlayer component

@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
@@ -485,7 +485,7 @@ const TickProgress = memo(() => {
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
-  const { play } = useUiSounds(getIsBlitz() ? soundSelector.blitzGong : soundSelector.gong);
+  const playGong = useUISound(getIsBlitz() ? "event.blitz_gong" : "event.gong");
 
   const lastProgressRef = useRef(0);
 
@@ -504,10 +504,10 @@ const TickProgress = memo(() => {
   // Play sound when progress resets
   useEffect(() => {
     if (lastProgressRef.current > progress) {
-      play();
+      playGong();
     }
     lastProgressRef.current = progress;
-  }, [progress, play]);
+  }, [progress, playGong]);
 
   // Memoize tooltip content
   const tooltipContent = useMemo(

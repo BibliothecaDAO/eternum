@@ -267,6 +267,7 @@ export const ArmyChip = ({
                   className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
                   resourcesIconSize="xs"
                   entityId={army.entityId}
+                  entityOwnerId={army.entity_owner_id}
                   recipientType={RelicRecipientType.Explorer}
                   textSize="xxs"
                   activateRelics={showButtons && army.isMine}

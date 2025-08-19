@@ -113,6 +113,8 @@ pub mod relic_systems {
 
             // ensure caller owns entity
             let current_tick: u32 = TickImpl::get_tick_interval(ref world).current().try_into().unwrap();
+            let mut essence_payer_id: ID = entity_id;
+
             match recipient_type {
                 RelicRecipientTypeParam::Explorer => {
                     // ensure caller owns explorer
@@ -124,6 +126,10 @@ pub mod relic_systems {
                     InternalImpl::explorer_boost(
                         ref world, ref explorer, relic_resource_id, current_tick, troop_stamina_config,
                     );
+
+                    if !explorer.is_daydreams_agent() {
+                        essence_payer_id = explorer.owner;
+                    }
                 },
                 RelicRecipientTypeParam::StructureGuard => {
                     // ensure caller owns structure
@@ -153,19 +159,28 @@ pub mod relic_systems {
             );
             relic_resource.spend(1 * RESOURCE_PRECISION, ref entity_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
+            // store entity weight
+            entity_weight.store(ref world, entity_id);
 
             // spend essence
+            let mut essence_payer_weight: Weight = WeightStoreImpl::retrieve(ref world, essence_payer_id);
             let essence_cost_amount: u128 = relic_essence_cost(relic_resource_id).into();
             let essence_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::ESSENCE);
             let mut essence_resource = SingleResourceStoreImpl::retrieve(
-                ref world, entity_id, ResourceTypes::ESSENCE, ref entity_weight, essence_resource_weight_grams, true,
+                ref world,
+                essence_payer_id,
+                ResourceTypes::ESSENCE,
+                ref essence_payer_weight,
+                essence_resource_weight_grams,
+                true,
             );
             essence_resource
-                .spend(essence_cost_amount * RESOURCE_PRECISION, ref entity_weight, essence_resource_weight_grams);
+                .spend(
+                    essence_cost_amount * RESOURCE_PRECISION, ref essence_payer_weight, essence_resource_weight_grams,
+                );
             essence_resource.store(ref world);
-
-            // store entity weight
-            entity_weight.store(ref world, entity_id);
+            // store essence payer weight
+            essence_payer_weight.store(ref world, essence_payer_id);
         }
     }
 

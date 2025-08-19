@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -47,7 +47,7 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
   const x = useMotionValue(0);
 
   // Sound effect for hovering
-  const { play: playHoverSound } = useUiSounds(soundSelector.hoverClick);
+  const playHoverSound = useUISound("ui.hover");
 
   // Get relic info for found relics, or show all relics as preview
   const displayRelics = useMemo(() => {
@@ -220,9 +220,8 @@ export const ChestContainer = ({
   const chestPositionNormalized = new Position({ x: chestHex.x, y: chestHex.y }).getNormalized();
 
   // Sound effects
-  const { play: playChestSound1 } = useUiSounds(soundSelector.relicChest1);
-  const { play: playChestSound2 } = useUiSounds(soundSelector.relicChest2);
-  const { play: playChestOpenSound } = useUiSounds(soundSelector.relicChest3);
+  const playChestSound = useUISound("relic.chest");
+  const playChestOpenSound = useUISound("relic.chest");
 
   const toggleModal = useUIStore((state) => state.toggleModal);
 
@@ -267,12 +266,8 @@ export const ChestContainer = ({
     const newClickCount = clickCount + 1;
     setClickCount(newClickCount);
 
-    // Alternate between the two click sounds
-    if (newClickCount % 2 === 1) {
-      playChestSound1();
-    } else {
-      playChestSound2();
-    }
+    // Play chest sound (variations will be handled by AudioManager)
+    playChestSound();
 
     // Trigger shake animation
     setIsShaking(true);
