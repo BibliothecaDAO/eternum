@@ -1,4 +1,5 @@
 import { AudioAsset, AudioCategory, AudioMetrics, AudioPlayOptions, AudioState } from "../types";
+import { AudioPoolManager } from "./AudioPoolManager";
 
 export class AudioManager {
   private static instance: AudioManager;
@@ -9,6 +10,7 @@ export class AudioManager {
   private loadedAudio: Map<string, AudioBuffer> = new Map();
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
+  private poolManager: AudioPoolManager | null = null;
   private state: AudioState;
 
   private constructor() {
@@ -41,6 +43,7 @@ export class AudioManager {
 
     try {
       this.audioContext = new AudioContext();
+      this.poolManager = new AudioPoolManager(this.audioContext);
       this.setupAudioGraph();
       await this.resumeContext();
     } catch (error) {
@@ -74,13 +77,37 @@ export class AudioManager {
     this.audioAssets.set(asset.id, asset);
   }
 
+  /**
+   * Register asset and pre-load its audio buffer into the pool
+   */
+  async registerAssetWithPreload(asset: AudioAsset): Promise<void> {
+    this.audioAssets.set(asset.id, asset);
+    
+    // Pre-load high-priority assets (UI sounds, etc.)
+    if (asset.priority >= 8 && this.poolManager) {
+      try {
+        const buffer = await this.loadAsset(asset.id);
+        this.poolManager.registerAsset(asset, buffer);
+      } catch (error) {
+        console.warn(`Failed to pre-load asset ${asset.id}:`, error);
+      }
+    }
+  }
+
   async loadAsset(assetId: string): Promise<AudioBuffer> {
     const cached = this.loadedAudio.get(assetId);
-    if (cached) return cached;
-
     const asset = this.audioAssets.get(assetId);
+    
     if (!asset || !this.audioContext) {
       throw new Error(`Asset ${assetId} not found or AudioContext not initialized`);
+    }
+
+    if (cached) {
+      // Ensure cached asset is registered with pool manager
+      if (this.poolManager) {
+        this.poolManager.registerAsset(asset, cached);
+      }
+      return cached;
     }
 
     try {
@@ -89,6 +116,12 @@ export class AudioManager {
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
       this.loadedAudio.set(assetId, audioBuffer);
+      
+      // Register with pool manager if available
+      if (this.poolManager) {
+        this.poolManager.registerAsset(asset, audioBuffer);
+      }
+      
       return audioBuffer;
     } catch (error) {
       throw new Error(`Failed to load audio asset ${assetId}: ${error}`);
@@ -102,17 +135,34 @@ export class AudioManager {
 
     await this.resumeContext();
 
-    const buffer = await this.loadAsset(assetId);
     const asset = this.audioAssets.get(assetId)!;
+    const buffer = await this.loadAsset(assetId);
 
     // If this is a music track, stop all existing music first
     if (asset.category === AudioCategory.MUSIC) {
       this.stopAllMusic();
     }
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.loop = options.loop ?? asset.loop;
+    // Try to get a pooled node first, fallback to creating new one
+    let source: AudioBufferSourceNode;
+    if (this.poolManager) {
+      const pooledNode = this.poolManager.getNode(assetId);
+      if (pooledNode) {
+        // Using pooled node - buffer already set
+        source = pooledNode;
+        source.loop = options.loop ?? asset.loop;
+      } else {
+        // Pool miss or no pool - create new node
+        source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.loop = options.loop ?? asset.loop;
+      }
+    } else {
+      // No pool manager, create directly
+      source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.loop = options.loop ?? asset.loop;
+    }
 
     const gainNode = this.audioContext.createGain();
     const finalVolume = (options.volume ?? asset.volume) * this.state.categoryVolumes[asset.category];
@@ -193,19 +243,37 @@ export class AudioManager {
 
   getMetrics(): AudioMetrics {
     const memoryUsageMB = this.loadedAudio.size * 0.1; // Rough estimate
+    const poolStats = this.poolManager?.getAggregatedStats();
+    
     return {
       memoryUsageMB,
       activeInstances: this.activeSources.size,
-      pooledInstances: 0, // Will be implemented with AudioPool
-      cacheHitRatio: 0, // Will be tracked with usage metrics
+      pooledInstances: poolStats?.totalAvailableNodes || 0,
+      cacheHitRatio: this.loadedAudio.size > 0 ? 1 : 0, // All loaded assets are "cached"
       averageLatencyMs: 0, // Will be measured with performance tracking
     };
   }
 
+  /**
+   * Get detailed pool statistics for debugging
+   */
+  getPoolStats() {
+    return this.poolManager?.getAllStats() || {};
+  }
+
+  /**
+   * Optimize audio pools based on usage patterns
+   */
+  optimizePools(): void {
+    this.poolManager?.optimizePools();
+  }
+
   dispose(): void {
     this.stopAll();
+    this.poolManager?.dispose();
     this.audioContext?.close();
     this.audioContext = null;
+    this.poolManager = null;
     this.loadedAudio.clear();
     this.audioAssets.clear();
     this.musicSources.clear();
