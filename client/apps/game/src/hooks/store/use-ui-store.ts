@@ -3,7 +3,7 @@ import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { tracks } from "../helpers/use-music";
+
 import { BuildModeStore, createBuildModeStoreSlice } from "./use-build-mode-store";
 import { createPopupsSlice, PopupsStore } from "./use-popups-store";
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
@@ -39,10 +39,7 @@ interface UIStore {
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
-  trackName: string;
-  setTrackName: (name: string) => void;
-  trackIndex: number;
-  setTrackIndex: (index: number) => void;
+
   toggleSound: () => void;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
@@ -99,8 +96,6 @@ interface UIStore {
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
 
-const initialTrackIndex = Math.floor(Math.random() * tracks.length);
-
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
@@ -125,10 +120,6 @@ export const useUIStore = create(
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
-    trackName: tracks[initialTrackIndex].name,
-    setTrackName: (name) => set({ trackName: name }),
-    trackIndex: initialTrackIndex,
-    setTrackIndex: (index) => set({ trackIndex: index }),
     toggleSound: () =>
       set((state) => {
         localStorage.setItem("soundEnabled", String(!state.isSoundOn));
