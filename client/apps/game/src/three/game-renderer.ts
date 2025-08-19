@@ -28,6 +28,8 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
+import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
+import { MaterialPool } from "./utils/material-pool";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -40,8 +42,10 @@ export default class GameRenderer {
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
 
-  // Stats
+  // Stats and Monitoring
   private stats!: Stats;
+  private memoryMonitor!: MemoryMonitor;
+  private memoryStatsElement!: HTMLDivElement;
 
   // Camera settings
   private cameraDistance = 10; // Maintain the same distance
@@ -201,8 +205,106 @@ export default class GameRenderer {
 
   initStats() {
     this.stats = new (Stats as any)();
-
     document.body.appendChild(this.stats.dom);
+
+    // Initialize memory monitoring
+    this.initMemoryMonitoring();
+  }
+
+  public initMemoryMonitoring() {
+    // Check if memory API is supported
+    if (!MemoryMonitor.isMemoryAPISupported()) {
+      console.warn("Memory monitoring not supported in this browser");
+      return;
+    }
+
+    // Initialize memory monitor with spike detection
+    this.memoryMonitor = new MemoryMonitor({
+      spikeThresholdMB: 30, // Alert on 30MB+ spikes during gameplay
+      onMemorySpike: (spike: MemorySpike) => {
+        console.warn(`🚨 Memory spike in ${spike.context}: +${spike.increaseMB.toFixed(1)}MB`);
+
+        // Additional logging for large spikes
+        if (spike.increaseMB > 100) {
+          console.error("🔥 Large memory spike detected!", spike);
+          // Could trigger additional debugging here
+        }
+      },
+    });
+
+    // Provide renderer reference for better resource tracking
+    this.memoryMonitor.setRenderer(this.renderer);
+    (window as any).__gameRenderer = this;
+
+    // Create memory stats display element
+    this.createMemoryStatsDisplay();
+
+    // Start periodic memory monitoring
+    this.startMemoryMonitoring();
+  }
+
+  private createMemoryStatsDisplay() {
+    this.memoryStatsElement = document.createElement("div");
+    this.memoryStatsElement.style.cssText = `
+      position: fixed;
+      top: 50px;
+      left: 0px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 10px;
+      padding: 5px;
+      border-radius: 3px;
+      z-index: 10000;
+      min-width: 200px;
+    `;
+    document.body.appendChild(this.memoryStatsElement);
+  }
+
+  private startMemoryMonitoring() {
+    const updateMemoryStats = () => {
+      if (this.isDestroyed || !this.memoryMonitor || !this.memoryStatsElement) {
+        return;
+      }
+
+      try {
+        const currentScene = this.sceneManager?.getCurrentScene() || "unknown";
+        const stats = this.memoryMonitor.getCurrentStats(currentScene);
+        const summary = this.memoryMonitor.getSummary();
+
+        // Get material pool stats
+        const materialStats = MaterialPool.getInstance().getStats();
+        const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
+
+        // Update display
+        this.memoryStatsElement.innerHTML = `
+          <strong>Memory Monitor</strong><br>
+          Heap: ${stats.heapUsedMB}MB / ${stats.heapTotalMB}MB<br>
+          Avg: ${summary.averageMB}MB<br>
+          Trend: ${summary.trendMBPerSecond > 0 ? "+" : ""}${summary.trendMBPerSecond.toFixed(2)}MB/s<br>
+          Spikes: ${summary.spikeCount} (max: ${summary.largestSpikeMB}MB)<br>
+          Resources: G:${stats.geometries} M:${stats.materials} T:${stats.textures}<br>
+          Materials: ${materialStats.uniqueMaterials} shared (${sharingRatio.toFixed(1)}:1)<br>
+          ${stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
+        `;
+
+        // Color coding based on memory usage
+        const memoryPercent = (stats.heapUsedMB / stats.heapLimitMB) * 100;
+        let color = "#00ff00"; // Green
+        if (memoryPercent > 70) color = "#ffaa00"; // Orange
+        if (memoryPercent > 85) color = "#ff4444"; // Red
+
+        this.memoryStatsElement.style.color = color;
+      } catch (error) {
+        console.error("Error updating memory stats:", error);
+      }
+
+      // Schedule next update (every second)
+      setTimeout(updateMemoryStats, 1000);
+    };
+
+    // Start monitoring
+    updateMemoryStats();
   }
 
   initScene() {
@@ -554,6 +656,12 @@ export default class GameRenderer {
   }
 
   animate() {
+    // Stop animation if renderer has been destroyed
+    if (this.isDestroyed) {
+      console.log("GameRenderer destroyed, stopping animation loop");
+      return;
+    }
+
     if (!this.labelRenderer) {
       requestAnimationFrame(() => {
         this.animate();
@@ -606,36 +714,61 @@ export default class GameRenderer {
     });
   }
 
+  private isDestroyed = false;
+
   public destroy(): void {
-    // Clean up intervals
-    this.cleanupIntervals.forEach((interval) => clearInterval(interval));
-    this.cleanupIntervals = [];
-
-    // Clean up renderer resources
-    this.renderer.dispose();
-    this.composer.dispose();
-
-    // Clean up scenes
-    if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
-      this.worldmapScene.destroy();
-    }
-    if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
-      this.hexceptionScene.destroy();
-    }
-    if (this.hudScene && typeof this.hudScene.destroy === "function") {
-      this.hudScene.destroy();
+    // Prevent multiple destroy calls
+    if (this.isDestroyed) {
+      console.warn("GameRenderer already destroyed, skipping cleanup");
+      return;
     }
 
-    // Clean up controls
-    if (this.controls) {
-      this.controls.dispose();
+    this.isDestroyed = true;
+
+    try {
+      // Clean up intervals
+      if (this.cleanupIntervals) {
+        this.cleanupIntervals.forEach((interval) => clearInterval(interval));
+        this.cleanupIntervals = [];
+      }
+
+      // Clean up renderer resources
+      if (this.renderer) {
+        this.renderer.dispose();
+      }
+      if (this.composer) {
+        this.composer.dispose();
+      }
+
+      // Clean up scenes
+      if (this.worldmapScene && typeof this.worldmapScene.destroy === "function") {
+        this.worldmapScene.destroy();
+      }
+      if (this.hexceptionScene && typeof this.hexceptionScene.destroy === "function") {
+        this.hexceptionScene.destroy();
+      }
+      if (this.hudScene && typeof this.hudScene.destroy === "function") {
+        this.hudScene.destroy();
+      }
+
+      // Clean up controls
+      if (this.controls) {
+        this.controls.dispose();
+      }
+
+      // Remove event listeners
+      window.removeEventListener("urlChanged", this.handleURLChange);
+      window.removeEventListener("popstate", this.handleURLChange);
+      window.removeEventListener("resize", this.onWindowResize.bind(this));
+
+      // Clean up memory monitoring
+      if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
+        this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
+      }
+
+      console.log("GameRenderer: Destroyed and cleaned up successfully");
+    } catch (error) {
+      console.error("Error during GameRenderer cleanup:", error);
     }
-
-    // Remove event listeners
-    window.removeEventListener("urlChanged", this.handleURLChange);
-    window.removeEventListener("popstate", this.handleURLChange);
-    window.removeEventListener("resize", this.onWindowResize.bind(this));
-
-    console.log("GameRenderer: Destroyed and cleaned up");
   }
 }

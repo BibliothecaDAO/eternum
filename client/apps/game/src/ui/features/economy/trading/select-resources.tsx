@@ -1,4 +1,4 @@
-import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { usePlayResourceSound } from "@/audio";
 import { getIsBlitz } from "@/ui/constants";
 import { Button, ListSelect, NumberInput } from "@/ui/design-system/atoms";
 import { ResourceCost } from "@/ui/design-system/molecules";

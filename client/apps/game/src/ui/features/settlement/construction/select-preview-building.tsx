@@ -1,4 +1,4 @@
-import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
+import { usePlayResourceSound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { getIsBlitz } from "@/ui/constants";

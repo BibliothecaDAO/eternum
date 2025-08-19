@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -124,7 +124,7 @@ export const AutomationTransferTable: React.FC = () => {
   } = useDojo();
 
   const [isPending, startTransition] = useTransition();
-  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
+  const playDonkeyScreaming = useUISound("resource.burn_donkey");
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const addOrder = useAutomationStore((state) => state.addOrder);

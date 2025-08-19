@@ -59,6 +59,8 @@ export interface AutomationTemplate {
   isTemplate: true; // Flag to identify this as a template
   templateName?: string; // Optional name for the template
   description?: string; // Optional description of the strategy
+  sourceRealmId?: string; // ID of the realm this template was exported from (undefined = all realms)
+  sourceRealmName?: string; // Name of the source realm for better identification
   orders: AutomationOrderTemplate[];
 }
 
@@ -94,8 +96,9 @@ interface AutomationState {
   toggleGlobalPause: () => void; // Toggle global pause state
   exportAutomation: () => AutomationExportData; // Export current automation state
   importAutomation: (data: AutomationExportData) => { success: boolean; error?: string }; // Import automation state
-  exportAsTemplate: (name?: string, description?: string) => AutomationTemplate; // Export as shareable template
+  exportAsTemplate: (name?: string, description?: string, realmEntityId?: string) => AutomationTemplate; // Export as shareable template
   importTemplate: (template: AutomationTemplate) => AutomationOrderTemplate[]; // Import template and return orders for manual assignment
+  getAvailableRealms: () => { id: string; name?: string; orderCount: number }[]; // Get list of realms with automation orders
 }
 
 export const useAutomationStore = create<AutomationState>()(
@@ -259,14 +262,20 @@ export const useAutomationStore = create<AutomationState>()(
           return { success: false, error: error instanceof Error ? error.message : "Unknown error occurred" };
         }
       },
-      exportAsTemplate: (name?: string, description?: string) => {
+      exportAsTemplate: (name?: string, description?: string, realmEntityId?: string) => {
         const state = get();
         const allOrders: AutomationOrder[] = [];
 
-        // Collect all orders from all realms
-        Object.values(state.ordersByRealm).forEach((realmOrders) => {
+        if (realmEntityId) {
+          // Export orders from specific realm only
+          const realmOrders = state.ordersByRealm[realmEntityId] || [];
           allOrders.push(...realmOrders);
-        });
+        } else {
+          // Collect all orders from all realms (legacy behavior)
+          Object.values(state.ordersByRealm).forEach((realmOrders) => {
+            allOrders.push(...realmOrders);
+          });
+        }
 
         // Convert orders to templates (removing entity-specific data)
         const templateOrders: AutomationOrderTemplate[] = allOrders.map((order) => ({
@@ -292,6 +301,8 @@ export const useAutomationStore = create<AutomationState>()(
           isTemplate: true,
           templateName: name,
           description: description,
+          sourceRealmId: realmEntityId,
+          sourceRealmName: realmEntityId ? allOrders[0]?.realmName : undefined,
           orders: templateOrders,
         };
 
@@ -306,6 +317,17 @@ export const useAutomationStore = create<AutomationState>()(
         // Return the template orders for manual assignment
         // The UI will need to handle assigning these to specific realms
         return template.orders;
+      },
+      getAvailableRealms: () => {
+        const state = get();
+        return Object.entries(state.ordersByRealm)
+          .filter(([_, orders]) => orders && orders.length > 0)
+          .map(([realmId, orders]) => ({
+            id: realmId,
+            name: orders[0]?.realmName, // Get realm name from first order
+            orderCount: orders.length,
+          }))
+          .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
       },
     }),
     {

@@ -1,4 +1,4 @@
-import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+import { AudioManager } from "@/audio/core/AudioManager";
 import throttle from "lodash/throttle";
 
 import { getMapFromToriiExact } from "@/dojo/queries";
@@ -13,7 +13,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { RelicSource, StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { playResourceSound, playSound } from "@/three/sound/utils";
+import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -48,6 +48,7 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
+import { MemoryMonitor } from "../utils/memory-monitor";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
@@ -88,6 +89,7 @@ export default class WorldmapScene extends HexagonScene {
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
   private structureManager: StructureManager;
+  private memoryMonitor: MemoryMonitor;
   private chestManager: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
@@ -152,6 +154,14 @@ export default class WorldmapScene extends HexagonScene {
     this.dojo = dojoContext;
     this.fxManager = new FXManager(this.scene, 1);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
+
+    // Initialize memory monitor for worldmap operations
+    this.memoryMonitor = new MemoryMonitor({
+      spikeThresholdMB: 30, // Higher threshold for world operations
+      onMemorySpike: (spike) => {
+        console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+      },
+    });
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -231,6 +241,9 @@ export default class WorldmapScene extends HexagonScene {
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
+
+    // Expose material sharing debug to global console
+    (window as any).testMaterialSharing = () => this.armyManager.logMaterialSharingStats();
     this.structureManager = new StructureManager(
       this.scene,
       this.renderChunkSize,
@@ -600,7 +613,9 @@ export default class WorldmapScene extends HexagonScene {
       });
 
       if (isMine) {
-        playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
+        if (this.state.isSoundOn) {
+          AudioManager.getInstance().play("ui.click", { volume: this.state.effectsLevel / 100 });
+        }
         // Get the entity at the clicked hex
         const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
 
@@ -630,6 +645,17 @@ export default class WorldmapScene extends HexagonScene {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
       if (actionPath && account) {
         const actionType = ActionPaths.getActionType(actionPath);
+
+        // Only validate army availability for army-specific actions
+        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help];
+        if (actionType && armyActions.includes(actionType)) {
+          if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
+            console.warn(`Army ${selectedEntityId} no longer available for movement`);
+            this.clearEntitySelection();
+            return;
+          }
+        }
+
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
           this.onArmyMovement(account, actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
@@ -652,7 +678,9 @@ export default class WorldmapScene extends HexagonScene {
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-      playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
+      if (this.state.isSoundOn) {
+        AudioManager.getInstance().play("unit.march", { volume: this.state.effectsLevel / 100 });
+      }
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
@@ -687,11 +715,16 @@ export default class WorldmapScene extends HexagonScene {
       // Mark army as having pending movement transaction
       this.pendingArmyMovements.add(selectedEntityId);
 
+      // Monitor memory usage before army movement action
+      this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
+
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
           // Transaction submitted successfully, cleanup visual effects
           cleanup();
+          // Monitor memory usage after army movement completion
+          this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
           // Transaction failed, remove from pending and cleanup
@@ -790,8 +823,27 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
-    // Don't allow selection of armies with pending movement transactions
+    // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(selectedEntityId)) {
+      return;
+    }
+
+    // Check if army is currently being rendered or is in chunk transition
+    if (this.globalChunkSwitchPromise) {
+      console.log("Chunk switch in progress, deferring army selection");
+      // Defer selection until chunk switch completes
+      this.globalChunkSwitchPromise.then(() => {
+        // Retry selection after chunk switch
+        if (this.armyManager.hasArmy(selectedEntityId)) {
+          this.onArmySelection(selectedEntityId, playerAddress);
+        }
+      });
+      return;
+    }
+
+    // Ensure army is available for selection
+    if (!this.armyManager.hasArmy(selectedEntityId)) {
+      console.warn(`Army ${selectedEntityId} not available in current chunk for selection`);
       return;
     }
 
@@ -1254,10 +1306,22 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
+
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       console.log("cache applied");
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
+
+      // Track memory usage for cached operation
+      if (memoryMonitor && preUpdateStats) {
+        const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
+        const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+        if (Math.abs(memoryDelta) > 10) {
+          console.log(`[HEX GRID] Cache application memory impact: ${memoryDelta.toFixed(1)}MB`);
+        }
+      }
       return;
     }
 
@@ -1352,6 +1416,20 @@ export default class WorldmapScene extends HexagonScene {
           this.cacheMatricesForChunk(startRow, startCol);
           // After processing, just update visible hexes
           this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
+
+          // Track memory usage for full hex grid generation
+          if (memoryMonitor && preUpdateStats) {
+            const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
+            const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+            console.log(
+              `[HEX GRID] Full generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+            );
+
+            if (memoryDelta > 50) {
+              console.warn(`[HEX GRID] Large memory usage for hex generation: ${memoryDelta.toFixed(1)}MB`);
+            }
+          }
+
           resolve();
         }
       };
@@ -1505,6 +1583,15 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async performChunkSwitch(chunkKey: string, startCol: number, startRow: number, force: boolean) {
+    console.log(`[CHUNK SYNC] Starting synchronized chunk switch to ${chunkKey}`);
+
+    // Track memory usage during chunk switch
+    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
+
+    // Clear any existing selections to prevent interaction during switch
+    this.clearEntitySelection();
+
     this.currentChunk = chunkKey;
 
     if (!force) {
@@ -1519,7 +1606,7 @@ export default class WorldmapScene extends HexagonScene {
     const loadPromises = surroundingChunks.map((chunk) => this.computeTileEntities(chunk));
 
     // Calculate the starting position for the new chunk
-    this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Update which interactive hexes are visible in the new chunk
     this.interactiveHexManager.updateVisibleHexes(
@@ -1530,13 +1617,29 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     console.log("performChunkSwitch", chunkKey);
-    // Update all managers concurrently to prevent sequential race conditions
-    await Promise.all([
-      this.armyManager.updateChunk(chunkKey),
-      this.structureManager.updateChunk(chunkKey),
-      this.questManager.updateChunk(chunkKey),
-      this.chestManager.updateChunk(chunkKey),
-    ]);
+    // Update all managers in sequence to prevent race conditions
+    // Changed from Promise.all to sequential execution
+    await this.armyManager.updateChunk(chunkKey);
+    await this.structureManager.updateChunk(chunkKey);
+    await this.questManager.updateChunk(chunkKey);
+    await this.chestManager.updateChunk(chunkKey);
+
+    // Track memory usage after chunk switch
+    if (memoryMonitor) {
+      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
+      if (preChunkStats && postChunkStats) {
+        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+        console.log(
+          `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+        );
+
+        if (Math.abs(memoryDelta) > 20) {
+          console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
+        }
+      }
+    }
+
+    console.log(`[CHUNK SYNC] All managers synchronized to chunk ${chunkKey}`);
   }
 
   update(deltaTime: number) {

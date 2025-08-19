@@ -1,4 +1,4 @@
-import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
+import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -198,7 +198,7 @@ export const TransferBetweenEntities = ({
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
-  const { play: playDonkeyScreaming } = useUiSounds(soundSelector.burnDonkey);
+  const playDonkeyScreaming = useUISound("resource.burn_donkey");
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 

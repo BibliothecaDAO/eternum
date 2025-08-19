@@ -21,8 +21,11 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
+  const [selectedRealmId, setSelectedRealmId] = useState<string>("");
 
-  const { exportAutomation, importAutomation, exportAsTemplate, importTemplate } = useAutomationStore();
+  const { exportAutomation, importAutomation, exportAsTemplate, importTemplate, getAvailableRealms } =
+    useAutomationStore();
+  const availableRealms = getAvailableRealms();
 
   const handleExport = () => {
     const data = exportAutomation();
@@ -30,11 +33,16 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
   };
 
   const handleExportTemplate = () => {
-    const template = exportAsTemplate(templateName || undefined, templateDescription || undefined);
+    const template = exportAsTemplate(
+      templateName || undefined,
+      templateDescription || undefined,
+      selectedRealmId || undefined,
+    );
     downloadAutomationTemplate(template);
     setShowTemplateModal(false);
     setTemplateName("");
     setTemplateDescription("");
+    setSelectedRealmId("");
   };
 
   const handleImportClick = () => {
@@ -174,6 +182,29 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
 
               <div className="space-y-4">
                 <div>
+                  <label htmlFor="realmSelect" className="block text-sm font-medium mb-1">
+                    Realm to Export
+                  </label>
+                  <select
+                    id="realmSelect"
+                    value={selectedRealmId}
+                    onChange={(e) => setSelectedRealmId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gold/20 bg-black/20 rounded"
+                  >
+                    <option value="">All Realms (Legacy)</option>
+                    {availableRealms.map((realm) => (
+                      <option key={realm.id} value={realm.id}>
+                        {realm.name || `Realm ${realm.id}`} ({realm.orderCount} orders)
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gold/60 mt-1">
+                    Select a specific realm to export only its automation strategy, or choose "All Realms" to export
+                    everything.
+                  </p>
+                </div>
+
+                <div>
                   <label htmlFor="templateName" className="block text-sm font-medium mb-1">
                     Template Name (optional)
                   </label>
@@ -211,6 +242,7 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
                     setShowTemplateModal(false);
                     setTemplateName("");
                     setTemplateDescription("");
+                    setSelectedRealmId("");
                   }}
                   variant="default"
                   size="md"
