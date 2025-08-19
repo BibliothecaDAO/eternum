@@ -1,5 +1,5 @@
+import { Position } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborOffsets } from "@bibliothecadao/types";
-import { Position } from "../types/position";
 
 interface Node {
   col: number;

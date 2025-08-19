@@ -16,6 +16,7 @@ import * as THREE from "three";
 import { getMapFromTorii } from "../../../../app/dojo/queries";
 import { getBlockTimestamp } from "../../../../shared/hooks/use-block-timestamp";
 import { GUIManager } from "../helpers/gui-manager";
+import { findShortestPath } from "../helpers/pathfinding";
 import { loggedInAccount } from "../helpers/utils";
 import { FXManager } from "./fx-manager";
 import { createHexagonShape } from "./hexagon-geometry";
@@ -455,24 +456,9 @@ export class HexagonMap {
       // Perform the actual movement call
       await armyActionManager.moveArmy(account, actionPath, isExplored, currentArmiesTick);
 
-      // Convert action path to movement path for visual representation (skip first position which is current position)
-      const movementPath = actionPath.slice(1).map((pathItem) => {
-        const normalized = new Position({
-          x: pathItem.hex.col - FELT_CENTER,
-          y: pathItem.hex.row - FELT_CENTER,
-        }).getNormalized();
-        return { col: normalized.x, row: normalized.y };
-      });
-
-      // Start visual army movement with slower speed (800ms instead of 200ms)
-      const movementPromise = this.armyRenderer.moveObjectAlongPath(armyId, movementPath, 800);
-
-      // End effect when movement starts
+      // End effect when transaction completes
       effect.end();
       this.activeTravelEffects.delete(armyId);
-
-      // Wait for visual movement to complete
-      await movementPromise;
 
       console.log(
         `Army ${armyId} ${isExplored ? "moved" : "explored"} from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`,
@@ -492,6 +478,12 @@ export class HexagonMap {
   private selectArmy(armyId: number): void {
     // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(armyId)) {
+      return;
+    }
+
+    // Check if army is currently moving
+    if (this.armyRenderer.isObjectMoving(armyId)) {
+      console.log(`[HexagonMap] Cannot select army ${armyId} - it is currently moving`);
       return;
     }
 
@@ -812,51 +804,136 @@ export class HexagonMap {
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
 
-    // Update army position
+    // Update army position in our tracking
     this.armiesPositions.set(entityId, newPos);
 
-    // Remove from old position if it changed
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      console.log(`[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`);
-      
-      // Clear selection if this army is currently selected and has moved
-      const selectedObject = this.selectionManager.getSelectedObject();
-      if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
-        this.selectionManager.clearSelection();
-      }
-    } else if (!oldPos) {
-      console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
-    }
+    // Check if this is a new army or an existing one
+    const existingArmy = this.armyRenderer.getObject(entityId);
+    const isNewArmy = !existingArmy;
 
-    // Add to new position
-    if (!this.armyHexes.has(newPos.col)) {
-      this.armyHexes.set(newPos.col, new Map());
+    if (isNewArmy) {
+      // New army - add it
+      console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
+      
+      const army: ArmyObject = {
+        id: entityId,
+        col: newPos.col,
+        row: newPos.row,
+        owner: ownerAddress,
+        type: "army",
+        troopType,
+        troopTier,
+        ownerName,
+        guildName,
+        isDaydreamsAgent,
+        isAlly: false,
+      };
+
+      this.armyRenderer.addObject(army);
+      
+      // Update hex tracking immediately for new armies
+      if (!this.armyHexes.has(newPos.col)) {
+        this.armyHexes.set(newPos.col, new Map());
+      }
+      this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+    } else {
+      // Existing army - check if it moved
+      const hasMoved = oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
+      
+      if (hasMoved) {
+        // Army moved - start movement (hex tracking will be updated after movement completes)
+        console.log(`[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`);
+        
+        // Clear selection if this army is currently selected and has moved
+        const selectedObject = this.selectionManager.getSelectedObject();
+        if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
+          this.selectionManager.clearSelection();
+        }
+
+        // Start smooth movement animation
+        this.startSmoothArmyMovement(entityId, oldPos, newPos);
+      } else {
+        // Army didn't move, update hex tracking immediately
+        if (!this.armyHexes.has(newPos.col)) {
+          this.armyHexes.set(newPos.col, new Map());
+        }
+        this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+      }
+
+      // Update army properties (position will be handled by animation)
+      const updatedArmy: ArmyObject = {
+        ...existingArmy,
+        owner: ownerAddress,
+        troopType,
+        troopTier,
+        ownerName,
+        guildName,
+        isDaydreamsAgent,
+        isAlly: false,
+      };
+
+      this.armyRenderer.updateObject(updatedArmy);
     }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
 
     // Remove from pending movements when position is updated from blockchain
     this.pendingArmyMovements.delete(entityId);
+  }
 
-    const army: ArmyObject = {
-      id: entityId,
-      col: newPos.col,
-      row: newPos.row,
-      owner: ownerAddress,
-      type: "army",
-      troopType,
-      troopTier,
-      ownerName,
-      guildName,
-      isDaydreamsAgent,
-      isAlly: false,
-    };
+  private startSmoothArmyMovement(entityId: number, oldPos: { col: number; row: number }, newPos: { col: number; row: number }) {
+    // Update hex tracking immediately before starting animation
+    this.updateArmyHexTracking(entityId, oldPos, newPos);
+    
+    // Update the army object's position immediately so getObjectsAtHex works correctly
+    const army = this.armyRenderer.getObject(entityId);
+    if (army) {
+      army.col = newPos.col;
+      army.row = newPos.row;
+    }
+    
+    // Calculate path using pathfinding
+    const oldPosition = new Position({ x: oldPos.col, y: oldPos.row });
+    const newPosition = new Position({ x: newPos.col, y: newPos.row });
+    
+    // Use a reasonable max distance for pathfinding (similar to desktop)
+    const maxDistance = 50; // This should be based on army stamina, but using a reasonable default
+    
+    const path = findShortestPath(
+      oldPosition,
+      newPosition,
+      this.exploredTiles,
+      this.structureHexes,
+      this.armyHexes,
+      maxDistance
+    );
 
-    this.armyRenderer.updateObject(army);
+    if (path && path.length > 0) {
+      // Convert path to movement format for the renderer
+      const movementPath = path.map((pos) => {
+        const normalized = pos.getNormalized();
+        return { col: normalized.x, row: normalized.y };
+      });
+
+      // Start smooth movement animation (hex tracking already updated)
+      this.armyRenderer.moveObjectAlongPath(entityId, movementPath, 300);
+    } else {
+      // If no path found, just update the sprite position to match the object position
+      this.armyRenderer.updateObjectPosition(entityId, newPos.col, newPos.row);
+    }
+  }
+
+  private updateArmyHexTracking(entityId: number, oldPos: { col: number; row: number }, newPos: { col: number; row: number }) {
+    // Remove from old position in hex tracking
+    this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+    
+    // Add to new position in hex tracking
+    if (!this.armyHexes.has(newPos.col)) {
+      this.armyHexes.set(newPos.col, new Map());
+    }
+    
+    const army = this.armyRenderer.getObject(entityId);
+    if (army) {
+      this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: army.owner || 0n });
+    }
   }
 
   public updateStructureHexes(update: StructureSystemUpdate) {
@@ -893,6 +970,7 @@ export class HexagonMap {
       this.armiesPositions.delete(entityId);
     }
 
+    // Remove from renderer (this will properly dispose of the sprite)
     this.armyRenderer.removeObject(entityId);
   }
 
@@ -938,6 +1016,6 @@ export class HexagonMap {
   }
 
   public isArmySelectable(armyId: number): boolean {
-    return !this.pendingArmyMovements.has(armyId);
+    return !this.pendingArmyMovements.has(armyId) && !this.armyRenderer.isObjectMoving(armyId);
   }
 }
