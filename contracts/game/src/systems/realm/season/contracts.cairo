@@ -31,6 +31,7 @@ pub mod realm_systems {
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
         WorldConfigUtilImpl,
     };
+    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
     use s1_eternum::models::map::{TileImpl};
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
@@ -42,7 +43,6 @@ pub mod realm_systems {
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
     use s1_eternum::systems::realm::utils::contracts::{
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };

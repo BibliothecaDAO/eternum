@@ -18,15 +18,28 @@ pub struct StoryEvent {
 #[derive(Introspect, Copy, Drop, Serde)]
 pub enum Story {
     RealmCreatedStory: RealmCreatedStory,
+    // Building
     BuildingPlacementStory: BuildingPlacementStory,
     BuildingPaymentStory: BuildingPaymentStory,
-    // BattleStory: BattleStory,
+    // Production
+    ProductionStory: ProductionStory,
 }
+
+///////////////////////////////////////////////
+///  Realm Creation
+///
+///////////////////////////////////////////////
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct RealmCreatedStory {
     pub coord: Coord,
 }
+
+
+///////////////////////////////////////////////
+///  Building placement, pausing & payment
+///
+///////////////////////////////////////////////
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct BuildingPlacementStory {
@@ -45,9 +58,21 @@ pub struct BuildingPaymentStory {
     pub cost: Span<(u8, u128)>,
 }
 
+///////////////////////////////////////////////
+///  Production
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ProductionStory {
+    pub received_resource_type: u8,
+    pub received_amount: u128,
+    pub cost: Span<(u8, u128)>,
+}
 // #[derive(Introspect, Copy, Drop, Serde)]
 // pub struct BattleStory {
 //     pub abc: u64,
 //     pub def: u64,
 // }
+
 

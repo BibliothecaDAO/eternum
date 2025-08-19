@@ -182,7 +182,9 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             let caller: ContractAddress = starknet::get_caller_address();
-            BuildingImpl::pause_production(ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord);
+            BuildingImpl::pause_production(
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         fn resume_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
@@ -202,7 +204,9 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             let caller: ContractAddress = starknet::get_caller_address();
-            BuildingImpl::resume_production(ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord);
+            BuildingImpl::resume_production(
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         /// Burn other resource for production of labor

@@ -1,15 +1,15 @@
 use alexandria_math::U128BitShift;
 use core::num::traits::zero::Zero;
-use dojo::model::{ModelStorage};
 use dojo::event::EventStorage;
+use dojo::model::{ModelStorage};
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcherTrait};
-use starknet::ContractAddress;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
+use s1_eternum::models::events::{BuildingPaymentStory, BuildingPlacementStory, Story, StoryEvent};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
@@ -19,9 +19,9 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::events::{StoryEvent, Story, BuildingPaymentStory, BuildingPlacementStory};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use starknet::ContractAddress;
 
 
 #[derive(PartialEq, Copy, Drop, Serde)]
@@ -626,23 +626,25 @@ pub impl BuildingImpl of BuildingTrait {
         world.write_model(@structure_buildings);
 
         // emit event
-        world.emit_event(
-            @StoryEvent {
-                owner: Option::Some(outer_entity_owner_address),
-                entity_id: Option::Some(outer_entity_id),
-                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                story: Story::BuildingPlacementStory(
-                    BuildingPlacementStory { 
-                        inner_coord,
-                        category: category.into(),
-                        created: true,
-                        paused: false,
-                        unpaused: false,
-                        destroyed: false,
-                    }),
-                timestamp: starknet::get_block_timestamp(),
-            },
-        );
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: category.into(),
+                            created: true,
+                            paused: false,
+                            unpaused: false,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
 
         (building, building_category_count)
     }
@@ -654,11 +656,11 @@ pub impl BuildingImpl of BuildingTrait {
     /// and stops receiving bonuses from adjacent buildings.
     ///
     fn pause_production(
-        ref world: WorldStorage, 
+        ref world: WorldStorage,
         outer_entity_owner_address: ContractAddress,
         outer_entity_id: ID,
-        outer_structure_category: u8, 
-        outer_entity_coord: Coord, 
+        outer_structure_category: u8,
+        outer_entity_coord: Coord,
         inner_coord: Coord,
     ) {
         // ensure that inner coordinate is occupied
@@ -673,22 +675,25 @@ pub impl BuildingImpl of BuildingTrait {
         world.write_model(@building);
 
         // emit event
-        world.emit_event(
-            @StoryEvent {
-                owner: Option::Some(outer_entity_owner_address),
-                entity_id: Option::Some(outer_entity_id),
-                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                story: Story::BuildingPlacementStory(BuildingPlacementStory { 
-                    inner_coord, 
-                    category: building.category.into(), 
-                    created: false, 
-                    paused: true, 
-                    unpaused: false,
-                    destroyed: false,
-                }),
-                timestamp: starknet::get_block_timestamp(),
-            },
-        );
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: building.category.into(),
+                            created: false,
+                            paused: true,
+                            unpaused: false,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     /// Restart building production without removing the building
@@ -700,8 +705,8 @@ pub impl BuildingImpl of BuildingTrait {
         ref world: WorldStorage,
         outer_entity_owner_address: ContractAddress,
         outer_entity_id: ID,
-        outer_structure_category: u8, 
-        outer_entity_coord: Coord, 
+        outer_structure_category: u8,
+        outer_entity_coord: Coord,
         inner_coord: Coord,
     ) {
         // ensure that inner coordinate is occupied
@@ -718,22 +723,25 @@ pub impl BuildingImpl of BuildingTrait {
         world.write_model(@building);
 
         // emit event
-        world.emit_event(
-            @StoryEvent {
-                owner: Option::Some(outer_entity_owner_address),
-                entity_id: Option::Some(outer_entity_id),
-                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                story: Story::BuildingPlacementStory(BuildingPlacementStory { 
-                    inner_coord, 
-                    category: building.category.into(), 
-                    created: false, 
-                    paused: false,
-                    unpaused: true,
-                    destroyed: false,
-                }),
-                timestamp: starknet::get_block_timestamp(),
-            },
-        );
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: building.category.into(),
+                            created: false,
+                            paused: false,
+                            unpaused: true,
+                            destroyed: false,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     /// Destroy building and remove it from the structure
@@ -785,32 +793,35 @@ pub impl BuildingImpl of BuildingTrait {
         world.erase_model(@building);
 
         // emit event
-        world.emit_event(
-            @StoryEvent {
-                owner: Option::Some(outer_entity_owner_address),
-                entity_id: Option::Some(outer_entity_id),
-                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                story: Story::BuildingPlacementStory(BuildingPlacementStory { 
-                    inner_coord, 
-                    category: destroyed_building_category, 
-                    created: false, 
-                    paused: false,
-                    unpaused: false,
-                    destroyed: true,
-                }),
-                timestamp: starknet::get_block_timestamp(),
-            },
-        );
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(outer_entity_owner_address),
+                    entity_id: Option::Some(outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPlacementStory(
+                        BuildingPlacementStory {
+                            inner_coord,
+                            category: destroyed_building_category,
+                            created: false,
+                            paused: false,
+                            unpaused: false,
+                            destroyed: true,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
 
         destroyed_building_category.into()
     }
 
     fn make_payment(
-        self: Building, 
+        self: Building,
         building_owner_address: ContractAddress,
-        building_count: u8, 
-        ref world: WorldStorage, 
-        use_simple: bool
+        building_count: u8,
+        ref world: WorldStorage,
+        use_simple: bool,
     ) {
         let building_category_config: BuildingCategoryConfig = world.read_model(self.category);
         let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
@@ -856,19 +867,22 @@ pub impl BuildingImpl of BuildingTrait {
         structure_weight.store(ref world, self.outer_entity_id);
 
         // emit event
-        world.emit_event(
-            @StoryEvent {
-                owner: Option::Some(building_owner_address),
-                entity_id: Option::Some(self.outer_entity_id),
-                tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                story: Story::BuildingPaymentStory(BuildingPaymentStory {
-                    inner_coord: Coord {x: self.inner_col, y: self.inner_row},
-                    category: self.category,
-                    cost: tcost.span(),
-                }),
-                timestamp: starknet::get_block_timestamp(),
-            },
-        );
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(building_owner_address),
+                    entity_id: Option::Some(self.outer_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::BuildingPaymentStory(
+                        BuildingPaymentStory {
+                            inner_coord: Coord { x: self.inner_col, y: self.inner_row },
+                            category: self.category,
+                            cost: tcost.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     fn _erection_cost_scaled(building_count: u8, erection_cost: ResourceList, base_cost_percent_increase: u64) -> u128 {
