@@ -476,6 +476,8 @@ export class HexagonMap {
     const army = this.armyRenderer.getObject(armyId);
     if (!army) return;
 
+    console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
+
     // Create army action manager
     const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
 
@@ -484,6 +486,14 @@ export class HexagonMap {
 
     // Get proper timestamps from block timestamp utility
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+
+    // Debug: Log current armyHexes state
+    console.log(`[HexagonMap] Current armyHexes state:`);
+    for (const [col, rowMap] of this.armyHexes) {
+      for (const [row, armyInfo] of rowMap) {
+        console.log(`  Army ${armyInfo.id} at (${col}, ${row})`);
+      }
+    }
 
     // Find action paths for the army
     const actionPaths = armyActionManager.findActionPaths(
@@ -774,7 +784,35 @@ export class HexagonMap {
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
 
-    // Update army hexes map for action path calculation
+    // First, remove this army from ALL positions in armyHexes to prevent duplicates
+    for (const [col, rowMap] of this.armyHexes) {
+      for (const [row, armyInfo] of rowMap) {
+        if (armyInfo.id === entityId) {
+          rowMap.delete(row);
+          console.log(`[HexagonMap] Removed army ${entityId} from (${col}, ${row})`);
+        }
+      }
+      // Clean up empty row maps
+      if (rowMap.size === 0) {
+        this.armyHexes.delete(col);
+      }
+    }
+
+    // Move army in army hexes map if it exists, otherwise add it
+    const existingArmy = this.armyRenderer.getObject(entityId);
+    if (existingArmy) {
+      console.log(`[HexagonMap] Moved army ${entityId} from (${existingArmy.col}, ${existingArmy.row}) to (${newPos.col}, ${newPos.row})`);
+      
+      // Clear selection if this army is currently selected and has moved
+      const selectedObject = this.selectionManager.getSelectedObject();
+      if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
+        this.selectionManager.clearSelection();
+      }
+    } else {
+      console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
+    }
+
+    // Add to new position
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
