@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAssetsByCategory } from "../config/registry";
 import { useAudio } from "../hooks/useAudio";
 import { AudioCategory } from "../types";
-import { getAssetsByCategory } from "../config/registry";
-import { getIsBlitz } from "@/ui/constants";
 
 export const useMusicPlayer = () => {
   const { play, audioState, isReady } = useAudio(); // Use audioState instead of getState
