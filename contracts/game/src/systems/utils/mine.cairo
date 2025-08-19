@@ -103,6 +103,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // create reward resource production building
         BuildingImpl::create(
             ref world,
+            Zero::zero(),
             structure_id,
             StructureCategory::FragmentMine.into(),
             coord,

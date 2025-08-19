@@ -104,8 +104,10 @@ mod production_systems {
                 }
             };
 
+            let caller: ContractAddress = starknet::get_caller_address();
             let (building, building_count) = BuildingImpl::create(
                 ref world,
+                caller,
                 structure_id,
                 structure_base.category,
                 structure_base.coord(),
@@ -126,7 +128,7 @@ mod production_systems {
             }
 
             // pay one time cost of the building
-            building.make_payment(building_count, ref world, use_simple);
+            building.make_payment(caller, building_count, ref world, use_simple);
 
             // give achievement
             if use_simple {
@@ -157,8 +159,9 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
+            let caller: ContractAddress = starknet::get_caller_address();
             BuildingImpl::destroy(
-                ref world, structure_id, structure_base.category, structure_base.coord(), building_coord,
+                ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord,
             );
         }
 
@@ -178,7 +181,8 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::pause_production(ref world, structure_base.category, structure_base.coord(), building_coord);
+            let caller: ContractAddress = starknet::get_caller_address();
+            BuildingImpl::pause_production(ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord);
         }
 
         fn resume_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
@@ -197,7 +201,8 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::resume_production(ref world, structure_base.category, structure_base.coord(), building_coord);
+            let caller: ContractAddress = starknet::get_caller_address();
+            BuildingImpl::resume_production(ref world, caller, structure_id, structure_base.category, structure_base.coord(), building_coord);
         }
 
         /// Burn other resource for production of labor

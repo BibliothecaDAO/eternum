@@ -92,6 +92,7 @@ pub impl iRealmImpl of iRealmTrait {
         // place castle building
         BuildingImpl::create(
             ref world,
+            owner,
             structure_id,
             StructureCategory::Realm.into(),
             coord,

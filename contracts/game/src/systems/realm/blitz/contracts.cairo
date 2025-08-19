@@ -15,7 +15,6 @@ pub mod blitz_realm_systems {
     use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
@@ -26,7 +25,7 @@ pub mod blitz_realm_systems {
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::event::{EventType, SettleRealmData};
+    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
     use s1_eternum::models::map::{TileImpl};
     use s1_eternum::models::name::{AddressName};
     use s1_eternum::models::position::{Coord};
@@ -342,27 +341,15 @@ pub mod blitz_realm_systems {
                 structure_weight.store(ref world, structure_id);
 
                 // emit realm settle event
-                let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-                let address_name: AddressName = world.read_model(caller);
+                let now = starknet::get_block_timestamp();
                 world
                     .emit_event(
-                        @SettleRealmData {
-                            id: world.dispatcher.uuid(),
-                            event_id: EventType::SettleRealm,
-                            entity_id: structure_id,
-                            owner_address: caller,
-                            owner_name: address_name.name,
-                            realm_name: '',
-                            produced_resources: 0, // why?
-                            cities: 0,
-                            harbors: 0,
-                            rivers: 0,
-                            regions: 0,
-                            wonder: 1,
-                            order: 0,
-                            x: coord.x,
-                            y: coord.y,
-                            timestamp: now.into(),
+                        @StoryEvent {
+                            owner: Option::Some(caller),
+                            entity_id: Option::Some(structure_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::RealmCreatedStory(RealmCreatedStory { coord }),
+                            timestamp: now,
                         },
                     );
 

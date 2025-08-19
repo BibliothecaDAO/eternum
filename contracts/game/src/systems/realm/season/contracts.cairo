@@ -23,7 +23,6 @@ pub trait IRealmSystems<T> {
 pub mod realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait};
     use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
@@ -32,9 +31,7 @@ pub mod realm_systems {
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl};
-    use s1_eternum::models::name::{AddressName};
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
@@ -45,6 +42,7 @@ pub mod realm_systems {
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
+    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
     use s1_eternum::systems::realm::utils::contracts::{
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
@@ -108,7 +106,7 @@ pub mod realm_systems {
             iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
 
             // retrieve realm metadata
-            let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
+            let (_realm_name, _regions, _cities, _harbors, _rivers, wonder, order, resources) =
                 iRealmImpl::collect_season_pass_metadata(
                 season_addresses_config.season_pass_address, realm_id,
             );
@@ -147,29 +145,17 @@ pub mod realm_systems {
             // }
 
             // emit realm settle event
-            let address_name: AddressName = world.read_model(owner);
+            let now = starknet::get_block_timestamp();
             world
                 .emit_event(
-                    @SettleRealmData {
-                        id: world.dispatcher.uuid(),
-                        event_id: EventType::SettleRealm,
-                        entity_id: structure_id,
-                        owner_address: owner,
-                        owner_name: address_name.name,
-                        realm_name: realm_name,
-                        produced_resources: 0, // why?
-                        cities,
-                        harbors,
-                        rivers,
-                        regions,
-                        wonder,
-                        order,
-                        x: coord.x,
-                        y: coord.y,
-                        timestamp: starknet::get_block_timestamp(),
+                    @StoryEvent {
+                        owner: Option::Some(owner),
+                        entity_id: Option::Some(structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::RealmCreatedStory(RealmCreatedStory { coord }),
+                        timestamp: now,
                     },
                 );
-
             // emit achievement progression
             AchievementTrait::progress(
                 world, owner.into(), Tasks::REALM_SETTLEMENT, 1, starknet::get_block_timestamp(),
