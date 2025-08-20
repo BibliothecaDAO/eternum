@@ -29,6 +29,7 @@ import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { HEX_SIZE } from "../constants";
+import { MatrixPool } from "./matrix-pool";
 
 export const hashCoordinates = (x: number, y: number): number => {
   // Simple hash function to generate a deterministic value between 0 and 1
@@ -40,12 +41,16 @@ export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,
 ): { hexCoords: HexPosition; position: THREE.Vector3 } => {
-  const matrix = new THREE.Matrix4();
+  const matrixPool = MatrixPool.getInstance();
+  const matrix = matrixPool.getMatrix();
   instancedMesh.getMatrixAt(instanceId, matrix);
   const position = new THREE.Vector3();
   matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
   const hexCoords = getHexForWorldPosition(position);
+
+  // Release matrix back to pool
+  matrixPool.releaseMatrix(matrix);
 
   return { hexCoords, position };
 };
