@@ -27,7 +27,7 @@ export function loggedInAccount(): ContractAddress {
 
 import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
-import * as THREE from "three";
+import { Vector3, Quaternion, InstancedMesh } from "three";
 import { HEX_SIZE } from "../constants";
 import { MatrixPool } from "./matrix-pool";
 
@@ -38,14 +38,14 @@ export const hashCoordinates = (x: number, y: number): number => {
 };
 
 export const getHexagonCoordinates = (
-  instancedMesh: THREE.InstancedMesh,
+  instancedMesh: InstancedMesh,
   instanceId: number,
-): { hexCoords: HexPosition; position: THREE.Vector3 } => {
+): { hexCoords: HexPosition; position: Vector3 } => {
   const matrixPool = MatrixPool.getInstance();
   const matrix = matrixPool.getMatrix();
   instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new THREE.Vector3();
-  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+  const position = new Vector3();
+  matrix.decompose(position, new Quaternion(), new Vector3());
 
   const hexCoords = getHexForWorldPosition(position);
 
@@ -68,7 +68,7 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
   const x = col * horizDist - rowOffset;
   const z = row * vertDist;
   const y = flat ? 0 : pseudoRandom(x, z) * 2;
-  return new THREE.Vector3(x, y, z);
+  return new Vector3(x, y, z);
 };
 
 export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z: number }): HexPosition => {

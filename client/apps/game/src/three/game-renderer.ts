@@ -20,7 +20,22 @@ import {
   ToneMappingMode,
   VignetteEffect,
 } from "postprocessing";
-import * as THREE from "three";
+import { 
+  WebGLRenderer, 
+  PerspectiveCamera, 
+  Raycaster, 
+  Vector2, 
+  Vector3,
+  PMREMGenerator,
+  Color,
+  HalfFloatType,
+  NoToneMapping,
+  LinearToneMapping,
+  ReinhardToneMapping,
+  CineonToneMapping,
+  ACESFilmicToneMapping,
+  PCFSoftShadowMap
+} from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -34,10 +49,10 @@ import { MaterialPool } from "./utils/material-pool";
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
   private labelRendererElement!: HTMLDivElement;
-  private renderer!: THREE.WebGLRenderer;
-  private camera!: THREE.PerspectiveCamera;
-  private raycaster!: THREE.Raycaster;
-  private mouse!: THREE.Vector2;
+  private renderer!: WebGLRenderer;
+  private camera!: PerspectiveCamera;
+  private raycaster!: Raycaster;
+  private mouse!: Vector2;
   private controls!: MapControls;
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
@@ -81,12 +96,12 @@ export default class GameRenderer {
   }
 
   private initializeRaycaster() {
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
+    this.raycaster = new Raycaster();
+    this.mouse = new Vector2();
   }
 
   private initializeCamera() {
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
+    this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, cameraDepth);
@@ -153,11 +168,11 @@ export default class GameRenderer {
     const rendererFolder = GUIManager.addFolder("Renderer");
     rendererFolder
       .add(this.renderer, "toneMapping", {
-        "No Tone Mapping": THREE.NoToneMapping,
-        "Linear Tone Mapping": THREE.LinearToneMapping,
-        "Reinhard Tone Mapping": THREE.ReinhardToneMapping,
-        "Cineon Tone Mapping": THREE.CineonToneMapping,
-        "ACESFilmic Tone Mapping": THREE.ACESFilmicToneMapping,
+        "No Tone Mapping": NoToneMapping,
+        "Linear Tone Mapping": LinearToneMapping,
+        "Reinhard Tone Mapping": ReinhardToneMapping,
+        "Cineon Tone Mapping": CineonToneMapping,
+        "ACESFilmic Tone Mapping": ACESFilmicToneMapping,
       })
       .name("Tone Mapping");
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
@@ -184,7 +199,7 @@ export default class GameRenderer {
   }
 
   private initializeRenderer() {
-    this.renderer = new THREE.WebGLRenderer({
+    this.renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       antialias: false,
       stencil: this.graphicsSetting === GraphicsSettings.LOW,
@@ -192,14 +207,14 @@ export default class GameRenderer {
     });
     this.renderer.setPixelRatio(this.graphicsSetting !== GraphicsSettings.HIGH ? 0.75 : window.devicePixelRatio);
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.8;
     this.renderer.autoClear = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.HalfFloatType,
+      frameBufferType: HalfFloatType,
     });
   }
 
@@ -607,7 +622,7 @@ export default class GameRenderer {
   }
 
   applyEnvironment() {
-    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
     const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
     const hdriLoader = new RGBELoader();

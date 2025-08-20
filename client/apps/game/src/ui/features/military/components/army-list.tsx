@@ -6,7 +6,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
-import { HintSection } from "@/ui/features/progression";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";

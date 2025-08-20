@@ -4,7 +4,7 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { battleSimulation } from "@/ui/features";
-import { HintSection } from "@/ui/features/progression";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";

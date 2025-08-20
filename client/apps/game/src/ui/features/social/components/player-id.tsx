@@ -5,7 +5,7 @@ import { getIsBlitz, Position as PositionType } from "@bibliothecadao/eternum";
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { RealmResourcesIO } from "@/ui/features/economy/resources";
-import { NavigateToPositionIcon } from "@/ui/features/military";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   configManager,

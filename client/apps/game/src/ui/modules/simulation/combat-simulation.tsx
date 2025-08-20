@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HintSection } from "@/ui/features/progression";
-import { battleSimulation, CombatSimulationPanel, OSWindow } from "@/ui/features/world";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+import { battleSimulation, OSWindow } from "@/ui/features/world";
+import { CombatSimulationPanel } from "@/ui/features/world/components/battles/combat-simulation-panel";
 
 export const CombatSimulation = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);

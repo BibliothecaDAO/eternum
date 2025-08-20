@@ -17,7 +17,31 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
-import * as THREE from "three";
+import { 
+  Scene, 
+  PerspectiveCamera, 
+  DirectionalLight, 
+  HemisphereLight, 
+  DirectionalLightHelper, 
+  PointLight, 
+  AmbientLight, 
+  Mesh, 
+  Fog, 
+  Color, 
+  Vector2, 
+  Raycaster, 
+  Vector3, 
+  Quaternion, 
+  InstancedMesh, 
+  Group, 
+  MeshStandardMaterial, 
+  PlaneGeometry, 
+  TextureLoader, 
+  SRGBColorSpace, 
+  RepeatWrapping, 
+  DoubleSide, 
+  Texture 
+} from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { SceneName } from "../types";
@@ -31,8 +55,8 @@ export enum CameraView {
 }
 
 export abstract class HexagonScene {
-  protected scene!: THREE.Scene;
-  protected camera!: THREE.PerspectiveCamera;
+  protected scene!: Scene;
+  protected camera!: PerspectiveCamera;
   protected inputManager!: InputManager;
   protected shortcutManager!: SceneShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
@@ -44,15 +68,15 @@ export abstract class HexagonScene {
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
   protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
-  protected fog!: THREE.Fog;
+  protected fog!: Fog;
 
-  protected mainDirectionalLight!: THREE.DirectionalLight;
-  protected hemisphereLight!: THREE.HemisphereLight;
-  protected lightHelper!: THREE.DirectionalLightHelper;
-  protected stormLight!: THREE.PointLight;
-  protected ambientPurpleLight!: THREE.AmbientLight;
+  protected mainDirectionalLight!: DirectionalLight;
+  protected hemisphereLight!: HemisphereLight;
+  protected lightHelper!: DirectionalLightHelper;
+  protected stormLight!: PointLight;
+  protected ambientPurpleLight!: AmbientLight;
 
-  private groundMesh!: THREE.Mesh;
+  private groundMesh!: Mesh;
   private lightningEndTime: number = 0;
   private originalLightningIntensity: number = 0;
   private originalLightningColor: number = 0;
@@ -76,8 +100,8 @@ export abstract class HexagonScene {
     protected sceneName: SceneName,
     protected controls: MapControls,
     protected dojo: SetupResult,
-    private mouse: THREE.Vector2,
-    private raycaster: THREE.Raycaster,
+    private mouse: Vector2,
+    private raycaster: Raycaster,
     protected sceneManager: SceneManager,
   ) {
     this.initializeScene();
@@ -88,17 +112,17 @@ export abstract class HexagonScene {
   }
 
   private initializeScene(): void {
-    this.scene = new THREE.Scene();
-    this.camera = this.controls.object as THREE.PerspectiveCamera;
+    this.scene = new Scene();
+    this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
-    this.scene.background = new THREE.Color(0x2a1a3e);
+    this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
-    this.fog = new THREE.Fog(0x2d1b4e, 15, 35);
+    this.fog = new Fog(0x2d1b4e, 15, 35);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
       // this.scene.fog = this.fog; // Disabled due to zoom level issues
     }
@@ -130,12 +154,12 @@ export abstract class HexagonScene {
   }
 
   private setupHemisphereLight(): void {
-    this.hemisphereLight = new THREE.HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
+    this.hemisphereLight = new HemisphereLight(0x6a3a6a, 0xffffff, 1.2);
     this.scene.add(this.hemisphereLight);
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0x9966ff, 2.0);
+    this.mainDirectionalLight = new DirectionalLight(0x9966ff, 2.0);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -157,16 +181,16 @@ export abstract class HexagonScene {
   }
 
   private setupStormLighting(): void {
-    this.ambientPurpleLight = new THREE.AmbientLight(0x3a1a3a, 0.1);
+    this.ambientPurpleLight = new AmbientLight(0x3a1a3a, 0.1);
     this.scene.add(this.ambientPurpleLight);
 
-    this.stormLight = new THREE.PointLight(0xaa77ff, 1.5, 80);
+    this.stormLight = new PointLight(0xaa77ff, 1.5, 80);
     this.stormLight.position.set(0, 20, 0);
     this.scene.add(this.stormLight);
   }
 
   private setupLightHelper(): void {
-    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+    this.lightHelper = new DirectionalLightHelper(this.mainDirectionalLight, 1);
     if (env.VITE_PUBLIC_GRAPHICS_DEV == true) this.scene.add(this.lightHelper);
   }
 
@@ -177,22 +201,22 @@ export abstract class HexagonScene {
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
   }
 
-  private handleMouseMove(raycaster: THREE.Raycaster): void {
+  private handleMouseMove(raycaster: Raycaster): void {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     hoveredHex ? this.onHexagonMouseMove(hoveredHex) : this.onHexagonMouseMove(null);
   }
 
-  private handleDoubleClick(raycaster: THREE.Raycaster): void {
+  private handleDoubleClick(raycaster: Raycaster): void {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
     clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
   }
 
-  private handleClick(raycaster: THREE.Raycaster): void {
+  private handleClick(raycaster: Raycaster): void {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
     clickedHex ? this.onHexagonClick(clickedHex.hexCoords) : this.onHexagonClick(null);
   }
 
-  private handleRightClick(raycaster: THREE.Raycaster): void {
+  private handleRightClick(raycaster: Raycaster): void {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
     clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
   }
@@ -303,7 +327,7 @@ export abstract class HexagonScene {
     return this.thunderBoltManager;
   }
 
-  public setEnvironment(texture: THREE.Texture, intensity: number = 1) {
+  public setEnvironment(texture: Texture, intensity: number = 1) {
     this.scene.environment = texture;
     this.scene.environmentIntensity = intensity;
   }
@@ -323,7 +347,7 @@ export abstract class HexagonScene {
     return hash - Math.floor(hash);
   }
 
-  private getHexFromWorldPosition(position: THREE.Vector3): HexPosition {
+  private getHexFromWorldPosition(position: Vector3): HexPosition {
     const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
     const verticalSpacing = (HEX_SIZE * 3) / 2;
 
@@ -340,14 +364,14 @@ export abstract class HexagonScene {
   }
 
   getHexagonCoordinates(
-    instancedMesh: THREE.InstancedMesh,
+    instancedMesh: InstancedMesh,
     instanceId: number,
   ): HexPosition & { x: number; z: number } {
     const matrixPool = MatrixPool.getInstance();
     const matrix = matrixPool.getMatrix();
     instancedMesh.getMatrixAt(instanceId, matrix);
-    const position = new THREE.Vector3();
-    matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+    const position = new Vector3();
+    matrix.decompose(position, new Quaternion(), new Vector3());
 
     const { row, col } = this.getHexFromWorldPosition(position);
 
@@ -367,8 +391,8 @@ export abstract class HexagonScene {
   }
 
   cameraAnimate(
-    newPosition: THREE.Vector3,
-    newTarget: THREE.Vector3,
+    newPosition: Vector3,
+    newTarget: Vector3,
     transitionDuration: number,
     onFinish?: () => void,
   ) {
@@ -406,15 +430,15 @@ export abstract class HexagonScene {
   }
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
-    const newTarget = new THREE.Vector3(x, y, z);
+    const newTarget = new Vector3(x, y, z);
     const target = this.controls.target;
     const pos = this.controls.object.position;
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
 
     const newPosition = IS_FLAT_MODE
-      ? new THREE.Vector3(newTarget.x, pos.y, newTarget.z)
-      : new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
+      ? new Vector3(newTarget.x, pos.y, newTarget.z)
+      : new Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
 
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
@@ -429,7 +453,7 @@ export abstract class HexagonScene {
   public moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const { x, y, z } = getWorldPositionForHex({ col, row });
 
-    const newTarget = new THREE.Vector3(x, y, z);
+    const newTarget = new Vector3(x, y, z);
 
     const target = this.controls.target;
     const pos = this.controls.object.position;
@@ -439,8 +463,8 @@ export abstract class HexagonScene {
     const deltaZ = newTarget.z - target.z;
 
     const newPosition = IS_FLAT_MODE
-      ? new THREE.Vector3(newTarget.x, pos.y, newTarget.z)
-      : new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
+      ? new Vector3(newTarget.x, pos.y, newTarget.z)
+      : new Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
 
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
@@ -459,10 +483,10 @@ export abstract class HexagonScene {
         loader.load(
           path,
           (gltf) => {
-            const model = gltf.scene as THREE.Group;
+            const model = gltf.scene as Group;
             if (biome === "Outline") {
-              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).transparent = true;
-              ((model.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.3;
+              ((model.children[0] as Mesh).material as MeshStandardMaterial).transparent = true;
+              ((model.children[0] as Mesh).material as MeshStandardMaterial).opacity = 0.3;
             }
             const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);
@@ -485,22 +509,22 @@ export abstract class HexagonScene {
     const metalness = 0;
     const roughness = 0.66;
 
-    const geometry = new THREE.PlaneGeometry(2668, 1390.35);
-    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
+    const geometry = new PlaneGeometry(2668, 1390.35);
+    const texture = new TextureLoader().load("/textures/paper/worldmap-bg-blitz.png", () => {
+      texture.colorSpace = SRGBColorSpace;
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
       texture.repeat.set(scale, scale / 2.5);
     });
 
-    const material = new THREE.MeshStandardMaterial({
+    const material = new MeshStandardMaterial({
       map: texture,
       metalness: metalness,
       roughness: roughness,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
     });
 
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
     mesh.rotation.set(Math.PI / 2, 0, Math.PI);
     const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
     mesh.position.set(x, -0.05, z);
@@ -674,7 +698,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonMouseMove(
     hex: {
       hexCoords: HexPosition;
-      position: THREE.Vector3;
+      position: Vector3;
     } | null,
   ): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
@@ -752,7 +776,7 @@ export abstract class HexagonScene {
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
 
-    const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
     this.cameraAnimate(newPosition, target, 1);
 
     // Notify all listeners of the camera view change

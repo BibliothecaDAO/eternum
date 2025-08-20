@@ -154,7 +154,6 @@ export default {
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",
         pointer: "url(/images/icons/cursor.png), pointer",
-        grab: "url(public/images/icons/grab.png), grab",
         crosshair: "url(public/images/icons/cursor-cross.png), crosshair",
         wait: "url(public/images/logos/eternum-animated.png), wait",
       },

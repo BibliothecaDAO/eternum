@@ -1,4 +1,4 @@
-import { HintSection } from "@/ui/features/progression";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 
 type OSWindows =
   | "Hyperstructures"

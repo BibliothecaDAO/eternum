@@ -12,13 +12,13 @@ import {
   structureTypeToBuildingType,
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { MatrixPool } from "@/three/utils/matrix-pool";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
+import { MatrixPool } from "@/three/utils/matrix-pool";
 import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "@/three/utils/navigation";
 import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
@@ -56,7 +56,21 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import gsap from "gsap";
-import * as THREE from "three";
+import {
+  AnimationClip,
+  AnimationMixer,
+  Color,
+  ExtrudeGeometry,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Object3D,
+  Raycaster,
+  Vector2,
+  Vector3,
+} from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
@@ -65,7 +79,7 @@ import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 const loader = gltfLoader;
 
 const generateHexPositions = (center: HexPosition, radius: number) => {
-  const color = new THREE.Color("gray");
+  const color = new Color("gray");
   const positions: any[] = [];
   const positionSet = new Set(); // To track existing positions
 
@@ -110,12 +124,12 @@ export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
   private buildingModels: Map<
     BUILDINGS_GROUPS,
-    Map<BUILDINGS_CATEGORIES_TYPES, { model: THREE.Group; animations: THREE.AnimationClip[] }>
+    Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
   > = new Map();
-  private buildingInstances: Map<string, THREE.Group> = new Map();
-  private wonderInstances: Map<string, THREE.Group> = new Map();
-  private buildingMixers: Map<string, THREE.AnimationMixer> = new Map();
-  private pillars: THREE.InstancedMesh | null = null;
+  private buildingInstances: Map<string, Group> = new Map();
+  private wonderInstances: Map<string, Group> = new Map();
+  private buildingMixers: Map<string, AnimationMixer> = new Map();
+  private pillars: InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
@@ -127,7 +141,7 @@ export default class HexceptionScene extends HexagonScene {
     label: CSS2DObject;
   }[] = [];
   private structureStage: RealmLevels | StructureProgress = RealmLevels.Settlement;
-  private minesMaterials: Map<number, THREE.MeshStandardMaterial> = new Map();
+  private minesMaterials: Map<number, MeshStandardMaterial> = new Map();
   private structureIndex: number = 0;
   private playerStructures: Structure[] = [];
   private isBlitz: boolean;
@@ -136,8 +150,8 @@ export default class HexceptionScene extends HexagonScene {
   constructor(
     controls: MapControls,
     dojo: SetupResult,
-    mouse: THREE.Vector2,
-    raycaster: THREE.Raycaster,
+    mouse: Vector2,
+    raycaster: Raycaster,
     sceneManager: SceneManager,
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
@@ -145,9 +159,9 @@ export default class HexceptionScene extends HexagonScene {
     this.isBlitz = getIsBlitz();
     this.buildingPreview = new BuildingPreview(this.scene);
 
-    const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
+    const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
-    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial(), 1000);
+    this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -299,12 +313,12 @@ export default class HexceptionScene extends HexagonScene {
           loader.load(
             path,
             (gltf) => {
-              const model = gltf.scene as THREE.Group;
+              const model = gltf.scene as Group;
               model.position.set(0, 0, 0);
               model.rotation.y = Math.PI;
 
               model.traverse((child) => {
-                if (child instanceof THREE.Mesh) {
+                if (child instanceof Mesh) {
                   if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -423,9 +437,9 @@ export default class HexceptionScene extends HexagonScene {
 
     // Clean up input manager event listeners
     this.inputManager.destroy();
-    
+
     // OPTIMIZED: Release any matrices back to the pool
-    console.log('🧹 Hexception scene cleanup - releasing matrices');
+    console.log("🧹 Hexception scene cleanup - releasing matrices");
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
@@ -507,7 +521,7 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
-  protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
+  protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {
     // Always clear the tooltip first to prevent it from persisting when other elements overlap
     this.state.setTooltip(null);
 
@@ -525,7 +539,7 @@ export default class HexceptionScene extends HexagonScene {
       this.tileManager.isHexOccupied(normalizedCoords) ||
       (normalizedCoords.col === BUILDINGS_CENTER[0] && normalizedCoords.row === BUILDINGS_CENTER[1])
     ) {
-      this.buildingPreview?.setBuildingColor(new THREE.Color(0xff0000));
+      this.buildingPreview?.setBuildingColor(new Color(0xff0000));
     } else {
       this.buildingPreview?.resetBuildingColor();
     }
@@ -576,11 +590,11 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   updateHexceptionGrid(radius: number) {
-    const dummy = new THREE.Object3D();
+    const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
-    
-    const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
+
+    const biomeHexes: Record<BiomeType | "Empty", Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -612,7 +626,7 @@ export default class HexceptionScene extends HexagonScene {
         [7, -5], //1, -1
       ];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-      const label = new THREE.Group();
+      const label = new Group();
       this.scene.add(label);
       this.highlights = [];
 
@@ -707,8 +721,8 @@ export default class HexceptionScene extends HexagonScene {
               // Check if the model has animations and start them
               const wonderAnimations = wonderData.animations;
               if (wonderAnimations && wonderAnimations.length > 0) {
-                const wonderMixer = new THREE.AnimationMixer(wonderInstance);
-                wonderAnimations.forEach((clip: THREE.AnimationClip) => {
+                const wonderMixer = new AnimationMixer(wonderInstance);
+                wonderAnimations.forEach((clip: AnimationClip) => {
                   wonderMixer.clipAction(clip).play();
                 });
                 // Store the mixer for later use
@@ -732,9 +746,9 @@ export default class HexceptionScene extends HexagonScene {
 
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
-                if (child.name === "Grassland003_1" && child instanceof THREE.Mesh) {
+                if (child.name === "Grassland003_1" && child instanceof Mesh) {
                   if (!this.minesMaterials.has(building.resource)) {
-                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                    const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                     this.minesMaterials.set(building.resource, material);
                   }
                   child.material = this.minesMaterials.get(building.resource);
@@ -744,9 +758,9 @@ export default class HexceptionScene extends HexagonScene {
             if (buildingType === ResourceMiningTypes.Mine) {
               instance.traverse((child) => {
                 // @ts-ignore
-                if (child?.material?.name === "crystal" && child instanceof THREE.Mesh) {
+                if (child?.material?.name === "crystal" && child instanceof Mesh) {
                   if (!this.minesMaterials.has(building.resource)) {
-                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                    const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                     this.minesMaterials.set(building.resource, material);
                   }
                   child.material = this.minesMaterials.get(building.resource);
@@ -770,8 +784,8 @@ export default class HexceptionScene extends HexagonScene {
             // Check if the model has animations and start them
             const animations = buildingData.animations;
             if (animations && animations.length > 0) {
-              const mixer = new THREE.AnimationMixer(instance);
-              animations.forEach((clip: THREE.AnimationClip) => {
+              const mixer = new AnimationMixer(instance);
+              animations.forEach((clip: AnimationClip) => {
                 mixer.clipAction(clip).play();
               });
               // Store the mixer for later use (e.g., updating in the animation loop)
@@ -850,12 +864,12 @@ export default class HexceptionScene extends HexagonScene {
 
   computeHexMatrices = (
     radius: number,
-    dummy: THREE.Object3D,
+    dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
     isMainHex: boolean,
     existingBuildings: any[],
-    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+    biomeHexes: Record<BiomeType, Matrix4[]>,
   ) => {
     const biome = Biome.getBiome(targetHex.col, targetHex.row);
     const buildableAreaBiome = "Empty";
@@ -944,10 +958,10 @@ export default class HexceptionScene extends HexagonScene {
 
   computeMainHexMatrices = (
     radius: number,
-    dummy: THREE.Object3D,
+    dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+    biomeHexes: Record<BiomeType, Matrix4[]>,
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
@@ -967,10 +981,10 @@ export default class HexceptionScene extends HexagonScene {
 
   computeNeighborHexMatrices = (
     radius: number,
-    dummy: THREE.Object3D,
+    dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
+    biomeHexes: Record<BiomeType, Matrix4[]>,
   ) => {
     this.computeHexMatrices(radius, dummy, center, targetHex, false, [], biomeHexes);
   };

@@ -10,7 +10,7 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import * as THREE from "three";
+import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 
 export const HEX_SIZE = 1;
@@ -228,96 +228,96 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
 
 export const MinesMaterialsParams: Record<
   number,
-  { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
+  { color: Color; emissive: Color; emissiveIntensity: number }
 > = {
   [ResourcesIds.Copper]: {
-    color: new THREE.Color(0.86, 0.26, 0.0),
-    emissive: new THREE.Color(6.71, 0.25, 0.08),
+    color: new Color(0.86, 0.26, 0.0),
+    emissive: new Color(6.71, 0.25, 0.08),
     emissiveIntensity: 5.9,
   },
   [ResourcesIds.ColdIron]: {
-    color: new THREE.Color(0.69, 0.63, 0.99),
-    emissive: new THREE.Color(0.76, 1.63, 6.82),
+    color: new Color(0.69, 0.63, 0.99),
+    emissive: new Color(0.76, 1.63, 6.82),
     emissiveIntensity: 5.9,
   },
   [ResourcesIds.Ignium]: {
-    color: new THREE.Color(0.97, 0.03, 0.03),
-    emissive: new THREE.Color(6.31, 0.13, 0.04),
+    color: new Color(0.97, 0.03, 0.03),
+    emissive: new Color(6.31, 0.13, 0.04),
     emissiveIntensity: 8.6,
   },
   [ResourcesIds.Gold]: {
-    color: new THREE.Color(0.99, 0.83, 0.3),
-    emissive: new THREE.Color(9.88, 6.79, 3.02),
+    color: new Color(0.99, 0.83, 0.3),
+    emissive: new Color(9.88, 6.79, 3.02),
     emissiveIntensity: 4.9,
   },
   [ResourcesIds.Silver]: {
-    color: new THREE.Color(0.93, 0.93, 0.93),
-    emissive: new THREE.Color(3.55, 3.73, 5.51),
+    color: new Color(0.93, 0.93, 0.93),
+    emissive: new Color(3.55, 3.73, 5.51),
     emissiveIntensity: 8.6,
   },
   [ResourcesIds.AlchemicalSilver]: {
-    color: new THREE.Color(0.93, 0.93, 0.93),
-    emissive: new THREE.Color(1.87, 4.57, 9.33),
+    color: new Color(0.93, 0.93, 0.93),
+    emissive: new Color(1.87, 4.57, 9.33),
     emissiveIntensity: 8.4,
   },
   [ResourcesIds.Adamantine]: {
-    color: new THREE.Color(0.0, 0.27, 1.0),
-    emissive: new THREE.Color(1.39, 0.52, 8.16),
+    color: new Color(0.0, 0.27, 1.0),
+    emissive: new Color(1.39, 0.52, 8.16),
     emissiveIntensity: 10,
   },
   [ResourcesIds.Diamonds]: {
-    color: new THREE.Color(1.6, 1.47, 1.96),
-    emissive: new THREE.Color(0.8, 0.73, 5.93),
+    color: new Color(1.6, 1.47, 1.96),
+    emissive: new Color(0.8, 0.73, 5.93),
     emissiveIntensity: 0.2,
   },
   [ResourcesIds.Sapphire]: {
-    color: new THREE.Color(0.23, 0.5, 0.96),
-    emissive: new THREE.Color(0, 0, 5.01),
+    color: new Color(0.23, 0.5, 0.96),
+    emissive: new Color(0, 0, 5.01),
     emissiveIntensity: 2.5,
   },
   [ResourcesIds.Ruby]: {
-    color: new THREE.Color(0.86, 0.15, 0.15),
-    emissive: new THREE.Color(2.59, 0.0, 0.0),
+    color: new Color(0.86, 0.15, 0.15),
+    emissive: new Color(2.59, 0.0, 0.0),
     emissiveIntensity: 4,
   },
   [ResourcesIds.DeepCrystal]: {
-    color: new THREE.Color(1.21, 2.7, 3.27),
-    emissive: new THREE.Color(0.58, 0.77, 3),
+    color: new Color(1.21, 2.7, 3.27),
+    emissive: new Color(0.58, 0.77, 3),
     emissiveIntensity: 5,
   },
   [ResourcesIds.TwilightQuartz]: {
-    color: new THREE.Color(0.43, 0.16, 0.85),
-    emissive: new THREE.Color(0.0, 0.03, 4.25),
+    color: new Color(0.43, 0.16, 0.85),
+    emissive: new Color(0.0, 0.03, 4.25),
     emissiveIntensity: 5.7,
   },
   [ResourcesIds.EtherealSilica]: {
-    color: new THREE.Color(0.06, 0.73, 0.51),
-    emissive: new THREE.Color(0.0, 0.12, 0.0),
+    color: new Color(0.06, 0.73, 0.51),
+    emissive: new Color(0.0, 0.12, 0.0),
     emissiveIntensity: 2,
   },
   [ResourcesIds.Stone]: {
-    color: new THREE.Color(0.38, 0.38, 0.38),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.38, 0.38, 0.38),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 0,
   },
   [ResourcesIds.Coal]: {
-    color: new THREE.Color(0.18, 0.18, 0.18),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.18, 0.18, 0.18),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 0,
   },
   [ResourcesIds.Obsidian]: {
-    color: new THREE.Color(0.06, 0.06, 0.06),
-    emissive: new THREE.Color(0, 0, 0),
+    color: new Color(0.06, 0.06, 0.06),
+    emissive: new Color(0, 0, 0),
     emissiveIntensity: 1,
   },
   [ResourcesIds.TrueIce]: {
-    color: new THREE.Color(3.0, 3.0, 3.8),
-    emissive: new THREE.Color(1.0, 1.0, 1),
+    color: new Color(3.0, 3.0, 3.8),
+    emissive: new Color(1.0, 1.0, 1),
     emissiveIntensity: 4,
   },
   [ResourcesIds.AncientFragment]: {
-    color: new THREE.Color(0.25, 0.45, 0.15),
-    emissive: new THREE.Color(0.0, 0.5, 0.03),
+    color: new Color(0.25, 0.45, 0.15),
+    emissive: new Color(0.0, 0.5, 0.03),
     emissiveIntensity: 0.8,
   },
 };

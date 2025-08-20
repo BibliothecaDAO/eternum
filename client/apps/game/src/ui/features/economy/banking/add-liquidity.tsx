@@ -5,8 +5,8 @@ import {
   ConfirmationPopup,
   LiquidityResourceRow,
   LiquidityTableHeader,
-  ResourceBar,
 } from "@/ui/features/economy/banking";
+import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {

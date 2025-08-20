@@ -53,8 +53,16 @@ import {
   Structure,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
-import * as THREE from "three";
-import { Raycaster } from "three";
+import { 
+  Group, 
+  Color, 
+  Vector3, 
+  Matrix4, 
+  Object3D, 
+  Vector2, 
+  InstancedBufferAttribute,
+  Raycaster 
+} from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
@@ -71,8 +79,8 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { MatrixPool } from "../utils/matrix-pool";
 
-const dummyObject = new THREE.Object3D();
-const dummyVector = new THREE.Vector3();
+const dummyObject = new Object3D();
+const dummyVector = new Vector3();
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
@@ -108,7 +116,7 @@ export default class WorldmapScene extends HexagonScene {
   private selectionPulseManager: SelectionPulseManager;
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
-  private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
+  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> =
     new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private travelEffects: Map<string, () => void> = new Map();
@@ -124,10 +132,10 @@ export default class WorldmapScene extends HexagonScene {
   private globalChunkSwitchPromise: Promise<void> | null = null;
 
   // Label groups
-  private armyLabelsGroup: THREE.Group;
-  private structureLabelsGroup: THREE.Group;
-  private questLabelsGroup: THREE.Group;
-  private chestLabelsGroup: THREE.Group;
+  private armyLabelsGroup: Group;
+  private structureLabelsGroup: Group;
+  private questLabelsGroup: Group;
+  private chestLabelsGroup: Group;
 
   dojo: SetupResult;
 
@@ -149,7 +157,7 @@ export default class WorldmapScene extends HexagonScene {
     dojoContext: SetupResult,
     raycaster: Raycaster,
     controls: MapControls,
-    mouse: THREE.Vector2,
+    mouse: Vector2,
     sceneManager: SceneManager,
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
@@ -227,13 +235,13 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     // Initialize label groups
-    this.armyLabelsGroup = new THREE.Group();
+    this.armyLabelsGroup = new Group();
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
-    this.structureLabelsGroup = new THREE.Group();
+    this.structureLabelsGroup = new Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
-    this.questLabelsGroup = new THREE.Group();
+    this.questLabelsGroup = new Group();
     this.questLabelsGroup.name = "QuestLabelsGroup";
-    this.chestLabelsGroup = new THREE.Group();
+    this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
 
     this.armyManager = new ArmyManager(
@@ -531,7 +539,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // methods needed to add worldmap specific behavior to the click events
-  protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
+  protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
     if (hex === null) {
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
@@ -825,8 +833,8 @@ export default class WorldmapScene extends HexagonScene {
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
       // Set structure-specific pulse colors (orange/gold for structures)
       this.selectionPulseManager.setPulseColor(
-        new THREE.Color(1.0, 0.6, 0.2), // Orange base
-        new THREE.Color(1.0, 0.9, 0.4), // Gold pulse
+        new Color(1.0, 0.6, 0.2), // Orange base
+        new Color(1.0, 0.9, 0.4), // Gold pulse
       );
     }
   }
@@ -882,8 +890,8 @@ export default class WorldmapScene extends HexagonScene {
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
       // Set army-specific pulse colors (blue/cyan for armies)
       this.selectionPulseManager.setPulseColor(
-        new THREE.Color(0.2, 0.6, 1.0), // Blue base
-        new THREE.Color(0.8, 1.0, 1.0), // Cyan pulse
+        new Color(0.2, 0.6, 1.0), // Blue base
+        new Color(0.8, 1.0, 1.0), // Cyan pulse
       );
     }
   }
@@ -1166,7 +1174,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const dummy = new THREE.Object3D();
+    const dummy = new Object3D();
     const pos = getWorldPositionForHex({ row, col });
 
     dummy.position.copy(pos);
@@ -1345,7 +1353,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
       // OPTIMIZED: Use arrays but avoid Matrix4.clone() calls
-      const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
+      const biomeHexes: Record<BiomeType | "Outline", Matrix4[]> = {
         None: [],
         Ocean: [],
         DeepOcean: [],
@@ -1370,9 +1378,9 @@ export default class WorldmapScene extends HexagonScene {
       let currentIndex = 0;
 
       // Reusable objects (zero allocations in loop)
-      const tempMatrix = new THREE.Matrix4();
-      const tempPosition = new THREE.Vector3();
-      const rotationMatrix = new THREE.Matrix4();
+      const tempMatrix = new Matrix4();
+      const tempPosition = new Vector3();
+      const rotationMatrix = new Matrix4();
 
       this.computeTileEntities(this.currentChunk);
 

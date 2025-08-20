@@ -1,9 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
-import { HintSection } from "@/ui/features/progression";
+import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { memo } from "react";
-import { ResourceArrival as StructureArrivals } from "@/ui/features/economy/resources";
 
 export const AllResourceArrivals = memo(({ className = "" }: { className?: string }) => {
   const playerStructures = useUIStore((state) => state.playerStructures);
