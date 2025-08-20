@@ -8,7 +8,7 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
 
 [world]
-seed = "s1_eternum_slot_1755702133"
+seed = "s1_eternum_slot_1755720139"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
