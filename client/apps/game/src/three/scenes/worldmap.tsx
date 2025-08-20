@@ -69,6 +69,7 @@ import {
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { MatrixPool } from "../utils/matrix-pool";
 
 const dummyObject = new THREE.Object3D();
 const dummyVector = new THREE.Vector3();
@@ -1421,18 +1422,18 @@ export default class WorldmapScene extends HexagonScene {
             const biome = isExplored as BiomeType;
             tempMatrix.setPosition(tempPosition);
 
-            // OPTIMIZED: Reuse tempMatrix instead of cloning
-            const reusedMatrix = new THREE.Matrix4();
-            reusedMatrix.copy(tempMatrix);
-            biomeHexes[biome].push(reusedMatrix);
+            // OPTIMIZED: Use matrix pool instead of allocating
+            const pooledMatrix = MatrixPool.getInstance().getMatrix();
+            pooledMatrix.copy(tempMatrix);
+            biomeHexes[biome].push(pooledMatrix);
           } else {
             tempPosition.y = 0.01;
             tempMatrix.setPosition(tempPosition);
 
-            // OPTIMIZED: Reuse tempMatrix instead of cloning
-            const reusedMatrix = new THREE.Matrix4();
-            reusedMatrix.copy(tempMatrix);
-            biomeHexes["Outline"].push(reusedMatrix);
+            // OPTIMIZED: Use matrix pool instead of allocating
+            const pooledMatrix = MatrixPool.getInstance().getMatrix();
+            pooledMatrix.copy(tempMatrix);
+            biomeHexes["Outline"].push(pooledMatrix);
           }
         }
 
@@ -1469,14 +1470,26 @@ export default class WorldmapScene extends HexagonScene {
 
           this.cacheMatricesForChunk(startRow, startCol);
           this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
+          
+          // CRITICAL: Release pooled matrices back to pool after processing
+          const matrixPool = MatrixPool.getInstance();
+          let totalReleasedMatrices = 0;
+          Object.values(biomeHexes).forEach(matrices => {
+            matrices.forEach(matrix => matrixPool.releaseMatrix(matrix));
+            totalReleasedMatrices += matrices.length;
+          });
+          console.log(`🔄 Released ${totalReleasedMatrices} matrices back to pool`);
 
           // Track memory usage
           if (memoryMonitor && preUpdateStats) {
             const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
             const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+            // Log matrix pool stats for optimization tracking
+            const poolStats = MatrixPool.getInstance().getStats();
             console.log(
               `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
             );
+            console.log(`📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`);
 
             const biomeDistribution = Object.fromEntries(
               Object.entries(biomeHexes)

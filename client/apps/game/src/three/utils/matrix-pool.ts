@@ -39,4 +39,25 @@ export class MatrixPool {
   public releaseAll(matrices: THREE.Matrix4[]): void {
     matrices.forEach(matrix => this.releaseMatrix(matrix));
   }
+
+  /**
+   * Get pool statistics for monitoring
+   */
+  public getStats() {
+    const totalAllocated = this.matrices.length + this.inUse.size;
+    return {
+      available: this.matrices.length,
+      inUse: this.inUse.size,
+      totalAllocated,
+      memoryEstimateMB: (totalAllocated * 80) / (1024 * 1024), // ~80 bytes per Matrix4
+    };
+  }
+
+  /**
+   * Clear the entire pool (for cleanup)
+   */
+  public clear(): void {
+    this.matrices = [];
+    this.inUse.clear();
+  }
 }
