@@ -12,6 +12,7 @@ export const SMALL_DETAILS_NAME = "small_details";
 // Reusable matrices for instance transformations
 const instanceMatrix = new THREE.Matrix4();
 const rotationMatrix = new THREE.Matrix4();
+const zeroMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 
 interface AnimatedInstancedMesh extends THREE.InstancedMesh {
   animated: boolean;
@@ -169,7 +170,7 @@ export default class InstancedModel {
 
   removeInstance(index: number) {
     console.log("remove instance");
-    this.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+    this.setMatrixAt(index, zeroMatrix);
     this.needsUpdate();
   }
 

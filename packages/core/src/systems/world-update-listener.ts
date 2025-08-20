@@ -1,4 +1,3 @@
-
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { SqlApi } from "@bibliothecadao/torii";
 import {
@@ -52,7 +51,10 @@ export class WorldUpdateListener {
   private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
   private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
 
-  constructor(private setup: SetupResult, sqlApi: SqlApi) {
+  constructor(
+    private setup: SetupResult,
+    sqlApi: SqlApi,
+  ) {
     // Initialize MapDataStore with centralized refresh interval
     this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
 
@@ -101,9 +103,39 @@ export class WorldUpdateListener {
 
               const { currentArmiesTick } = getBlockTimestamp();
 
+              // Get ExplorerTroops component data directly for immediate owner access
+              const explorerTroops = getComponentValue(
+                this.setup.components.ExplorerTroops,
+                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+              );
+
               // Use sequential update processing to prevent race conditions
               const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
-                // Use DataEnhancer to fetch all enhanced data
+                // Get owner from ExplorerTroops component as primary source
+                let ownerAddress: bigint;
+                let ownerName: string;
+                let guildName: string;
+
+                if (explorerTroops?.owner) {
+                  // Use component data as primary source for owner address
+                  ownerAddress = BigInt(explorerTroops.owner);
+                  // Get owner details from DataEnhancer
+                  const ownerDetails = await this.dataEnhancer.getStructureOwner(explorerTroops.owner);
+                  ownerName = ownerDetails?.ownerName || "";
+                  guildName = "";
+                } else {
+                  // Fallback to MapDataStore if component data not available
+                  const enhancedOwnerData = await this.dataEnhancer.enhanceArmyData(
+                    currentState.occupier_id,
+                    explorer,
+                    currentArmiesTick,
+                  );
+                  ownerAddress = enhancedOwnerData?.owner.address ? BigInt(enhancedOwnerData.owner.address) : 0n;
+                  ownerName = enhancedOwnerData?.owner.ownerName || "";
+                  guildName = enhancedOwnerData?.owner.guildName || "";
+                }
+
+                // Get troop and stamina data from DataEnhancer
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
                   currentState.occupier_id,
                   explorer,
@@ -115,10 +147,9 @@ export class WorldUpdateListener {
                 return {
                   entityId: currentState.occupier_id,
                   hexCoords: { col: currentState.col, row: currentState.row },
-                  // need to set it to 0n if no owner address because else it won't be registered on the worldmap
-                  ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
-                  ownerName: enhancedData?.owner.ownerName || "",
-                  guildName: enhancedData?.owner.guildName || "",
+                  ownerAddress,
+                  ownerName,
+                  guildName,
                   troopType: explorer.troopType as TroopType,
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,

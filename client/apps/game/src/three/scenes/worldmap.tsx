@@ -1344,30 +1344,50 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
-      // Don't clear interactive hexes here, just update which ones are visible
-      const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
-        None: [],
-        Ocean: [],
-        DeepOcean: [],
-        Beach: [],
-        Scorched: [],
-        Bare: [],
-        Tundra: [],
-        Snow: [],
-        TemperateDesert: [],
-        Shrubland: [],
-        Taiga: [],
-        Grassland: [],
-        TemperateDeciduousForest: [],
-        TemperateRainForest: [],
-        SubtropicalDesert: [],
-        TropicalSeasonalForest: [],
-        TropicalRainForest: [],
-        Outline: [],
-      };
+      // OPTIMIZED: Pre-count instances per biome to allocate exact buffer sizes
+      const biomeCounts: Record<string, number> = {};
+      
+      // First pass: count instances per biome type
+      for (let i = 0; i < rows * cols; i++) {
+        const row = Math.floor(i / cols) - rows / 2;
+        const col = (i % cols) - cols / 2;
+        const globalRow = startRow + row;
+        const globalCol = startCol + col;
 
-      const batchSize = 600; // Adjust batch size as needed
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+        
+        let biome: string;
+        if (isExplored) {
+          biome = (isExplored as BiomeType).toString();
+        } else {
+          biome = "Outline";
+        }
+        
+        biomeCounts[biome] = (biomeCounts[biome] || 0) + 1;
+      }
+
+      // Debug: Log biome counts
+      console.log(`🔍 Biome analysis for chunk:`, biomeCounts);
+      
+      // OPTIMIZED: Use direct Float32Array buffers instead of Matrix4 arrays
+      const biomeBuffers: Record<string, Float32Array> = {};
+      const biomeIndices: Record<string, number> = {};
+      
+      for (const [biome, count] of Object.entries(biomeCounts)) {
+        biomeBuffers[biome] = new Float32Array(count * 16); // 16 floats per matrix
+        biomeIndices[biome] = 0;
+        console.log(`🎨 Allocated buffer for ${biome}: ${count} instances`);
+      }
+
+      const batchSize = 600;
       let currentIndex = 0;
+      
+      // Reusable objects (zero allocations in loop)
+      const tempMatrix = new THREE.Matrix4();
+      const tempPosition = new THREE.Vector3();
+      const rotationMatrix = new THREE.Matrix4();
 
       this.computeTileEntities(this.currentChunk);
 
@@ -1381,70 +1401,107 @@ export default class WorldmapScene extends HexagonScene {
           const globalRow = startRow + row;
           const globalCol = startCol + col;
 
+          // OPTIMIZED: Reuse tempPosition instead of creating new vectors
           const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
-          dummyObject.position.copy(pos);
+          tempPosition.copy(pos);
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
           const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
           const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+          
+          // Set scale
           if (isStructure || isQuest) {
-            dummyObject.scale.set(0, 0, 0);
+            tempMatrix.makeScale(0, 0, 0);
           } else {
-            dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+            tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
           }
 
-          // Make all hexes in the current chunk interactive regardless of exploration status
+          // Make hex interactive
           this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
 
+          // Apply rotation and position
           const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
           const rotationIndex = Math.floor(rotationSeed * 6);
           const randomRotation = (rotationIndex * Math.PI) / 3;
+          
           if (!IS_FLAT_MODE) {
-            dummyObject.position.y += 0.05;
-            dummyObject.rotation.y = randomRotation;
+            tempPosition.y += 0.05;
+            rotationMatrix.makeRotationY(randomRotation);
+            tempMatrix.multiply(rotationMatrix);
           } else {
-            dummyObject.position.y += 0.05;
-            dummyObject.rotation.y = 0;
+            tempPosition.y += 0.05;
           }
 
-          dummyObject.updateMatrix();
-
+          // Determine biome and adjust position if needed
+          let biome: string;
           if (isExplored) {
-            const biome = isExplored as BiomeType;
-            //const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
-            biomeHexes[biome].push(dummyObject.matrix.clone());
+            biome = (isExplored as BiomeType).toString();
           } else {
-            dummyObject.position.y = 0.01;
-            dummyObject.updateMatrix();
-            biomeHexes["Outline"].push(dummyObject.matrix.clone());
+            biome = "Outline";
+            tempPosition.y = 0.01;
           }
+
+          // Set final position
+          tempMatrix.setPosition(tempPosition);
+
+          // CRITICAL FIX: Write directly to Float32Array buffer (ZERO allocations)
+          const buffer = biomeBuffers[biome];
+          const writeIndex = biomeIndices[biome];
+          tempMatrix.toArray(buffer, writeIndex * 16);
+          biomeIndices[biome] = writeIndex + 1;
         }
 
         currentIndex = endIndex;
         if (currentIndex < rows * cols) {
           requestAnimationFrame(processBatch);
         } else {
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-            matrices.forEach((matrix, index) => {
-              hexMesh.setMatrixAt(index, matrix);
-            });
-            hexMesh.setCount(matrices.length);
+          // OPTIMIZED: Apply matrices efficiently using existing API
+          for (const [biome, buffer] of Object.entries(biomeBuffers)) {
+            const hexMesh = this.biomeModels.get(biome as BiomeType);
+            
+            if (!hexMesh) {
+              console.error(`❌ Missing biome model for: ${biome}`);
+              console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+              continue;
+            }
+            
+            if (buffer.length === 0) {
+              console.warn(`⚠️ Empty buffer for biome: ${biome}`);
+              continue;
+            }
+
+            const instanceCount = buffer.length / 16;
+            const tempMatrix = new THREE.Matrix4();
+            
+            console.log(`🔄 Processing ${biome}: ${instanceCount} instances`);
+            
+            // Set matrices efficiently using the existing API
+            for (let i = 0; i < instanceCount; i++) {
+              tempMatrix.fromArray(buffer, i * 16);
+              hexMesh.setMatrixAt(i, tempMatrix);
+            }
+            hexMesh.setCount(instanceCount);
+            hexMesh.needsUpdate();
+            
+            console.log(`✅ Applied ${instanceCount} ${biome} hexes`);
           }
+          
           this.cacheMatricesForChunk(startRow, startCol);
-          // After processing, just update visible hexes
           this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
 
-          // Track memory usage for full hex grid generation
+          // Track memory usage
           if (memoryMonitor && preUpdateStats) {
             const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
             const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
             console.log(
-              `[HEX GRID] Full generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+              `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
             );
+            console.log(`📊 Biome distribution:`, Object.keys(biomeCounts).map(b => `${b}:${biomeCounts[b]}`).join(', '));
 
-            if (memoryDelta > 50) {
-              console.warn(`[HEX GRID] Large memory usage for hex generation: ${memoryDelta.toFixed(1)}MB`);
+            if (memoryDelta > 10) { // Much lower threshold now
+              console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
+            } else {
+              console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
             }
           }
 

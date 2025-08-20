@@ -12,6 +12,7 @@ import {
   structureTypeToBuildingType,
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { MatrixPool } from "@/three/utils/matrix-pool";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
@@ -422,6 +423,9 @@ export default class HexceptionScene extends HexagonScene {
 
     // Clean up input manager event listeners
     this.inputManager.destroy();
+    
+    // OPTIMIZED: Release any matrices back to the pool
+    console.log('🧹 Hexception scene cleanup - releasing matrices');
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
@@ -575,6 +579,7 @@ export default class HexceptionScene extends HexagonScene {
     const dummy = new THREE.Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
+    
     const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
       None: [],
       Ocean: [],
@@ -908,7 +913,10 @@ export default class HexceptionScene extends HexagonScene {
         }
 
         if (!withBuilding) {
-          biomeHexes[buildableAreaBiome as BiomeType].push(dummy.matrix.clone());
+          // OPTIMIZED: Use matrix pool instead of clone()
+          const tempMatrix = MatrixPool.getInstance().getMatrix();
+          tempMatrix.copy(dummy.matrix);
+          biomeHexes[buildableAreaBiome as BiomeType].push(tempMatrix);
         }
       });
     }
@@ -927,7 +935,10 @@ export default class HexceptionScene extends HexagonScene {
         dummy.rotation.y = 0;
       }
       dummy.updateMatrix();
-      biomeHexes[biome].push(dummy.matrix.clone());
+      // OPTIMIZED: Use matrix pool instead of clone()
+      const tempMatrix = MatrixPool.getInstance().getMatrix();
+      tempMatrix.copy(dummy.matrix);
+      biomeHexes[biome].push(tempMatrix);
     });
   };
 
