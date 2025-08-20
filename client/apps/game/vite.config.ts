@@ -1,12 +1,12 @@
 import svgr from "@svgr/rollup";
 import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
+import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
-import { visualizer } from "rollup-plugin-visualizer";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -74,50 +74,50 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
         },
-        manualChunks: {
+        advancedChunks: {
           // Three.js ecosystem - Separate chunk for 3D graphics
-          'three': ['three', 'three-stdlib', 'postprocessing'],
-          
-          // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality  
-          'blockchain': [
-            '@bibliothecadao/dojo',
-            '@bibliothecadao/eternum', 
-            '@bibliothecadao/provider',
-            '@bibliothecadao/torii',
-            '@bibliothecadao/types',
-            '@dojoengine/core',
-            '@dojoengine/sdk',
-            '@dojoengine/state',
-            '@dojoengine/torii-client',
-            '@dojoengine/torii-wasm',
-            'starknet'
+          three: ["three", "three-stdlib", "postprocessing"],
+
+          // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
+          blockchain: [
+            "@bibliothecadao/dojo",
+            "@bibliothecadao/eternum",
+            "@bibliothecadao/provider",
+            "@bibliothecadao/torii",
+            "@bibliothecadao/types",
+            "@dojoengine/core",
+            "@dojoengine/sdk",
+            "@dojoengine/state",
+            "@dojoengine/torii-client",
+            "@dojoengine/torii-wasm",
+            "starknet",
           ],
-          
+
           // React ecosystem - Core framework chunk
-          'react-vendor': ['react', 'react-dom', 'react-beautiful-dnd', 'react-draggable'],
-          
+          "react-vendor": ["react", "react-dom", "react-beautiful-dnd", "react-draggable"],
+
           // UI & Animation libraries
-          'ui-libs': ['gsap', 'lil-gui', '@tanstack/react-query', 'zustand'],
-          
+          "ui-libs": ["gsap", "lil-gui", "@tanstack/react-query", "zustand"],
+
           // OpenTelemetry observability - Can be lazy loaded
-          'telemetry': [
-            '@opentelemetry/api',
-            '@opentelemetry/context-zone',
-            '@opentelemetry/exporter-trace-otlp-http',
-            '@opentelemetry/instrumentation',
-            '@opentelemetry/instrumentation-fetch',
-            '@opentelemetry/instrumentation-xml-http-request',
-            '@opentelemetry/resources',
-            '@opentelemetry/sdk-trace-base',
-            '@opentelemetry/sdk-trace-web',
-            '@opentelemetry/semantic-conventions'
+          telemetry: [
+            "@opentelemetry/api",
+            "@opentelemetry/context-zone",
+            "@opentelemetry/exporter-trace-otlp-http",
+            "@opentelemetry/instrumentation",
+            "@opentelemetry/instrumentation-fetch",
+            "@opentelemetry/instrumentation-xml-http-request",
+            "@opentelemetry/resources",
+            "@opentelemetry/sdk-trace-base",
+            "@opentelemetry/sdk-trace-web",
+            "@opentelemetry/semantic-conventions",
           ],
-          
+
           // Utilities & Misc
-          'utils': ['lodash', 'uuid', 'platform', 'buffer', 'wouter'],
-          
+          utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
+
           // Communication & External APIs
-          'external': ['socket.io-client', 'graphql-request', '@vercel/analytics', 'posthog-js']
+          external: ["socket.io-client", "graphql-request", "@vercel/analytics", "posthog-js"],
         },
         inlineDynamicImports: false,
         sourcemapIgnoreList: (relativeSourcePath) => {
