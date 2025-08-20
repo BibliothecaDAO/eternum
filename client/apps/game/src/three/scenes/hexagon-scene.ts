@@ -8,6 +8,7 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
+import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
@@ -342,7 +343,8 @@ export abstract class HexagonScene {
     instancedMesh: THREE.InstancedMesh,
     instanceId: number,
   ): HexPosition & { x: number; z: number } {
-    const matrix = new THREE.Matrix4();
+    const matrixPool = MatrixPool.getInstance();
+    const matrix = matrixPool.getMatrix();
     instancedMesh.getMatrixAt(instanceId, matrix);
     const position = new THREE.Vector3();
     matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
@@ -350,6 +352,9 @@ export abstract class HexagonScene {
     const { row, col } = this.getHexFromWorldPosition(position);
 
     console.log("row", row, col);
+
+    // Release matrix back to pool
+    matrixPool.releaseMatrix(matrix);
 
     return { row, col, x: position.x, z: position.z };
   }
