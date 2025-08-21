@@ -23,9 +23,9 @@ export class HoverHexManager {
     // Create hexagon shape and convert to BufferGeometry
     const hexShape = createHexagonShape(HEX_SIZE * 1.02);
     const geometry = new THREE.ShapeGeometry(hexShape);
-    
+
     this.hoverHex = new THREE.Mesh(geometry, hoverHexMaterial);
-    this.hoverHex.position.y = 0.05; // Very slightly above ground, lower than labels
+    this.hoverHex.position.y = 0.2; // Very slightly above ground, lower than labels
     this.hoverHex.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
     this.hoverHex.raycast = () => {}; // Disable raycasting to prevent interference
@@ -53,8 +53,8 @@ export class HoverHexManager {
   public showHover(x: number, z: number): void {
     if (!this.hoverHex) return;
 
-    this.hoverHex.position.set(x, 0.1, z);
-    
+    this.hoverHex.position.set(x, 0.2, z);
+
     if (!this.isVisible) {
       this.scene.add(this.hoverHex);
       this.hoverHex.visible = true;
