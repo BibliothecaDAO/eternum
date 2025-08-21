@@ -3,7 +3,8 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { CooldownTimer, DefenseTroop, NavigateToPositionIcon, TroopChip } from "@/ui/features/military";
+import { CooldownTimer, DefenseTroop, TroopChip } from "@/ui/features/military";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 

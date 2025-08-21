@@ -1,8 +1,19 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { AnimationClip, AnimationMixer } from "three";
+import {
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
+  Color,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Vector3,
+} from "three";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -10,27 +21,28 @@ export const LAND_NAME = "land";
 export const SMALL_DETAILS_NAME = "small_details";
 
 // Reusable matrices for instance transformations
-const instanceMatrix = new THREE.Matrix4();
-const rotationMatrix = new THREE.Matrix4();
+const instanceMatrix = new Matrix4();
+const rotationMatrix = new Matrix4();
+const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
 
-interface AnimatedInstancedMesh extends THREE.InstancedMesh {
+interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
 }
 
 export default class InstancedModel {
-  public group: THREE.Group;
+  public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
   private biomeMeshes: any[] = [];
   private count: number = 0;
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
-  private animationActions: Map<number, THREE.AnimationAction> = new Map();
+  private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
   timeOffsets: Float32Array;
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.name = name;
-    this.group = new THREE.Group();
+    this.group = new Group();
     this.count = count;
 
     this.timeOffsets = new Float32Array(count);
@@ -39,7 +51,7 @@ export default class InstancedModel {
     }
 
     gltf.scene.traverse((child: any) => {
-      if (child instanceof THREE.Mesh) {
+      if (child instanceof Mesh) {
         if (child.scale.x !== 1) {
           return;
         }
@@ -60,9 +72,9 @@ export default class InstancedModel {
           }
         }
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
-          material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
+          material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
-        const tmp = new THREE.InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
+        const tmp = new InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
         tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
@@ -118,22 +130,22 @@ export default class InstancedModel {
 
   getLandColor() {
     const land = this.group.children.find((child) => child.name === LAND_NAME);
-    if (land instanceof THREE.InstancedMesh) {
-      return (land.material as THREE.MeshStandardMaterial).color;
+    if (land instanceof InstancedMesh) {
+      return (land.material as MeshStandardMaterial).color;
     }
-    return new THREE.Color(PREVIEW_BUILD_COLOR_INVALID);
+    return new Color(PREVIEW_BUILD_COLOR_INVALID);
   }
 
   getMatricesAndCount() {
     return {
-      matrices: (this.group.children[0] as THREE.InstancedMesh).instanceMatrix.clone(),
-      count: (this.group.children[0] as THREE.InstancedMesh).count,
+      matrices: (this.group.children[0] as InstancedMesh).instanceMatrix.clone(),
+      count: (this.group.children[0] as InstancedMesh).count,
     };
   }
 
-  setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
+  setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
     this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
+      if (child instanceof InstancedMesh) {
         child.instanceMatrix.copy(matrices);
         child.count = count;
         child.instanceMatrix.needsUpdate = true;
@@ -141,17 +153,17 @@ export default class InstancedModel {
     });
   }
 
-  setMatrixAt(index: number, matrix: THREE.Matrix4) {
+  setMatrixAt(index: number, matrix: Matrix4) {
     this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
+      if (child instanceof InstancedMesh) {
         child.setMatrixAt(index, matrix);
       }
     });
   }
 
-  setColorAt(index: number, color: THREE.Color) {
+  setColorAt(index: number, color: Color) {
     this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
+      if (child instanceof InstancedMesh) {
         child.setColorAt(index, color);
       }
     });
@@ -160,7 +172,7 @@ export default class InstancedModel {
   setCount(count: number) {
     this.count = count;
     this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
+      if (child instanceof InstancedMesh) {
         child.count = count;
       }
     });
@@ -169,13 +181,13 @@ export default class InstancedModel {
 
   removeInstance(index: number) {
     console.log("remove instance");
-    this.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+    this.setMatrixAt(index, zeroMatrix);
     this.needsUpdate();
   }
 
   needsUpdate() {
     this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
+      if (child instanceof InstancedMesh) {
         child.instanceMatrix.needsUpdate = true;
         child.computeBoundingSphere();
         child.frustumCulled = false;
@@ -187,7 +199,7 @@ export default class InstancedModel {
     return this.group.clone();
   }
 
-  scaleModel(scale: THREE.Vector3) {
+  scaleModel(scale: Vector3) {
     this.group.scale.copy(scale);
     this.group.updateMatrixWorld(true);
   }

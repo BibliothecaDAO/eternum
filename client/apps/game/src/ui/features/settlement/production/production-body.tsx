@@ -91,7 +91,7 @@ export const ProductionBody = ({
         <ActiveRelicEffects relicEffects={activeRelics} entityId={realm.entityId} />
         {hasActivatedWonderBonus && (
           <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('/images/patterns/gold-pattern.png')] opacity-5"></div>
+            <div className="absolute inset-0 opacity-5"></div>
             <div className="relative">
               <div className="flex items-center gap-4">
                 <div className="bg-gold/20 p-3 rounded-lg">

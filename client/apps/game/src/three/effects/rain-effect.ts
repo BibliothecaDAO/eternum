@@ -1,10 +1,10 @@
-import * as THREE from "three";
+import { Scene, LineSegments, BufferGeometry, LineBasicMaterial, BufferAttribute } from "three";
 
 export class RainEffect {
-  private scene: THREE.Scene;
-  private rainParticles!: THREE.LineSegments;
-  private rainGeometry!: THREE.BufferGeometry;
-  private rainMaterial!: THREE.LineBasicMaterial;
+  private scene: Scene;
+  private rainParticles!: LineSegments;
+  private rainGeometry!: BufferGeometry;
+  private rainMaterial!: LineBasicMaterial;
   private rainPositions!: Float32Array;
   private rainVelocities!: Float32Array;
   private rainCount: number = 800;
@@ -16,13 +16,13 @@ export class RainEffect {
     enabled: true,
   };
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: Scene) {
     this.scene = scene;
     this.initializeRain();
   }
 
   private initializeRain() {
-    this.rainGeometry = new THREE.BufferGeometry();
+    this.rainGeometry = new BufferGeometry();
     this.rainPositions = new Float32Array(this.rainCount * 6);
     this.rainVelocities = new Float32Array(this.rainCount * 3);
 
@@ -46,16 +46,16 @@ export class RainEffect {
       this.rainVelocities[i3 + 2] = (Math.random() - 0.5) * 0.03;
     }
 
-    this.rainGeometry.setAttribute("position", new THREE.BufferAttribute(this.rainPositions, 3));
+    this.rainGeometry.setAttribute("position", new BufferAttribute(this.rainPositions, 3));
 
-    this.rainMaterial = new THREE.LineBasicMaterial({
+    this.rainMaterial = new LineBasicMaterial({
       color: this.rainParams.color,
       transparent: true,
       opacity: this.rainParams.intensity,
       linewidth: 1,
     });
 
-    this.rainParticles = new THREE.LineSegments(this.rainGeometry, this.rainMaterial);
+    this.rainParticles = new LineSegments(this.rainGeometry, this.rainMaterial);
     this.scene.add(this.rainParticles);
   }
 

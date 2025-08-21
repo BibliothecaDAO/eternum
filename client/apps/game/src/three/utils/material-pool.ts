@@ -7,12 +7,12 @@
  * - Material properties (opacity, side, etc.)
  */
 
-import * as THREE from "three";
+import { Material, MeshBasicMaterial, MeshStandardMaterial, Side } from "three";
 
 interface MaterialKey {
   textureUrl: string;
   transparent: boolean;
-  side: THREE.Side;
+  side: Side;
   opacity: number;
   materialType: "basic" | "standard";
   color?: number;
@@ -29,9 +29,9 @@ interface MaterialStats {
 
 export class MaterialPool {
   private static instance: MaterialPool;
-  private materials: Map<string, THREE.Material> = new Map();
+  private materials: Map<string, Material> = new Map();
   private referenceCount: Map<string, number> = new Map();
-  private materialKeys: Map<THREE.Material, string> = new Map();
+  private materialKeys: Map<Material, string> = new Map();
 
   private constructor() {}
 
@@ -45,7 +45,7 @@ export class MaterialPool {
   /**
    * Generate a unique key for material properties
    */
-  private generateMaterialKey(sourceMaterial: THREE.Material, overrides?: Partial<MaterialKey>): string {
+  private generateMaterialKey(sourceMaterial: Material, overrides?: Partial<MaterialKey>): string {
     const sourceMap = (sourceMaterial as any).map;
     const textureUrl = sourceMap?.image?.src || sourceMap?.source?.data?.src || "none";
 
@@ -67,13 +67,13 @@ export class MaterialPool {
    * Get or create a shared MeshBasicMaterial
    */
   public getBasicMaterial(
-    sourceMaterial: THREE.Material,
+    sourceMaterial: Material,
     overrides?: {
       opacity?: number;
       color?: number;
       transparent?: boolean;
     },
-  ): THREE.MeshBasicMaterial {
+  ): MeshBasicMaterial {
     const materialOverrides = {
       materialType: "basic" as const,
       ...overrides,
@@ -81,14 +81,14 @@ export class MaterialPool {
     const key = this.generateMaterialKey(sourceMaterial, materialOverrides);
 
     if (this.materials.has(key)) {
-      const material = this.materials.get(key) as THREE.MeshBasicMaterial;
+      const material = this.materials.get(key) as MeshBasicMaterial;
       this.referenceCount.set(key, (this.referenceCount.get(key) || 0) + 1);
       return material;
     }
 
     // Create new shared material
-    const sourceAsStandard = sourceMaterial as THREE.MeshStandardMaterial;
-    const newMaterial = new THREE.MeshBasicMaterial({
+    const sourceAsStandard = sourceMaterial as MeshStandardMaterial;
+    const newMaterial = new MeshBasicMaterial({
       map: sourceAsStandard.map,
       transparent: overrides?.transparent ?? sourceMaterial.transparent,
       side: sourceMaterial.side,
@@ -108,7 +108,7 @@ export class MaterialPool {
    * Get or create a shared MeshStandardMaterial
    */
   public getStandardMaterial(
-    sourceMaterial: THREE.Material,
+    sourceMaterial: Material,
     overrides?: {
       opacity?: number;
       color?: number;
@@ -116,7 +116,7 @@ export class MaterialPool {
       roughness?: number;
       transparent?: boolean;
     },
-  ): THREE.MeshStandardMaterial {
+  ): MeshStandardMaterial {
     const materialOverrides = {
       materialType: "standard" as const,
       ...overrides,
@@ -124,14 +124,14 @@ export class MaterialPool {
     const key = this.generateMaterialKey(sourceMaterial, materialOverrides);
 
     if (this.materials.has(key)) {
-      const material = this.materials.get(key) as THREE.MeshStandardMaterial;
+      const material = this.materials.get(key) as MeshStandardMaterial;
       this.referenceCount.set(key, (this.referenceCount.get(key) || 0) + 1);
       return material;
     }
 
     // Create new shared material
-    const sourceAsStandard = sourceMaterial as THREE.MeshStandardMaterial;
-    const newMaterial = new THREE.MeshStandardMaterial({
+    const sourceAsStandard = sourceMaterial as MeshStandardMaterial;
+    const newMaterial = new MeshStandardMaterial({
       map: sourceAsStandard.map,
       transparent: overrides?.transparent ?? sourceMaterial.transparent,
       side: sourceMaterial.side,
@@ -152,7 +152,7 @@ export class MaterialPool {
   /**
    * Release a material reference (decrements reference count)
    */
-  public releaseMaterial(material: THREE.Material): void {
+  public releaseMaterial(material: Material): void {
     const key = this.materialKeys.get(material);
     if (!key) {
       console.warn("MaterialPool: Attempting to release material not managed by pool");

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { TransferBetweenEntities } from "@/ui/features/economy/trading";
+import { TransferBetweenEntities } from "@/ui/features/economy/trading/transfer-between-entities";
 import { getGuildMembersFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Structure, StructureType } from "@bibliothecadao/types";

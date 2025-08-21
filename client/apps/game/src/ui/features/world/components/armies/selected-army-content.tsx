@@ -1,4 +1,4 @@
-import { ArmyChip } from "@/ui/features/military";
+import { ArmyChip } from "@/ui/features/military/components/army-chip";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";

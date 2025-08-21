@@ -1,6 +1,6 @@
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
-import { CapacityInfo } from "@/ui/features/world";
+import { CapacityInfo } from "@/ui/features/world/containers/capacity-info";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
 import { memo } from "react";

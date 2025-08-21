@@ -1,4 +1,3 @@
-
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { SqlApi } from "@bibliothecadao/torii";
 import {
@@ -52,7 +51,10 @@ export class WorldUpdateListener {
   private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
   private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
 
-  constructor(private setup: SetupResult, sqlApi: SqlApi) {
+  constructor(
+    private setup: SetupResult,
+    sqlApi: SqlApi,
+  ) {
     // Initialize MapDataStore with centralized refresh interval
     this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
 

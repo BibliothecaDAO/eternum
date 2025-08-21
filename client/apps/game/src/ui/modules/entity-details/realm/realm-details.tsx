@@ -4,7 +4,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
-import { HintSection } from "@/ui/features/progression";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";

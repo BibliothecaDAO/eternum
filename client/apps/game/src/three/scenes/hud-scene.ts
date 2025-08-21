@@ -3,22 +3,22 @@ import { RainEffect } from "@/three/effects/rain-effect";
 import { Navigator } from "@/three/managers/navigator";
 import { SceneManager } from "@/three/scene-manager";
 import { GUIManager } from "@/three/utils/";
-import * as THREE from "three";
+import { Scene, OrthographicCamera, AmbientLight, HemisphereLight, Color } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 export default class HUDScene {
-  private scene: THREE.Scene;
-  private camera: THREE.OrthographicCamera;
+  private scene: Scene;
+  private camera: OrthographicCamera;
   private sceneManager: SceneManager;
   private controls: MapControls;
   private GUIFolder: any;
   private navigator: Navigator;
-  private ambientLight!: THREE.AmbientLight;
-  private hemisphereLight!: THREE.HemisphereLight;
+  private ambientLight!: AmbientLight;
+  private hemisphereLight!: HemisphereLight;
   private rainEffect!: RainEffect;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
-    this.scene = new THREE.Scene();
+    this.scene = new Scene();
     this.sceneManager = sceneManager;
     this.controls = controls;
     this.camera = this.createOrthographicCamera();
@@ -55,10 +55,10 @@ export default class HUDScene {
     );
   }
 
-  private createOrthographicCamera(): THREE.OrthographicCamera {
+  private createOrthographicCamera(): OrthographicCamera {
     const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = 10;
-    const camera = new THREE.OrthographicCamera(
+    const camera = new OrthographicCamera(
       (frustumSize * aspect) / -2,
       (frustumSize * aspect) / 2,
       frustumSize / 2,
@@ -80,14 +80,14 @@ export default class HUDScene {
   }
 
   private addAmbientLight() {
-    this.ambientLight = new THREE.AmbientLight(0xf3c99f, 3.5);
+    this.ambientLight = new AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
     this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
   private addHemisphereLight() {
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3c99f, 0xffffff, 0.5);
+    this.hemisphereLight = new HemisphereLight(0xf3c99f, 0xffffff, 0.5);
     this.hemisphereLight.position.set(0, 20, 0);
     this.scene.add(this.hemisphereLight);
 
@@ -97,11 +97,11 @@ export default class HUDScene {
     this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
   }
 
-  getScene(): THREE.Scene {
+  getScene(): Scene {
     return this.scene;
   }
 
-  getCamera(): THREE.OrthographicCamera {
+  getCamera(): OrthographicCamera {
     return this.camera;
   }
 

@@ -7,7 +7,7 @@
 
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape, createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
-import * as THREE from "three";
+import { ShapeGeometry } from "three";
 
 interface GeometryConfig {
   size: number;
@@ -26,7 +26,7 @@ export class HexGeometryPool {
   private static instance: HexGeometryPool;
 
   // Cache for shared geometries
-  private geometries: Map<string, THREE.ShapeGeometry> = new Map();
+  private geometries: Map<string, ShapeGeometry> = new Map();
 
   // Reference counting for safe disposal
   private referenceCount: Map<string, number> = new Map();
@@ -64,7 +64,7 @@ export class HexGeometryPool {
   /**
    * Get or create a shared hex geometry
    */
-  public getGeometry(type: string): THREE.ShapeGeometry {
+  public getGeometry(type: string): ShapeGeometry {
     const config = HexGeometryPool.GEOMETRY_CONFIGS[type];
     if (!config) {
       throw new Error(`Unknown hex geometry type: ${type}`);
@@ -111,12 +111,12 @@ export class HexGeometryPool {
   /**
    * Create optimized geometry from config
    */
-  private createGeometry(config: GeometryConfig): THREE.ShapeGeometry {
+  private createGeometry(config: GeometryConfig): ShapeGeometry {
     const shape = config.rounded
       ? createRoundedHexagonShape(config.size, config.cornerRadius)
       : createHexagonShape(config.size);
 
-    const geometry = new THREE.ShapeGeometry(shape);
+    const geometry = new ShapeGeometry(shape);
 
     // Optimize geometry for sharing
     geometry.computeBoundingBox();

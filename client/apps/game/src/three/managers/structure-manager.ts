@@ -6,7 +6,7 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz, StructureSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
-import * as THREE from "three";
+import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import { StructureInfo } from "../types";
@@ -34,18 +34,18 @@ interface PendingLabelUpdate {
 }
 
 export class StructureManager {
-  private scene: THREE.Scene;
+  private scene: Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private dummy: THREE.Object3D = new THREE.Object3D();
+  private dummy: Object3D = new Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
   structureHexCoords: Map<number, Set<number>> = new Map();
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
-  private labelsGroup: THREE.Group;
+  private labelsGroup: Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
@@ -62,9 +62,9 @@ export class StructureManager {
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
 
   constructor(
-    scene: THREE.Scene,
+    scene: Scene,
     renderChunkSize: { width: number; height: number },
-    labelsGroup?: THREE.Group,
+    labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
@@ -72,7 +72,7 @@ export class StructureManager {
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
-    this.labelsGroup = labelsGroup || new THREE.Group();
+    this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = fxManager || new FXManager(scene);
@@ -241,8 +241,14 @@ export class StructureManager {
     };
 
     // If incoming owner is invalid (0n or undefined) but existing structure has valid owner, preserve existing
-    if ((!owner.address || owner.address === 0n) && existingStructure?.owner.address && existingStructure.owner.address !== 0n) {
-      console.log(`[OWNER PRESERVATION] Structure ${entityId} preserving existing owner ${existingStructure.owner.address} instead of invalid update owner ${owner.address}`);
+    if (
+      (!owner.address || owner.address === 0n) &&
+      existingStructure?.owner.address &&
+      existingStructure.owner.address !== 0n
+    ) {
+      console.log(
+        `[OWNER PRESERVATION] Structure ${entityId} preserving existing owner ${existingStructure.owner.address} instead of invalid update owner ${owner.address}`,
+      );
       finalOwner = existingStructure.owner;
     }
     let finalGuardArmies = update.guardArmies;
@@ -531,8 +537,8 @@ export class StructureManager {
   }
 
   // Label Management Methods
-  private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
-    console.log("[ADD ENTITY ID LABEL]", {...structure});
+  private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
+    console.log("[ADD ENTITY ID LABEL]", { ...structure });
     console.log("[ADD ENTITY ID LABEL] isMine:", structure.isMine, "owner.address:", structure.owner.address);
     const labelDiv = createStructureLabel(structure, this.currentCameraView);
 
