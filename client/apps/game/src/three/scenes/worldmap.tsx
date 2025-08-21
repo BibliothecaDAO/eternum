@@ -5,7 +5,7 @@ import { getMapFromToriiExact } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
-import { HEX_SIZE } from "@/three/constants";
+import { getBiomeVariant, HEX_SIZE } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import Minimap from "@/three/managers/minimap";
@@ -962,7 +962,7 @@ export default class WorldmapScene extends HexagonScene {
     // Configure thunder bolts for worldmap - dramatic storm effect
     this.getThunderBoltManager().setConfig({
       radius: 18, // Large spread across the visible area
-      count: 12, // Many thunder bolts for dramatic effect
+      count: 6, // Many thunder bolts for dramatic effect
       duration: 400, // Medium duration for good visibility
       persistent: false, // Auto-fade for production use
       debug: false, // Disable logging for performance
@@ -1258,7 +1258,8 @@ export default class WorldmapScene extends HexagonScene {
       );
 
       await Promise.all(this.modelLoadPromises);
-      const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+      const biomeVariant = getBiomeVariant(biome, col, row);
+      const hexMesh = this.biomeModels.get(biomeVariant as any)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
@@ -1386,7 +1387,7 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
       // OPTIMIZED: Use arrays but avoid Matrix4.clone() calls
-      const biomeHexes: Record<BiomeType | "Outline", Matrix4[]> = {
+      const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
         None: [],
         Ocean: [],
         DeepOcean: [],
@@ -1397,9 +1398,12 @@ export default class WorldmapScene extends HexagonScene {
         Snow: [],
         TemperateDesert: [],
         Shrubland: [],
+        ShrublandAlt: [],
         Taiga: [],
         Grassland: [],
+        GrasslandAlt: [],
         TemperateDeciduousForest: [],
+        TemperateDeciduousForestAlt: [],
         TemperateRainForest: [],
         SubtropicalDesert: [],
         TropicalSeasonalForest: [],
@@ -1461,12 +1465,13 @@ export default class WorldmapScene extends HexagonScene {
           // Determine biome and adjust position if needed
           if (isExplored) {
             const biome = isExplored as BiomeType;
+            const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
             tempMatrix.setPosition(tempPosition);
 
             // OPTIMIZED: Use matrix pool instead of allocating
             const pooledMatrix = MatrixPool.getInstance().getMatrix();
             pooledMatrix.copy(tempMatrix);
-            biomeHexes[biome].push(pooledMatrix);
+            biomeHexes[biomeVariant].push(pooledMatrix);
           } else {
             tempPosition.y = 0.01;
             tempMatrix.setPosition(tempPosition);
@@ -1484,7 +1489,7 @@ export default class WorldmapScene extends HexagonScene {
         } else {
           // Apply matrices using existing proven API
           for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as BiomeType);
+            const hexMesh = this.biomeModels.get(biome as any);
 
             if (!hexMesh) {
               if (matrices.length > 0) {
@@ -1649,7 +1654,7 @@ export default class WorldmapScene extends HexagonScene {
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
       for (const [biome, { matrices, count }] of cachedMatrices) {
-        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+        const hexMesh = this.biomeModels.get(biome as any)!;
         hexMesh.setMatricesAndCount(matrices, count);
       }
       return true;
