@@ -8,6 +8,7 @@ import {
   WONDER_REALM,
   buildingModelPaths,
   castleLevelToRealmCastle,
+  getBiomeVariant,
   hyperstructureStageToModel,
   structureTypeToBuildingType,
 } from "@/three/constants";
@@ -594,7 +595,7 @@ export default class HexceptionScene extends HexagonScene {
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
 
-    const biomeHexes: Record<BiomeType | "Empty", Matrix4[]> = {
+    const biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -605,9 +606,12 @@ export default class HexceptionScene extends HexagonScene {
       Snow: [],
       TemperateDesert: [],
       Shrubland: [],
+      ShrublandAlt: [],
       Taiga: [],
       Grassland: [],
+      GrasslandAlt: [],
       TemperateDeciduousForest: [],
+      TemperateDeciduousForestAlt: [],
       TemperateRainForest: [],
       SubtropicalDesert: [],
       TropicalSeasonalForest: [],
@@ -806,7 +810,7 @@ export default class HexceptionScene extends HexagonScene {
       // update neighbor hexes around the center hex
       let pillarOffset = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+        const hexMesh = this.biomeModels.get(biome as any)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
           this.pillars!.setMatrixAt(index + pillarOffset, matrix);
@@ -869,9 +873,10 @@ export default class HexceptionScene extends HexagonScene {
     targetHex: HexPosition,
     isMainHex: boolean,
     existingBuildings: any[],
-    biomeHexes: Record<BiomeType, Matrix4[]>,
+    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const biome = Biome.getBiome(targetHex.col, targetHex.row);
+    const biomeVariant = getBiomeVariant(biome, targetHex.col, targetHex.row);
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
@@ -952,7 +957,7 @@ export default class HexceptionScene extends HexagonScene {
       // OPTIMIZED: Use matrix pool instead of clone()
       const tempMatrix = MatrixPool.getInstance().getMatrix();
       tempMatrix.copy(dummy.matrix);
-      biomeHexes[biome].push(tempMatrix);
+      biomeHexes[biomeVariant].push(tempMatrix);
     });
   };
 
@@ -961,7 +966,7 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType, Matrix4[]>,
+    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
@@ -984,7 +989,7 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType, Matrix4[]>,
+    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     this.computeHexMatrices(radius, dummy, center, targetHex, false, [], biomeHexes);
   };

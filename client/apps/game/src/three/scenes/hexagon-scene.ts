@@ -17,30 +17,30 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
-import { 
-  Scene, 
-  PerspectiveCamera, 
-  DirectionalLight, 
-  HemisphereLight, 
-  DirectionalLightHelper, 
-  PointLight, 
-  AmbientLight, 
-  Mesh, 
-  Fog, 
-  Color, 
-  Vector2, 
-  Raycaster, 
-  Vector3, 
-  Quaternion, 
-  InstancedMesh, 
-  Group, 
-  MeshStandardMaterial, 
-  PlaneGeometry, 
-  TextureLoader, 
-  SRGBColorSpace, 
-  RepeatWrapping, 
-  DoubleSide, 
-  Texture 
+import {
+  AmbientLight,
+  Color,
+  DirectionalLight,
+  DirectionalLightHelper,
+  DoubleSide,
+  Fog,
+  Group,
+  HemisphereLight,
+  InstancedMesh,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  PlaneGeometry,
+  PointLight,
+  Quaternion,
+  Raycaster,
+  RepeatWrapping,
+  SRGBColorSpace,
+  Scene,
+  Texture,
+  TextureLoader,
+  Vector2,
+  Vector3,
 } from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
@@ -363,10 +363,7 @@ export abstract class HexagonScene {
     return { row, col: adjustedCol };
   }
 
-  getHexagonCoordinates(
-    instancedMesh: InstancedMesh,
-    instanceId: number,
-  ): HexPosition & { x: number; z: number } {
+  getHexagonCoordinates(instancedMesh: InstancedMesh, instanceId: number): HexPosition & { x: number; z: number } {
     const matrixPool = MatrixPool.getInstance();
     const matrix = matrixPool.getMatrix();
     instancedMesh.getMatrixAt(instanceId, matrix);
@@ -390,12 +387,7 @@ export abstract class HexagonScene {
     return { col, row, x, z };
   }
 
-  cameraAnimate(
-    newPosition: Vector3,
-    newTarget: Vector3,
-    transitionDuration: number,
-    onFinish?: () => void,
-  ) {
+  cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
     const camera = this.controls.object;
     const target = this.controls.target;
     gsap.killTweensOf(camera.position);
