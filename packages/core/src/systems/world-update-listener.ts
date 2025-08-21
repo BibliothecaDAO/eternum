@@ -123,7 +123,7 @@ export class WorldUpdateListener {
                   currentArmiesTick,
                   structureOwnerId,
                 );
-
+                console.log("enhancedData", enhancedData);
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
                 return {
@@ -237,7 +237,7 @@ export class WorldUpdateListener {
               const [currentState, _prevState] = update.value;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-
+              console.log("structureInfo", structureInfo, currentState);
               if (!structureInfo) return;
 
               console.log("[STRUCTURE UPDATE]", currentState);
@@ -259,7 +259,7 @@ export class WorldUpdateListener {
               const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
-
+                console.log("enhancedData Structure", enhancedData);
                 return {
                   entityId: currentState.occupier_id,
                   hexCoords: {

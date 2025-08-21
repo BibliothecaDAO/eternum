@@ -281,7 +281,17 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
-
+      console.log(`[DEBUG] Army onTileUpdate received:`, {
+        source: 'Tile',
+        entityId: update.entityId,
+        hexCoords: update.hexCoords,
+        ownerAddress: update.ownerAddress,
+        ownerAddressType: typeof update.ownerAddress,
+        isOwnerZero: update.ownerAddress === 0n,
+        isNewArmy: !this.armiesPositions.has(update.entityId),
+        fullUpdate: update
+      });
+      
       this.updateArmyHexes(update);
 
       // Ensure army spawn location is marked as explored for pathfinding
@@ -292,17 +302,28 @@ export default class WorldmapScene extends HexagonScene {
       }
       if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
         // Mark spawn location as grassland (default safe biome for pathfinding)
+        console.log(`[DEBUG] Marking army spawn location (${normalizedPos.x}, ${normalizedPos.y}) as explored`);
         this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
       }
 
+      console.log(`[DEBUG] Calling armyManager.onTileUpdate for army ${update.entityId}`);
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+      console.log(`[DEBUG] Army onTileUpdate completed for army ${update.entityId}`);
     });
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-
+      console.log(`[DEBUG] Army onExplorerTroopsUpdate received:`, {
+        source: 'ExplorerTroops',
+        entityId: update.entityId,
+        hexCoords: update.hexCoords,
+        ownerAddress: update.ownerAddress,
+        ownerAddressType: typeof update.ownerAddress,
+        isOwnerZero: update.ownerAddress === 0n,
+        fullUpdate: update
+      });
       
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
@@ -317,6 +338,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for structure guard updates
     this.worldUpdateListener.Structure.onStructureUpdate((update) => {
+      console.log("[DEBUG] Structure onStructureUpdate received:", {
+        source: 'Structure',
+        update
+      });     
       this.updateStructureHexes(update);
       this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
@@ -331,6 +356,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Structure updates
     this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
+      console.log("[DEBUG] Structure onTileUpdate received:", {
+        source: 'Tile',
+        value
+      });
       this.updateStructureHexes(value);
 
       const optimisticStructure = this.structureManager.structures.removeStructure(
@@ -575,6 +604,15 @@ export default class WorldmapScene extends HexagonScene {
     const structure = this.structureHexes.get(hex.x)?.get(hex.y);
     const quest = this.questHexes.get(hex.x)?.get(hex.y);
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
+    
+    console.log(`[DEBUG] getHexagonEntity at (${hexCoords.col}, ${hexCoords.row}) normalized to (${hex.x}, ${hex.y}):`, {
+      army: army ? { id: army.id, owner: army.owner, ownerType: typeof army.owner } : null,
+      structure: structure ? { id: structure.id, owner: structure.owner } : null,
+      quest: quest ? { id: quest.id } : null,
+      chest: chest ? { id: chest.id } : null,
+      armyHexesAtCol: this.armyHexes.get(hex.x) ? Array.from(this.armyHexes.get(hex.x)!.keys()) : null
+    });
+    
     return { army, structure, quest, chest };
   }
 
@@ -587,23 +625,38 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
+    console.log(`[DEBUG] onHexagonClick at (${hexCoords.col}, ${hexCoords.row})`);
+
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
+
+    console.log(`[DEBUG] Hex entities found:`, {
+      army: army ? { id: army.id, owner: army.owner } : null,
+      structure: structure ? { id: structure.id, owner: structure.owner } : null,
+      quest: quest ? { id: quest.id } : null,
+      chest: chest ? { id: chest.id } : null,
+      playerAccount: account
+    });
 
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
+      console.log(`[DEBUG] Clicking on own army ${army.id}, calling onArmySelection`);
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
+      console.log(`[DEBUG] Clicking on own structure ${structure.id}, calling onStructureSelection`);
       this.onStructureSelection(structure.id, hexCoords);
     } else if (quest) {
+      console.log(`[DEBUG] Clicking on quest ${quest.id}, clearing selection`);
       // Handle quest click
       this.clearEntitySelection();
     } else if (chest) {
+      console.log(`[DEBUG] Clicking on chest ${chest.id}, clearing selection`);
       // Handle chest click - chests can be interacted with by anyone
       this.clearEntitySelection();
     } else {
+      console.log(`[DEBUG] Clicking on empty hex or enemy entity, clearing selection`);
       this.clearEntitySelection();
     }
   }
@@ -834,19 +887,25 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
+    console.log(`[DEBUG] onArmySelection called for entityId: ${selectedEntityId}, playerAddress: ${playerAddress}`);
+    
     // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(selectedEntityId)) {
+      console.log(`[DEBUG] Army ${selectedEntityId} has pending movement, skipping selection`);
       return;
     }
 
     // Check if army is currently being rendered or is in chunk transition
     if (this.globalChunkSwitchPromise) {
-      console.log("Chunk switch in progress, deferring army selection");
+      console.log(`[DEBUG] Chunk switch in progress, deferring army selection for ${selectedEntityId}`);
       // Defer selection until chunk switch completes
       this.globalChunkSwitchPromise.then(() => {
+        console.log(`[DEBUG] Chunk switch completed, retrying army selection for ${selectedEntityId}`);
         // Retry selection after chunk switch
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
+        } else {
+          console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
         }
       });
       return;
@@ -854,15 +913,26 @@ export default class WorldmapScene extends HexagonScene {
 
     // Ensure army is available for selection
     if (!this.armyManager.hasArmy(selectedEntityId)) {
-      console.warn(`Army ${selectedEntityId} not available in current chunk for selection`);
+      console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+      console.log(`[DEBUG] Available armies:`, this.armyManager.getArmies().map(a => a.entityId));
       return;
     }
 
+    console.log(`[DEBUG] Army ${selectedEntityId} is available, proceeding with selection`);
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+    console.log(`[DEBUG] Using ticks - default: ${currentDefaultTick}, armies: ${currentArmiesTick}`);
+
+    console.log(`[DEBUG] Finding action paths with:`, {
+      structureHexes: this.structureHexes.size,
+      armyHexes: this.armyHexes.size,
+      exploredTiles: this.exploredTiles.size,
+      questHexes: this.questHexes.size,
+      chestHexes: this.chestHexes.size
+    });
 
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
@@ -874,12 +944,26 @@ export default class WorldmapScene extends HexagonScene {
       currentArmiesTick,
       playerAddress,
     );
-    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
-    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+    
+    const paths = actionPaths.getPaths();
+    const highlightedHexes = actionPaths.getHighlightedHexes();
+    
+    console.log(`[DEBUG] Action paths generated:`, {
+      pathsCount: paths.size,
+      highlightedHexesCount: highlightedHexes.length,
+      paths: Array.from(paths.keys()).slice(0, 10), // Show first 10 path keys
+      highlightedHexes: highlightedHexes.slice(0, 10) // Show first 10 highlighted hexes
+    });
+    
+    this.state.updateEntityActionActionPaths(paths);
+    this.highlightHexManager.highlightHexes(highlightedHexes);
+    
+    console.log(`[DEBUG] Action paths and highlights applied for army ${selectedEntityId}`);
     
     // Show selection pulse for the selected army
     const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
+      console.log(`[DEBUG] Army position found:`, armyPosition);
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
       // Set army-specific pulse colors (blue/cyan for armies)
@@ -887,6 +971,9 @@ export default class WorldmapScene extends HexagonScene {
         new THREE.Color(0.2, 0.6, 1.0), // Blue base
         new THREE.Color(0.8, 1.0, 1.0)  // Cyan pulse
       );
+    } else {
+      console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+      console.log(`[DEBUG] Available positions:`, Array.from(this.armiesPositions.keys()));
     }
   }
 
@@ -1043,11 +1130,52 @@ export default class WorldmapScene extends HexagonScene {
       entityId,
     } = update;
 
-    if (ownerAddress === undefined) return;
+    console.log(`[DEBUG] updateArmyHexes called for army ${entityId} at (${col}, ${row}), owner: ${ownerAddress}`);
+    console.log(`[DEBUG] Owner address type: ${typeof ownerAddress}, value: ${ownerAddress}, is zero: ${ownerAddress === 0n}`);
+    console.log(`[DEBUG] updateArmyHexes call stack:`, new Error().stack?.split('\n').slice(0, 5));
+
+    if (ownerAddress === undefined) {
+      console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
+      return;
+    }
+
+    // Handle the case where we receive an update with 0n owner for an existing army
+    let actualOwnerAddress = ownerAddress;
+    if (ownerAddress === 0n) {
+      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - this may cause selection issues!`);
+      
+      // Check if we already have this army with a valid owner
+      const existingArmy = this.armiesPositions.has(entityId);
+      if (existingArmy) {
+        // Try to find existing army data in armyHexes to preserve owner
+        for (const [col, rowMap] of this.armyHexes) {
+          for (const [row, armyData] of rowMap) {
+            if (armyData.id === entityId && armyData.owner !== 0n) {
+              console.log(`[DEBUG] Found existing army ${entityId} with valid owner ${armyData.owner}, preserving it`);
+              actualOwnerAddress = armyData.owner;
+              break;
+            }
+          }
+          if (actualOwnerAddress !== 0n) break;
+        }
+        
+        // If we still have 0n owner and this is an existing army, skip the update to preserve existing data
+        if (actualOwnerAddress === 0n) {
+          console.warn(`[DEBUG] Skipping army ${entityId} update with 0n owner to preserve existing valid data`);
+          return;
+        }
+      }
+    }
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
+
+    console.log(`[DEBUG] Army ${entityId} position update:`, {
+      oldPos,
+      newPos,
+      normalized: { col: normalized.x, row: normalized.y }
+    });
 
     // Update army position
     this.armiesPositions.set(entityId, newPos);
@@ -1058,6 +1186,7 @@ export default class WorldmapScene extends HexagonScene {
       (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
       this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
+      console.log(`[DEBUG] Removing army ${entityId} from old position (${oldPos.col}, ${oldPos.row})`);
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
@@ -1066,11 +1195,25 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+    
+    const armyHexData = { id: entityId, owner: actualOwnerAddress };
+    console.log(`[DEBUG] Storing army in armyHexes:`, armyHexData);
+    this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    
+    console.log(`[DEBUG] Army ${entityId} added to new position (${newPos.col}, ${newPos.row})`);
+    
+    // Verify what was actually stored
+    const storedArmy = this.armyHexes.get(newPos.col)?.get(newPos.row);
+    console.log(`[DEBUG] Verification - stored army data:`, storedArmy);
 
     // Remove from pending movements when position is updated from blockchain
-    this.pendingArmyMovements.delete(entityId);
+    if (this.pendingArmyMovements.has(entityId)) {
+      console.log(`[DEBUG] Removing army ${entityId} from pending movements`);
+      this.pendingArmyMovements.delete(entityId);
+    }
+    
+    console.log(`[DEBUG] Army ${entityId} hex update completed. Total armies in positions map: ${this.armiesPositions.size}`);
   }
 
   public updateStructureHexes(update: {
@@ -1084,6 +1227,16 @@ export default class WorldmapScene extends HexagonScene {
       entityId,
     } = update;
 
+    console.log(`[DEBUG] Structure onTileUpdate received:`, {
+      source: 'Tile',
+      entityId: update.entityId,
+      hexCoords: update.hexCoords,
+      ownerAddress: address,
+      ownerAddressType: typeof address,
+      isOwnerZero: address === 0n,
+      fullUpdate: update
+    });
+    
     if (address === undefined) return;
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
