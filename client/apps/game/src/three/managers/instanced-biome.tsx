@@ -26,6 +26,13 @@ export default class InstancedModel {
     let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
+        const isAlt = name.toLowerCase().includes("alt");
+        if (name.toLowerCase().includes("alt")) {
+          console.log(name, "alt", child.material);
+          if (child.material.emissiveIntensity > 1) {
+            //child.material.emissiveIntensity = 15;
+          }
+        }
         if (name.toLowerCase().includes("deepocean") && child.material) {
           child.material.transparent = false;
         }
@@ -41,7 +48,7 @@ export default class InstancedModel {
         } else {
           renderOrder = 2;
         }
-        if (child?.material?.emissiveIntensity > 1) {
+        if (child?.material?.emissiveIntensity > 1 && !isAlt) {
           child.material.emissiveIntensity = 3;
         }
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
