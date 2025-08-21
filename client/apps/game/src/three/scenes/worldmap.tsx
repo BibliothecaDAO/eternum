@@ -281,17 +281,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
-      console.log(`[DEBUG] Army onTileUpdate received:`, {
-        source: 'Tile',
-        entityId: update.entityId,
-        hexCoords: update.hexCoords,
-        ownerAddress: update.ownerAddress,
-        ownerAddressType: typeof update.ownerAddress,
-        isOwnerZero: update.ownerAddress === 0n,
-        isNewArmy: !this.armiesPositions.has(update.entityId),
-        fullUpdate: update
-      });
-      
       this.updateArmyHexes(update);
 
       // Ensure army spawn location is marked as explored for pathfinding
@@ -302,29 +291,16 @@ export default class WorldmapScene extends HexagonScene {
       }
       if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
         // Mark spawn location as grassland (default safe biome for pathfinding)
-        console.log(`[DEBUG] Marking army spawn location (${normalizedPos.x}, ${normalizedPos.y}) as explored`);
         this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
       }
 
-      console.log(`[DEBUG] Calling armyManager.onTileUpdate for army ${update.entityId}`);
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
-      console.log(`[DEBUG] Army onTileUpdate completed for army ${update.entityId}`);
     });
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-      console.log(`[DEBUG] Army onExplorerTroopsUpdate received:`, {
-        source: 'ExplorerTroops',
-        entityId: update.entityId,
-        hexCoords: update.hexCoords,
-        ownerAddress: update.ownerAddress,
-        ownerAddressType: typeof update.ownerAddress,
-        isOwnerZero: update.ownerAddress === 0n,
-        fullUpdate: update
-      });
-      
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
@@ -338,10 +314,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for structure guard updates
     this.worldUpdateListener.Structure.onStructureUpdate((update) => {
-      console.log("[DEBUG] Structure onStructureUpdate received:", {
-        source: 'Structure',
-        update
-      });     
+  
       this.updateStructureHexes(update);
       this.structureManager.updateStructureLabelFromStructureUpdate(update);
     });
@@ -356,10 +329,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Structure updates
     this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
-      console.log("[DEBUG] Structure onTileUpdate received:", {
-        source: 'Tile',
-        value
-      });
+
       this.updateStructureHexes(value);
 
       const optimisticStructure = this.structureManager.structures.removeStructure(
@@ -605,14 +575,7 @@ export default class WorldmapScene extends HexagonScene {
     const quest = this.questHexes.get(hex.x)?.get(hex.y);
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
     
-    console.log(`[DEBUG] getHexagonEntity at (${hexCoords.col}, ${hexCoords.row}) normalized to (${hex.x}, ${hex.y}):`, {
-      army: army ? { id: army.id, owner: army.owner, ownerType: typeof army.owner } : null,
-      structure: structure ? { id: structure.id, owner: structure.owner } : null,
-      quest: quest ? { id: quest.id } : null,
-      chest: chest ? { id: chest.id } : null,
-      armyHexesAtCol: this.armyHexes.get(hex.x) ? Array.from(this.armyHexes.get(hex.x)!.keys()) : null
-    });
-    
+
     return { army, structure, quest, chest };
   }
 
@@ -625,38 +588,30 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    console.log(`[DEBUG] onHexagonClick at (${hexCoords.col}, ${hexCoords.row})`);
+    
 
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
-
-    console.log(`[DEBUG] Hex entities found:`, {
-      army: army ? { id: army.id, owner: army.owner } : null,
-      structure: structure ? { id: structure.id, owner: structure.owner } : null,
-      quest: quest ? { id: quest.id } : null,
-      chest: chest ? { id: chest.id } : null,
-      playerAccount: account
-    });
 
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
-      console.log(`[DEBUG] Clicking on own army ${army.id}, calling onArmySelection`);
+      
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
-      console.log(`[DEBUG] Clicking on own structure ${structure.id}, calling onStructureSelection`);
+      
       this.onStructureSelection(structure.id, hexCoords);
     } else if (quest) {
-      console.log(`[DEBUG] Clicking on quest ${quest.id}, clearing selection`);
+      
       // Handle quest click
       this.clearEntitySelection();
     } else if (chest) {
-      console.log(`[DEBUG] Clicking on chest ${chest.id}, clearing selection`);
+      
       // Handle chest click - chests can be interacted with by anyone
       this.clearEntitySelection();
     } else {
-      console.log(`[DEBUG] Clicking on empty hex or enemy entity, clearing selection`);
+      
       this.clearEntitySelection();
     }
   }
@@ -887,20 +842,20 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
-    console.log(`[DEBUG] onArmySelection called for entityId: ${selectedEntityId}, playerAddress: ${playerAddress}`);
+    
     
     // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(selectedEntityId)) {
-      console.log(`[DEBUG] Army ${selectedEntityId} has pending movement, skipping selection`);
+      
       return;
     }
 
     // Check if army is currently being rendered or is in chunk transition
     if (this.globalChunkSwitchPromise) {
-      console.log(`[DEBUG] Chunk switch in progress, deferring army selection for ${selectedEntityId}`);
+      
       // Defer selection until chunk switch completes
       this.globalChunkSwitchPromise.then(() => {
-        console.log(`[DEBUG] Chunk switch completed, retrying army selection for ${selectedEntityId}`);
+        
         // Retry selection after chunk switch
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
@@ -914,25 +869,17 @@ export default class WorldmapScene extends HexagonScene {
     // Ensure army is available for selection
     if (!this.armyManager.hasArmy(selectedEntityId)) {
       console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
-      console.log(`[DEBUG] Available armies:`, this.armyManager.getArmies().map(a => a.entityId));
+      
       return;
     }
 
-    console.log(`[DEBUG] Army ${selectedEntityId} is available, proceeding with selection`);
+    
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    console.log(`[DEBUG] Using ticks - default: ${currentDefaultTick}, armies: ${currentArmiesTick}`);
-
-    console.log(`[DEBUG] Finding action paths with:`, {
-      structureHexes: this.structureHexes.size,
-      armyHexes: this.armyHexes.size,
-      exploredTiles: this.exploredTiles.size,
-      questHexes: this.questHexes.size,
-      chestHexes: this.chestHexes.size
-    });
+    
 
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
@@ -948,22 +895,16 @@ export default class WorldmapScene extends HexagonScene {
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightedHexes();
     
-    console.log(`[DEBUG] Action paths generated:`, {
-      pathsCount: paths.size,
-      highlightedHexesCount: highlightedHexes.length,
-      paths: Array.from(paths.keys()).slice(0, 10), // Show first 10 path keys
-      highlightedHexes: highlightedHexes.slice(0, 10) // Show first 10 highlighted hexes
-    });
     
     this.state.updateEntityActionActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
     
-    console.log(`[DEBUG] Action paths and highlights applied for army ${selectedEntityId}`);
+    
     
     // Show selection pulse for the selected army
     const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
-      console.log(`[DEBUG] Army position found:`, armyPosition);
+      
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
       // Set army-specific pulse colors (blue/cyan for armies)
@@ -973,7 +914,7 @@ export default class WorldmapScene extends HexagonScene {
       );
     } else {
       console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
-      console.log(`[DEBUG] Available positions:`, Array.from(this.armiesPositions.keys()));
+      
     }
   }
 
@@ -1011,14 +952,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private clearSelection() {
-    console.log("clearSelection");
+    
     this.selectedHexManager.resetPosition();
     this.state.setSelectedHex(null);
     this.clearEntitySelection();
   }
 
   private clearEntitySelection() {
-    console.log("clearEntitySelection");
+    
     this.highlightHexManager.highlightHexes([]);
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
@@ -1130,9 +1071,9 @@ export default class WorldmapScene extends HexagonScene {
       entityId,
     } = update;
 
-    console.log(`[DEBUG] updateArmyHexes called for army ${entityId} at (${col}, ${row}), owner: ${ownerAddress}`);
-    console.log(`[DEBUG] Owner address type: ${typeof ownerAddress}, value: ${ownerAddress}, is zero: ${ownerAddress === 0n}`);
-    console.log(`[DEBUG] updateArmyHexes call stack:`, new Error().stack?.split('\n').slice(0, 5));
+    
+    
+    
 
     if (ownerAddress === undefined) {
       console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
@@ -1151,7 +1092,7 @@ export default class WorldmapScene extends HexagonScene {
         for (const [col, rowMap] of this.armyHexes) {
           for (const [row, armyData] of rowMap) {
             if (armyData.id === entityId && armyData.owner !== 0n) {
-              console.log(`[DEBUG] Found existing army ${entityId} with valid owner ${armyData.owner}, preserving it`);
+              
               actualOwnerAddress = armyData.owner;
               break;
             }
@@ -1171,12 +1112,6 @@ export default class WorldmapScene extends HexagonScene {
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
 
-    console.log(`[DEBUG] Army ${entityId} position update:`, {
-      oldPos,
-      newPos,
-      normalized: { col: normalized.x, row: normalized.y }
-    });
-
     // Update army position
     this.armiesPositions.set(entityId, newPos);
 
@@ -1186,7 +1121,7 @@ export default class WorldmapScene extends HexagonScene {
       (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
       this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
-      console.log(`[DEBUG] Removing army ${entityId} from old position (${oldPos.col}, ${oldPos.row})`);
+      
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
@@ -1197,23 +1132,23 @@ export default class WorldmapScene extends HexagonScene {
     }
     
     const armyHexData = { id: entityId, owner: actualOwnerAddress };
-    console.log(`[DEBUG] Storing army in armyHexes:`, armyHexData);
+    
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
     
-    console.log(`[DEBUG] Army ${entityId} added to new position (${newPos.col}, ${newPos.row})`);
+    
     
     // Verify what was actually stored
     const storedArmy = this.armyHexes.get(newPos.col)?.get(newPos.row);
-    console.log(`[DEBUG] Verification - stored army data:`, storedArmy);
+    
 
     // Remove from pending movements when position is updated from blockchain
     if (this.pendingArmyMovements.has(entityId)) {
-      console.log(`[DEBUG] Removing army ${entityId} from pending movements`);
+      
       this.pendingArmyMovements.delete(entityId);
     }
     
-    console.log(`[DEBUG] Army ${entityId} hex update completed. Total armies in positions map: ${this.armiesPositions.size}`);
+    
   }
 
   public updateStructureHexes(update: {
@@ -1227,16 +1162,6 @@ export default class WorldmapScene extends HexagonScene {
       entityId,
     } = update;
 
-    console.log(`[DEBUG] Structure onTileUpdate received:`, {
-      source: 'Tile',
-      entityId: update.entityId,
-      hexCoords: update.hexCoords,
-      ownerAddress: address,
-      ownerAddressType: typeof address,
-      isOwnerZero: address === 0n,
-      fullUpdate: update
-    });
-    
     if (address === undefined) return;
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
@@ -1485,7 +1410,7 @@ export default class WorldmapScene extends HexagonScene {
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      console.log("cache applied");
+      
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
 
       // Track memory usage for cached operation
@@ -1493,7 +1418,7 @@ export default class WorldmapScene extends HexagonScene {
         const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
         const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
         if (Math.abs(memoryDelta) > 10) {
-          console.log(`[HEX GRID] Cache application memory impact: ${memoryDelta.toFixed(1)}MB`);
+          
         }
       }
       return;
@@ -1617,14 +1542,14 @@ export default class WorldmapScene extends HexagonScene {
   private async computeTileEntities(chunkKey: string): Promise<void> {
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
-      console.log("Already fetched");
+      
       return;
     }
 
     // If there's already a pending request for this chunk, return the existing promise
     const existingPromise = this.pendingChunks.get(chunkKey);
     if (existingPromise) {
-      console.log("Request already pending for chunk", chunkKey);
+      
       return existingPromise;
     }
 
@@ -1682,7 +1607,7 @@ export default class WorldmapScene extends HexagonScene {
       this.pendingChunks.delete(chunkKey);
       this.state.setLoading(LoadingStateKey.Map, false);
       const end = performance.now();
-      console.log("[sync] map query", end - start);
+      
     }
   }
 
@@ -1724,7 +1649,7 @@ export default class WorldmapScene extends HexagonScene {
   async updateVisibleChunks(force: boolean = false) {
     // Wait for any ongoing global chunk switch to complete first
     if (this.globalChunkSwitchPromise) {
-      console.log(`[GLOBAL CHUNK SYNC] Waiting for previous global chunk switch to complete`);
+      
       try {
         await this.globalChunkSwitchPromise;
       } catch (error) {
@@ -1749,7 +1674,7 @@ export default class WorldmapScene extends HexagonScene {
 
       try {
         await this.globalChunkSwitchPromise;
-        console.log(`[GLOBAL CHUNK SYNC] Global chunk switch to ${chunkKey} completed`);
+        
       } finally {
         this.globalChunkSwitchPromise = null;
       }
@@ -1757,7 +1682,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private async performChunkSwitch(chunkKey: string, startCol: number, startRow: number, force: boolean) {
-    console.log(`[CHUNK SYNC] Starting synchronized chunk switch to ${chunkKey}`);
+    
 
     // Track memory usage during chunk switch
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
@@ -1774,7 +1699,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Load surrounding chunks for better UX (3x3 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    console.log("Loading chunks:", surroundingChunks);
+    
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -1790,7 +1715,7 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    console.log("performChunkSwitch", chunkKey);
+    
     // Update all managers in sequence to prevent race conditions
     // Changed from Promise.all to sequential execution
     await this.armyManager.updateChunk(chunkKey);
@@ -1813,7 +1738,7 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
 
-    console.log(`[CHUNK SYNC] All managers synchronized to chunk ${chunkKey}`);
+    
   }
 
   update(deltaTime: number) {
@@ -1844,7 +1769,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Check if this is an army entity
     if (this.armyManager.hasArmy(entityId)) {
-      console.log(`Relic effect update for Army entityId: ${entityId}, effects count: ${relicEffects.length}`);
+      
       // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
       const { currentArmiesTick } = getBlockTimestamp();
       const newEffects = relicEffects.map((relicEffect) => ({
@@ -1865,9 +1790,7 @@ export default class WorldmapScene extends HexagonScene {
       const structureHexes = this.structureManager.structures.getStructures();
       for (const [, structures] of structureHexes) {
         if (structures.has(entityId)) {
-          console.log(
-            `Relic effect update for Structure entityId: ${entityId}, source: ${relicSource}, effects count: ${relicEffects.length}`,
-          );
+
           // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
           const { currentArmiesTick } = getBlockTimestamp();
           const newEffects = relicEffects.map((relicEffect) => ({
@@ -1888,9 +1811,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // If entity is not currently loaded, store as pending effects
     if (!entityFound) {
-      console.log(
-        `Entity ${entityId} not found in current scene. Storing ${relicEffects.length} relic effects as pending`,
-      );
+
 
       // Get or create the entity's pending effects map
       let entityPendingMap = this.pendingRelicEffects.get(entityId);
@@ -1962,7 +1883,7 @@ export default class WorldmapScene extends HexagonScene {
     const entityPendingMap = this.pendingRelicEffects.get(entityId);
     if (!entityPendingMap || entityPendingMap.size === 0) return;
 
-    console.log(`Applying pending relic effects for entity ${entityId} from ${entityPendingMap.size} sources`);
+    
 
     // Check if this is an army entity
     if (this.armyManager.hasArmy(entityId)) {
@@ -1980,7 +1901,7 @@ export default class WorldmapScene extends HexagonScene {
         }));
 
         await this.armyManager.updateRelicEffects(entityId, relicEffectsArray);
-        console.log(`Applied ${relicEffectsArray.length} pending relic effects to army: entityId=${entityId}`);
+        
       } catch (error) {
         console.error(`Failed to apply pending relic effects to army ${entityId}:`, error);
       }
@@ -2123,7 +2044,7 @@ export default class WorldmapScene extends HexagonScene {
           // If some relics were removed, update the effects
           if (activeRelics.length < currentRelics.length) {
             const removedThisArmy = currentRelics.length - activeRelics.length;
-            console.log(`Removing ${removedThisArmy} inactive relic effect(s) from army: entityId=${army.entityId}`);
+            
             await this.armyManager.updateRelicEffects(
               army.entityId,
               activeRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
@@ -2141,7 +2062,7 @@ export default class WorldmapScene extends HexagonScene {
           if (currentRelics.length > 0) {
             // Filter out inactive relics
             const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
-            console.log({ currentRelics, activeRelics, currentArmiesTick });
+            
 
             // If some relics were removed, update the effects
             if (activeRelics.length < currentRelics.length) {
@@ -2173,7 +2094,7 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       if (removedCount > 0) {
-        console.log(`Removed ${removedCount} inactive relic effects during validation`);
+        
       }
     } catch (error) {
       console.error("Error during relic effect validation:", error);
