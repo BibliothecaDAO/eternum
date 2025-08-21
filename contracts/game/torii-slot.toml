@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
 
-world_address = "0x7c679f36a5e0a6c8bd4ec66ba7283a05177ed468e674a81f37f078bb936451c"
+world_address = "0x6f0d199ce8cd0ed7afcb5a43a2959253388149cbbe1f53b139bfe3c15c14153"
 
 db_dir = "torii-slot"
 

@@ -232,11 +232,25 @@ export class StructureManager {
     const key = structureType;
 
     // Check for pending label updates and apply them if they exist
+    // Check if structure already exists with valid owner before overwriting
+    const existingStructure = this.structures.getStructureByEntityId(entityId);
     let finalOwner = {
       address: owner.address || 0n,
       ownerName: owner.ownerName || "",
       guildName: owner.guildName || "",
     };
+
+    // If incoming owner is invalid (0n or undefined) but existing structure has valid owner, preserve existing
+    if (
+      (!owner.address || owner.address === 0n) &&
+      existingStructure?.owner.address &&
+      existingStructure.owner.address !== 0n
+    ) {
+      console.log(
+        `[OWNER PRESERVATION] Structure ${entityId} preserving existing owner ${existingStructure.owner.address} instead of invalid update owner ${owner.address}`,
+      );
+      finalOwner = existingStructure.owner;
+    }
     let finalGuardArmies = update.guardArmies;
     let finalActiveProductions = update.activeProductions;
 
@@ -524,7 +538,8 @@ export class StructureManager {
 
   // Label Management Methods
   private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
-    console.log("[ADD ENTITY ID LABEL]", structure);
+    console.log("[ADD ENTITY ID LABEL]", { ...structure });
+    console.log("[ADD ENTITY ID LABEL] isMine:", structure.isMine, "owner.address:", structure.owner.address);
     const labelDiv = createStructureLabel(structure, this.currentCameraView);
 
     const label = new CSS2DObject(labelDiv);
