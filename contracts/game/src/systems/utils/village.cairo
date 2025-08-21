@@ -212,6 +212,7 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
         // place castle building
         BuildingImpl::create(
             ref world,
+            Zero::zero(),
             structure_id,
             StructureCategory::Village.into(),
             coord,

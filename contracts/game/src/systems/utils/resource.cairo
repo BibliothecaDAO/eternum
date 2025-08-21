@@ -1,10 +1,14 @@
 use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
+use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{all_resource_ids, is_bank};
 use s1_eternum::models::config::{SpeedImpl, WorldConfigUtilImpl};
+use s1_eternum::models::events::{
+    ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
+};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
@@ -230,6 +234,36 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // update to_resource weight
         to_weight.store(ref world, to_id);
+
+        // emit story event
+        let from_owner = if from_id == 0 {
+            starknet::contract_address_const::<0>()
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, from_id)
+        };
+        let to_owner = StructureOwnerStoreImpl::retrieve(ref world, to_id);
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(to_owner),
+                    entity_id: Option::Some(to_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ResourceTransferStory(
+                        ResourceTransferStory {
+                            transfer_type: TransferType::Instant,
+                            from_entity_id: from_id,
+                            from_entity_owner_address: from_owner,
+                            to_entity_id: to_id,
+                            to_entity_owner_address: to_owner,
+                            resources: resources,
+                            is_mint: mint,
+                            travel_time: 0,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
 
@@ -279,6 +313,32 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // update to_resource weight
         to_weight.store(ref world, to_id);
+
+        // emit story event
+        let from_owner = StructureOwnerStoreImpl::retrieve(ref world, from_id);
+        let to_owner = StructureOwnerStoreImpl::retrieve(ref world, to_id);
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(to_owner),
+                    entity_id: Option::Some(to_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ResourceTransferStory(
+                        ResourceTransferStory {
+                            transfer_type: TransferType::InstantStorable,
+                            from_entity_id: from_id,
+                            from_entity_owner_address: from_owner,
+                            to_entity_id: to_id,
+                            to_entity_owner_address: to_owner,
+                            resources: resources,
+                            is_mint: false,
+                            travel_time: 0,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     fn _instant_arrivals_transfer(
@@ -330,6 +390,36 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // update from_resource weight
             from_weight.store(ref world, from_id);
         }
+
+        // emit story event
+        let from_owner = if from_id == 0 {
+            starknet::contract_address_const::<0>()
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, from_id)
+        };
+        let to_owner = StructureOwnerStoreImpl::retrieve(ref world, to_id);
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(to_owner),
+                    entity_id: Option::Some(to_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ResourceTransferStory(
+                        ResourceTransferStory {
+                            transfer_type: TransferType::InstantArrivals,
+                            from_entity_id: from_id,
+                            from_entity_owner_address: from_owner,
+                            to_entity_id: to_id,
+                            to_entity_owner_address: to_owner,
+                            resources: resources,
+                            is_mint: mint,
+                            travel_time: 0,
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
 
@@ -437,6 +527,42 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         // update both structures weights
         from_weight.store(ref world, from_id);
         to_weight.store(ref world, to_id);
+
+        // emit story event
+        let story = Story::ResourceTransferStory(
+            ResourceTransferStory {
+                transfer_type: TransferType::Delayed,
+                from_entity_id: from_id,
+                from_entity_owner_address: from_owner,
+                to_entity_id: to_id,
+                to_entity_owner_address: to_owner,
+                resources: resources,
+                is_mint: mint,
+                travel_time,
+            },
+        );
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_owner),
+                    entity_id: Option::Some(from_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: story,
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(to_owner),
+                    entity_id: Option::Some(to_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: story,
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     fn _instant_burn(ref world: WorldStorage, from_id: ID, ref from_weight: Weight, mut resources: Span<(u8, u128)>) {
@@ -463,6 +589,20 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // update from entity resource weight
         from_weight.store(ref world, from_id);
+
+        // emit story event
+        let from_owner = StructureOwnerStoreImpl::retrieve(ref world, from_id);
+
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_owner),
+                    entity_id: Option::Some(from_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ResourceBurnStory(ResourceBurnStory { resources: resources }),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     fn deliver_arrivals(
@@ -486,6 +626,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         // todo: delay delivery by day and slot
         let mut index_counted: u8 = 0;
         let mut total_amount_deposited: u128 = 0;
+        let mut delivered_resources: Array<(u8, u128)> = array![];
         loop {
             match to_structure_resources_array.pop_front() {
                 Option::Some((
@@ -500,6 +641,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     to_structure_resource.add(resource_amount, ref to_structure_weight, resource_weight_grams);
                     to_structure_resource.store(ref world);
                     total_amount_deposited += resource_amount;
+                    delivered_resources.append((resource_type, resource_amount));
                     // stop when necessary
                     index_counted += 1;
                     if index_counted >= index_count {
@@ -525,6 +667,24 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ResourceArrivalImpl::write_day_total(
                 ref world, to_structure_id, day, to_structure_resource_arrival_day_total,
             );
+        }
+
+        // emit story event if resources were delivered
+        if delivered_resources.len() > 0 {
+            let to_owner = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(to_owner),
+                        entity_id: Option::Some(to_structure_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::ResourceReceiveArrivalStory(
+                            ResourceReceiveArrivalStory { resources: delivered_resources.span() },
+                        ),
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
         }
     }
 

@@ -1,6 +1,6 @@
 pub mod agent;
 pub mod config;
-pub mod event;
+pub mod events;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;

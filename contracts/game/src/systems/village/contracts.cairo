@@ -123,6 +123,7 @@ pub mod village_systems {
             // place castle building
             BuildingImpl::create(
                 ref world,
+                caller,
                 village_id,
                 StructureCategory::Village.into(),
                 village_coord,

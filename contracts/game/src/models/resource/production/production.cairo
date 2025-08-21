@@ -1,11 +1,13 @@
 use core::num::traits::Bounded;
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
+use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
+use s1_eternum::models::events::{ProductionStory, Story, StoryEvent};
 
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -300,7 +302,24 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         // grant achievement
         let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
         Self::_grant_producer_achievement(ref world, from_entity_owner, ResourceTypes::LABOR, produced_labor_amount);
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: ResourceTypes::LABOR,
+                            received_amount: produced_labor_amount,
+                            cost: array![(from_resource_type, from_resource_amount)].span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
     // burn labor for production of some other resource
@@ -321,6 +340,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let payment_resources_count = produced_resource_factory_config.simple_input_list_count;
         assert!(payment_resources_count.is_non_zero(), "labor can't be produced from specified resource");
 
+        let mut paid_costs = array![];
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
         for i in 0..payment_resources_count {
             let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
@@ -335,6 +355,8 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             );
             payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
+
+            paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
         };
 
         // add produceable resource amount to factory
@@ -359,7 +381,24 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         Self::_grant_producer_achievement(
             ref world, from_entity_owner, produced_resource_type, produced_resource_amount,
         );
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: produced_resource_type,
+                            received_amount: produced_resource_amount,
+                            cost: paid_costs.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 
 
@@ -379,6 +418,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(payment_resources_count.is_non_zero(), "specified resource can't be produced from non labor resources");
 
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
+        let mut paid_costs = array![];
         for i in 0..payment_resources_count {
             let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
             let payment_resource_type = payment_resource_cost.resource_type;
@@ -392,6 +432,8 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             );
             payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
+
+            paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
         };
 
         // add produced resource amount to factory
@@ -423,6 +465,23 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         // grant achievement
         let from_entity_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
         Self::_grant_producer_achievement(ref world, from_entity_owner, produced_resource_type, produceable_amount);
-        // todo add event here
+
+        // emit event
+        world
+            .emit_event(
+                @StoryEvent {
+                    owner: Option::Some(from_entity_owner),
+                    entity_id: Option::Some(from_entity_id),
+                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                    story: Story::ProductionStory(
+                        ProductionStory {
+                            received_resource_type: produced_resource_type,
+                            received_amount: produceable_amount,
+                            cost: paid_costs.span(),
+                        },
+                    ),
+                    timestamp: starknet::get_block_timestamp(),
+                },
+            );
     }
 }
