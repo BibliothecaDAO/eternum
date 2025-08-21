@@ -184,7 +184,7 @@ pub struct ResourceTransferStory {
     pub to_entity_owner_address: ContractAddress,
     pub resources: Span<(u8, u128)>,
     pub is_mint: bool,
-    pub travel_time: u64 // 0 for instant transfers
+    pub travel_time: u64, // 0 for instant transfers
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
