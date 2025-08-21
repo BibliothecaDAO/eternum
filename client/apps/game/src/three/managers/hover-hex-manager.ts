@@ -1,6 +1,7 @@
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { hoverHexMaterial, updateHoverHexMaterial } from "@/three/shaders/hover-hex-material";
+import { gltfLoader } from "@/three/utils/utils";
 import * as THREE from "three";
 
 /**
@@ -9,6 +10,7 @@ import * as THREE from "three";
 export class HoverHexManager {
   private scene: THREE.Scene;
   private hoverHex: THREE.Mesh | null = null;
+  private outlineModel: THREE.Object3D | null = null;
   private isVisible = false;
   private animationId: number | null = null;
   private lastTime = 0;
@@ -16,6 +18,7 @@ export class HoverHexManager {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createHoverHex();
+    this.loadOutlineModel();
     this.startAnimation();
   }
 
@@ -30,6 +33,25 @@ export class HoverHexManager {
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
     this.hoverHex.raycast = () => {}; // Disable raycasting to prevent interference
     this.hoverHex.visible = false;
+  }
+
+  private async loadOutlineModel(): Promise<void> {
+    try {
+      const gltf = await gltfLoader.loadAsync("/models/outline_pink_small.glb");
+      this.outlineModel = gltf.scene;
+
+      this.outlineModel.position.y = 0.01;
+      // this.outlineModel.rotation.x = -Math.PI / 2;
+      this.outlineModel.renderOrder = 45;
+      this.outlineModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.raycast = () => {};
+        }
+      });
+      this.outlineModel.visible = false;
+    } catch (error) {
+      console.warn("Failed to load outline model:", error);
+    }
   }
 
   private startAnimation(): void {
@@ -55,9 +77,19 @@ export class HoverHexManager {
 
     this.hoverHex.position.set(x, 0.2, z);
 
+    if (this.outlineModel) {
+      this.outlineModel.position.set(x, 0.01, z);
+    }
+
     if (!this.isVisible) {
       this.scene.add(this.hoverHex);
       this.hoverHex.visible = true;
+
+      if (this.outlineModel) {
+        this.scene.add(this.outlineModel);
+        this.outlineModel.visible = true;
+      }
+
       this.isVisible = true;
     }
   }
@@ -70,6 +102,12 @@ export class HoverHexManager {
 
     this.scene.remove(this.hoverHex);
     this.hoverHex.visible = false;
+
+    if (this.outlineModel) {
+      this.scene.remove(this.outlineModel);
+      this.outlineModel.visible = false;
+    }
+
     this.isVisible = false;
   }
 
@@ -109,6 +147,21 @@ export class HoverHexManager {
       this.scene.remove(this.hoverHex);
       this.hoverHex.geometry.dispose();
       this.hoverHex = null;
+    }
+
+    if (this.outlineModel) {
+      this.scene.remove(this.outlineModel);
+      this.outlineModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material) => material.dispose());
+          } else if (child.material) {
+            child.material.dispose();
+          }
+        }
+      });
+      this.outlineModel = null;
     }
 
     this.isVisible = false;
