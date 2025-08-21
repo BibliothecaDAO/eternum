@@ -103,11 +103,25 @@ export class WorldUpdateListener {
 
               // Use sequential update processing to prevent race conditions
               const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
+                // Try to get the structure owner ID from ExplorerTroops component
+                let structureOwnerId: ID | undefined;
+                try {
+                  const explorerTroops = getComponentValue(
+                    this.setup.components.ExplorerTroops,
+                    getEntityIdFromKeys([BigInt(currentState.occupier_id)])
+                  );
+                  structureOwnerId = explorerTroops?.owner;
+                  console.log(`[DEBUG] Found structure owner ID ${structureOwnerId} for army ${currentState.occupier_id}`);
+                } catch (error) {
+                  console.warn(`[DEBUG] Could not get structure owner for army ${currentState.occupier_id}:`, error);
+                }
+
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
                   currentState.occupier_id,
                   explorer,
                   currentArmiesTick,
+                  structureOwnerId,
                 );
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);

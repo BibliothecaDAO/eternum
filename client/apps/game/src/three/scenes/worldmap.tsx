@@ -57,12 +57,12 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
-import { MemoryMonitor } from "../utils/memory-monitor";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { MemoryMonitor } from "../utils/memory-monitor";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -281,6 +281,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
+
       this.updateArmyHexes(update);
 
       // Ensure army spawn location is marked as explored for pathfinding
@@ -301,6 +302,8 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+
+      
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
