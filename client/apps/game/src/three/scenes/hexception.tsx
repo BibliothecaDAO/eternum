@@ -814,7 +814,9 @@ export default class HexceptionScene extends HexagonScene {
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
           this.pillars!.setMatrixAt(index + pillarOffset, matrix);
-          this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[biome as BiomeType]);
+          // Use base biome type for color lookup (remove 'Alt' suffix if present)
+          const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
+          this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
         });
         pillarOffset += matrices.length;
         this.pillars!.position.y = -0.01;
