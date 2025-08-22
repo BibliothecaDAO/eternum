@@ -82,4 +82,44 @@ export class HighlightHexManager {
   setYOffset(yOffset: number) {
     this.yOffset = yOffset;
   }
+
+  public dispose(): void {
+    console.log("🧹 HighlightHexManager: Starting disposal");
+    
+    let meshesDisposed = 0;
+    
+    // Dispose all highlighted hex meshes
+    this.highlightedHexes.forEach((mesh) => {
+      // Remove from scene
+      if (mesh.parent) {
+        mesh.parent.remove(mesh);
+      }
+      
+      // Dispose geometry
+      if (mesh.geometry) {
+        mesh.geometry.dispose();
+      }
+      
+      // Dispose material (these are cloned materials that need disposal)
+      if (mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat) => mat.dispose());
+        } else {
+          mesh.material.dispose();
+        }
+      }
+      
+      meshesDisposed++;
+    });
+    
+    // Clear the array
+    this.highlightedHexes = [];
+    
+    // Dispose the base material if it exists
+    if (this.material) {
+      this.material.dispose();
+    }
+    
+    console.log(`🧹 HighlightHexManager: Disposed ${meshesDisposed} meshes and materials`);
+  }
 }

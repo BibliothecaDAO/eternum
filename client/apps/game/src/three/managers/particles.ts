@@ -109,4 +109,31 @@ export class Particles {
 
     this.points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
   }
+
+  public dispose(): void {
+    console.log("🧹 Particles: Starting disposal");
+    
+    // Remove from scene
+    if (this.points.parent) {
+      this.points.parent.remove(this.points);
+    }
+    if (this.light.parent) {
+      this.light.parent.remove(this.light);
+    }
+    
+    // Dispose geometry and material
+    if (this.points.geometry) {
+      this.points.geometry.dispose();
+    }
+    if (this.points.material) {
+      (this.points.material as THREE.PointsMaterial).dispose();
+    }
+    
+    // Clear arrays
+    this.pointsPositions = new Float32Array();
+    this.particleVelocities = new Float32Array(); 
+    this.particleAngles = new Float32Array();
+    
+    console.log("🧹 Particles: Disposed geometry, material, and cleaned up");
+  }
 }

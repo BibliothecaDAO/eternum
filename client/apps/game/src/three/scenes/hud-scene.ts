@@ -16,6 +16,7 @@ export default class HUDScene {
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
   private rainEffect!: RainEffect;
+  private navigationTargetUnsubscribe: (() => void) | null = null;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
@@ -42,7 +43,8 @@ export default class HUDScene {
     this.rainEffect = new RainEffect(this.scene);
     this.rainEffect.addGUIControls(this.GUIFolder);
 
-    useUIStore.subscribe(
+    // Store subscription reference for cleanup
+    this.navigationTargetUnsubscribe = useUIStore.subscribe(
       (state) => state.navigationTarget,
       (target) => {
         const currentTarget = this.navigator.getNavigationTarget();
@@ -125,6 +127,13 @@ export default class HUDScene {
   }
 
   public destroy(): void {
+    // CRITICAL: Unsubscribe from store to prevent memory leaks
+    if (this.navigationTargetUnsubscribe) {
+      this.navigationTargetUnsubscribe();
+      this.navigationTargetUnsubscribe = null;
+      console.log("🧹 HUDScene: Unsubscribed from navigationTarget store");
+    }
+
     // Clean up navigator (if it has a destroy method)
     if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
       (this.navigator as any).destroy();

@@ -39,6 +39,12 @@ export default class InstancedModel {
   private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
   timeOffsets: Float32Array;
+  
+  // Animation optimization
+  private lastAnimationUpdate = 0;
+  private animationUpdateInterval = 1000 / 20; // 20 FPS for animations
+  private lastWonderUpdate = 0;
+  private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.name = name;
@@ -113,15 +119,18 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
-        this.mixer = new AnimationMixer(gltf.scene);
-        this.animation = gltf.animations[0];
-
         tmp.count = 0;
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
         this.biomeMeshes.push(biomeMesh);
       }
     });
+
+    // Create mixer once, outside the loop to prevent memory leaks
+    if (gltf.animations.length > 0) {
+      this.mixer = new AnimationMixer(gltf.scene);
+      this.animation = gltf.animations[0];
+    }
   }
 
   getCount(): number {
@@ -209,8 +218,17 @@ export default class InstancedModel {
       return;
     }
 
+    const now = performance.now();
+    
+    // Frame limit animation updates to reduce GPU load
+    if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+      return;
+    }
+
     if (this.mixer && this.animation) {
-      const time = performance.now() * 0.001;
+      const time = now * 0.001;
+      let needsUpdate = false;
+      
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         if (!mesh.animated) return;
         if (!this.animationActions.has(meshIndex)) {
@@ -221,16 +239,24 @@ export default class InstancedModel {
         const action = this.animationActions.get(meshIndex)!;
         action.play();
 
+        // Batch morph updates instead of doing them individually
         for (let i = 0; i < mesh.count; i++) {
           this.mixer!.setTime(time + this.timeOffsets[i]);
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
+        
+        // Only set needsUpdate once per mesh instead of every frame
         mesh.morphTexture!.needsUpdate = true;
+        needsUpdate = true;
       });
+
+      if (needsUpdate) {
+        this.lastAnimationUpdate = now;
+      }
     }
 
-    if (this.name === "wonder") {
-      // Add rotation.y animation for individual instances of wonder model
+    // Wonder rotation with its own frame limiting
+    if (this.name === "wonder" && (now - this.lastWonderUpdate >= this.wonderUpdateInterval)) {
       const rotationSpeed = 1; // Adjust speed as needed
 
       this.instancedMeshes.forEach((mesh) => {
@@ -251,6 +277,8 @@ export default class InstancedModel {
         // Update the instance matrix
         mesh.instanceMatrix.needsUpdate = true;
       });
+      
+      this.lastWonderUpdate = now;
     }
   }
 
@@ -258,7 +286,7 @@ export default class InstancedModel {
     // Dispose of animation mixer
     if (this.mixer) {
       this.mixer.stopAllAction();
-
+      this.mixer.uncacheRoot(this.mixer.getRoot());
       this.mixer = null;
     }
 
