@@ -26,6 +26,7 @@ export default class InstancedModel {
     let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
+        const isAlt = name.toLowerCase().includes("alt");
         if (name.toLowerCase().includes("deepocean") && child.material) {
           child.material.transparent = false;
         }
