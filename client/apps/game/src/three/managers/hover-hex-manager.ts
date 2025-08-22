@@ -19,7 +19,7 @@ export class HoverHexManager {
     this.scene = scene;
     this.createHoverHex();
     this.loadOutlineModel();
-    this.startAnimation();
+    // Don't start animation immediately - only when hover becomes visible
   }
 
   private createHoverHex(): void {
@@ -55,18 +55,37 @@ export class HoverHexManager {
   }
 
   private startAnimation(): void {
+    // Only start animation loop if not already running and visible
+    if (this.animationId !== null || !this.isVisible) {
+      return;
+    }
+
     const animate = (currentTime: number) => {
+      // Exit if no longer visible
+      if (!this.isVisible) {
+        this.stopAnimation();
+        return;
+      }
+
       const deltaTime = (currentTime - this.lastTime) * 0.001; // Convert to seconds
       this.lastTime = currentTime;
 
-      if (this.isVisible && deltaTime > 0) {
+      if (deltaTime > 0) {
         updateHoverHexMaterial(deltaTime);
       }
 
       this.animationId = requestAnimationFrame(animate);
     };
 
+    this.lastTime = performance.now();
     this.animationId = requestAnimationFrame(animate);
+  }
+
+  private stopAnimation(): void {
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
   }
 
   /**
@@ -91,6 +110,8 @@ export class HoverHexManager {
       }
 
       this.isVisible = true;
+      // Start animation when hover becomes visible
+      this.startAnimation();
     }
   }
 
@@ -109,6 +130,8 @@ export class HoverHexManager {
     }
 
     this.isVisible = false;
+    // Stop animation when hover is hidden
+    this.stopAnimation();
   }
 
   /**
@@ -138,10 +161,7 @@ export class HoverHexManager {
    * Clean up resources
    */
   public dispose(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
+    this.stopAnimation();
 
     if (this.hoverHex) {
       this.scene.remove(this.hoverHex);

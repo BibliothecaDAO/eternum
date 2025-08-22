@@ -436,6 +436,27 @@ export default class HexceptionScene extends HexagonScene {
       this.structureUpdateSubscription = null;
     }
 
+    // CRITICAL: Clean up animation mixers to prevent memory leaks
+    console.log("🧹 Disposing animation mixers:", this.buildingMixers.size);
+    this.buildingMixers.forEach((mixer, key) => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(mixer.getRoot());
+      console.log(`  ✅ Disposed mixer: ${key}`);
+    });
+    this.buildingMixers.clear();
+
+    // Clean up mines materials
+    console.log("🧹 Disposing mines materials:", this.minesMaterials.size);
+    this.minesMaterials.forEach((material, resourceId) => {
+      material.dispose();
+      console.log(`  ✅ Disposed material for resource: ${resourceId}`);
+    });
+    this.minesMaterials.clear();
+
+    // Clean up building instances
+    this.buildingInstances.clear();
+    this.wonderInstances.clear();
+
     // Clean up input manager event listeners
     this.inputManager.destroy();
 
@@ -827,6 +848,17 @@ export default class HexceptionScene extends HexagonScene {
       this.pillars!.instanceMatrix.needsUpdate = true;
       this.pillars!.instanceColor!.needsUpdate = true;
       this.interactiveHexManager.renderAllHexes();
+
+      // CRITICAL: Release all matrices back to the pool to prevent memory leaks
+      const matrixPool = MatrixPool.getInstance();
+      let totalMatricesReleased = 0;
+      for (const [biome, matrices] of Object.entries(biomeHexes)) {
+        matrixPool.releaseAll(matrices);
+        totalMatricesReleased += matrices.length;
+        // Clear the array to prevent accidental reuse of released matrices
+        matrices.length = 0;
+      }
+      console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
     });
   }
 
@@ -863,9 +895,20 @@ export default class HexceptionScene extends HexagonScene {
       this.wonderInstances.delete(wonderKey);
     }
 
-    // Remove any mixers
-    this.buildingMixers.delete(key);
-    this.buildingMixers.delete(wonderKey);
+    // Properly dispose of mixers before removing
+    const mixer = this.buildingMixers.get(key);
+    if (mixer) {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(mixer.getRoot());
+      this.buildingMixers.delete(key);
+    }
+    
+    const wonderMixer = this.buildingMixers.get(wonderKey);
+    if (wonderMixer) {
+      wonderMixer.stopAllAction();
+      wonderMixer.uncacheRoot(wonderMixer.getRoot());
+      this.buildingMixers.delete(wonderKey);
+    }
   }
 
   computeHexMatrices = (
@@ -1012,9 +1055,20 @@ export default class HexceptionScene extends HexagonScene {
       this.wonderInstances.delete(wonderKey);
     }
 
-    // Remove any mixers
-    this.buildingMixers.delete(key);
-    this.buildingMixers.delete(wonderKey);
+    // Properly dispose of mixers before removing
+    const mixer = this.buildingMixers.get(key);
+    if (mixer) {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(mixer.getRoot());
+      this.buildingMixers.delete(key);
+    }
+    
+    const wonderMixer = this.buildingMixers.get(wonderKey);
+    if (wonderMixer) {
+      wonderMixer.stopAllAction();
+      wonderMixer.uncacheRoot(wonderMixer.getRoot());
+      this.buildingMixers.delete(wonderKey);
+    }
   }
 
   private selectNextStructure() {

@@ -80,9 +80,17 @@ export const hoverHexMaterial = new ShaderMaterial({
   blending: 1, // NormalBlending instead of AdditiveBlending
 });
 
+// Frame limiting for shader animation
+let lastShaderUpdate = 0;
+const SHADER_UPDATE_INTERVAL = 1000 / 30; // 30 FPS max for shader animation
+
 /**
- * Update the hover hex material animation
+ * Update the hover hex material animation with frame limiting
  */
 export function updateHoverHexMaterial(deltaTime: number) {
-  hoverHexMaterial.uniforms.time.value += deltaTime;
+  const now = performance.now();
+  if (now - lastShaderUpdate >= SHADER_UPDATE_INTERVAL) {
+    hoverHexMaterial.uniforms.time.value += deltaTime;
+    lastShaderUpdate = now;
+  }
 }

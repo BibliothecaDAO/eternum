@@ -4,8 +4,21 @@ import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
 import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { AnimationMixer } from "three";
+import {
+  AnimationAction,
+  AnimationMixer,
+  Color,
+  Euler,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  Object3D,
+  Raycaster,
+  Scene,
+  Vector3,
+} from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import {
   ANIMATION_STATE_IDLE,
@@ -16,14 +29,14 @@ import {
 } from "../constants";
 import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
 import { getHexForWorldPosition } from "../utils";
-import { MemoryMonitor } from "../utils/memory-monitor";
-import { MaterialPool } from "../utils/material-pool";
 import { applyEasing, EasingType } from "../utils/easing";
+import { MaterialPool } from "../utils/material-pool";
+import { MemoryMonitor } from "../utils/memory-monitor";
 
 export class ArmyModel {
   // Core properties
-  private readonly scene: THREE.Scene;
-  private readonly dummyObject: THREE.Object3D;
+  private readonly scene: Scene;
+  private readonly dummyObject: Object3D;
   public readonly loadPromise: Promise<void>;
 
   // Model and instance management
@@ -32,15 +45,15 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
-  private readonly labelsGroup: THREE.Group;
+  private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
 
   // Reusable objects for matrix operations and memory optimization
-  private readonly dummyMatrix: THREE.Matrix4 = new THREE.Matrix4();
-  private readonly dummyEuler: THREE.Euler = new THREE.Euler();
-  private readonly tempVector1: THREE.Vector3 = new THREE.Vector3();
-  private readonly tempVector2: THREE.Vector3 = new THREE.Vector3();
-  private readonly tempVector3: THREE.Vector3 = new THREE.Vector3();
+  private readonly dummyMatrix: Matrix4 = new Matrix4();
+  private readonly dummyEuler: Euler = new Euler();
+  private readonly tempVector1: Vector3 = new Vector3();
+  private readonly tempVector2: Vector3 = new Vector3();
+  private readonly tempVector3: Vector3 = new Vector3();
 
   // Animation and state management
   private readonly animationStates: Float32Array;
@@ -54,10 +67,10 @@ export class ArmyModel {
   private readonly FLOAT_HEIGHT = 0.5;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
-  private readonly zeroScale = new THREE.Vector3(0, 0, 0);
-  private readonly normalScale = new THREE.Vector3(1, 1, 1);
-  private readonly boatScale = new THREE.Vector3(1, 1, 1);
-  private readonly agentScale = new THREE.Vector3(2, 2, 2);
+  private readonly zeroScale = new Vector3(0, 0, 0);
+  private readonly normalScale = new Vector3(1, 1, 1);
+  private readonly boatScale = new Vector3(1, 1, 1);
+  private readonly agentScale = new Vector3(2, 2, 2);
 
   // agent
   private isAgent: boolean = false;
@@ -76,11 +89,11 @@ export class ArmyModel {
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
-  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group, cameraView?: CameraView) {
+  constructor(scene: Scene, labelsGroup?: Group, cameraView?: CameraView) {
     this.scene = scene;
-    this.dummyObject = new THREE.Object3D();
+    this.dummyObject = new Object3D();
     this.loadPromise = this.loadModels();
-    this.labelsGroup = labelsGroup || new THREE.Group();
+    this.labelsGroup = labelsGroup || new Group();
     this.currentCameraView = cameraView || CameraView.Medium;
 
     // Initialize memory monitor for army model operations
@@ -130,9 +143,9 @@ export class ArmyModel {
   }
 
   private createModelData(gltf: any): ModelData {
-    const group = new THREE.Group();
+    const group = new Group();
     const instancedMeshes: AnimatedInstancedMesh[] = [];
-    const baseMeshes: THREE.Mesh[] = [];
+    const baseMeshes: Mesh[] = [];
 
     this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
     this.scene.add(group);
@@ -157,14 +170,14 @@ export class ArmyModel {
 
   private processGLTFScene(
     gltf: any,
-    group: THREE.Group,
+    group: Group,
     instancedMeshes: AnimatedInstancedMesh[],
-    baseMeshes: THREE.Mesh[],
+    baseMeshes: Mesh[],
   ): void {
     let meshIndex = 0;
 
-    gltf.scene.traverse((child: THREE.Object3D) => {
-      if (child instanceof THREE.Mesh) {
+    gltf.scene.traverse((child: Object3D) => {
+      if (child instanceof Mesh) {
         const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex);
         group.add(instancedMesh);
         instancedMeshes.push(instancedMesh);
@@ -174,14 +187,14 @@ export class ArmyModel {
     });
   }
 
-  private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
+  private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry.clone();
 
     // Handle both single material and material array cases
     const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
     const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
-    const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
+    const instancedMesh = new InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
@@ -189,7 +202,7 @@ export class ArmyModel {
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
-      instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
+      instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
     }
 
     if (animations.length > 0) {
@@ -200,7 +213,7 @@ export class ArmyModel {
     return instancedMesh;
   }
 
-  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: THREE.Mesh, animations: any[]): void {
+  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
     const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
 
     if (hasAnimation) {
@@ -228,10 +241,10 @@ export class ArmyModel {
   public updateInstance(
     entityId: number,
     index: number,
-    position: THREE.Vector3,
-    scale: THREE.Vector3,
-    rotation?: THREE.Euler,
-    color?: THREE.Color,
+    position: Vector3,
+    scale: Vector3,
+    rotation?: Euler,
+    color?: Color,
   ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
@@ -252,7 +265,7 @@ export class ArmyModel {
     });
   }
 
-  private updateInstanceTransform(position: THREE.Vector3, scale: THREE.Vector3, rotation?: THREE.Euler): void {
+  private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
     this.dummyObject.position.copy(position);
     this.dummyObject.position.y += 0.15;
     this.dummyObject.scale.copy(scale);
@@ -262,7 +275,7 @@ export class ArmyModel {
     this.dummyObject.updateMatrix();
   }
 
-  private updateInstanceMeshes(modelData: ModelData, index: number, color?: THREE.Color): void {
+  private updateInstanceMeshes(modelData: ModelData, index: number, color?: Color): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
       mesh.instanceMatrix.needsUpdate = true;
@@ -336,10 +349,7 @@ export class ArmyModel {
     return modelData.animationActions.get(instanceIndex)!;
   }
 
-  private updateAnimationState(
-    actions: { idle: THREE.AnimationAction; moving: THREE.AnimationAction },
-    state: number,
-  ): void {
+  private updateAnimationState(actions: { idle: AnimationAction; moving: AnimationAction }, state: number): void {
     if (state === ANIMATION_STATE_IDLE) {
       actions.idle.setEffectiveTimeScale(1);
       actions.moving.setEffectiveTimeScale(0);
@@ -354,7 +364,7 @@ export class ArmyModel {
   // Movement Methods
   public startMovement(
     entityId: number,
-    path: THREE.Vector3[],
+    path: Vector3[],
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
@@ -379,17 +389,17 @@ export class ArmyModel {
 
   private initializeMovement(
     entityId: number,
-    currentPos: THREE.Vector3,
-    nextPos: THREE.Vector3,
-    path: THREE.Vector3[],
+    currentPos: Vector3,
+    nextPos: Vector3,
+    path: Vector3[],
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
   ): void {
     this.instanceData.set(entityId, {
       entityId,
-      position: new THREE.Vector3().copy(currentPos), // Create once per army
-      scale: new THREE.Vector3().copy(this.normalScale), // Create once per army
+      position: new Vector3().copy(currentPos), // Create once per army
+      scale: new Vector3().copy(this.normalScale), // Create once per army
       isMoving: true,
       path,
       category,
@@ -403,8 +413,8 @@ export class ArmyModel {
       this.dummyEuler.setFromRotationMatrix(this.dummyMatrix);
 
       this.movingInstances.set(entityId, {
-        startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
-        endPos: new THREE.Vector3().copy(nextPos), // Create once per movement
+        startPos: new Vector3().copy(currentPos), // Create once per movement
+        endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -414,8 +424,8 @@ export class ArmyModel {
       });
     } else {
       this.movingInstances.set(entityId, {
-        startPos: new THREE.Vector3().copy(currentPos), // Create once per movement
-        endPos: new THREE.Vector3().copy(nextPos), // Create once per movement
+        startPos: new Vector3().copy(currentPos), // Create once per movement
+        endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         matrixIndex,
         currentPathIndex: 0,
@@ -568,11 +578,11 @@ export class ArmyModel {
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
   }
 
-  private updateInstanceDirection(entityId: number, fromPos: THREE.Vector3, toPos: THREE.Vector3): void {
+  private updateInstanceDirection(entityId: number, fromPos: Vector3, toPos: Vector3): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
+    const direction = new Vector3().subVectors(toPos, fromPos).normalize();
     const baseAngle = Math.atan2(direction.x, direction.z);
 
     movement.targetRotation = baseAngle;
@@ -581,12 +591,7 @@ export class ArmyModel {
     }
   }
 
-  private updateModelTypeForPosition(
-    entityId: number,
-    position: THREE.Vector3,
-    category: TroopType,
-    tier: TroopTier,
-  ): void {
+  private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
     const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
 
@@ -652,8 +657,8 @@ export class ArmyModel {
     }
 
     this.movingInstances.set(entityId, {
-      startPos: new THREE.Vector3().copy(instanceData.position), // Create once for descent
-      endPos: new THREE.Vector3().copy(instanceData.position), // Create once for descent
+      startPos: new Vector3().copy(instanceData.position), // Create once for descent
+      endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
       matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
@@ -764,7 +769,7 @@ export class ArmyModel {
     }
   }
 
-  private updateLabelPosition(entityId: number, position: THREE.Vector3): void {
+  private updateLabelPosition(entityId: number, position: Vector3): void {
     const labelData = this.labels.get(entityId);
     if (labelData) {
       labelData.label.position.copy(position);
@@ -839,8 +844,8 @@ export class ArmyModel {
     });
   }
 
-  public raycastAll(raycaster: THREE.Raycaster): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> = [];
+  public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
+    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }> = [];
 
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
@@ -858,9 +863,9 @@ export class ArmyModel {
   }
 
   private sortRaycastResults(
-    results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }>,
-    raycaster: THREE.Raycaster,
-  ): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
+    results: Array<{ instanceId: number | undefined; mesh: InstancedMesh }>,
+    raycaster: Raycaster,
+  ): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
     return results.sort((a, b) => {
       const intersectsA = raycaster.intersectObject(a.mesh);
       const intersectsB = raycaster.intersectObject(b.mesh);

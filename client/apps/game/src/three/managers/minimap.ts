@@ -961,6 +961,43 @@ class Minimap {
       this.draw();
     }
   };
+
+  public dispose(): void {
+    console.log("🧹 Minimap: Starting disposal");
+
+    // Remove all event listeners
+    if (this.canvas) {
+      this.canvas.removeEventListener("mousedown", this.handleMouseDown);
+      this.canvas.removeEventListener("mousemove", this.handleMouseMove);
+      this.canvas.removeEventListener("mouseup", this.handleMouseUp);
+      this.canvas.removeEventListener("wheel", this.handleWheel);
+      this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
+    }
+
+    // Clear all cached data
+    this.scaledCoords.clear();
+
+    // Dispose label images
+    let imagesDisposed = 0;
+    this.labelImages.forEach((image, key) => {
+      // Set src to empty to help with garbage collection
+      image.src = "";
+      imagesDisposed++;
+    });
+    this.labelImages.clear();
+
+    // Clear canvas context if exists
+    if (this.context) {
+      this.context.clearRect(0, 0, this.canvas?.width || 0, this.canvas?.height || 0);
+    }
+
+    // Reset references
+    this.canvas = null as any;
+    this.context = null as any;
+    this.hoveredHexCoords = null;
+
+    console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
+  }
 }
 
 export default Minimap;

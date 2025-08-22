@@ -18,15 +18,15 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import * as THREE from "three";
+import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
+import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
-import { MemoryMonitor } from "../utils/memory-monitor";
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -51,16 +51,16 @@ interface AddArmyParams {
 }
 
 export class ArmyManager {
-  private scene: THREE.Scene;
+  private scene: Scene;
   private armyModel: ArmyModel;
   private armies: Map<ID, ArmyData> = new Map();
-  private scale: THREE.Vector3;
+  private scale: Vector3;
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private labelsGroup: THREE.Group;
+  private labelsGroup: Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
@@ -78,12 +78,12 @@ export class ArmyManager {
   private memoryMonitor: MemoryMonitor;
 
   // Reusable objects for memory optimization
-  private readonly tempPosition: THREE.Vector3 = new THREE.Vector3();
+  private readonly tempPosition: Vector3 = new Vector3();
 
   constructor(
-    scene: THREE.Scene,
+    scene: Scene,
     renderChunkSize: { width: number; height: number },
-    labelsGroup?: THREE.Group,
+    labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
@@ -91,11 +91,11 @@ export class ArmyManager {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
-    this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
+    this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
-    this.labelsGroup = labelsGroup || new THREE.Group();
+    this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
@@ -221,7 +221,7 @@ export class ArmyManager {
     this.cleanupTimeout = setTimeout(cleanup, 60000);
   }
 
-  public onMouseMove(raycaster: THREE.Raycaster) {
+  public onMouseMove(raycaster: Raycaster) {
     const intersectResults = this.armyModel.raycastAll(raycaster);
     if (intersectResults.length > 0) {
       const { instanceId, mesh } = intersectResults[0];
@@ -232,7 +232,7 @@ export class ArmyManager {
     return undefined;
   }
 
-  public onRightClick(raycaster: THREE.Raycaster) {
+  public onRightClick(raycaster: Raycaster) {
     const intersectResults = this.armyModel.raycastAll(raycaster);
     if (intersectResults.length === 0) return;
 
@@ -343,8 +343,8 @@ export class ArmyManager {
         currentCount,
         position,
         this.scale,
-        new THREE.Euler(0, randomRotation, 0),
-        new THREE.Color(army.color),
+        new Euler(0, randomRotation, 0),
+        new Color(army.color),
       );
 
       this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
@@ -714,7 +714,7 @@ export class ArmyManager {
     });
   }
 
-  private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
+  private async addEntityIdLabel(army: ArmyData, position: Vector3) {
     // Create label using centralized function
     const labelDiv = createArmyLabel(army, this.currentCameraView);
 
