@@ -1435,7 +1435,7 @@
     "startSettlingAfterSeconds": 59,
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
-    "startMainAt": 1755783000,
+    "startMainAt": 1755837000,
     "durationSeconds": 7200,
     "bridgeCloseAfterEndSeconds": 604800,
     "pointRegistrationCloseAfterEndSeconds": 604800
@@ -1759,8 +1759,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x685ed02eefa98fe7e208aa295042e9bbad8029b0d3d6f0ba2b32546efe0a1f9",
-        "address": "0x1babc7f10c213b38eb7e5b86470193ff5026e555e2cf166dc7c5d399cb161fb",
-        "seed": "s1_eternum_slot_1755774137",
+        "address": "0x3657088693149e731e02f74f37956ba7a849ec43c82984374ae988c6a7eeb9d",
+        "seed": "s1_eternum_slot_1755828103",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3086,8 +3086,8 @@
       },
       "contracts": [
         {
-          "address": "0x15473c835096e15b5eda3cec064cf1db63808b5207f7d94cc930d4f548ba80c",
-          "class_hash": "0x11bdc41a74dd6f9fe46d47d5c3bfd8259c335e97d52b7a5200202b8b0bb1c88",
+          "address": "0x1b286627fc5f674a1b0a1e9f74f79d1ec14eb7bc66f8dab3219bfef4d1b686d",
+          "class_hash": "0x4ff1142c70e5363e2832480f1d3ca823a4521226ce28a68a0ce871c5e2afe7",
           "abi": [
             {
               "type": "impl",
@@ -3362,7 +3362,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -3433,7 +3433,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -3563,7 +3563,7 @@
           ]
         },
         {
-          "address": "0x6d2bef851bb7bdff6d98ddacef4c9791729c34ca53aea3e17ac51954dfc2cc8",
+          "address": "0x61e21ed7f13267f8d54d73fe330d6255422de307fee13f28231d9aafc970abf",
           "class_hash": "0xefc5e5fdeba6295e9cb5686a8cd4dc99015865732b0b6e7e34e7a520f5d8a",
           "abi": [
             {
@@ -3815,8 +3815,8 @@
           ]
         },
         {
-          "address": "0xe4fab8fc98a6c69ad7a0bbef419932bf26c8666f742b31352fa308a06f9be8",
-          "class_hash": "0x2a0f6a67dfb57ba35a107dd976d8c21a1f836914a7b79c30cd57d94e17344e",
+          "address": "0x651aac78122f15562b7318fc3be6cbbe3153273aaa15e089436bd708148b5bc",
+          "class_hash": "0x4df2afa830b2d9b006a7c6ba42e4be2b132480bfc11da02b081c7aa69423dec",
           "abi": [
             {
               "type": "impl",
@@ -4044,7 +4044,7 @@
           ]
         },
         {
-          "address": "0x3fdfb1733de4226b1bb88fad4baa816166e3d3468ab161f7da4e0edf1fcd5b6",
+          "address": "0xa3feace75c380ceb54dcff74c1bf24a74fafd9dc22313dee48511a5b59f736",
           "class_hash": "0x348c04e329dfe7550e47f680df5d5ff09f2eabe723cfbf0f11fdf928e4ca7e9",
           "abi": [
             {
@@ -5774,7 +5774,7 @@
           ]
         },
         {
-          "address": "0x2a5f5a7e125ddfc60e03fdbb7ef6ed63516821b4935a0f90cb3818c0f9398e6",
+          "address": "0x2a3433370d2b38ec966e32ccc0c303a60473478f89c7ca596a7ed05a44e2843",
           "class_hash": "0x2663273e8efaec0428712dcc9b2da7eaae75acf094f3bd9ea5a50ae5cadcb0",
           "abi": [
             {
@@ -5988,7 +5988,7 @@
           ]
         },
         {
-          "address": "0x1e8d0801c050a6af4cc42b1599fc55987859c0afa0e40260708bc31701b9068",
+          "address": "0x28e952af7e89034ad98958ebe28fdf1896d6613a918dee88593bbb1a0219b3f",
           "class_hash": "0x6afe60ae074a244fd471f58e1d08c6b51fd582c488b485a45d0f43693ab1361",
           "abi": [
             {
@@ -7074,7 +7074,7 @@
           ]
         },
         {
-          "address": "0x33e04d1e785b02d01a8ab8a9c266c91776132b5385e2de5ac21b6cc48e7bf05",
+          "address": "0x5a942104e2c50e7b0f8c50d955283811c49fa8f4dcabe32bd205f16c221a3c9",
           "class_hash": "0xe75e0be0534d714f3803f5ed3989f9f90b2e4ac65e49f127d3073c3aa5abc3",
           "abi": [
             {
@@ -7343,8 +7343,8 @@
           ]
         },
         {
-          "address": "0x79d7664ab96a8112452be64e66121d50ba9725ae9976e7debba9eff6287f127",
-          "class_hash": "0x5a914ac3cb12f1c0327ef07830187c3ca95b61151d3486b663ca873c564f7d1",
+          "address": "0x26f3ddf5b8b5d5262a2c6c186cec1ee3c336d9cc5a8a7fa9e911729b757ed88",
+          "class_hash": "0x1cd9d26b89d8672a7d86bbf2da9d99f3101f5db73b695d2577a7aedde817240",
           "abi": [
             {
               "type": "impl",
@@ -7619,7 +7619,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -7690,7 +7690,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -7820,7 +7820,7 @@
           ]
         },
         {
-          "address": "0x2656663f16e3a976093c4bfd1ed7c09d403d0c8d554839cd69dda459180a58a",
+          "address": "0x5aec663835801b925bcd54f20a6be5984b1809e61d475dc5ebb98124980e2ad",
           "class_hash": "0x4ef331a97e12b82f8f0c17e906d0824dc1d527c379f46a4c0d4c96f7ec79c4e",
           "abi": [
             {
@@ -8136,8 +8136,8 @@
           ]
         },
         {
-          "address": "0x68cbdd7d186ee610c7738b3c3fa1d8373d4902dcb2bb85a91e91b8ad67e30b0",
-          "class_hash": "0x73ff2caa400fbaa7b24a125e1b49c395d50aeaccb2b12c774aee4cbc48666a2",
+          "address": "0x1010cec600d0a68697faa42deb53896060cce243af494f41dc901535bf3ff8e",
+          "class_hash": "0x6faee4a8929a4159bb1abcdf92dcaa0b0133cc5a4b624b7e6eb57afd97c274c",
           "abi": [
             {
               "type": "impl",
@@ -8377,8 +8377,8 @@
           ]
         },
         {
-          "address": "0x7b6f3444855aafe44d445c30a8dcb612390dd9066b9ba78b1c745266d71277",
-          "class_hash": "0x377be829016949eb04371979bff29355d3dcaba61d6cdf99eacf7e5e81945a4",
+          "address": "0x7e48ed69a0f1d7de540836d79cca9487f5ec6875084ed97732ceecf77e0e3eb",
+          "class_hash": "0x890b4deeb988569132de5b20117cf0732ccfef77025a1b8a991295ba9707f3",
           "abi": [
             {
               "type": "impl",
@@ -8653,7 +8653,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -8724,7 +8724,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -8854,7 +8854,7 @@
           ]
         },
         {
-          "address": "0x73a6924cc06cdddd35892a51ed6d5e173be5f6252f634480a2ecf041cd6d4",
+          "address": "0x670aeb5553aef6d9a4f2c92fd2bf7405cee2b2402d0bcaf8750cef8c9a888",
           "class_hash": "0x41541d203da748f2560233cf12eecc653595d4c43cce7251ea904467569a206",
           "abi": [
             {
@@ -9054,7 +9054,7 @@
           ]
         },
         {
-          "address": "0x69a36ef4768418def4a5831a46e01c2af0bb6417baaa5ca5b094e75b910c64f",
+          "address": "0x17ea0d363524b520783aa1f2a9813273a02f28c961002b22affbf4cdba79249",
           "class_hash": "0x3583d4bd19b1cbc957a8111d2168a4d4e2d3db146bdea0e23cd9cda8a90edcc",
           "abi": [
             {
@@ -9275,8 +9275,8 @@
           ]
         },
         {
-          "address": "0x4854b7982516f3bea18f332a699a715f8f16d161c257e59c782acc278b1dbc",
-          "class_hash": "0x3c0d4aa6624b117f563a9ef0ac0d568cab54a158a61c18d12c1c7bd42195d73",
+          "address": "0x6633d7e4e25eb03db344b41023d523775ac87413d1aa7d45be15202ec5e9125",
+          "class_hash": "0x6021da67e177a01307e9cc9f9ef6a036d05c5c677c3264dd0c419fdba8e9cbc",
           "abi": [
             {
               "type": "impl",
@@ -9872,7 +9872,7 @@
           ]
         },
         {
-          "address": "0x4b7b022dd2d0776a57b67eb8ae32456e73d8b5974cc3a86b5449f18b78c9075",
+          "address": "0x18bad55fa7cfaa5cb602883fc5bb1f2fef69a6660c7fe6074385aa96d24d527",
           "class_hash": "0x8371df986f1460f88a0115da045589a8456f7b6a0e3aefbf9426f86ec93264",
           "abi": [
             {
@@ -10453,8 +10453,8 @@
           ]
         },
         {
-          "address": "0x6511b54e6049ddc32d9ead2056928e920b25f785ff6d20d1a29e95b8cd7991e",
-          "class_hash": "0x2efcb475115d995cf9ed2c60ace7ddaaf1da91415b1acbb09cb97a5b9227a89",
+          "address": "0x4312d9d49747e29114f398eaa0f1a5c40abd2e8abf237c784d71e547b2b79dc",
+          "class_hash": "0x45cca9df06d9c43b978645ab0f20a13f33fce817ed20f05600c40f865962763",
           "abi": [
             {
               "type": "impl",
@@ -10709,8 +10709,8 @@
           ]
         },
         {
-          "address": "0x1122471893a4c1a7feea4ffad18803bc71f1619d183002ac010651f564fe9e1",
-          "class_hash": "0x347a15a8c3c7eef5758102d46a28254de696936a0bc03ad5d4c872b38bf8ef1",
+          "address": "0x59c2a640a5c1518772b2f6633a6a731d267df7bb007fc79ec4d2c18694ab230",
+          "class_hash": "0x10ee7fe5208745ccb5847581ea54569a61a4f90254bda3f4f147f469400b516",
           "abi": [
             {
               "type": "impl",
@@ -10943,8 +10943,8 @@
           ]
         },
         {
-          "address": "0x401b6ee5440a9039a305768eb140c5cc443825a9766111c8d3bf0dca7a7678b",
-          "class_hash": "0x431e12723dfe860ae2eac12d0979e620c0baaf0f95dc595fbf041e01877f84a",
+          "address": "0x20b89f9953448ecd19ff564420919da63cf67e3ac9da4eba765ef6f64564903",
+          "class_hash": "0x2473eddb16f17facdf344a63e4a9be85629c7aebf9c3badd4b01d488d6c7f97",
           "abi": [
             {
               "type": "impl",
@@ -11219,7 +11219,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -11290,7 +11290,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -11420,7 +11420,7 @@
           ]
         },
         {
-          "address": "0x235311c6d29ce424ed3d52bb0129230ededfee8a71c6d8ae99ebdd44ef86196",
+          "address": "0x796c0c4cedebb3389eb47118a5033d5b3d9fbdd5382cc77e006b824aabe9ca8",
           "class_hash": "0xfba05beab0072deb6b2a53338a61476a7d47ce2eea6b068f23f334845146a8",
           "abi": [
             {
@@ -11677,8 +11677,8 @@
           ]
         },
         {
-          "address": "0x2ea38d92ae793fb24d4091602dc4526e09f0797c79f98c8c916eba0cfb95b23",
-          "class_hash": "0x22ff6a0a7447e23d4ca46aa82f326ed8defd932b3d1e6b8ed0c639c1932a409",
+          "address": "0x7cb2225967bdb64c8c6f7d3ca956b40a391387dea030ccabe1b1df761caaba4",
+          "class_hash": "0x33fac665be32acf59cfb02b667f9fc135439310eb5175d0a1695c424e1317ce",
           "abi": [
             {
               "type": "impl",
@@ -11965,8 +11965,8 @@
           ]
         },
         {
-          "address": "0x214933c192f7bb5bd8d0a97d9356230dc3035884ecebbf07195e5bea78fea56",
-          "class_hash": "0x1086685c4f9591fa50ed7e3a0ca34ae264250bb698fcfb79238bb5bae6715e5",
+          "address": "0x7641f14487239ab6e1e7094be68976322e31cda780904e2bd370bf541ca4fdb",
+          "class_hash": "0x1bec1d1f42fa6dc855b66c4af697f8b45683c07bd3868c660642a29727eb6c0",
           "abi": [
             {
               "type": "impl",
@@ -12360,7 +12360,7 @@
           ]
         },
         {
-          "address": "0x27853c08ac058b76acd70397bb6c9cf4018d283d07de10eae7d062ce2b323a3",
+          "address": "0x281a554612b1d0ae887b95a62d2d4c1b66a163f78311c87f71afb56aaf8c8d0",
           "class_hash": "0x67b7e9f31c73553321b847b8d7b7c2c1c30c5e068565b18a0c16f6adf7971f5",
           "abi": [
             {
@@ -12555,8 +12555,8 @@
           ]
         },
         {
-          "address": "0x6b31260e0e7048b92741c840d099cdbbdd9a46b4ae318f33f32d706f81921e8",
-          "class_hash": "0x3a8fe5ef41c3942ab079a8f249820f416faa46761a9355fdc6f5cf06d32c0af",
+          "address": "0x3c2fd0c86c02b33f83aceca6db7ffd7045a6e20319ca43863a0c9631e6b0643",
+          "class_hash": "0x6c75f484d4ae23ab3c94bfb80e4016d35520ccd162b45e9196103f5d3677c67",
           "abi": [
             {
               "type": "impl",
@@ -12755,8 +12755,8 @@
           ]
         },
         {
-          "address": "0x202d13a65d94c607a8edfa3d67b9d4c60ca0482fa6f228bda4e8363a7786808",
-          "class_hash": "0x20bb0dab2ecadeab63f090fe4bf7af0fc5f0401a29040a0c5fae07dbcc01a18",
+          "address": "0x4634bd989f88919e84783467a244589a5e8f805044ec1b656646699786825a8",
+          "class_hash": "0x69c23ceec78fde3a0f9c3e5909fd2f16bf5a3716cba28ba0147ea82ce58264a",
           "abi": [
             {
               "type": "impl",
@@ -12992,7 +12992,7 @@
           ]
         },
         {
-          "address": "0x3905cc6866ebf61e87c497b2ea9be59986d3ad20861ff27da8ed469641c3214",
+          "address": "0x578564feae2b2676bd62f3375f54435dc6f5a397073421697710f4b88439089",
           "class_hash": "0x4450c7782e33cedea6601053ab65d5229487d3ff501025000461a6c435bdebf",
           "abi": [
             {
@@ -13258,8 +13258,8 @@
           ]
         },
         {
-          "address": "0x47d3ddbeab96f081fe585f1564e87fd0ee08048f65ddb9fb21b8c1161014dce",
-          "class_hash": "0x22eee674309358ce1ce2ddaff2864fa8b6f9464024e30ecc54fc55654b6745",
+          "address": "0x557b85b4b705ace0e7261b629a26965bf8abfdab7edefb3c1d1f3c576ff3548",
+          "class_hash": "0x35c2cf81edda1e3fab4729954f18beb29e6209af0974cd6e23d6edd44fe74e5",
           "abi": [
             {
               "type": "impl",
@@ -13578,8 +13578,8 @@
           ]
         },
         {
-          "address": "0x6a6a394f16d7b1f73b2399a4d08f8f2a0924cb377bf27220af2c1de962fa59b",
-          "class_hash": "0x38ad955e5abcf4bb9a45e168ea255130df2914b3bb57f00bb261966fdce6634",
+          "address": "0x17123cbd107d6a6c2fc842db34cbb46ba3a564ed8fc5a4ec05f7335c979765c",
+          "class_hash": "0x7cc970cd80cf99ca34fad0c9a6d7fc69197480bc34f70184801704a13303876",
           "abi": [
             {
               "type": "impl",
@@ -14049,8 +14049,8 @@
           ]
         },
         {
-          "address": "0x254ecfadff694281316ceb374bcce2bdf0107f457ce8a5c96515fa5d86a661b",
-          "class_hash": "0x5e5cb33903ed1cbc2669c6efdc8dac615c8759a38aac874bd86813cbbcbb662",
+          "address": "0x434a9867afd97ab6ded7560f8888df728c5535ac3e5d65a97a68152d7ee0104",
+          "class_hash": "0x39648bd4d07a2d860a6f679d4994d3b31efc9761590fff590b726f3c7aa2b0f",
           "abi": [
             {
               "type": "impl",
@@ -14355,8 +14355,8 @@
           ]
         },
         {
-          "address": "0x1a70c44f31abf4dabf83e1a9f3c1919a3f6f0ea28016eb7711689caebc7ec01",
-          "class_hash": "0x1a7c4db7a0fc5063f862d77a5929c76b7deeaebe94264f654eb0ec95cec67cb",
+          "address": "0xff631ed3537e8af12be2f6b101ec8756a5ba7fbeecb09035053dbbe5da1153",
+          "class_hash": "0xa7af541b099008ccbf149ba2f0a3a28d6ea370b2a613d8f1f5ecd4f8a53ad4",
           "abi": [
             {
               "type": "impl",
@@ -14631,7 +14631,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -14702,7 +14702,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -14832,8 +14832,8 @@
           ]
         },
         {
-          "address": "0x40a9f8074387d13c00cc67d83a79807675eb50c805a98505aa044a8b530f2ba",
-          "class_hash": "0x357e97ee8f710f806e6f7dea1d3174f587dd93be1c53eb3a330055769858285",
+          "address": "0x7414602cf366e2382337cc462707c07c6980f0ecc64c6cf379fcfbbbcb8a730",
+          "class_hash": "0x31468274fae993e3683c78676d9e125a5ebcded8d915d174885edc55a541885",
           "abi": [
             {
               "type": "impl",
@@ -15084,8 +15084,8 @@
           ]
         },
         {
-          "address": "0x71ee10544cfbcbc5f267fd987d0c039971cf3109f044ecc6ca1fcca86da371d",
-          "class_hash": "0x7309b1bdc1813961be1720efb381b8968a0ebf52b06a9b0109836a432304db4",
+          "address": "0x5a9d5f059a0c29b9a2b0b3c1be1c97f13c7bae97a0c6e2b3e108de1569bf615",
+          "class_hash": "0x5131e0c36ae9ede824fabdbfa66f9b72276be99b0a2c39c8ff973fc74228fa2",
           "abi": [
             {
               "type": "impl",
@@ -15360,7 +15360,7 @@
             },
             {
               "type": "enum",
-              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "name": "s1_eternum::models::events::ExploreFind",
               "variants": [
                 {
                   "name": "None",
@@ -15431,7 +15431,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                      "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -15561,8 +15561,8 @@
           ]
         },
         {
-          "address": "0xdcdc1e042039b35f2420bb2c3de5ab0a685a8d3ea20c2dd087dce3a69ec13f",
-          "class_hash": "0x7b932f05e09361edc2f3f5cab08685e44a5619d80384cf66f77c4aea4e14453",
+          "address": "0x3df9509c24ec6f8a529b0763cd657d9dfb7a459f0112ab7e219598bd9bdf7db",
+          "class_hash": "0x4158e73c86620d90a4a065009a8e1dd6dd1a11cad7d6b615216fa77ba87e5e2",
           "abi": [
             {
               "type": "impl",
@@ -16229,12 +16229,6 @@
         },
         {
           "members": [],
-          "class_hash": "0x3381ba1a793e9b006a05637bb2e6368d87ba1629b9c7955c0abc59d6ca93f7d",
-          "tag": "s1_eternum-CreateGuild",
-          "selector": "0x45b5322475ee81006e7e7df176c2f31829e57224ae86ca261738a15ef8c88a7"
-        },
-        {
-          "members": [],
           "class_hash": "0x5904853a7a91b5d15ff6becf6af3fd00a4c89572c50c8a9ec27efc6ae141f50",
           "tag": "s1_eternum-CreateOrder",
           "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
@@ -16247,7 +16241,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x590a6336910a1f87f30ae7d58231c2b75c90e8937e41a809867ce70e673cb1a",
+          "class_hash": "0x1f4874a3931bb2999640bcfb095c98ca039b6f47af01d963a5db9109dddec10",
           "tag": "s1_eternum-ExplorerMoveEvent",
           "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
         },
@@ -16262,12 +16256,6 @@
           "class_hash": "0x15a3085db97ff7e292a7af8492c645c5afd182286d8a653e0c12b4939b42919",
           "tag": "s1_eternum-ExplorerRaidEvent",
           "selector": "0x524ff0171e1bb2aaf232b86a14fcf1f3dc78c1149bab1e87ead801ba9203c0a"
-        },
-        {
-          "members": [],
-          "class_hash": "0x5fbf047fa535f1bb4d1cd446c7fdfd1a0600e8473a2994fc24b85535c470b3b",
-          "tag": "s1_eternum-JoinGuild",
-          "selector": "0x1341888a2238268a519a7c39af6c03489343fe2288ef7f66bea5c1f479cc1e4"
         },
         {
           "members": [],
@@ -16289,9 +16277,9 @@
         },
         {
           "members": [],
-          "class_hash": "0x22dc8f4fb0b3de5f86fd82c6796495016450ff3b00b6396bdf93c32c1112119",
-          "tag": "s1_eternum-SettleRealmData",
-          "selector": "0x7eff418a618f1ecd46303c1e0560094940d883e7ec2edde98bcb002a6e1ccca"
+          "class_hash": "0x40324e851f5c45718f10f2e7aeddf69af4ab00467a309fc1b4ee907a39841ae",
+          "tag": "s1_eternum-StoryEvent",
+          "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
         },
         {
           "members": [],
