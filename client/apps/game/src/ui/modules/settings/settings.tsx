@@ -71,7 +71,7 @@ export const SettingsWindow = () => {
   const [showSettings, setShowSettings] = useState(false);
 
   // Use full audio system for reactive state updates
-  const { setCategoryVolume, setMuted, audioState } = useAudio();
+  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   const { trackName, next: nextTrack } = useMusicPlayer();
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
@@ -348,6 +348,12 @@ export const SettingsWindow = () => {
               </Button>
             </div>
             <div className="space-y-2">
+              <RangeInput
+                value={Math.round((audioState?.masterVolume || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setMasterVolume(value / 100)}
+                title="Master Volume"
+              />
               <RangeInput
                 value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] || 0) * 100)}
                 fromTitle="Mute"
