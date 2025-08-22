@@ -5,89 +5,98 @@ import { useAudio } from "../hooks/useAudio";
 import { AudioCategory } from "../types";
 
 export const useMusicPlayer = () => {
-  const { play, audioState, isReady } = useAudio(); // Use audioState instead of getState
-  const [currentSource, setCurrentSource] = useState<AudioBufferSourceNode | null>(null);
+  const { play, audioState, isReady } = useAudio();
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // Memoize expensive operations
   const availableTracks = useMemo(() => {
     const musicTracks = getAssetsByCategory(AudioCategory.MUSIC);
     const isBlitz = getIsBlitz();
-
     return musicTracks.filter((track) => {
-      if (isBlitz) {
+      if (isBlitz)
         return track.id.includes("blitz") || track.id.includes("order_of") || track.id.includes("light_through");
-      } else {
-        return !track.id.includes("blitz") && !track.id.includes("order_of") && !track.id.includes("light_through");
-      }
+      return !track.id.includes("blitz") && !track.id.includes("order_of") && !track.id.includes("light_through");
     });
-  }, []); // Empty deps - tracks don't change during runtime
-
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(() => {
-    return Math.floor(Math.random() * availableTracks.length);
-  });
-
+  }, []);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(() =>
+    availableTracks.length > 0 ? Math.floor(Math.random() * availableTracks.length) : 0,
+  );
   const currentTrack = availableTracks[currentTrackIndex];
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const requestIdRef = useRef(0);
+  const startPlayRef = useRef<(index: number) => void>(() => {});
 
-  const playTrack = useCallback(
-    async (trackId: string) => {
+  const stopCurrent = useCallback(() => {
+    if (sourceRef.current) {
       try {
-        if (!audioState?.muted && isReady) {
-          const source = await play(trackId, {
-            loop: true,
-            onComplete: () => {
-              setCurrentSource(null);
-              setIsPlaying(false);
-            },
-          });
+        sourceRef.current.stop();
+      } catch {}
+      sourceRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
 
-          if (source) {
-            setCurrentSource(source);
-            setIsPlaying(true);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to play track:", error);
-        setIsPlaying(false);
+  const startPlay = useCallback(
+    async (index: number) => {
+      if (!isReady || audioState?.muted) return;
+      const track = availableTracks[index];
+      if (!track) return;
+      requestIdRef.current += 1;
+      const rid = requestIdRef.current;
+      if (sourceRef.current) {
+        try {
+          sourceRef.current.stop();
+        } catch {}
+        sourceRef.current = null;
       }
+      setCurrentTrackIndex(index);
+      setIsPlaying(false);
+      const source = await play(track.id, {
+        loop: false,
+        onComplete: () => {
+          if (rid !== requestIdRef.current) return;
+          sourceRef.current = null;
+          setIsPlaying(false);
+          const nextIndex = (index + 1) % availableTracks.length;
+          startPlayRef.current(nextIndex);
+        },
+      });
+      if (!source) return;
+      if (rid !== requestIdRef.current) {
+        try {
+          source.stop();
+        } catch {}
+        return;
+      }
+      sourceRef.current = source;
+      setIsPlaying(true);
     },
-    [play, audioState?.muted, isReady],
-  ); // Removed problematic dependencies
+    [isReady, audioState?.muted, availableTracks, play],
+  );
+
+  useEffect(() => {
+    startPlayRef.current = startPlay;
+  }, [startPlay]);
 
   const nextTrack = useCallback(() => {
     const nextIndex = (currentTrackIndex + 1) % availableTracks.length;
-    setCurrentTrackIndex(nextIndex);
-    const nextTrackData = availableTracks[nextIndex];
-    if (nextTrackData && !audioState?.muted && isReady) {
-      play(nextTrackData.id, { loop: true });
-    }
-  }, [currentTrackIndex, availableTracks, audioState?.muted, isReady, play]);
+    startPlayRef.current(nextIndex);
+  }, [currentTrackIndex, availableTracks.length]);
 
-  // Auto-start music when system is ready - simple version
   useEffect(() => {
-    if (isReady && currentTrack && !isPlaying) {
-      playTrack(currentTrack.id);
+    if (isReady && !audioState?.muted && availableTracks.length > 0 && !sourceRef.current) {
+      startPlayRef.current(currentTrackIndex);
     }
-  }, [isReady, currentTrack?.id]); // Remove playTrack dependency to prevent loops
+  }, [isReady, audioState?.muted, availableTracks.length, currentTrackIndex]);
 
-  // Handle mute/unmute - fixed
   useEffect(() => {
-    if (audioState?.muted && currentSource) {
-      currentSource.stop();
-      setCurrentSource(null);
-      setIsPlaying(false);
-    }
-  }, [audioState?.muted, currentSource]);
+    if (audioState?.muted) stopCurrent();
+  }, [audioState?.muted, stopCurrent]);
 
   const getTrackDisplayName = (track: typeof currentTrack) => {
     if (!track) return "Loading...";
-
-    // Convert track ID to display name
     const name = track.id
       .replace("music.", "")
       .replace(/_/g, " ")
       .replace(/\b\w/g, (l) => l.toUpperCase());
-
     return name;
   };
 
@@ -101,26 +110,32 @@ export const useMusicPlayer = () => {
 
 export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   const trackNameRef = useRef<HTMLDivElement>(null);
+  const isBlitz = useMemo(() => getIsBlitz(), []);
 
   useEffect(() => {
     const trackNameElement = trackNameRef.current;
     if (!trackNameElement) return;
 
-    const trackNameWidth = trackNameElement.offsetWidth;
-    const containerWidth = trackNameElement.parentElement?.offsetWidth || 0;
+    trackNameElement.classList.remove("scrolling");
 
-    if (trackNameWidth > containerWidth) {
-      trackNameElement.style.animationDuration = `${trackNameWidth / 20}s`;
-      trackNameElement.classList.add("scrolling");
-    }
+    const checkScrolling = () => {
+      const trackNameWidth = trackNameElement.scrollWidth;
+      const containerWidth = trackNameElement.parentElement?.clientWidth || 0;
+
+      if (trackNameWidth > containerWidth) {
+        trackNameElement.style.animationDuration = `${trackNameWidth / 20}s`;
+        trackNameElement.classList.add("scrolling");
+      }
+    };
+
+    const timeoutId = setTimeout(checkScrolling, 0);
+    return () => clearTimeout(timeoutId);
   }, [trackName]);
-
-  const isBlitz = getIsBlitz();
 
   return (
     <div className="w-full p-1 overflow-hidden text-xs border border-gold">
       <div className="track-name" ref={trackNameRef}>
-        {trackName} - {isBlitz ? "Casey Wescot" : "The Minstrels"}
+        {trackName} - {isBlitz ? "The Minstrels" : "Casey Wescott"}
       </div>
     </div>
   );

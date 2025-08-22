@@ -51,28 +51,24 @@ export class Particles {
     });
 
     this.points = new THREE.Points(geometry, material);
+    this.points.position.set(0, -1000, 0);
 
     this.light = new THREE.PointLight(LIGHT_COLOR, LIGHT_INTENSITY);
+    this.light.position.set(0, -1000, 0);
 
     this.scene = scene;
+    this.scene.add(this.points);
+    this.scene.add(this.light);
   }
 
   setPosition(x: number, y: number, z: number) {
     this.points.position.set(x, y, z);
     this.light.position.set(x, y + 1.5, z);
-
-    // avoid having particles in position (0, 0, 0) at start
-    if (!this.scene.children.includes(this.points)) {
-      this.scene.add(this.points);
-    }
-    if (!this.scene.children.includes(this.light)) {
-      this.scene.add(this.light);
-    }
   }
 
   resetPosition() {
-    this.points.position.set(0, 0, 0);
-    this.light.position.set(0, 0, 0);
+    this.points.position.set(0, -1000, 0);
+    this.light.position.set(0, -1000, 0);
   }
 
   setParticleSize(size: number) {
@@ -112,7 +108,7 @@ export class Particles {
 
   public dispose(): void {
     console.log("🧹 Particles: Starting disposal");
-    
+
     // Remove from scene
     if (this.points.parent) {
       this.points.parent.remove(this.points);
@@ -120,7 +116,7 @@ export class Particles {
     if (this.light.parent) {
       this.light.parent.remove(this.light);
     }
-    
+
     // Dispose geometry and material
     if (this.points.geometry) {
       this.points.geometry.dispose();
@@ -128,12 +124,12 @@ export class Particles {
     if (this.points.material) {
       (this.points.material as THREE.PointsMaterial).dispose();
     }
-    
+
     // Clear arrays
     this.pointsPositions = new Float32Array();
-    this.particleVelocities = new Float32Array(); 
+    this.particleVelocities = new Float32Array();
     this.particleAngles = new Float32Array();
-    
+
     console.log("🧹 Particles: Disposed geometry, material, and cleaned up");
   }
 }

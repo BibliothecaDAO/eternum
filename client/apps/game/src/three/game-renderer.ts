@@ -20,21 +20,19 @@ import {
   ToneMappingMode,
   VignetteEffect,
 } from "postprocessing";
-import { 
-  WebGLRenderer, 
-  PerspectiveCamera, 
-  Raycaster, 
-  Vector2, 
-  Vector3,
-  PMREMGenerator,
-  Color,
-  HalfFloatType,
-  NoToneMapping,
-  LinearToneMapping,
-  ReinhardToneMapping,
-  CineonToneMapping,
+import {
   ACESFilmicToneMapping,
-  PCFSoftShadowMap
+  CineonToneMapping,
+  HalfFloatType,
+  LinearToneMapping,
+  NoToneMapping,
+  PCFSoftShadowMap,
+  PerspectiveCamera,
+  PMREMGenerator,
+  Raycaster,
+  ReinhardToneMapping,
+  Vector2,
+  WebGLRenderer,
 } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -43,8 +41,8 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
-import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 import { MaterialPool } from "./utils/material-pool";
+import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -495,7 +493,7 @@ export default class GameRenderer {
       hue: 0,
       saturation: 0.6,
       toneMapping: {
-        mode: ToneMappingMode.ACES_FILMIC,
+        mode: ToneMappingMode.OPTIMIZED_CINEON,
         exposure: 0.7,
         whitePoint: 1.2,
       },

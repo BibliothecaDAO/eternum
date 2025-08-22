@@ -5,7 +5,7 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { AudioCategory, ScrollingTrackName, useMusicPlayer, useSimpleAudio } from "@/audio";
+import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ToriiSetting } from "@/types";
 import { GraphicsSettings } from "@/ui/config";
@@ -14,7 +14,7 @@ import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
-import { getAddressName, getIsBlitz } from "@bibliothecadao/eternum";
+import { getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import * as platform from "platform";
@@ -70,12 +70,9 @@ export const SettingsWindow = () => {
 
   const [showSettings, setShowSettings] = useState(false);
 
-  // New audio system - lightweight version
-  const { setCategoryVolume, setMuted, getCurrentState } = useSimpleAudio();
+  // Use full audio system for reactive state updates
+  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   const { trackName, next: nextTrack } = useMusicPlayer();
-
-  // Get current state for initial render only
-  const [audioState] = useState(() => getCurrentState());
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
 
@@ -347,10 +344,16 @@ export const SettingsWindow = () => {
               )}
               <ScrollingTrackName trackName={trackName || "Loading..."} />
               <Button variant="outline" onClick={nextTrack}>
-                <Next className="h-4 cursor-pointer" />
+                <Next className="w-2 cursor-pointer fill-gold" />
               </Button>
             </div>
             <div className="space-y-2">
+              <RangeInput
+                value={Math.round((audioState?.masterVolume || 0) * 100)}
+                fromTitle="Mute"
+                onChange={(value) => setMasterVolume(value / 100)}
+                title="Master Volume"
+              />
               <RangeInput
                 value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] || 0) * 100)}
                 fromTitle="Mute"

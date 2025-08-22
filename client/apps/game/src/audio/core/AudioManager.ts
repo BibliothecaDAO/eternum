@@ -12,9 +12,21 @@ export class AudioManager {
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
   private poolManager: AudioPoolManager | null = null;
   private state: AudioState;
+  private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
 
   private constructor() {
-    this.state = {
+    this.state = this.loadPersistedState();
+  }
+
+  static getInstance(): AudioManager {
+    if (!AudioManager.instance) {
+      AudioManager.instance = new AudioManager();
+    }
+    return AudioManager.instance;
+  }
+
+  private getDefaultState(): AudioState {
+    return {
       masterVolume: 1.0,
       categoryVolumes: {
         [AudioCategory.MUSIC]: 0.5,
@@ -31,11 +43,25 @@ export class AudioManager {
     };
   }
 
-  static getInstance(): AudioManager {
-    if (!AudioManager.instance) {
-      AudioManager.instance = new AudioManager();
+  private loadPersistedState(): AudioState {
+    try {
+      const stored = localStorage.getItem(AudioManager.STORAGE_KEY);
+      if (stored) {
+        const parsedState = JSON.parse(stored);
+        return { ...this.getDefaultState(), ...parsedState };
+      }
+    } catch (error) {
+      console.warn("Failed to load persisted audio settings:", error);
     }
-    return AudioManager.instance;
+    return this.getDefaultState();
+  }
+
+  private saveState(): void {
+    try {
+      localStorage.setItem(AudioManager.STORAGE_KEY, JSON.stringify(this.state));
+    } catch (error) {
+      console.warn("Failed to save audio settings:", error);
+    }
   }
 
   async initialize(): Promise<void> {
@@ -220,6 +246,7 @@ export class AudioManager {
     if (this.masterGainNode) {
       this.masterGainNode.gain.value = this.state.muted ? 0 : this.state.masterVolume;
     }
+    this.saveState();
   }
 
   setCategoryVolume(category: AudioCategory, volume: number): void {
@@ -228,6 +255,7 @@ export class AudioManager {
     if (gainNode) {
       gainNode.gain.value = this.state.categoryVolumes[category];
     }
+    this.saveState();
   }
 
   setMuted(muted: boolean): void {
@@ -235,6 +263,7 @@ export class AudioManager {
     if (this.masterGainNode) {
       this.masterGainNode.gain.value = muted ? 0 : this.state.masterVolume;
     }
+    this.saveState();
   }
 
   getState(): Readonly<AudioState> {

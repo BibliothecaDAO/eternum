@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AudioManager } from "../core/AudioManager";
-import { AudioPlayOptions, AudioCategory } from "../types";
 import { getAllAssets } from "../config/registry";
+import { AudioManager } from "../core/AudioManager";
+import { AudioCategory, AudioPlayOptions } from "../types";
 
 export function useAudio() {
   const managerRef = useRef<AudioManager>();
@@ -52,6 +52,7 @@ export function useAudio() {
 
   const setMasterVolume = useCallback((volume: number) => {
     managerRef.current?.setMasterVolume(volume);
+    setAudioState(managerRef.current?.getState());
   }, []);
 
   // Moved setCategoryVolume and setMuted to return statement for immediate state updates
