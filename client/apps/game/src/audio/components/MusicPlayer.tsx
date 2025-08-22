@@ -29,15 +29,21 @@ export const useMusicPlayer = () => {
 
   const currentTrack = availableTracks[currentTrackIndex];
 
+  const advanceToNextTrack = useCallback(() => {
+    const nextIndex = (currentTrackIndex + 1) % availableTracks.length;
+    setCurrentTrackIndex(nextIndex);
+  }, [currentTrackIndex, availableTracks.length]);
+
   const playTrack = useCallback(
     async (trackId: string) => {
       try {
         if (!audioState?.muted && isReady) {
           const source = await play(trackId, {
-            loop: true,
+            loop: false,
             onComplete: () => {
               setCurrentSource(null);
               setIsPlaying(false);
+              advanceToNextTrack();
             },
           });
 
@@ -51,24 +57,24 @@ export const useMusicPlayer = () => {
         setIsPlaying(false);
       }
     },
-    [play, audioState?.muted, isReady],
-  ); // Removed problematic dependencies
+    [play, audioState?.muted, isReady, advanceToNextTrack],
+  );
 
   const nextTrack = useCallback(() => {
-    const nextIndex = (currentTrackIndex + 1) % availableTracks.length;
-    setCurrentTrackIndex(nextIndex);
-    const nextTrackData = availableTracks[nextIndex];
-    if (nextTrackData && !audioState?.muted && isReady) {
-      play(nextTrackData.id, { loop: true });
+    if (currentSource) {
+      currentSource.stop();
+      setCurrentSource(null);
+      setIsPlaying(false);
     }
-  }, [currentTrackIndex, availableTracks, audioState?.muted, isReady, play]);
+    advanceToNextTrack();
+  }, [currentSource, advanceToNextTrack]);
 
   // Auto-start music when system is ready - simple version
   useEffect(() => {
     if (isReady && currentTrack && !isPlaying) {
       playTrack(currentTrack.id);
     }
-  }, [isReady, currentTrack?.id]); // Remove playTrack dependency to prevent loops
+  }, [isReady, currentTrack?.id, playTrack, isPlaying]);
 
   // Handle mute/unmute - fixed
   useEffect(() => {
@@ -120,7 +126,7 @@ export const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   return (
     <div className="w-full p-1 overflow-hidden text-xs border border-gold">
       <div className="track-name" ref={trackNameRef}>
-        {trackName} - {isBlitz ? "Casey Wescot" : "The Minstrels"}
+        {trackName} - {isBlitz ? "The Minstrels" : "Casey Wescott"}
       </div>
     </div>
   );
