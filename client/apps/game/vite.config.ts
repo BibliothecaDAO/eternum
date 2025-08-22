@@ -74,7 +74,7 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
         },
-        advancedChunks: {
+        manualChunks: {
           // Three.js ecosystem - Separate chunk for 3D graphics
           three: ["three", "three-stdlib", "postprocessing"],
 
