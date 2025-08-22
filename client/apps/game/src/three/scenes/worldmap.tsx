@@ -644,7 +644,7 @@ export default class WorldmapScene extends HexagonScene {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help];
+        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack];
         if (actionType && armyActions.includes(actionType)) {
           if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
             console.warn(`Army ${selectedEntityId} no longer available for movement`);
