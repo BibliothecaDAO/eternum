@@ -11,7 +11,7 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
 import { gltfLoader } from "../utils/utils";
-const MAX_INSTANCES = 1000;
+const MAX_INSTANCES = 256;
 
 export class QuestManager {
   private scene: THREE.Scene;

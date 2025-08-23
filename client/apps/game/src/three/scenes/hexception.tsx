@@ -162,7 +162,7 @@ export default class HexceptionScene extends HexagonScene {
 
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
-    this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
+    this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 512);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);

@@ -165,7 +165,11 @@ export default class InstancedModel {
   setMatrixAt(index: number, matrix: Matrix4) {
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.setMatrixAt(index, matrix);
+        // Guard against exceeding instanced capacity
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setMatrixAt(index, matrix);
+        }
       }
     });
   }
@@ -173,7 +177,10 @@ export default class InstancedModel {
   setColorAt(index: number, color: Color) {
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.setColorAt(index, color);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setColorAt(index, color);
+        }
       }
     });
   }

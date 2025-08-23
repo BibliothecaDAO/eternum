@@ -16,7 +16,7 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 
-const MAX_INSTANCES = 1000;
+const MAX_INSTANCES = 512;
 const WONDER_MODEL_INDEX = 4;
 
 // Enum to track the source of relic effects

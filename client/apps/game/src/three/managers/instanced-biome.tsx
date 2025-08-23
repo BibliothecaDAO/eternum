@@ -122,7 +122,10 @@ export default class InstancedModel {
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.setMatrixAt(index, matrix);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setMatrixAt(index, matrix);
+        }
       }
     });
   }
@@ -130,7 +133,10 @@ export default class InstancedModel {
   setColorAt(index: number, color: THREE.Color) {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.setColorAt(index, color);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setColorAt(index, color);
+        }
       }
     });
   }

@@ -324,12 +324,20 @@ export class ArmyModel {
 
   private updateInstanceMeshes(modelData: ModelData, index: number, color?: Color): void {
     modelData.instancedMeshes.forEach((mesh) => {
-      mesh.setMatrixAt(index, this.dummyObject.matrix);
-      mesh.instanceMatrix.needsUpdate = true;
+      const capacity = ((mesh.instanceMatrix as any).count ?? 0) as number;
+      if (index < capacity) {
+        mesh.setMatrixAt(index, this.dummyObject.matrix);
+        mesh.instanceMatrix.needsUpdate = true;
+      } else {
+        // Out of capacity; skip safely
+        return;
+      }
 
       if (color && mesh.instanceColor) {
-        mesh.setColorAt(index, color);
-        mesh.instanceColor.needsUpdate = true;
+        try {
+          mesh.setColorAt(index, color);
+          mesh.instanceColor.needsUpdate = true;
+        } catch {}
       }
 
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();

@@ -13,7 +13,7 @@ import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 
-const MAX_INSTANCES = 1000;
+const MAX_INSTANCES = 256;
 
 export class ChestManager {
   private scene: THREE.Scene;

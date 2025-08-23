@@ -722,7 +722,7 @@ export class ArmyManager {
     // Create label using centralized function
     const labelDiv = createArmyLabel(army, this.currentCameraView);
 
-    // Create CSS2DObject normally (revert pooling for now)
+    // Create CSS2DObject normally (no pooling)
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
@@ -759,7 +759,7 @@ export class ArmyManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    // Remove label normally (revert pooling for now)
+    // Remove label normally
     this.armyModel.removeLabel(entityId);
     this.entityIdLabels.delete(entityId);
   }
