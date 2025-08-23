@@ -194,9 +194,15 @@ export class ArmyModel {
     const geometry = mesh.geometry;
 
     // Handle both single material and material array cases
-    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
-    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
+    const sourceMaterial = Array.isArray(mesh.material) ? (mesh.material as any[])[0] : (mesh.material as any);
+    const needsOpacityOverride = sourceMaterial?.name?.includes("stand");
+    let material = sourceMaterial as any;
+    if (needsOpacityOverride) {
+      // Clone to safely adjust transparency without affecting the original
+      material = sourceMaterial.clone();
+      material.transparent = true;
+      material.opacity = 0.9;
+    }
     const instancedMesh = new InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
@@ -205,6 +211,7 @@ export class ArmyModel {
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
+      // Use Float32 colors for correctness with setColorAt
       instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
     }
 
@@ -232,9 +239,11 @@ export class ArmyModel {
           // Release pooled materials (handle arrays defensively)
           const material = mesh.material as any;
           if (Array.isArray(material)) {
-            material.forEach((m) => ArmyModel.materialPool.releaseMaterial(m));
+            material.forEach((m) => {
+              if (!ArmyModel.materialPool.releaseMaterial(m)) m.dispose();
+            });
           } else if (material) {
-            ArmyModel.materialPool.releaseMaterial(material);
+            if (!ArmyModel.materialPool.releaseMaterial(material)) material.dispose();
           }
 
           // Morph textures are created per-instanced mesh
@@ -918,30 +927,36 @@ export class ArmyModel {
   public setVisibleCount(count: number): void {
     if (count === this.currentVisibleCount) return;
 
-    this.currentVisibleCount = count;
+    let clampedVisible = count;
     this.models.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+        const capacity = ((mesh.instanceMatrix as any).count ?? MAX_INSTANCES) as number;
+        const target = Math.min(count, capacity);
         // Ensure morphs are initialized for new indices (handles LOW setting too)
         const baseMesh = modelData.baseMeshes[meshIndex];
-        this.ensureMorphInitialized(mesh, baseMesh, count);
-        mesh.count = count;
+        this.ensureMorphInitialized(mesh, baseMesh, target);
+        mesh.count = target;
+        if (target < clampedVisible) clampedVisible = target;
       });
     });
+    this.currentVisibleCount = clampedVisible;
   }
 
   private ensureMorphInitialized(mesh: AnimatedInstancedMesh, baseMesh: Mesh, targetCount: number) {
     try {
       if (!mesh.animated) return;
       if (!baseMesh) return;
+      const capacity = ((mesh.instanceMatrix as any).count ?? MAX_INSTANCES) as number;
       const initCount: number = (mesh.userData as any).morphInitCount || 0;
-      if (targetCount <= initCount) return;
-      for (let i = initCount; i < targetCount; i++) {
+      const target = Math.min(targetCount, capacity);
+      if (target <= initCount) return;
+      for (let i = initCount; i < target; i++) {
         mesh.setMorphAt(i, baseMesh as any);
       }
       if ((mesh as any).morphTexture) {
         (mesh as any).morphTexture.needsUpdate = true;
       }
-      (mesh.userData as any).morphInitCount = targetCount;
+      (mesh.userData as any).morphInitCount = target;
     } catch (e) {
       console.warn('[ArmyModel] ensureMorphInitialized error', e);
     }

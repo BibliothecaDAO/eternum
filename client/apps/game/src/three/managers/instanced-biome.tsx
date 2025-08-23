@@ -145,9 +145,11 @@ export default class InstancedModel {
     this.count = count;
     this.group.children.forEach((child, idx) => {
       if (child instanceof THREE.InstancedMesh) {
+        const capacity = ((child.instanceMatrix as any).count ?? this.count) as number;
+        const target = Math.min(count, capacity);
         // Initialize morphs only for new indices
-        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
-        child.count = count;
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], target);
+        child.count = target;
       }
     });
     this.needsUpdate();
@@ -248,7 +250,7 @@ export default class InstancedModel {
         if (Array.isArray(mesh.material)) {
           mesh.material.forEach((mat) => mat.dispose());
         } else {
-          mesh.material.dispose();
+          (mesh.material as any).dispose();
         }
       }
       if (mesh.morphTexture) {

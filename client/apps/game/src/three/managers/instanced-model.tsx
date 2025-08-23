@@ -14,6 +14,7 @@ import {
   MeshStandardMaterial,
   Vector3,
 } from "three";
+import { MaterialPool } from "../utils/material-pool";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -56,29 +57,57 @@ export default class InstancedModel {
       this.timeOffsets[i] = Math.random() * 3;
     }
 
+    let anyAnimated = false;
     gltf.scene.traverse((child: any) => {
       if (child instanceof Mesh) {
         if (child.scale.x !== 1) {
           return;
         }
-        let material = child.material;
+        const materialPool = MaterialPool.getInstance();
+        let material: MeshStandardMaterial | undefined;
         if (name.includes("Quest") || name.includes("Chest")) {
-          if (!material.depthWrite) {
-            material.depthWrite = true;
-            material.alphaTest = 0.075;
-          }
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 1.5;
-          }
+          const depthWrite = true;
+          const alphaTest = 0.075;
+          const emissiveIntensity = (child.material as MeshStandardMaterial).emissiveIntensity > 1 ? 1.5 : undefined;
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            depthWrite,
+            alphaTest,
+            emissiveIntensity,
+          });
         }
         //name.includes("FragmentMine")
         if (name.includes("FragmentMine")) {
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 15;
-          }
+          const emissiveIntensity = 15;
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            emissiveIntensity,
+          });
         }
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
+          // Keep explicit material for crystal variant (unique params), no pooling
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
+        }
+        // Fallback to pooled material if not set yet
+        if (!material) {
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            depthWrite: (child.material as MeshStandardMaterial).depthWrite,
+            alphaTest: (child.material as MeshStandardMaterial).alphaTest,
+            emissiveIntensity: (child.material as MeshStandardMaterial).emissiveIntensity,
+          });
         }
         const tmp = new InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
         tmp.renderOrder = 10;
@@ -91,6 +120,7 @@ export default class InstancedModel {
           ) {
             console.log("animated", gltf.animations[0]);
             tmp.animated = true; // defer actual morph initialization
+            anyAnimated = true;
           }
         }
 
@@ -124,8 +154,8 @@ export default class InstancedModel {
       }
     });
 
-    // Create mixer once, outside the loop to prevent memory leaks
-    if (gltf.animations.length > 0) {
+    // Create mixer only if at least one mesh is animated
+    if (gltf.animations.length > 0 && anyAnimated) {
       this.mixer = new AnimationMixer(gltf.scene);
       this.animation = gltf.animations[0];
     }
@@ -189,8 +219,10 @@ export default class InstancedModel {
     this.count = count;
     this.group.children.forEach((child, idx) => {
       if (child instanceof InstancedMesh) {
-        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
-        child.count = count;
+        const capacity = ((child.instanceMatrix as any).count ?? this.count) as number;
+        const target = Math.min(count, capacity);
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], target);
+        child.count = target;
       }
     });
     this.needsUpdate();
@@ -320,15 +352,18 @@ export default class InstancedModel {
     this.animationActions.clear();
 
     // Dispose of instanced meshes and their resources
+    const materialPool = MaterialPool.getInstance();
     this.instancedMeshes.forEach((mesh) => {
       if (mesh.geometry) {
         mesh.geometry.dispose();
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => mat.dispose());
+          mesh.material.forEach((mat) => {
+            if (!materialPool.releaseMaterial(mat)) mat.dispose();
+          });
         } else {
-          mesh.material.dispose();
+          if (!materialPool.releaseMaterial(mesh.material as any)) (mesh.material as any).dispose();
         }
       }
       if (mesh.morphTexture) {

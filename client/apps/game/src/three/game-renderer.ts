@@ -35,6 +35,7 @@ import {
   Vector2,
   WebGLRenderer,
 } from "three";
+import { UnsignedByteType } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -215,7 +216,7 @@ export default class GameRenderer {
     this.renderer.autoClear = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: HalfFloatType,
+      frameBufferType: this.graphicsSetting === GraphicsSettings.HIGH ? HalfFloatType : UnsignedByteType,
     });
   }
 
@@ -617,7 +618,7 @@ export default class GameRenderer {
   private createBloomEffect() {
     return new BloomEffect({
       luminanceThreshold: 1.1,
-      mipmapBlur: true,
+      mipmapBlur: this.graphicsSetting === GraphicsSettings.HIGH,
       intensity: 0.25,
     });
   }
@@ -796,6 +797,11 @@ export default class GameRenderer {
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
       }
+
+      // Dispose pooled materials to release references
+      try {
+        MaterialPool.getInstance().dispose();
+      } catch {}
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {

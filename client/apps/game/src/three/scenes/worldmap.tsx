@@ -58,6 +58,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
+import { PathVisualizer } from "../managers/path-visualizer";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -138,6 +139,7 @@ export default class WorldmapScene extends HexagonScene {
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
+  private pathVisualizer!: PathVisualizer;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -272,6 +274,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Initialize the quest manager
     this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
+    this.pathVisualizer = new PathVisualizer(this.scene);
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
@@ -321,6 +324,11 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+
+      // Trim committed path as the army advances
+      try {
+        this.pathVisualizer.trimToHex(update.entityId, { col: normalizedPos.x, row: normalizedPos.y });
+      } catch {}
     });
 
     // Listen for troop count and stamina changes
@@ -573,10 +581,25 @@ export default class WorldmapScene extends HexagonScene {
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
+      // If this entity already has a committed path, do not show preview
+      try {
+        if (this.pathVisualizer.hasActivePath(Number(selectedEntityId))) {
+          return;
+        }
+      } catch {}
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
       this.state.updateEntityActionHoveredHex(hexCoords);
+
+      // Update path preview to hovered hex if a path exists
+      const key = (ActionPaths as any).posKey ? (ActionPaths as any).posKey(hexCoords, true) : `${hexCoords.col},${hexCoords.row}`;
+      const path = (actionPaths as any).get ? (actionPaths as any).get(key) : undefined;
+      if (path && Array.isArray(path) && path.length > 1) {
+        const hexes = path.map((p: any) => ({ col: p.hex.col - FELT_CENTER, row: p.hex.row - FELT_CENTER }));
+        const points = hexes.map((h: any) => getWorldPositionForHex(h));
+        this.pathVisualizer.updatePreview(points);
+      }
     }
   }
 
@@ -740,6 +763,13 @@ export default class WorldmapScene extends HexagonScene {
       // Monitor memory usage before army movement action
       this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
 
+      // Build positions array for visual path
+      const path = actionPath;
+      const hexesNorm = path.map((p) => ({ col: p.hex.col - FELT_CENTER, row: p.hex.row - FELT_CENTER }));
+      const points = hexesNorm.map((h) => getWorldPositionForHex(h));
+      // Commit path visualization immediately
+      this.pathVisualizer.commitPath(selectedEntityId, hexesNorm, points);
+
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
@@ -752,6 +782,8 @@ export default class WorldmapScene extends HexagonScene {
           // Transaction failed, remove from pending and cleanup
           this.pendingArmyMovements.delete(selectedEntityId);
           cleanup();
+          // Remove committed path on failure
+          this.pathVisualizer.trimToHex(selectedEntityId, hexesNorm[hexesNorm.length - 1]);
           console.error("Army movement failed:", e);
         });
 
@@ -967,6 +999,8 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
+    // Clear transient path preview on deselect
+    this.pathVisualizer.clearPreview();
   }
 
   setup() {
@@ -1830,6 +1864,7 @@ export default class WorldmapScene extends HexagonScene {
   update(deltaTime: number) {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
+    this.pathVisualizer.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     this.chestManager.update(deltaTime);
