@@ -108,6 +108,9 @@ export default class WorldmapScene extends HexagonScene {
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
+  // LRU tracking for cachedMatrices to prevent unbounded growth
+  private matrixCacheOrder: string[] = [];
+  private matrixCacheCapacity: number = 12; // current + neighbors (~9) with a small cushion
   private updateHexagonGridPromise: Promise<void> | null = null;
   private travelEffects: Map<string, () => void> = new Map();
 
@@ -1663,17 +1666,25 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
     }
+    this.touchMatrixCacheKey(chunkKey);
+    this.enforceMatrixCacheCapacity();
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     this.cachedMatrices.delete(chunkKey);
+    // Remove from LRU order as well
+    const idx = this.matrixCacheOrder.indexOf(chunkKey);
+    if (idx !== -1) {
+      this.matrixCacheOrder.splice(idx, 1);
+    }
   }
 
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      this.touchMatrixCacheKey(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as any)!;
         hexMesh.setMatricesAndCount(matrices, count);
@@ -1681,6 +1692,46 @@ export default class WorldmapScene extends HexagonScene {
       return true;
     }
     return false;
+  }
+
+  private touchMatrixCacheKey(key: string) {
+    const idx = this.matrixCacheOrder.indexOf(key);
+    if (idx !== -1) {
+      this.matrixCacheOrder.splice(idx, 1);
+    }
+    this.matrixCacheOrder.push(key);
+  }
+
+  private enforceMatrixCacheCapacity() {
+    // Preserve the current chunk and its immediate neighbors when evicting
+    const preserve = new Set<string>();
+    if (this.currentChunk && typeof this.currentChunk === 'string') {
+      preserve.add(this.currentChunk);
+      try {
+        const [rowStr, colStr] = this.currentChunk.split(",");
+        const startRow = parseInt(rowStr);
+        const startCol = parseInt(colStr);
+        const neighbors = this.getSurroundingChunkKeys(startRow, startCol);
+        neighbors.forEach((k) => preserve.add(k));
+      } catch {}
+    }
+
+    while (this.cachedMatrices.size > this.matrixCacheCapacity) {
+      // Find the oldest non-preserved key to evict
+      let evicted = false;
+      for (let i = 0; i < this.matrixCacheOrder.length; i++) {
+        const key = this.matrixCacheOrder[i];
+        if (!preserve.has(key)) {
+          // Evict this key
+          this.cachedMatrices.delete(key);
+          this.matrixCacheOrder.splice(i, 1);
+          evicted = true;
+          break;
+        }
+      }
+      // If all remaining keys are preserved, break to avoid infinite loop
+      if (!evicted) break;
+    }
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {

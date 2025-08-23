@@ -212,6 +212,8 @@ export class ArmyModel {
       this.setupMeshAnimation(instancedMesh, mesh, animations);
     }
 
+    // Track morph initialization progress
+    (instancedMesh.userData as any).morphInitCount = 0;
     instancedMesh.count = 0;
     return instancedMesh;
   }
@@ -264,11 +266,9 @@ export class ArmyModel {
     const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
 
     if (hasAnimation) {
+      // Mark as animated, but defer morph initialization until instances become visible.
       instancedMesh.animated = true;
-      for (let i = 0; i < MAX_INSTANCES; i++) {
-        instancedMesh.setMorphAt(i, mesh as any);
-      }
-      instancedMesh.morphTexture!.needsUpdate = true;
+      (instancedMesh.userData as any).baseMeshRef = mesh;
     }
   }
 
@@ -912,10 +912,31 @@ export class ArmyModel {
 
     this.currentVisibleCount = count;
     this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
+      modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+        // Ensure morphs are initialized for new indices (handles LOW setting too)
+        const baseMesh = modelData.baseMeshes[meshIndex];
+        this.ensureMorphInitialized(mesh, baseMesh, count);
         mesh.count = count;
       });
     });
+  }
+
+  private ensureMorphInitialized(mesh: AnimatedInstancedMesh, baseMesh: Mesh, targetCount: number) {
+    try {
+      if (!mesh.animated) return;
+      if (!baseMesh) return;
+      const initCount: number = (mesh.userData as any).morphInitCount || 0;
+      if (targetCount <= initCount) return;
+      for (let i = initCount; i < targetCount; i++) {
+        mesh.setMorphAt(i, baseMesh as any);
+      }
+      if ((mesh as any).morphTexture) {
+        (mesh as any).morphTexture.needsUpdate = true;
+      }
+      (mesh.userData as any).morphInitCount = targetCount;
+    } catch (e) {
+      console.warn('[ArmyModel] ensureMorphInitialized error', e);
+    }
   }
 
   public setAnimationState(index: number, isWalking: boolean): void {

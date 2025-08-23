@@ -90,11 +90,7 @@ export default class InstancedModel {
             name !== "wonder"
           ) {
             console.log("animated", gltf.animations[0]);
-            tmp.animated = true;
-            for (let i = 0; i < count; i++) {
-              tmp.setMorphAt(i, biomeMesh as any);
-            }
-            tmp.morphTexture!.needsUpdate = true;
+            tmp.animated = true; // defer actual morph initialization
           }
         }
 
@@ -119,6 +115,8 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
+        // Track morph initialization per mesh
+        (tmp.userData as any).morphInitCount = 0;
         tmp.count = 0;
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
@@ -153,9 +151,11 @@ export default class InstancedModel {
   }
 
   setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof InstancedMesh) {
         child.instanceMatrix.copy(matrices);
+        // Ensure morphs exist for visible instances (even on LOW settings)
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
         child.count = count;
         child.instanceMatrix.needsUpdate = true;
       }
@@ -180,12 +180,31 @@ export default class InstancedModel {
 
   setCount(count: number) {
     this.count = count;
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof InstancedMesh) {
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
         child.count = count;
       }
     });
     this.needsUpdate();
+  }
+
+  private ensureMorphInitialized(mesh: InstancedMesh, sourceMesh: any, targetCount: number) {
+    try {
+      if (!(mesh as any).animated) return;
+      if (!sourceMesh) return;
+      const initCount: number = (mesh.userData as any).morphInitCount || 0;
+      if (targetCount <= initCount) return;
+      for (let i = initCount; i < targetCount; i++) {
+        (mesh as any).setMorphAt(i, sourceMesh as any);
+      }
+      if ((mesh as any).morphTexture) {
+        (mesh as any).morphTexture.needsUpdate = true;
+      }
+      (mesh.userData as any).morphInitCount = targetCount;
+    } catch (e) {
+      console.warn('[InstancedModel] ensureMorphInitialized error', e);
+    }
   }
 
   removeInstance(index: number) {
