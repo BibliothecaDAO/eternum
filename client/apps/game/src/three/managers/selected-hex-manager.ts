@@ -21,4 +21,8 @@ export class SelectedHexManager {
   update(deltaTime: number) {
     this.particles.update(deltaTime);
   }
+
+  dispose(): void {
+    this.particles.dispose();
+  }
 }

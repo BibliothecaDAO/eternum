@@ -63,10 +63,11 @@ export class ArmyModel {
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
-  private readonly MOVEMENT_SPEED = 1.25;
+  // Faster base movement for snappier feel
+  private readonly MOVEMENT_SPEED = 2.1;
   private readonly FLOAT_HEIGHT = 0.5;
-  private readonly FLOAT_TRANSITION_SPEED = 3.0;
-  private readonly ROTATION_SPEED = 5.0;
+  private readonly FLOAT_TRANSITION_SPEED = 3.6;
+  private readonly ROTATION_SPEED = 8.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
   private readonly boatScale = new Vector3(1, 1, 1);
@@ -84,8 +85,8 @@ export class ArmyModel {
   // Movement easing configuration
   private defaultEasingType: EasingType = EasingType.EaseOut;
   private tierEasingMap: Map<TroopTier, EasingType> = new Map([
-    ["T1" as TroopTier, EasingType.EaseOut],
-    ["T2" as TroopTier, EasingType.EaseOutCubic],
+    ["T1" as TroopTier, EasingType.EaseOutCubic],
+    ["T2" as TroopTier, EasingType.EaseOutQuart],
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
@@ -188,7 +189,9 @@ export class ArmyModel {
   }
 
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
-    const geometry = mesh.geometry.clone();
+    // Share source geometry to avoid duplicate GPU/heap allocations
+    // Geometry is owned by the GLTF scene; we must not dispose it here.
+    const geometry = mesh.geometry;
 
     // Handle both single material and material array cases
     const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
@@ -211,6 +214,50 @@ export class ArmyModel {
 
     instancedMesh.count = 0;
     return instancedMesh;
+  }
+
+  // Dispose instanced resources (materials via pool, morph textures) and detach from scene
+  public dispose(): void {
+    try {
+      this.models.forEach((modelData) => {
+        // Remove group from scene
+        if (modelData.group.parent) {
+          modelData.group.parent.remove(modelData.group);
+        }
+
+        // Release instanced mesh resources
+        modelData.instancedMeshes.forEach((mesh) => {
+          // Release pooled materials (handle arrays defensively)
+          const material = mesh.material as any;
+          if (Array.isArray(material)) {
+            material.forEach((m) => ArmyModel.materialPool.releaseMaterial(m));
+          } else if (material) {
+            ArmyModel.materialPool.releaseMaterial(material);
+          }
+
+          // Morph textures are created per-instanced mesh
+          if ((mesh as any).morphTexture) {
+            (mesh as any).morphTexture.dispose();
+          }
+        });
+
+        // Stop animations and clear references
+        try {
+          modelData.animationActions.clear();
+          modelData.mixer.stopAllAction();
+        } catch {}
+      });
+
+      this.models.clear();
+      this.entityModelMap.clear();
+      this.movingInstances.clear();
+      this.instanceData.clear();
+      this.labels.clear();
+      this.instanceCount = 0;
+      this.currentVisibleCount = 0;
+    } catch (e) {
+      console.warn("ArmyModel.dispose error", e);
+    }
   }
 
   private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
@@ -489,6 +536,13 @@ export class ArmyModel {
 
     this.updateLabelPosition(entityId, this.tempVector1);
 
+    // Smoothly restore scale back to normal during descent
+    const instanceScale = instanceData.scale;
+    const restoreSpeed = 8.0 * deltaTime;
+    instanceScale.x += (1.0 - instanceScale.x) * restoreSpeed;
+    instanceScale.y += (1.0 - instanceScale.y) * restoreSpeed;
+    instanceScale.z += (1.0 - instanceScale.z) * restoreSpeed;
+
     if (movement.floatingHeight <= 0 || isBoat) {
       this.movingInstances.delete(entityId);
     }
@@ -553,6 +607,12 @@ export class ArmyModel {
       // Apply dynamic easing based on army type for juicy movement
       const easingType = this.getEasingTypeForMovement(instanceData.entityId, instanceData);
       const easedProgress = applyEasing(movement.progress, easingType);
+      // Add squash-and-stretch for juice (skip for boats)
+      const modelType = this.entityModelMap.get(instanceData.entityId);
+      const isBoat = modelType === ModelType.Boat;
+      if (!isBoat) {
+        this.applyJuicyScale(instanceData, movement.progress);
+      }
       instanceData.position.copy(movement.startPos).lerp(movement.endPos, easedProgress);
     }
   }
@@ -576,6 +636,32 @@ export class ArmyModel {
     movement.progress = 0;
 
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
+  }
+
+  // Squash and stretch: early stretch, late squash, then normalize
+  private applyJuicyScale(instanceData: ArmyInstanceData, linearProgress: number): void {
+    // Base normal
+    const sx0 = 1.0, sy0 = 1.0, sz0 = 1.0;
+    let sx = sx0, sy = sy0, sz = sz0;
+
+    // Anticipation/stretch for first 15% of movement
+    if (linearProgress < 0.15) {
+      const t = linearProgress / 0.15; // 0..1
+      // Stretch up, thin horizontally
+      sy = 1.0 + 0.15 * (1.0 - (1.0 - t) * (1.0 - t)); // easeOut
+      sx = 1.0 - 0.08 * (1.0 - t);
+      sz = sx;
+    }
+    // Squash right before arrival (last 15%)
+    else if (linearProgress > 0.85) {
+      const t = (linearProgress - 0.85) / 0.15; // 0..1
+      // Squash down, widen horizontally
+      sy = 1.0 - 0.10 * t;
+      sx = 1.0 + 0.06 * t;
+      sz = sx;
+    }
+
+    instanceData.scale.set(sx, sy, sz);
   }
 
   private updateInstanceDirection(entityId: number, fromPos: Vector3, toPos: Vector3): void {
@@ -873,40 +959,7 @@ export class ArmyModel {
     });
   }
 
-  /**
-   * Dispose of all resources including shared materials
-   */
-  public dispose(): void {
-    // Dispose geometries and release materials from pool
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        // Release material from pool (handle both single and array materials)
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
-
-        // Dispose geometry
-        mesh.geometry.dispose();
-
-        // Remove from scene
-        this.scene.remove(mesh);
-      });
-
-      // Dispose animations
-      modelData.mixer.stopAllAction();
-
-      // Remove group from scene
-      this.scene.remove(modelData.group);
-    });
-
-    // Clear all data structures
-    this.models.clear();
-    this.entityModelMap.clear();
-    this.movingInstances.clear();
-    this.instanceData.clear();
-    this.labels.clear();
-
-    console.log("ArmyModel: Disposed all resources");
-  }
+  // (duplicate dispose removed; see unified dispose above)
 }
 
 // Global debug functions for testing easing in armies

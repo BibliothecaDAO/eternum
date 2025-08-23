@@ -142,6 +142,10 @@ export default class WorldmapScene extends HexagonScene {
 
   // Hover-based label expansion manager
   private hoverLabelManager: HoverLabelManager;
+  private storeUnsubscribes: Array<() => void> = [];
+  private onUrlChangedHandler = () => {
+    this.clearSelection();
+  };
 
   constructor(
     dojoContext: SetupResult,
@@ -168,61 +172,69 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    useUIStore.subscribe(
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.selectableArmies,
       (selectableArmies) => {
         this.updateSelectableArmies(selectableArmies);
       },
-    );
+    ));
 
-    useUIStore.subscribe(
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.playerStructures,
       (playerStructures) => {
         this.updatePlayerStructures(playerStructures);
       },
-    );
+    ));
 
-    useUIStore.subscribe(
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.entityActions,
       (armyActions) => {
         this.state.entityActions = armyActions;
       },
-    );
-    useUIStore.subscribe(
+    ));
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.selectedHex,
       (selectedHex) => {
         this.state.selectedHex = selectedHex;
       },
-    );
-    useUIStore.subscribe(
+    ));
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.isSoundOn,
       (isSoundOn) => {
         this.state.isSoundOn = isSoundOn;
       },
-    );
-    useUIStore.subscribe(
+    ));
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.effectsLevel,
       (effectsLevel) => {
         this.state.effectsLevel = effectsLevel;
       },
-    );
+    ));
 
     // Subscribe to zoom setting changes
-    useUIStore.subscribe(
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.enableMapZoom,
       (enableMapZoom) => {
         if (this.controls) {
           this.controls.enableZoom = enableMapZoom;
         }
       },
-    );
+    ));
 
-    useUIStore.subscribe(
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
       (selectedEntityId) => {
         if (!selectedEntityId) this.clearEntitySelection();
       },
-    );
+    ));
 
     // Initialize label groups
     this.armyLabelsGroup = new Group();
@@ -293,7 +305,17 @@ export default class WorldmapScene extends HexagonScene {
         this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
       }
 
-      await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+      const started = await this.armyManager.onTileUpdate(
+        update,
+        this.armyHexes,
+        this.structureHexes,
+        this.exploredTiles,
+      );
+
+      // Clear selection exactly when movement starts to avoid gaps
+      if (started) {
+        this.clearSelection();
+      }
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
     });
@@ -474,13 +496,13 @@ export default class WorldmapScene extends HexagonScene {
       });
     }
 
-    window.addEventListener("urlChanged", () => {
-      this.clearSelection();
-    });
+    window.addEventListener("urlChanged", this.onUrlChangedHandler);
 
     // Start relic effect validation timer (every 5 seconds)
     this.startRelicValidationTimer();
   }
+
+  // (duplicate destroy removed; see unified destroy at bottom)
 
   private setupCameraZoomHandler() {
     // Add mouse wheel handler
@@ -732,8 +754,7 @@ export default class WorldmapScene extends HexagonScene {
 
       this.state.updateEntityActionHoveredHex(null);
     }
-    // clear after movement
-    this.clearSelection();
+    // Do not clear selection immediately; keep label visible until movement starts
   }
 
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -1959,21 +1980,51 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
-    this.resourceFXManager.destroy();
-    this.stopRelicValidationTimer();
+    try {
+      // Stop relic validation timer
+      this.stopRelicValidationTimer();
 
-    // Clean up hover label manager
-    this.hoverLabelManager.destroy();
+      // Unsubscribe store listeners
+      this.storeUnsubscribes.forEach((u) => u());
+      this.storeUnsubscribes = [];
 
-    // Clean up selection pulse manager
-    this.selectionPulseManager.dispose();
+      // Remove window listeners
+      window.removeEventListener("urlChanged", this.onUrlChangedHandler);
 
-    // Clean up input manager
-    this.inputManager.destroy();
+      // Clean up managers and effects
+      if (this.armyManager && typeof (this.armyManager as any).destroy === "function") {
+        (this.armyManager as any).destroy();
+      }
+      if (this.fxManager) this.fxManager.destroy();
+      if (this.resourceFXManager) this.resourceFXManager.destroy();
+      if (this.hoverLabelManager) this.hoverLabelManager.destroy();
+      if (this.selectionPulseManager) this.selectionPulseManager.dispose();
+      if (this.selectedHexManager && typeof (this.selectedHexManager as any).dispose === "function") {
+        (this.selectedHexManager as any).dispose();
+      }
+      if (this.questManager && typeof (this.questManager as any).destroy === "function") {
+        (this.questManager as any).destroy();
+      }
+      if (this.chestManager && typeof (this.chestManager as any).destroy === "function") {
+        (this.chestManager as any).destroy();
+      }
+      if (this.structureManager && typeof (this.structureManager as any).destroy === "function") {
+        (this.structureManager as any).destroy();
+      }
+      if (this.minimap && typeof (this.minimap as any).dispose === "function") {
+        (this.minimap as any).dispose();
+      }
+      if (this.inputManager) this.inputManager.destroy();
 
-    // Clean up shortcuts when scene is actually destroyed
-    if (this.shortcutManager instanceof SceneShortcutManager) {
-      this.shortcutManager.cleanup();
+      // Clean up shortcuts when scene is actually destroyed
+      if (this.shortcutManager instanceof SceneShortcutManager) {
+        this.shortcutManager.cleanup();
+      }
+
+      // Clear caches
+      this.cachedMatrices.clear();
+    } catch (e) {
+      console.warn("WorldmapScene.destroy error", e);
     }
   }
 

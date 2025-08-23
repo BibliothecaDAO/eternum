@@ -14,6 +14,9 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   timeOffsets: Float32Array;
+  // Frame limiting for morph updates to reduce GPU churn
+  private lastAnimationUpdate = 0;
+  private animationUpdateInterval = 1000 / 30; // ~30 FPS
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
@@ -169,8 +172,13 @@ export default class InstancedModel {
       return;
     }
 
+    const now = performance.now();
+    if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+      return;
+    }
+
     if (this.mixer && this.animation) {
-      const time = performance.now() * 0.001;
+      const time = now * 0.001;
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
@@ -187,6 +195,7 @@ export default class InstancedModel {
         }
         mesh.morphTexture!.needsUpdate = true;
       });
+      this.lastAnimationUpdate = now;
     }
   }
 

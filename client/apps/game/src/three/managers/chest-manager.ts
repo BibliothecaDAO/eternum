@@ -84,6 +84,32 @@ export class ChestManager {
     // Clean up animations
     this.animations.forEach((mixer) => mixer.stopAllAction());
     this.animations.clear();
+
+    // Remove labels
+    this.entityIdLabels.forEach((label) => {
+      if (label.parent) this.labelsGroup.remove(label);
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+    });
+    this.entityIdLabels.clear();
+
+    // Dispose chest model
+    if (this.chestModel) {
+      if (typeof this.chestModel.dispose === "function") {
+        this.chestModel.dispose();
+      }
+      if (this.chestModel.group && this.chestModel.group.parent) {
+        this.chestModel.group.parent.remove(this.chestModel.group);
+      }
+      // @ts-ignore
+      this.chestModel = undefined;
+    }
+
+    // Clear maps
+    this.entityIdMap.clear();
+    this.chestHexCoords.clear();
+    this.chests.getChests().clear();
   }
 
   private async loadModel(): Promise<void> {

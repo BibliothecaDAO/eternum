@@ -29,6 +29,7 @@ import {
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
+  Texture,
   Raycaster,
   ReinhardToneMapping,
   Vector2,
@@ -54,6 +55,8 @@ export default class GameRenderer {
   private controls!: MapControls;
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
+  // Environment resources to dispose
+  private environmentMap?: Texture;
 
   // Stats and Monitoring
   private stats!: Stats;
@@ -622,11 +625,15 @@ export default class GameRenderer {
   applyEnvironment() {
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
-    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
     const hdriLoader = new RGBELoader();
-    const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
+    hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+      // We no longer need the HDR texture or generator
       texture.dispose();
+      pmremGenerator.dispose();
+
+      // Apply to scenes and keep reference for cleanup
+      this.environmentMap = envMap;
       this.hexceptionScene.setEnvironment(envMap, 0.1);
       this.worldmapScene.setEnvironment(envMap, 0.1);
     });
@@ -763,6 +770,17 @@ export default class GameRenderer {
       if (this.hudScene && typeof this.hudScene.destroy === "function") {
         this.hudScene.destroy();
       }
+
+      // Remove environment to allow GC of textures
+      try {
+        if (this.environmentMap) {
+          // Clear environment refs from scenes
+          this.hexceptionScene.setEnvironment(null as any, 0);
+          this.worldmapScene.setEnvironment(null as any, 0);
+          this.environmentMap.dispose();
+          this.environmentMap = undefined;
+        }
+      } catch {}
 
       // Clean up controls
       if (this.controls) {

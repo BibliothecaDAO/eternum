@@ -184,6 +184,8 @@ export class ArmyManager {
     this.startPendingUpdatesCleanup();
   }
 
+  // (duplicate destroy removed; see unified destroy below)
+
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
       const { currentArmiesTick } = getBlockTimestamp();
@@ -250,14 +252,15 @@ export class ArmyManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  ): Promise<boolean> {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      const started = await this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      return started;
     } else {
       this.addArmy({
         entityId,
@@ -554,17 +557,17 @@ export class ArmyManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  ): Promise<boolean> {
     // Monitor memory usage before army movement
     this.memoryMonitor.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return false;
 
     const startPos = armyData.hexCoords.getNormalized();
     const targetPos = hexCoords.getNormalized();
 
-    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return false;
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -575,7 +578,7 @@ export class ArmyManager {
     if (!path || path.length === 0) {
       // If no path is found, just teleport the army to the target position
       this.armies.set(entityId, { ...armyData, hexCoords });
-      return;
+      return false;
     }
 
     // Convert path to world positions
@@ -593,6 +596,7 @@ export class ArmyManager {
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
   }
 
   public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
@@ -1026,9 +1030,16 @@ ${
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
 
+    // Dispose FX
+    this.fxManager.destroy();
+
     // Clear entity ID labels
     this.entityIdLabels.clear();
 
-    // Clean up any other resources...
+    // Clear maps
+    this.armies.clear();
+    this.armyPaths.clear();
+    this.armyRelicEffects.clear();
+    this.pendingExplorerTroopsUpdate.clear();
   }
 }

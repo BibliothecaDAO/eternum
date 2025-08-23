@@ -77,6 +77,23 @@ export class QuestManager {
 
     // Clean up the label manager
     this.labelManager.destroy();
+
+    // Dispose quest models and remove from scene
+    this.questModels.forEach((models) => {
+      models.forEach((model) => {
+        if (typeof model.dispose === "function") {
+          model.dispose();
+        }
+        if (model.group && model.group.parent) {
+          model.group.parent.remove(model.group);
+        }
+      });
+    });
+    this.questModels.clear();
+
+    // Clear entity maps and coords
+    this.entityIdMaps.clear();
+    this.questHexCoords.clear();
   }
 
   private async loadModels(): Promise<void> {
