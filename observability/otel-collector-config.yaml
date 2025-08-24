@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins: ["http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*"]
+          allowed_headers: ["*"]
+          max_age: 7200
+
+processors:
+  attributes/sanitize:
+    actions:
+      - key: user.id
+        action: delete
+  batch: {}
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1500
+    policies:
+      - name: keep_errors
+        type: status_code
+        status_code:
+          status_codes: [ ERROR ]
+      - name: keep_tx_spans
+        type: string_attribute
+        string_attribute:
+          key: span.name
+          values:
+            - ^state\.tx\.
+          enabled_regex_matching: true
+      - name: sample_rest
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+exporters:
+  # Send from Collector to Jaeger via OTLP gRPC
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  
+  # Send from Collector to Tempo via OTLP gRPC
+  otlp/tempo:
+    endpoint: tempo:4327
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ attributes/sanitize, tail_sampling, batch ]
+      exporters: [ otlp/jaeger, otlp/tempo ]
+

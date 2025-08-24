@@ -4,6 +4,7 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
+import { telemetry } from "@bibliothecadao/telemetry";
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
@@ -125,48 +126,45 @@ class PromiseQueue {
 
           // Process each chunk
           for (const batch of chunks) {
-            console.log("Processing batch of size:", batch.length); // Debug log
+            const size = batch.length;
+            await telemetry.span("state.tx.batch", { size }, async () => {
+              console.log("Processing batch of size:", size);
 
-            if (batch.length === 1) {
-              const { providerCall, resolve, reject } = batch[0];
-              console.log({ providerCall, batch });
-              try {
-                const result = await providerCall();
-                resolve(result);
-              } catch (error) {
-                reject(error);
+              if (size === 1) {
+                const { providerCall, resolve, reject } = batch[0];
+                console.log({ providerCall, batch });
+                try {
+                  const result = await telemetry.span("state.tx.call", undefined, () => providerCall());
+                  resolve(result);
+                } catch (error) {
+                  telemetry.event("state.tx.error", { where: "single_call", message: (error as Error)?.message });
+                  reject(error);
+                }
+              } else {
+                console.log("batch", batch);
+                try {
+                  const allCalls = await Promise.all(
+                    batch.map(async ({ providerCall }) => {
+                      const fn = providerCall as any;
+                      const calls = fn._transactionDetails;
+                      return Array.isArray(calls) ? calls : [calls];
+                    }),
+                  );
+
+                  const flattenedCalls = allCalls.flat();
+                  console.log("Batched calls:", flattenedCalls);
+
+                  const signer = (batch[0].providerCall as any)._signer;
+
+                  const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
+                  batch.forEach((item) => item.resolve(result));
+                } catch (error) {
+                  console.error("Batch processing error:", error);
+                  telemetry.event("state.tx.error", { where: "batch", message: (error as Error)?.message });
+                  batch.forEach((item) => item.reject(error));
+                }
               }
-            } else {
-              console.log("batch", batch);
-              try {
-                // Extract the actual calls from the providerCalls
-                const allCalls = await Promise.all(
-                  batch.map(async ({ providerCall }) => {
-                    // Access the internal call object
-                    const fn = providerCall as any;
-                    const calls = fn._transactionDetails;
-                    // Handle both single calls and arrays of calls
-                    return Array.isArray(calls) ? calls : [calls];
-                  }),
-                );
-
-                // Flatten all calls into a single array
-                const flattenedCalls = allCalls.flat();
-                console.log("Batched calls:", flattenedCalls); // Debug log
-
-                // Get signer from first call
-                const signer = (batch[0].providerCall as any)._signer;
-
-                // Execute the batched transaction
-                const result = await this.provider.executeAndCheckTransaction(signer, flattenedCalls);
-
-                // Resolve all promises with the result
-                batch.forEach((item) => item.resolve(result));
-              } catch (error) {
-                console.error("Batch processing error:", error); // Debug log
-                batch.forEach((item) => item.reject(error));
-              }
-            }
+            });
           }
         }
       }
@@ -237,11 +235,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): Promise<Result> {
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
-    }
-    const tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
-    const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
+    const transactionResult = await telemetry.span(
+      "state.tx.execute",
+      {
+        count: Array.isArray(transactionDetails) ? transactionDetails.length : 1,
+        namespace: NAMESPACE,
+      },
+      async () => {
+        if (typeof window !== "undefined") {
+          console.log({ signer, transactionDetails });
+        }
+        const tx = await this.execute(signer as any, transactionDetails, NAMESPACE, { version: 3 });
+        return await this.waitForTransactionWithCheck(tx.transaction_hash);
+      },
+    );
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -266,6 +273,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...(isMultipleTransactions && { transactionCount: transactionDetails.length }),
     });
 
+    telemetry.event("state.tx.complete", {
+      type: txType,
+      count: isMultipleTransactions ? transactionDetails.length : 1,
+    });
     return transactionResult;
   }
 
@@ -337,19 +348,24 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @throws Error if transaction fails or is reverted
    */
   async waitForTransactionWithCheck(transactionHash: string): Promise<Result> {
-    let receipt;
-    try {
-      receipt = await this.provider.waitForTransaction(transactionHash, {
-        retryInterval: 500,
-      });
-    } catch (error) {
-      console.error(`Error waiting for transaction ${transactionHash}`);
-      throw error;
-    }
+    const receipt = await telemetry.span("state.tx.wait", { tx_hash: transactionHash }, async () => {
+      try {
+        return await this.provider.waitForTransaction(transactionHash, { retryInterval: 500 });
+      } catch (error) {
+        console.error(`Error waiting for transaction ${transactionHash}`);
+        telemetry.event("state.tx.error", {
+          where: "wait",
+          tx_hash: transactionHash,
+          message: (error as Error)?.message,
+        });
+        throw error;
+      }
+    });
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
       this.emit("transactionFailed", `Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
+      telemetry.event("state.tx.failed", { tx_hash: transactionHash });
       throw new Error(`Transaction failed with reason: HARDCODED_SEARCH_ME_IN_THE_CODE`);
       // this.emit("transactionFailed", `Transaction failed with reason: ${receipt.revert_reason}`);
       // throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);

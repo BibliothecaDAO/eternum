@@ -121,7 +121,7 @@ export class DataEnhancer {
     console.log(`[DEBUG] getStructureOwner called for structure ${structureId}`);
     const structureMapData = await this.mapDataStore.getStructureByIdAsync(structureId);
     console.log(`[DEBUG] Structure map data:`, structureMapData);
-    
+
     if (structureMapData) {
       const result = { address: BigInt(structureMapData.ownerAddress), ownerName: structureMapData.ownerName };
       console.log(`[DEBUG] Returning structure owner:`, result);

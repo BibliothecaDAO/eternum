@@ -19,6 +19,7 @@
   "dependencies": {
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/telemetry": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",

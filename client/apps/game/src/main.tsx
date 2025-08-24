@@ -2,7 +2,6 @@
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { captureSystemError, initPostHog } from "@/posthog";
-import { cleanupTracing } from "@/tracing";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
@@ -10,6 +9,8 @@ import { Buffer } from "buffer";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { initOtelTelemetry } from "@/otel";
+import { initCoreTelemetry } from "@/telemetry";
 import { PWAUpdatePopup } from "@/ui/shared";
 import { registerSW } from "virtual:pwa-register";
 import { dojoConfig } from "../dojo-config";
@@ -42,23 +43,12 @@ async function init() {
   // Initialize PostHog for analytics and error reporting
   initPostHog();
 
-  // // Initialize tracing system
-  // initializeTracing({
-  //   enableMetricsCollection: true,
-  //   metricsInterval: 1000,
-  // });
-
-  // Set up cleanup on page unload
-  window.addEventListener("beforeunload", () => {
-    cleanupTracing();
-  });
-
-  // // Load test utilities in development
-  // if (import.meta.env.DEV) {
-  //   import("./tracing/test-tracing").then(() => {
-  //     console.log("🧪 Tracing test utilities loaded. Use TestTracing.runAllTests() to test.");
-  //   });
-  // }
+  // Initialize telemetry adapter (console or OTel)
+  if (env.VITE_TRACING_USE_OTEL) {
+    initOtelTelemetry();
+  } else {
+    initCoreTelemetry();
+  }
 
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("React root not found");

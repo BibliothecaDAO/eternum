@@ -1,4 +1,5 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
+import { telemetry } from "@bibliothecadao/telemetry";
 import { SqlApi } from "@bibliothecadao/torii";
 import {
   BiomeIdToType,
@@ -73,11 +74,32 @@ export class WorldUpdateListener {
     getUpdate: (update: any) => T | Promise<T | undefined>,
     runOnInit = true,
   ) {
+    const compName = (component as any)?.metadata?.name || "Component";
     const handleUpdate = async (update: any) => {
-      const value = await getUpdate(update);
-      if (value) {
-        callback(value);
+      // Build attributes with extra context for Tile updates
+      const isTile = component === (this as any).setup.components.Tile;
+      const baseAttrs: Record<string, any> = {
+        component: compName,
+        entity_id: update?.entity,
+      };
+      if (isTile && update?.value) {
+        const [currentState, prevState] = update.value as [any, any];
+        const ref = currentState || prevState || {};
+        baseAttrs["tile.col"] = ref.col;
+        baseAttrs["tile.row"] = ref.row;
+        baseAttrs["tile.biome"] = ref.biome;
+        baseAttrs["has_prev"] = Boolean(prevState);
+        baseAttrs["removed"] = !currentState && Boolean(prevState);
+        baseAttrs["tile.occupier_type"] = currentState?.occupier_type ?? prevState?.occupier_type ?? null;
+        baseAttrs["tile.occupier_id"] = currentState?.occupier_id ?? prevState?.occupier_id ?? null;
       }
+
+      await telemetry.span(`state.update.${compName}`, baseAttrs, async () => {
+        const value = await getUpdate(update);
+        if (value) {
+          callback(value);
+        }
+      });
     };
 
     defineComponentSystem(this.setup.network.world, component, handleUpdate, {
@@ -108,10 +130,9 @@ export class WorldUpdateListener {
                 try {
                   const explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(currentState.occupier_id)])
+                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
                   );
                   structureOwnerId = explorerTroops?.owner;
-                  
                 } catch (error) {
                   console.warn(`[DEBUG] Could not get structure owner for army ${currentState.occupier_id}:`, error);
                 }
@@ -123,7 +144,7 @@ export class WorldUpdateListener {
                   currentArmiesTick,
                   structureOwnerId,
                 );
-                
+
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
                 return {
@@ -161,7 +182,6 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              
               // maybe don't use mapdatastore here since these are all available from the tile listener
               const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
 
@@ -237,10 +257,8 @@ export class WorldUpdateListener {
               const [currentState, _prevState] = update.value;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-              
-              if (!structureInfo) return;
 
-              
+              if (!structureInfo) return;
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -259,7 +277,7 @@ export class WorldUpdateListener {
               const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
-                
+
                 return {
                   entityId: currentState.occupier_id,
                   hexCoords: {
@@ -311,7 +329,7 @@ export class WorldUpdateListener {
           > => {
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
-              
+
               if (!currentState) return;
 
               // Extract guard armies data from the structure
@@ -614,8 +632,6 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
 
-              
-
               // at least one of the states must have an entity id
               const entityId = currentState?.explorer_id || prevState?.explorer_id || 0;
 
@@ -623,7 +639,6 @@ export class WorldUpdateListener {
               if (currentState) {
                 const { currentArmiesTick } = getBlockTimestamp();
                 const relicEffects = getArmyRelicEffects(currentState.troops, currentArmiesTick);
-
 
                 if (relicEffects.length === 0) {
                   return;
@@ -683,7 +698,6 @@ export class WorldUpdateListener {
                 return;
               }
 
-
               return {
                 entityId: currentState.structure_id,
                 relicEffects,
@@ -701,11 +715,10 @@ export class WorldUpdateListener {
    * Prevents race conditions where newer updates get overwritten by older ones
    */
   private async processSequentialUpdate<T>(entityId: ID, updateFunction: () => Promise<T>): Promise<T | null> {
-    // Generate a sequence number for this update
+    const waitStart = performance.now();
     const currentSequence = (this.updateSequenceMap.get(entityId) || 0) + 1;
     this.updateSequenceMap.set(entityId, currentSequence);
 
-    // Wait for any pending update for this entity to complete first
     if (this.pendingUpdates.has(entityId)) {
       try {
         await this.pendingUpdates.get(entityId);
@@ -713,30 +726,40 @@ export class WorldUpdateListener {
         console.warn(`Previous update for entity ${entityId} failed:`, error);
       }
     }
+    const queueWaitMs = performance.now() - waitStart;
 
-    // Create and execute the update promise
-    const updatePromise = (async () => {
-      try {
-        // Check if this update is still the latest before processing
-        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+    // Create and execute the update promise with telemetry
+    const updatePromise = telemetry.span(
+      "state.update.sequential",
+      { entity_id: entityId, sequence_id: currentSequence, queue_wait_ms: Math.round(queueWaitMs) },
+      async () => {
+        try {
+          // Check if this update is still the latest before processing
+          if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+            telemetry.event("state.update.dropped", { entity_id: entityId, sequence_id: currentSequence });
+            return null;
+          }
 
-          return null;
+          const result = await updateFunction();
+
+          // Double-check sequence number before returning result
+          if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+            telemetry.event("state.update.dropped", { entity_id: entityId, sequence_id: currentSequence });
+            return null;
+          }
+
+          return result;
+        } catch (error) {
+          console.error(`Sequential update failed for entity ${entityId}:`, error);
+          telemetry.event("state.update.error", {
+            entity_id: entityId,
+            sequence_id: currentSequence,
+            message: (error as Error)?.message,
+          });
+          throw error;
         }
-
-        const result = await updateFunction();
-
-        // Double-check sequence number before returning result
-        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
-
-          return null;
-        }
-
-        return result;
-      } catch (error) {
-        console.error(`Sequential update failed for entity ${entityId}:`, error);
-        throw error;
-      }
-    })();
+      },
+    ) as Promise<T | null>;
 
     // Track this update as pending
     this.pendingUpdates.set(entityId, updatePromise);
@@ -761,6 +784,5 @@ export class WorldUpdateListener {
     this.updateSequenceMap.clear();
 
     this.mapDataStore.destroy();
-    
   }
 }
