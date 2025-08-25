@@ -288,6 +288,81 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       contentContainer.appendChild(productionsDisplay);
     }
 
+    // Add hyperstructure realm count display
+    if (data.hyperstructureRealmCount !== undefined && data.structureType === StructureType.Hyperstructure) {
+      const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
+
+      const realmCountDisplay = document.createElement("div");
+      realmCountDisplay.classList.add(
+        "flex",
+        "items-center",
+        "gap-1.5",
+        "mt-1",
+        "px-2",
+        "py-0.5",
+        "rounded",
+        "transition-all",
+        "duration-300",
+      );
+
+      // Style based on ownership status
+      if (isOwned) {
+        // Active/earning style
+        realmCountDisplay.classList.add(
+          "bg-order-brilliance/20",
+          "border",
+          "border-order-brilliance/30",
+          "animate-slowPulse",
+        );
+      } else {
+        // Inactive/unclaimed style
+        realmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+      }
+
+      realmCountDisplay.setAttribute("data-component", "realm-count");
+
+      // Add icon based on status
+      const vpIcon = document.createElement("span");
+      vpIcon.classList.add("text-xs");
+      if (isOwned) {
+        vpIcon.textContent = "⚡"; // Lightning for active
+        vpIcon.classList.add("text-order-brilliance");
+      } else {
+        vpIcon.textContent = "💤"; // Sleeping for inactive
+        vpIcon.classList.add("text-gray-300");
+      }
+      realmCountDisplay.appendChild(vpIcon);
+
+      // Add the VP value
+      const realmCountText = document.createElement("span");
+      realmCountText.classList.add("font-bold", "text-xs");
+
+      if (isOwned) {
+        realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+      } else {
+        realmCountText.classList.add("text-gray-300");
+      }
+
+      realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+      realmCountDisplay.appendChild(realmCountText);
+
+      // Add VP/s label with status
+      const vpLabel = document.createElement("span");
+      vpLabel.classList.add("text-xxs", "font-normal");
+
+      if (isOwned) {
+        vpLabel.classList.add("text-order-brilliance/80");
+        vpLabel.textContent = "VP/s";
+      } else {
+        vpLabel.classList.add("text-gray-300");
+        vpLabel.textContent = "VP/s (unclaimed)";
+      }
+
+      realmCountDisplay.appendChild(vpLabel);
+
+      contentContainer.appendChild(realmCountDisplay);
+    }
+
     labelDiv.appendChild(contentContainer.wrapper);
     return labelDiv;
   },
@@ -345,6 +420,137 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       while (newProductionsDisplay.firstChild) {
         productionsDisplay.appendChild(newProductionsDisplay.firstChild);
       }
+    }
+
+    // Update hyperstructure realm count
+    const realmCountDisplay = element.querySelector('[data-component="realm-count"]');
+    if (data.hyperstructureRealmCount !== undefined && data.structureType === StructureType.Hyperstructure) {
+      const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
+
+      if (realmCountDisplay) {
+        // Update existing display
+        const vpIcon = realmCountDisplay.querySelector("span:first-child");
+        const realmCountText = realmCountDisplay.querySelector("span.font-bold");
+        const vpLabel = realmCountDisplay.querySelector("span:last-child");
+
+        if (vpIcon && realmCountText && vpLabel) {
+          // Update icon
+          if (isOwned) {
+            vpIcon.textContent = "⚡";
+            vpIcon.className = "text-xs text-order-brilliance";
+          } else {
+            vpIcon.textContent = "💤";
+            vpIcon.className = "text-xs text-gray-300";
+          }
+
+          // Update count
+          realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+          realmCountText.className = "font-bold text-xs";
+          if (isOwned) {
+            realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+          } else {
+            realmCountText.classList.add("text-gray-300");
+          }
+
+          // Update label
+          vpLabel.className = "text-xxs font-normal";
+          if (isOwned) {
+            vpLabel.classList.add("text-order-brilliance/80");
+            vpLabel.textContent = "VP/s";
+          } else {
+            vpLabel.classList.add("text-gray-300");
+            vpLabel.textContent = "VP/s (unclaimed)";
+          }
+
+          // Update container styles
+          realmCountDisplay.className =
+            "flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300";
+          if (isOwned) {
+            realmCountDisplay.classList.add(
+              "bg-order-brilliance/20",
+              "border",
+              "border-order-brilliance/30",
+              "animate-slowPulse",
+            );
+          } else {
+            realmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+          }
+        }
+      } else {
+        // Create new realm count display if it doesn't exist
+        const newRealmCountDisplay = document.createElement("div");
+        newRealmCountDisplay.classList.add(
+          "flex",
+          "items-center",
+          "gap-1.5",
+          "mt-1",
+          "px-2",
+          "py-0.5",
+          "rounded",
+          "transition-all",
+          "duration-300",
+        );
+
+        if (isOwned) {
+          newRealmCountDisplay.classList.add(
+            "bg-order-brilliance/20",
+            "border",
+            "border-order-brilliance/30",
+            "animate-slowPulse",
+          );
+        } else {
+          newRealmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+        }
+
+        newRealmCountDisplay.setAttribute("data-component", "realm-count");
+
+        // Add icon
+        const vpIcon = document.createElement("span");
+        vpIcon.classList.add("text-xs");
+        if (isOwned) {
+          vpIcon.textContent = "⚡";
+          vpIcon.classList.add("text-order-brilliance");
+        } else {
+          vpIcon.textContent = "💤";
+          vpIcon.classList.add("text-gray-300");
+        }
+        newRealmCountDisplay.appendChild(vpIcon);
+
+        // Add the VP value
+        const realmCountText = document.createElement("span");
+        realmCountText.classList.add("font-bold", "text-xs");
+
+        if (isOwned) {
+          realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+        } else {
+          realmCountText.classList.add("text-gray-300");
+        }
+
+        realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+        newRealmCountDisplay.appendChild(realmCountText);
+
+        // Add VP/s label
+        const vpLabel = document.createElement("span");
+        vpLabel.classList.add("text-xxs", "font-normal");
+
+        if (isOwned) {
+          vpLabel.classList.add("text-order-brilliance/80");
+          vpLabel.textContent = "VP/s";
+        } else {
+          vpLabel.classList.add("text-gray-300");
+          vpLabel.textContent = "VP/s (unclaimed)";
+        }
+
+        newRealmCountDisplay.appendChild(vpLabel);
+
+        const contentContainer = element.querySelector('[data-component="content-container"]');
+        if (contentContainer) {
+          contentContainer.appendChild(newRealmCountDisplay);
+        }
+      }
+    } else if (realmCountDisplay) {
+      // Remove realm count display if no longer needed
+      realmCountDisplay.remove();
     }
   },
 };

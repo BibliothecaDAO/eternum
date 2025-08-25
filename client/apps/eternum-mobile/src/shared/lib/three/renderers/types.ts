@@ -30,6 +30,14 @@ export interface StructureObject extends MapObject {
   structureType?: string;
   level?: number;
   buildingType?: BuildingType;
+  ownerName?: string;
+  guildName?: string;
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  hyperstructureRealmCount?: number;
+  stage?: number;
+  initialized?: boolean;
+  hasWonder?: boolean;
 }
 
 export interface QuestObject extends MapObject {

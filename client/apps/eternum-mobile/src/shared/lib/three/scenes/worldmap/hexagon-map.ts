@@ -1130,6 +1130,7 @@ export class HexagonMap {
   }
 
   public updateStructureHexes(update: StructureSystemUpdate) {
+    console.log("[HexagonMap] Structure tile update:", update);
     const {
       hexCoords: { col, row },
       owner: { address },
@@ -1152,6 +1153,15 @@ export class HexagonMap {
       owner: address || 0n,
       type: "structure",
       structureType: structureType.toString(),
+      ownerName: update.owner.ownerName,
+      guildName: update.owner.guildName,
+      guardArmies: update.guardArmies,
+      activeProductions: update.activeProductions,
+      hyperstructureRealmCount: update.hyperstructureRealmCount,
+      stage: update.stage,
+      initialized: update.initialized,
+      level: update.level,
+      hasWonder: update.hasWonder,
     };
     this.structureRenderer.updateObject(structure);
   }
@@ -1410,7 +1420,18 @@ export class HexagonMap {
     owner: { address: bigint; ownerName: string; guildName: string };
   }): void {
     console.log("[HexagonMap] Structure guard update:", update);
-    // For mobile, structure renderer handles its own updates
+
+    const existingStructure = this.structureRenderer.getObject(update.entityId);
+    if (existingStructure) {
+      // Update structure with guard data
+      const updatedStructure = {
+        ...existingStructure,
+        guardArmies: update.guardArmies,
+        ownerName: update.owner.ownerName,
+        guildName: update.owner.guildName,
+      };
+      this.structureRenderer.updateObject(updatedStructure);
+    }
   }
 
   private updateStructureFromBuildingUpdate(update: {
@@ -1418,12 +1439,31 @@ export class HexagonMap {
     activeProductions: Array<{ buildingCount: number; buildingType: any }>;
   }): void {
     console.log("[HexagonMap] Structure building update:", update);
-    // For mobile, structure renderer handles its own updates
+
+    const existingStructure = this.structureRenderer.getObject(update.entityId);
+    if (existingStructure) {
+      // Update structure with production data
+      const updatedStructure = {
+        ...existingStructure,
+        activeProductions: update.activeProductions,
+      };
+      this.structureRenderer.updateObject(updatedStructure);
+    }
   }
 
   private updateStructureContribution(value: { entityId: ID; structureType: any; stage: any }): void {
     console.log("[HexagonMap] Structure contribution update:", value);
-    // For mobile, structure renderer handles its own updates
+
+    const existingStructure = this.structureRenderer.getObject(value.entityId);
+    if (existingStructure) {
+      // Update structure with contribution data (hyperstructure realm count)
+      const updatedStructure = {
+        ...existingStructure,
+        stage: value.stage,
+        hyperstructureRealmCount: value.stage, // Stage represents VP/s for hyperstructures
+      };
+      this.structureRenderer.updateObject(updatedStructure);
+    }
   }
 
   private handleRelicEffectUpdate(update: RelicEffectSystemUpdate): void {

@@ -295,23 +295,31 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       ? (parseInt(structure.structureType) as StructureType)
       : StructureType.Realm;
 
+    console.log(`[StructureRenderer] Converting structure ${structure.id} to label data:`, {
+      structureType,
+      hyperstructureRealmCount: structure.hyperstructureRealmCount,
+      guardArmies: structure.guardArmies?.length || 0,
+      activeProductions: structure.activeProductions?.length || 0,
+      ownerName: structure.ownerName,
+    });
+
     return {
       entityId: structure.id,
       hexCoords: new Position({ x: structure.col, y: structure.row }),
       structureType,
-      stage: 1,
-      initialized: true,
+      stage: structure.stage || 1,
+      initialized: structure.initialized ?? true,
       level: structure.level || 1,
       isMine: Boolean(isPlayerStructure),
-      hasWonder: false,
+      hasWonder: structure.hasWonder || false,
       owner: {
         address: structure.owner || 0n,
-        ownerName: isPlayerStructure ? "My Structure" : "Structure",
-        guildName: "",
+        ownerName: structure.ownerName || (isPlayerStructure ? "My Structure" : "Structure"),
+        guildName: structure.guildName || "",
       },
-      guardArmies: [],
-      activeProductions: [],
-      hyperstructureRealmCount: 0,
+      guardArmies: structure.guardArmies || [],
+      activeProductions: structure.activeProductions || [],
+      hyperstructureRealmCount: structure.hyperstructureRealmCount || 0,
     };
   }
 
