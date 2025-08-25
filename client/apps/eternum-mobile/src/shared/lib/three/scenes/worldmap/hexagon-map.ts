@@ -266,7 +266,7 @@ export class HexagonMap {
         this.pendingChunkUpdate = null;
 
         if (chunkX !== centerChunkX || chunkZ !== centerChunkZ) {
-          await this.updateVisibleHexes(chunkX, chunkZ);
+          this.updateVisibleHexes(chunkX, chunkZ);
         }
       }
     }

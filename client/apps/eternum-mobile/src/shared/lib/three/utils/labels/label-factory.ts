@@ -6,8 +6,8 @@ import {
   createOwnerDisplayElement,
   createProductionDisplay,
   createStaminaBar,
-  createTroopCountDisplay,
-  getTroopDisplayName,
+  getTierStyle,
+  getTroopResourceIdFromCategory,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -78,6 +78,67 @@ export interface QuestLabelData extends LabelData {
   questType: number;
   occupierId: number;
 }
+
+/**
+ * Convert TroopTier enum to number for styling
+ */
+const getTierNumber = (tier: TroopTier): number => {
+  switch (tier) {
+    case TroopTier.T1:
+      return 1;
+    case TroopTier.T2:
+      return 2;
+    case TroopTier.T3:
+      return 3;
+    default:
+      return 1;
+  }
+};
+
+/**
+ * Create troop icon display for army labels
+ */
+const createTroopIconDisplay = (troopCount: number, troopType: TroopType, troopTier: TroopTier): HTMLElement => {
+  const troopDisplay = document.createElement("div");
+  troopDisplay.classList.add("flex", "items-center", "gap-0.5", "rounded", "px-1", "py-0.5", "bg-black/40");
+  troopDisplay.setAttribute("data-component", "troop-icon");
+
+  const troopTypeName = troopType.toString();
+  const resourceId = getTroopResourceIdFromCategory(troopTypeName);
+
+  if (resourceId) {
+    const iconContainer = document.createElement("div");
+    iconContainer.classList.add("w-3", "h-3", "flex-shrink-0");
+
+    const img = document.createElement("img");
+    img.src = `/images/resources/${resourceId}.png`;
+    img.classList.add("w-full", "h-full", "object-contain");
+    iconContainer.appendChild(img);
+    troopDisplay.appendChild(iconContainer);
+  }
+
+  const countSpan = document.createElement("span");
+  countSpan.textContent = troopCount.toString();
+  countSpan.classList.add("font-semibold", "text-xxs", "leading-none");
+  countSpan.setAttribute("data-role", "count");
+  troopDisplay.appendChild(countSpan);
+
+  const tierBadge = document.createElement("span");
+  tierBadge.textContent = `T${getTierNumber(troopTier)}`;
+  tierBadge.classList.add(
+    "px-0.5",
+    "py-0",
+    "rounded",
+    "text-[9px]",
+    "font-bold",
+    "border",
+    "leading-none",
+    ...getTierStyle(getTierNumber(troopTier)).split(" "),
+  );
+  troopDisplay.appendChild(tierBadge);
+
+  return troopDisplay;
+};
 
 /**
  * Create base label element with common properties
@@ -161,10 +222,10 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     });
     textContainer.appendChild(ownerDisplay);
 
-    // Add troop count display
+    // Add troop icon display
     if (data.troopCount !== undefined) {
-      const troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier);
-      textContainer.appendChild(troopCountDisplay);
+      const troopIconDisplay = createTroopIconDisplay(data.troopCount, data.category, data.tier);
+      textContainer.appendChild(troopIconDisplay);
     }
 
     // Add stamina bar
@@ -216,12 +277,32 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     }
 
-    // Update troop count if present
-    const troopCountElement = element.querySelector('[data-component="troop-count"] [data-role="count"]');
-    if (troopCountElement && data.troopCount !== undefined) {
-      const troopName = getTroopDisplayName(data.category, data.tier);
-      const troopCountText = data.troopCount ? `${data.troopCount}x ${troopName}` : troopName;
-      troopCountElement.textContent = troopCountText;
+    // Update troop icon display if present
+    const troopIconElement = element.querySelector('[data-component="troop-icon"]');
+    if (troopIconElement && data.troopCount !== undefined) {
+      // Update the count
+      const countElement = troopIconElement.querySelector('[data-role="count"]');
+      if (countElement) {
+        countElement.textContent = data.troopCount.toString();
+      }
+
+      // Update the icon if troop type changed
+      const iconContainer = troopIconElement.querySelector("div:first-child");
+      const img = iconContainer?.querySelector("img");
+      if (img) {
+        const troopTypeName = data.category.toString();
+        const resourceId = getTroopResourceIdFromCategory(troopTypeName);
+        if (resourceId) {
+          img.src = `/images/resources/${resourceId}.png`;
+        }
+      }
+
+      // Update the tier badge
+      const tierBadge = troopIconElement.querySelector("span:last-child");
+      if (tierBadge) {
+        tierBadge.textContent = `T${getTierNumber(data.tier)}`;
+        tierBadge.className = `px-0.5 py-0 rounded text-[9px] font-bold border leading-none ${getTierStyle(getTierNumber(data.tier))}`;
+      }
     }
 
     // Update stamina bar if present
