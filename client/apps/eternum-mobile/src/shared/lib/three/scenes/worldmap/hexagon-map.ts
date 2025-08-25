@@ -4,6 +4,7 @@ import {
   ActionType,
   ArmyActionManager,
   ArmySystemUpdate,
+  ChestSystemUpdate,
   Position,
   StructureActionManager,
   StructureSystemUpdate,
@@ -19,7 +20,15 @@ import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
 import { SelectionManager } from "../../managers/selection-manager";
-import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "../../renderers";
+import {
+  ArmyObject,
+  ArmyRenderer,
+  ChestObject,
+  ChestRenderer,
+  QuestRenderer,
+  StructureObject,
+  StructureRenderer,
+} from "../../renderers";
 import { BiomeTilePosition, BiomeTileRenderer } from "../../tiles/biome-tile-renderer";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { findShortestPath } from "../../utils/pathfinding";
@@ -40,6 +49,7 @@ export class HexagonMap {
   private armyRenderer: ArmyRenderer;
   private structureRenderer: StructureRenderer;
   private questRenderer: QuestRenderer;
+  private chestRenderer: ChestRenderer;
   private selectionManager: SelectionManager;
   private fxManager: FXManager;
   private GUIFolder: any;
@@ -80,6 +90,7 @@ export class HexagonMap {
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
   // Store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<number, { col: number; row: number }> = new Map();
@@ -105,11 +116,13 @@ export class HexagonMap {
     this.armyRenderer = new ArmyRenderer(scene);
     this.structureRenderer = new StructureRenderer(scene);
     this.questRenderer = new QuestRenderer(scene);
+    this.chestRenderer = new ChestRenderer(scene);
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyRenderer);
     this.selectionManager.registerObjectRenderer("structure", this.structureRenderer);
     this.selectionManager.registerObjectRenderer("quest", this.questRenderer);
+    this.selectionManager.registerObjectRenderer("chest", this.chestRenderer);
 
     this.initializeStaticAssets();
     this.initializeMap();
@@ -118,6 +131,8 @@ export class HexagonMap {
     this.systemManager.Army.onTileUpdate((update) => this.updateArmyHexes(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
     this.systemManager.Structure.onTileUpdate((update) => this.updateStructureHexes(update));
+    this.systemManager.Chest.onTileUpdate((update) => this.updateChestHexes(update));
+    this.systemManager.Chest.onDeadChest((entityId) => this.deleteChest(entityId));
 
     // Setup GUI with duplicate prevention
     const folderName = "HexagonMap";
@@ -359,6 +374,7 @@ export class HexagonMap {
     this.armyRenderer.setVisibleBounds(bounds);
     this.structureRenderer.setVisibleBounds(bounds);
     this.questRenderer.setVisibleBounds(bounds);
+    this.chestRenderer.setVisibleBounds(bounds);
     console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
 
@@ -425,6 +441,7 @@ export class HexagonMap {
     const armies = this.armyRenderer.getObjectsAtHex(col, row);
     const structures = this.structureRenderer.getObjectsAtHex(col, row);
     const quests = this.questRenderer.getObjectsAtHex(col, row);
+    const chests = this.chestRenderer.getObjectsAtHex(col, row);
 
     // Check if we have a selected object and clicked on a highlighted hex
     const selectedObject = this.selectionManager.getSelectedObject();
@@ -451,6 +468,10 @@ export class HexagonMap {
           console.log(`Quest action at (${col}, ${row})`);
           // Handle quest action
           this.selectionManager.clearSelection();
+        } else if (actionType === ActionType.Chest) {
+          console.log(`Chest action at (${col}, ${row})`);
+          // Handle chest action
+          this.selectionManager.clearSelection();
         }
 
         return;
@@ -464,6 +485,8 @@ export class HexagonMap {
       this.selectStructure(structures[0].id);
     } else if (quests.length > 0) {
       this.selectionManager.selectObject(quests[0].id, "quest");
+    } else if (chests.length > 0) {
+      this.selectionManager.selectObject(chests[0].id, "chest");
     } else {
       this.selectionManager.clearSelection();
     }
@@ -704,6 +727,7 @@ export class HexagonMap {
     this.armyRenderer.dispose();
     this.structureRenderer.dispose();
     this.questRenderer.dispose();
+    this.chestRenderer.dispose();
     this.selectionManager.dispose();
 
     this.allHexes.clear();
@@ -1060,6 +1084,47 @@ export class HexagonMap {
     this.armyRenderer.removeObject(entityId);
   }
 
+  public updateChestHexes(update: ChestSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      occupierId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    // Update chest hexes map for action path calculation
+    if (!this.chestHexes.has(normalized.x)) {
+      this.chestHexes.set(normalized.x, new Map());
+    }
+    this.chestHexes.get(normalized.x)?.set(normalized.y, { id: occupierId, owner: 0n });
+
+    const chest: ChestObject = {
+      id: occupierId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: 0n,
+      type: "chest",
+    };
+    this.chestRenderer.addObject(chest);
+  }
+
+  public deleteChest(entityId: number) {
+    // Find and remove from chestHexes
+    this.chestHexes.forEach((rowMap, col) => {
+      rowMap.forEach((chestInfo, row) => {
+        if (chestInfo.id === entityId) {
+          rowMap.delete(row);
+          if (rowMap.size === 0) {
+            this.chestHexes.delete(col);
+          }
+        }
+      });
+    });
+
+    // Remove from renderer
+    this.chestRenderer.removeObject(entityId);
+  }
+
   public hasArmyAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
     return this.armyRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
@@ -1068,6 +1133,11 @@ export class HexagonMap {
   public hasStructureAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
     return this.structureRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
+  }
+
+  public hasChestAtHex(col: number, row: number): boolean {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return this.chestRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
   }
 
   public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
@@ -1082,14 +1152,22 @@ export class HexagonMap {
     return structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined;
   }
 
+  public getChestAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    const chests = this.chestRenderer.getObjectsAtHex(normalized.x, normalized.y);
+    return chests.length > 0 ? { id: chests[0].id, owner: chests[0].owner! } : undefined;
+  }
+
   public getHexagonEntity(hexCoords: { col: number; row: number }) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
     const armies = this.armyRenderer.getObjectsAtHex(hex.x, hex.y);
     const structures = this.structureRenderer.getObjectsAtHex(hex.x, hex.y);
+    const chests = this.chestRenderer.getObjectsAtHex(hex.x, hex.y);
 
     return {
       army: armies.length > 0 ? { id: armies[0].id, owner: armies[0].owner! } : undefined,
       structure: structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined,
+      chest: chests.length > 0 ? { id: chests[0].id, owner: chests[0].owner! } : undefined,
     };
   }
 

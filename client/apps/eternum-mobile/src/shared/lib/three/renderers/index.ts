@@ -1,5 +1,6 @@
-export { ObjectRenderer } from "./base-object-renderer";
 export { ArmyRenderer } from "./army-renderer";
-export { StructureRenderer } from "./structure-renderer";
+export { ObjectRenderer } from "./base-object-renderer";
+export { ChestRenderer } from "./chest-renderer";
 export { QuestRenderer } from "./quest-renderer";
-export type { MapObject, ArmyObject, StructureObject, QuestObject, GameMapObject } from "./types";
+export { StructureRenderer } from "./structure-renderer";
+export type { ArmyObject, ChestObject, GameMapObject, MapObject, QuestObject, StructureObject } from "./types";
