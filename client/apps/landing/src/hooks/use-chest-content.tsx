@@ -32,8 +32,8 @@ export const useChestContent = (debugMode: boolean = false) => {
       const currentLength = tokenBalanceQuery.length;
 
       console.log({ currentLength, previousLengthRef: previousLengthRef.current });
-      // If array length increased, get the last 3 items
-      if (previousLengthRef.current > 0 && currentLength > previousLengthRef.current) {
+      // If exactly 3 new items were added, get the last 3 items
+      if (currentLength === previousLengthRef.current + 3) {
         const lastThreeTokens = tokenBalanceQuery.slice(-3);
 
         // Convert to ChestAsset format
