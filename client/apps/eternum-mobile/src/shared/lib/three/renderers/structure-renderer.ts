@@ -1,12 +1,18 @@
+import { Position } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
 import { BuildingTileIndex, getBuildingTileIndex } from "../tiles/tile-enums";
+import { StructureLabelData, StructureLabelType } from "../utils/labels/label-factory";
+import { HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { ObjectRenderer } from "./base-object-renderer";
 import { StructureObject } from "./types";
 
 export class StructureRenderer extends ObjectRenderer<StructureObject> {
   private buildingTileRenderer: BuildingTileRenderer;
+  private labels: Map<number, CSS2DObject> = new Map();
+  private labelAttachmentState: Map<number, boolean> = new Map();
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -15,14 +21,21 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
 
   public addObject(object: StructureObject): void {
     this.objects.set(object.id, object);
+    this.createLabel(object);
     this.syncBuildingTile(object);
   }
 
   public updateObject(object: StructureObject): void {
     const existingStructure = this.objects.get(object.id);
 
+    // If structure doesn't exist, treat as new object
+    if (!existingStructure) {
+      this.addObject(object);
+      return;
+    }
+
     // Check if the structure has moved to a new position (unlikely but consistent API)
-    if (existingStructure && (existingStructure.col !== object.col || existingStructure.row !== object.row)) {
+    if (existingStructure.col !== object.col || existingStructure.row !== object.row) {
       // If currently moving, don't start another movement
       if (this.isObjectMoving(object.id)) {
         return;
@@ -33,6 +46,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     } else {
       // Just update properties without position change
       this.objects.set(object.id, object);
+      this.updateLabelContent(object);
       this.syncBuildingTile(object);
     }
   }
@@ -42,6 +56,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     if (structure) {
       this.buildingTileRenderer.removeTile(structure.col, structure.row);
     }
+    this.removeLabel(objectId);
     this.objects.delete(objectId);
   }
 
@@ -49,6 +64,14 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     const oldStructure = this.objects.get(objectId);
     if (oldStructure) {
       this.buildingTileRenderer.removeTile(oldStructure.col, oldStructure.row);
+
+      const label = this.labels.get(objectId);
+      if (label) {
+        const wasAttached = this.labelAttachmentState.get(objectId) ?? false;
+        if (wasAttached) {
+          this.buildingTileRenderer.removeObjectFromTileGroup(oldStructure.col, oldStructure.row, label);
+        }
+      }
     }
 
     const structure = this.objects.get(objectId);
@@ -56,6 +79,17 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       structure.col = col;
       structure.row = row;
       this.syncBuildingTile(structure);
+
+      const label = this.labels.get(objectId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(col, row);
+        if (shouldBeVisible) {
+          this.buildingTileRenderer.addObjectToTileGroup(col, row, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else {
+          this.labelAttachmentState.set(objectId, false);
+        }
+      }
     }
   }
 
@@ -102,6 +136,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
     this.buildingTileRenderer.setVisibleBounds(bounds);
+    this.updateLabelVisibility();
   }
 
   public getObject(objectId: number): StructureObject | undefined {
@@ -133,6 +168,21 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       // Update structure position after movement completes
       structure.col = targetCol;
       structure.row = targetRow;
+
+      // Update label attachment for new position
+      const label = this.labels.get(objectId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(targetCol, targetRow);
+        const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.buildingTileRenderer.addObjectToTileGroup(targetCol, targetRow, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.buildingTileRenderer.removeObjectFromTileGroup(targetCol, targetRow, label);
+          this.labelAttachmentState.set(objectId, false);
+        }
+      }
     });
   }
 
@@ -154,6 +204,21 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       // Update structure position after movement completes
       structure.col = finalHex.col;
       structure.row = finalHex.row;
+
+      // Update label attachment for final position
+      const label = this.labels.get(objectId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(finalHex.col, finalHex.row);
+        const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.buildingTileRenderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.buildingTileRenderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
+          this.labelAttachmentState.set(objectId, false);
+        }
+      }
     });
   }
 
@@ -173,7 +238,110 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     );
   }
 
+  private createLabel(structure: StructureObject): void {
+    const structureLabelData = this.convertStructureToLabelData(structure);
+
+    const labelDiv = StructureLabelType.createElement(structureLabelData);
+
+    // Create CSS2DObject
+    const label = new CSS2DObject(labelDiv);
+
+    // Position the label above the tile (relative to tile group position)
+    label.position.set(0, 2.1, -HEX_SIZE * 1.425);
+
+    // Store entityId in userData for identification
+    label.userData.entityId = structure.id;
+
+    this.labels.set(structure.id, label);
+
+    // Set initial attachment state based on visibility bounds
+    const shouldBeVisible = this.isHexVisible(structure.col, structure.row);
+    if (shouldBeVisible) {
+      this.buildingTileRenderer.addObjectToTileGroup(structure.col, structure.row, label);
+      this.labelAttachmentState.set(structure.id, true);
+    } else {
+      this.labelAttachmentState.set(structure.id, false);
+    }
+  }
+
+  private updateLabelContent(structure: StructureObject): void {
+    const label = this.labels.get(structure.id);
+    if (!label || !label.element) return;
+
+    const structureLabelData = this.convertStructureToLabelData(structure);
+    StructureLabelType.updateElement?.(label.element, structureLabelData);
+  }
+
+  private removeLabel(structureId: number): void {
+    const label = this.labels.get(structureId);
+    const structure = this.objects.get(structureId);
+    if (label && structure) {
+      const isAttached = this.labelAttachmentState.get(structureId) ?? false;
+      if (isAttached) {
+        this.buildingTileRenderer.removeObjectFromTileGroup(structure.col, structure.row, label);
+      }
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+      this.labels.delete(structureId);
+      this.labelAttachmentState.delete(structureId);
+    }
+  }
+
+  private convertStructureToLabelData(structure: StructureObject): StructureLabelData {
+    const playerAddress = loggedInAccount();
+    const isPlayerStructure = structure.owner && structure.owner.toString() === playerAddress?.toString();
+    const structureType = structure.structureType
+      ? (parseInt(structure.structureType) as StructureType)
+      : StructureType.Realm;
+
+    return {
+      entityId: structure.id,
+      hexCoords: new Position({ x: structure.col, y: structure.row }),
+      structureType,
+      stage: 1,
+      initialized: true,
+      level: structure.level || 1,
+      isMine: Boolean(isPlayerStructure),
+      hasWonder: false,
+      owner: {
+        address: structure.owner || 0n,
+        ownerName: isPlayerStructure ? "My Structure" : "Structure",
+        guildName: "",
+      },
+      guardArmies: [],
+      activeProductions: [],
+      hyperstructureRealmCount: 0,
+    };
+  }
+
+  private updateLabelVisibility(): void {
+    this.labels.forEach((label, structureId) => {
+      const structure = this.objects.get(structureId);
+      if (structure) {
+        const shouldBeVisible = this.isHexVisible(structure.col, structure.row);
+        const isCurrentlyAttached = this.labelAttachmentState.get(structureId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.buildingTileRenderer.addObjectToTileGroup(structure.col, structure.row, label);
+          this.labelAttachmentState.set(structureId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.buildingTileRenderer.removeObjectFromTileGroup(structure.col, structure.row, label);
+          this.labelAttachmentState.set(structureId, false);
+        }
+      }
+    });
+  }
+
   public dispose(): void {
+    this.labels.forEach((label) => {
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+    });
+    this.labels.clear();
+    this.labelAttachmentState.clear();
+
     this.buildingTileRenderer.dispose();
   }
 }
