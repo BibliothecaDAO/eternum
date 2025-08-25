@@ -36,7 +36,7 @@ export class HexagonMap {
   private hexagonMesh: THREE.InstancedMesh | null = null;
   private hexagonMeshCapacity: number = 0;
   private static readonly MAX_HEX_CAPACITY = 5000;
-  private tileRenderer: TileRenderer;
+  private tileRenderer: BiomeTileRenderer;
   private highlightRenderer: HighlightRenderer;
   private armyRenderer: ArmyRenderer;
   private structureRenderer: StructureRenderer;
@@ -101,7 +101,7 @@ export class HexagonMap {
     this.fxManager = fxManager;
     this.raycaster = new THREE.Raycaster();
 
-    this.tileRenderer = new TileRenderer(scene);
+    this.tileRenderer = new BiomeTileRenderer(scene);
     this.highlightRenderer = new HighlightRenderer(scene);
     this.armyRenderer = new ArmyRenderer(scene);
     this.structureRenderer = new StructureRenderer(scene);
@@ -313,7 +313,7 @@ export class HexagonMap {
 
     const instanceSetupStartTime = performance.now();
     let index = 0;
-    const tilePositions: TilePosition[] = [];
+    const tilePositions: BiomeTilePosition[] = [];
 
     allVisibleHexes.forEach(({ col, row, hexString }) => {
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
@@ -834,6 +834,8 @@ export class HexagonMap {
 
     if (removeExplored) {
       this.exploredTiles.get(col)?.delete(row);
+      // Also remove the tile from the renderer
+      this.tileRenderer.removeTile(col, row);
       return;
     }
 
@@ -843,14 +845,8 @@ export class HexagonMap {
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
 
-      // Debounced re-render to batch tile updates
-      if (this.tileUpdateTimeout) {
-        clearTimeout(this.tileUpdateTimeout);
-      }
-      this.tileUpdateTimeout = setTimeout(() => {
-        this.renderHexes();
-        this.tileUpdateTimeout = null;
-      }, 50);
+      // Update the tile directly instead of re-rendering all hexes
+      this.tileRenderer.addTile(col, row, biome, true);
     }
   }
 
