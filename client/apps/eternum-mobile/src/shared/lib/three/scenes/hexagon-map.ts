@@ -21,9 +21,9 @@ import { loggedInAccount } from "../helpers/utils";
 import { FXManager } from "./fx-manager";
 import { createHexagonShape } from "./hexagon-geometry";
 import { HighlightRenderer } from "./highlight-renderer";
-import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./object-renderer";
+import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./renderers";
 import { SelectionManager } from "./selection-manager";
-import { BiomeTileRenderer, BiomeTilePosition } from "./tiles/biome-tile-renderer";
+import { BiomeTilePosition, BiomeTileRenderer } from "./tiles/biome-tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
 export class HexagonMap {
