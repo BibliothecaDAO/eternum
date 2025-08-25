@@ -11,8 +11,6 @@ export interface UnitTilePosition extends TilePosition {
 }
 
 export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
-  private visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
-
   constructor(scene: THREE.Scene) {
     super(scene, TILEMAP_CONFIGS.units);
   }
@@ -50,6 +48,8 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
       return;
     }
 
+    void isDonkey; // Not currently used but kept for future extensibility
+
     const hexKey = `${col},${row}`;
     getWorldPositionForTile({ col, row }, true, this.tempVector3);
 
@@ -62,12 +62,6 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
     }
 
     this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, true);
-
-    // Only add to scene if within visible bounds
-    const sprite = this.sprites.get(hexKey);
-    if (sprite && this.visibleBounds && !this.isHexVisible(col, row)) {
-      this.scene.remove(sprite);
-    }
   }
 
   public addTile(
@@ -145,35 +139,6 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
 
     toAdd.forEach(({ col, row, troopType, troopTier, isDonkey, isExplored }) => {
       this.addTile(col, row, troopType, troopTier, isDonkey, isExplored);
-    });
-  }
-
-  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
-    this.visibleBounds = bounds;
-    this.updateTileVisibility(bounds);
-  }
-
-  private isHexVisible(col: number, row: number): boolean {
-    if (!this.visibleBounds) return true;
-    return (
-      col >= this.visibleBounds.minCol &&
-      col <= this.visibleBounds.maxCol &&
-      row >= this.visibleBounds.minRow &&
-      row <= this.visibleBounds.maxRow
-    );
-  }
-
-  private updateTileVisibility(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
-    this.sprites.forEach((sprite, hexKey) => {
-      const [col, row] = hexKey.split(",").map(Number);
-      const shouldBeVisible =
-        col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
-
-      if (shouldBeVisible && !sprite.parent) {
-        this.scene.add(sprite);
-      } else if (!shouldBeVisible && sprite.parent) {
-        this.scene.remove(sprite);
-      }
     });
   }
 }

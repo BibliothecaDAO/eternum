@@ -14,6 +14,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   }
 
   protected configureSpriteScale(sprite: THREE.Sprite, tileId: BuildingTileIndex): void {
+    void tileId; // Not used in current implementation, but subclasses might need it
     const spriteScale = HEX_SIZE * 3.2;
     const heightRatio = this.config.tileHeight / 312;
     sprite.scale.set(spriteScale, spriteScale * 1.15 * heightRatio, 1);
@@ -25,10 +26,13 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     row: number,
     isOverlay: boolean,
   ): void {
+    void position; // Position is now handled by the group
+    void row; // Not used in new implementation
+
     const yOffset = isOverlay ? 0.25 : 0.2;
     const heightRatio = this.config.tileHeight / 312;
     const zAdjustment = HEX_SIZE * 0.825 * heightRatio;
-    sprite.position.set(position.x, yOffset, position.z - zAdjustment * 1.575);
+    sprite.position.set(0, yOffset, -zAdjustment * 1.075);
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
@@ -150,23 +154,8 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     const boundsStartTime = performance.now();
     console.log(`[BuildingTileRenderer] setVisibleBounds: sprites=${this.sprites.size}, bounds:`, bounds);
-    // Building tiles need bounds-based visibility management
-    this.updateTileVisibility(bounds);
+    // Use parent class visibility management which works with groups
+    super.setVisibleBounds(bounds);
     console.log(`[BUILDING-TIMING] Set visible bounds: ${(performance.now() - boundsStartTime).toFixed(2)}ms`);
-  }
-
-  private updateTileVisibility(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
-    this.sprites.forEach((sprite, hexKey) => {
-      const [col, row] = hexKey.split(",").map(Number);
-      const shouldBeVisible =
-        col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
-
-      if (shouldBeVisible && !sprite.parent) {
-        console.log(`[BuildingTileRenderer] Making tile visible at (${col}, ${row})`);
-        this.scene.add(sprite);
-      } else if (!shouldBeVisible && sprite.parent) {
-        this.scene.remove(sprite);
-      }
-    });
   }
 }

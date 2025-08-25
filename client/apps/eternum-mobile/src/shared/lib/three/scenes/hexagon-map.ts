@@ -906,6 +906,19 @@ export class HexagonMap {
           this.selectionManager.clearSelection();
         }
 
+        // Update army properties BEFORE starting movement (so movement logic has correct data)
+        const updatedArmy: ArmyObject = {
+          ...existingArmy,
+          owner: ownerAddress,
+          troopType,
+          troopTier,
+          ownerName,
+          guildName,
+          isDaydreamsAgent,
+          isAlly: false,
+        };
+        this.armyRenderer.updateObject(updatedArmy);
+
         // Start smooth movement animation
         this.startSmoothArmyMovement(entityId, oldPos, newPos);
       } else {
@@ -914,21 +927,23 @@ export class HexagonMap {
           this.armyHexes.set(newPos.col, new Map());
         }
         this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+
+        // Update army properties without position change
+        const updatedArmy: ArmyObject = {
+          ...existingArmy,
+          col: newPos.col,
+          row: newPos.row,
+          owner: ownerAddress,
+          troopType,
+          troopTier,
+          ownerName,
+          guildName,
+          isDaydreamsAgent,
+          isAlly: false,
+        };
+
+        this.armyRenderer.updateObject(updatedArmy);
       }
-
-      // Update army properties (position will be handled by animation)
-      const updatedArmy: ArmyObject = {
-        ...existingArmy,
-        owner: ownerAddress,
-        troopType,
-        troopTier,
-        ownerName,
-        guildName,
-        isDaydreamsAgent,
-        isAlly: false,
-      };
-
-      this.armyRenderer.updateObject(updatedArmy);
     }
 
     // Remove from pending movements when position is updated from blockchain
@@ -942,13 +957,6 @@ export class HexagonMap {
   ) {
     // Update hex tracking immediately before starting animation
     this.updateArmyHexTracking(entityId, oldPos, newPos);
-
-    // Update the army object's position immediately so getObjectsAtHex works correctly
-    const army = this.armyRenderer.getObject(entityId);
-    if (army) {
-      army.col = newPos.col;
-      army.row = newPos.row;
-    }
 
     // Calculate path using pathfinding
     const oldPosition = new Position({ x: oldPos.col, y: oldPos.row });
