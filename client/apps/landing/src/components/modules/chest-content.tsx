@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TroopType } from "@bibliothecadao/types";
 import { BarChart3, Diamond, Swords, Target } from "lucide-react";
 import { useState } from "react";
+import { useClickSound } from "@/hooks/use-click-sound";
 import { ModelViewer } from "./model-viewer";
 
 export enum AssetType {
@@ -356,10 +357,18 @@ export const ChestContent = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
+  
+  const { playClickSound } = useClickSound({
+    src: '/sound/ui/click-2.wav',
+    volume: 0.6,
+  });
 
   const handleAssetSelect = (asset: ChestAsset) => {
     if (asset.id === selectedAsset.id) return;
 
+    // Play click sound
+    playClickSound();
+    
     setIsTransitioning(true);
     setTimeout(() => {
       setSelectedAsset(asset);
