@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUIManager } from "../helpers/gui-manager";
 import { FXManager } from "./fx-manager";
-import { TileRenderer } from "./tile-renderer";
+import { TileRenderer } from "./tiles/tile-renderer";
 import { getWorldPositionForHex } from "./utils";
 
 export abstract class BaseScene {
