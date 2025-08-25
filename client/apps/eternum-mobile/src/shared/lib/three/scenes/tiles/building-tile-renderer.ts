@@ -65,7 +65,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     getWorldPositionForTile({ col, row }, false, this.tempVector3);
 
     const tileId = BuildingTypeToTileIndex[buildingType];
-    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, true);
+    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, false);
   }
 
   public addTile(col: number, row: number, buildingType?: BuildingType, isExplored: boolean = true): void {
@@ -86,7 +86,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     }
 
     getWorldPositionForTile({ col, row }, false, this.tempVector3);
-    this.createSingleTileSprite(hexKey, tileIndex, this.tempVector3, row, true);
+    this.createSingleTileSprite(hexKey, tileIndex, this.tempVector3, row, false);
   }
 
   public updateTilesForHexes(hexes: BuildingTilePosition[]): void {
