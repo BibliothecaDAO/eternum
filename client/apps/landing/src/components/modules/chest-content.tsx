@@ -367,8 +367,9 @@ export const ChestContent = ({
 }) => {
   // Sort assets by rarity (rarest first)
   const sortedChestContent = sortAssetsByRarity(chestContent);
-  const [selectedAsset, setSelectedAsset] = useState<ChestAsset>(sortedChestContent[0]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const selectedAsset = sortedChestContent[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
 
@@ -377,15 +378,15 @@ export const ChestContent = ({
     volume: 0.6,
   });
 
-  const handleAssetSelect = (asset: ChestAsset) => {
-    if (asset.id === selectedAsset.id) return;
+  const handleAssetSelect = (index: number) => {
+    if (index === selectedIndex) return;
 
     // Play click sound
     playClickSound();
 
     setIsTransitioning(true);
     setTimeout(() => {
-      setSelectedAsset(asset);
+      setSelectedIndex(index);
       setTimeout(() => setIsTransitioning(false), 50);
     }, 150);
   };
@@ -597,7 +598,7 @@ export const ChestContent = ({
                 {/* Asset grid with enhanced spacing */}
                 <div className="space-y-3">
                   {sortedChestContent.map((asset, index) => {
-                    const isSelected = selectedAsset.id === asset.id;
+                    const isSelected = index === selectedIndex;
                     const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
                     const cardClass = isSelected
                       ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
@@ -609,7 +610,7 @@ export const ChestContent = ({
                       <Card
                         key={index}
                         className={cardClass}
-                        onClick={() => handleAssetSelect(asset)}
+                        onClick={() => handleAssetSelect(index)}
                         style={{
                           transition: "all 0.3s ease",
                           transform: isSelected ? "scale(1.02)" : "scale(1)",
