@@ -837,6 +837,29 @@ export class HexagonMap {
       this.currentAbortController = null;
     }
 
+    // Clear all objects from renderers
+    this.armyRenderer.getAllObjects().forEach((army) => {
+      this.armyRenderer.removeObject(army.id);
+    });
+
+    this.chestRenderer.getAllObjects().forEach((chest) => {
+      this.chestRenderer.removeObject(chest.id);
+    });
+
+    this.structureRenderer.getAllObjects().forEach((structure) => {
+      this.structureRenderer.removeObject(structure.id);
+    });
+
+    this.questRenderer.getAllObjects().forEach((quest) => {
+      this.questRenderer.removeObject(quest.id);
+    });
+
+    // Clear hex data
+    this.armyHexes.clear();
+    this.chestHexes.clear();
+    this.structureHexes.clear();
+    this.questHexes.clear();
+
     this.fetchedChunks.clear();
     this.isLoadingChunks = false;
     this.pendingChunkUpdate = null;

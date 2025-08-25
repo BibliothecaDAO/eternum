@@ -93,7 +93,8 @@ export function getStructureTileIndex(structureType: StructureType, level?: numb
     }
   }
 
-  return structureTypeToBuildingTileIndex[structureType] || BuildingTileIndex.Camp;
+  const mappedTile = structureTypeToBuildingTileIndex[structureType];
+  return mappedTile !== undefined ? mappedTile : BuildingTileIndex.Camp;
 }
 
 export function getBuildingTileIndex(
@@ -102,7 +103,8 @@ export function getBuildingTileIndex(
   level?: number,
 ): BuildingTileIndex {
   if (buildingType !== undefined) {
-    return BuildingTypeToTileIndex[buildingType] || BuildingTileIndex.WorkersHut;
+    const mappedTile = BuildingTypeToTileIndex[buildingType];
+    return mappedTile !== undefined ? mappedTile : BuildingTileIndex.WorkersHut;
   }
 
   if (structureType !== undefined) {
