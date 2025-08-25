@@ -1,4 +1,4 @@
-import { BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export interface MapObject {
   id: number;
@@ -38,4 +38,8 @@ export interface QuestObject extends MapObject {
   isCompleted?: boolean;
 }
 
-export type GameMapObject = ArmyObject | StructureObject | QuestObject;
+export interface ChestObject extends MapObject {
+  type: "chest";
+}
+
+export type GameMapObject = ArmyObject | StructureObject | QuestObject | ChestObject;
