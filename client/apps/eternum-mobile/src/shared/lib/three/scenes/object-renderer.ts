@@ -5,7 +5,7 @@ import { loggedInAccount } from "../helpers/utils";
 import { BuildingTileRenderer } from "./tiles/building-tile-renderer";
 import { BuildingTileIndex, getBuildingTileIndex } from "./tiles/tile-enums";
 import { UnitTilePosition, UnitTileRenderer } from "./tiles/unit-tile-renderer";
-import { getWorldPositionForTile, HEX_SIZE } from "./utils";
+import { HEX_SIZE } from "./utils";
 
 export interface MapObject {
   id: number;
@@ -50,501 +50,88 @@ export type GameMapObject = ArmyObject | StructureObject | QuestObject;
 export abstract class ObjectRenderer<T extends MapObject> {
   protected scene: THREE.Scene;
   protected objects: Map<number, T> = new Map();
-  protected sprites: Map<number, THREE.Sprite> = new Map();
   protected selectedObjectId: number | null = null;
-  protected animationId: number | null = null;
   protected visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
 
-  // Track objects that are currently moving to prevent conflicts
-  protected movingObjects: Set<number> = new Set();
-
   protected tempVector3 = new THREE.Vector3();
-  protected tempColor = new THREE.Color();
-
-  protected startTime = performance.now();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
-    this.initializeMaterials();
   }
 
-  protected abstract initializeMaterials(): void;
-  protected abstract createSprite(object: T): THREE.Sprite;
-  protected abstract getTileId(object: T): number;
-  protected abstract getSharedMaterial(objectType: string): THREE.SpriteMaterial;
-
-  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
-    this.visibleBounds = bounds;
-    this.updateObjectVisibility();
-  }
-
-  protected updateObjectVisibility(): void {
-    if (!this.visibleBounds) return;
-
-    for (const [objectId, object] of this.objects) {
-      const sprite = this.sprites.get(objectId);
-
-      if (sprite) {
-        const shouldBeVisible = this.isHexVisible(object.col, object.row);
-
-        if (shouldBeVisible && !sprite.parent) {
-          this.scene.add(sprite);
-        } else if (!shouldBeVisible && sprite.parent) {
-          this.scene.remove(sprite);
-        }
-      }
-    }
-  }
-
-  protected isHexVisible(col: number, row: number): boolean {
-    if (!this.visibleBounds) return false;
-    return (
-      col >= this.visibleBounds.minCol &&
-      col <= this.visibleBounds.maxCol &&
-      row >= this.visibleBounds.minRow &&
-      row <= this.visibleBounds.maxRow
-    );
-  }
-
-  public addObject(object: T): void {
-    // Remove any existing object first to prevent duplicates
-    this.removeObject(object.id);
-
-    this.objects.set(object.id, object);
-    const sprite = this.createSprite(object);
-    this.sprites.set(object.id, sprite);
-
-    if (this.isHexVisible(object.col, object.row)) {
-      this.scene.add(sprite);
-    }
-  }
-
-  public removeObject(objectId: number): void {
-    const sprite = this.sprites.get(objectId);
-    if (sprite) {
-      if (sprite.parent) {
-        this.scene.remove(sprite);
-      }
-      // Dispose of the sprite material if it's individual
-      if (sprite.userData.hasIndividualMaterial && sprite.material) {
-        sprite.material.dispose();
-      }
-    }
-
-    this.sprites.delete(objectId);
-    this.objects.delete(objectId);
-    this.movingObjects.delete(objectId);
-
-    if (this.selectedObjectId === objectId) {
-      this.selectedObjectId = null;
-      this.stopSelectionAnimation();
-    }
-  }
-
-  public updateObject(object: T): void {
-    // If object is moving, only update non-position properties
-    if (this.movingObjects.has(object.id)) {
-      this.updateObjectProperties(object);
-      return;
-    }
-
-    // For non-moving objects, do a full update
-    this.updateObjectFull(object);
-  }
-
-  private updateObjectProperties(object: T): void {
-    const existingObject = this.objects.get(object.id);
-    if (!existingObject) return;
-
-    // Update only non-position properties
-    const updatedObject = {
-      ...existingObject,
-      owner: object.owner,
-      type: object.type,
-    };
-
-    // Update army-specific properties if it's an army
-    if ("troopType" in object && "troopTier" in object) {
-      (updatedObject as any).troopType = (object as any).troopType;
-      (updatedObject as any).troopTier = (object as any).troopTier;
-      (updatedObject as any).ownerName = (object as any).ownerName;
-      (updatedObject as any).guildName = (object as any).guildName;
-      (updatedObject as any).isDaydreamsAgent = (object as any).isDaydreamsAgent;
-      (updatedObject as any).isAlly = (object as any).isAlly;
-      (updatedObject as any).troopCount = (object as any).troopCount;
-      (updatedObject as any).currentStamina = (object as any).currentStamina;
-      (updatedObject as any).maxStamina = (object as any).maxStamina;
-    }
-
-    this.objects.set(object.id, updatedObject);
-  }
-
-  private updateObjectFull(object: T): void {
-    const existingSprite = this.sprites.get(object.id);
-    if (existingSprite && existingSprite.parent) {
-      this.scene.remove(existingSprite);
-    }
-
-    this.objects.set(object.id, object);
-    const sprite = this.createSprite(object);
-    this.sprites.set(object.id, sprite);
-
-    if (this.isHexVisible(object.col, object.row)) {
-      this.scene.add(sprite);
-    }
-  }
-
-  public updateObjectPosition(objectId: number, col: number, row: number): void {
-    const object = this.objects.get(objectId);
-    const sprite = this.sprites.get(objectId);
-
-    if (!object || !sprite) return;
-
-    // Update the object's position
-    object.col = col;
-    object.row = row;
-
-    // Update the sprite's position
-    getWorldPositionForTile({ col, row }, true, this.tempVector3);
-    sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
-
-    // Update visibility
-    const shouldBeVisible = this.isHexVisible(col, row);
-    if (shouldBeVisible && !sprite.parent) {
-      this.scene.add(sprite);
-    } else if (!shouldBeVisible && sprite.parent) {
-      this.scene.remove(sprite);
-    }
-
-    // Update label position if this is an army
-    this.updateLabelPosition(objectId, col, row);
-  }
-
-  protected updateLabelPosition(objectId: number, col: number, row: number): void {
-    // Base implementation does nothing - override in subclasses
-    void objectId;
-    void col;
-    void row;
-  }
-
-  // Update label to follow sprite position smoothly during movement
-  // Override in subclasses that have labels
-  protected updateLabelPositionFromSprite(objectId: number): void {
-    // Base implementation does nothing
-    void objectId;
-  }
-
-  public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
-    const object = this.objects.get(objectId);
-    const sprite = this.sprites.get(objectId);
-
-    if (!object || !sprite) {
-      return Promise.resolve();
-    }
-
-    // Mark object as moving
-    this.movingObjects.add(objectId);
-
-    return new Promise((resolve) => {
-      const startPosition = sprite.position.clone();
-      getWorldPositionForTile({ col: targetCol, row: targetRow }, true, this.tempVector3);
-      const endPosition = this.tempVector3.clone();
-      endPosition.y = 0.2;
-      endPosition.z -= HEX_SIZE * 0.825;
-
-      const startTime = performance.now();
-
-      const animate = () => {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-
-        sprite.position.lerpVectors(startPosition, endPosition, easeProgress);
-
-        // Update label position to follow sprite smoothly
-        this.updateLabelPositionFromSprite(objectId);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          // Update final position
-          object.col = targetCol;
-          object.row = targetRow;
-
-          const shouldBeVisible = this.isHexVisible(targetCol, targetRow);
-
-          if (shouldBeVisible && !sprite.parent) {
-            this.scene.add(sprite);
-          } else if (!shouldBeVisible && sprite.parent) {
-            this.scene.remove(sprite);
-          }
-
-          // Mark object as no longer moving
-          this.movingObjects.delete(objectId);
-          resolve();
-        }
-      };
-
-      animate();
-    });
-  }
-
-  public moveObjectAlongPath(
+  public abstract setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void;
+  public abstract addObject(object: T): void;
+  public abstract removeObject(objectId: number): void;
+  public abstract updateObject(object: T): void;
+  public abstract updateObjectPosition(objectId: number, col: number, row: number): void;
+  public abstract moveObject(objectId: number, targetCol: number, targetRow: number, duration?: number): Promise<void>;
+  public abstract moveObjectAlongPath(
     objectId: number,
     path: Array<{ col: number; row: number }>,
-    stepDuration: number = 300,
-  ): Promise<void> {
-    const object = this.objects.get(objectId);
-    const sprite = this.sprites.get(objectId);
-
-    if (!object || !sprite || path.length === 0) {
-      return Promise.resolve();
-    }
-
-    // Mark object as moving
-    this.movingObjects.add(objectId);
-
-    return new Promise((resolve) => {
-      let currentStep = 0;
-
-      const moveToNextStep = () => {
-        if (currentStep >= path.length) {
-          // Mark object as no longer moving
-          this.movingObjects.delete(objectId);
-          resolve();
-          return;
-        }
-
-        const targetHex = path[currentStep];
-        getWorldPositionForTile({ col: targetHex.col, row: targetHex.row }, true, this.tempVector3);
-
-        const startPosition = sprite.position.clone();
-        const endPosition = this.tempVector3.clone();
-        endPosition.y = 0.2;
-        endPosition.z -= HEX_SIZE * 0.825;
-
-        const startTime = performance.now();
-
-        const animate = () => {
-          const elapsed = performance.now() - startTime;
-          const progress = Math.min(elapsed / stepDuration, 1);
-
-          // Chess-like movement: quick movement with slight arc
-          const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-          // Add slight vertical arc for chess-like movement
-          const arcHeight = 0.1;
-          const arcProgress = Math.sin(progress * Math.PI) * arcHeight;
-
-          sprite.position.lerpVectors(startPosition, endPosition, easeProgress);
-          sprite.position.y += arcProgress;
-
-          // Update label position to follow sprite smoothly during movement
-          this.updateLabelPositionFromSprite(objectId);
-
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            // Update object position
-            object.col = targetHex.col;
-            object.row = targetHex.row;
-
-            const shouldBeVisible = this.isHexVisible(targetHex.col, targetHex.row);
-
-            if (shouldBeVisible && !sprite.parent) {
-              this.scene.add(sprite);
-            } else if (!shouldBeVisible && sprite.parent) {
-              this.scene.remove(sprite);
-            }
-
-            currentStep++;
-            setTimeout(moveToNextStep, 50); // Small delay between steps
-          }
-        };
-
-        animate();
-      };
-
-      moveToNextStep();
-    });
-  }
-
-  public isObjectMoving(objectId: number): boolean {
-    return this.movingObjects.has(objectId);
-  }
-
-  public getObject(objectId: number): T | undefined {
-    return this.objects.get(objectId);
-  }
-
-  public getObjectsAtHex(col: number, row: number): T[] {
-    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
-  }
-
-  public selectObject(objectId: number): void {
-    this.selectedObjectId = objectId;
-    const sprite = this.sprites.get(objectId);
-    if (sprite) {
-      sprite.renderOrder = 3000;
-
-      // Move selected sprite higher to ensure it's above highlights
-      sprite.userData.originalY = sprite.position.y;
-      sprite.position.y = 0.35;
-
-      // Create individual material for selected sprite to avoid affecting others
-      if (sprite.material instanceof THREE.SpriteMaterial) {
-        const individualMaterial = sprite.material.clone();
-        sprite.material = individualMaterial;
-        sprite.userData.hasIndividualMaterial = true;
-      }
-    }
-    this.startSelectionAnimation();
-  }
-
-  public deselectObject(): void {
-    if (this.selectedObjectId !== null) {
-      const sprite = this.sprites.get(this.selectedObjectId);
-      if (sprite) {
-        // Restore original opacity
-        if (sprite.material instanceof THREE.SpriteMaterial) {
-          sprite.material.opacity = 1.0;
-
-          // Dispose individual material and restore shared material
-          if (sprite.userData.hasIndividualMaterial) {
-            sprite.material.dispose();
-            if (sprite.material.map) {
-              sprite.material.map.dispose();
-            }
-
-            // Restore shared material based on object type
-            const object = this.objects.get(this.selectedObjectId);
-            if (object) {
-              sprite.material = this.getSharedMaterial(object.type);
-            }
-            sprite.userData.hasIndividualMaterial = false;
-          }
-        }
-
-        // Restore original Y position
-        if (sprite.userData.originalY !== undefined) {
-          sprite.position.y = sprite.userData.originalY;
-          sprite.userData.originalY = undefined;
-        }
-
-        // Restore original render order
-        const object = this.objects.get(this.selectedObjectId);
-        if (object) {
-          const baseRenderOrder = Math.max(100 + object.row, 1);
-          sprite.renderOrder = baseRenderOrder + (object.type === "army" ? 1000 : object.type === "quest" ? 1500 : 500);
-        }
-      }
-    }
-    this.selectedObjectId = null;
-    this.stopSelectionAnimation();
-  }
-
-  public getSelectedObjectId(): number | null {
-    return this.selectedObjectId;
-  }
-
-  public getAllObjects(): T[] {
-    return Array.from(this.objects.values());
-  }
-
-  private startSelectionAnimation(): void {
-    if (this.animationId !== null) return;
-
-    this.startTime = performance.now();
-    this.animateSelection();
-  }
-
-  protected stopSelectionAnimation(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-  }
-
-  private animateSelection = (): void => {
-    if (this.selectedObjectId === null) {
-      this.animationId = null;
-      return;
-    }
-
-    const sprite = this.sprites.get(this.selectedObjectId);
-    if (!sprite || !(sprite.material instanceof THREE.SpriteMaterial)) {
-      this.animationId = null;
-      return;
-    }
-
-    const currentTime = performance.now();
-    const elapsed = (currentTime - this.startTime) / 1000;
-
-    const pulseValue = Math.sin(elapsed * 3.0 * Math.PI) * 0.3 + 0.7;
-    sprite.material.opacity = pulseValue;
-
-    this.animationId = requestAnimationFrame(this.animateSelection);
-  };
-
-  public dispose(): void {
-    this.stopSelectionAnimation();
-    this.sprites.forEach((sprite) => {
-      if (sprite.parent) {
-        this.scene.remove(sprite);
-      }
-    });
-    this.sprites.clear();
-    this.objects.clear();
-    this.visibleBounds = null;
-  }
+    stepDuration?: number,
+  ): Promise<void>;
+  public abstract isObjectMoving(objectId: number): boolean;
+  public abstract getObject(objectId: number): T | undefined;
+  public abstract getObjectsAtHex(col: number, row: number): T[];
+  public abstract selectObject(objectId: number): void;
+  public abstract deselectObject(): void;
+  public abstract getSelectedObjectId(): number | null;
+  public abstract getAllObjects(): T[];
+  public abstract dispose(): void;
 }
 
 export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
   private unitTileRenderer: UnitTileRenderer;
+  private movingObjects: Set<number> = new Set();
 
   constructor(scene: THREE.Scene) {
     super(scene);
     this.unitTileRenderer = new UnitTileRenderer(scene);
   }
 
-  protected initializeMaterials(): void {
-    // No longer needed - tiles are handled by UnitTileRenderer
-  }
-
-  protected createSprite(army: ArmyObject): THREE.Sprite {
-    // Create invisible sprite for interaction - visual representation handled by UnitTileRenderer
-    const material = new THREE.SpriteMaterial({
-      transparent: true,
-      opacity: 0,
-    });
-
-    const sprite = new THREE.Sprite(material);
-    sprite.userData.hasIndividualMaterial = true;
-
-    const spriteScale = HEX_SIZE * 3.2;
-    sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
-    sprite.userData.originalScale = { x: spriteScale, y: spriteScale * 1.15, z: 1 };
-
-    getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
-    sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
-
-    sprite.renderOrder = Math.max(100 + army.row, 1) + 1000;
-
-    return sprite;
-  }
-
   public addObject(object: ArmyObject): void {
-    super.addObject(object);
+    console.log(`[ArmyRenderer] addObject: Adding army ${object.id} at (${object.col},${object.row})`);
+    this.objects.set(object.id, object);
     this.createLabel(object);
     this.syncUnitTile(object);
   }
 
   public updateObject(object: ArmyObject): void {
-    this.updateLabelContent(object);
-    super.updateObject(object);
-    this.syncUnitTile(object);
+    const existingArmy = this.objects.get(object.id);
+
+    console.log(`[ArmyRenderer] updateObject called for army ${object.id}`, {
+      existingPosition: existingArmy ? { col: existingArmy.col, row: existingArmy.row } : null,
+      newPosition: { col: object.col, row: object.row },
+      hasPositionChanged: existingArmy ? existingArmy.col !== object.col || existingArmy.row !== object.row : false,
+      isCurrentlyMoving: this.movingObjects.has(object.id),
+    });
+
+    // Check if the army has moved to a new position
+    if (existingArmy && (existingArmy.col !== object.col || existingArmy.row !== object.row)) {
+      // If currently moving, don't start another movement
+      if (this.movingObjects.has(object.id)) {
+        console.log(`[ArmyRenderer] Army ${object.id} is already moving, skipping update`);
+        return;
+      }
+
+      console.log(
+        `[ArmyRenderer] Starting movement animation for army ${object.id} from (${existingArmy.col},${existingArmy.row}) to (${object.col},${object.row})`,
+      );
+
+      // Start movement animation from current position to new position
+      this.moveObject(object.id, object.col, object.row, 1000).then(() => {
+        console.log(`[ArmyRenderer] Movement completed for army ${object.id}`);
+        // Update label content after movement completes
+        this.updateLabelContent(object);
+      });
+    } else {
+      console.log(`[ArmyRenderer] No position change for army ${object.id}, updating properties only`);
+      // Just update properties without position change
+      this.objects.set(object.id, object);
+      this.updateLabelContent(object);
+      this.syncUnitTile(object);
+    }
   }
 
   private updateLabelContent(army: ArmyObject): void {
@@ -633,7 +220,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       this.unitTileRenderer.removeTile(army.col, army.row);
     }
     this.removeLabel(objectId);
-    super.removeObject(objectId);
+    this.objects.delete(objectId);
+    this.movingObjects.delete(objectId);
   }
 
   private createLabel(army: ArmyObject): void {
@@ -784,31 +372,30 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     // Create CSS2DObject
     const label = new CSS2DObject(labelDiv);
 
-    // Position the label above the army sprite
-    getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
-    label.position.set(this.tempVector3.x, 2.1, this.tempVector3.z - HEX_SIZE * 2.25);
+    // Position the label above the tile (relative to tile group position)
+    label.position.set(0, 2.1, -HEX_SIZE * 1.425);
 
     // Store entityId in userData for identification
     label.userData.entityId = army.id;
 
     this.labels.set(army.id, label);
 
-    // Add to scene if army is visible
-    if (this.isHexVisible(army.col, army.row)) {
-      this.scene.add(label);
-    }
+    // Add label to the tile group instead of directly to scene
+    this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
   }
 
   private syncUnitTile(army: ArmyObject): void {
+    console.log(
+      `[ArmyRenderer] syncUnitTile: Syncing tile for army ${army.id} at (${army.col},${army.row}) with troopType ${army.troopType}, troopTier ${army.troopTier}`,
+    );
     this.unitTileRenderer.addTile(army.col, army.row, army.troopType, army.troopTier, false, true);
   }
 
   private removeLabel(armyId: number): void {
     const label = this.labels.get(armyId);
-    if (label) {
-      if (label.parent) {
-        this.scene.remove(label);
-      }
+    const army = this.objects.get(armyId);
+    if (label && army) {
+      this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
       }
@@ -834,8 +421,6 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.updateObjectVisibility();
-    this.updateLabelVisibility();
     this.unitTileRenderer.setVisibleBounds(bounds);
   }
 
@@ -855,86 +440,160 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     this.unitTileRenderer.updateTilesForHexes(unitTilePositions);
   }
 
-  private updateLabelVisibility(): void {
-    if (!this.visibleBounds) return;
-
-    for (const [armyId, army] of this.objects) {
-      const label = this.labels.get(armyId);
-      if (label) {
-        const shouldBeVisible = this.isHexVisible(army.col, army.row);
-
-        if (shouldBeVisible && !label.parent) {
-          this.scene.add(label);
-        } else if (!shouldBeVisible && label.parent) {
-          this.scene.remove(label);
-        }
-      }
-    }
-  }
-
-  protected getTileId(_army: ArmyObject): number {
-    return 19;
-  }
-
-  protected getSharedMaterial(_objectType: string): THREE.SpriteMaterial {
-    // Return transparent material since visual representation is handled by UnitTileRenderer
-    return new THREE.SpriteMaterial({ transparent: true, opacity: 0 });
-  }
-
   protected updateLabelPosition(objectId: number, col: number, row: number): void {
-    const label = this.labels.get(objectId);
-    if (label) {
-      // Update label position to match tile position
-      getWorldPositionForTile({ col, row }, true, this.tempVector3);
-      label.position.set(this.tempVector3.x, 2.1, this.tempVector3.z - HEX_SIZE * 2.25);
-
-      // Update visibility
-      const shouldBeVisible = this.isHexVisible(col, row);
-      if (shouldBeVisible && !label.parent) {
-        this.scene.add(label);
-      } else if (!shouldBeVisible && label.parent) {
-        this.scene.remove(label);
-      }
-    }
+    // Labels are now part of tile groups, so no manual position updates needed
+    // The tile renderer handles positioning automatically
+    void objectId;
+    void col;
+    void row;
   }
 
   public updateObjectPosition(objectId: number, col: number, row: number): void {
     const oldArmy = this.objects.get(objectId);
     if (oldArmy) {
       this.unitTileRenderer.removeTile(oldArmy.col, oldArmy.row);
-    }
 
-    super.updateObjectPosition(objectId, col, row);
+      const label = this.labels.get(objectId);
+      if (label) {
+        this.unitTileRenderer.removeObjectFromTileGroup(oldArmy.col, oldArmy.row, label);
+      }
+    }
 
     const army = this.objects.get(objectId);
     if (army) {
+      army.col = col;
+      army.row = row;
+
       this.syncUnitTile(army);
+
+      const label = this.labels.get(objectId);
+      if (label) {
+        this.unitTileRenderer.addObjectToTileGroup(col, row, label);
+      }
     }
   }
 
   protected updateLabelPositionFromSprite(objectId: number): void {
-    const label = this.labels.get(objectId);
-    const sprite = this.sprites.get(objectId);
-    if (label && sprite) {
-      label.position.copy(sprite.position);
-      label.position.y = 2.1;
-      label.position.z += HEX_SIZE * 0.825 - HEX_SIZE * 2.25;
+    // Labels are now part of tile groups and move automatically with the tile
+    void objectId;
+  }
+
+  public getObject(objectId: number): ArmyObject | undefined {
+    return this.objects.get(objectId);
+  }
+
+  public getObjectsAtHex(col: number, row: number): ArmyObject[] {
+    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
+  }
+
+  public getAllObjects(): ArmyObject[] {
+    return Array.from(this.objects.values());
+  }
+
+  public getSelectedObjectId(): number | null {
+    return this.selectedObjectId;
+  }
+
+  protected isHexVisible(col: number, row: number): boolean {
+    if (!this.visibleBounds) return true;
+    return (
+      col >= this.visibleBounds.minCol &&
+      col <= this.visibleBounds.maxCol &&
+      row >= this.visibleBounds.minRow &&
+      row <= this.visibleBounds.maxRow
+    );
+  }
+
+  public selectObject(objectId: number): void {
+    this.selectedObjectId = objectId;
+    const army = this.objects.get(objectId);
+
+    if (army) {
+      this.unitTileRenderer.selectTile(army.col, army.row);
     }
+  }
+
+  public deselectObject(): void {
+    this.unitTileRenderer.deselectTile();
+    this.selectedObjectId = null;
+  }
+
+  public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
+    const army = this.objects.get(objectId);
+    if (!army) {
+      console.log(`[ArmyRenderer] moveObject: Army ${objectId} not found`);
+      return Promise.resolve();
+    }
+
+    const startCol = army.col;
+    const startRow = army.row;
+
+    console.log(
+      `[ArmyRenderer] moveObject: Moving army ${objectId} from (${startCol},${startRow}) to (${targetCol},${targetRow}) with duration ${duration}ms`,
+    );
+
+    // Mark as moving
+    this.movingObjects.add(objectId);
+    console.log(
+      `[ArmyRenderer] moveObject: Marked army ${objectId} as moving. Moving objects count: ${this.movingObjects.size}`,
+    );
+
+    return this.unitTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+      console.log(`[ArmyRenderer] moveObject: Tile movement completed for army ${objectId}`);
+
+      // Update army position after movement completes
+      army.col = targetCol;
+      army.row = targetRow;
+
+      // Mark as no longer moving
+      this.movingObjects.delete(objectId);
+      console.log(
+        `[ArmyRenderer] moveObject: Unmarked army ${objectId} as moving. Moving objects count: ${this.movingObjects.size}`,
+      );
+    });
+  }
+
+  public moveObjectAlongPath(
+    objectId: number,
+    path: Array<{ col: number; row: number }>,
+    stepDuration: number = 300,
+  ): Promise<void> {
+    const army = this.objects.get(objectId);
+    if (!army || path.length === 0) {
+      return Promise.resolve();
+    }
+
+    const startCol = army.col;
+    const startRow = army.row;
+    const finalHex = path[path.length - 1];
+
+    // Mark as moving
+    this.movingObjects.add(objectId);
+
+    return this.unitTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+      // Update army position after movement completes
+      army.col = finalHex.col;
+      army.row = finalHex.row;
+
+      // Mark as no longer moving
+      this.movingObjects.delete(objectId);
+    });
+  }
+
+  public isObjectMoving(objectId: number): boolean {
+    return this.movingObjects.has(objectId);
   }
 
   public dispose(): void {
     this.labels.forEach((label) => {
-      if (label.parent) {
-        this.scene.remove(label);
-      }
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
       }
     });
     this.labels.clear();
+    this.movingObjects.clear();
 
     this.unitTileRenderer.dispose();
-    super.dispose();
   }
 }
 
@@ -946,49 +605,28 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     this.buildingTileRenderer = new BuildingTileRenderer(scene);
   }
 
-  protected initializeMaterials(): void {
-    // No longer needed - tiles are handled by BuildingTileRenderer
-  }
-
-  protected createSprite(structure: StructureObject): THREE.Sprite {
-    // Create invisible sprite for interaction - visual representation handled by BuildingTileRenderer
-    const material = new THREE.SpriteMaterial({
-      transparent: true,
-      opacity: 0,
-    });
-
-    const sprite = new THREE.Sprite(material);
-    sprite.userData.hasIndividualMaterial = true;
-
-    const spriteScale = HEX_SIZE * 3.2;
-    sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
-    sprite.userData.originalScale = { x: spriteScale, y: spriteScale * 1.15, z: 1 };
-
-    getWorldPositionForTile({ col: structure.col, row: structure.row }, true, this.tempVector3);
-    sprite.position.set(this.tempVector3.x, 0.2, this.tempVector3.z - HEX_SIZE * 0.825);
-
-    sprite.renderOrder = Math.max(100 + structure.row, 1) + 500;
-
-    return sprite;
-  }
-
-  protected getTileId(_structure: StructureObject): number {
-    return 18;
-  }
-
-  protected getSharedMaterial(_objectType: string): THREE.SpriteMaterial {
-    // Return transparent material since visual representation is handled by BuildingTileRenderer
-    return new THREE.SpriteMaterial({ transparent: true, opacity: 0 });
-  }
-
   public addObject(object: StructureObject): void {
-    super.addObject(object);
+    this.objects.set(object.id, object);
     this.syncBuildingTile(object);
   }
 
   public updateObject(object: StructureObject): void {
-    super.updateObject(object);
-    this.syncBuildingTile(object);
+    const existingStructure = this.objects.get(object.id);
+
+    // Check if the structure has moved to a new position (unlikely but consistent API)
+    if (existingStructure && (existingStructure.col !== object.col || existingStructure.row !== object.row)) {
+      // If currently moving, don't start another movement
+      if (this.isObjectMoving(object.id)) {
+        return;
+      }
+
+      // Start movement animation from current position to new position
+      this.moveObject(object.id, object.col, object.row, 1000);
+    } else {
+      // Just update properties without position change
+      this.objects.set(object.id, object);
+      this.syncBuildingTile(object);
+    }
   }
 
   public removeObject(objectId: number): void {
@@ -996,7 +634,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     if (structure) {
       this.buildingTileRenderer.removeTile(structure.col, structure.row);
     }
-    super.removeObject(objectId);
+    this.objects.delete(objectId);
   }
 
   public updateObjectPosition(objectId: number, col: number, row: number): void {
@@ -1005,10 +643,10 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       this.buildingTileRenderer.removeTile(oldStructure.col, oldStructure.row);
     }
 
-    super.updateObjectPosition(objectId, col, row);
-
     const structure = this.objects.get(objectId);
     if (structure) {
+      structure.col = col;
+      structure.row = row;
       this.syncBuildingTile(structure);
     }
   }
@@ -1039,59 +677,247 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     });
   }
 
+  public selectObject(objectId: number): void {
+    this.selectedObjectId = objectId;
+    const structure = this.objects.get(objectId);
+
+    if (structure) {
+      this.buildingTileRenderer.selectTile(structure.col, structure.row);
+    }
+  }
+
+  public deselectObject(): void {
+    this.buildingTileRenderer.deselectTile();
+    this.selectedObjectId = null;
+  }
+
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.updateObjectVisibility();
     this.buildingTileRenderer.setVisibleBounds(bounds);
+  }
+
+  public getObject(objectId: number): StructureObject | undefined {
+    return this.objects.get(objectId);
+  }
+
+  public getObjectsAtHex(col: number, row: number): StructureObject[] {
+    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
+  }
+
+  public getAllObjects(): StructureObject[] {
+    return Array.from(this.objects.values());
+  }
+
+  public getSelectedObjectId(): number | null {
+    return this.selectedObjectId;
+  }
+
+  public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
+    const structure = this.objects.get(objectId);
+    if (!structure) {
+      return Promise.resolve();
+    }
+
+    const startCol = structure.col;
+    const startRow = structure.row;
+
+    return this.buildingTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+      // Update structure position after movement completes
+      structure.col = targetCol;
+      structure.row = targetRow;
+    });
+  }
+
+  public moveObjectAlongPath(
+    objectId: number,
+    path: Array<{ col: number; row: number }>,
+    stepDuration: number = 300,
+  ): Promise<void> {
+    const structure = this.objects.get(objectId);
+    if (!structure || path.length === 0) {
+      return Promise.resolve();
+    }
+
+    const startCol = structure.col;
+    const startRow = structure.row;
+    const finalHex = path[path.length - 1];
+
+    return this.buildingTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+      // Update structure position after movement completes
+      structure.col = finalHex.col;
+      structure.row = finalHex.row;
+    });
+  }
+
+  public isObjectMoving(objectId: number): boolean {
+    const structure = this.objects.get(objectId);
+    if (!structure) return false;
+    return this.buildingTileRenderer.isTileMoving(structure.col, structure.row);
+  }
+
+  protected isHexVisible(col: number, row: number): boolean {
+    if (!this.visibleBounds) return true;
+    return (
+      col >= this.visibleBounds.minCol &&
+      col <= this.visibleBounds.maxCol &&
+      row >= this.visibleBounds.minRow &&
+      row <= this.visibleBounds.maxRow
+    );
   }
 
   public dispose(): void {
     this.buildingTileRenderer.dispose();
-    super.dispose();
   }
 }
 
 export class QuestRenderer extends ObjectRenderer<QuestObject> {
-  private static questMaterial: THREE.SpriteMaterial | null = null;
+  private buildingTileRenderer: BuildingTileRenderer;
 
-  protected initializeMaterials(): void {
-    if (!QuestRenderer.questMaterial) {
-      QuestRenderer.questMaterial = new THREE.SpriteMaterial({
-        color: 0xffd700,
-        transparent: true,
-        alphaTest: 0.1,
-        opacity: 1.0,
-      });
+  constructor(scene: THREE.Scene) {
+    super(scene);
+    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+  }
+
+  public addObject(object: QuestObject): void {
+    this.objects.set(object.id, object);
+    // Use Chest tile index for quests temporarily
+    this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
+  }
+
+  public updateObject(object: QuestObject): void {
+    const existingQuest = this.objects.get(object.id);
+
+    // Check if the quest has moved to a new position (unlikely but consistent API)
+    if (existingQuest && (existingQuest.col !== object.col || existingQuest.row !== object.row)) {
+      // If currently moving, don't start another movement
+      if (this.isObjectMoving(object.id)) {
+        return;
+      }
+
+      // Start movement animation from current position to new position
+      this.moveObject(object.id, object.col, object.row, 1000);
+    } else {
+      // Just update properties without position change
+      this.objects.set(object.id, object);
+      this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
     }
   }
 
-  protected createSprite(quest: QuestObject): THREE.Sprite {
-    const sprite = new THREE.Sprite(QuestRenderer.questMaterial!);
-
-    const spriteScale = HEX_SIZE * 2.0;
-    sprite.scale.set(spriteScale, spriteScale, 1);
-    sprite.userData.originalScale = { x: spriteScale, y: spriteScale, z: 1 };
-
-    getWorldPositionForTile({ col: quest.col, row: quest.row }, true, this.tempVector3);
-    sprite.position.set(this.tempVector3.x, 0.3, this.tempVector3.z - HEX_SIZE * 0.825);
-
-    sprite.renderOrder = Math.max(100 + quest.row, 1) + 1500;
-
-    return sprite;
+  public removeObject(objectId: number): void {
+    const quest = this.objects.get(objectId);
+    if (quest) {
+      this.buildingTileRenderer.removeTile(quest.col, quest.row);
+    }
+    this.objects.delete(objectId);
   }
 
-  protected getTileId(_quest: QuestObject): number {
-    return 20;
+  public updateObjectPosition(objectId: number, col: number, row: number): void {
+    const oldQuest = this.objects.get(objectId);
+    if (oldQuest) {
+      this.buildingTileRenderer.removeTile(oldQuest.col, oldQuest.row);
+    }
+
+    const quest = this.objects.get(objectId);
+    if (quest) {
+      quest.col = col;
+      quest.row = row;
+      this.buildingTileRenderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true);
+    }
   }
 
-  protected getSharedMaterial(_objectType: string): THREE.SpriteMaterial {
-    return QuestRenderer.questMaterial!;
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.visibleBounds = bounds;
+    this.buildingTileRenderer.setVisibleBounds(bounds);
+  }
+
+  public selectObject(objectId: number): void {
+    this.selectedObjectId = objectId;
+    const quest = this.objects.get(objectId);
+
+    if (quest) {
+      this.buildingTileRenderer.selectTile(quest.col, quest.row);
+    }
+  }
+
+  public deselectObject(): void {
+    this.buildingTileRenderer.deselectTile();
+    this.selectedObjectId = null;
+  }
+
+  public getObject(objectId: number): QuestObject | undefined {
+    return this.objects.get(objectId);
+  }
+
+  public getObjectsAtHex(col: number, row: number): QuestObject[] {
+    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
+  }
+
+  public getAllObjects(): QuestObject[] {
+    return Array.from(this.objects.values());
+  }
+
+  public getSelectedObjectId(): number | null {
+    return this.selectedObjectId;
+  }
+
+  public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
+    const quest = this.objects.get(objectId);
+    if (!quest) {
+      return Promise.resolve();
+    }
+
+    const startCol = quest.col;
+    const startRow = quest.row;
+
+    return this.buildingTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+      // Update quest position after movement completes
+      quest.col = targetCol;
+      quest.row = targetRow;
+    });
+  }
+
+  public moveObjectAlongPath(
+    objectId: number,
+    path: Array<{ col: number; row: number }>,
+    stepDuration: number = 300,
+  ): Promise<void> {
+    const quest = this.objects.get(objectId);
+    if (!quest || path.length === 0) {
+      return Promise.resolve();
+    }
+
+    const startCol = quest.col;
+    const startRow = quest.row;
+    const finalHex = path[path.length - 1];
+
+    return this.buildingTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+      // Update quest position after movement completes
+      quest.col = finalHex.col;
+      quest.row = finalHex.row;
+    });
+  }
+
+  public isObjectMoving(objectId: number): boolean {
+    const quest = this.objects.get(objectId);
+    if (!quest) return false;
+    return this.buildingTileRenderer.isTileMoving(quest.col, quest.row);
+  }
+
+  protected isHexVisible(col: number, row: number): boolean {
+    if (!this.visibleBounds) return true;
+    return (
+      col >= this.visibleBounds.minCol &&
+      col <= this.visibleBounds.maxCol &&
+      row >= this.visibleBounds.minRow &&
+      row <= this.visibleBounds.maxRow
+    );
+  }
+
+  public dispose(): void {
+    this.buildingTileRenderer.dispose();
   }
 
   public static disposeStaticAssets(): void {
-    if (QuestRenderer.questMaterial) {
-      QuestRenderer.questMaterial.dispose();
-      QuestRenderer.questMaterial = null;
-    }
+    // No longer needed
   }
 }
