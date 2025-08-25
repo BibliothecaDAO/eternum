@@ -33,6 +33,7 @@ import {
   ExplorerMoveSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
+  
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
   SelectableArmy,
@@ -51,14 +52,15 @@ import {
   ID,
   RelicEffect,
   Structure,
+  TroopType,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
-import { QuestManager } from "../managers/quest-manager";
 import { PathVisualizer } from "../managers/path-visualizer";
+import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -179,67 +181,75 @@ export default class WorldmapScene extends HexagonScene {
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.selectableArmies,
-      (selectableArmies) => {
-        this.updateSelectableArmies(selectableArmies);
-      },
-    ));
+        (state) => state.selectableArmies,
+        (selectableArmies) => {
+          this.updateSelectableArmies(selectableArmies);
+        },
+      ),
+    );
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.playerStructures,
-      (playerStructures) => {
-        this.updatePlayerStructures(playerStructures);
-      },
-    ));
+        (state) => state.playerStructures,
+        (playerStructures) => {
+          this.updatePlayerStructures(playerStructures);
+        },
+      ),
+    );
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.entityActions,
-      (armyActions) => {
-        this.state.entityActions = armyActions;
-      },
-    ));
+        (state) => state.entityActions,
+        (armyActions) => {
+          this.state.entityActions = armyActions;
+        },
+      ),
+    );
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.selectedHex,
-      (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-      },
-    ));
+        (state) => state.selectedHex,
+        (selectedHex) => {
+          this.state.selectedHex = selectedHex;
+        },
+      ),
+    );
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.isSoundOn,
-      (isSoundOn) => {
-        this.state.isSoundOn = isSoundOn;
-      },
-    ));
+        (state) => state.isSoundOn,
+        (isSoundOn) => {
+          this.state.isSoundOn = isSoundOn;
+        },
+      ),
+    );
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.effectsLevel,
-      (effectsLevel) => {
-        this.state.effectsLevel = effectsLevel;
-      },
-    ));
+        (state) => state.effectsLevel,
+        (effectsLevel) => {
+          this.state.effectsLevel = effectsLevel;
+        },
+      ),
+    );
 
     // Subscribe to zoom setting changes
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
-        }
-      },
-    ));
+        (state) => state.enableMapZoom,
+        (enableMapZoom) => {
+          if (this.controls) {
+            this.controls.enableZoom = enableMapZoom;
+          }
+        },
+      ),
+    );
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-      (state) => state.entityActions.selectedEntityId,
-      (selectedEntityId) => {
-        if (!selectedEntityId) this.clearEntitySelection();
-      },
-    ));
+        (state) => state.entityActions.selectedEntityId,
+        (selectedEntityId) => {
+          if (!selectedEntityId) this.clearEntitySelection();
+        },
+      ),
+    );
 
     // Initialize label groups
     this.armyLabelsGroup = new Group();
@@ -318,9 +328,13 @@ export default class WorldmapScene extends HexagonScene {
         this.exploredTiles,
       );
 
-      // Clear selection exactly when movement starts to avoid gaps
+      // Clear selection only if the moving army is still the selected entity
+      // This prevents clearing a newer selection (e.g., user selected a different army)
       if (started) {
-        this.clearSelection();
+        const { selectedEntityId } = this.state.entityActions;
+        if (selectedEntityId === update.entityId) {
+          this.clearSelection();
+        }
       }
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
@@ -593,7 +607,9 @@ export default class WorldmapScene extends HexagonScene {
       this.state.updateEntityActionHoveredHex(hexCoords);
 
       // Update path preview to hovered hex if a path exists
-      const key = (ActionPaths as any).posKey ? (ActionPaths as any).posKey(hexCoords, true) : `${hexCoords.col},${hexCoords.row}`;
+      const key = (ActionPaths as any).posKey
+        ? (ActionPaths as any).posKey(hexCoords, true)
+        : `${hexCoords.col},${hexCoords.row}`;
       const path = (actionPaths as any).get ? (actionPaths as any).get(key) : undefined;
       if (path && Array.isArray(path) && path.length > 1) {
         const hexes = path.map((p: any) => ({ col: p.hex.col - FELT_CENTER, row: p.hex.row - FELT_CENTER }));
@@ -1739,7 +1755,7 @@ export default class WorldmapScene extends HexagonScene {
   private enforceMatrixCacheCapacity() {
     // Preserve the current chunk and its immediate neighbors when evicting
     const preserve = new Set<string>();
-    if (this.currentChunk && typeof this.currentChunk === 'string') {
+    if (this.currentChunk && typeof this.currentChunk === "string") {
       preserve.add(this.currentChunk);
       try {
         const [rowStr, colStr] = this.currentChunk.split(",");
@@ -1827,6 +1843,8 @@ export default class WorldmapScene extends HexagonScene {
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
+    // (Reverted) Do not force-wait center chunk fetch here
+
     // Calculate the starting position for the new chunk
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
@@ -1837,6 +1855,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
+
+    // (Removed hydration) ArmyManager relies on live tile updates + its own chunking
 
     // Update all managers in sequence to prevent race conditions
     // Changed from Promise.all to sequential execution
@@ -1860,6 +1880,8 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
   }
+
+  // (Removed hydration helper)
 
   update(deltaTime: number) {
     super.update(deltaTime);

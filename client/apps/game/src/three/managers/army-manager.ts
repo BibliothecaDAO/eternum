@@ -58,6 +58,8 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  // Debug: track last set of visible armies to log newly visible ones per chunk render
+  private lastVisibleIds: Set<ID> = new Set();
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: Group;
@@ -258,8 +260,21 @@ export class ArmyManager {
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
+    // Debug: log incoming tile update
+    try {
+      console.log(
+        `[ARMY DEBUG] onTileUpdate: id=${entityId} col=${hexCoords.col} row=${hexCoords.row} ` +
+          `type=${troopType} tier=${troopTier} ownerName=${ownerName} hasExisting=${this.armies.has(entityId)}`,
+      );
+    } catch {}
+
     if (this.armies.has(entityId)) {
       const started = await this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      try {
+        console.log(
+          `[ARMY DEBUG] moveArmy: id=${entityId} started=${started} chunk=${this.currentChunkKey}`,
+        );
+      } catch {}
       return started;
     } else {
       this.addArmy({
@@ -278,6 +293,12 @@ export class ArmyManager {
         onChainStamina: update.onChainStamina,
         maxStamina: update.maxStamina,
       });
+      try {
+        const n = newPosition.getNormalized();
+        console.log(
+          `[ARMY DEBUG] addArmy done: id=${entityId} norm=(${n.x},${n.y}) total=${this.armies.size} chunk=${this.currentChunkKey}`,
+        );
+      } catch {}
     }
     return false;
   }
@@ -325,6 +346,25 @@ export class ArmyManager {
     // Reset all model instances
     this.armyModel.resetInstanceCounts();
 
+    try {
+      console.log(
+        `[ARMY DEBUG] renderVisibleArmies: chunk=${chunkKey} ` +
+          `bounds: col=[${startCol - this.renderChunkSize.width / 2}, ${startCol + this.renderChunkSize.width / 2}] ` +
+          `row=[${startRow - this.renderChunkSize.height / 2}, ${startRow + this.renderChunkSize.height / 2}] ` +
+          `total=${this.armies.size} visible=${this.visibleArmies.length}`,
+      );
+      // Log newly visible army IDs since last render
+      const nowSet = new Set(this.visibleArmies.map((a) => a.entityId));
+      const newlyVisible: ID[] = [];
+      nowSet.forEach((id) => {
+        if (!this.lastVisibleIds.has(id)) newlyVisible.push(id);
+      });
+      if (newlyVisible.length > 0) {
+        console.log(`[ARMY DEBUG] newly visible armies in chunk ${chunkKey}: ${newlyVisible.join(',')}`);
+      }
+      this.lastVisibleIds = nowSet;
+    } catch {}
+
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
@@ -351,8 +391,6 @@ export class ArmyManager {
       );
 
       this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
-      // Ensure any ongoing movement/animation maps to the new instance index
-      this.armyModel.remapEntityIndex(army.entityId, currentCount);
 
       // Increment count and update all meshes
       currentCount++;
@@ -549,7 +587,10 @@ export class ArmyManager {
         }
       }
 
-      await this.renderVisibleArmies(this.currentChunkKey!);
+      // Re-render visible armies for the current chunk to include any newly added
+      if (this.currentChunkKey) {
+        await this.renderVisibleArmies(this.currentChunkKey);
+      }
     }
   }
 

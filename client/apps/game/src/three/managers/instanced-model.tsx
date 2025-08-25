@@ -60,9 +60,8 @@ export default class InstancedModel {
     let anyAnimated = false;
     gltf.scene.traverse((child: any) => {
       if (child instanceof Mesh) {
-        if (child.scale.x !== 1) {
-          return;
-        }
+        // Do not skip meshes based on authoring-time scale; some GLBs (e.g., chests/quests)
+        // include non-1.0 scaled children. We still want to instance those.
         const materialPool = MaterialPool.getInstance();
         let material: MeshStandardMaterial | undefined;
         if (name.includes("Quest") || name.includes("Chest")) {
