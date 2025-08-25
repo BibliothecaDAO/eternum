@@ -275,6 +275,7 @@ export interface Troops {
     updated_tick: bigint;
   };
   boosts: TroopBoosts;
+  battle_cooldown_end: number;
 }
 
 export enum TroopTier {

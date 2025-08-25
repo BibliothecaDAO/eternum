@@ -90,6 +90,7 @@ export class DataEnhancer {
             decr_damage_gotten_percent_num: 0,
             decr_damage_gotten_end_tick: 0,
           },
+          battle_cooldown_end: 0
         },
         currentArmiesTick,
       ).amount,

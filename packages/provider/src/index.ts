@@ -2313,7 +2313,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         stamina_config.stamina_paladin_max,
         stamina_config.stamina_crossbowman_max,
         stamina_config.stamina_attack_req,
-        stamina_config.stamina_attack_max,
+        stamina_config.stamina_defense_req,
         stamina_config.stamina_explore_stamina_cost,
         stamina_config.stamina_travel_stamina_cost,
         stamina_config.stamina_explore_wheat_cost,

@@ -1,4 +1,4 @@
-import { BiomeType, TroopTier, TroopType, RELICS, ResourcesIds } from "@bibliothecadao/types";
+import { BiomeType, RELICS, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { configManager } from "../managers";
 import { divideWithPrecision } from "./utils";
 
@@ -17,6 +17,7 @@ export interface Army {
   troopCount: number;
   troopType: TroopType;
   tier: TroopTier;
+  battle_cooldown_end: number
 }
 
 export interface CombatParameters {
@@ -31,6 +32,7 @@ export interface CombatParameters {
   t2_damage_multiplier: bigint;
   t3_damage_multiplier: bigint;
   stamina_attack_req: number;
+  stamina_defense_req: number;
 }
 
 export class CombatSimulator {
@@ -38,6 +40,7 @@ export class CombatSimulator {
   private readonly t2DamageMultiplier: number;
   private readonly t3DamageMultiplier: number;
   private readonly staminaAttackThreshold: number;
+  private readonly staminaDefenseThreshold: number;
   private readonly baseDamageFactor: number;
   // private readonly betaSmall: number;
   // private readonly betaLarge: number;
@@ -51,6 +54,8 @@ export class CombatSimulator {
     this.t2DamageMultiplier = divideWithPrecision(params.t2_damage_multiplier, CombatSimulator.MAX_U64);
     this.t3DamageMultiplier = divideWithPrecision(params.t3_damage_multiplier, CombatSimulator.MAX_U64);
     this.staminaAttackThreshold = params.stamina_attack_req;
+    this.staminaDefenseThreshold = params.stamina_defense_req;
+
     this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
     // this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
     // this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
@@ -72,13 +77,37 @@ export class CombatSimulator {
   public calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
     if (isAttacker) {
       if (stamina < this.staminaAttackThreshold) return 0;
-      // max stamina bonus is 30%
-      const extraStamina = Math.min(stamina - this.staminaAttackThreshold, this.staminaAttackThreshold);
-      return 1 + extraStamina / 100;
+      return 1;
     } else {
-      // Defender stamina penalty
-      return 0.7 + (0.3 * Math.min(stamina, 30)) / 30;
+      if (stamina < this.staminaDefenseThreshold) return 0.7;
+      return 1;
     }
+  }
+
+  public calculateBattleTimerDamageModifier(battle_cooldown_end: number, time: number, isAttacker: boolean): number {
+    if (battle_cooldown_end < time) {
+      battle_cooldown_end = time;
+    }
+
+    if (isAttacker) {
+      if (battle_cooldown_end < time) return 0;
+      return 1;
+    } else {
+      if (battle_cooldown_end < time) return 0.85;
+      return 1;
+    }
+  }
+
+  public calculateRefundMultiplier(aDamage: number, bDamage: number): number {
+    let ratio = aDamage / bDamage;
+    if (ratio >= 10) {
+      return 1;
+    }
+    if (ratio <= 2.5) {
+      return 0;
+    }
+
+    return (ratio - 2.5) / (10 - 2.5);
   }
 
   private calculateEffectiveBeta(): number {
@@ -98,17 +127,23 @@ export class CombatSimulator {
    *          - defenderDamage: Amount of damage dealt by the defender
    */
   public simulateBattle(
+    now: number,
     attacker: Army,
     defender: Army,
     biome: BiomeType,
     attackerRelics: ResourcesIds[] = [],
     defenderRelics: ResourcesIds[] = [],
-  ): { attackerDamage: number; defenderDamage: number } {
+  ): {
+    attackerDamage: number;
+    defenderDamage: number;
+    attackerRefundMultiplier: number;
+    defenderRefundMultiplier: number;
+  } {
     const totalTroops = attacker.troopCount + defender.troopCount;
     const betaEff = this.calculateEffectiveBeta();
 
     if (totalTroops === 0) {
-      return { attackerDamage: 0, defenderDamage: 0 };
+      return { attackerDamage: 0, defenderDamage: 0, attackerRefundMultiplier: 0, defenderRefundMultiplier: 0 };
     }
 
     // Calculate relic effects
@@ -142,6 +177,7 @@ export class CombatSimulator {
         attacker.troopCount *
         (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
         this.calculateStaminaModifier(attacker.stamina, true) *
+        this.calculateBattleTimerDamageModifier(attacker.battle_cooldown_end, now, true) *
         configManager.getBiomeCombatBonus(attacker.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
 
@@ -151,6 +187,7 @@ export class CombatSimulator {
         defender.troopCount *
         (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
         this.calculateStaminaModifier(defender.stamina, false) *
+        this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
         configManager.getBiomeCombatBonus(defender.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
 
@@ -158,9 +195,14 @@ export class CombatSimulator {
     const attackerDamage = baseAttackerDamage * attackerDamageMultiplier * defenderReductionMultiplier;
     const defenderDamage = baseDefenderDamage * defenderDamageMultiplier * attackerReductionMultiplier;
 
+    const attackerRefundMultiplier = this.calculateRefundMultiplier(attackerDamage, defenderDamage);
+    const defenderRefundMultiplier = this.calculateRefundMultiplier(defenderDamage, attackerDamage);
+
     return {
       attackerDamage,
       defenderDamage,
+      attackerRefundMultiplier,
+      defenderRefundMultiplier,
     };
   }
 
@@ -170,24 +212,31 @@ export class CombatSimulator {
       damage_biome_bonus_num: 3000,
       damage_beta_small: 4611686018427387904n, // 0.25
       damage_beta_large: 2213609288845146193n, // 0.12
-      damage_scaling_factor: 55340232221128654848n, // 3
+      damage_scaling_factor: 36893488147419103232n, // 2
       damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
       damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100
       t2_damage_multiplier: 46116860184273879040n, // 2.5
       t3_damage_multiplier: 129127208515966861312n, // 7
-      stamina_attack_req: 30,
+      stamina_attack_req: 50,
+      stamina_defense_req: 40,
     };
   }
 
   // Static method to simulate with default parameters
   public simulateBattleWithParams(
+    now: number, 
     attacker: Army,
     defender: Army,
     biome: BiomeType,
     attackerRelics: ResourcesIds[] = [],
     defenderRelics: ResourcesIds[] = [],
-  ): { attackerDamage: number; defenderDamage: number } {
-    return this.simulateBattle(attacker, defender, biome, attackerRelics, defenderRelics);
+  ): {
+    attackerDamage: number;
+    defenderDamage: number;
+    attackerRefundMultiplier: number;
+    defenderRefundMultiplier: number;
+  } {
+    return this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics);
   }
 }
