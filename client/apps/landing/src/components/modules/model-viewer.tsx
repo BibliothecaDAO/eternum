@@ -9,7 +9,10 @@ interface ModelViewerProps {
   positionY?: number;
   scale?: number;
   rotationY?: number;
+  rotationX?: number | undefined;
+  rotationZ?: number | undefined;
   rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  cameraPosition?: { x: number; y: number; z: number };
 }
 
 const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
@@ -21,9 +24,9 @@ const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" |
     case "rare":
       return "#56c8da";
     case "epic":
-      return "#e9b062";
-    case "legendary":
       return "#ba37d4";
+    case "legendary":
+      return "#e9b062";
     default:
       return "#666666";
   }
@@ -34,8 +37,11 @@ export const ModelViewer = ({
   positionY = 0,
   scale = 1,
   rotationY = 0,
+  rotationX = 0,
+  rotationZ = 0,
   rarity,
   className = "",
+  cameraPosition = { x: 0, y: 1, z: 1 },
 }: ModelViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -60,7 +66,7 @@ export const ModelViewer = ({
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.set(0, 1, 1);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
     cameraRef.current = camera;
 
     // Renderer setup
@@ -84,47 +90,39 @@ export const ModelViewer = ({
     controls.maxDistance = 5;
     controlsRef.current = controls;
 
-    // Ground plane - darker to blend with background
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = 0;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    // Dramatic lighting setup with rarity-based ambient light
+    // Enhanced lighting setup with rarity-based ambient light
     const rarityColor = getRarityAmbientColor(rarity);
-    const ambientLight = new THREE.AmbientLight(rarityColor, 0.4);
+    const ambientLight = new THREE.AmbientLight(rarityColor, 0.6);
     scene.add(ambientLight);
 
-    // Warm directional light
-    const dirLight1 = new THREE.DirectionalLight(0xffddcc, 3);
-    dirLight1.position.set(1, 0.75, 0.5);
-    dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 2048;
-    dirLight1.shadow.mapSize.height = 2048;
-    dirLight1.shadow.camera.near = 0.1;
-    dirLight1.shadow.camera.far = 50;
-    dirLight1.shadow.camera.left = -10;
-    dirLight1.shadow.camera.right = 10;
-    dirLight1.shadow.camera.top = 10;
-    dirLight1.shadow.camera.bottom = -10;
-    scene.add(dirLight1);
+    // Key light - main directional light from front-top
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4);
+    keyLight.position.set(2, 3, 2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.1;
+    keyLight.shadow.camera.far = 50;
+    keyLight.shadow.camera.left = -10;
+    keyLight.shadow.camera.right = 10;
+    keyLight.shadow.camera.top = 10;
+    keyLight.shadow.camera.bottom = -10;
+    scene.add(keyLight);
 
-    // Cool directional light
-    const dirLight2 = new THREE.DirectionalLight(0xccccff, 3);
-    dirLight2.position.set(-1, 0.75, -0.5);
-    dirLight2.castShadow = true;
-    dirLight2.shadow.mapSize.width = 2048;
-    dirLight2.shadow.mapSize.height = 2048;
-    dirLight2.shadow.camera.near = 0.1;
-    dirLight2.shadow.camera.far = 50;
-    dirLight2.shadow.camera.left = -10;
-    dirLight2.shadow.camera.right = 10;
-    dirLight2.shadow.camera.top = 10;
-    dirLight2.shadow.camera.bottom = -10;
-    scene.add(dirLight2);
+    // Fill light - softer light from opposite side
+    const fillLight = new THREE.DirectionalLight(0xccddff, 2);
+    fillLight.position.set(-2, 2, 1);
+    scene.add(fillLight);
+
+    // Rim light - dramatic backlighting
+    const rimLight = new THREE.DirectionalLight(0xffffcc, 1.5);
+    rimLight.position.set(0, 1, -3);
+    scene.add(rimLight);
+
+    // Additional point light for overall brightness
+    const pointLight = new THREE.PointLight(0xffffff, 2, 10);
+    pointLight.position.set(0, 2, 1);
+    scene.add(pointLight);
 
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
@@ -154,6 +152,8 @@ export const ModelViewer = ({
 
         // Apply Y rotation
         model.rotation.y = rotationY;
+        model.rotation.x = rotationX;
+        model.rotation.z = rotationZ;
 
         // Enable shadows
         model.traverse((child) => {

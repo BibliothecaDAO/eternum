@@ -348,15 +348,16 @@ interface CollectibleClaimed {
 /**
  * Fetch collectible claimed events for a specific player
  */
-export async function fetchCollectibleClaimed(
-  playerAddress: string,
-  minTimestamp: number = 0,
-): Promise<CollectibleClaimed[]> {
-  const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{playerAddress}", playerAddress).replace(
-    "{minTimestamp}",
-    minTimestamp.toString(),
-  );
+// TODO: Uncomment this when the query is implemented
+// export async function fetchCollectibleClaimed(
+//   playerAddress: string,
+//   minTimestamp: number = 0,
+// ): Promise<CollectibleClaimed[]> {
+//   const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{playerAddress}", playerAddress).replace(
+//     "{minTimestamp}",
+//     minTimestamp.toString(),
+//   );
 
-  console.log({ query });
-  return await gameClientFetch<CollectibleClaimed[]>(query);
-}
+//   console.log({ query });
+//   return await gameClientFetch<CollectibleClaimed[]>(query);
+// }

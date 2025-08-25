@@ -1,15 +1,41 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { useClickSound } from "@/hooks/use-click-sound";
 import { TroopType } from "@bibliothecadao/types";
 import { BarChart3, Diamond, Swords, Target } from "lucide-react";
 import { useState } from "react";
 import { ModelViewer } from "./model-viewer";
 
+enum AssetType {
+  TroopArmor = "Troop Armor",
+  TroopPrimary = "Troop Primary",
+  TroopSecondary = "Troop Secondary",
+  TroopAura = "Troop Aura",
+  TroopBase = "Troop Base",
+  RealmSkin = "Realm Skin",
+  RealmAura = "Realm Aura",
+}
+
+enum AssetSet {
+  FirstLegacySet = "First Legacy Set",
+  WinterLordSet = "Winter Lord Set",
+  S1AlternatesSet = "",
+}
+
+export enum AssetRarity {
+  Common = "common",
+  Uncommon = "uncommon",
+  Rare = "rare",
+  Epic = "epic",
+  Legendary = "legendary",
+}
+
 export interface ChestAsset {
   id: string;
   name: string;
-  type: "armor" | "skin" | "aura" | "title";
+  type: AssetType;
   troopType: TroopType | undefined;
-  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  rarity: AssetRarity;
+  set: AssetSet;
   description: string;
   drawChance: number;
   modelPath: string;
@@ -17,77 +43,111 @@ export interface ChestAsset {
   positionY: number;
   scale: number;
   rotationY?: number | undefined;
+  rotationX?: number | undefined;
+  rotationZ?: number | undefined;
+  cameraPosition?: { x: number; y: number; z: number } | undefined;
 }
-const RARITY_PERCENTAGES = {
-  common: 50.7, // 16.9 * 3 items
-  uncommon: 25.36, // 12.68 * 2 items
-  rare: 16.9, // 8.45 * 2 items
-  epic: 2.82, // 1.41 * 2 items
-  legendary: 4.22, // 4.22 * 1 item
+// Dynamic rarity percentages based on actual chest assets
+const calculateRarityPercentages = (assets: ChestAsset[]) => {
+  const totalDrawChance = assets.reduce((sum, asset) => sum + asset.drawChance, 0);
+
+  const rarityTotals = assets.reduce(
+    (acc, asset) => {
+      acc[asset.rarity] = (acc[asset.rarity] || 0) + asset.drawChance;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  return {
+    common: Number((((rarityTotals.common || 0) / totalDrawChance) * 100).toFixed(2)),
+    uncommon: Number((((rarityTotals.uncommon || 0) / totalDrawChance) * 100).toFixed(2)),
+    rare: Number((((rarityTotals.rare || 0) / totalDrawChance) * 100).toFixed(2)),
+    epic: Number((((rarityTotals.epic || 0) / totalDrawChance) * 100).toFixed(2)),
+    legendary: Number((((rarityTotals.legendary || 0) / totalDrawChance) * 100).toFixed(2)),
+  };
 };
+
+// Centralized rarity styling configuration
+const RARITY_STYLES = {
+  common: {
+    text: "text-rarity-common",
+    bg: "bg-rarity-common",
+    border: "border-rarity-common",
+    glow: "border-2 border-rarity-common bg-rarity-common/15 shadow-[0_0_15px_rgba(132,132,132,0.4)]",
+    hex: "#848484",
+  },
+  uncommon: {
+    text: "text-rarity-uncommon",
+    bg: "bg-rarity-uncommon",
+    border: "border-rarity-uncommon",
+    glow: "border-2 border-rarity-uncommon bg-rarity-uncommon/20 shadow-[0_0_18px_rgba(108,201,94,0.5)]",
+    hex: "#6cc95e",
+  },
+  rare: {
+    text: "text-rarity-rare",
+    bg: "bg-rarity-rare",
+    border: "border-rarity-rare",
+    glow: "border-2 border-rarity-rare bg-rarity-rare/20 shadow-[0_0_22px_rgba(86,200,218,0.6)]",
+    hex: "#56c8da",
+  },
+  epic: {
+    text: "text-rarity-epic",
+    bg: "bg-rarity-epic",
+    border: "border-rarity-epic",
+    glow: "border-2 border-rarity-epic bg-rarity-epic/20 shadow-[0_0_28px_rgba(186,55,212,0.6)]",
+    hex: "#ba37d4",
+  },
+  legendary: {
+    text: "text-rarity-legendary",
+    bg: "bg-rarity-legendary",
+    border: "border-rarity-legendary",
+    glow: "border-2 border-rarity-legendary bg-rarity-legendary/20 shadow-[0_0_35px_rgba(233,176,98,0.7)]",
+    hex: "#e9b062",
+  },
+} as const;
 
 export const chestAssets: ChestAsset[] = [
   {
-    id: "2",
-    name: "Legacy Guardian",
-    type: "armor",
-    troopType: TroopType.Knight,
-    rarity: "epic",
-    description:
-      "An impressive and timeless Knight armor set, inspired by the Knight troop models of Eternum Season 1. Part of the First Legacy Set.",
-    drawChance: 1.41,
-    modelPath: "models/cosmetics/high-res/legacy_knight_t3.glb",
-    imagePath: "images/cosmetics/legacy-knight.png",
-    positionY: 0.2,
-    scale: 1,
-  },
-  {
-    id: "3",
-    name: "Aura of the Legacy Warrior",
-    type: "aura",
-    troopType: undefined,
-    rarity: "epic",
-    description: "An aura of golden magnificence for troops of a distinguished Realm. Part of the First Legacy Set.",
-    drawChance: 1.41,
-    modelPath: "models/cosmetics/high-res/s1_legacy_troop_aura.glb",
-    imagePath: "images/cosmetics/legacy-troop-aura.png",
-    positionY: 0,
-    scale: 1,
-  },
-  {
     id: "4",
     name: "Aura of the Legacy Realm",
-    type: "aura",
+    type: AssetType.RealmAura,
     troopType: undefined,
-    rarity: "legendary",
-    description: "An aura of golden magnificence for a distinguished Realm. Part of the First Legacy Set.",
+    rarity: AssetRarity.Epic,
+    set: AssetSet.FirstLegacySet,
+    description: "An aura of golden magnificence for a distinguished Realm.",
     drawChance: 4.22,
     modelPath: "models/cosmetics/high-res/s1_legacy_realm_aura.glb",
     imagePath: "images/cosmetics/legacy-realm-aura.png",
     positionY: -0.1,
     scale: 2.4,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "5",
     name: "Winterhold",
-    type: "skin",
+    type: AssetType.RealmSkin,
     troopType: undefined,
-    rarity: "rare",
-    description: "The icy domain of a Lord that has withstood the fiercest of winters. Part of the Winter Lord Set.",
+    rarity: AssetRarity.Rare,
+    set: AssetSet.WinterLordSet,
+    description: "The icy domain of a Lord that has withstood the fiercest of winters.",
     drawChance: 8.45,
     modelPath: "models/cosmetics/high-res/castle_winter_lord_l3.glb",
     imagePath: "images/cosmetics/winter-lord-realm.png",
     positionY: 0,
     scale: 1,
-    rotationY: -2,
+    rotationY: 1.2,
+    rotationX: 0,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "6",
     name: "Winter's Palisade",
-    type: "aura",
+    type: AssetType.RealmAura,
     troopType: undefined,
-    rarity: "rare",
-    description: "A ring of razor-sharp ice spikes to deter a Lord's foes. Part of the Winter Lord Set.",
+    rarity: AssetRarity.Rare,
+    set: AssetSet.WinterLordSet,
+    description: "A ring of razor-sharp ice spikes to deter a Lord's foes.",
     drawChance: 8.45,
     modelPath: "models/cosmetics/high-res/winter_lord_spike_aura.glb",
     imagePath: "images/cosmetics/winter-lord-realm-aura.png",
@@ -95,12 +155,47 @@ export const chestAssets: ChestAsset[] = [
     scale: 1,
   },
   {
+    id: "3",
+    name: "Aura of the Legacy Warrior",
+    type: AssetType.TroopAura,
+    troopType: undefined,
+    rarity: AssetRarity.Legendary,
+    set: AssetSet.FirstLegacySet,
+    description: "An aura of golden magnificence for troops of a distinguished Realm.",
+    drawChance: 1.41,
+    modelPath: "models/cosmetics/high-res/s1_legacy_troop_aura.glb",
+    imagePath: "images/cosmetics/legacy-troop-aura.png",
+    positionY: 0,
+    scale: 1,
+    rotationY: -0.1,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
+  },
+  {
+    id: "2",
+    name: "Legacy Guardian",
+    type: AssetType.TroopArmor,
+    troopType: TroopType.Knight,
+    rarity: AssetRarity.Legendary,
+    set: AssetSet.FirstLegacySet,
+    description:
+      "An impressive and timeless Knight armor set, inspired by the Knight troop models of Eternum Season 1.",
+    drawChance: 1.41,
+    modelPath: "models/cosmetics/high-res/legacy_knight_t3.glb",
+    imagePath: "images/cosmetics/legacy-knight.png",
+    positionY: 0.2,
+    scale: 1,
+    rotationY: 0.7,
+    rotationX: 0,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
+  },
+  {
     id: "7",
     name: "Battleaxe of the Winter Paladin",
-    type: "armor",
+    type: AssetType.TroopPrimary,
     troopType: TroopType.Paladin,
-    rarity: "uncommon",
-    description: "A frosty, spiked battleaxe wielded by Winter Paladins. Part of the Winter Lord Set.",
+    rarity: AssetRarity.Uncommon,
+    set: AssetSet.WinterLordSet,
+    description: "A frosty, spiked battleaxe wielded by Winter Paladins.",
     drawChance: 12.68,
     modelPath: "models/cosmetics/high-res/winter_lord_paladin_primary.glb",
     imagePath: "images/cosmetics/winter-lord-paladin-axe.png",
@@ -111,11 +206,11 @@ export const chestAssets: ChestAsset[] = [
   {
     id: "8",
     name: "Shield of the Winter Paladin",
-    type: "armor",
+    type: AssetType.TroopSecondary,
     troopType: TroopType.Paladin,
-    rarity: "uncommon",
-    description:
-      "An elegant, snowflake-patterned cavalry shield wielded by Winter Paladins. Part of the Winter Lord Set.",
+    rarity: AssetRarity.Uncommon,
+    set: AssetSet.WinterLordSet,
+    description: "An elegant, snowflake-patterned cavalry shield wielded by Winter Paladins.",
     drawChance: 12.68,
     modelPath: "models/cosmetics/high-res/winter_lord_paladin_secondary.glb",
     imagePath: "images/cosmetics/winter-lord-paladin-shield.png",
@@ -126,133 +221,90 @@ export const chestAssets: ChestAsset[] = [
   {
     id: "9",
     name: "Hunter's Bow",
-    type: "armor",
+    type: AssetType.TroopPrimary,
     troopType: TroopType.Crossbowman,
-    rarity: "common",
-    description: "A wooden hunting bow. Part of the S1 Alternates Set",
+    rarity: AssetRarity.Common,
+    set: AssetSet.S1AlternatesSet,
+    description: "A wooden hunting bow.",
     drawChance: 16.9,
     modelPath: "models/cosmetics/high-res/bow_common.glb",
     imagePath: "images/cosmetics/common-bow.png",
     positionY: -0.8,
     scale: 1,
-    rotationY: 5,
+    rotationY: 1,
   },
   {
     id: "10",
     name: "Hunter's Quiver",
-    type: "armor",
+    type: AssetType.TroopSecondary,
     troopType: TroopType.Crossbowman,
-    rarity: "common",
-    description: "A leather quiver filled with hunting arrows. Part of the S1 Alternates Set",
+    rarity: AssetRarity.Common,
+    set: AssetSet.S1AlternatesSet,
+    description: "A leather quiver filled with hunting arrows.",
     drawChance: 16.9,
     modelPath: "models/cosmetics/high-res/common_quiver.glb",
     imagePath: "images/cosmetics/common-quiver.png",
     positionY: 0,
-    scale: 1,
+    scale: 0.8,
+    rotationX: 0,
+    rotationZ: -0.8,
   },
   {
     id: "11",
     name: "Carved Wooden Base",
-    type: "aura",
+    type: AssetType.TroopBase,
     troopType: undefined,
-    rarity: "common",
-    description: "A basic-but-sturdy wooden platform. Part of the S1 Alternates Set",
+    rarity: AssetRarity.Common,
+    set: AssetSet.S1AlternatesSet,
+    description: "A basic-but-sturdy wooden platform.",
     drawChance: 16.9,
     modelPath: "models/cosmetics/high-res/common_platform.glb",
     imagePath: "images/cosmetics/common-base.png",
     positionY: 0.2,
     scale: 1,
+    cameraPosition: { x: -0.4, y: 3, z: 1 },
   },
 ];
 
-const getTypeClass = (type: ChestAsset["type"]) => {
+const getTypeClass = (type: AssetType) => {
   switch (type) {
-    case "armor":
+    case AssetType.TroopArmor:
       return "bg-blue-600 text-white";
-    case "skin":
+    case AssetType.TroopPrimary:
+      return "bg-blue-500 text-white";
+    case AssetType.TroopSecondary:
       return "bg-purple-600 text-white";
-    case "aura":
+    case AssetType.TroopAura:
       return "bg-yellow-600 text-black";
-    case "title":
+    case AssetType.TroopBase:
+      return "bg-orange-500 text-white";
+    case AssetType.RealmSkin:
+      return "bg-purple-500 text-white";
+    case AssetType.RealmAura:
       return "bg-green-600 text-white";
     default:
       return "bg-gray-600 text-white";
   }
 };
 
-const getRarityClass = (rarity: ChestAsset["rarity"]) => {
-  switch (rarity) {
-    case "common":
-      return "text-[#848484]";
-    case "uncommon":
-      return "text-[#6cc95e]";
-    case "rare":
-      return "text-[#56c8da]";
-    case "epic":
-      return "text-[#e9b062]";
-    case "legendary":
-      return "text-[#ba37d4]";
-    default:
-      return "bg-gray-500 text-white";
-  }
+const getRarityClass = (rarity: AssetRarity) => {
+  return RARITY_STYLES[rarity]?.text || "text-gray-500";
 };
 
-const getRarityBgClass = (rarity: ChestAsset["rarity"]) => {
-  switch (rarity) {
-    case "common":
-      return "bg-[#848484]";
-    case "uncommon":
-      return "bg-[#6cc95e]";
-    case "rare":
-      return "bg-[#56c8da]";
-    case "epic":
-      return "bg-[#e9b062]";
-    case "legendary":
-      return "bg-[#ba37d4]";
-    default:
-      return "bg-gray-500";
-  }
+const getRarityBgClass = (rarity: AssetRarity) => {
+  return RARITY_STYLES[rarity]?.bg || "bg-gray-500";
 };
 
-const getRarityGlowClass = (rarity: ChestAsset["rarity"]) => {
-  switch (rarity) {
-    case "common":
-      return "border-2 border-[#848484] bg-[#848484]/15 shadow-[0_0_15px_rgba(132,132,132,0.4)]";
-    case "uncommon":
-      return "border-2 border-[#6cc95e] bg-[#6cc95e]/20 shadow-[0_0_18px_rgba(108,201,94,0.5)]";
-    case "rare":
-      return "border-2 border-[#56c8da] bg-[#56c8da]/20 shadow-[0_0_22px_rgba(86,200,218,0.6)]";
-    case "epic":
-      return "border-2 border-[#e9b062] bg-[#e9b062]/20 shadow-[0_0_28px_rgba(233,176,98,0.6)]";
-    case "legendary":
-      return "border-2 border-[#ba37d4] bg-[#ba37d4]/20 shadow-[0_0_35px_rgba(186,55,212,0.7)]";
-    default:
-      return "border-2 border-gray-500 bg-gray-500/15";
-  }
+const getRarityGlowClass = (rarity: AssetRarity) => {
+  return RARITY_STYLES[rarity]?.glow || "border-2 border-gray-500 bg-gray-500/15";
 };
 
-const getRarityAccentColor = (rarity: ChestAsset["rarity"]) => {
-  switch (rarity) {
-    case "common":
-      return "#848484";
-    case "uncommon":
-      return "#6cc95e";
-    case "rare":
-      return "#56c8da";
-    case "epic":
-      return "#e9b062";
-    case "legendary":
-      return "#ba37d4";
-    default:
-      return "#6b7280";
-  }
+const getRarityAccentColor = (rarity: AssetRarity) => {
+  return RARITY_STYLES[rarity]?.hex || "#6b7280";
 };
 
 const getItemSet = (item: ChestAsset): string => {
-  if (item.description.includes("First Legacy Set")) return "First Legacy Set";
-  if (item.description.includes("Winter Lord Set")) return "Winter Lord Set";
-  if (item.description.includes("S1 Alternates Set")) return "S1 Alternates Set";
-  return "";
+  return item.set;
 };
 
 const calculateRarityStats = (items: ChestAsset[]) => {
@@ -309,22 +361,32 @@ export const ChestContent = ({
   showContent,
   chestContent,
 }: {
-  chestType: ChestAsset["rarity"];
+  chestType: AssetRarity;
   showContent: boolean;
   chestContent: ChestAsset[];
 }) => {
   // Sort assets by rarity (rarest first)
   const sortedChestContent = sortAssetsByRarity(chestContent);
-  const [selectedAsset, setSelectedAsset] = useState<ChestAsset>(sortedChestContent[0]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const selectedAsset = sortedChestContent[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
+  const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
 
-  const handleAssetSelect = (asset: ChestAsset) => {
-    if (asset.id === selectedAsset.id) return;
+  const { playClickSound } = useClickSound({
+    src: "/sound/ui/click-2.wav",
+    volume: 0.6,
+  });
+
+  const handleAssetSelect = (index: number) => {
+    if (index === selectedIndex) return;
+
+    // Play click sound
+    playClickSound();
 
     setIsTransitioning(true);
     setTimeout(() => {
-      setSelectedAsset(asset);
+      setSelectedIndex(index);
       setTimeout(() => setIsTransitioning(false), 50);
     }, 150);
   };
@@ -363,6 +425,9 @@ export const ChestContent = ({
             positionY={selectedAsset.positionY}
             scale={selectedAsset.scale}
             rotationY={selectedAsset.rotationY}
+            rotationZ={selectedAsset.rotationZ}
+            rotationX={selectedAsset.rotationX}
+            cameraPosition={selectedAsset.cameraPosition}
           />
         </div>
 
@@ -389,35 +454,35 @@ export const ChestContent = ({
                 </h4>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#ba37d4] font-medium text-sm flex items-center gap-1">
+                    <span className="text-rarity-legendary font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Legendary
                     </span>
                     <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.legendary}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#e9b062] font-medium text-sm flex items-center gap-1">
+                    <span className="text-rarity-epic font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Epic
                     </span>
                     <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.epic}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#56c8da] font-medium text-sm flex items-center gap-1">
+                    <span className="text-rarity-rare font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Rare
                     </span>
                     <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.rare}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#6cc95e] font-medium text-sm flex items-center gap-1">
+                    <span className="text-rarity-uncommon font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Uncommon
                     </span>
                     <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.uncommon}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#848484] font-medium text-sm flex items-center gap-1">
+                    <span className="text-rarity-common font-medium text-sm flex items-center gap-1">
                       <Diamond className="w-3 h-3" />
                       Common
                     </span>
@@ -498,31 +563,31 @@ export const ChestContent = ({
                   {/* Rarity breakdown */}
                   <div className="mt-3 flex justify-center gap-3 text-xs">
                     {rarityStats.legendary > 0 && (
-                      <span className="text-[#ba37d4] flex items-center gap-1">
+                      <span className="text-rarity-legendary flex items-center gap-1">
                         <Diamond className="w-2 h-2" />
                         {rarityStats.legendary} Legendary
                       </span>
                     )}
                     {rarityStats.epic > 0 && (
-                      <span className="text-[#e9b062] flex items-center gap-1">
+                      <span className="text-rarity-epic flex items-center gap-1">
                         <Diamond className="w-2 h-2" />
                         {rarityStats.epic} Epic
                       </span>
                     )}
                     {rarityStats.rare > 0 && (
-                      <span className="text-[#56c8da] flex items-center gap-1">
+                      <span className="text-rarity-rare flex items-center gap-1">
                         <Diamond className="w-2 h-2" />
                         {rarityStats.rare} Rare
                       </span>
                     )}
                     {rarityStats.uncommon > 0 && (
-                      <span className="text-[#6cc95e] flex items-center gap-1">
+                      <span className="text-rarity-uncommon flex items-center gap-1">
                         <Diamond className="w-2 h-2" />
                         {rarityStats.uncommon} Uncommon
                       </span>
                     )}
                     {rarityStats.common > 0 && (
-                      <span className="text-[#848484] flex items-center gap-1">
+                      <span className="text-rarity-common flex items-center gap-1">
                         <Diamond className="w-2 h-2" />
                         {rarityStats.common} Common
                       </span>
@@ -532,8 +597,8 @@ export const ChestContent = ({
 
                 {/* Asset grid with enhanced spacing */}
                 <div className="space-y-3">
-                  {sortedChestContent.map((asset) => {
-                    const isSelected = selectedAsset.id === asset.id;
+                  {sortedChestContent.map((asset, index) => {
+                    const isSelected = index === selectedIndex;
                     const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
                     const cardClass = isSelected
                       ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
@@ -543,9 +608,9 @@ export const ChestContent = ({
 
                     return (
                       <Card
-                        key={asset.id}
+                        key={index}
                         className={cardClass}
-                        onClick={() => handleAssetSelect(asset)}
+                        onClick={() => handleAssetSelect(index)}
                         style={{
                           transition: "all 0.3s ease",
                           transform: isSelected ? "scale(1.02)" : "scale(1)",
@@ -558,10 +623,14 @@ export const ChestContent = ({
                               <div
                                 className={`w-12 h-12 text-white rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border `}
                               >
-                                {asset.type === "armor" && <Swords className="w-6 h-6" />}
-                                {asset.type === "skin" && <Target className="w-6 h-6" />}
-                                {asset.type === "aura" && <Diamond className="w-6 h-6" />}
-                                {asset.type === "title" && <BarChart3 className="w-6 h-6" />}
+                                {(asset.type === AssetType.TroopArmor ||
+                                  asset.type === AssetType.TroopPrimary ||
+                                  asset.type === AssetType.TroopSecondary) && <Swords className="w-6 h-6" />}
+                                {asset.type === AssetType.RealmSkin && <Target className="w-6 h-6" />}
+                                {(asset.type === AssetType.TroopAura || asset.type === AssetType.RealmAura) && (
+                                  <Diamond className="w-6 h-6" />
+                                )}
+                                {asset.type === AssetType.TroopBase && <BarChart3 className="w-6 h-6" />}
                               </div>
                             </div>
 
@@ -577,12 +646,12 @@ export const ChestContent = ({
                                     <span
                                       className={`text-xs px-2 py-1 rounded-full font-medium text-white ${getRarityBgClass(asset.rarity)}`}
                                     >
-                                      {asset.rarity.charAt(0).toUpperCase() + asset.rarity.slice(1)}
+                                      {asset.rarity.toUpperCase()}
                                     </span>
                                     <span
                                       className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeClass(asset.type)}`}
                                     >
-                                      {asset.type.charAt(0).toUpperCase() + asset.type.slice(1)}
+                                      {asset.type.toUpperCase()}
                                     </span>
                                     {/* Drop rate badge */}
                                     <span className="px-2 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-400/40">

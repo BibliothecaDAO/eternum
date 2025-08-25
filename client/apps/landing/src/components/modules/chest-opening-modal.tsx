@@ -1,18 +1,18 @@
-import chestOpeningCommon from "@/assets/videos/chest-opening/common.mp4";
-// todo: fix this
-import chestOpeningLegendary from "@/assets/videos/chest-opening/epic.mp4";
-import chestOpeningEpic from "@/assets/videos/chest-opening/legendary.mp4";
-import chestOpeningRare from "@/assets/videos/chest-opening/rare.mp4";
-import chestOpeningUncommon from "@/assets/videos/chest-opening/uncommon.mp4";
+import chestOpeningCommon from "@videos/chest-opening/common.mp4";
+import chestOpeningEpic from "@videos/chest-opening/epic.mp4";
+import chestOpeningLegendary from "@videos/chest-opening/legendary.mp4";
+import chestOpeningRare from "@videos/chest-opening/rare.mp4";
+import chestOpeningUncommon from "@videos/chest-opening/uncommon.mp4";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ChestAsset, ChestContent } from "./chest-content";
+import { AssetRarity, ChestAsset, ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
   return (
@@ -57,10 +57,27 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [showContent, setShowContent] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [chestType, setChestType] = useState<ChestAsset["rarity"]>("common");
+  const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   const { chestContent, resetChestContent } = useChestContent();
+
+  const ambienceAudio = useAmbienceAudio({
+    src: "/sound/music/ShadowSong.mp3",
+    volume: 0.4,
+    quietVolume: 0.1,
+    loop: true,
+  });
+
+  // Start ambient music when modal opens
+  useEffect(() => {
+    ambienceAudio.play();
+
+    // Cleanup: stop audio when component unmounts
+    return () => {
+      ambienceAudio.stop();
+    };
+  }, []);
 
   // Cycle through loading messages every 2 seconds
   useEffect(() => {
@@ -106,6 +123,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           await videoRef.current!.play();
           console.log("Video playing successfully");
           setVideoState("playing");
+          // Fade ambience audio to quiet when video starts
+          ambienceAudio.fadeToQuiet(500);
         } catch (error) {
           console.error("Error playing video:", error);
           // Try playing without sound if autoplay policy blocks it
@@ -115,6 +134,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               await videoRef.current.play();
               console.log("Video playing muted");
               setVideoState("playing");
+              // Fade ambience audio to quiet when video starts
+              ambienceAudio.fadeToQuiet(500);
             } catch (e) {
               console.error("Failed to play even when muted:", e);
               // Show manual play button as fallback
@@ -156,6 +177,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     // Hide video and show white screen
     setVideoState("ended");
     setShowWhiteScreen(true);
+
+    // Restore ambience audio to normal volume when video ends
+    ambienceAudio.fadeToNormal(500);
 
     // After 3 seconds, show text and trigger fade
     setTimeout(() => {
@@ -201,12 +225,19 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     setVideoState("ended");
     setShowWhiteScreen(false);
     setShowContent(true);
+
+    // Restore ambience audio to normal volume when skipping
+    ambienceAudio.fadeToNormal(200);
   };
 
   const handleClose = () => {
     setShowWhiteScreen(false);
     setShowContent(false);
     setVideoState("loading");
+
+    // Stop ambience audio when closing modal
+    ambienceAudio.stop();
+
     clearLootChestOpening();
   };
 
