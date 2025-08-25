@@ -1,8 +1,7 @@
-export { BaseScene } from "./base-scene";
-export { Chunk } from "./chunk";
-export type { ChunkCoordinates } from "./chunk";
-export { GenericScene } from "./generic-scene";
-export { Hexagon } from "./hexagon";
-export type { HexagonCoordinates, HexagonWorldPosition } from "./hexagon";
-export { HexagonMap } from "./hexagon-map";
-export { WorldmapScene } from "./worldmap-scene";
+export { BaseTileRenderer, type TilePosition } from "./tiles/base-tile-renderer";
+export { BiomeTileRenderer, type BiomeTilePosition } from "./tiles/biome-tile-renderer";
+export { BuildingTileRenderer, type BuildingTilePosition } from "./tiles/building-tile-renderer";
+export { MultiTileRenderer, type MultiTilePosition } from "./tiles/multi-tile-renderer";
+export * from "./tiles/tile-enums";
+export { TileRenderer } from "./tiles/tile-renderer";
+export { UnitTileRenderer, type UnitTilePosition } from "./tiles/unit-tile-renderer";

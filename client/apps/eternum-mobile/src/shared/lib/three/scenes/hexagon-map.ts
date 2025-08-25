@@ -23,7 +23,7 @@ import { createHexagonShape } from "./hexagon-geometry";
 import { HighlightRenderer } from "./highlight-renderer";
 import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./object-renderer";
 import { SelectionManager } from "./selection-manager";
-import { TilePosition, TileRenderer } from "./tile-renderer";
+import { TilePosition, TileRenderer } from "./tiles/tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
 export class HexagonMap {
@@ -76,7 +76,7 @@ export class HexagonMap {
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  
+
   // Store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<number, { col: number; row: number }> = new Map();
 
@@ -85,7 +85,7 @@ export class HexagonMap {
 
   // Travel effects tracking
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
-  
+
   // Track armies with pending movement transactions
   private pendingArmyMovements: Set<number> = new Set();
 
@@ -367,7 +367,7 @@ export class HexagonMap {
         if (actionType === ActionType.Move || actionType === ActionType.Explore) {
           // Clear selection immediately to prevent further interactions
           this.selectionManager.clearSelection();
-          
+
           // Move the army to the clicked hex
           await this.handleArmyMovement(selectedObject.id, actionPath);
         } else if (actionType === ActionType.Attack) {
@@ -469,7 +469,7 @@ export class HexagonMap {
       effect.end();
       this.activeTravelEffects.delete(armyId);
       this.pendingArmyMovements.delete(armyId);
-      
+
       // Re-throw error to let caller handle it
       throw error;
     }
@@ -814,7 +814,7 @@ export class HexagonMap {
     if (isNewArmy) {
       // New army - add it
       console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
-      
+
       const army: ArmyObject = {
         id: entityId,
         col: newPos.col,
@@ -830,7 +830,7 @@ export class HexagonMap {
       };
 
       this.armyRenderer.addObject(army);
-      
+
       // Update hex tracking immediately for new armies
       if (!this.armyHexes.has(newPos.col)) {
         this.armyHexes.set(newPos.col, new Map());
@@ -839,11 +839,13 @@ export class HexagonMap {
     } else {
       // Existing army - check if it moved
       const hasMoved = oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
-      
+
       if (hasMoved) {
         // Army moved - start movement (hex tracking will be updated after movement completes)
-        console.log(`[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`);
-        
+        console.log(
+          `[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`,
+        );
+
         // Clear selection if this army is currently selected and has moved
         const selectedObject = this.selectionManager.getSelectedObject();
         if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
@@ -879,31 +881,35 @@ export class HexagonMap {
     this.pendingArmyMovements.delete(entityId);
   }
 
-  private startSmoothArmyMovement(entityId: number, oldPos: { col: number; row: number }, newPos: { col: number; row: number }) {
+  private startSmoothArmyMovement(
+    entityId: number,
+    oldPos: { col: number; row: number },
+    newPos: { col: number; row: number },
+  ) {
     // Update hex tracking immediately before starting animation
     this.updateArmyHexTracking(entityId, oldPos, newPos);
-    
+
     // Update the army object's position immediately so getObjectsAtHex works correctly
     const army = this.armyRenderer.getObject(entityId);
     if (army) {
       army.col = newPos.col;
       army.row = newPos.row;
     }
-    
+
     // Calculate path using pathfinding
     const oldPosition = new Position({ x: oldPos.col, y: oldPos.row });
     const newPosition = new Position({ x: newPos.col, y: newPos.row });
-    
+
     // Use a reasonable max distance for pathfinding (similar to desktop)
     const maxDistance = 50; // This should be based on army stamina, but using a reasonable default
-    
+
     const path = findShortestPath(
       oldPosition,
       newPosition,
       this.exploredTiles,
       this.structureHexes,
       this.armyHexes,
-      maxDistance
+      maxDistance,
     );
 
     if (path && path.length > 0) {
@@ -921,15 +927,19 @@ export class HexagonMap {
     }
   }
 
-  private updateArmyHexTracking(entityId: number, oldPos: { col: number; row: number }, newPos: { col: number; row: number }) {
+  private updateArmyHexTracking(
+    entityId: number,
+    oldPos: { col: number; row: number },
+    newPos: { col: number; row: number },
+  ) {
     // Remove from old position in hex tracking
     this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-    
+
     // Add to new position in hex tracking
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    
+
     const army = this.armyRenderer.getObject(entityId);
     if (army) {
       this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: army.owner || 0n });
