@@ -317,7 +317,7 @@ export class ArmyModel {
       }
 
       this.updateInstanceTransform(position, targetScale, rotation);
-      this.updateInstanceMeshes(modelData, index, color);
+      this.updateInstanceMeshes(modelData, index, entityId, color);
     });
   }
 
@@ -331,7 +331,12 @@ export class ArmyModel {
     this.dummyObject.updateMatrix();
   }
 
-  private updateInstanceMeshes(modelData: ModelData, index: number, color?: Color): void {
+  private updateInstanceMeshes(
+    modelData: ModelData,
+    index: number,
+    entityId: number,
+    color?: Color,
+  ): void {
     modelData.instancedMeshes.forEach((mesh) => {
       const capacity = ((mesh.instanceMatrix as any).count ?? 0) as number;
       if (index < capacity) {
@@ -349,9 +354,25 @@ export class ArmyModel {
         } catch {}
       }
 
+      // Ensure picking maps instance index -> entityId
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
-      mesh.userData.entityIdMap.set(index, index);
+      mesh.userData.entityIdMap.set(index, entityId);
     });
+  }
+
+  /**
+   * Remap an entity's active movement/animation to a new instance index.
+   * Useful after chunk switches that reassign instance ordering.
+   */
+  public remapEntityIndex(entityId: number, newIndex: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+    const oldIndex = movement.matrixIndex;
+    if (oldIndex === newIndex) return;
+    // Transfer animation state to the new slot and clear the old
+    this.animationStates[newIndex] = this.animationStates[oldIndex];
+    this.animationStates[oldIndex] = ANIMATION_STATE_IDLE;
+    movement.matrixIndex = newIndex;
   }
 
   // Animation Methods

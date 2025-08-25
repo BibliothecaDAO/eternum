@@ -351,6 +351,8 @@ export class ArmyManager {
       );
 
       this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
+      // Ensure any ongoing movement/animation maps to the new instance index
+      this.armyModel.remapEntityIndex(army.entityId, currentCount);
 
       // Increment count and update all meshes
       currentCount++;
