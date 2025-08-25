@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface UseAmbienceAudioOptions {
   src: string;
@@ -7,12 +7,7 @@ interface UseAmbienceAudioOptions {
   loop?: boolean;
 }
 
-export const useAmbienceAudio = ({
-  src,
-  volume = 0.4,
-  quietVolume = 0.1,
-  loop = true,
-}: UseAmbienceAudioOptions) => {
+export const useAmbienceAudio = ({ src, volume = 0.4, quietVolume = 0.1, loop = true }: UseAmbienceAudioOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayingRef = useRef(false);
 
@@ -36,7 +31,7 @@ export const useAmbienceAudio = ({
       await audioRef.current.play();
       isPlayingRef.current = true;
     } catch (error) {
-      console.warn('Ambience audio autoplay failed:', error);
+      console.warn("Ambience audio autoplay failed:", error);
     }
   };
 

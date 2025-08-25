@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef } from "react";
 
 interface UseClickSoundOptions {
   src: string;
@@ -13,19 +13,19 @@ export const useClickSound = ({ src, volume = 0.5 }: UseClickSoundOptions) => {
     if (!audioRef.current) {
       audioRef.current = new Audio(src);
       audioRef.current.volume = volume;
-      audioRef.current.preload = 'auto';
+      audioRef.current.preload = "auto";
     }
   }, [src, volume]);
 
   const playClickSound = useCallback(() => {
     initializeAudio();
-    
+
     if (audioRef.current) {
       // Reset audio to beginning and play
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
         // Silently handle autoplay policy restrictions
-        console.debug('Click sound play failed:', error);
+        console.debug("Click sound play failed:", error);
       });
     }
   }, [initializeAudio]);
