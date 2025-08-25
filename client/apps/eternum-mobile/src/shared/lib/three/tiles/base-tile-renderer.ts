@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { getWorldPositionForTile, HEX_SIZE } from "../utils";
+import { getWorldPositionForTile, HEX_SIZE } from "../utils/utils";
 import type { TilemapConfig } from "./tile-enums";
 
 export interface TilePosition {

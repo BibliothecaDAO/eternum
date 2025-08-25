@@ -1,5 +1,7 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { currencyIntlFormat, generateHexPositions } from "@/shared/lib/utils";
+import { generateHexPositions } from "@/shared/lib/three/utils/utils";
+import { currencyIntlFormat } from "@/shared/lib/utils";
+
 import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";

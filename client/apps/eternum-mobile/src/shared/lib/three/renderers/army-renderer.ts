@@ -1,9 +1,8 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { loggedInAccount } from "../../helpers/utils";
 import { UnitTilePosition, UnitTileRenderer } from "../tiles/unit-tile-renderer";
-import { HEX_SIZE } from "../utils";
+import { HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { ObjectRenderer } from "./base-object-renderer";
 import { ArmyObject } from "./types";
 

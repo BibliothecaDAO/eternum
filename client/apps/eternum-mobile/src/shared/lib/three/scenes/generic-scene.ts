@@ -1,7 +1,7 @@
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { SCENE_COLORS } from "../constants";
+import { SCENE_COLORS } from "../constants/constants";
 import { BaseScene } from "./base-scene";
 
 export class GenericScene extends BaseScene {

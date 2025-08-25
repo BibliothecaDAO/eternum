@@ -4,16 +4,16 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GUIManager } from "../helpers/gui-manager";
-import { FXManager } from "./fx-manager";
-import { TileRenderer } from "./tiles/tile-renderer";
-import { getWorldPositionForHex } from "./utils";
+import { FXManager } from "../managers/fx-manager";
+import { GUIManager } from "../managers/gui-manager";
+import { BiomeTileRenderer } from "../tiles";
+import { getWorldPositionForHex } from "../utils/utils";
 
 export abstract class BaseScene {
   protected scene: THREE.Scene;
   protected dojo: DojoResult;
   protected systemManager: WorldUpdateListener;
-  protected tileRenderer: TileRenderer;
+  protected tileRenderer: BiomeTileRenderer;
   protected fxManager: FXManager;
   protected raycaster: THREE.Raycaster;
   protected controls?: OrbitControls;
@@ -40,7 +40,7 @@ export abstract class BaseScene {
     this.sceneId = sceneId || "BaseScene";
     this.scene = new THREE.Scene();
     this.systemManager = new WorldUpdateListener(this.dojo.setup, sqlApi);
-    this.tileRenderer = new TileRenderer(this.scene);
+    this.tileRenderer = new BiomeTileRenderer(this.scene);
     this.fxManager = new FXManager(this.scene);
     this.raycaster = new THREE.Raycaster();
 
@@ -155,11 +155,11 @@ export abstract class BaseScene {
     return this.dojo;
   }
 
-  public getSystemManager(): SystemManager {
+  public getSystemManager(): WorldUpdateListener {
     return this.systemManager;
   }
 
-  public getTileRenderer(): TileRenderer {
+  public getTileRenderer(): BiomeTileRenderer {
     return this.tileRenderer;
   }
 
