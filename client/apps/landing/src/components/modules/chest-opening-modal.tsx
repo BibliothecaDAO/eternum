@@ -1,9 +1,8 @@
-import chestOpeningCommon from "@/assets/videos/chest-opening/common.mp4";
-// todo: fix this
-import chestOpeningEpic from "@/assets/videos/chest-opening/epic.mp4";
-import chestOpeningLegendary from "@/assets/videos/chest-opening/legendary.mp4";
-import chestOpeningRare from "@/assets/videos/chest-opening/rare.mp4";
-import chestOpeningUncommon from "@/assets/videos/chest-opening/uncommon.mp4";
+import chestOpeningCommon from "@videos/chest-opening/common.mp4";
+import chestOpeningEpic from "@videos/chest-opening/epic.mp4";
+import chestOpeningLegendary from "@videos/chest-opening/legendary.mp4";
+import chestOpeningRare from "@videos/chest-opening/rare.mp4";
+import chestOpeningUncommon from "@videos/chest-opening/uncommon.mp4";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

@@ -5,7 +5,7 @@ import { BarChart3, Diamond, Swords, Target } from "lucide-react";
 import { useState } from "react";
 import { ModelViewer } from "./model-viewer";
 
-export enum AssetType {
+enum AssetType {
   TroopArmor = "Troop Armor",
   TroopPrimary = "Troop Primary",
   TroopSecondary = "Troop Secondary",
@@ -15,18 +15,18 @@ export enum AssetType {
   RealmAura = "Realm Aura",
 }
 
+enum AssetSet {
+  FirstLegacySet = "First Legacy Set",
+  WinterLordSet = "Winter Lord Set",
+  S1AlternatesSet = "",
+}
+
 export enum AssetRarity {
   Common = "common",
   Uncommon = "uncommon",
   Rare = "rare",
   Epic = "epic",
   Legendary = "legendary",
-}
-
-export enum AssetSet {
-  FirstLegacySet = "First Legacy Set",
-  WinterLordSet = "Winter Lord Set",
-  S1AlternatesSet = "",
 }
 
 export interface ChestAsset {
