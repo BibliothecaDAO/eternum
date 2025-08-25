@@ -103,7 +103,17 @@ export function createContentContainer(): {
   appendChild: (child: HTMLElement) => void;
 } {
   const textContainer = document.createElement("div");
-  textContainer.classList.add("ml-1", "flex", "flex-col", "justify-center", "items-start", "text-left", "min-w-0");
+  textContainer.classList.add(
+    "ml-1",
+    "flex",
+    "flex-col",
+    "justify-center",
+    "items-start",
+    "text-left",
+    "min-w-0",
+    "gap-0.5",
+    "leading-tight",
+  );
   textContainer.setAttribute("data-component", "content-container");
 
   return {
@@ -124,11 +134,11 @@ export function createOwnerDisplayElement(options: {
   const { owner, isMine, isDaydreamsAgent } = options;
 
   const ownerDisplay = document.createElement("div");
-  ownerDisplay.classList.add("flex", "items-center", "gap-1", "min-w-0");
+  ownerDisplay.classList.add("flex", "items-center", "gap-0.5", "min-w-0", "absolute", "-top-5", "left-0");
   ownerDisplay.setAttribute("data-component", "owner");
 
   const ownerText = document.createElement("span");
-  ownerText.classList.add("truncate", "text-xxs");
+  ownerText.classList.add("truncate", "text-xxs", "leading-none");
   ownerText.style.color = "inherit";
 
   if (owner.ownerName && owner.ownerName !== "test") {
@@ -150,7 +160,7 @@ export function createOwnerDisplayElement(options: {
  */
 export function createTroopCountDisplay(troopCount: number, troopType: TroopType, troopTier: TroopTier): HTMLElement {
   const troopDisplay = document.createElement("div");
-  troopDisplay.classList.add("flex", "items-center", "text-xxs", "gap-1");
+  troopDisplay.classList.add("flex", "items-center", "text-xxs", "gap-0.5", "leading-none");
   troopDisplay.setAttribute("data-component", "troop-count");
 
   const troopIcon = document.createElement("span");
@@ -159,7 +169,7 @@ export function createTroopCountDisplay(troopCount: number, troopType: TroopType
   troopDisplay.appendChild(troopIcon);
 
   const troopText = document.createElement("span");
-  troopText.classList.add("text-white", "font-mono");
+  troopText.classList.add("text-white", "font-mono", "text-xxs", "leading-none");
   troopText.setAttribute("data-role", "count");
 
   const troopName = getTroopDisplayName(troopType, troopTier);
@@ -175,7 +185,7 @@ export function createTroopCountDisplay(troopCount: number, troopType: TroopType
  */
 export function createStaminaBar(currentStamina: number, maxStamina: number): HTMLElement {
   const staminaContainer = document.createElement("div");
-  staminaContainer.classList.add("flex", "items-center", "text-xxs", "gap-1");
+  staminaContainer.classList.add("flex", "items-center", "text-xxs", "gap-0.5", "leading-none");
   staminaContainer.setAttribute("data-component", "stamina-bar");
 
   const staminaIcon = document.createElement("span");
@@ -185,7 +195,7 @@ export function createStaminaBar(currentStamina: number, maxStamina: number): HT
 
   const staminaText = document.createElement("span");
   staminaText.textContent = `${currentStamina}/${maxStamina}`;
-  staminaText.classList.add("text-white", "font-mono");
+  staminaText.classList.add("text-white", "font-mono", "text-xxs", "leading-none");
   staminaContainer.appendChild(staminaText);
 
   return staminaContainer;
@@ -208,7 +218,15 @@ export function createGuardArmyDisplay(
   guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+  container.classList.add(
+    "flex",
+    "flex-row",
+    "gap-0.5",
+    "text-xxs",
+    "overflow-x-auto",
+    "text-gray-400",
+    "leading-none",
+  );
   container.setAttribute("data-component", "guard-armies");
 
   if (guardArmies.length === 0) {
@@ -222,16 +240,12 @@ export function createGuardArmyDisplay(
   guardArmies.forEach((guard) => {
     if (guard.count > 0) {
       const guardDiv = document.createElement("div");
-      guardDiv.classList.add("flex", "items-center", "gap-1", "rounded", "px-1.5", "py-0.5", "bg-black/40");
-
-      const shieldIcon = document.createElement("span");
-      shieldIcon.textContent = "🛡️";
-      guardDiv.appendChild(shieldIcon);
+      guardDiv.classList.add("flex", "items-center", "gap-0.5", "rounded", "px-1", "py-0.5", "bg-black/40");
 
       const resourceId = getTroopResourceIdFromCategory(guard.category);
       if (resourceId) {
         const iconContainer = document.createElement("div");
-        iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
+        iconContainer.classList.add("w-3", "h-3", "flex-shrink-0");
 
         const img = document.createElement("img");
         img.src = `/images/resources/${resourceId}.png`;
@@ -242,18 +256,19 @@ export function createGuardArmyDisplay(
 
       const countSpan = document.createElement("span");
       countSpan.textContent = guard.count.toString();
-      countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+      countSpan.classList.add("font-semibold", "text-xxs", "leading-none");
       guardDiv.appendChild(countSpan);
 
       const tierBadge = document.createElement("span");
       tierBadge.textContent = `T${guard.tier}`;
       tierBadge.classList.add(
-        "px-1",
-        "py-0.5",
+        "px-0.5",
+        "py-0",
         "rounded",
-        "text-[10px]",
+        "text-[9px]",
         "font-bold",
         "border",
+        "leading-none",
         ...getTierStyle(guard.tier).split(" "),
       );
       guardDiv.appendChild(tierBadge);
@@ -272,7 +287,7 @@ export function createProductionDisplay(
   activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
 ): HTMLElement {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
+  container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs", "leading-none");
   container.setAttribute("data-component", "productions");
 
   if (activeProductions.length === 0) {
@@ -285,12 +300,12 @@ export function createProductionDisplay(
 
   activeProductions.forEach((production) => {
     const productionDiv = document.createElement("div");
-    productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
+    productionDiv.classList.add("flex", "items-center", "gap-0.5", "bg-black/40", "rounded", "px-1", "py-0.5");
 
     const resourceName = BuildingTypeToIcon[production.buildingType];
     if (resourceName) {
       const iconContainer = document.createElement("div");
-      iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
+      iconContainer.classList.add("w-3", "h-3", "flex-shrink-0");
 
       const img = document.createElement("img");
 
@@ -312,7 +327,7 @@ export function createProductionDisplay(
 
     const countSpan = document.createElement("span");
     countSpan.textContent = `${production.buildingCount}`;
-    countSpan.classList.add("text-white", "font-semibold");
+    countSpan.classList.add("text-white", "font-semibold", "text-xxs", "leading-none");
     productionDiv.appendChild(countSpan);
 
     container.appendChild(productionDiv);

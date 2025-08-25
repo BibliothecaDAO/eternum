@@ -87,20 +87,20 @@ const createLabelBase = (isMine: boolean, isDaydreamsAgent?: boolean): HTMLEleme
 
   // Add common classes
   labelDiv.classList.add(
-    "rounded-md",
+    "rounded",
     "p-0.5",
     "-translate-x-1/2",
     "text-xxs",
     "flex",
     "items-center",
     "group",
-    "shadow-md",
+    "shadow-sm",
     "font-semibold",
     "transition-[height]",
-    "duration-700",
+    "duration-300",
     "ease-in-out",
     "h-auto",
-    "has-[.opacity-0]:h-12",
+    "leading-none",
   );
 
   // Get appropriate style
@@ -145,7 +145,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     img.src = data.isDaydreamsAgent
       ? "/images/logos/daydreams.png"
       : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.classList.add("w-6", "h-6", "inline-block", "object-contain", "flex-shrink-0");
     img.setAttribute("data-component", "army-icon");
     labelDiv.appendChild(img);
 
@@ -174,7 +174,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     } else if (data.currentStamina !== undefined) {
       // Show just current stamina if max is not available
       const staminaInfo = document.createElement("div");
-      staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+      staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-0.5", "leading-none");
 
       const staminaIcon = document.createElement("span");
       staminaIcon.textContent = "⚡";
@@ -183,7 +183,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
       const staminaText = document.createElement("span");
       staminaText.textContent = `${data.currentStamina}`;
-      staminaText.classList.add("text-white", "font-mono");
+      staminaText.classList.add("text-white", "font-mono", "text-xxs", "leading-none");
       staminaInfo.appendChild(staminaText);
 
       textContainer.appendChild(staminaInfo);
@@ -260,7 +260,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     // Create and set icon image
     const iconImg = document.createElement("img");
     iconImg.src = iconPath;
-    iconImg.classList.add("w-10", "h-10", "object-contain");
+    iconImg.classList.add("w-6", "h-6", "object-contain", "flex-shrink-0");
     iconImg.setAttribute("data-component", "structure-icon");
     iconContainer.appendChild(iconImg);
     labelDiv.appendChild(iconContainer);
@@ -296,13 +296,13 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       realmCountDisplay.classList.add(
         "flex",
         "items-center",
-        "gap-1.5",
-        "mt-1",
-        "px-2",
+        "gap-1",
+        "px-1.5",
         "py-0.5",
         "rounded",
         "transition-all",
         "duration-300",
+        "leading-none",
       );
 
       // Style based on ownership status
@@ -323,19 +323,19 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       // Add icon based on status
       const vpIcon = document.createElement("span");
-      vpIcon.classList.add("text-xs");
+      vpIcon.classList.add("text-xxs", "leading-none");
       if (isOwned) {
-        vpIcon.textContent = "⚡"; // Lightning for active
+        vpIcon.textContent = "⚡";
         vpIcon.classList.add("text-order-brilliance");
       } else {
-        vpIcon.textContent = "💤"; // Sleeping for inactive
+        vpIcon.textContent = "💤";
         vpIcon.classList.add("text-gray-300");
       }
       realmCountDisplay.appendChild(vpIcon);
 
       // Add the VP value
       const realmCountText = document.createElement("span");
-      realmCountText.classList.add("font-bold", "text-xs");
+      realmCountText.classList.add("font-bold", "text-xxs", "leading-none");
 
       if (isOwned) {
         realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
@@ -348,14 +348,14 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       // Add VP/s label with status
       const vpLabel = document.createElement("span");
-      vpLabel.classList.add("text-xxs", "font-normal");
+      vpLabel.classList.add("text-xxs", "font-normal", "leading-none");
 
       if (isOwned) {
         vpLabel.classList.add("text-order-brilliance/80");
         vpLabel.textContent = "VP/s";
       } else {
         vpLabel.classList.add("text-gray-300");
-        vpLabel.textContent = "VP/s (unclaimed)";
+        vpLabel.textContent = "unclaimed";
       }
 
       realmCountDisplay.appendChild(vpLabel);
@@ -437,15 +437,15 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           // Update icon
           if (isOwned) {
             vpIcon.textContent = "⚡";
-            vpIcon.className = "text-xs text-order-brilliance";
+            vpIcon.className = "text-xxs leading-none text-order-brilliance";
           } else {
             vpIcon.textContent = "💤";
-            vpIcon.className = "text-xs text-gray-300";
+            vpIcon.className = "text-xxs leading-none text-gray-300";
           }
 
           // Update count
           realmCountText.textContent = `${data.hyperstructureRealmCount}`;
-          realmCountText.className = "font-bold text-xs";
+          realmCountText.className = "font-bold text-xxs leading-none";
           if (isOwned) {
             realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
           } else {
@@ -453,18 +453,18 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           }
 
           // Update label
-          vpLabel.className = "text-xxs font-normal";
+          vpLabel.className = "text-xxs font-normal leading-none";
           if (isOwned) {
             vpLabel.classList.add("text-order-brilliance/80");
             vpLabel.textContent = "VP/s";
           } else {
             vpLabel.classList.add("text-gray-300");
-            vpLabel.textContent = "VP/s (unclaimed)";
+            vpLabel.textContent = "unclaimed";
           }
 
           // Update container styles
           realmCountDisplay.className =
-            "flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300";
+            "flex items-center gap-1 px-1.5 py-0.5 rounded transition-all duration-300 leading-none";
           if (isOwned) {
             realmCountDisplay.classList.add(
               "bg-order-brilliance/20",
@@ -482,13 +482,13 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         newRealmCountDisplay.classList.add(
           "flex",
           "items-center",
-          "gap-1.5",
-          "mt-1",
-          "px-2",
+          "gap-1",
+          "px-1.5",
           "py-0.5",
           "rounded",
           "transition-all",
           "duration-300",
+          "leading-none",
         );
 
         if (isOwned) {
@@ -506,7 +506,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
         // Add icon
         const vpIcon = document.createElement("span");
-        vpIcon.classList.add("text-xs");
+        vpIcon.classList.add("text-xxs", "leading-none");
         if (isOwned) {
           vpIcon.textContent = "⚡";
           vpIcon.classList.add("text-order-brilliance");
@@ -518,7 +518,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
         // Add the VP value
         const realmCountText = document.createElement("span");
-        realmCountText.classList.add("font-bold", "text-xs");
+        realmCountText.classList.add("font-bold", "text-xxs", "leading-none");
 
         if (isOwned) {
           realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
@@ -531,14 +531,14 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
         // Add VP/s label
         const vpLabel = document.createElement("span");
-        vpLabel.classList.add("text-xxs", "font-normal");
+        vpLabel.classList.add("text-xxs", "font-normal", "leading-none");
 
         if (isOwned) {
           vpLabel.classList.add("text-order-brilliance/80");
           vpLabel.textContent = "VP/s";
         } else {
           vpLabel.classList.add("text-gray-300");
-          vpLabel.textContent = "VP/s (unclaimed)";
+          vpLabel.textContent = "unclaimed";
         }
 
         newRealmCountDisplay.appendChild(vpLabel);
@@ -574,7 +574,7 @@ export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
     // Add chest icon
     const img = document.createElement("img");
     img.src = "/images/labels/chest.png";
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.classList.add("w-5", "h-5", "inline-block", "object-contain", "flex-shrink-0");
     img.setAttribute("data-component", "chest-icon");
     labelDiv.appendChild(img);
 
@@ -617,7 +617,7 @@ export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
     // Add quest icon
     const img = document.createElement("img");
     img.src = "/images/labels/quest.png";
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+    img.classList.add("w-5", "h-5", "inline-block", "object-contain", "flex-shrink-0");
     img.setAttribute("data-component", "quest-icon");
     labelDiv.appendChild(img);
 
