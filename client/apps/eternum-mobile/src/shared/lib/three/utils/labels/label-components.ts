@@ -184,30 +184,87 @@ export function createTroopCountDisplay(troopCount: number, troopType: TroopType
  * Create stamina bar component
  */
 export function createStaminaBar(currentStamina: number, maxStamina: number): HTMLElement {
-  const staminaContainer = document.createElement("div");
-  staminaContainer.classList.add("flex", "items-center", "text-xxs", "gap-0.5", "leading-none");
-  staminaContainer.setAttribute("data-component", "stamina-bar");
+  const container = document.createElement("div");
+  container.style.display = "flex";
+  container.style.alignItems = "center";
+  container.style.gap = "4px";
+  container.style.fontSize = "10px";
+  container.setAttribute("data-component", "stamina-bar");
 
-  const staminaIcon = document.createElement("span");
-  staminaIcon.textContent = "⚡";
-  staminaIcon.classList.add("text-yellow-400");
-  staminaContainer.appendChild(staminaIcon);
+  const icon = document.createElement("span");
+  icon.textContent = "⚡";
+  icon.style.color = "#facc15";
+  container.appendChild(icon);
 
-  const staminaText = document.createElement("span");
-  staminaText.textContent = `${currentStamina}/${maxStamina}`;
-  staminaText.classList.add("text-white", "font-mono", "text-xxs", "leading-none");
-  staminaContainer.appendChild(staminaText);
+  const progressBar = document.createElement("div");
+  progressBar.style.position = "relative";
+  progressBar.style.backgroundColor = "#374151";
+  progressBar.style.borderRadius = "9999px";
+  progressBar.style.height = "8px";
+  progressBar.style.width = "80px";
+  progressBar.style.minWidth = "80px";
+  progressBar.style.maxWidth = "80px";
+  progressBar.style.overflow = "hidden";
+  progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+  progressBar.setAttribute("data-role", "progress-container");
 
-  return staminaContainer;
+  const progressFill = document.createElement("div");
+  progressFill.style.position = "absolute";
+  progressFill.style.top = "0";
+  progressFill.style.left = "0";
+  progressFill.style.height = "100%";
+  progressFill.style.borderRadius = "9999px";
+  progressFill.style.transition = "width 0.3s ease-in-out";
+  progressFill.setAttribute("data-role", "progress-fill");
+
+  const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
+  progressFill.style.width = `${percentage}%`;
+
+  if (percentage > 66) {
+    progressFill.style.backgroundColor = "#10b981";
+  } else if (percentage > 33) {
+    progressFill.style.backgroundColor = "#f59e0b";
+  } else {
+    progressFill.style.backgroundColor = "#ef4444";
+  }
+
+  progressBar.appendChild(progressFill);
+  container.appendChild(progressBar);
+
+  const text = document.createElement("span");
+  text.textContent = `${currentStamina}/${maxStamina}`;
+  text.style.color = "#ffffff";
+  text.style.fontFamily = "monospace";
+  text.style.fontSize = "10px";
+  text.style.fontWeight = "500";
+  text.setAttribute("data-role", "stamina-text");
+  container.appendChild(text);
+
+  return container;
 }
 
 /**
  * Update stamina bar values
  */
 export function updateStaminaBar(staminaBar: HTMLElement, currentStamina: number, maxStamina: number): void {
-  const staminaText = staminaBar.querySelector("span:last-child");
-  if (staminaText) {
-    staminaText.textContent = `${currentStamina}/${maxStamina}`;
+  const progressFill = staminaBar.querySelector("[data-role='progress-fill']") as HTMLElement;
+  const textElement = staminaBar.querySelector("[data-role='stamina-text']") as HTMLElement;
+
+  if (textElement) {
+    textElement.textContent = `${currentStamina}/${maxStamina}`;
+  }
+
+  if (progressFill) {
+    const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
+    progressFill.style.width = `${percentage}%`;
+
+    if (percentage > 66) {
+      progressFill.style.backgroundColor = "#10b981";
+    } else if (percentage > 33) {
+      progressFill.style.backgroundColor = "#f59e0b";
+    } else {
+      progressFill.style.backgroundColor = "#ef4444";
+    }
   }
 }
 
